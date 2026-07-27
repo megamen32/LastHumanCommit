@@ -1,7 +1,7 @@
 # STOP / RETHINK
 
 Trigger when 30 minutes pass without an end-to-end P0 slice, after two failed
-independent attempts, on conflicting evidence, when the user repeats that P0
+independent attempts, on conflicting evidence, when the user repeats that P0/P1
 still fails, when the target shares the failed failure domain, when scope must
 expand materially, or when framework/process grows without user progress.
 

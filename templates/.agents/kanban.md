@@ -9,7 +9,7 @@ file under `.agents/tasks/`. Status is encoded in the filename prefix:
 
 State transitions are `git mv` only; do not edit-and-rename in place. The
 working tree is the lock, the commit is the audit trail. Tasks are versioned,
-diffable, greppable. No SaaS task tracker, no API latency, no race condition.
+diffable, greppable. 
 
 Priority header below picks which `tasks/` entries to surface. Each line under
 the header is `path — owner — one-line status`. Bodies live in the file, not in
@@ -21,6 +21,7 @@ this board.
 ## CORE
 
 ## BEST_EFFORT
+<!-- Session time < 1hour and <1 million tokens> -->
 
 ## OPT_IN
 <!-- Requires explicit user choice. -->

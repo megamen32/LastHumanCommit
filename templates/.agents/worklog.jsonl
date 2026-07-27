@@ -1,1 +1,0 @@
-{"_schema":"event=start|end; agent=<id>; role=<role>; pid_or_run_id=<value|null>; time=<ISO-8601 UTC+3>; note=<short>"}
