@@ -54,3 +54,22 @@ Rigid rules protect P0, retry limits, oversight cadence, irreversible
 boundaries, and completion evidence. Implementation advice remains contextual:
 Overseer and Critic create mandatory decision gates without making a
 context-poor proposed solution blindly binding.
+
+## Token footprint (tiktoken, cl100k_base)
+
+Short description: a compact, lazy-loaded canon for agent orchestration. The always-loaded core (`AGENTS.md`) is the only file carried in every prompt; roles, profiles, and protocols load on demand. Total library: 15,349 chars / 3,427 tokens across 11 files.
+
+| File | chars | tokens |
+| --- | ---: | ---: |
+| AGENTS.md | 790 | 218 |
+| agents/Adviser.md | 982 | 213 |
+| agents/Critic.md | 1332 | 287 |
+| agents/Explorer.md | 1193 | 256 |
+| agents/Lead.md | 4480 | 1029 |
+| agents/Overseer.md | 1492 | 356 |
+| agents/Reviewer.md | 1049 | 228 |
+| agents/Worker.md | 1101 | 230 |
+| protocols/STOP_RETHINK.md | 1277 | 270 |
+| profiles/Code.md | 385 | 80 |
+| profiles/Infrastructure.md | 1268 | 260 |
+| TOTAL | 15349 | 3427 |
