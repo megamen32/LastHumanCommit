@@ -1,56 +1,30 @@
-# Agent Canon
+# Last Human Commit
+<img width="1672" height="941" alt="image" src="https://github.com/user-attachments/assets/7b259f64-50c1-45a4-af27-07a5101d8120" />
 
-Public canonical source for agent orchestration. The always-loaded core is kept
-under 800 Unicode characters; role, event, and domain instructions are loaded
-only when relevant. The full directory must never be concatenated into one
-prompt.
+Agent orchestration instruction. Go Away From Here to grub All-In-One stuff that you will never understand. 
+This one is Simple Enough, so even you can understand it. Grab-n-Go
+
+install: curl <add oneliner for ubuntu-mac> | bash - all (codex claude opencode zcode)
+uninstall: lasthuman unistall
+
 
 ## Layout
-
-- `AGENTS.md` — 790-character dispatch and interaction core.
-- `agents/` — L, Explorer, Worker, Reviewer, Хлыст, Adviser, Critic.
+        218-tokens 
+- `AGENTS.md` — 
+- `agents/` — Overseer->         |>Ad(viser)     5.6-sol fable glm5.2 kimi k3                     /\ Интелект
+-                       L(eader)-|>Crit(ic),     5.6-terra  kimi 2.7  deepseek-v4-pro                  →Время
+-                                |     
+                                  ----------- Ex(plorer readonly), Wo(rker), R(eviewer) MinimaxM3 Deepseek v4 flash mimo glm-4.7
+-                                                                             
 - `protocols/` — event-triggered procedures such as STOP/RETHINK.
 - `profiles/` — code and infrastructure rules loaded only for matching work.
 - `templates/.agents/` — runtime state used only when work is expected to exceed
-  one hour or has already exceeded twenty minutes.
-- `tests/validate.py` — dependency-free structure and size guard.
+  one hour or has already exceeded twenty minutes. Нет работы длинее чем маленькой новой фичи, а дороги длинее "я знаю короткий путь"
+- `tests/validate.py` — dependency-free structure and size guard.  
 
-Runtime logging is intentionally quiet: every agent records only start and end;
-there are no heartbeat messages. Detailed work stays in subagent results,
-commits, evidence, and L's cumulative Overseer brief.
+You dont need to read this doc futuher anymore 
 
-## Canonical installation
-
-Target repository: `megamen32/agent-canon`.
-
-Clone once, then expose the canonical files to each harness through symlinks or
-its native agent configuration. Harness adapters should reference these files,
-not fork their text. Keep project-specific topology and secrets in the project's
-own instruction files.
-
-For Codex user-level files, one possible layout is:
-
-```sh
-git clone git@github.com:megamen32/agent-canon.git ~/.agent-canon
-ln -sfn ~/.agent-canon/AGENTS.md ~/.codex/AGENTS.md
-ln -sfn ~/.agent-canon/agents ~/.codex/agents
-ln -sfn ~/.agent-canon/protocols ~/.codex/protocols
-ln -sfn ~/.agent-canon/profiles ~/.codex/profiles
-```
-
-For tracked work only:
-
-```sh
-cp -R ~/.agent-canon/templates/.agents ./.agents
-```
-
-## Validation
-
-```sh
-python3 tests/validate.py
-```
-
-Rigid rules protect P0, retry limits, oversight cadence, irreversible
+Rigid rules protect "Immediately", retry limits, oversight cadence, irreversible
 boundaries, and completion evidence. Implementation advice remains contextual:
 Overseer and Critic create mandatory decision gates without making a
 context-poor proposed solution blindly binding.
