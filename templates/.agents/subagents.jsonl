@@ -1,0 +1,1 @@
+{"_schema":"event=assigned|completed|failed; agent=<id>; role=<role>; scope=<bounded task>; time=<ISO-8601 UTC+3>; result_ref=<path or short result|null>"}
