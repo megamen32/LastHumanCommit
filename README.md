@@ -2,20 +2,9 @@
 
 <img width="1672" height="941" alt="image" src="https://github.com/user-attachments/assets/7b259f64-50c1-45a4-af27-07a5101d8120" />
 
-Инструкции для оркестровки агентов. Личное, без SEO, без претензий на чужие
-процессы. Бери и работай:Grab-n-Go.
+Инструкции для оркестровки агентов, в любой среде (codex/claude/opencode etc). Прост Бери и работай:Grab-n-Go.
 
-> **English version is a placeholder for now.**
-> This repository is intentionally Russian-only while it stays personal. An
-> English translation will land later if the project ever needs to be read by
-> anyone else.
->
-> <!-- English placeholder:
-> Agent orchestration instruction. Go Away From Here to grub All-In-One stuff
-> that you will never understand. This one is Simple Enough, so even you can
-> understand it. Grab-n-Go install: curl <add oneliner for ubuntu-mac> | bash
-> — all (codex claude opencode zcode). Uninstall: lasthuman uninstall.
-> -->
+
 
 Установка и удаление — позже, инлайнер ещё не написан. Здесь пока — структура
 и контракт.
@@ -27,9 +16,9 @@
 
 ## Layout
 
-        218-tokens
+      
 
-- `AGENTS.md` — компактное ядро диспетчеризации.
+- `AGENTS.md` — компактное(218 токена) ядро диспетчеризации.
 - `agents/` — структура ролей:
 
   - Overseer → ┬─ Ad(viser)            — 5.6-sol, fable, glm5.2, kimi k3                       /  Интеллект
@@ -44,19 +33,13 @@
 - `protocols/` — процедуры по событиям, например STOP/RETHINK.
 - `profiles/` — правила для кода и инфраструктуры, грузятся только под
   соответствующую работу.
-- `templates/.agents/` — runtime-состояние, используется только когда работа
-  обещает занять больше часа или уже заняла больше двадцати минут. Нет работы
-  длиннее маленькой новой фичи, а дороги длиннее «я знаю короткий путь» не
-  бывает. Для отслеживаемой работы задачи лежат в `.agents/tasks/` как
+- `templates/.agents/` — Нет работы
+  дольше "маленькой новой фичи", а дороги длиннее «я знаю короткий путь». runtime-состояния, используется только когда работа обещает занять больше часа или уже заняла больше двадцати минут, чтобы агенты могли работать паралельно и очитска контекста не затирала им память. В проект кладеться как подпапка проекта и с ним комитяться, как доска задач `.agents/tasks/` 
   `todo-{id}.md` → `wip-{id}.md` → `done-{id}.md`; переходы делаются
-  `git mv` и только так.
-- `tests/validate.py` — структура и бюджет размера без внешних зависимостей.
 
 Дальше этот документ можно не читать.
 
-Жёсткие правила защищают «сразу», лимиты ретраев, ритм надзора, необратимые
-границы и доказательства завершения. Реализационные советы остаются
-контекстными: Overseer и Critic ставят обязательные decision gates, не
+Жёсткие правила - опасная игрушка, но нужны: лимиты ретраев, ритм надзора, необратимые границы и доказательства завершения. Реализационные советы остаются контекстными: Хлыст и Критик ставят обязательные рамки решения, не
 превращая бедное контекстом предложенное решение в слепо обязательное.
 
 ## File-based task lifecycle
@@ -125,3 +108,15 @@ cp -R ~/.agent-canon/templates/.agents ./.agents
 ```sh
 python3 tests/validate.py
 ```
+
+> **English version is a placeholder for now.**
+> This repository is intentionally Russian-only while it stays personal. An
+> English translation will land later if the project ever needs to be read by
+> anyone else.
+>
+> <!-- English placeholder:
+> Agent orchestration instruction. Go Away From Here to grub All-In-One stuff
+> that you will never understand. This one is Simple Enough, so even you can
+> understand it. Grab-n-Go install: curl <add oneliner for ubuntu-mac> | bash
+> — all (codex claude opencode zcode). Uninstall: lasthuman uninstall.
+> -->
