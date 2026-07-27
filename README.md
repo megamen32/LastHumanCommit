@@ -1,65 +1,90 @@
-# Agent Canon
+# Last Human Commit
 
-Public canonical source for agent orchestration. The always-loaded core is kept
-under 800 Unicode characters; role, event, and domain instructions are loaded
-only when relevant. The full directory must never be concatenated into one
-prompt.
+<img width="1672" height="941" alt="image" src="https://github.com/user-attachments/assets/7b259f64-50c1-45a4-af27-07a5101d8120" />
+
+Инструкции для оркестровки агентов. Личное, без SEO, без претензий на чужие
+процессы. Бери и работай:Grab-n-Go.
+
+> **English version is a placeholder for now.**
+> This repository is intentionally Russian-only while it stays personal. An
+> English translation will land later if the project ever needs to be read by
+> anyone else.
+>
+> <!-- English placeholder:
+> Agent orchestration instruction. Go Away From Here to grub All-In-One stuff
+> that you will never understand. This one is Simple Enough, so even you can
+> understand it. Grab-n-Go install: curl <add oneliner for ubuntu-mac> | bash
+> — all (codex claude opencode zcode). Uninstall: lasthuman uninstall.
+> -->
+
+Установка и удаление — позже, инлайнер ещё не написан. Здесь пока — структура
+и контракт.
+
+```sh
+# install: <one-liner coming>
+# uninstall: lasthuman uninstall
+```
 
 ## Layout
 
-- `AGENTS.md` — 790-character dispatch and interaction core.
-- `agents/` — L, Explorer, Worker, Reviewer, Хлыст, Adviser, Critic.
-- `protocols/` — event-triggered procedures such as STOP/RETHINK.
-- `profiles/` — code and infrastructure rules loaded only for matching work.
-- `templates/.agents/` — runtime state used only when work is expected to exceed
-  one hour or has already exceeded twenty minutes. Tracked work uses
-  `.agents/tasks/todo-{id}.md` → `wip-{id}.md` → `done-{id}.md`; state
-  transitions are `git mv` only.
-- `tests/validate.py` — dependency-free structure and size guard.
+        218-tokens
 
-Runtime logging is intentionally quiet: every agent records only start and end;
-there are no heartbeat messages. Detailed work stays in subagent results,
-commits, evidence, and L's cumulative Overseer brief.
+- `AGENTS.md` — компактное ядро диспетчеризации.
+- `agents/` — структура ролей:
 
-## Canonical installation
+  - Overseer → ┬─ Ad(viser)            — 5.6-sol, fable, glm5.2, kimi k3                       /  Интеллект
+              ├─ Crit(ic)             — 5.6-terra, kimi 2.7, deepseek-v4-pro                  →  Время
+              └─ L(eader)             — основной владелец результата
+                  ├─ Ex(plorer, read-only)
+                  ├─ Wo(rker)
+                  └─ R(eviewer)
 
-Target repository: `megamen32/agent-canon`.
+  Рабочие модели: MinimaxM3, Deepseek v4 flash, mimo, glm-4.7.
 
-Clone once, then expose the canonical files to each harness through symlinks or
-its native agent configuration. Harness adapters should reference these files,
-not fork their text. Keep project-specific topology and secrets in the project's
-own instruction files.
+- `protocols/` — процедуры по событиям, например STOP/RETHINK.
+- `profiles/` — правила для кода и инфраструктуры, грузятся только под
+  соответствующую работу.
+- `templates/.agents/` — runtime-состояние, используется только когда работа
+  обещает занять больше часа или уже заняла больше двадцати минут. Нет работы
+  длиннее маленькой новой фичи, а дороги длиннее «я знаю короткий путь» не
+  бывает. Для отслеживаемой работы задачи лежат в `.agents/tasks/` как
+  `todo-{id}.md` → `wip-{id}.md` → `done-{id}.md`; переходы делаются
+  `git mv` и только так.
+- `tests/validate.py` — структура и бюджет размера без внешних зависимостей.
 
-For Codex user-level files, one possible layout is:
+Дальше этот документ можно не читать.
 
-```sh
-git clone git@github.com:megamen32/agent-canon.git ~/.agent-canon
-ln -sfn ~/.agent-canon/AGENTS.md ~/.codex/AGENTS.md
-ln -sfn ~/.agent-canon/agents ~/.codex/agents
-ln -sfn ~/.agent-canon/protocols ~/.codex/protocols
-ln -sfn ~/.agent-canon/profiles ~/.codex/profiles
-```
+Жёсткие правила защищают «сразу», лимиты ретраев, ритм надзора, необратимые
+границы и доказательства завершения. Реализационные советы остаются
+контекстными: Overseer и Critic ставят обязательные decision gates, не
+превращая бедное контекстом предложенное решение в слепо обязательное.
 
-For tracked work only:
+## File-based task lifecycle
 
-```sh
-cp -R ~/.agent-canon/templates/.agents ./.agents
-```
+Состояние задачи живёт в репозитории, не во внешней системе. Для отслеживаемой
+работы каждая задача — это один Markdown-файл под `.agents/tasks/`. Префикс
+имени кодирует стадию:
 
-## Validation
+- `todo-{id}.md` — принято, не начато. Содержит критерии приёмки.
+- `wip-{id}.md`  — в работе. Один владелец, текущее доказательство, следующее
+  действие.
+- `done-{id}.md` — завершено, с секцией `## Evidence` внизу.
 
-```sh
-python3 tests/validate.py
-```
+Переходы состояний — только `git mv`. Никаких edit-and-rename, никаких
+in-place-флагов. Рабочее дерево — это лок, коммит — это журнал аудита. Это
+даёт четыре свойства: версионируемость, дифф-читаемость, greppability и
+нулевую координационную стоимость. Никакого SaaS-трекера, никакой задержки
+API, никакой гонки между людьми и агентами.
 
-Rigid rules protect P0, retry limits, oversight cadence, irreversible
-boundaries, and completion evidence. Implementation advice remains contextual:
-Overseer and Critic create mandatory decision gates without making a
-context-poor proposed solution blindly binding.
+Файл `kanban.md` хранит только указатели (`path`, владелец, статус одной
+строкой). Тела задач в доску не дублируются.
 
 ## Token footprint (tiktoken, cl100k_base)
 
-Short description: a compact, lazy-loaded canon for agent orchestration. The always-loaded core (`AGENTS.md`) is the only file carried in every prompt; roles, profiles, and protocols load on demand. Total library: 15,349 chars / 3,427 tokens across 11 files.
+Краткое описание: компактный канон оркестровки агентов с ленивой загрузкой.
+`AGENTS.md` — единственный файл, который грузится в каждый промпт; роли,
+профили и протоколы подгружаются по запросу. Полная библиотека: 15 349
+символов / 3 427 токенов на 11 файлов.
 
 | File | chars | tokens |
 | --- | ---: | ---: |
@@ -75,3 +100,28 @@ Short description: a compact, lazy-loaded canon for agent orchestration. The alw
 | profiles/Code.md | 385 | 80 |
 | profiles/Infrastructure.md | 1268 | 260 |
 | TOTAL | 15349 | 3427 |
+
+## Canonical installation
+
+Репозиторий публикуется как `megamen32/LastHumanCommit`. Установка Grab-n-Go
+делается инлайнером (готовится), а сейчас — клон + симлинки под harness.
+
+```sh
+git clone git@github.com:megamen32/LastHumanCommit.git ~/.agent-canon
+ln -sfn ~/.agent-canon/AGENTS.md        ~/.codex/AGENTS.md
+ln -sfn ~/.agent-canon/agents          ~/.codex/agents
+ln -sfn ~/.agent-canon/protocols       ~/.codex/protocols
+ln -sfn ~/.agent-canon/profiles        ~/.codex/profiles
+```
+
+Для отслеживаемой работы:
+
+```sh
+cp -R ~/.agent-canon/templates/.agents ./.agents
+```
+
+## Validation
+
+```sh
+python3 tests/validate.py
+```
