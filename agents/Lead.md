@@ -40,8 +40,12 @@ starts mid-task, record known original agent start times.
 
 - `.agents/orchestrator.md`: outcome, exact corrections, P0, acceptance,
   constraints, chosen path, evidence/blocker, and decision gates.
-- `.agents/kanban.md`: `P0_URGENT` only for a real urgent P0, then `CORE`,
-  `BEST_EFFORT`, `OPT_IN`. OPT_IN requires explicit user choice.
+- `.agents/kanban.md`: priority header (`P0_URGENT`, `CORE`, `BEST_EFFORT`,
+  `OPT_IN`) and a list of pointers to the actual task files. The board itself
+  holds no free-text tasks — every task lives in its own file.
+- `.agents/tasks/todo-{id}.md` / `wip-{id}.md` / `done-{id}.md`: one task per
+  file. State transitions are `git mv` only. No SaaS tracker, no API latency, no
+  shared lock; the working tree is the lock, the commit is the audit trail.
 - `.agents/subagents.jsonl`: bounded assignments and final result references.
 - `.agents/worklog.jsonl`: every agent appends start and end only with ID, role,
   PID/run ID when available, and UTC+3 time. No heartbeat or activity narration.
@@ -96,3 +100,35 @@ Never claim completion because a framework, release, test, or document exists.
 Report exactly `P0 ПОДТВЕРЖДЁН` with end-to-end evidence, or
 `P0 НЕ ПОДТВЕРЖДЁН` with the exact blocker. List unfinished `CORE`,
 `BEST_EFFORT`, and `OPT_IN` work separately.
+
+## File-based task lifecycle
+
+Task state lives in the repository, not in an external service. For tracked
+work, every task is a single Markdown file under `.agents/tasks/`. The filename
+prefix encodes its lifecycle stage:
+
+- `todo-{id}.md` — accepted, not started. Must contain acceptance criteria.
+- `wip-{id}.md`  — in progress. One owner, current evidence, and a next action.
+- `done-{id}.md` — finished, with completion evidence appended at the bottom.
+
+State transitions are `git mv` only. There is no edit-and-rename, no status
+flag, no in-place promotion. The working tree is the lock; the commit is the
+audit trail. That buys four things: versioning, diffability, greppability, and
+zero coordination cost. There is no SaaS task tracker, no API latency, no race
+condition between humans and agents.
+
+Rules:
+
+- The ID is unique across `todo/`, `wip/`, and `done/`. Reusing an ID for a
+  new task is a bug.
+- `git mv .agents/tasks/todo-{id}.md .agents/tasks/wip-{id}.md` is the only
+  legal move into `wip`. The commit message must name the owner.
+- `done-{id}.md` carries the original task body plus an `## Evidence` section.
+  Do not delete it; later audits and Overseer briefs read `done/` like a log.
+- A blocked task stays in `wip/` with a `## Blocker` section and a pointer to
+  `.agents/bugs.md` or the user decision it is waiting on.
+- `kanban.md` only lists pointers (`path`, one-line owner, one-line status).
+  It never duplicates task bodies; grep would otherwise fork.
+
+For tracked work L keeps `.agents/kanban.md` and `.agents/tasks/` consistent
+within the same commit.

@@ -12,7 +12,9 @@ prompt.
 - `protocols/` — event-triggered procedures such as STOP/RETHINK.
 - `profiles/` — code and infrastructure rules loaded only for matching work.
 - `templates/.agents/` — runtime state used only when work is expected to exceed
-  one hour or has already exceeded twenty minutes.
+  one hour or has already exceeded twenty minutes. Tracked work uses
+  `.agents/tasks/todo-{id}.md` → `wip-{id}.md` → `done-{id}.md`; state
+  transitions are `git mv` only.
 - `tests/validate.py` — dependency-free structure and size guard.
 
 Runtime logging is intentionally quiet: every agent records only start and end;
