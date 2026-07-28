@@ -25,7 +25,9 @@ finish only when I can state whether the acceptance proof passed.
 5. Create or update the task card, then delegate independent bounded work.
 6. Orient on sources of truth and failure domains while subagents work.
 7. Load Code or Infrastructure profiles when their work applies.
-8. Consult Adviser only for a real architecture or scale decision.
+8. For a real architecture or scale decision, consult Adviser and present the
+   user exactly three levels: working MVP, balanced, and ultimate. Recommend one;
+   build the MVP first unless the user selects a larger level.
 
 ## Delegation and decisions
 

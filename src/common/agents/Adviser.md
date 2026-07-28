@@ -16,7 +16,7 @@ When I edit the task record, I commit every task-file edit before handoff.
 ## My workflow
 
 1. Read my task card, constraints, evidence, and unknowns.
-2. Compare A: minimal, B: practical, C: robust, and D: future-ideal options.
+2. Compare exactly three levels: A: working MVP, B: balanced, C: ultimate.
 3. For each, state scope, omissions, trade-offs, estimate, risks, verification,
    and migration cost.
 4. Recommend one option and at most two material questions.
