@@ -1,122 +1,96 @@
 # Last Human Commit
 
-<img width="1672" height="941" alt="image" src="https://github.com/user-attachments/assets/7b259f64-50c1-45a4-af27-07a5101d8120" />
+<img width="1672" height="941" alt="Last Human Commit role map" src="https://github.com/user-attachments/assets/7b259f64-50c1-45a4-af27-07a5101d8120" />
 
-Инструкции для оркестровки агентов, в любой среде (codex/claude/opencode etc). Прост Бери и работай:Grab-n-Go.
+Agent orchestration instruction. Grab-n-Go: a compact canon for Codex, Claude,
+OpenCode, and other harnesses.
 
+## Map
 
-
-Установка и удаление — позже, инлайнер ещё не написан. Здесь пока — структура
-и контракт.
-
-```sh
-# install: <one-liner coming>
-# uninstall: lasthuman uninstall
+```text
+Overseer ── Adviser                 intelligence
+          └─ L (Lead) ── Critic     time and risk
+                         ├─ Explorer (read-only)
+                         ├─ Worker
+                         └─ Reviewer
 ```
 
-## Layout
+- `AGENTS.md` — the small entry canon.
+- `agents/` — roles; only Lead owns the outcome and final integration.
+- `protocols/` — event-triggered procedures such as STOP/RETHINK.
+- `profiles/` — code and infrastructure rules loaded only when relevant.
+- `templates/.agents/` — tracked-work state for work expected to exceed an hour
+  or that already exceeded twenty minutes.
 
-      
+You do not need the rest of the canon to start; the commands below install it.
 
-- `AGENTS.md` — компактное(218 токена) ядро диспетчеризации.
-- `agents/` — структура ролей:
+## Install
 
-  - Overseer → ┬─ Ad(viser)            — 5.6-sol, fable, glm5.2, kimi k3                       /  Интеллект
-              ├─ Crit(ic)             — 5.6-terra, kimi 2.7, deepseek-v4-pro                  →  Время
-              └─ L(eader)             — основной владелец результата
-                  ├─ Ex(plorer, read-only)
-                  ├─ Wo(rker)
-                  └─ R(eviewer)
-
-  Рабочие модели: MinimaxM3, Deepseek v4 flash, mimo, glm-4.7.
-
-- `protocols/` — процедуры по событиям, например STOP/RETHINK.
-- `profiles/` — правила для кода и инфраструктуры, грузятся только под
-  соответствующую работу.
-- `templates/.agents/` — Нет работы
-  дольше "маленькой новой фичи", а дороги длиннее «я знаю короткий путь». runtime-состояния, используется только когда работа обещает занять больше часа или уже заняла больше двадцати минут, чтобы агенты могли работать паралельно и очитска контекста не затирала им память. В проект кладеться как подпапка проекта и с ним комитяться, как доска задач `.agents/tasks/` 
-  `todo-{id}.md` → `wip-{id}.md` → `done-{id}.md`; переходы делаются
-
-Дальше этот документ можно не читать.
-
-Жёсткие правила - опасная игрушка, но нужны: лимиты ретраев, ритм надзора, необратимые границы и доказательства завершения. Реализационные советы остаются контекстными: Хлыст и Критик ставят обязательные рамки решения, не
-превращая бедное контекстом предложенное решение в слепо обязательное.
-
-## File-based task lifecycle
-
-Состояние задачи живёт в репозитории, не во внешней системе. Для отслеживаемой
-работы каждая задача — это один Markdown-файл под `.agents/tasks/`. Префикс
-имени кодирует стадию:
-
-- `todo-{id}.md` — принято, не начато. Содержит критерии приёмки.
-- `wip-{id}.md`  — в работе. Один владелец, текущее доказательство, следующее
-  действие.
-- `done-{id}.md` — завершено, с секцией `## Evidence` внизу.
-
-Переходы состояний — только `git mv`. Никаких edit-and-rename, никаких
-in-place-флагов. Рабочее дерево — это лок, коммит — это журнал аудита. Это
-даёт четыре свойства: версионируемость, дифф-читаемость, greppability и
-нулевую координационную стоимость. Никакого SaaS-трекера, никакой задержки
-API, никакой гонки между людьми и агентами.
-
-Файл `kanban.md` хранит только указатели (`path`, владелец, статус одной
-строкой). Тела задач в доску не дублируются.
-
-## Token footprint (tiktoken, cl100k_base)
-
-Краткое описание: компактный канон оркестровки агентов с ленивой загрузкой.
-`AGENTS.md` — единственный файл, который грузится в каждый промпт; роли,
-профили и протоколы подгружаются по запросу. Полная библиотека: 15 349
-символов / 3 427 токенов на 11 файлов.
-
-| File | chars | tokens |
-| --- | ---: | ---: |
-| AGENTS.md | 790 | 218 |
-| agents/Adviser.md | 982 | 213 |
-| agents/Critic.md | 1332 | 287 |
-| agents/Explorer.md | 1193 | 256 |
-| agents/Lead.md | 4480 | 1029 |
-| agents/Overseer.md | 1492 | 356 |
-| agents/Reviewer.md | 1049 | 228 |
-| agents/Worker.md | 1101 | 230 |
-| protocols/STOP_RETHINK.md | 1277 | 270 |
-| profiles/Code.md | 385 | 80 |
-| profiles/Infrastructure.md | 1268 | 260 |
-| TOTAL | 15349 | 3427 |
-
-## Canonical installation
-
-Репозиторий публикуется как `megamen32/LastHumanCommit`. Установка Grab-n-Go
-делается инлайнером (готовится), а сейчас — клон + симлинки под harness.
+From a clone, install host instructions:
 
 ```sh
-git clone git@github.com:megamen32/LastHumanCommit.git ~/.agent-canon
-ln -sfn ~/.agent-canon/AGENTS.md        ~/.codex/AGENTS.md
-ln -sfn ~/.agent-canon/agents          ~/.codex/agents
-ln -sfn ~/.agent-canon/protocols       ~/.codex/protocols
-ln -sfn ~/.agent-canon/profiles        ~/.codex/profiles
+sh install.sh host
 ```
 
-Для отслеживаемой работы:
+Install project instructions:
 
 ```sh
-cp -R ~/.agent-canon/templates/.agents ./.agents
+sh install.sh project .
 ```
+
+Install into the current project with one command. This writes the shared
+`AGENTS.md` block used by Codex and OpenCode plus the `CLAUDE.md` block used by
+Claude, and preserves any text already in those files:
+
+```sh
+tmp=$(mktemp -d) && git clone --depth=1 https://github.com/megamen32/LastHumanCommit.git "$tmp" && sh "$tmp/install.sh" project "$PWD"; rc=$?; rm -rf "$tmp"; exit "$rc"
+```
+
+Remove only the managed blocks from the current project with one command:
+
+```sh
+tmp=$(mktemp -d) && git clone --depth=1 https://github.com/megamen32/LastHumanCommit.git "$tmp" && sh "$tmp/install.sh" uninstall project "$PWD"; rc=$?; rm -rf "$tmp"; exit "$rc"
+```
+
+Both commands are offline, dependency-free, and do not use `sudo`. Existing
+`AGENTS.md`, `CLAUDE.md`, and `ROADMAP.md` content is preserved. Installer owns
+only marked blocks:
+
+```md
+<!-- last-human-commit:begin -->
+...
+<!-- last-human-commit:end -->
+```
+
+Use `status` or `uninstall project PATH` to inspect/remove managed blocks.
+
+## Source layout
+
+- `src/common/` — roles, profiles, protocols, and tracked-work templates.
+- `src/global/` — host entry instruction.
+- `src/project/` — project entry instruction and roadmap template.
+- root — maintainer meta: installer, tests, README, roadmap, and authoring rules.
+
+The root files are not installed as agent instructions. Installed project state
+is kept in `.last-human-commit/`; runtime `.agents/` is created only when
+tracked work starts.
+
+## Roadmap, tasks, kanban
+
+`ROADMAP.md` is strategic state: ordered milestones, outcomes, statuses, stable
+checkbox items, and `Proposed` for unapproved features.
+
+`.agents/tasks/` is execution state. Use `todo-{id}.md` → `work-{id}.md` →
+`done-{id}.md`; move files with `git mv` only and commit every task-file edit.
+The task itself stores its ordered workflow, min-max estimate, current
+executor/PID/harness/session, next action, notes, blockers, and full final
+result. Confirmed bugs are individual `.agents/bugs/<id>.md` files: commit the
+file immediately, then delete it in the verified fix commit.
 
 ## Validation
 
 ```sh
 python3 tests/validate.py
+python3 -m pytest -q tests/test_installer.py
+sh -n install.sh
 ```
-
-> **English version is a placeholder for now.**
-> This repository is intentionally Russian-only while it stays personal. An
-> English translation will land later if the project ever needs to be read by
-> anyone else.
->
-> <!-- English placeholder:
-> Agent orchestration instruction. Go Away From Here to grub All-In-One stuff
-> that you will never understand. This one is Simple Enough, so even you can
-> understand it. Grab-n-Go install: curl <add oneliner for ubuntu-mac> | bash
-> — all (codex claude opencode zcode). Uninstall: lasthuman uninstall.
-> -->

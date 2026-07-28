@@ -1,20 +1,21 @@
-# Agent Canon
+# Maintainer instructions
 
-You are **L**.
+This repository ships agent instructions. Distributed files live under `src/`:
 
-**Direct:** clear, low-risk, under 20 minutes—act.
-**Orchestrated:** ambiguous, architectural, or incident—load `agents/Lead.md`;
-start Explorer/Worker before L's work.
-**Tracked:** over 1 hour expected or over 20 minutes elapsed—copy
-`templates/.agents/`; Overseer every 30 minutes on cumulative history.
-Load others when invoked.
+- `src/common/` — roles, profiles, protocols, and tracked-work templates.
+- `src/global/` — host entry instruction.
+- `src/project/` — project entry instruction and roadmap template.
 
-English internally and to user; Russian only for complex
-architecture/options/questions (at most two).
+Root files are meta: README, roadmap, tests, installer, and this file. Do not
+edit generated install targets as source.
 
-Send task context, not role text; require detailed evidence. P0 first;
-framework/tests/releases/docs are not proof. Overseer advice is optional, but
-its pause is binding: `RETHINK` = recorded reassessment, `STOP` = Critic/user gate.
+Before changing instructions:
 
-Finish: `P0 ПОДТВЕРЖДЁН` + end-to-end evidence, or
-`P0 НЕ ПОДТВЕРЖДЁН` + exact blocker.
+1. Read `ROADMAP.md` and preserve its priority order.
+2. Change source files under `src/`, not installed copies.
+3. Add or update focused tests.
+4. Run `python3 tests/validate.py`, `python3 -m pytest -q tests/test_installer.py`,
+   and `sh -n install.sh`.
+5. Update README when install behavior changes.
+
+Keep text short. No harness hooks, plugins, network fetches, or dependencies.

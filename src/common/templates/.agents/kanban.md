@@ -9,11 +9,11 @@ file under `.agents/tasks/`. Status is encoded in the filename prefix:
 
 State transitions are `git mv` only; do not edit-and-rename in place. The
 working tree is the lock, the commit is the audit trail. Tasks are versioned,
-diffable, greppable. 
+diffable, greppable.
 
 Priority header below picks which `tasks/` entries to surface. Each line under
-the header is `path — owner — one-line status`. Bodies live in the file, not in
-this board.
+the header is `path — owner — roadmap item — one-line status`. Bodies live in
+task files, not in this board.
 
 ## P0_URGENT
 <!-- Empty unless a real urgent user-visible P0 exists. -->
