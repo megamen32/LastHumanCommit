@@ -14,10 +14,10 @@ Status: done
 
 ## M2 — Installable distribution
 
-Status: blocked — distribution ownership moves to Agent Fleet.
+Status: blocked — outside the current text-only scope; no owner selected.
 
 Historical installer work is retained here only as roadmap history. Live
-installer artifacts are removed from LastHumanCommit.
+installer artifacts are removed.
 
 - [x] M2.1 Split common, global, project, and meta sources.
 - [x] M2.2 Add offline project and host installer.
@@ -32,18 +32,18 @@ Status: done
 - [x] M3.1 Classify direct, short, full, and emergency work.
 - [x] M3.2 Require research and human selection among three plans for full work.
 - [x] M3.3 Add WSFF planning views and model-class guidance.
-- [x] M3.4 Add Russian mobile commit review and timed external deploy handoff.
+- [x] M3.4 Add Russian mobile commit review and timed release handoff.
 - [x] M3.5 Make the core canon copy-paste portable and internally consistent.
 
 ## M4 — Portable role router correction
 
-Status: active
+Status: done
 
-- [ ] M4.1 Replace `CANON.md` with byte-identical `AGENTS.md` and `CLAUDE.md`.
-- [ ] M4.2 Route every known role to one independently loadable prompt.
-- [ ] M4.3 Restore the full provider/model role map.
-- [ ] M4.4 Make L own timed self-resume, revalidation, and deployment.
-- [ ] M4.5 Complete a whole-repository review and close stale contracts.
+- [x] M4.1 Replace `CANON.md` with byte-identical `AGENTS.md` and `CLAUDE.md`.
+- [x] M4.2 Route every known role to one independently loadable prompt.
+- [x] M4.3 Restore the full provider/model role map.
+- [x] M4.4 Make L own timed self-resume, revalidation, and deployment.
+- [x] M4.5 Complete a whole-repository review and close stale contracts.
 
 ## Proposed
 

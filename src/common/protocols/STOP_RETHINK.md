@@ -5,9 +5,10 @@ independent attempts, on conflicting evidence, when the user repeats that P0/P1
 still fails, when the target shares the failed failure domain, when scope must
 expand materially, or when framework/process grows without user progress.
 
-Before writing, launch an Explorer for external/current solution research when
-known tools, projects, official documentation, or alternative components may
-exist.
+Before writing, delegate an Explorer child for external/current solution
+research when known tools, projects, official documentation, or alternative
+components may exist. Give the child the Explorer role; L does not load the
+Explorer prompt.
 
 The user message must contain:
 

@@ -22,7 +22,7 @@ def fail(message: str) -> None:
 
 
 def require_text(text: str, phrase: str, source: str) -> None:
-    if phrase not in text:
+    if " ".join(phrase.split()) not in " ".join(text.split()):
         fail(f"{source} lacks: {phrase}")
 
 
@@ -30,8 +30,9 @@ agents_path = ROOT / "AGENTS.md"
 claude_path = ROOT / "CLAUDE.md"
 lead_path = ROOT / "src/common/agents/Lead.md"
 roadmap_path = ROOT / "ROADMAP.md"
+release_path = ROOT / "templates/RELEASE_HANDOFF.md"
 
-for path in (agents_path, claude_path, lead_path, roadmap_path):
+for path in (agents_path, claude_path, lead_path, roadmap_path, release_path):
     if not path.is_file():
         fail(f"missing text contract: {path.relative_to(ROOT)}")
 
@@ -48,6 +49,9 @@ roadmap = roadmap_path.read_text(encoding="utf-8")
 for role in ROLES:
     require_text(router, role, "AGENTS.md router")
     require_text(router, f"src/common/agents/{role}.md", "AGENTS.md router")
+    role_path = ROOT / f"src/common/agents/{role}.md"
+    if not role_path.is_file():
+        fail(f"missing role contract: {role_path.relative_to(ROOT)}")
 
 for phrase in (
     "If an enclosing instruction explicitly assigns one of these roles",
@@ -71,21 +75,51 @@ for role in ROLES[1:]:
     if "read lead.md" in role_text.lower():
         fail(f"{relative} must remain independently injectable")
 
-for forbidden in ("Web", "credential", "Agent Fleet", "external scheduler"):
-    if forbidden.lower() in router.lower() or forbidden.lower() in lead.lower():
-        fail(f"router and Lead must not own a {forbidden} rule")
+normative = {
+    "AGENTS.md": router,
+    "src/common/agents/Lead.md": lead,
+    "README.md": (ROOT / "README.md").read_text(encoding="utf-8"),
+    "docs/agent-authoring.md": (ROOT / "docs/agent-authoring.md").read_text(
+        encoding="utf-8"
+    ),
+    "templates/RELEASE_HANDOFF.md": release_path.read_text(encoding="utf-8"),
+}
+for source, text in normative.items():
+    for forbidden in (
+        "CANON.md",
+        "Web, credentials",
+        "Agent Fleet",
+        "external scheduler",
+        "external adapter",
+    ):
+        if forbidden.lower() in text.lower():
+            fail(f"{source} contains stale ownership or source: {forbidden}")
 
 for phrase in (
     "Ultimate perfect totally ideal",
     "Normal",
     "YAGNI MVP",
     "explicit human selection",
-    "GLM",
-    "DeepSeek",
-    "MiniMax",
-    "Kimi",
-    "Mimo",
     "30 minutes",
+):
+    require_text(lead, phrase, "src/common/agents/Lead.md")
+
+for alias in (
+    "glm5.2",
+    "kimi k3",
+    "deepseek-v4-pro",
+    "MinimaxM3",
+    "Deepseek v4 flash",
+    "mimo",
+    "glm-4.7",
+):
+    require_text(lead, alias, "src/common/agents/Lead.md")
+
+for phrase in (
+    "I do not load specialist prompts into my own context",
+    "Review the whole repository",
+    "Reviewer",
+    "Critic once",
 ):
     require_text(lead, phrase, "src/common/agents/Lead.md")
 
@@ -93,5 +127,30 @@ if "agent_resume" not in lead and "available harness cron" not in lead:
     fail("src/common/agents/Lead.md must self-resume via agent_resume or available harness cron")
 
 require_text(roadmap, "## Proposed", "ROADMAP.md")
+require_text(roadmap, "Agents Capable Start", "ROADMAP.md")
+require_text(roadmap, "Agents Capable End", "ROADMAP.md")
+
+release = release_path.read_text(encoding="utf-8")
+for phrase in (
+    "status: pending | answered | vetoed | invalidated | deploying | deployed | deploy_failed",
+    "review_sent_at:",
+    "eligible_not_before:",
+    "wake_transport:",
+    "execution_guard: single_serialized_L | unverified",
+    "commit_or_artifact:",
+    "tests:",
+    "target:",
+    "rollback_reference:",
+    "last_human_reply_at_or_id:",
+    "pending + да + current + single_serialized_L",
+    "pending + due + unanswered + current + single_serialized_L",
+    "pending + нет | стоп -> vetoed",
+    "pending + other human reply -> answered",
+    "pending + stale | unprovable | unverified serialization -> invalidated",
+    "non-pending + any event -> no-op",
+    "still-`pending` handoff to `deploying`",
+    "repeated wake must be a no-op",
+):
+    require_text(release, phrase, "templates/RELEASE_HANDOFF.md")
 
 print(f"PASS: {len(ROLES)} router roles and YAGNI text contracts")

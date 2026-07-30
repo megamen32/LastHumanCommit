@@ -1,5 +1,10 @@
 # Text-first LastHumanCommit canon
 
+Superseded on 2026-07-30 by
+`.agents/tasks/done-20260730-role-router-yagni.md`. This file preserves the
+historical decision record; its `CANON.md` and external-ownership design is not
+current instruction.
+
 Outcome: LastHumanCommit remains a simple copy-paste text canon. Agent Fleet or
 another external adapter owns installation, synchronization, scheduling, and
 harness-specific deployment.

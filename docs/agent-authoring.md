@@ -1,15 +1,25 @@
-# Authoring the canon
+# Authoring agent instructions
 
-`CANON.md` is the source of truth and must work when copied alone.
+`AGENTS.md` and `CLAUDE.md` are byte-identical entry routers. `Lead.md` owns the
+root workflow. Every other role file is a self-contained subagent prompt.
 
-Keep rules short, observable, and proportional:
+Keep instructions short, operational, and proportional:
 
-- direct, short, and emergency work must remain fast;
-- full work must preserve research, three plans, human selection, WSFF,
-  implementation, test, review, commit, Russian summary, and external handoff;
-- optional role files may explain a rule but may not contradict it;
-- external adapters own installation, synchronization, scheduling, deployment,
-  rollback execution, credentials, and host topology.
+- Direct, Short, and Emergency work remain fast.
+- Full work preserves research, three plans, human selection, WSFF views,
+  implementation, whole-repository review, tests, commit, Russian summary, and
+  L-owned timed resume.
+- The router names roles and paths but does not repeat their instructions.
+- L sends a role name to a child and does not load that role prompt itself.
+- Profiles supplement an assigned role; protocols load only when triggered.
+- Templates store decisions and state, not a second normative workflow.
 
-Validation should check only stable text contracts. Avoid tests for formatting,
-implementation details, or external adapters.
+When changing instructions:
+
+1. Update the one file that owns the rule.
+2. Align only direct references and record schemas.
+3. Keep validation literal, dependency-free, and readable in one sitting.
+4. Run `python3 tests/validate.py` and `git diff --check`.
+
+Do not add an installer, daemon, hook, or generator to solve an instruction
+change. Harness-specific compilation belongs in a future roadmap item.

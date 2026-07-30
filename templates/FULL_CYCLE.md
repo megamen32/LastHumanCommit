@@ -42,4 +42,4 @@ Test evidence:
 Review evidence:
 Commit:
 Russian mobile review:
-External deploy handoff:
+L-owned release handoff and wake:

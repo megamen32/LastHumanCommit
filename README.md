@@ -1,52 +1,55 @@
-# Last Human Commit
+# LastHumanCommit
 
-<img width="1672" height="941" alt="Last Human Commit role map" src="https://github.com/user-attachments/assets/7b259f64-50c1-45a4-af27-07a5101d8120" />
+> A small, human-gated instruction set for cheaper multi-agent coding.
 
-A small human/agent workflow canon. It is text, not a framework.
+The root agent keeps decisions and integration. Specialist prompts are loaded
+only by the agent doing that job, so the Lead does not carry every role in
+context.
 
 ## Use
 
-Copy the complete contents of [`CANON.md`](CANON.md) into the instruction file
-your harness already reads. That is the base product and is enough to work.
+Copy `AGENTS.md`, `CLAUDE.md`, `src/common/`, and `templates/` into the project
+root. The two entry files are intentionally identical and route each agent to
+exactly one role file. No installer or runtime service is required.
 
-Copy optional role or record templates only when they help. A project may adapt
-formatting and paths, but must preserve the decisions in `CANON.md`.
+## Workflow
 
-LastHumanCommit does not install, synchronize, schedule, deploy, or run a
-service. Agent Fleet or another external adapter owns those environment-specific
-jobs.
+- Direct and Short work stay fast.
+- Full work researches first, presents Ultimate/Normal/YAGNI, and waits for the
+  human to choose.
+- Full work uses bounded subagents and reviews the whole repository.
+- A tested commit receives a Russian mobile summary.
+- L schedules its own 30-minute wake and revalidates before deploy.
 
-## Model map
+## Roles and models
 
 ```text
 L (Lead)
-├─ Adviser / strategy        fable | sol
-├─ Critic / review           opus | terra
-├─ Worker (about 90%)        sonnet | luna
-└─ Explorer (read-only)      haiku | 5.4mini
+├─ Adviser             5.6-sol | fable | glm5.2 | kimi k3
+├─ Critic / Overseer   5.6-terra | opus | kimi 2.7 | deepseek-v4-pro
+├─ Explorer            sonnet | luna | MinimaxM3 | Deepseek v4 flash | mimo | glm-4.7
+├─ Worker (~90%)       sonnet | luna | MinimaxM3 | Deepseek v4 flash | mimo | glm-4.7
+└─ Reviewer            sonnet | luna | MinimaxM3 | Deepseek v4 flash | mimo | glm-4.7
+
+Fast read-only lookup: haiku | 5.4mini
 ```
 
 The strongest models are short strategic advisers, not long-running workers.
-Names are capability hints; unavailable aliases must not block the workflow.
+Aliases are capability hints and may be replaced by the nearest available
+equivalent.
 
-## Text map
+## Files
 
-- `CANON.md` — self-contained copy-paste contract.
-- `src/common/agents/` — optional role expansions.
-- `src/common/profiles/` — optional code, test, and infrastructure guidance.
-- `src/common/protocols/` — optional recovery guidance.
-- `src/common/templates/.agents/` — optional task and bug records.
-- `templates/FULL_CYCLE.md` — planning and human-selection record.
-- `templates/RELEASE_HANDOFF.md` — stable boundary for Agent Fleet or another
-  deploy adapter.
+- `AGENTS.md`, `CLAUDE.md` — portable role router and work classification.
+- `src/common/agents/Lead.md` — root workflow, human gate, and release action.
+- `src/common/agents/*.md` — independently loadable specialist roles.
+- `src/common/profiles/*.md` — optional domain rules for an assigned role.
+- `src/common/protocols/*.md` — event-triggered procedures.
+- `templates/` — planning and handoff records.
+- `docs/agent-authoring.md` — maintainer rules.
 
-Optional tracked task state is `todo -> work -> done`. The workflow remains
-usable without task files for direct and short work.
+Validation stays deliberately small:
 
-## Validate
-
-The only routine check is intentionally simple and dependency-free:
-
-```sh
+```bash
 python3 tests/validate.py
 ```

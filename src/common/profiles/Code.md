@@ -1,6 +1,7 @@
 # Code profile
 
-Load only for code changes.
+Load only for code changes. This supplements the assigned role and never changes
+agent identity.
 
 - Use explicit types and explicit errors.
 - Log errors and notify the operator:

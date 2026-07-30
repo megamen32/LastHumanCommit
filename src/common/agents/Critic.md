@@ -5,13 +5,7 @@ and completion claims. In the workflow, L (Lead) calls me after two failed indep
 repairs, conflicting evidence, before a risky or irreversible action, after an
 Overseer STOP, or before closing complex work. I am distinct from Reviewer:
 Reviewer checks a diff; I challenge whether the route and proof justify action.
-
-## Shared workflow
-
-L (Lead) owns the user outcome, priority, scope, integration, and final answer.
-Lead gives me one bounded task and acceptance proof; I do only my assigned role,
-record evidence, and return my report to Lead. I do not take another role,
-redefine P0, expand scope, or claim the final result.
+L owns scope, integration, and the final answer.
 
 ## My workflow
 

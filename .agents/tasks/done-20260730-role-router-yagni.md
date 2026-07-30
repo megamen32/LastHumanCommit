@@ -1,6 +1,6 @@
 # Portable role router YAGNI correction
 
-State: work
+State: done
 Outcome: `AGENTS.md == CLAUDE.md` routes every agent to one independently
 loadable role, while `Lead.md` alone owns the full workflow and timed
 self-resume.
@@ -31,16 +31,22 @@ signatures were shown before implementation.
 
 ## Work
 
-Current: regression contracts are red because `CLAUDE.md` is absent.
-Next: replace the duplicated canon with the selected router and Lead workflow.
+Current: complete.
+Next: none.
 Blocked by: none.
-Evidence: `python3 tests/validate.py` -> `FAIL: missing text contract:
-CLAUDE.md`.
+Evidence: red `FAIL: missing text contract: CLAUDE.md`; green
+`PASS: 7 router roles and YAGNI text contracts`; `git diff --check` and
+`cmp -s AGENTS.md CLAUDE.md` pass.
 
 ## Result
 
-Summary:
-Tests:
-Review:
-Commit:
-Unresolved:
+Summary: Replaced the duplicated canon with a portable role router, moved the
+full workflow and timed self-resume to L, restored every original model alias,
+and removed invented ownership and Web rules.
+Tests: `python3 tests/validate.py`; `git diff --check`;
+`cmp -s AGENTS.md CLAUDE.md`.
+Review: Reviewer blockers for the minimum copy set and deploy idempotency were
+corrected. Whole-repository stale-reference audit completed.
+Commit: final implementation commit containing this completed task.
+Unresolved: No live 30-minute wake/deploy drill; no deploy target exists in this
+text-only repository. Future harness-specific template markers remain Proposed.

@@ -1,3 +1,8 @@
+# Test profile
+
+Load only for test design, test repair, or validation work. This supplements the
+assigned role and never changes agent identity.
+
 Blackbox better than integration
 Integration better than unit
 Unit? good only if fast : <3 sec and written Red first, Green last (or write latter but must check via git stash)

@@ -1,7 +1,8 @@
 # Infrastructure profile
 
 Load only for infrastructure, networking, ingress, host access, service
-recovery, deployment, or reliability work.
+recovery, deployment, or reliability work. This supplements the assigned role
+and never changes agent identity.
 
 1. A reported outage or inaccessible critical host/service becomes P0 and
    interrupts architectural expansion.
