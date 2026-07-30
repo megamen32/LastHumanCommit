@@ -43,4 +43,3 @@ Review evidence:
 Commit:
 Russian mobile review:
 External deploy handoff:
-

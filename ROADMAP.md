@@ -27,7 +27,7 @@ installer artifacts are removed from LastHumanCommit.
 
 ## M3 — Text-first human/agent workflow
 
-Status: active
+Status: done
 
 - [x] M3.1 Classify direct, short, full, and emergency work.
 - [x] M3.2 Require research and human selection among three plans for full work.
