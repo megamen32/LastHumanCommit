@@ -24,8 +24,8 @@ Executor: L
 PID: 294519
 Harness: codex
 session identifier: current Codex task
-Next action: commit the reviewed text-only rewrite, reconcile origin history,
-then record the final commit and review handoff.
+Next action: run final validation, record the merge and review evidence, then
+complete the task.
 
 ## Notes
 
@@ -44,4 +44,7 @@ then record the final commit and review handoff.
   `.env` without reading it.
 - Reviewer and Critic requested stronger literal checks, handoff cancellation
   wording, audit disposition, and origin reconciliation; these corrections are
-  integrated. Only `.agents/bugs/git-divergence.md` remains open until merge.
+  integrated.
+- Safety branch `safety/pre-origin-main-reconcile-20260730` preserves the
+  pre-merge state. A normal merge incorporates remote commit `568ef2c`; its
+  stale README was resolved to the reviewed text-only canon.
