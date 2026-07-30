@@ -31,8 +31,16 @@ claude_path = ROOT / "CLAUDE.md"
 lead_path = ROOT / "src/common/agents/Lead.md"
 roadmap_path = ROOT / "ROADMAP.md"
 release_path = ROOT / "templates/RELEASE_HANDOFF.md"
+planning_path = ROOT / "src/common/profiles/Planning.md"
 
-for path in (agents_path, claude_path, lead_path, roadmap_path, release_path):
+for path in (
+    agents_path,
+    claude_path,
+    lead_path,
+    roadmap_path,
+    release_path,
+    planning_path,
+):
     if not path.is_file():
         fail(f"missing text contract: {path.relative_to(ROOT)}")
 
@@ -120,8 +128,26 @@ for phrase in (
     "Review the whole repository",
     "Reviewer",
     "Critic once",
+    "For Full work, load `src/common/profiles/Planning.md` before presenting plans.",
+    "Direct, Short, and Emergency work stay proportional; they do not gain planning ceremony unless",
 ):
     require_text(lead, phrase, "src/common/agents/Lead.md")
+
+planning = planning_path.read_text(encoding="utf-8")
+for phrase in (
+    "Use this profile for Full work",
+    "optimistic / likely / pessimistic",
+    "relative cost",
+    "more than 20 likely active minutes",
+    "Every fresh child receives a Task Card",
+    "NEEDS_REDECOMPOSITION",
+    "Use a no-history child only when the harness demonstrably supports it",
+    "do not claim model-routing or fresh-context proof",
+):
+    require_text(planning, phrase, "src/common/profiles/Planning.md")
+
+require_text(roadmap, "Codex custom-agent routing", "ROADMAP.md")
+require_text(roadmap, "actual model", "ROADMAP.md")
 
 if "agent_resume" not in lead and "available harness cron" not in lead:
     fail("src/common/agents/Lead.md must self-resume via agent_resume or available harness cron")

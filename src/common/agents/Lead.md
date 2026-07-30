@@ -51,6 +51,13 @@ they do not perform long implementation.
 
 Names are capability hints. Missing aliases must not block the workflow.
 
+## Cost-aware planning
+
+For Full work, load `src/common/profiles/Planning.md` before presenting plans.
+Estimate and re-decompose before assigning a cheap child. Direct, Short, and
+Emergency work stay proportional; they do not gain planning ceremony unless
+risk promotes them to Full.
+
 ## Timed self-resume and deploy
 
 After sending the review for a reversible prepared release, persist the handoff

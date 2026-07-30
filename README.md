@@ -38,6 +38,30 @@ The strongest models are short strategic advisers, not long-running workers.
 Aliases are capability hints and may be replaced by the nearest available
 equivalent.
 
+## Why this shape
+
+- [ManagerWorker](https://arxiv.org/abs/2603.26458) found that a strong manager
+  plus a cheap coding worker matched a strong solo agent on its experiment; the
+  manager's early research and direction mattered more than a final review.
+- [Single-agent or Multi-agent Systems? Why Not Both?](https://arxiv.org/abs/2505.18286)
+  finds coordination has a cost: add agents only for bounded, useful work.
+- [DecisionBench](https://arxiv.org/abs/2605.19099) and
+  [TwinRouterBench](https://arxiv.org/abs/2605.18859) motivate measuring routing
+  on held-out end-to-end tasks, not trusting a model's routing claim.
+- [WSFF](https://github.com/humanlayer/advanced-context-engineering-for-coding-agents/blob/main/wsff.md)
+  motivates research before a human-gated plan and compact planning views.
+
+These are preprints and design input, not a promise that one routing policy
+wins everywhere. `ROADMAP.md` keeps local benchmark work separate from the
+small instruction set.
+
+## Routing boundary
+
+The canon names model classes and requires fresh, scoped cheap-child work. It
+does not claim that every harness can select every child model. Add a
+harness-specific profile only after a live child test proves its role, model,
+and no-history boundary; the Codex CLI limitation is tracked in `ROADMAP.md`.
+
 ## Files
 
 - `AGENTS.md`, `CLAUDE.md` — portable role router and work classification.

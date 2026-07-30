@@ -13,6 +13,7 @@ Keep instructions short, operational, and proportional:
 - L sends a role name to a child and does not load that role prompt itself.
 - Profiles supplement an assigned role; protocols load only when triggered.
 - Templates store decisions and state, not a second normative workflow.
+- `profiles/Planning.md` owns Full-work estimate and re-decomposition rules.
 
 When changing instructions:
 
@@ -20,6 +21,10 @@ When changing instructions:
 2. Align only direct references and record schemas.
 3. Keep validation literal, dependency-free, and readable in one sitting.
 4. Run `python3 tests/validate.py` and `git diff --check`.
+
+Do not add a harness-specific profile until a live child test proves the role,
+actual model, fresh-context boundary, and returned result. A profile cannot
+force a harness to change a full-history fork.
 
 Do not add an installer, daemon, hook, or generator to solve an instruction
 change. Harness-specific compilation belongs in a future roadmap item.

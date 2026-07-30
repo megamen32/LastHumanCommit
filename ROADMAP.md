@@ -50,3 +50,23 @@ Status: done
 - [ ] Treat instruction files as installable templates with optional
   `Agents Capable Start` / `Agents Capable End` sections that a future
   harness adapter may remove when native role injection is configured.
+- [ ] Run a held-out local benchmark: strong Lead alone; Lead plus one cheap
+  Worker; Lead plus parallel cheap Workers; cheap Worker alone; and a
+  full-history expensive fork control. Measure accepted tasks, end-to-end
+  proof, scarce-quota use, wall-clock, human interventions, retries,
+  wandering time, rework, and estimate error.
+- [ ] Calibrate estimate ranges from completed task cards. The objective is
+  accepted tasks per scarce quota without moving rework to the human.
+- [ ] Turn the current hand-tuned role map into an evaluated router: begin with
+  an explainable rule matrix by task, risk, scope, tools, and quota bucket;
+  compare it with cheap-first cascades, classifiers, contextual bandits, and
+  LLM routing only on held-out work. Keep the static map until a candidate wins
+  on final task outcome and human rework, not cost alone.
+- [ ] Record available subscription/API quota buckets, reset times,
+  concurrency, and relative burn rates. This is future measurement data, not a
+  scheduler or runtime service in the core canon.
+- [ ] Re-test Codex custom-agent routing before adding harness-specific Codex
+  project profiles. On the current CLI, a custom `agent_type` is rejected as
+  unknown and a prompt can answer without spawning a child. Require a real
+  child event that proves role, actual model, fresh-context boundary, and
+  returned result before claiming `gpt-5.4-mini` or any other model is routable.
