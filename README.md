@@ -8,9 +8,32 @@ context.
 
 ## Use
 
-Copy `AGENTS.md`, `CLAUDE.md`, `src/common/`, and `templates/` into the project
-root. The two entry files are intentionally identical and route each agent to
-exactly one role file. No installer or runtime service is required.
+Copy `src/common/` and `templates/` into the project root. The two entry files
+are intentionally identical and route each agent to exactly one role file.
+
+Never copy `AGENTS.md` or `CLAUDE.md` over an existing project file. They are
+canonical marker blocks. Add or update only that block with the explicit,
+POSIX-standard adapter:
+
+```sh
+scripts/lhc-block init AGENTS.md /path/to/project/AGENTS.md
+scripts/lhc-block init CLAUDE.md /path/to/project/CLAUDE.md
+
+# After updating this repository, update an already initialized project:
+scripts/lhc-block apply AGENTS.md /path/to/project/AGENTS.md
+scripts/lhc-block apply CLAUDE.md /path/to/project/CLAUDE.md
+```
+
+`init` appends the canonical block only when the target has no marker lines;
+`apply` requires one valid block and replaces only its contents. Both refuse
+malformed, nested, or duplicate blocks without writing. The adapter never
+discovers paths, creates project directories, changes host configuration, or
+installs a runtime service.
+
+The adapter needs only standard POSIX `sh`, `awk`, `ed`, `cp`, and `tail`
+utilities. It edits an existing target in place, preserving its ownership,
+permissions, and surrounding text; before an edit it keeps a private adjacent
+backup and restores the original content if the editor fails.
 
 ## Workflow
 
@@ -64,12 +87,13 @@ and no-history boundary; the Codex CLI limitation is tracked in `ROADMAP.md`.
 
 ## Files
 
-- `AGENTS.md`, `CLAUDE.md` — portable role router and work classification.
+- `AGENTS.md`, `CLAUDE.md` — canonical marked role router for explicit targets.
 - `src/common/agents/Lead.md` — root workflow, human gate, and release action.
 - `src/common/agents/*.md` — independently loadable specialist roles.
 - `src/common/profiles/*.md` — optional domain rules for an assigned role.
 - `src/common/protocols/*.md` — event-triggered procedures.
-- `templates/` — planning and handoff records.
+- `templates/` — planning, handoff, and optional `.agents/` records.
+- `scripts/lhc-block` — explicit, marker-only add/update/check/remove adapter.
 - `docs/agent-authoring.md` — maintainer rules.
 
 Validation stays deliberately small:

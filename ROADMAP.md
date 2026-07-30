@@ -10,20 +10,19 @@ Status: done
 - [x] M1.2 Add lazy roles, profiles, and protocols.
 - [x] M1.3 Add file-based task tracking.
 - [x] M1.4 Add roadmap and out-of-roadmap priority gate.
-- [x] M1.5 Add one-line installer. Retired: copy-paste is the base interface.
+- [x] M1.5 Keep copy-paste available as the base interface.
 
-## M2 — Installable distribution
+## M2 — Explicit marker-block adapter
 
-Status: blocked — outside the current text-only scope; no owner selected.
+Status: done
 
-Historical installer work is retained here only as roadmap history. Live
-installer artifacts are removed.
+The built-in helper is intentionally not a universal installer. It manages one
+explicit marker block in one explicit file and preserves all other project text.
 
-- [x] M2.1 Split common, global, project, and meta sources.
-- [x] M2.2 Add offline project and host installer.
-- [x] M2.3 Add installer regression tests.
-- [ ] M2.4 Validate install on Codex, Claude, and OpenCode.
-- [ ] M2.5 Document rollback and upgrade.
+- [x] M2.1 Keep `src/common/` for shared instructions and `templates/` for all records.
+- [x] M2.2 Add explicit `init`, `apply`, `check`, and `remove-block` commands.
+- [x] M2.3 Preserve text outside one complete marker pair; fail closed otherwise.
+- [x] M2.4 Add dependency-free behavioral regression tests.
 
 ## M3 — Text-first human/agent workflow
 

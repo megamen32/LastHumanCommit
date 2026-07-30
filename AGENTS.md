@@ -1,3 +1,4 @@
+<!-- last-human-commit:begin -->
 # Agent role router
 
 Resolve identity before task work. If an enclosing instruction explicitly assigns one of these roles,
@@ -28,3 +29,4 @@ L classifies the request before work:
 If the boundary is uncertain, L gives short/full estimates and asks the human
 which cycle to use. L reads `ROADMAP.md` when present; new unselected work goes
 under `Proposed` unless the human explicitly chose it or it is P0 recovery.
+<!-- last-human-commit:end -->

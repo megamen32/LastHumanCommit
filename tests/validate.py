@@ -2,6 +2,7 @@
 """Validate the small, dependency-free YAGNI text canon."""
 
 from pathlib import Path
+import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -32,6 +33,8 @@ lead_path = ROOT / "src/common/agents/Lead.md"
 roadmap_path = ROOT / "ROADMAP.md"
 release_path = ROOT / "templates/RELEASE_HANDOFF.md"
 planning_path = ROOT / "src/common/profiles/Planning.md"
+adapter_path = ROOT / "scripts/lhc-block"
+adapter_test_path = ROOT / "tests/test_block_adapter.sh"
 
 for path in (
     agents_path,
@@ -40,6 +43,8 @@ for path in (
     roadmap_path,
     release_path,
     planning_path,
+    adapter_path,
+    adapter_test_path,
 ):
     if not path.is_file():
         fail(f"missing text contract: {path.relative_to(ROOT)}")
@@ -50,9 +55,35 @@ if (ROOT / "CANON.md").exists():
 if agents_path.read_bytes() != claude_path.read_bytes():
     fail("AGENTS.md and CLAUDE.md must be byte-identical")
 
+
+def require_one_marker_block(text: str, source: str) -> None:
+    begin = "<!-- last-human-commit:begin -->"
+    end = "<!-- last-human-commit:end -->"
+    lines = text.splitlines()
+    if lines.count(begin) != 1 or lines.count(end) != 1:
+        fail(f"{source} needs exactly one marker pair")
+    if lines.index(begin) >= lines.index(end):
+        fail(f"{source} has reversed marker lines")
+
 router = agents_path.read_text(encoding="utf-8")
 lead = lead_path.read_text(encoding="utf-8")
 roadmap = roadmap_path.read_text(encoding="utf-8")
+
+require_one_marker_block(router, "AGENTS.md")
+if not adapter_path.stat().st_mode & 0o111:
+    fail("scripts/lhc-block must be executable")
+for path in (
+    ROOT / "src/common/templates/.agents/kanban.md",
+    ROOT / "src/common/templates/.agents/orchestrator.md",
+):
+    if path.exists():
+        fail("templates must not be split between src/common/templates and templates")
+for path in (
+    ROOT / "templates/.agents/kanban.md",
+    ROOT / "templates/.agents/orchestrator.md",
+):
+    if not path.is_file():
+        fail(f"missing unified template: {path.relative_to(ROOT)}")
 
 for role in ROLES:
     require_text(router, role, "AGENTS.md router")
@@ -179,4 +210,9 @@ for phrase in (
 ):
     require_text(release, phrase, "templates/RELEASE_HANDOFF.md")
 
-print(f"PASS: {len(ROLES)} router roles and YAGNI text contracts")
+try:
+    subprocess.run(["sh", str(adapter_test_path)], check=True)
+except subprocess.CalledProcessError as error:
+    fail(f"block adapter tests failed: exit {error.returncode}")
+
+print(f"PASS: {len(ROLES)} router roles and marker-block contracts")

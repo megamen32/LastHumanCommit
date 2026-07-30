@@ -1,0 +1,238 @@
+#!/bin/sh
+# Manage only one explicit LastHumanCommit block in one explicitly named file.
+set -eu
+
+BEGIN='<!-- last-human-commit:begin -->'
+END='<!-- last-human-commit:end -->'
+ED=${LHC_BLOCK_ED:-ed}
+
+fail() { printf '%s\n' "last-human-commit: $*" >&2; exit 1; }
+usage() {
+    cat >&2 <<'EOF'
+usage:
+  lhc-block init SOURCE TARGET
+  lhc-block apply SOURCE TARGET
+  lhc-block check TARGET
+  lhc-block remove-block TARGET
+
+SOURCE must contain exactly one complete LastHumanCommit marker block. TARGET is
+always explicit; this tool never discovers files, creates directories, or
+changes content outside that block.
+EOF
+    exit 2
+}
+
+require_safe_path() {
+    case "$1" in
+        *'
+'*|*''*) fail "paths cannot contain a newline or carriage return" ;;
+    esac
+}
+
+require_regular() {
+    require_safe_path "$1"
+    [ -e "$1" ] || fail "missing file: $1"
+    [ ! -L "$1" ] || fail "refusing symlink: $1"
+    [ -f "$1" ] || fail "not a regular file: $1"
+}
+
+require_final_newline() {
+    [ ! -s "$1" ] && return 0
+    last=$(tail -c 1 "$1" | od -An -t x1 | tr -d '[:space:]')
+    [ "$last" = 0a ] || fail "file must end with a newline: $1"
+}
+
+block_is_valid() {
+    awk -v begin="$BEGIN" -v end="$END" '
+        $0 == begin {
+            begins++
+            if (state != 0) bad = 1
+            state = 1
+            next
+        }
+        $0 == end {
+            ends++
+            if (state != 1) bad = 1
+            state = 2
+            next
+        }
+        END { exit !(begins == 1 && ends == 1 && state == 2 && !bad) }
+    ' "$1"
+}
+
+marker_counts() {
+    awk -v begin="$BEGIN" -v end="$END" '
+        $0 == begin { begins++ }
+        $0 == end { ends++ }
+        END { printf "%d:%d\n", begins, ends }
+    ' "$1"
+}
+
+require_valid_block() {
+    require_regular "$1"
+    require_final_newline "$1"
+    block_is_valid "$1" || fail "need exactly one complete, non-nested marker block: $1"
+}
+
+require_no_markers() {
+    require_regular "$1"
+    require_final_newline "$1"
+    [ "$(marker_counts "$1")" = 0:0 ] || fail "target already contains marker text: $1"
+}
+
+require_editor() {
+    command -v "$ED" >/dev/null 2>&1 || fail "missing POSIX editor: $ED"
+}
+
+marker_range() {
+    awk -v begin="$BEGIN" -v end="$END" '
+        $0 == begin { first = NR }
+        $0 == end { last = NR }
+        END { printf "%d:%d\n", first, last }
+    ' "$1"
+}
+
+make_backup() {
+    target=$1
+    backup="$(dirname "$target")/.$(basename "$target").lhc-block.$$"
+    umask 077
+    (set -C; : >"$backup") 2>/dev/null || fail "cannot reserve backup beside target: $target"
+    cp -p "$target" "$backup" || {
+        rm -f "$backup"
+        fail "cannot back up target: $target"
+    }
+}
+
+restore_or_fail() {
+    message=$1
+    if cat "$backup" >"$target"; then
+        rm -f "$backup"
+        fail "$message; original content restored"
+    else
+        fail "$message; recovery failed, backup retained at $backup"
+    fi
+}
+
+finish_edit() {
+    rm -f "$backup"
+    printf '%s\n' "$1: $target"
+}
+
+apply_block() {
+    source=$1
+    target=$2
+    range=$(marker_range "$target")
+    first=${range%%:*}
+    last=${range##*:}
+    before=$((first - 1))
+    make_backup "$target"
+    if "$ED" -s "$target" <<EOF
+${first},${last}d
+${before}r $source
+w
+q
+EOF
+    then
+        finish_edit "applied block"
+    else
+        restore_or_fail "could not apply block"
+    fi
+}
+
+append_block() {
+    source=$1
+    target=$2
+    if [ "${TARGET_EXISTS:-0}" = 0 ]; then
+        cp "$source" "$target" || fail "cannot create target: $target"
+        printf 'initialized block: %s\n' "$target"
+        return
+    fi
+    make_backup "$target"
+    if [ -s "$target" ]; then
+        if "$ED" -s "$target" <<EOF
+\$a
+
+.
+\$r $source
+w
+q
+EOF
+        then
+            finish_edit "initialized block"
+        else
+            restore_or_fail "could not initialize block"
+        fi
+    else
+        if "$ED" -s "$target" <<EOF
+0r $source
+w
+q
+EOF
+        then
+            finish_edit "initialized block"
+        else
+            restore_or_fail "could not initialize block"
+        fi
+    fi
+}
+
+remove_block() {
+    target=$1
+    range=$(marker_range "$target")
+    first=${range%%:*}
+    last=${range##*:}
+    make_backup "$target"
+    if "$ED" -s "$target" <<EOF
+${first},${last}d
+w
+q
+EOF
+    then
+        finish_edit "removed block"
+    else
+        restore_or_fail "could not remove block"
+    fi
+}
+
+command=${1:-}
+case "$command" in
+    init)
+        [ "$#" = 3 ] || usage
+        require_safe_path "$2"
+        require_safe_path "$3"
+        require_valid_block "$2"
+        require_editor
+        if [ -e "$3" ]; then
+            require_no_markers "$3"
+            TARGET_EXISTS=1
+        else
+            parent=$(dirname "$3")
+            [ -d "$parent" ] || fail "parent directory does not exist: $parent"
+            TARGET_EXISTS=0
+        fi
+        append_block "$2" "$3"
+        ;;
+    apply)
+        [ "$#" = 3 ] || usage
+        require_safe_path "$2"
+        require_safe_path "$3"
+        require_valid_block "$2"
+        require_valid_block "$3"
+        require_editor
+        apply_block "$2" "$3"
+        ;;
+    check)
+        [ "$#" = 2 ] || usage
+        require_safe_path "$2"
+        require_valid_block "$2"
+        printf 'valid block: %s\n' "$2"
+        ;;
+    remove-block)
+        [ "$#" = 2 ] || usage
+        require_safe_path "$2"
+        require_valid_block "$2"
+        require_editor
+        remove_block "$2"
+        ;;
+    *) usage ;;
+esac
