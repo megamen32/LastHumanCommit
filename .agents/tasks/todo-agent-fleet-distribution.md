@@ -13,4 +13,3 @@ Acceptance:
   repository, not here.
 
 Workflow: explore -> plan -> implement-in-agent-fleet -> review -> deploy
-
