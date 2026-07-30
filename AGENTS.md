@@ -1,21 +1,17 @@
 # Maintainer instructions
 
-This repository ships agent instructions. Distributed files live under `src/`:
+This is a text-only canon. `CANON.md` is the portable base contract.
 
-- `src/common/` — roles, profiles, protocols, and tracked-work templates.
-- `src/global/` — host entry instruction.
-- `src/project/` — project entry instruction and roadmap template.
+Read `ROADMAP.md` first. Preserve the user's concise meaning and keep direct
+work fast. Installation, synchronization, cron, deployment, and harness-specific
+adaptation belong to Agent Fleet or another external adapter.
 
-Root files are meta: README, roadmap, tests, installer, and this file. Do not
-edit generated install targets as source.
+When changing the canon:
 
-Before changing instructions:
+1. Update `CANON.md` first.
+2. Align only the optional roles/templates that expand the changed rule.
+3. Keep validation literal, dependency-free, and readable in one sitting.
+4. Run `python3 tests/validate.py` and `git diff --check`.
 
-1. Read `ROADMAP.md` and preserve its priority order.
-2. Change source files under `src/`, not installed copies.
-3. Add or update focused tests.
-4. Run `python3 tests/validate.py`, `python3 -m pytest -q tests/test_installer.py`,
-   and `sh -n install.sh`.
-5. Update README when install behavior changes.
-
-Keep text short. No harness hooks, plugins, network fetches, or dependencies.
+Do not add installers, daemons, hooks, network fetches, credentials, or runtime
+dependencies to this repository.

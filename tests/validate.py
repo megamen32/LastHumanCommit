@@ -1,156 +1,137 @@
 #!/usr/bin/env python3
-"""Validate the canonical agent store without third-party dependencies."""
-
-from __future__ import annotations
+"""Validate the small, text-only LastHumanCommit contract."""
 
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-REQUIRED = {
-    "AGENTS.md",
+
+REQUIRED = (
+    "CANON.md",
+    "README.md",
     "ROADMAP.md",
-    "src/project/ROADMAP.md",
-    "VERSION",
-    "install.sh",
-    "src/global/entry.md.in",
-    "src/project/entry.md.in",
-    "src/project/ROADMAP.md",
     "src/common/agents/Lead.md",
-    "src/common/agents/Explorer.md",
-    "src/common/agents/Worker.md",
-    "src/common/agents/Reviewer.md",
-    "src/common/agents/Overseer.md",
     "src/common/agents/Adviser.md",
-    "src/common/agents/Critic.md",
-    "src/common/protocols/STOP_RETHINK.md",
-    "src/common/profiles/Code.md",
-    "src/common/profiles/Infrastructure.md",
-    "src/common/templates/.agents/orchestrator.md",
-    "src/common/templates/.agents/bugs/bug_template.md",
     "src/common/templates/.agents/kanban.md",
     "src/common/templates/.agents/tasks/task_template.md",
-}
+    "templates/FULL_CYCLE.md",
+    "templates/RELEASE_HANDOFF.md",
+)
+
+RETIRED = (
+    "install.sh",
+    "VERSION",
+    "tests/test_installer.py",
+    "src/global/entry.md.in",
+    "src/project/entry.md.in",
+)
 
 
 def fail(message: str) -> None:
+    """Exit with one readable contract failure."""
     raise SystemExit(f"FAIL: {message}")
 
 
-missing = sorted(path for path in REQUIRED if not (ROOT / path).is_file())
-if missing:
-    fail(f"missing files: {', '.join(missing)}")
+for relative in REQUIRED:
+    if not (ROOT / relative).is_file():
+        fail(f"missing text contract: {relative}")
 
-core = (ROOT / "src/global/entry.md.in").read_text(encoding="utf-8")
-if len(core) > 800:
-    fail(f"src/global/entry.md.in is {len(core)} characters; budget is 800")
+for relative in RETIRED:
+    if (ROOT / relative).exists():
+        fail(f"retired runtime surface still exists: {relative}")
 
-required_core = (
-    "You are **L**",
-    "Overseer every 30 minutes",
-    "P0 CONFIRMED",
-    "P0 NOT CONFIRMED",
-    "ROADMAP.md",
+runtime_files = sorted(
+    path.relative_to(ROOT)
+    for suffix in ("*.sh", "*.service", "*.timer")
+    for path in ROOT.rglob(suffix)
+    if ".git" not in path.parts
 )
-for phrase in required_core:
-    if phrase not in core:
-        fail(f"src/global/entry.md.in lacks required phrase: {phrase}")
+if runtime_files:
+    fail(f"runtime files are outside this text canon: {', '.join(map(str, runtime_files))}")
 
-role_prompts = {
-    "Lead.md": ("I am L", "workflow"),
-    "Adviser.md": ("I am a subagent", "workflow"),
-    "Critic.md": ("I am a subagent", "workflow"),
-    "Explorer.md": ("I am a subagent", "workflow"),
-    "Overseer.md": ("I am a subagent", "workflow"),
-    "Reviewer.md": ("I am a subagent", "workflow"),
-    "Worker.md": ("I am a subagent", "workflow"),
+canon = (ROOT / "CANON.md").read_text(encoding="utf-8")
+ordered = (
+    "Ultimate perfect totally ideal",
+    "Normal",
+    "YAGNI MVP",
+)
+positions = [canon.find(phrase) for phrase in ordered]
+if any(position < 0 for position in positions) or positions != sorted(positions):
+    fail("CANON.md must contain the three plans in the required order")
+
+for phrase in (
+    "Research the request and repository",
+    "bounded subagents",
+    "Wait for explicit human selection",
+    "Do not implement before the human selects one plan.",
+    "Call-stack tree",
+    "File-tree diff",
+    "Key types and method signatures",
+    "fable | sol",
+    "opus | terra",
+    "sonnet | luna",
+    "haiku | 5.4mini",
+    "Russian mobile review",
+    "external deploy handoff",
+    "30 minutes",
+    "Stop after the handoff.",
+    "open every named site in a real browser",
+    "approved credential retrieval reference",
+):
+    if phrase not in canon:
+        fail(f"CANON.md lacks: {phrase}")
+
+contract_checks = {
+    "src/common/agents/Lead.md": (
+        "Research first",
+        "Ultimate perfect totally ideal, Normal, YAGNI MVP",
+        "explicit human selection",
+        "external deploy handoff",
+    ),
+    "src/common/agents/Adviser.md": ordered,
+    "templates/FULL_CYCLE.md": (
+        "## Research",
+        "### 1. Ultimate perfect totally ideal",
+        "### 2. Normal",
+        "### 3. YAGNI MVP",
+        "Human selection",
+        "## Selected-plan WSFF",
+    ),
+    "templates/RELEASE_HANDOFF.md": (
+        "## Russian mobile review",
+        "Eligibility is not deployment",
+        "A new commit",
+        "failed tests",
+        "changed target",
+        "owner:",
+        "target:",
+        "commit_or_artifact:",
+        "acceptance_proof:",
+        "rollback_reference:",
+        "review_sent_at:",
+        "eligible_not_before:",
+        "veto_state:",
+    ),
 }
-for name, phrases in role_prompts.items():
-    prompt = (ROOT / "src/common/agents" / name).read_text(encoding="utf-8")
+for relative, phrases in contract_checks.items():
+    text = (ROOT / relative).read_text(encoding="utf-8")
     for phrase in phrases:
-        if phrase not in prompt:
-            fail(f"src/common/agents/{name} lacks required phrase: {phrase}")
+        if phrase not in text:
+            fail(f"{relative} lacks: {phrase}")
 
-subagent_names = ("Adviser.md", "Critic.md", "Explorer.md", "Overseer.md", "Reviewer.md", "Worker.md")
-for name in subagent_names:
-    prompt = (ROOT / "src/common/agents" / name).read_text(encoding="utf-8")
-    for phrase in ("L (Lead)", "## Shared workflow", "do only my assigned role", "commit every task-file edit"):
-        if phrase not in prompt:
-            fail(f"src/common/agents/{name} lacks shared workflow phrase: {phrase}")
-
-lead = (ROOT / "src/common/agents/Lead.md").read_text(encoding="utf-8")
-for phrase in (
-    "Immediately launch bounded Explorers",
-    "vertical slice",
-    "P0/P1 still fails",
-    "STOP_RETHINK.md",
-    "Critic before closing complex",
-    "`.agents/bugs/<id>.md`",
-    "todo-{id}.md`, `work-{id}.md`, and `done-{id}.md",
-    "every task-file edit",
-    "verified fix commit",
-    "Never depend on a",
-    "shortest useful",
-    "TL;DR: status and task-file path",
-    "Do not duplicate its detailed Result",
-    "tag meaningful",
+task_state = "todo -> work -> done"
+for relative in (
+    "README.md",
+    "src/common/agents/Lead.md",
+    "src/common/templates/.agents/kanban.md",
+    "src/common/templates/.agents/tasks/task_template.md",
 ):
-    if phrase not in lead:
-        fail(f"src/common/agents/Lead.md lacks required workflow guarantee: {phrase}")
+    text = (ROOT / relative).read_text(encoding="utf-8")
+    if task_state not in text:
+        fail(f"{relative} lacks the shared task state: {task_state}")
 
-explorer = (ROOT / "src/common/agents/Explorer.md").read_text(encoding="utf-8")
-for phrase in ("primary sources", "source and date", "what was checked and excluded"):
-    if phrase not in explorer:
-        fail(f"src/common/agents/Explorer.md lacks required research guarantee: {phrase}")
+for relative in REQUIRED:
+    text = (ROOT / relative).read_text(encoding="utf-8")
+    if "@CANON_ROOT@" in text:
+        fail(f"{relative} contains installer placeholder @CANON_ROOT@")
 
-task_template = (ROOT / "src/common/templates/.agents/tasks/task_template.md").read_text(encoding="utf-8")
-for phrase in (
-    "on any edit this file then commit it",
-    "## Before Start",
-    "Description:",
-    "Severity: P0_URGENT | CORE | BEST_EFFORT | OPT_IN",
-    "workflow:",
-    "estimated min-max complete time:",
-    "Acceptance:",
-    "DO `git mv todo-<id>.md work-<id>.md`",
-    "started (UTC+3):",
-    "Executor:",
-    "PID:",
-    "Harness:",
-    "session identifier:",
-    "Next action:",
-    "# Message layer",
-    "## Notes",
-    "## Blocker",
-    ".agents/bugs/<id>.md",
-    "DO `git mv work-<id>.md done-<id>.md`",
-    "full durable result",
-    "does not depend on a delivered agent message",
-):
-    if phrase not in task_template:
-        fail(f"task template lacks lifecycle contract: {phrase}")
-
-for path in (
-    ROOT / "src/common/templates/.agents/bugs.md",
-    ROOT / "src/common/templates/.agents/subagents.jsonl",
-):
-    if path.exists():
-        fail(f"obsolete shared registry still exists: {path.relative_to(ROOT)}")
-
-for phrase in ("wip-<id>", "Transition:", "Harness and session ID (best effort)"):
-    if phrase in task_template:
-        fail(f"task template retains obsolete field: {phrase}")
-
-checked_docs = list((ROOT / "src").rglob("*.md")) + [
-    ROOT / "AGENTS.md",
-    ROOT / "README.md",
-    ROOT / "ROADMAP.md",
-    ROOT / "docs/agent-authoring.md",
-]
-for path in checked_docs:
-    for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
-        if line.rstrip() != line:
-            fail(f"trailing whitespace: {path.relative_to(ROOT)}:{number}")
-        if any("\u0400" <= char <= "\u04ff" for char in line):
-            fail(f"non-English text: {path.relative_to(ROOT)}:{number}")
-
-print(f"PASS: {len(REQUIRED)} required files; global entry={len(core)} characters")
+print(f"PASS: {len(REQUIRED)} text contracts; no shell/service runtime surface")

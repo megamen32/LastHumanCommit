@@ -1,19 +1,15 @@
-# Instruction authoring
+# Authoring the canon
 
-Change source files only:
+`CANON.md` is the source of truth and must work when copied alone.
 
-- `src/global/entry.md.in` — host entry.
-- `src/project/entry.md.in` — project entry.
-- `src/common/` — shared roles, profiles, protocols, templates.
+Keep rules short, observable, and proportional:
 
-Do not edit installed `AGENTS.md`, `CLAUDE.md`, or `.last-human-commit/` as
-source. Keep entry text short. Use `@CANON_ROOT@` for shared-file paths.
+- direct, short, and emergency work must remain fast;
+- full work must preserve research, three plans, human selection, WSFF,
+  implementation, test, review, commit, Russian summary, and external handoff;
+- optional role files may explain a rule but may not contradict it;
+- external adapters own installation, synchronization, scheduling, deployment,
+  rollback execution, credentials, and host topology.
 
-Every instruction change must:
-
-1. preserve roadmap priority;
-2. add or update focused test;
-3. run validator, installer tests, and `sh -n install.sh`;
-4. update README when install behavior changes.
-
-No harness hooks, plugins, network fetches, or new dependencies.
+Validation should check only stable text contracts. Avoid tests for formatting,
+implementation details, or external adapters.

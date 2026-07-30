@@ -2,95 +2,51 @@
 
 <img width="1672" height="941" alt="Last Human Commit role map" src="https://github.com/user-attachments/assets/7b259f64-50c1-45a4-af27-07a5101d8120" />
 
-Agent orchestration instruction. Grab-n-Go: a compact canon for Codex, Claude,
-OpenCode, and other harnesses.
+A small human/agent workflow canon. It is text, not a framework.
 
-## Map
+## Use
+
+Copy the complete contents of [`CANON.md`](CANON.md) into the instruction file
+your harness already reads. That is the base product and is enough to work.
+
+Copy optional role or record templates only when they help. A project may adapt
+formatting and paths, but must preserve the decisions in `CANON.md`.
+
+LastHumanCommit does not install, synchronize, schedule, deploy, or run a
+service. Agent Fleet or another external adapter owns those environment-specific
+jobs.
+
+## Model map
 
 ```text
-Overseer ── Adviser                 intelligence
-          └─ L (Lead) ── Critic     time and risk
-                         ├─ Explorer (read-only)
-                         ├─ Worker
-                         └─ Reviewer
+L (Lead)
+├─ Adviser / strategy        fable | sol
+├─ Critic / review           opus | terra
+├─ Worker (about 90%)        sonnet | luna
+└─ Explorer (read-only)      haiku | 5.4mini
 ```
 
-- `AGENTS.md` — the small entry canon.
-- `agents/` — roles; only Lead owns the outcome and final integration.
-- `protocols/` — event-triggered procedures such as STOP/RETHINK.
-- `profiles/` — code and infrastructure rules loaded only when relevant.
-- `templates/.agents/` — tracked-work state for work expected to exceed an hour
-  or that already exceeded twenty minutes.
+The strongest models are short strategic advisers, not long-running workers.
+Names are capability hints; unavailable aliases must not block the workflow.
 
-You do not need the rest of the canon to start; the commands below install it.
+## Text map
 
-## Install
+- `CANON.md` — self-contained copy-paste contract.
+- `src/common/agents/` — optional role expansions.
+- `src/common/profiles/` — optional code, test, and infrastructure guidance.
+- `src/common/protocols/` — optional recovery guidance.
+- `src/common/templates/.agents/` — optional task and bug records.
+- `templates/FULL_CYCLE.md` — planning and human-selection record.
+- `templates/RELEASE_HANDOFF.md` — stable boundary for Agent Fleet or another
+  deploy adapter.
 
-From a clone, install host instructions:
+Optional tracked task state is `todo -> work -> done`. The workflow remains
+usable without task files for direct and short work.
 
-```sh
-sh install.sh host
-```
+## Validate
 
-Install project instructions:
-
-```sh
-sh install.sh project .
-```
-
-Install into the current project with one command. This writes the shared
-`AGENTS.md` block used by Codex and OpenCode plus the `CLAUDE.md` block used by
-Claude, and preserves any text already in those files:
-
-```sh
-tmp=$(mktemp -d) && git clone --depth=1 https://github.com/megamen32/LastHumanCommit.git "$tmp" && sh "$tmp/install.sh" project "$PWD"; rc=$?; rm -rf "$tmp"; exit "$rc"
-```
-
-Remove only the managed blocks from the current project with one command:
-
-```sh
-tmp=$(mktemp -d) && git clone --depth=1 https://github.com/megamen32/LastHumanCommit.git "$tmp" && sh "$tmp/install.sh" uninstall project "$PWD"; rc=$?; rm -rf "$tmp"; exit "$rc"
-```
-
-Both commands are offline, dependency-free, and do not use `sudo`. Existing
-`AGENTS.md`, `CLAUDE.md`, and `ROADMAP.md` content is preserved. Installer owns
-only marked blocks:
-
-```md
-<!-- last-human-commit:begin -->
-...
-<!-- last-human-commit:end -->
-```
-
-Use `status` or `uninstall project PATH` to inspect/remove managed blocks.
-
-## Source layout
-
-- `src/common/` — roles, profiles, protocols, and tracked-work templates.
-- `src/global/` — host entry instruction.
-- `src/project/` — project entry instruction and roadmap template.
-- root — maintainer meta: installer, tests, README, roadmap, and authoring rules.
-
-The root files are not installed as agent instructions. Installed project state
-is kept in `.last-human-commit/`; runtime `.agents/` is created only when
-tracked work starts.
-
-## Roadmap, tasks, kanban
-
-`ROADMAP.md` is strategic state: ordered milestones, outcomes, statuses, stable
-checkbox items, and `Proposed` for unapproved features.
-
-`.agents/tasks/` is execution state. Use `todo-{id}.md` → `work-{id}.md` →
-`done-{id}.md`; move files with `git mv` only and commit every task-file edit.
-The task itself stores its ordered workflow, min-max estimate, current
-executor/PID/harness/session, next action, notes, blockers, and full final
-result. Confirmed bugs are individual `.agents/bugs/<id>.md` files: commit the
-file immediately, then delete it in the verified fix commit.
-
-## Validation
+The only routine check is intentionally simple and dependency-free:
 
 ```sh
 python3 tests/validate.py
-python3 -m pytest -q tests/test_installer.py
-sh -n install.sh
 ```

@@ -24,8 +24,8 @@ Executor: L
 PID: 294519
 Harness: codex
 session identifier: current Codex task
-Next action: turn the approved YAGNI boundary into a concise design and
-test-first text/template changes.
+Next action: commit the reviewed text-only rewrite, reconcile origin history,
+then record the final commit and review handoff.
 
 ## Notes
 
@@ -33,4 +33,15 @@ test-first text/template changes.
   this repository.
 - Preserve existing dirty work and never read or stage `.env`.
 - Reconcile the remote-only README commit without adopting its stale content.
-
+- Red: the new validator first failed because `CANON.md` was absent.
+- Green: `python3 tests/validate.py` passes nine text contracts;
+  `git diff --check` passes.
+- Removed installer, rendered entries, installer tests, versioned runtime
+  surface, and obsolete install plans. This closes installer boundary, parser,
+  path-rendering, release-state, entry-drift, and README bootstrap defects in
+  this repository; Agent Fleet owns any future adapter implementation.
+- Unified `todo -> work -> done`, fixed bug retention language, and ignored
+  `.env` without reading it.
+- Reviewer and Critic requested stronger literal checks, handoff cancellation
+  wording, audit disposition, and origin reconciliation; these corrections are
+  integrated. Only `.agents/bugs/git-divergence.md` remains open until merge.

@@ -9,9 +9,8 @@ completion-risk challenges.
 
 L (Lead) owns the user outcome, priority, scope, integration, and final answer.
 Lead gives me one bounded task and acceptance proof; I do only my assigned role,
-record evidence in that task, and return my report to Lead. I do not take another
-role, redefine P0, expand scope, or claim the final result.
-When I edit the task record, I commit every task-file edit before handoff.
+record evidence, and return my report to Lead. I do not take another role,
+redefine P0, expand scope, or claim the final result.
 
 ## My workflow
 

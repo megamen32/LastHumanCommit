@@ -10,11 +10,14 @@ Status: done
 - [x] M1.2 Add lazy roles, profiles, and protocols.
 - [x] M1.3 Add file-based task tracking.
 - [x] M1.4 Add roadmap and out-of-roadmap priority gate.
-- [x] M1.5 Add one-line installer.
+- [x] M1.5 Add one-line installer. Retired: copy-paste is the base interface.
 
 ## M2 — Installable distribution
 
 Status: blocked — distribution ownership moves to Agent Fleet.
+
+Historical installer work is retained here only as roadmap history. Live
+installer artifacts are removed from LastHumanCommit.
 
 - [x] M2.1 Split common, global, project, and meta sources.
 - [x] M2.2 Add offline project and host installer.
@@ -26,11 +29,11 @@ Status: blocked — distribution ownership moves to Agent Fleet.
 
 Status: active
 
-- [ ] M3.1 Classify direct, short, full, and emergency work.
-- [ ] M3.2 Require research and human selection among three plans for full work.
-- [ ] M3.3 Add WSFF planning views and model-class guidance.
-- [ ] M3.4 Add Russian mobile commit review and timed external deploy handoff.
-- [ ] M3.5 Make the core canon copy-paste portable and internally consistent.
+- [x] M3.1 Classify direct, short, full, and emergency work.
+- [x] M3.2 Require research and human selection among three plans for full work.
+- [x] M3.3 Add WSFF planning views and model-class guidance.
+- [x] M3.4 Add Russian mobile commit review and timed external deploy handoff.
+- [x] M3.5 Make the core canon copy-paste portable and internally consistent.
 
 ## Proposed
 

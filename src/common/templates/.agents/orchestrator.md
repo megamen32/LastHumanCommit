@@ -1,20 +1,13 @@
 # Orchestrator
 
-## Current state
+Outcome:
+Acceptance:
+Cycle:
+Current stage:
+Current owner:
+Next action:
+Blocker:
+Evidence:
 
-- Roadmap item:
-- Outcome:
-- P0:
-- Acceptance:
-- Constraints:
-- Chosen path:
-- Evidence or blocker:
-- Next gate:
-
-## Agent and time notes
-
-- Long-running models may need a resume mechanism.
-- Use English to save tokens. Use Russian only for complex operator choices.
-- If work takes 2x estimate, review path. At 3x, stop and rethink.
-- Parallelize independent work. Reuse suitable existing agents.
-- Agents must write final reports to a file and return path, size, and one-line summary.
+For full work, list each bounded subagent with scope, model class, reason, and
+result. L owns integration and the final decision.

@@ -12,5 +12,5 @@ A test already failing before you arrived is no excuse to ignore it or leave it
 stale. Finish the requested work and its bug fixes first, then repair or update
 that test too.
 
-If bug files still exist when you think the work is done, process them. No bug
-files may remain at the end.
+At release completion, close resolved bug files. Retain unresolved bug files
+with their exact blocker; do not hide them to make the task appear complete.
