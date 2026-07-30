@@ -35,6 +35,18 @@ Status: done
 - [x] M3.4 Add Russian mobile commit review and timed external deploy handoff.
 - [x] M3.5 Make the core canon copy-paste portable and internally consistent.
 
+## M4 — Portable role router correction
+
+Status: active
+
+- [ ] M4.1 Replace `CANON.md` with byte-identical `AGENTS.md` and `CLAUDE.md`.
+- [ ] M4.2 Route every known role to one independently loadable prompt.
+- [ ] M4.3 Restore the full provider/model role map.
+- [ ] M4.4 Make L own timed self-resume, revalidation, and deployment.
+- [ ] M4.5 Complete a whole-repository review and close stale contracts.
+
 ## Proposed
 
-- [ ] Agent Fleet consumes and distributes the stable text canon.
+- [ ] Treat instruction files as installable templates with optional
+  `Agents Capable Start` / `Agents Capable End` sections that a future
+  harness adapter may remove when native role injection is configured.

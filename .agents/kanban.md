@@ -2,7 +2,7 @@
 
 ## ACTIVE
 
-- None.
+- `.agents/tasks/work-20260730-role-router-yagni.md` — L — portable role router
 
 ## UNPRIORITIZED
 
