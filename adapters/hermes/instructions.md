@@ -8,3 +8,7 @@ to the child context before Hermes builds the child. Hermes' native
 The plugin reads the explicit LastHumanCommit marker block and role source but
 never edits project instructions. A missing or unknown role is left untouched
 so Hermes retains its normal behavior.
+
+Hermes owns self-improvement natively: it reviews memory/skills after selected
+completed turns and exposes `/learn` for reusable successful workflows. Do not
+add the LHC `SELF_IMPROVE.md` record here.

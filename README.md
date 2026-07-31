@@ -43,6 +43,8 @@ backup and restores the original content if the editor fails.
 - Full work uses bounded subagents and reviews the whole repository.
 - A tested commit receives a Russian mobile summary.
 - L schedules its own 30-minute wake and revalidates before deploy.
+- On Codex, OpenCode, and Claude Code, L records a compact self-improvement
+  retrospective; Hermes keeps its native memory/skill learning loop.
 
 ## Roles and models
 

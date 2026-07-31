@@ -7,3 +7,7 @@ active Codex surface has no native profile delivery.
 
 Do not claim model selection, fresh-context isolation, or resume support until
 a live child event proves the actual role, model, context boundary, and result.
+
+Before L sends its final answer, run the core `SELF_IMPROVE.md` protocol and
+persist its compact record. This is required even when native profile delivery
+is unavailable.

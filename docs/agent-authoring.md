@@ -15,6 +15,8 @@ Keep instructions short, operational, and proportional:
 - Profiles supplement an assigned role; protocols load only when triggered.
 - Templates store decisions and state, not a second normative workflow.
 - `profiles/Planning.md` owns Full-work estimate and re-decomposition rules.
+- `protocols/SELF_IMPROVE.md` owns the non-Hermes end-of-task retrospective;
+  it records concrete friction and proposals without silently changing canon.
 
 When changing instructions:
 

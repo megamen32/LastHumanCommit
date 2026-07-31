@@ -7,3 +7,6 @@ and must not overwrite project-owned text outside the marker pair.
 
 Do not promise scheduled resume until the active Claude surface exposes and
 verifies its cron or scheduled-task transport.
+
+Before L sends its final answer, run the core `SELF_IMPROVE.md` protocol and
+persist its compact record.

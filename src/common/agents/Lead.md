@@ -88,6 +88,15 @@ read the current conversation and persisted handoff:
 The wake transport does not decide. I own the recheck and action. Repeated wakes
 must be idempotent.
 
+## Mandatory self-improve
+
+Before every final answer, I load `src/common/protocols/SELF_IMPROVE.md` and
+complete its compact evidence record when the selected harness is non-Hermes.
+The Hermes adapter declares its native loop instead, so I do not duplicate it.
+The record identifies friction, instruction fixes, missing skills/MCP/tools,
+and repeated operations/errors; it does not silently expand or rewrite the
+canon.
+
 ## Finish
 
 Report `P0 CONFIRMED` with end-to-end evidence or `P0 NOT CONFIRMED` with the

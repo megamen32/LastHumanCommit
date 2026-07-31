@@ -35,6 +35,7 @@ lead_path = ROOT / "src/common/agents/Lead.md"
 roadmap_path = ROOT / "ROADMAP.md"
 release_path = ROOT / "templates/RELEASE_HANDOFF.md"
 planning_path = ROOT / "src/common/profiles/Planning.md"
+self_improve_path = ROOT / "src/common/protocols/SELF_IMPROVE.md"
 adapter_path = ROOT / "scripts/lhc-block"
 adapter_test_path = ROOT / "tests/test_block_adapter.sh"
 
@@ -45,6 +46,7 @@ for path in (
     roadmap_path,
     release_path,
     planning_path,
+    self_improve_path,
     adapter_path,
     adapter_test_path,
 ):
@@ -126,6 +128,7 @@ for path in (
 for path in (
     ROOT / "templates/.agents/kanban.md",
     ROOT / "templates/.agents/orchestrator.md",
+    ROOT / "templates/.agents/self-improve.md",
 ):
     if not path.is_file():
         fail(f"missing unified template: {path.relative_to(ROOT)}")
@@ -206,8 +209,32 @@ for phrase in (
     "Critic once",
     "For Full work, load `src/common/profiles/Planning.md` before presenting plans.",
     "Direct, Short, and Emergency work stay proportional; they do not gain planning ceremony unless",
+    "Mandatory self-improve",
+    "SELF_IMPROVE.md",
 ):
     require_text(lead, phrase, "src/common/agents/Lead.md")
+
+self_improve = self_improve_path.read_text(encoding="utf-8")
+for phrase in (
+    "all non-Hermes harnesses",
+    ".agents/last-human-commit/self-improve.md",
+    "What slowed or confused L?",
+    "Which instruction should change?",
+    "Which skill, MCP, or tool is missing?",
+    "What operation or error repeated?",
+    "same fingerprint",
+    "Do not silently rewrite the canon",
+):
+    require_text(self_improve, phrase, "src/common/protocols/SELF_IMPROVE.md")
+
+for adapter in ("codex", "opencode", "claude-code"):
+    adapter_text = (ROOT / "adapters" / adapter / "adapter.yaml").read_text(
+        encoding="utf-8"
+    )
+    require_text(adapter_text, "self_improve: required-core-protocol", f"{adapter} adapter")
+
+hermes_adapter = (ROOT / "adapters/hermes/adapter.yaml").read_text(encoding="utf-8")
+require_text(hermes_adapter, "self_improve: hermes-native", "hermes adapter")
 
 planning = planning_path.read_text(encoding="utf-8")
 for phrase in (

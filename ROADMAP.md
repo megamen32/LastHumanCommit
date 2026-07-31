@@ -60,6 +60,9 @@ Status: in progress
   model, role, fresh-context, or resume capability `proven`.
 - [x] M5.6 Keep adapter overlays additive; do not create subtractive
   `Agents Capable Start/End` variants of the portable canon.
+- [x] M5.7 Add a mandatory, bounded self-improve record for every non-Hermes
+  L. Hermes retains its native post-response memory/skill review instead of a
+  duplicate LHC loop.
 
 ## Proposed
 

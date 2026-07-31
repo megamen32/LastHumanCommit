@@ -25,6 +25,15 @@ Every adapter manifest records evidence as `proven`, `unproven`, or `unsupported
 Names in a manifest are capability claims, not promises that every model or
 provider is routable on every installation.
 
+## Self-improve ownership
+
+Codex, OpenCode, and Claude Code run the core `SELF_IMPROVE.md` retrospective
+before L's final answer. It records concrete friction and a small proposed
+remedy in the project-local LHC log; it does not mutate the canon or install
+tools by itself. Hermes declares `self_improve: hermes-native`: its own
+post-response memory/skill review and `/learn` flow already own this work, so
+the adapter must not duplicate the loop.
+
 ## Delivery contract
 
 An adapter should answer these questions without changing the core role text:

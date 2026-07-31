@@ -6,6 +6,7 @@ optional_instructions: instructions.md
 plugin: plugin
 verification: VERIFICATION.md
 delivery: tool-request-middleware
+self_improve: hermes-native
 capabilities:
   native_role_profile: unsupported
   fresh_child_context: proven

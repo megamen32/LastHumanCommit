@@ -4,6 +4,7 @@ kind: external-adapter
 role_source: ../../src/common/agents
 optional_instructions: instructions.md
 delivery: native-markdown-agent-profile
+self_improve: required-core-protocol
 capabilities:
   native_role_profile: proven
   fresh_child_context: proven
