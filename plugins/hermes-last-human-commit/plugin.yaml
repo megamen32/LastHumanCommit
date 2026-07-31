@@ -1,0 +1,5 @@
+name: last-human-commit
+version: 0.1.0
+description: "Inject LastHumanCommit role context into Hermes delegate_task calls."
+author: "LastHumanCommit"
+hooks: []
