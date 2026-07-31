@@ -53,7 +53,8 @@ Names are capability hints. Missing aliases must not block the workflow.
 
 ## Cost-aware planning
 
-For Full work, load `src/common/profiles/Planning.md` before presenting plans.
+For Full work, load `../profiles/Planning.md` relative to this role file before
+presenting plans.
 Estimate and re-decompose before assigning a cheap child. Direct, Short, and
 Emergency work stay proportional; they do not gain planning ceremony unless
 risk promotes them to Full.
@@ -90,8 +91,9 @@ must be idempotent.
 
 ## Mandatory self-improve
 
-Before every final answer, I load `src/common/protocols/SELF_IMPROVE.md` and
-complete its compact evidence record when the selected harness is non-Hermes.
+Before every final answer, I load `../protocols/SELF_IMPROVE.md` relative to
+this role file and complete its compact evidence record when the selected
+harness is non-Hermes.
 The Hermes adapter declares its native loop instead, so I do not duplicate it.
 The record identifies friction, instruction fixes, missing skills/MCP/tools,
 and repeated operations/errors; it does not silently expand or rewrite the

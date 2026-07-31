@@ -207,10 +207,10 @@ for phrase in (
     "Review the whole repository",
     "Reviewer",
     "Critic once",
-    "For Full work, load `src/common/profiles/Planning.md` before presenting plans.",
+    "For Full work, load `../profiles/Planning.md` relative to this role file before presenting plans.",
     "Direct, Short, and Emergency work stay proportional; they do not gain planning ceremony unless",
     "Mandatory self-improve",
-    "SELF_IMPROVE.md",
+    "../protocols/SELF_IMPROVE.md",
 ):
     require_text(lead, phrase, "src/common/agents/Lead.md")
 
