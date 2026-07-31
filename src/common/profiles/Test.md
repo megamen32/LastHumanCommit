@@ -5,7 +5,7 @@ assigned role and never changes agent identity.
 
 Blackbox better than integration
 Integration better than unit
-Unit? good only if fast : <3 sec and written Red first, Green last (or write latter but must check via git stash)
+Unit? good only if fast : <3 sec and written Red first, Green last (or write later but verify the failing condition first)
 You can mock freely on internal, BUT if mocking external, write BLACKBOX test to verify mock structure will not become outdated. Depth-3 tests are prohibited (tests for tests).
 
 Any Test must be complete < 30s.

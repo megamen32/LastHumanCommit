@@ -1,6 +1,14 @@
 <!-- last-human-commit:begin -->
 # Agent role router
 
+## Shared worktree default
+
+Assume the worktree is shared. Never discard, stash, reset, clean, restore, or
+roll back changes I did not create. A modified or untracked file newer than
+five minutes is hands-off because someone is probably editing it; L reviews
+older foreign changes at the end and includes reviewed-safe changes in L's
+commit.
+
 Resolve identity before task work. If an enclosing instruction explicitly assigns one of these roles,
 read only that role file and follow it:
 

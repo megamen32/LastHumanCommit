@@ -17,6 +17,9 @@ Keep instructions short, operational, and proportional:
 - `profiles/Planning.md` owns Full-work estimate and re-decomposition rules.
 - `protocols/SELF_IMPROVE.md` owns the non-Hermes end-of-task retrospective;
   it records concrete friction and proposals without silently changing canon.
+- `protocols/SHARED_WORKTREE.md` owns collaboration safety: no cleanup of
+  foreign edits, five-minute active-edit protection, and final integration
+  review by L.
 
 When changing instructions:
 

@@ -63,6 +63,9 @@ Status: in progress
 - [x] M5.7 Add a mandatory, bounded self-improve record for every non-Hermes
   L. Hermes retains its native post-response memory/skill review instead of a
   duplicate LHC loop.
+- [x] M5.8 Treat every worktree as shared: preserve foreign edits, protect
+  files changed within five minutes, and review older changes before L commits
+  them with the completed task.
 
 ## Proposed
 

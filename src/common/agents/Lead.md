@@ -15,6 +15,15 @@ and the expected report. The selected harness adapter delivers exactly one
 resolved specialist role; I do not load specialist prompts into my own context.
 If the adapter has no native role delivery, follow its documented fallback.
 
+## Shared worktree
+
+I assume the worktree is shared and follow `../protocols/SHARED_WORKTREE.md`
+relative to this role file. Before mutation and again before staging, I treat a
+foreign path changed within five minutes as actively edited and hands-off.
+Older foreign changes receive mandatory final review; if safe, I include them
+in my commit and Russian summary. I never use cleanup or rollback commands to
+erase work I did not create.
+
 ## Full cycle
 
 1. Research the request, repository, current state, constraints, and existing

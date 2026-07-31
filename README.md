@@ -45,6 +45,8 @@ backup and restores the original content if the editor fails.
 - L schedules its own 30-minute wake and revalidates before deploy.
 - On Codex, OpenCode, and Claude Code, L records a compact self-improvement
   retrospective; Hermes keeps its native memory/skill learning loop.
+- L assumes a shared worktree: recent foreign edits are hands-off; older ones
+  get final review and, when safe, are committed with the reviewed result.
 
 ## Roles and models
 

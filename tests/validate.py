@@ -36,6 +36,7 @@ roadmap_path = ROOT / "ROADMAP.md"
 release_path = ROOT / "templates/RELEASE_HANDOFF.md"
 planning_path = ROOT / "src/common/profiles/Planning.md"
 self_improve_path = ROOT / "src/common/protocols/SELF_IMPROVE.md"
+shared_worktree_path = ROOT / "src/common/protocols/SHARED_WORKTREE.md"
 adapter_path = ROOT / "scripts/lhc-block"
 adapter_test_path = ROOT / "tests/test_block_adapter.sh"
 
@@ -47,6 +48,7 @@ for path in (
     release_path,
     planning_path,
     self_improve_path,
+    shared_worktree_path,
     adapter_path,
     adapter_test_path,
 ):
@@ -211,8 +213,34 @@ for phrase in (
     "Direct, Short, and Emergency work stay proportional; they do not gain planning ceremony unless",
     "Mandatory self-improve",
     "../protocols/SELF_IMPROVE.md",
+    "Shared worktree",
+    "five minutes",
 ):
     require_text(lead, phrase, "src/common/agents/Lead.md")
+
+shared_worktree = shared_worktree_path.read_text(encoding="utf-8")
+for phrase in (
+    "assume I am not working alone",
+    "git stash",
+    "git reset",
+    "git clean",
+    "git restore",
+    "git revert",
+    "five minutes",
+    "currently being edited",
+    "final review",
+    "include it in L's commit",
+):
+    require_text(shared_worktree, phrase, "src/common/protocols/SHARED_WORKTREE.md")
+
+worker = (ROOT / "src/common/agents/Worker.md").read_text(encoding="utf-8")
+reviewer = (ROOT / "src/common/agents/Reviewer.md").read_text(encoding="utf-8")
+for text, source in ((worker, "Worker.md"), (reviewer, "Reviewer.md")):
+    require_text(text, "shared worktree", source)
+    require_text(text, "five minutes", source)
+
+if "git stash" in (ROOT / "src/common/profiles/Test.md").read_text(encoding="utf-8"):
+    fail("Test.md must not instruct agents to use git stash")
 
 self_improve = self_improve_path.read_text(encoding="utf-8")
 for phrase in (
