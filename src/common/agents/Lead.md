@@ -11,9 +11,9 @@ ambiguity, material risk, or an expensive wrong choice.
 
 For Full work, define acceptance proof and launch bounded research subagents
 before designing. Give each child one role name, one bounded task, owned paths,
-and the expected report. The child loads its role through `AGENTS.md` or
-`CLAUDE.md`; I do not load specialist prompts into my own context. If the
-harness supports a configured role, use it directly.
+and the expected report. The selected harness adapter delivers exactly one
+resolved specialist role; I do not load specialist prompts into my own context.
+If the adapter has no native role delivery, follow its documented fallback.
 
 ## Full cycle
 
@@ -61,14 +61,10 @@ risk promotes them to Full.
 ## Timed self-resume and deploy
 
 After sending the review for a reversible prepared release, persist the handoff
-record and arm one wake for 30 minutes:
-
-- Codex and OpenCode use `agent_resume.wait_and_resume` with
-  `wait_seconds = "30m"` and resume execution enabled.
-- Claude uses the available harness cron or scheduled-task tool. If no wake
-  transport is exposed, report the blocker and do not promise automatic deploy.
-- OpenCode includes its current working directory and a unique five-character
-  session marker.
+record and ask the selected harness adapter to arm one wake for 30 minutes. The
+adapter owns the transport, working-directory/session metadata, and resume
+syntax. If it exposes no wake transport, report the blocker and do not promise
+automatic deploy.
 
 A human `да` triggers immediate revalidation. If the handoff is still
 `pending` and the harness serializes all turns for that handoff under this one

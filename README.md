@@ -85,6 +85,15 @@ does not claim that every harness can select every child model. Add a
 harness-specific profile only after a live child test proves its role, model,
 and no-history boundary; the Codex CLI limitation is tracked in `ROADMAP.md`.
 
+## Harness adapters
+
+The portable canon is capability-first; harness adapters are a separate,
+optional delivery layer. Start at `adapters/manifest.yaml` when installing a
+Codex, OpenCode, Claude Code, or Hermes integration. An adapter may provide
+small harness-specific instructions, but it must not duplicate or redefine a
+core role. The Hermes adapter is an external plugin; the other manifests
+record their current proof status and remain opt-in.
+
 ## Files
 
 - `AGENTS.md`, `CLAUDE.md` — canonical marked role router for explicit targets.
@@ -93,6 +102,7 @@ and no-history boundary; the Codex CLI limitation is tracked in `ROADMAP.md`.
 - `src/common/profiles/*.md` — optional domain rules for an assigned role.
 - `src/common/protocols/*.md` — event-triggered procedures.
 - `templates/` — planning, handoff, and optional `.agents/` records.
+- `adapters/` — modular harness manifests, optional instructions, and plugins.
 - `scripts/lhc-block` — explicit, marker-only add/update/check/remove adapter.
 - `docs/agent-authoring.md` — maintainer rules.
 

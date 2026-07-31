@@ -5,7 +5,6 @@ from __future__ import annotations
 import copy
 import os
 import re
-from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -46,19 +45,26 @@ def _marker(text: str) -> str:
 
 def load_marked_project_block(cwd: Path | None = None) -> str:
     base = cwd or Path.cwd()
+    blocks = []
     for name in ("AGENTS.md", "CLAUDE.md"):
         block = _marker(_read(base / name))
         if block:
-            return block
-    return ""
+            blocks.append(block)
+    if len(blocks) == 2 and blocks[0] != blocks[1]:
+        return ""
+    return blocks[0] if blocks else ""
 
 
-@lru_cache(maxsize=8)
 def load_role_prompt(role: str) -> str:
     filename = ROLES.get(role.strip().lower())
     if not filename:
         return ""
     return _read(_root() / "common/agents" / f"{filename}.md").strip()
+
+
+def load_harness_overlay() -> str:
+    """Load only the adapter's small harness-specific overlay."""
+    return _read(Path(__file__).with_name("instructions.md")).strip()
 
 
 def _role_from_goal(goal: str) -> str | None:
@@ -70,6 +76,10 @@ def _role_from_goal(goal: str) -> str | None:
 
 
 def _context(role: str) -> str:
+    # The marker is an opt-in boundary. Its text is not injected here because
+    # a resolved role must not also receive a router telling it to load a role.
+    if not load_marked_project_block():
+        return ""
     role_prompt = load_role_prompt(role)
     if not role_prompt:
         return ""
@@ -79,9 +89,9 @@ def _context(role: str) -> str:
         "role file at runtime.",
         role_prompt,
     ]
-    block = load_marked_project_block()
-    if block:
-        parts += ["", "Explicit LHC project block:", block]
+    overlay = load_harness_overlay()
+    if overlay:
+        parts += ["", "Hermes adapter overlay:", overlay]
     return "\n\n".join(parts)
 
 

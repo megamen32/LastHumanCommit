@@ -1,0 +1,11 @@
+schema_version: 1
+harness: codex
+kind: external-adapter
+role_source: ../../src/common/agents
+optional_instructions: instructions.md
+delivery: configured-profile-or-fallback-file
+capabilities:
+  native_role_profile: unproven
+  fresh_child_context: unproven
+  model_override: unproven
+  resume_transport: unproven

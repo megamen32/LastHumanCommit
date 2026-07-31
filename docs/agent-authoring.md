@@ -39,8 +39,9 @@ installed targets byte-identical by overwriting that text.
 
 Do not add a harness-specific profile until a live child test proves the role,
 actual model, fresh-context boundary, and returned result. A profile cannot
-force a harness to change a full-history fork.
+force a harness to change a full-history fork. Put proven delivery details in
+`adapters/<harness>/`; keep the role contract in `src/common/agents/`.
 
 Do not expand `scripts/lhc-block` into an installer, daemon, hook, generator,
 or harness adapter. It owns only one explicit text block in one explicit file;
-harness-specific compilation belongs in a future roadmap item.
+harness-specific delivery belongs in the modular `adapters/` layer.

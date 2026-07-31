@@ -16,6 +16,8 @@ ROLES = (
     "Reviewer",
 )
 
+ADAPTERS = ("codex", "opencode", "claude-code", "hermes")
+
 
 def fail(message: str) -> None:
     """Exit with one readable contract failure."""
@@ -48,6 +50,49 @@ for path in (
 ):
     if not path.is_file():
         fail(f"missing text contract: {path.relative_to(ROOT)}")
+
+for adapter in ADAPTERS:
+    adapter_dir = ROOT / "adapters" / adapter
+    for path in (adapter_dir / "adapter.yaml", adapter_dir / "instructions.md"):
+        if not path.is_file():
+            fail(f"missing harness adapter contract: {path.relative_to(ROOT)}")
+    manifest = (adapter_dir / "adapter.yaml").read_text(encoding="utf-8")
+    require_text(manifest, f"harness: {adapter}", str(adapter_dir / "adapter.yaml"))
+    for key in ("role_source", "optional_instructions"):
+        prefix = f"{key}:"
+        value = next(
+            (line.split(":", 1)[1].strip() for line in manifest.splitlines()
+             if line.startswith(prefix)),
+            "",
+        )
+        if not value or not (adapter_dir / value).exists():
+            fail(f"{adapter} manifest has missing {key}: {value or '<empty>'}")
+    plugin_value = next(
+        (line.split(":", 1)[1].strip() for line in manifest.splitlines()
+         if line.startswith("plugin:")),
+        "",
+    )
+    if plugin_value and not (adapter_dir / plugin_value).is_dir():
+        fail(f"{adapter} manifest has missing plugin directory: {plugin_value}")
+    verification_value = next(
+        (line.split(":", 1)[1].strip() for line in manifest.splitlines()
+         if line.startswith("verification:")),
+        "",
+    )
+    if verification_value and not (adapter_dir / verification_value).is_file():
+        fail(f"{adapter} manifest has missing verification file: {verification_value}")
+
+manifest_path = ROOT / "adapters/manifest.yaml"
+if not manifest_path.is_file():
+    fail("missing adapters/manifest.yaml")
+require_text(
+    manifest_path.read_text(encoding="utf-8"),
+    "schema_version: 1",
+    "adapters/manifest.yaml",
+)
+manifest_text = manifest_path.read_text(encoding="utf-8")
+for adapter in ADAPTERS:
+    require_text(manifest_text, f"adapters/{adapter}/adapter.yaml", "adapters/manifest.yaml")
 
 if (ROOT / "CANON.md").exists():
     fail("CANON.md must be absent; AGENTS.md is the portable router")
@@ -180,12 +225,10 @@ for phrase in (
 require_text(roadmap, "Codex custom-agent routing", "ROADMAP.md")
 require_text(roadmap, "actual model", "ROADMAP.md")
 
-if "agent_resume" not in lead and "available harness cron" not in lead:
-    fail("src/common/agents/Lead.md must self-resume via agent_resume or available harness cron")
+require_text(lead, "selected harness adapter to arm one wake", "src/common/agents/Lead.md")
 
 require_text(roadmap, "## Proposed", "ROADMAP.md")
-require_text(roadmap, "Agents Capable Start", "ROADMAP.md")
-require_text(roadmap, "Agents Capable End", "ROADMAP.md")
+require_text(roadmap, "adapter overlays additive", "ROADMAP.md")
 
 release = release_path.read_text(encoding="utf-8")
 for phrase in (

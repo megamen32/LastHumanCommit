@@ -44,11 +44,25 @@ Status: done
 - [x] M4.4 Make L own timed self-resume, revalidation, and deployment.
 - [x] M4.5 Complete a whole-repository review and close stale contracts.
 
+## M5 — Modular harness adapters
+
+Status: in progress
+
+- [x] M5.1 Keep role/protocol semantics in the capability-first core and define
+  the adapter manifest and evidence states.
+- [x] M5.2 Move the Hermes integration under `adapters/hermes/plugin/` and
+  preserve it as an external plugin rather than a Hermes source change.
+- [x] M5.3 Add opt-in Codex, OpenCode, and Claude Code adapter contracts with
+  optional harness-specific instructions.
+- [x] M5.4 Reinstall and verify Hermes from the canonical adapter path, then
+  update the remote plugin without breaking the existing user config.
+- [ ] M5.5 Add live child proof for each native adapter before marking its
+  model, role, fresh-context, or resume capability `proven`.
+- [x] M5.6 Keep adapter overlays additive; do not create subtractive
+  `Agents Capable Start/End` variants of the portable canon.
+
 ## Proposed
 
-- [ ] Treat instruction files as installable templates with optional
-  `Agents Capable Start` / `Agents Capable End` sections that a future
-  harness adapter may remove when native role injection is configured.
 - [ ] Run a held-out local benchmark: strong Lead alone; Lead plus one cheap
   Worker; Lead plus parallel cheap Workers; cheap Worker alone; and a
   full-history expensive fork control. Measure accepted tasks, end-to-end

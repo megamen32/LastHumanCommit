@@ -21,11 +21,15 @@ def test_marker_reader_is_outside_text_safe(tmp_path):
 
 
 def test_middleware_rewrites_single_delegate_without_touching_other_tools(tmp_path, monkeypatch):
+    (tmp_path / "AGENTS.md").write_text(
+        "<!-- last-human-commit:begin -->\nrouter\n"
+        "<!-- last-human-commit:end -->\n", encoding="utf-8"
+    )
     role = tmp_path / "common/agents/Worker.md"
     role.parent.mkdir(parents=True)
     role.write_text("# Worker\ncomplete role body", encoding="utf-8")
     monkeypatch.setenv("LAST_HUMAN_COMMIT_ROOT", str(tmp_path))
-    lhc.load_role_prompt.cache_clear()
+    monkeypatch.chdir(tmp_path)
     result = lhc.rewrite_delegate_task(
         "delegate_task", {"goal": "[LHC_ROLE=worker] implement", "context": "facts"}
     )
@@ -38,3 +42,15 @@ def test_middleware_rewrites_batch_and_rejects_unknown_role():
     args = {"tasks": [{"goal": "[LHC_ROLE=coder] no-op"}]}
     result = lhc.rewrite_delegate_task("delegate_task", args)
     assert result == {"args": args}
+
+
+def test_conflicting_marker_files_fail_closed(tmp_path):
+    (tmp_path / "AGENTS.md").write_text(
+        "<!-- last-human-commit:begin -->\na\n<!-- last-human-commit:end -->\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "CLAUDE.md").write_text(
+        "<!-- last-human-commit:begin -->\nb\n<!-- last-human-commit:end -->\n",
+        encoding="utf-8",
+    )
+    assert lhc.load_marked_project_block(tmp_path) == ""
