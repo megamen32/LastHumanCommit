@@ -1,5 +1,5 @@
 #!/bin/sh
-# Behavioral checks for the narrow, explicit LastHumanCommit block adapter.
+# Behavioral checks for the narrow, explicit Last Human Commit block adapter.
 set -eu
 
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)

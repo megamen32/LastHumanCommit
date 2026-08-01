@@ -1,6 +1,6 @@
 # Harness adapters
 
-The adapter layer is the boundary between the portable LastHumanCommit canon
+The adapter layer is the boundary between the portable Last Human Commit instructions
 and a host's agent API. It is intentionally modular: installing or enabling
 one adapter does not install, configure, or rewrite another harness.
 
@@ -29,7 +29,7 @@ provider is routable on every installation.
 
 Codex, OpenCode, and Claude Code run the core `SELF_IMPROVE.md` retrospective
 before L's final answer. It records concrete friction and a small proposed
-remedy in the project-local LHC log; it does not mutate the canon or install
+remedy in the project-local LHC log; it does not mutate LHC or install
 tools by itself. Hermes declares `self_improve: hermes-native`: its own
 post-response memory/skill review and `/learn` flow already own this work, so
 the adapter must not duplicate the loop.

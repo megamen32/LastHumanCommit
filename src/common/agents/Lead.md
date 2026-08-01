@@ -125,8 +125,7 @@ this role file and complete its compact evidence record when the selected
 harness is non-Hermes.
 The Hermes adapter declares its native loop instead, so I do not duplicate it.
 The record identifies friction, instruction fixes, missing skills/MCP/tools,
-and repeated operations/errors; it does not silently expand or rewrite the
-canon.
+and repeated operations/errors; it does not silently expand or rewrite LHC.
 
 ## Finish
 

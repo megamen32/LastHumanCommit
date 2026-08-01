@@ -1,4 +1,4 @@
-# Outcome-first canon correction
+# Outcome-first LHC correction
 
 Status: complete, deployed, proven, and published
 Session: 019fbe04-b90d-7703-af85-9e5671758e6a
@@ -27,7 +27,7 @@ plugin 4/4; routers byte-identical; git diff check clean.
 
 Release staging is restricted to:
 
-- .agents/tasks/work-20260801-outcome-first-canon.md
+- .agents/tasks/work-20260801-outcome-first-lhc.md
 - AGENTS.md
 - CLAUDE.md
 - README.md
@@ -112,7 +112,7 @@ Critic corrections resolved:
 
 Publication:
 
-- LastHumanCommit origin/main includes fd3165d, source release c4f25c8, and
+- Last Human Commit origin/main includes fd3165d, source release c4f25c8, and
   runtime evidence fd8436e.
 - TelegramAuto marker commit 628bf79 is live and committed locally but not
   pushed: its main contains dozens of pre-existing unpublished commits, so

@@ -24,7 +24,7 @@ Keep instructions short, operational, and proportional:
 - Templates store decisions and state, not a second normative workflow.
 - `profiles/Planning.md` owns Full-work estimate and re-decomposition rules.
 - `protocols/SELF_IMPROVE.md` owns the non-Hermes end-of-task retrospective;
-  it records concrete friction and proposals without silently changing canon.
+  it records concrete friction and proposals without silently changing LHC.
 - `protocols/SHARED_WORKTREE.md` owns collaboration safety: no cleanup of
   foreign edits, five-minute active-edit protection, and final integration
   review by L.
@@ -40,11 +40,11 @@ The marker lines are an ownership boundary:
 
 ```html
 <!-- last-human-commit:begin -->
-… LastHumanCommit owns only this content …
+… Last Human Commit owns only this content …
 <!-- last-human-commit:end -->
 ```
 
-When applying the canon to a project, preserve every byte outside the block.
+When applying LHC to a project, preserve every byte outside the block.
 Use `scripts/lhc-block` with an explicit source and target; it must fail closed
 for missing, duplicate, nested, reversed, or malformed marker pairs. A project
 may have different project-owned text in `AGENTS.md` and `CLAUDE.md`; never make

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Validate the small, dependency-free YAGNI text canon."""
+"""Validate the small, dependency-free YAGNI LHC text contract."""
 
 from pathlib import Path
+import re
 import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -189,6 +190,36 @@ for source, text in normative.items():
         if forbidden.lower() in text.lower():
             fail(f"{source} contains stale ownership or source: {forbidden}")
 
+lhc_naming_surfaces = {
+    relative: (ROOT / relative).read_text(encoding="utf-8")
+    for relative in (
+        "README.md",
+        "adapters/README.md",
+        "adapters/hermes/instructions.md",
+        "adapters/hermes/plugin/README.md",
+        "adapters/hermes/plugin/instructions.md",
+        "adapters/hermes/plugin/plugin.yaml",
+        "adapters/hermes/plugin/__init__.py",
+        "docs/agent-authoring.md",
+        "scripts/lhc-block",
+        "src/common/agents/Lead.md",
+        "src/common/protocols/SELF_IMPROVE.md",
+        "templates/.agents/self-improve.md",
+    )
+}
+for source, text in lhc_naming_surfaces.items():
+    normalized_text = " ".join(text.split())
+    for deprecated in (
+        "LastHuman" + "Commit",
+        "the " + "canon",
+        "portable " + "canon",
+        "rewrite the " + "canon",
+        "mutate the " + "canon",
+        "applying the " + "canon",
+    ):
+        if re.search(rf"\b{re.escape(deprecated)}\b", normalized_text, re.IGNORECASE):
+            fail(f"{source} uses deprecated LHC product wording: {deprecated}")
+
 for phrase in (
     "Максимально идеальный",
     "Нормальный",
@@ -339,7 +370,7 @@ for phrase in (
     "Which skill, MCP, or tool is missing?",
     "What operation or error repeated?",
     "same fingerprint",
-    "Do not silently rewrite the canon",
+    "Do not silently rewrite LHC",
 ):
     require_text(self_improve, phrase, "src/common/protocols/SELF_IMPROVE.md")
 

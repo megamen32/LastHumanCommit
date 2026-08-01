@@ -1,4 +1,4 @@
-"""External Hermes adapter for LastHumanCommit child-task instructions."""
+"""External Hermes adapter for Last Human Commit child-task instructions."""
 
 from __future__ import annotations
 
@@ -84,7 +84,7 @@ def _context(role: str) -> str:
     if not role_prompt:
         return ""
     parts = [
-        f"[LastHumanCommit child role: {role}]",
+        f"[Last Human Commit child role: {role}]",
         "The following is the complete role context. Do not load another "
         "role file at runtime.",
         role_prompt,
@@ -101,7 +101,7 @@ def _role_item(item: dict[str, Any]) -> dict[str, Any]:
     if not role:
         return result
     context = _context(role)
-    if context and "[LastHumanCommit child role:" not in str(result.get("context") or ""):
+    if context and "[Last Human Commit child role:" not in str(result.get("context") or ""):
         existing = str(result.get("context") or "").strip()
         result["context"] = "\n\n".join(x for x in (context, existing) if x)
     return result

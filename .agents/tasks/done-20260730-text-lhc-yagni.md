@@ -1,11 +1,11 @@
-# Text-first LastHumanCommit canon
+# Text-first Last Human Commit
 
 Superseded on 2026-07-30 by
 `.agents/tasks/done-20260730-role-router-yagni.md`. This file preserves the
 historical decision record; its `CANON.md` and external-ownership design is not
 current instruction.
 
-Outcome: LastHumanCommit remains a simple copy-paste text canon. Agent Fleet or
+Outcome: LHC remains a simple copy-paste instruction set. Agent Fleet or
 another external adapter owns installation, synchronization, scheduling, and
 harness-specific deployment.
 
@@ -66,4 +66,4 @@ completed (UTC+3): 2026-07-30
   integrated.
 - Safety branch `safety/pre-origin-main-reconcile-20260730` preserves the
   pre-merge state. A normal merge incorporates remote commit `568ef2c`; its
-  stale README was resolved to the reviewed text-only canon.
+  stale README was resolved to the reviewed text-only LHC instructions.

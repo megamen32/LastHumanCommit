@@ -1,4 +1,4 @@
-# LastHumanCommit
+# Last Human Commit
 
 > A small, human-gated instruction set for cheaper multi-agent coding.
 
@@ -24,7 +24,7 @@ scripts/lhc-block apply AGENTS.md /path/to/project/AGENTS.md
 scripts/lhc-block apply CLAUDE.md /path/to/project/CLAUDE.md
 ```
 
-`init` appends the canonical block only when the target has no marker lines;
+`init` appends the canonical LHC block only when the target has no marker lines;
 `apply` requires one valid block and replaces only its contents. Both refuse
 malformed, nested, or duplicate blocks without writing. The adapter never
 discovers paths, creates project directories, changes host configuration, or
@@ -92,14 +92,14 @@ small instruction set.
 
 ## Routing boundary
 
-The canon names model classes and requires fresh, scoped cheap-child work. It
+LHC names model classes and requires fresh, scoped cheap-child work. It
 does not claim that every harness can select every child model. Add a
 harness-specific profile only after a live child test proves its role, model,
 and no-history boundary; the Codex CLI limitation is tracked in `ROADMAP.md`.
 
 ## Harness adapters
 
-The portable canon is capability-first; harness adapters are a separate,
+The portable LHC instructions are capability-first; harness adapters are a separate,
 optional delivery layer. Start at `adapters/manifest.yaml` when installing a
 Codex, OpenCode, Claude Code, or Hermes integration. An adapter may provide
 small harness-specific instructions, but it must not duplicate or redefine a

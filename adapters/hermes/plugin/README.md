@@ -1,4 +1,4 @@
-# LastHumanCommit plugin for Hermes
+# Last Human Commit plugin for Hermes
 
 This external plugin does not modify Hermes source code or project instruction
 files. Enable `last-human-commit` in `~/.hermes/config.yaml` under

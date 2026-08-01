@@ -2,7 +2,7 @@
 
 Priority order: top first.
 
-## M1 — Clear reusable canon
+## M1 — Clear reusable LHC
 
 Status: done
 
@@ -32,7 +32,7 @@ Status: done
 - [x] M3.2 Require research and human selection among three plans for full work.
 - [x] M3.3 Add WSFF planning views and model-class guidance.
 - [x] M3.4 Add Russian mobile commit review and timed release handoff.
-- [x] M3.5 Make the core canon copy-paste portable and internally consistent.
+- [x] M3.5 Make the LHC core copy-paste portable and internally consistent.
 
 ## M4 — Portable role router correction
 
@@ -60,7 +60,7 @@ Status: in progress
 - [ ] M5.5 Add live child proof for each native adapter before marking its
   model, role, fresh-context, or resume capability `proven`.
 - [x] M5.6 Keep adapter overlays additive; do not create subtractive
-  `Agents Capable Start/End` variants of the portable canon.
+  `Agents Capable Start/End` variants of the portable LHC instructions.
 - [x] M5.7 Add a mandatory, bounded self-improve record for every non-Hermes
   L. Hermes retains its native post-response memory/skill review instead of a
   duplicate LHC loop.
@@ -75,13 +75,19 @@ Status: done
 - [x] M6.1 Make real outcome proof and selected scope the public authoring gate;
   forbid unsolicited secondary hardening or broad review unless user-confirmed
   or strictly required for the shortest safe business canary.
-- [x] M6.2 Prove the aligned contract in canonical roles, profiles, templates,
+- [x] M6.2 Prove the aligned contract in LHC roles, profiles, templates,
   validation, applied project markers, and the installed version before making
   any runtime deployment claim. Plan selection is recorded in
-  `.agents/tasks/work-20260801-outcome-first-canon.md`.
+  `.agents/tasks/work-20260801-outcome-first-lhc.md`.
 
 ## Proposed
 
+- [x] Add a generic Agent Fleet versioned-directory rollout action: accept a
+  committed payload plus per-host router/project/plugin overrides, preview the
+  exact target matrix, preserve marker-external text, switch `current`
+  atomically, retain rollback receipts, and verify full-tree digests. Keep it
+  generic rather than adding an LHC-specific API branch. Implemented as
+  Agent Fleet's `$lhc-rollout` skill over the generic skill-sync API.
 - [ ] Run a held-out local benchmark: strong Lead alone; Lead plus one cheap
   Worker; Lead plus parallel cheap Workers; cheap Worker alone; and a
   full-history expensive fork control. Measure accepted tasks, end-to-end
@@ -96,7 +102,7 @@ Status: done
   on final task outcome and human rework, not cost alone.
 - [ ] Record available subscription/API quota buckets, reset times,
   concurrency, and relative burn rates. This is future measurement data, not a
-  scheduler or runtime service in the core canon.
+  scheduler or runtime service in the LHC core.
 - [ ] Re-test Codex custom-agent routing before adding harness-specific Codex
   project profiles. On the current CLI, a custom `agent_type` is rejected as
   unknown and a prompt can answer without spawning a child. Require a real

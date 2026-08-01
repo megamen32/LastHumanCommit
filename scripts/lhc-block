@@ -1,5 +1,5 @@
 #!/bin/sh
-# Manage only one explicit LastHumanCommit block in one explicitly named file.
+# Manage only one explicit Last Human Commit block in one explicitly named file.
 set -eu
 
 BEGIN='<!-- last-human-commit:begin -->'
@@ -15,7 +15,7 @@ usage:
   lhc-block check TARGET
   lhc-block remove-block TARGET
 
-SOURCE must contain exactly one complete LastHumanCommit marker block. TARGET is
+SOURCE must contain exactly one complete Last Human Commit marker block. TARGET is
 always explicit; this tool never discovers files, creates directories, or
 changes content outside that block.
 EOF

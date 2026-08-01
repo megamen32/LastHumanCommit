@@ -37,7 +37,7 @@ four questions:
   remedy.
 - Classify each signal as `fixed now`, `Proposed`, `needs human decision`, or
   `not actionable`. Put unselected work under `ROADMAP.md` → `Proposed`.
-- Do not silently rewrite the canon, add a skill, install an MCP, or change
+- Do not silently rewrite LHC, add a skill, install an MCP, or change
   harness configuration from one retrospective. Make an immediate small fix
   only when it is clearly in the user's current scope; otherwise preserve the
   concrete proposal for later selection.

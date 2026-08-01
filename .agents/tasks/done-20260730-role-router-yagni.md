@@ -40,7 +40,7 @@ Evidence: red `FAIL: missing text contract: CLAUDE.md`; green
 
 ## Result
 
-Summary: Replaced the duplicated canon with a portable role router, moved the
+Summary: Replaced the duplicated LHC instructions with a portable role router, moved the
 full workflow and timed self-resume to L, restored every original model alias,
 and removed invented ownership and Web rules.
 Tests: `python3 tests/validate.py`; `git diff --check`;
