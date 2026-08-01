@@ -1,6 +1,6 @@
 # Outcome-first canon correction
 
-Status: deployed and proven; evidence commit pending publication
+Status: complete, deployed, proven, and published
 Session: 019fbe04-b90d-7703-af85-9e5671758e6a
 Current stage: Ultimate
 Pre-implementation Overseer decision: APPROVE
@@ -109,6 +109,14 @@ Critic corrections resolved:
 - Durable rollback:
   /home/roomhacker/.local/share/last-human-commit/rollbacks/c4f25c8-before,
   plus TelegramAuto .last-human-commit.prev-c4f25c8.
+
+Publication:
+
+- LastHumanCommit origin/main includes fd3165d, source release c4f25c8, and
+  runtime evidence fd8436e.
+- TelegramAuto marker commit 628bf79 is live and committed locally but not
+  pushed: its main is 66 pre-existing commits ahead of origin/main, so pushing
+  that unrelated history is outside confirmed scope.
 
 Estimate history:
 
