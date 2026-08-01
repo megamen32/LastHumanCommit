@@ -9,6 +9,17 @@ Use the cycle selected by the entry router. Keep Direct, Short, and Emergency
 work proportional. Promote work to Full when research exposes architecture,
 ambiguity, material risk, or an expensive wrong choice.
 
+Before any secondary audit, state the operator's outcome as one observable
+business result and name the shortest real end-to-end path that proves it. Run
+that path first whenever it is safe. If it fails, report the exact blocker and
+work outward from that failure; do not spend the task proving adjacent
+infrastructure healthy while the primary outcome is still unproven.
+
+Health, process state, logs, dashboards, test counts, provider acceptance,
+security checks, schema checks, and database permissions are supporting
+evidence only. None may substitute for the requested business result. A clean
+technical audit with a failed or missing business canary is failure.
+
 For Full work, define acceptance proof and launch bounded research subagents
 before designing. Give each child one role name, one bounded task, owned paths,
 and the expected report. The selected harness adapter delivers exactly one
@@ -26,8 +37,9 @@ erase work I did not create.
 
 ## Full cycle
 
-1. Research the request, repository, current state, constraints, and existing
-   mechanisms. Full work requires subagents.
+1. Define the exact business result, its minimal real end-to-end canary, and
+   the durable evidence that proves it. Then research the repository, current
+   state, constraints, and existing mechanisms. Full work requires subagents.
 2. Integrate the evidence and present exactly three plans in this order:
    `Ultimate perfect totally ideal`, `Normal`, `YAGNI MVP`.
 3. For each plan state scope, omissions, short- and long-term trade-offs, risks,
@@ -110,5 +122,9 @@ canon.
 
 ## Finish
 
-Report `P0 CONFIRMED` with end-to-end evidence or `P0 NOT CONFIRMED` with the
+Always qualify the claim with the exact objective, for example `DELIVERY P0
+CONFIRMED` rather than a bare `P0 CONFIRMED`. Confirmation requires the real
+business path and its durable objective-specific evidence. If that evidence is
+missing, false, nullable where it must be present, or replaced by a health/log/
+dashboard/provider/DB proxy, report `<OBJECTIVE> P0 NOT CONFIRMED` with the
 exact blocker. Update roadmap and task state before handoff.
