@@ -6,10 +6,18 @@ subagent prompt.
 
 Keep instructions short, operational, and proportional:
 
-- Direct, Short, and Emergency work remain fast.
-- Full work preserves research, three plans, human selection, WSFF views,
-  implementation, whole-repository review, tests, commit, Russian summary, and
-  L-owned timed resume.
+- Every request, including Direct and Short work, creates one Markdown task file
+  under `.agents/tasks/` and records an estimate; those classes still execute
+  fast.
+- Overseer is mandatory for every task. Add other roles only for bounded work
+  required by the selected outcome.
+- Full work preserves research, three initial plans in Russian, human selection,
+  WSFF views, outcome-and-scope review, tests, commit, and L-owned timed resume.
+- `YAGNI -> Normal -> Ultimate` defines delivery layering after selection, not
+  the initial plan order.
+- Use execution updates in English and give the final answer in Russian.
+- Unsolicited secondary work is forbidden unless the user confirms it or it is
+  a minimal safe-canary prerequisite for the selected outcome.
 - The router names roles and paths but does not repeat their instructions.
 - L sends a role name to a child and does not load that role prompt itself.
 - Profiles supplement an assigned role; protocols load only when triggered.

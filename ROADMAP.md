@@ -42,7 +42,8 @@ Status: done
 - [x] M4.2 Route every known role to one independently loadable prompt.
 - [x] M4.3 Restore the full provider/model role map.
 - [x] M4.4 Make L own timed self-resume, revalidation, and deployment.
-- [x] M4.5 Complete a whole-repository review and close stale contracts.
+- [x] M4.5 Complete an outcome-and-affected-scope contract review and close
+  stale contracts within that boundary.
 
 ## M5 — Modular harness adapters
 
@@ -66,6 +67,18 @@ Status: in progress
 - [x] M5.8 Treat every worktree as shared: preserve foreign edits, protect
   files changed within five minutes, and review older changes before L commits
   them with the completed task.
+
+## M6 — Outcome-first workflow contract
+
+Status: in progress
+
+- [x] M6.1 Make real outcome proof and selected scope the public authoring gate;
+  forbid unsolicited secondary hardening or broad review unless user-confirmed
+  or strictly required for the shortest safe business canary.
+- [ ] M6.2 Prove the aligned contract in canonical roles, profiles, templates,
+  validation, applied project markers, and the installed version before making
+  any runtime deployment claim. Plan selection is recorded in
+  `.agents/tasks/work-20260801-outcome-first-canon.md`.
 
 ## Proposed
 

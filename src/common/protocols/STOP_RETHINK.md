@@ -5,10 +5,33 @@ independent attempts, on conflicting evidence, when the user repeats that P0/P1
 still fails, when the target shares the failed failure domain, when scope must
 expand materially, or when framework/process grows without user progress.
 
-Before writing, delegate an Explorer child for external/current solution
-research when known tools, projects, official documentation, or alternative
-components may exist. Give the child the Explorer role; L does not load the
-Explorer prompt.
+## Terminal scope drift
+
+`STOP_SCOPE_DRIFT` is terminal for unauthorized scope expansion beyond the
+original user request, confirmed scope, explicit exclusions, or the failed
+canary's dependency chain. When it is raised:
+
+1. Preserve the evidence without changing or cleaning the conflicting work.
+2. Report the exact mismatch and required stop to L.
+3. Update the task record with the timestamp, stage, evidence, and
+   `STOP_SCOPE_DRIFT` decision.
+4. After plan selection, write in English; before plan selection, write in
+   Russian.
+5. Do not launch Explorer.
+6. Do not generate alternatives.
+7. Stop until explicit human scope confirmation is recorded in the task.
+
+Do not investigate, implement, review, or otherwise resume work after this
+decision until that confirmation exists.
+
+## Architectural STOP/RETHINK
+
+Architectural STOP/RETHINK applies to the non-scope triggers above. It may use
+one bounded Explorer for external/current solution research when known tools,
+projects, official documentation, or alternative components may exist. Give
+the child the Explorer role; L does not load the Explorer prompt. This branch
+may generate alternatives because it is choosing a path inside confirmed
+scope, not seeking permission to expand scope.
 
 The user message must contain:
 
@@ -26,5 +49,5 @@ The user message must contain:
 8. One user question only when a decision is genuinely required; none when the
    answer is already clear.
 
-Use Russian when this is an architectural decision. Do not silently resume the
-same path after sending STOP/RETHINK.
+Before plan selection, write in Russian. After plan selection, write in English.
+Do not silently resume the same path after sending architectural STOP/RETHINK.

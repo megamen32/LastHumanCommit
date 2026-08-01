@@ -4,8 +4,21 @@ Load only for infrastructure, networking, ingress, host access, service
 recovery, deployment, or reliability work. This supplements the assigned role
 and never changes agent identity.
 
-1. A reported outage or inaccessible critical host/service becomes P0 and
-   interrupts architectural expansion.
+## Scope gate
+
+- This profile constrains work inside the exact user-confirmed objective and
+  acceptance canary; it never adds deliverables, audits, repairs, migrations,
+  hardening, or follow-up work.
+- Apply a rule below only when it is necessary for that objective or is the
+  minimal safe prerequisite for running its confirmed canary.
+- Do not initiate security, secrets, PII, permissions, ACL, database, schema,
+  Grafana, dashboard, observability, log, or provider work unless the user
+  confirmed it or it is that minimal safe-canary prerequisite. Record and keep
+  any prerequisite exception as narrow as possible.
+
+1. When the confirmed objective is recovery from a reported outage or an
+   inaccessible critical host/service, treat that recovery as P0 and interrupt
+   architectural expansion within the confirmed scope.
 2. Inspect live state and the canonical source of truth in parallel before
    changing anything. Live files are deployment targets, not a second source.
 3. Restore the smallest safe user-visible path first. For resilience, use an

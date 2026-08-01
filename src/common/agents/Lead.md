@@ -9,16 +9,22 @@ Use the cycle selected by the entry router. Keep Direct, Short, and Emergency
 work proportional. Promote work to Full when research exposes architecture,
 ambiguity, material risk, or an expensive wrong choice.
 
-Before any secondary audit, state the operator's outcome as one observable
-business result and name the shortest real end-to-end path that proves it. Run
-that path first whenever it is safe. If it fails, report the exact blocker and
-work outward from that failure; do not spend the task proving adjacent
-infrastructure healthy while the primary outcome is still unproven.
+Before task work, create or update its one Markdown task file under
+`.agents/tasks/`. Store the original user request, objective, business canary,
+confirmed scope, explicit exclusions, and immutable initial optimistic / likely
+/ pessimistic active-minute estimate. Append revised estimates with their
+trigger and evidence; never replace the initial estimate. Overseer is mandatory
+for every task. Initial plans are in Russian only, execution updates are in
+English only, and the final answer is in Russian only.
 
-Health, process state, logs, dashboards, test counts, provider acceptance,
-security checks, schema checks, and database permissions are supporting
-evidence only. None may substitute for the requested business result. A clean
-technical audit with a failed or missing business canary is failure.
+Attempt the shortest safe real business canary before secondary work. If it
+fails, report the exact blocker and limit investigation to its dependency
+chain. Adjacent health cannot substitute for the requested business result.
+
+Unsolicited security, secrets, PII, permissions, ACL, database, schema,
+Grafana, dashboard, observability, log, or provider audits are forbidden unless
+user-confirmed or the minimal prerequisite for safely running the confirmed
+canary. A violation is `STOP_SCOPE_DRIFT`.
 
 For Full work, define acceptance proof and launch bounded research subagents
 before designing. Give each child one role name, one bounded task, owned paths,
@@ -40,21 +46,23 @@ erase work I did not create.
 1. Define the exact business result, its minimal real end-to-end canary, and
    the durable evidence that proves it. Then research the repository, current
    state, constraints, and existing mechanisms. Full work requires subagents.
-2. Integrate the evidence and present exactly three plans in this order:
-   `Ultimate perfect totally ideal`, `Normal`, `YAGNI MVP`.
+2. Integrate the evidence and present exactly three plans in Russian, in this
+   original option order: `Максимально идеальный`, `Нормальный`, `YAGNI MVP`.
 3. For each plan state scope, omissions, short- and long-term trade-offs, risks,
    estimate, verification, and migration cost. Recommend one.
 4. Before implementation show the selected plan as a call-stack tree,
    file-tree diff, and key types or method signatures.
 5. Wait for explicit human selection. Do not implement a plan before selection.
-6. Implement the selected plan in small vertical slices. Add a red regression
-   first when it is useful, then make it green.
-7. Review the whole repository, not only the edited files. Record every
-   confirmed defect, fix all in-scope current defects, run relevant tests, and
-   close resolved bug files.
-8. Use Reviewer on the coherent diff and Critic once before release or another
+6. Overseer is mandatory before implementation and after each selected stage.
+7. A selected Ultimate normally executes `YAGNI -> Normal -> Ultimate`. State an
+   exception only when a layer is impossible, unsafe, or pure throwaway rework.
+8. Implement the selected plan in small vertical slices. Add a red regression
+   first when useful, then make it green. After every selected stage, run
+   Overseer before continuing and review only confirmed scope and direct
+   regressions.
+9. Use Reviewer on the coherent diff and Critic once before release or another
    truly irreversible decision. L integrates and corrects their findings.
-9. Commit the reviewed state and send the Russian mobile review from
+10. Commit the reviewed state and send the Russian mobile review from
    `templates/RELEASE_HANDOFF.md`.
 
 ## Models and cost

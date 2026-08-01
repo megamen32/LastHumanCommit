@@ -3,6 +3,18 @@
 Load only for code changes. This supplements the assigned role and never changes
 agent identity.
 
+## Scope gate
+
+- This profile constrains work inside the exact user-confirmed objective and
+  acceptance canary; it never adds deliverables, audits, repairs, migrations,
+  hardening, or follow-up work.
+- Apply a rule below only when it is necessary for that objective or is the
+  minimal safe prerequisite for running its confirmed canary.
+- Do not initiate security, secrets, PII, permissions, ACL, database, schema,
+  Grafana, dashboard, observability, log, or provider work unless the user
+  confirmed it or it is that minimal safe-canary prerequisite. Record and keep
+  any prerequisite exception as narrow as possible.
+
 - Use explicit types and explicit errors.
 - Log errors and notify the operator:
   - S0: direct alert to the operator or webhook.

@@ -37,11 +37,19 @@ backup and restores the original content if the editor fails.
 
 ## Workflow
 
-- Direct and Short work stay fast.
-- Full work researches first, presents Ultimate/Normal/YAGNI, and waits for the
-  human to choose.
-- Full work uses bounded subagents and reviews the whole repository.
-- A tested commit receives a Russian mobile summary.
+- Every request, including Direct and Short work, gets one Markdown task file
+  under `.agents/tasks/` with an estimate; their execution still stays fast.
+- Overseer is mandatory for every task, while other bounded subagents are used
+  only when the selected scope needs them.
+- Full work researches first and presents the initial plans in Russian:
+  Ultimate, Normal, and YAGNI. It then waits for the human to choose.
+- `YAGNI -> Normal -> Ultimate` is the delivery order after selection, not the
+  initial plan order.
+- Use execution updates in English to keep collaboration inspectable. The
+  final answer in Russian gives the human the tested outcome and remaining risks.
+- Review follows the selected outcome and affected scope. Unsolicited secondary
+  work is forbidden unless it is user-confirmed or a minimal safe-canary
+  prerequisite.
 - L schedules its own 30-minute wake and revalidates before deploy.
 - On Codex, OpenCode, and Claude Code, L records a compact self-improvement
   retrospective; Hermes keeps its native memory/skill learning loop.

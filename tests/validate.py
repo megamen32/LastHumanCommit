@@ -29,6 +29,11 @@ def require_text(text: str, phrase: str, source: str) -> None:
         fail(f"{source} lacks: {phrase}")
 
 
+def require_absent(text: str, phrase: str, source: str) -> None:
+    if " ".join(phrase.split()) in " ".join(text.split()):
+        fail(f"{source} still contains forbidden text: {phrase}")
+
+
 agents_path = ROOT / "AGENTS.md"
 claude_path = ROOT / "CLAUDE.md"
 lead_path = ROOT / "src/common/agents/Lead.md"
@@ -185,8 +190,8 @@ for source, text in normative.items():
             fail(f"{source} contains stale ownership or source: {forbidden}")
 
 for phrase in (
-    "Ultimate perfect totally ideal",
-    "Normal",
+    "Максимально идеальный",
+    "Нормальный",
     "YAGNI MVP",
     "explicit human selection",
     "30 minutes",
@@ -206,7 +211,6 @@ for alias in (
 
 for phrase in (
     "I do not load specialist prompts into my own context",
-    "Review the whole repository",
     "Reviewer",
     "Critic once",
     "For Full work, load `../profiles/Planning.md` relative to this role file before presenting plans.",
@@ -235,9 +239,93 @@ for phrase in (
 
 worker = (ROOT / "src/common/agents/Worker.md").read_text(encoding="utf-8")
 reviewer = (ROOT / "src/common/agents/Reviewer.md").read_text(encoding="utf-8")
+overseer = (ROOT / "src/common/agents/Overseer.md").read_text(encoding="utf-8")
 for text, source in ((worker, "Worker.md"), (reviewer, "Reviewer.md")):
     require_text(text, "shared worktree", source)
     require_text(text, "five minutes", source)
+
+workflow_contracts = {
+    "AGENTS.md router": (
+        router,
+        (
+            "create or update one Markdown task file under",
+            ".agents/tasks/",
+            "initial active-minute estimate",
+            "Overseer is mandatory for every task",
+            "Initial plans are written in Russian",
+            "implementation progress is written in English",
+            "final answer is written in Russian",
+        ),
+    ),
+    "src/common/agents/Lead.md": (
+        lead,
+        (
+            "original user request",
+            ".agents/tasks/",
+            "confirmed scope",
+            "YAGNI -> Normal -> Ultimate",
+            "Overseer is mandatory",
+            "STOP_SCOPE_DRIFT",
+            "Initial plans are in Russian",
+            "execution updates are in English",
+            "final answer is in Russian",
+        ),
+    ),
+    "src/common/agents/Overseer.md": (
+        overseer,
+        (
+            "original user request",
+            "confirmed scope",
+            "STOP_SCOPE_DRIFT",
+            "unsolicited security",
+        ),
+    ),
+    "src/common/agents/Worker.md": (
+        worker,
+        (
+            "task record",
+            "confirmed scope",
+            "I do not add helpful extras",
+        ),
+    ),
+    "src/common/agents/Reviewer.md": (
+        reviewer,
+        (
+            "business canary succeeds",
+            "direct regressions",
+            "outside-scope fixes",
+        ),
+    ),
+}
+for source, (text, phrases) in workflow_contracts.items():
+    for phrase in phrases:
+        require_text(text, phrase, source)
+
+for category in (
+    "security",
+    "secrets",
+    "PII",
+    "permissions",
+    "ACL",
+    "database",
+    "schema",
+    "Grafana",
+    "dashboard",
+    "observability",
+    "log",
+    "provider",
+):
+    require_text(overseer, category, "src/common/agents/Overseer.md")
+for phrase in (
+    "maximum-severity unauthorized drift",
+    "user-confirmed scope",
+    "minimal prerequisite for safely running the confirmed canary",
+):
+    require_text(overseer, phrase, "src/common/agents/Overseer.md")
+
+require_absent(lead, "Review the whole repository", "src/common/agents/Lead.md")
+if lead.index("Overseer is mandatory") > lead.index("Implement the selected plan"):
+    fail("Lead.md invokes mandatory Overseer after implementation starts")
 
 if "git stash" in (ROOT / "src/common/profiles/Test.md").read_text(encoding="utf-8"):
     fail("Test.md must not instruct agents to use git stash")
@@ -266,7 +354,8 @@ require_text(hermes_adapter, "self_improve: hermes-native", "hermes adapter")
 
 planning = planning_path.read_text(encoding="utf-8")
 for phrase in (
-    "Use this profile for Full work",
+    "Use this profile for every task",
+    "Every task record has an initial estimate",
     "optimistic / likely / pessimistic",
     "relative cost",
     "more than 20 likely active minutes",
@@ -276,6 +365,90 @@ for phrase in (
     "do not claim model-routing or fresh-context proof",
 ):
     require_text(planning, phrase, "src/common/profiles/Planning.md")
+
+full_cycle = (ROOT / "templates/FULL_CYCLE.md").read_text(encoding="utf-8")
+task_template = (
+    ROOT / "src/common/templates/.agents/tasks/task_template.md"
+).read_text(encoding="utf-8")
+stop_rethink = (
+    ROOT / "src/common/protocols/STOP_RETHINK.md"
+).read_text(encoding="utf-8")
+for phrase in (
+    "Планы - только на русском",
+    "### 1. Максимально идеальный",
+    "### 2. Нормальный",
+    "### 3. YAGNI MVP",
+    "Execution updates - English only",
+    "YAGNI -> Normal -> Ultimate",
+    "Финальный ответ - только на русском",
+    "Failed canary + unrelated secondary work -> STOP_SCOPE_DRIFT",
+    "Green canary + direct regression -> review the direct regression",
+    "User-confirmed secondary objective -> in scope",
+):
+    require_text(full_cycle, phrase, "templates/FULL_CYCLE.md")
+for phrase in (
+    "Original user request:",
+    "Confirmed scope:",
+    "Explicit exclusions:",
+    "Initial estimate (optimistic / likely / pessimistic active minutes):",
+    "Current stage: YAGNI | Normal | Ultimate",
+    "Overseer decision history (append-only)",
+    "Timestamp:",
+    "Stage:",
+    "Evidence:",
+    "Decision: APPROVE | STOP_SCOPE_DRIFT",
+):
+    require_text(task_template, phrase, "task_template.md")
+for phrase in (
+    "unauthorized scope expansion",
+    "STOP_SCOPE_DRIFT",
+    "original user request",
+    "is terminal",
+    "Preserve the evidence",
+    "Report the exact mismatch",
+    "Update the task record",
+    "After plan selection, write in English",
+    "Do not launch Explorer",
+    "Do not generate alternatives",
+    "explicit human scope confirmation",
+    "Architectural STOP/RETHINK",
+    "bounded Explorer",
+    "Before plan selection, write in Russian",
+):
+    require_text(stop_rethink, phrase, "src/common/protocols/STOP_RETHINK.md")
+
+readme = (ROOT / "README.md").read_text(encoding="utf-8")
+authoring = (ROOT / "docs/agent-authoring.md").read_text(encoding="utf-8")
+for text, source in (
+    (readme, "README.md"),
+    (authoring, "docs/agent-authoring.md"),
+):
+    for phrase in (
+        "one Markdown task file",
+        ".agents/tasks/",
+        "Overseer is mandatory",
+        "YAGNI -> Normal -> Ultimate",
+        "initial plans in Russian",
+        "execution updates in English",
+        "final answer in Russian",
+    ):
+        require_text(text, phrase, source)
+    require_absent(text, "whole-repository review", source)
+
+for phrase in (
+    "Максимально идеальный",
+    "Нормальный",
+    "YAGNI MVP",
+):
+    require_text(lead, phrase, "src/common/agents/Lead.md")
+
+release_text = release_path.read_text(encoding="utf-8")
+require_text(
+    release_text,
+    "Финальный ответ - только на русском",
+    "templates/RELEASE_HANDOFF.md",
+)
+require_absent(roadmap, "whole-repository review", "ROADMAP.md")
 
 require_text(roadmap, "Codex custom-agent routing", "ROADMAP.md")
 require_text(roadmap, "actual model", "ROADMAP.md")

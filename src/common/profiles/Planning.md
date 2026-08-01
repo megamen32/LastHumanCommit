@@ -1,6 +1,10 @@
 # Cost-aware planning
 
-Use this profile for Full work. Keep Direct, Short, and Emergency work fast.
+Use this profile for every task. Keep Direct, Short, and Emergency work fast.
+
+Every task record has an initial estimate as optimistic / likely / pessimistic
+active minutes. It is immutable. Append each revision with its trigger and
+evidence instead of replacing the initial estimate.
 
 For every candidate plan and selected child package, record:
 
