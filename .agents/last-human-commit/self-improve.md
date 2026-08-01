@@ -39,3 +39,11 @@
 - Which skill, MCP, or tool is missing? Proposed: a generic Fleet versioned-directory rollout action with per-host target overrides, marker-only router updates, immutable digest verification, and rollback receipts.
 - What operation or error repeated? Four hosts repeated the same preview/apply/verify transport; guard by making that exact matrix an idempotent Fleet action instead of another product-specific endpoint.
 - State: Proposed
+
+## 2026-08-02 — restore README image (Direct)
+
+- What slowed or confused L? Git history contained two removals, but live PushEvent range proof isolated `fc97d68` as the lasting deletion.
+- Which instruction should change? `none` — existing memory already says to preserve the README's concise intent and image.
+- Which skill, MCP, or tool is missing? `none` — Git history plus GitHub PushEvent data identified the regression.
+- What operation or error repeated? The image was removed twice and restored once; guard: review the README's first screen when rewriting it.
+- State: fixed now

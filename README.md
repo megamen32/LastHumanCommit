@@ -1,5 +1,7 @@
 # Last Human Commit
 
+<img width="1672" height="941" alt="Last Human Commit role map" src="https://github.com/user-attachments/assets/7b259f64-50c1-45a4-af27-07a5101d8120" />
+
 > A small, human-gated instruction set for cheaper multi-agent coding.
 
 The root agent keeps decisions and integration. Specialist prompts are loaded
