@@ -115,8 +115,15 @@ Publication:
 - LastHumanCommit origin/main includes fd3165d, source release c4f25c8, and
   runtime evidence fd8436e.
 - TelegramAuto marker commit 628bf79 is live and committed locally but not
-  pushed: its main is 66 pre-existing commits ahead of origin/main, so pushing
-  that unrelated history is outside confirmed scope.
+  pushed: its main contains dozens of pre-existing unpublished commits, so
+  pushing that unrelated history is outside confirmed scope.
+
+Final live Overseer decision:
+
+- Stage: deployed runtime and publication acceptance.
+- Evidence: published source, immutable/global/project runtime identity, marker
+  loading, Telegram outcome text, terminal scope gate, tests, and rollback.
+- Decision: APPROVE.
 
 Estimate history:
 
