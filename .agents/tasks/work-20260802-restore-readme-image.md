@@ -34,7 +34,7 @@ asset returns a successful HTTP response.
 
 ## State
 
-Status: publication pending
+Status: complete
 
 ## Pre-publication result
 
@@ -45,3 +45,15 @@ Status: publication pending
 - `tests/validate.py` passes all 7 router and marker-block contracts.
 - `tests/test_block_adapter.sh` passes.
 - Hermes plugin regression suite passes: 4 tests.
+
+## Publication result
+
+- Published the restoration to `main` in commit `52877ae` by non-force
+  fast-forward from `159c50f`.
+- GitHub Contents API returns README blob `5f4093f` and confirms the exact image
+  element on line 3.
+- Remote `refs/heads/main` matched the verified local commit after publication.
+
+## Actual estimate
+
+- About 7 active minutes.
