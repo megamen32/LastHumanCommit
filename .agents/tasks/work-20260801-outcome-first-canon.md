@@ -1,6 +1,6 @@
 # Outcome-first canon correction
 
-Status: Reviewer APPROVE; Critic route corrections pending release execution
+Status: deployed and proven; evidence commit pending publication
 Session: 019fbe04-b90d-7703-af85-9e5671758e6a
 Current stage: Ultimate
 Pre-implementation Overseer decision: APPROVE
@@ -90,6 +90,25 @@ Corrected release order:
 7. On failure, restore both runtime surfaces. On success, record evidence and
    complete M6.2 in a second evidence-only commit.
 8. Push both commits once.
+
+Critic corrections resolved:
+
+- Source commit: c4f25c8.
+- TelegramAuto marker commit: 628bf79.
+- Global current: versions/c4f25c8.
+- TelegramAuto project-local version: c4f25c8.
+- Canonical/source/global/project Lead digest:
+  66adbf117531568bebd19e65e413ba1f0d9d4fafe6270b6bdff71a6e0e63bee3.
+- Identical AGENTS/CLAUDE marker digest:
+  36f242886b4fc5c83931ed2daa23afce98312526f5b13df06e53ff61088824ee.
+- Live Hermes marker loader accepted the TelegramAuto project block.
+- Telegram delivery outcome text and STOP_SCOPE_DRIFT secondary-work gate are
+  present outside the shared marker.
+- Canonical validator and block adapter pass; Hermes plugin pytest is 4/4;
+  immutable version matches all 22 commit-object common/template files.
+- Durable rollback:
+  /home/roomhacker/.local/share/last-human-commit/rollbacks/c4f25c8-before,
+  plus TelegramAuto .last-human-commit.prev-c4f25c8.
 
 Estimate history:
 

@@ -70,12 +70,12 @@ Status: in progress
 
 ## M6 — Outcome-first workflow contract
 
-Status: in progress
+Status: done
 
 - [x] M6.1 Make real outcome proof and selected scope the public authoring gate;
   forbid unsolicited secondary hardening or broad review unless user-confirmed
   or strictly required for the shortest safe business canary.
-- [ ] M6.2 Prove the aligned contract in canonical roles, profiles, templates,
+- [x] M6.2 Prove the aligned contract in canonical roles, profiles, templates,
   validation, applied project markers, and the installed version before making
   any runtime deployment claim. Plan selection is recorded in
   `.agents/tasks/work-20260801-outcome-first-canon.md`.
