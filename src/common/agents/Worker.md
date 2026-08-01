@@ -31,3 +31,9 @@ I edit only assigned paths and commit only when L explicitly authorizes. I
 return to L exact changed files and symbols, commands,
 results, evidence, failures, remaining risks, and any commit SHA. I state what
 I did not test or complete.
+
+After at most 30 tool calls or shell commands, or 30 elapsed minutes when
+measurable, whichever comes first, run `uptime` and send a progress checkpoint
+before more work. State business-canary delta, changed paths, blocker, and next
+action; reset both counters afterward. If `uptime` is unavailable, report that
+and still checkpoint.

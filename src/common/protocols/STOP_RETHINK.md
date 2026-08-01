@@ -1,9 +1,32 @@
 # STOP / RETHINK
 
-Trigger when 30 minutes pass without an end-to-end P0 slice, after two failed
-independent attempts, on conflicting evidence, when the user repeats that P0/P1
-still fails, when the target shares the failed failure domain, when scope must
-expand materially, or when framework/process grows without user progress.
+Trigger when 30 minutes or 30 tool calls or shell commands pass without real
+business delta toward an end-to-end P0 slice, after two failed independent
+attempts, on conflicting evidence, when the user repeats that P0/P1 still
+fails, when the target shares the failed failure domain, when scope must expand
+materially, or when framework/process grows without user progress.
+
+## Independent gate authority
+
+The user is the only authority over Overseer and Critic. L requests their audit
+but cannot frame, narrow, rewrite, or override it. Every gate decision is
+binding on L. If a harness routes the report through L, L must relay the
+complete report unchanged to the user before more action. L cannot override a
+gate decision. `RETHINK`, `STOP`,
+`STOP_SCOPE_DRIFT`, `STOP_MISSING_CONTEXT`, or
+unanswered questions stop further actions and completion claims. L may answer
+questions and present new business evidence to the same gate; only that gate or
+the user may release the stop. Conflicting gate decisions resolve to the
+stricter verdict until the user decides.
+
+## Uptime checkpoint
+
+After at most 30 tool calls or shell commands, or 30 elapsed minutes when
+measurable, whichever comes first, every agent must run `uptime` and send a
+progress checkpoint before more work. The checkpoint states current P0, real
+business delta, elapsed time when available, blocker, and next action. It resets
+both counters. If `uptime` is unavailable, the agent reports that fact and still
+sends the checkpoint.
 
 ## Terminal scope drift
 
@@ -12,7 +35,7 @@ original user request, confirmed scope, explicit exclusions, or the failed
 canary's dependency chain. When it is raised:
 
 1. Preserve the evidence without changing or cleaning the conflicting work.
-2. Report the exact mismatch and required stop to L.
+2. Report the exact mismatch and required stop directly to the user and L.
 3. Update the task record with the timestamp, stage, evidence, and
    `STOP_SCOPE_DRIFT` decision.
 4. After plan selection, write in English; before plan selection, write in

@@ -1,5 +1,7 @@
 # Text-first Last Human Commit
 
+Status: complete
+
 Superseded on 2026-07-30 by
 `.agents/tasks/done-20260730-role-router-yagni.md`. This file preserves the
 historical decision record; its `CANON.md` and external-ownership design is not

@@ -78,7 +78,7 @@ Status: done
 - [x] M6.2 Prove the aligned contract in LHC roles, profiles, templates,
   validation, applied project markers, and the installed version before making
   any runtime deployment claim. Plan selection is recorded in
-  `.agents/tasks/work-20260801-outcome-first-lhc.md`.
+  `.agents/tasks/done-20260801-outcome-first-lhc.md`.
 
 ## Proposed
 

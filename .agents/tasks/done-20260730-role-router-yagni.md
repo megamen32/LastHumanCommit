@@ -1,6 +1,7 @@
 # Portable role router YAGNI correction
 
-State: done
+Status: complete
+
 Outcome: `AGENTS.md == CLAUDE.md` routes every agent to one independently
 loadable role, while `Lead.md` alone owns the full workflow and timed
 self-resume.

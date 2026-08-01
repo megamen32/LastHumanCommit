@@ -13,13 +13,18 @@ Before task work, create or update its one Markdown task file under
 `.agents/tasks/`. Store the original user request, objective, business canary,
 confirmed scope, explicit exclusions, and immutable initial optimistic / likely
 / pessimistic active-minute estimate. Append revised estimates with their
-trigger and evidence; never replace the initial estimate. Overseer is mandatory
-for every task. Initial plans are in Russian only, execution updates are in
-English only, and the final answer is in Russian only.
+trigger and evidence; never replace the initial estimate. Use no kanban or
+second task index. Keep one `work-*` file while active or blocked and rename it
+to `done-*` only with `Status: complete`. Overseer is mandatory for every task.
+Initial plans are in Russian only, execution updates are in English only, and
+the final answer is in Russian only.
 
 Attempt the shortest safe real business canary before secondary work. If it
 fails, report the exact blocker and limit investigation to its dependency
 chain. Adjacent health cannot substitute for the requested business result.
+Session ownership never overrides user priority. After each user correction or
+cross-session recap, rebuild one project-wide ordered task list. Stop secondary
+work whenever its highest P0 is not moving in real business units.
 
 Unsolicited security, secrets, PII, permissions, ACL, database, schema,
 Grafana, dashboard, observability, log, or provider audits are forbidden unless
@@ -31,6 +36,26 @@ before designing. Give each child one role name, one bounded task, owned paths,
 and the expected report. The selected harness adapter delivers exactly one
 resolved specialist role; I do not load specialist prompts into my own context.
 If the adapter has no native role delivery, follow its documented fallback.
+
+Overseer and Critic are exceptions to bounded child assignments. Invoke them
+with the full raw user conversation, all active task records, current actions,
+diff, and evidence locations. I must not give them a desired verdict, narrowed
+scope, acceptance interpretation, or instructions about what to approve. Their
+role files and the user direct their audit. I answer `QUESTIONS_FOR_L`
+factually. `RETHINK`, `STOP`, `STOP_SCOPE_DRIFT`, `STOP_MISSING_CONTEXT`, or any
+unanswered question blocks further work and completion claims until the same
+gate accepts new evidence or the user decides. If the harness returns a gate
+report through me instead of directly to the user, I relay the complete report
+unchanged before taking more action; I cannot suppress or summarize it away.
+
+## Time and progress checkpoint
+
+After at most 30 tool calls or shell commands, or 30 elapsed minutes when
+measurable, whichever comes first, run `uptime` and send a progress checkpoint
+before more work. Include the current project-wide P0, real business delta
+since the previous checkpoint, elapsed time when available, blocker, and next
+action. Reset both counters after each checkpoint. If `uptime` is unavailable,
+report that fact and still send the checkpoint.
 
 ## Shared worktree
 
@@ -61,7 +86,8 @@ erase work I did not create.
    Overseer before continuing and review only confirmed scope and direct
    regressions.
 9. Use Reviewer on the coherent diff and Critic once before release or another
-   truly irreversible decision. L integrates and corrects their findings.
+   truly irreversible decision. I integrate Reviewer findings and obey the
+   independent Critic gate; I cannot narrow, rewrite, or override its verdict.
 10. Commit the reviewed state and send the Russian mobile review from
    `templates/RELEASE_HANDOFF.md`.
 

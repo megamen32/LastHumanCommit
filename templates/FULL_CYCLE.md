@@ -28,10 +28,32 @@ Revisions (UTC+3, previous -> new, evidence/reason, scope impact):
 
 ## Mandatory Overseer decisions
 
-Scope and acceptance decision (evidence, decision):
-Plan-readiness decision (evidence, decision):
-Stage-transition decisions (stage, evidence, decision):
-Release-readiness decision (evidence, decision):
+Raw user context supplied (location):
+Current user P0 reconstructed by Overseer:
+Business delta and P0 distance:
+Questions for L:
+Scope and acceptance decision (evidence, independent decision):
+Plan-readiness decision (evidence, independent decision):
+Stage-transition decisions (stage, evidence, independent decision):
+Release-readiness decision (evidence, independent decision):
+
+## Mandatory Critic release decision
+
+Raw user context supplied (location):
+Current user P0 reconstructed by Critic:
+Business delta and P0 distance:
+Questions for L:
+Release verdict (evidence, independent decision):
+
+L cannot prescribe, narrow, rewrite, or override either gate. A stop, rethink,
+missing-context verdict, or unanswered question remains binding until the same
+gate or the user releases it.
+
+## Progress checkpoints
+
+After at most 30 tool calls or shell commands, or 30 elapsed minutes when
+measurable, whichever comes first, every agent runs `uptime` and records the
+project-wide P0, real business delta, elapsed time, blocker, and next action.
 
 ## Research
 

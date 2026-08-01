@@ -1,6 +1,6 @@
 # Task
 
-State: todo -> work -> done
+Status: in progress | blocked | complete
 Original user request:
 Objective:
 Business canary:
@@ -20,7 +20,24 @@ Add one entry for every decision. Never replace or delete an earlier entry.
 - Timestamp:
   Stage:
   Evidence:
-  Decision: APPROVE | STOP_SCOPE_DRIFT
+  Current user P0:
+  Business delta:
+  P0 distance: CLOSER | SAME | FARTHER
+  Questions for L:
+  Decision: APPROVE | RETHINK | STOP | STOP_SCOPE_DRIFT | STOP_MISSING_CONTEXT
+
+## Critic decision history (append-only)
+
+Add one entry for every decision. Never replace or delete an earlier entry.
+
+- Timestamp:
+  Stage:
+  Evidence:
+  Current user P0:
+  Business delta:
+  P0 distance: CLOSER | SAME | FARTHER
+  Questions for L:
+  Decision: PASS | RETHINK | STOP | STOP_SCOPE_DRIFT | STOP_MISSING_CONTEXT
 
 ## Decision
 

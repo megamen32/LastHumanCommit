@@ -29,7 +29,10 @@ for every user request, including Direct and Short. Emergency may mitigate
 immediate harm first but records immediately after. Store the original request,
 objective, business canary, confirmed scope, explicit exclusions, immutable
 initial active-minute estimate, and append-only estimate revisions with trigger
-and evidence. Overseer is mandatory for every task.
+and evidence. Use no kanban or duplicate task index: active or blocked work uses
+one `work-*` file and completed work uses one `done-*` file. Overseer is
+mandatory for every task and independently audits L against the raw user
+conversation; L cannot frame or override its verdict.
 Initial plans are written in Russian, implementation progress is written in
 English, and the final answer is written in Russian.
 

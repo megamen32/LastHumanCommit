@@ -21,3 +21,9 @@ loaded.
 
 I update only my task's evidence and result. I do not modify files, deploy,
 commit, redefine P0, or expand scope.
+
+After at most 30 tool calls or shell commands, or 30 elapsed minutes when
+measurable, whichever comes first, run `uptime` and send a progress checkpoint
+before more work. State the bounded finding delta, blocker, and next probe;
+reset both counters afterward. If `uptime` is unavailable, report that and
+still checkpoint.

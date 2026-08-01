@@ -128,13 +128,15 @@ require_one_marker_block(router, "AGENTS.md")
 if not adapter_path.stat().st_mode & 0o111:
     fail("scripts/lhc-block must be executable")
 for path in (
+    ROOT / ".agents/kanban.md",
     ROOT / "src/common/templates/.agents/kanban.md",
-    ROOT / "src/common/templates/.agents/orchestrator.md",
+    ROOT / "templates/.agents/kanban.md",
 ):
     if path.exists():
-        fail("templates must not be split between src/common/templates and templates")
+        fail(f"obsolete duplicate task index remains: {path.relative_to(ROOT)}")
+if (ROOT / "src/common/templates/.agents/orchestrator.md").exists():
+    fail("templates must not be split between src/common/templates and templates")
 for path in (
-    ROOT / "templates/.agents/kanban.md",
     ROOT / "templates/.agents/orchestrator.md",
     ROOT / "templates/.agents/self-improve.md",
 ):
@@ -169,6 +171,40 @@ for role in ROLES[1:]:
     require_text(role_text.lower(), "subagent", relative)
     if "read lead.md" in role_text.lower():
         fail(f"{relative} must remain independently injectable")
+
+for role in ROLES:
+    relative = f"src/common/agents/{role}.md"
+    role_text = (ROOT / relative).read_text(encoding="utf-8")
+    for phrase in (
+        "After at most 30 tool calls or shell commands",
+        "30 elapsed minutes when measurable",
+        "whichever comes first",
+        "run `uptime`",
+        "progress checkpoint",
+    ):
+        require_text(role_text, phrase, relative)
+
+for path in sorted((ROOT / ".agents/tasks").glob("*.md")):
+    task_text = path.read_text(encoding="utf-8")
+    if not path.name.startswith(("work-", "done-")):
+        fail(
+            "task filename must start with work- or done-: "
+            f"{path.relative_to(ROOT)}"
+        )
+    status_match = re.search(r"^Status:\s*(.+)$", task_text, re.MULTILINE)
+    if not status_match:
+        fail(f"task lacks Status: {path.relative_to(ROOT)}")
+    status = status_match.group(1).strip().lower()
+    if re.search(r"^State:\s*", task_text, re.MULTILINE):
+        fail(f"task duplicates Status with legacy State: {path.relative_to(ROOT)}")
+    if path.name.startswith("work-"):
+        if status not in {"in progress", "blocked"}:
+            fail(
+                f"work task has invalid status {status!r}: "
+                f"{path.relative_to(ROOT)}"
+            )
+    elif status != "complete":
+        fail(f"done task has invalid status {status!r}: {path.relative_to(ROOT)}")
 
 normative = {
     "AGENTS.md": router,
@@ -250,6 +286,11 @@ for phrase in (
     "../protocols/SELF_IMPROVE.md",
     "Shared worktree",
     "five minutes",
+    "Overseer and Critic are exceptions to bounded child assignments",
+    "full raw user conversation",
+    "must not give them a desired verdict",
+    "Session ownership never overrides user priority",
+    "project-wide ordered task list",
 ):
     require_text(lead, phrase, "src/common/agents/Lead.md")
 
@@ -271,6 +312,7 @@ for phrase in (
 worker = (ROOT / "src/common/agents/Worker.md").read_text(encoding="utf-8")
 reviewer = (ROOT / "src/common/agents/Reviewer.md").read_text(encoding="utf-8")
 overseer = (ROOT / "src/common/agents/Overseer.md").read_text(encoding="utf-8")
+critic = (ROOT / "src/common/agents/Critic.md").read_text(encoding="utf-8")
 for text, source in ((worker, "Worker.md"), (reviewer, "Reviewer.md")):
     require_text(text, "shared worktree", source)
     require_text(text, "five minutes", source)
@@ -305,10 +347,38 @@ workflow_contracts = {
     "src/common/agents/Overseer.md": (
         overseer,
         (
-            "original user request",
-            "confirmed scope",
+            "latest raw user request",
+            "project-wide P0",
+            "my only authority",
+            "L's delegation prompt",
+            "claims to audit",
+            "completely and unchanged",
+            "STOP_MISSING_CONTEXT",
+            "BUSINESS_DELTA",
+            "P0_DISTANCE",
+            "QUESTIONS_FOR_L",
+            "RETHINK",
             "STOP_SCOPE_DRIFT",
             "unsolicited security",
+        ),
+    ),
+    "src/common/agents/Critic.md": (
+        critic,
+        (
+            "latest raw user request",
+            "project-wide P0",
+            "my only authority",
+            "L's delegation prompt",
+            "claims to audit",
+            "completely and unchanged",
+            "STOP_MISSING_CONTEXT",
+            "BUSINESS_DELTA",
+            "P0_DISTANCE",
+            "QUESTIONS_FOR_L",
+            "PASS",
+            "RETHINK",
+            "STOP",
+            "STOP_SCOPE_DRIFT",
         ),
     ),
     "src/common/agents/Worker.md": (
@@ -415,6 +485,14 @@ for phrase in (
     "Failed canary + unrelated secondary work -> STOP_SCOPE_DRIFT",
     "Green canary + direct regression -> review the direct regression",
     "User-confirmed secondary objective -> in scope",
+    "Mandatory Critic release decision",
+    "Current user P0 reconstructed by Overseer",
+    "Current user P0 reconstructed by Critic",
+    "L cannot prescribe, narrow, rewrite, or override either gate",
+    "After at most 30 tool calls or shell commands",
+    "30 elapsed minutes when measurable",
+    "whichever comes first",
+    "runs `uptime`",
 ):
     require_text(full_cycle, phrase, "templates/FULL_CYCLE.md")
 for phrase in (
@@ -424,10 +502,16 @@ for phrase in (
     "Initial estimate (optimistic / likely / pessimistic active minutes):",
     "Current stage: YAGNI | Normal | Ultimate",
     "Overseer decision history (append-only)",
+    "Critic decision history (append-only)",
     "Timestamp:",
     "Stage:",
     "Evidence:",
-    "Decision: APPROVE | STOP_SCOPE_DRIFT",
+    "Current user P0:",
+    "Business delta:",
+    "P0 distance: CLOSER | SAME | FARTHER",
+    "Questions for L:",
+    "Decision: APPROVE | RETHINK | STOP | STOP_SCOPE_DRIFT | STOP_MISSING_CONTEXT",
+    "Decision: PASS | RETHINK | STOP | STOP_SCOPE_DRIFT | STOP_MISSING_CONTEXT",
 ):
     require_text(task_template, phrase, "task_template.md")
 for phrase in (
@@ -445,6 +529,13 @@ for phrase in (
     "Architectural STOP/RETHINK",
     "bounded Explorer",
     "Before plan selection, write in Russian",
+    "30 tool calls or shell commands",
+    "run `uptime`",
+    "gate decision is binding on L",
+    "L cannot override",
+    "unanswered questions",
+    "user is the only authority",
+    "complete report unchanged",
 ):
     require_text(stop_rethink, phrase, "src/common/protocols/STOP_RETHINK.md")
 
@@ -457,7 +548,15 @@ for text, source in (
     for phrase in (
         "one Markdown task file",
         ".agents/tasks/",
+        "There is no duplicate kanban" if source == "README.md" else "Never maintain a duplicate kanban",
         "Overseer is mandatory",
+        "Critic gates release",
+        "raw user context",
+        "obey only the user" if source == "docs/agent-authoring.md" else "obey the user rather than L",
+        "at most 30",
+        "30 elapsed minutes when measurable",
+        "whichever comes first",
+        "uptime",
         "YAGNI -> Normal -> Ultimate",
         "initial plans in Russian",
         "execution updates in English",
@@ -480,6 +579,11 @@ require_text(
     "templates/RELEASE_HANDOFF.md",
 )
 require_absent(roadmap, "whole-repository review", "ROADMAP.md")
+require_absent(
+    roadmap,
+    ".agents/tasks/work-20260801-outcome-first-lhc.md",
+    "ROADMAP.md",
+)
 
 require_text(roadmap, "Codex custom-agent routing", "ROADMAP.md")
 require_text(roadmap, "actual model", "ROADMAP.md")

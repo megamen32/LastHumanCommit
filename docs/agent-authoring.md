@@ -7,15 +7,20 @@ subagent prompt.
 Keep instructions short, operational, and proportional:
 
 - Every request, including Direct and Short work, creates one Markdown task file
-  under `.agents/tasks/` and records an estimate; those classes still execute
-  fast.
-- Overseer is mandatory for every task. Add other roles only for bounded work
-  required by the selected outcome.
+  under `.agents/tasks/` and records an estimate; rename the same file from
+  `work-*` to `done-*` on completion. Never maintain a duplicate kanban.
+- Overseer is mandatory for every task and Critic gates release. Both receive
+  the raw user context, independently reconstruct the current user priority,
+  obey only the user, and bind L with stops or unanswered questions. Add other
+  roles only for bounded work required by the selected outcome.
 - Full work preserves research, three initial plans in Russian, human selection,
   WSFF views, outcome-and-scope review, tests, commit, and L-owned timed resume.
 - `YAGNI -> Normal -> Ultimate` defines delivery layering after selection, not
   the initial plan order.
 - Use execution updates in English and give the final answer in Russian.
+- Every role runs `uptime` and sends a progress checkpoint after at most 30
+  tool calls or shell commands, or 30 elapsed minutes when measurable,
+  whichever comes first.
 - Unsolicited secondary work is forbidden unless the user confirms it or it is
   a minimal safe-canary prerequisite for the selected outcome.
 - The router names roles and paths but does not repeat their instructions.

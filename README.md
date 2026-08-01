@@ -40,15 +40,21 @@ backup and restores the original content if the editor fails.
 ## Workflow
 
 - Every request, including Direct and Short work, gets one Markdown task file
-  under `.agents/tasks/` with an estimate; their execution still stays fast.
-- Overseer is mandatory for every task, while other bounded subagents are used
-  only when the selected scope needs them.
+  under `.agents/tasks/` with an estimate; `work-*` is active or blocked and the
+  same file becomes `done-*` when complete. There is no duplicate kanban.
+- Overseer is mandatory for every task and Critic gates release. Both audit the
+  raw user context independently, obey the user rather than L, and their stops
+  and unanswered questions bind L. Other bounded subagents are used only when
+  the selected scope needs them.
 - Full work researches first and presents the initial plans in Russian:
   Ultimate, Normal, and YAGNI. It then waits for the human to choose.
 - `YAGNI -> Normal -> Ultimate` is the delivery order after selection, not the
   initial plan order.
 - Use execution updates in English to keep collaboration inspectable. The
   final answer in Russian gives the human the tested outcome and remaining risks.
+- Every agent runs `uptime` and sends a progress checkpoint after at most 30
+  tool calls or shell commands, or 30 elapsed minutes when measurable,
+  whichever comes first.
 - Review follows the selected outcome and affected scope. Unsolicited secondary
   work is forbidden unless it is user-confirmed or a minimal safe-canary
   prerequisite.

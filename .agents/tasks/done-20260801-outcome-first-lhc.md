@@ -1,6 +1,7 @@
 # Outcome-first LHC correction
 
-Status: complete, deployed, proven, and published
+Status: complete
+Release state: deployed, proven, and published
 Session: 019fbe04-b90d-7703-af85-9e5671758e6a
 Current stage: Ultimate
 Pre-implementation Overseer decision: APPROVE

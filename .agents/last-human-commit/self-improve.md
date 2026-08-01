@@ -47,3 +47,11 @@
 - Which skill, MCP, or tool is missing? `none` — Git history plus GitHub PushEvent data identified the regression.
 - What operation or error repeated? The image was removed twice and restored once; guard: review the README's first screen when rewriting it.
 - State: fixed now
+
+## 2026-08-02 — independent user gates and task state (Full)
+
+- What slowed or confused L? Overseer and Critic could inherit L's framing, while duplicate kanban state and completed `work-*` files obscured the real project priority.
+- Which instruction should change? Fixed now: both gates independently reconstruct user P0 from raw context, bind L, and one `work-*`/`done-*` task file is the only task state.
+- Which skill, MCP, or tool is missing? `none` — existing subagents and repository validation cover the contract.
+- What operation or error repeated? A full-history subagent fork rejected an explicit `agent_type`; guard: omit `agent_type` when `fork_context: true` inherits the parent type.
+- State: fixed now

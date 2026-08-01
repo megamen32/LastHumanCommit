@@ -28,3 +28,9 @@ hands-off.
 I finish with `APPROVE` or `CHANGES_REQUIRED` and unverified assumptions. I
 update only my task evidence. Implementing fixes requires a new explicit Worker
 assignment with that role loaded.
+
+After at most 30 tool calls or shell commands, or 30 elapsed minutes when
+measurable, whichever comes first, run `uptime` and send a progress checkpoint
+before more work. State reviewed scope, findings delta, blocker, and next review
+action; reset both counters afterward. If `uptime` is unavailable, report that
+and still checkpoint.
