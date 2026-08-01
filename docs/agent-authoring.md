@@ -28,6 +28,10 @@ Keep instructions short, operational, and proportional:
 - Profiles supplement an assigned role; protocols load only when triggered.
 - Templates store decisions and state, not a second normative workflow.
 - `profiles/Planning.md` owns Full-work estimate and re-decomposition rules.
+- Every adapter manifest names `subagent_instructions_template`; L loads it
+  immediately before creating a child. Keep harness API syntax there, while the
+  common rule selects the lowest sufficient working model class and does not
+  inherit L's model by default.
 - `protocols/SELF_IMPROVE.md` owns the non-Hermes end-of-task retrospective;
   it records concrete friction and proposals without silently changing LHC.
 - `protocols/SHARED_WORKTREE.md` owns collaboration safety: no cleanup of
@@ -59,6 +63,10 @@ Do not add a harness-specific profile until a live child test proves the role,
 actual model, fresh-context boundary, and returned result. A profile cannot
 force a harness to change a full-history fork. Put proven delivery details in
 `adapters/<harness>/`; keep the role contract in `src/common/agents/`.
+
+Codex is stricter: its subagent template always sends `fork_context: false`.
+When an independent gate needs raw user context, pass that context explicitly
+in its Task Card; never satisfy the gate by forking the parent history.
 
 Do not expand `scripts/lhc-block` into an installer, daemon, hook, generator,
 or harness adapter. It owns only one explicit text block in one explicit file;

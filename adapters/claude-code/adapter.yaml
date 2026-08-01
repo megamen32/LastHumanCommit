@@ -3,6 +3,7 @@ harness: claude-code
 kind: external-adapter
 role_source: ../../src/common/agents
 optional_instructions: instructions.md
+subagent_instructions_template: templates/subagent.md
 delivery: claude-project-or-agent-profile
 self_improve: required-core-protocol
 capabilities:

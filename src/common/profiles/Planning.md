@@ -25,9 +25,13 @@ real architecture decision.
 
 Every fresh child receives a Task Card: goal, known facts, allowed and excluded
 paths, acceptance check, selected model and budget, stop conditions, and a
-short report format. Use a no-history child only when the harness demonstrably
-supports it; otherwise record the limitation and do not claim model-routing or
-fresh-context proof.
+short report format. Select the lowest sufficient working model class from the
+assigned role's available working classes. Do not inherit L's model by default.
+Escalate only after `NEEDS_REDECOMPOSITION` or concrete acceptance evidence
+shows a capability gap. Load the selected harness adapter's
+`subagent_instructions_template` before creating the child. Use a no-history
+child only when the harness demonstrably supports it; otherwise record the
+limitation and do not claim model-routing or fresh-context proof.
 
 A child returns `NEEDS_REDECOMPOSITION` before wandering when scope must change,
 the second independent hypothesis fails, another unknown dependency appears,

@@ -3,6 +3,7 @@ harness: hermes
 kind: external-plugin
 role_source: ../../src/common/agents
 optional_instructions: instructions.md
+subagent_instructions_template: templates/subagent.md
 plugin: plugin
 verification: VERIFICATION.md
 delivery: tool-request-middleware

@@ -55,3 +55,11 @@
 - Which skill, MCP, or tool is missing? `none` — existing subagents and repository validation cover the contract.
 - What operation or error repeated? A full-history subagent fork rejected an explicit `agent_type`; guard: omit `agent_type` when `fork_context: true` inherits the parent type.
 - State: fixed now
+
+## 2026-08-02 — harness subagent templates (Short)
+
+- What slowed or confused L? No-history gates lacked parent git provenance, mistook pre-existing `graphify-out/` for scope drift, and initially missed their own Codex calls as live proof.
+- Which instruction should change? `none` — the new explicit Task Card and per-harness template contract already carries the needed facts without history forks.
+- Which skill, MCP, or tool is missing? `none` — `spawn_agent` accepted `fork_context:false`, Luna, and low reasoning and returned both role reports.
+- What operation or error repeated? Two gates made the same provenance/proof mistake; guard by putting pre-task foreign paths and exact spawn parameters in every no-history audit card.
+- State: fixed now

@@ -103,16 +103,21 @@ small instruction set.
 LHC names model classes and requires fresh, scoped cheap-child work. It
 does not claim that every harness can select every child model. Add a
 harness-specific profile only after a live child test proves its role, model,
-and no-history boundary; the Codex CLI limitation is tracked in `ROADMAP.md`.
+and no-history boundary. Each adapter may enforce its own child-call syntax via
+`subagent_instructions_template`; Codex requires `fork_context: false` and must
+pass needed context explicitly instead of forking the parent conversation.
+These templates are source policy, not fleet-wide runtime proof; manifest
+capability statuses change only after separate live evidence.
 
 ## Harness adapters
 
 The portable LHC instructions are capability-first; harness adapters are a separate,
 optional delivery layer. Start at `adapters/manifest.yaml` when installing a
 Codex, OpenCode, Claude Code, or Hermes integration. An adapter may provide
-small harness-specific instructions, but it must not duplicate or redefine a
-core role. The Hermes adapter is an external plugin; the other manifests
-record their current proof status and remain opt-in.
+small harness-specific instructions and a subagent-call template, but it must
+not duplicate or redefine a core role. The Hermes adapter is an external
+plugin; the other manifests record their current proof status and remain
+opt-in.
 
 ## Files
 

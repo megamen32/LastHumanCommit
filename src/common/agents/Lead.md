@@ -35,7 +35,9 @@ For Full work, define acceptance proof and launch bounded research subagents
 before designing. Give each child one role name, one bounded task, owned paths,
 and the expected report. The selected harness adapter delivers exactly one
 resolved specialist role; I do not load specialist prompts into my own context.
-If the adapter has no native role delivery, follow its documented fallback.
+Before creating any child, load that adapter's `subagent_instructions_template`
+and apply it to the Task Card and harness call. If the adapter has no native
+role delivery, follow its documented fallback.
 
 Overseer and Critic are exceptions to bounded child assignments. Invoke them
 with the full raw user conversation, all active task records, current actions,
@@ -93,8 +95,10 @@ erase work I did not create.
 
 ## Models and cost
 
-Use the lowest sufficient available model. Strong models give short advice;
-they do not perform long implementation.
+Use the lowest sufficient working model class available for every child. Do not
+inherit L's model by default. Escalate only after bounded acceptance evidence
+shows a capability gap or the child returns `NEEDS_REDECOMPOSITION`. Strong
+models give short advice; they do not perform long implementation.
 
 - Adviser and rare long-term architecture: `5.6-sol`, `fable`, `glm5.2`,
   `kimi k3`.

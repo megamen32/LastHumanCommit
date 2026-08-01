@@ -5,6 +5,9 @@ configured. Otherwise the marker-preserving `CLAUDE.md` block is the portable
 fallback. The adapter must keep the complete role context in the child prompt
 and must not overwrite project-owned text outside the marker pair.
 
+Before every child call, load `templates/subagent.md` for the native context,
+Task Card, and cheapest-sufficient model rules.
+
 Do not promise scheduled resume until the active Claude surface exposes and
 verifies its cron or scheduled-task transport.
 

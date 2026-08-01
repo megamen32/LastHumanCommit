@@ -20,6 +20,12 @@ Worker        × Codex / OpenCode / Claude Code / Hermes
 Do not duplicate a role in an adapter. An adapter may add a small optional
 overlay when its API needs extra syntax, file-loading, permissions, or resume
 instructions. The overlay is additive and is loaded only by that adapter.
+Every manifest also names one `subagent_instructions_template`. L loads that
+template immediately before creating a child, so API-specific spawn rules stay
+outside the portable roles. The common contract still chooses the lowest
+sufficient working model class and forbids inheriting L's model by default.
+Templates define source policy; they do not upgrade a runtime capability claim
+without separate live evidence for that harness and installation.
 
 Every adapter manifest records evidence as `proven`, `unproven`, or `unsupported`.
 Names in a manifest are capability claims, not promises that every model or

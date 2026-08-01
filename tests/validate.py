@@ -68,7 +68,16 @@ for adapter in ADAPTERS:
             fail(f"missing harness adapter contract: {path.relative_to(ROOT)}")
     manifest = (adapter_dir / "adapter.yaml").read_text(encoding="utf-8")
     require_text(manifest, f"harness: {adapter}", str(adapter_dir / "adapter.yaml"))
-    for key in ("role_source", "optional_instructions"):
+    require_text(
+        (adapter_dir / "instructions.md").read_text(encoding="utf-8"),
+        "templates/subagent.md",
+        f"{adapter} adapter instructions",
+    )
+    for key in (
+        "role_source",
+        "optional_instructions",
+        "subagent_instructions_template",
+    ):
         prefix = f"{key}:"
         value = next(
             (line.split(":", 1)[1].strip() for line in manifest.splitlines()
@@ -77,6 +86,26 @@ for adapter in ADAPTERS:
         )
         if not value or not (adapter_dir / value).exists():
             fail(f"{adapter} manifest has missing {key}: {value or '<empty>'}")
+        if key == "subagent_instructions_template":
+            template = (adapter_dir / value).read_text(encoding="utf-8")
+            for phrase in (
+                "lowest sufficient working model class",
+                "Do not inherit L's model by default",
+                "Task Card",
+            ):
+                require_text(template, phrase, f"{adapter} subagent template")
+            if adapter == "codex":
+                for phrase in (
+                    "fork_context: false",
+                    "Never fork the parent conversation history",
+                    "pass required context explicitly",
+                ):
+                    require_text(template, phrase, "codex subagent template")
+                require_absent(
+                    template,
+                    "fork_context: true",
+                    "codex subagent template",
+                )
     plugin_value = next(
         (line.split(":", 1)[1].strip() for line in manifest.splitlines()
          if line.startswith("plugin:")),
@@ -338,6 +367,10 @@ workflow_contracts = {
             "confirmed scope",
             "YAGNI -> Normal -> Ultimate",
             "Overseer is mandatory",
+            "subagent_instructions_template",
+            "lowest sufficient working model class",
+            "Do not inherit L's model by default",
+            "Escalate only after",
             "STOP_SCOPE_DRIFT",
             "Initial plans are in Russian",
             "execution updates are in English",
@@ -461,6 +494,9 @@ for phrase in (
     "relative cost",
     "more than 20 likely active minutes",
     "Every fresh child receives a Task Card",
+    "lowest sufficient working model class",
+    "Do not inherit L's model by default",
+    "Escalate only after",
     "NEEDS_REDECOMPOSITION",
     "Use a no-history child only when the harness demonstrably supports it",
     "do not claim model-routing or fresh-context proof",
