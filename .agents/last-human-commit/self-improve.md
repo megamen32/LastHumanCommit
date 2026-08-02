@@ -63,3 +63,11 @@
 - Which skill, MCP, or tool is missing? `none` — `spawn_agent` accepted `fork_context:false`, Luna, and low reasoning and returned both role reports.
 - What operation or error repeated? Two gates made the same provenance/proof mistake; guard by putting pre-task foreign paths and exact spawn parameters in every no-history audit card.
 - State: fixed now
+
+## 2026-08-02 — Fleet rollout 567925f (Short)
+
+- What slowed or confused L? The canonical Fleet manifest packaged 22 core/template files but omitted the new `adapters/` tree, so the first preview would have reported success without the requested templates.
+- Which instruction should change? Fixed in Fleet commit `7f97fba`: the rollout manifest now packages `adapters -> adapters`, with a regression test.
+- Which skill, MCP, or tool is missing? `none` — `$lhc-rollout` plus generic `skill-sync` exposed and repaired the gap.
+- What operation or error repeated? One preview was invalidated before apply; guard by asserting required payload roots and file count before accepting every release preview.
+- State: fixed now
