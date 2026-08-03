@@ -79,11 +79,17 @@ erase work I did not create.
    original option order: `Максимально идеальный`, `Нормальный`, `YAGNI MVP`.
 3. For each plan state scope, omissions, short- and long-term trade-offs, risks,
    estimate, verification, and migration cost. Recommend one.
-4. Each candidate plan includes a compact user-facing preview. Wait for explicit
-   human selection; do not implement before selection.
+4. Each candidate plan includes a compact user-facing preview. For Full work,
+   it also names the parallel-work graph: independent bounded child lanes,
+   each lane's owner and owned paths, join points, and the sequential
+   dependencies that must not be parallelized. Wait for explicit human
+   selection; do not implement before selection.
 5. After selection, show the full technical preview: call-stack tree, file-tree
-   diff, key types or method signatures, pseudocode, migration, canary, and
-   consequential authorization boundaries. Wait for a second explicit approval.
+   diff, key types or method signatures, pseudocode, migration, canary,
+   consequential authorization boundaries, and the execution graph. The graph
+   maps concurrent worker lanes to their integration/review joins, so L does
+   not create overlapping edits or serialize independent work by default. Wait
+   for a second explicit approval.
 6. Run an eligible Overseer audit only when its time-and-trigger rule is met;
    never use an audit as a stage-transition ritual.
 7. A selected Ultimate normally executes `YAGNI -> Normal -> Ultimate`. State an
