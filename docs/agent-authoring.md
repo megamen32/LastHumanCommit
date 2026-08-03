@@ -9,24 +9,25 @@ Keep instructions short, operational, and proportional:
 - Every request, including Direct and Short work, creates one Markdown task file
   under `.agents/tasks/` and records an estimate; rename the same file from
   `work-*` to `done-*` on completion. Never maintain a duplicate kanban.
-- Overseer is mandatory for every task and Critic gates release. Both receive
-  the raw user context, independently reconstruct the current user priority,
-  obey only the user, and bind L with stops or unanswered questions. Add other
-  roles only for bounded work required by the selected outcome.
+- Overseer is an eligibility-gated least-cost route audit; it is not a second
+  planner or a per-stage ritual. Critic gates a release or irreversible claim.
+  Both use compact task contracts and deltas, preserve receipts in task state,
+  and expose the user only to direct consequential questions or blocking drift.
 - Full work preserves research, three initial plans in Russian, human selection,
   WSFF views, outcome-and-scope review, tests, commit, and L-owned timed resume.
 - `YAGNI -> Normal -> Ultimate` defines delivery layering after selection, not
   the initial plan order.
 - Use execution updates in English and give the final answer in Russian.
-- Every role runs `uptime` and sends a progress checkpoint after at most 30
-  tool calls or shell commands, or 30 elapsed minutes when measurable,
-  whichever comes first.
+- Harness or Fleet timing, when attested, makes Overseer eligible no more than
+  once in 30 minutes after a material trigger. Do not use `uptime` as ritual.
 - Unsolicited secondary work is forbidden unless the user confirms it or it is
   a minimal safe-canary prerequisite for the selected outcome.
 - The router names roles and paths but does not repeat their instructions.
 - L sends a role name to a child and does not load that role prompt itself.
 - Profiles supplement an assigned role; protocols load only when triggered.
-- Templates store decisions and state, not a second normative workflow.
+- Templates store decisions and state, not a second normative workflow. A Full
+  task has a compact option preview, human selection, then a detailed technical
+  preview and second human approval before implementation.
 - `profiles/Planning.md` owns Full-work estimate and re-decomposition rules.
 - Every adapter manifest names `subagent_instructions_template`; L loads it
   immediately before creating a child. Keep harness API syntax there, while the
@@ -43,7 +44,8 @@ When changing instructions:
 1. Update the one file that owns the rule.
 2. Align only direct references and record schemas.
 3. Keep validation literal, dependency-free, and readable in one sitting.
-4. Run `python3 tests/validate.py` and `git diff --check`.
+4. For text-only instruction work, review the diff and run `git diff --check`;
+   do not invent a test programme. Run validation only when behavior changes.
 
 The marker lines are an ownership boundary:
 

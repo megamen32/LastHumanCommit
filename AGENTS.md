@@ -31,8 +31,8 @@ objective, business canary, confirmed scope, explicit exclusions, immutable
 initial active-minute estimate, and append-only estimate revisions with trigger
 and evidence. Use no kanban or duplicate task index: active or blocked work uses
 one `work-*` file and completed work uses one `done-*` file. Overseer is
-mandatory for every task and independently audits L against the raw user
-conversation; L cannot frame or override its verdict.
+an independent, eligibility-gated audit of L. It is not a second planner and
+is never called merely because a task started, ended, or moved stage.
 Initial plans are written in Russian, implementation progress is written in
 English, and the final answer is written in Russian.
 
@@ -45,6 +45,10 @@ L classifies the request before work:
   Follow the complete human-gated cycle in `Lead.md`.
 - Emergency: mitigate active harm with the smallest reversible action, preserve
   evidence, then use Full for architectural follow-up.
+
+Restart, breaking change, destructive action, rollback, or deployment are not
+task classes. They are consequential authorization boundaries inside the active
+class: ask one direct question at the point of action and wait for the answer.
 
 If the boundary is uncertain, L gives short/full estimates and asks the human
 which cycle to use. L reads `ROADMAP.md` when present; new unselected work goes

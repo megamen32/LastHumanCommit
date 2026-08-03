@@ -31,6 +31,20 @@ Every adapter manifest records evidence as `proven`, `unproven`, or `unsupported
 Names in a manifest are capability claims, not promises that every model or
 provider is routable on every installation.
 
+## Agent-facing capabilities
+
+Portable capability descriptors describe semantic contracts only. A descriptor
+can provide a short agent fragment, but it never contains endpoint URLs,
+credentials, installation commands, or delivery policy. Fleet or a harness
+attests one exact binding as `proven`, `unproven`, `absent`, or `unsupported`.
+Render a fragment only for `proven`; an optional absent capability is omitted and
+a required absent capability fails preflight explicitly. LHC does not install,
+probe, or remove runtime capabilities.
+
+`human.ask_user.v1` and `human.ask_secret.v1` are planned semantic contracts.
+They do not claim a particular Notify, SSS, Agent Herder, or agent-resume
+implementation.
+
 ## Self-improve ownership
 
 Codex, OpenCode, and Claude Code run the core `SELF_IMPROVE.md` retrospective

@@ -14,6 +14,9 @@ Confirmed scope (exact):
 Exclusions (exact):
 Constraints:
 Scope changes with verbatim human confirmation:
+Stop when:
+Abandon when:
+Forbidden without explicit user request:
 
 ## Scope scenarios
 
@@ -26,16 +29,14 @@ Scope changes with verbatim human confirmation:
 Initial estimate (UTC+3, range, assumptions):
 Revisions (UTC+3, previous -> new, evidence/reason, scope impact):
 
-## Mandatory Overseer decisions
+## Eligible Overseer audit receipts
 
-Raw user context supplied (location):
-Current user P0 reconstructed by Overseer:
-Business delta and P0 distance:
-Questions for L:
-Scope and acceptance decision (evidence, independent decision):
-Plan-readiness decision (evidence, independent decision):
-Stage-transition decisions (stage, evidence, independent decision):
-Release-readiness decision (evidence, independent decision):
+Eligibility source and trigger:
+Business delta:
+Avoidable spend:
+Next minimal action:
+Direct user question:
+Decision: CONTINUE | ASK_USER | STOP_DRIFT
 
 ## Mandatory Critic release decision
 
@@ -45,15 +46,15 @@ Business delta and P0 distance:
 Questions for L:
 Release verdict (evidence, independent decision):
 
-L cannot prescribe, narrow, rewrite, or override either gate. A stop, rethink,
-missing-context verdict, or unanswered question remains binding until the same
-gate or the user releases it.
+L preserves the complete receipt in the task record. `CONTINUE` is silent;
+`ASK_USER` is shown only as its direct question; `STOP_DRIFT` stops the extra
+branch.
 
-## Progress checkpoints
+## Audit eligibility
 
-After at most 30 tool calls or shell commands, or 30 elapsed minutes when
-measurable, whichever comes first, every agent runs `uptime` and records the
-project-wide P0, real business delta, elapsed time, blocker, and next action.
+An attested harness or Fleet clock may make Overseer eligible no more often than
+once in 30 minutes after material progress, plateau, repeat failure, budget
+pressure, scope drift, or a consequential user question. No `uptime` ritual.
 
 ## Research
 
@@ -80,30 +81,35 @@ Bounded subagents (scope, model class, reason, result):
 
 Рекомендация:
 Выбор человека (дословно):
+Краткий preview каждого варианта:
 
 ## Stage rule
 
 Default delivery order is YAGNI -> Normal -> Ultimate, stopping at the
 human-selected target. Do not start a later stage unless it is inside the exact
 confirmed scope and selected target. Any skipped, reordered, or collapsed stage
-requires recorded exception evidence and a mandatory Overseer decision.
+requires recorded exception evidence; run an eligible Overseer audit only when
+the time-and-trigger rule is met.
 
 ## Selected-plan WSFF
 
 Call-stack tree:
 File-tree diff:
 Key types and method signatures:
+Pseudocode and migration:
+Consequential authorization boundaries:
+Second approval of full preview (verbatim):
 
 ## Delivery
 
-YAGNI MVP slice, canary, evidence, Overseer decision:
-Normal slice, canary, evidence, Overseer decision:
-Ultimate slice, canary, evidence, Overseer decision:
-Stage exceptions (evidence, risk, Overseer decision):
+YAGNI MVP slice, canary, evidence:
+Normal slice, canary, evidence:
+Ultimate slice, canary, evidence:
+Stage exceptions (evidence, risk):
 Test evidence:
 Review evidence:
-Commit:
-L-owned release handoff and wake:
+Automatic normal/checkpoint commits:
+Tag decision (explicit user or release process only):
 
 ## Финальный ответ
 

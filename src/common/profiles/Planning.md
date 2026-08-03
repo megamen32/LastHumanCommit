@@ -6,6 +6,16 @@ Every task record has an initial estimate as optimistic / likely / pessimistic
 active minutes. It is immutable. Append each revision with its trigger and
 evidence instead of replacing the initial estimate.
 
+Choose the next action by `Least Cost-to-Canary`: maximize expected movement of
+the business canary while minimizing tokens, time, tool calls, subagents, and
+user interruptions. Stop when the canary passes. Do not spend budget on
+unrequested hardening, audits, rollback, backup, or cleanup.
+
+For every task record, state `stop_when`, `abandon_when`, and
+`forbidden_without_explicit_user_request`. A restart, breaking change,
+destructive action, deployment, or rollback is an authorization boundary, not a
+task class: ask one short question when that exact action becomes necessary.
+
 For every candidate plan and selected child package, record:
 
 - outcome, allowed scope, acceptance proof, and separately runnable check;
