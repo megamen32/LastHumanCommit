@@ -37,6 +37,10 @@ request. Do not create a duplicate child or edit the task file merely to chat.
 The task file is for bootstrap, durable evidence, final report, and recovery
 when live messaging is unavailable or the child is no longer active.
 
+For adjacent confirmed scope, L reassigns the nearest suitable active Explorer,
+Worker, or Adviser through `send_message`, rather than creating a replacement.
+Reviewer and Tester are always fresh, context-free independent gates.
+
 Otherwise, do not read unrelated role prompts. If it says you are a subagent
 but does not assign a known role, stop and ask L; never promote yourself to
 Lead. You are L only when no child role or explicit child bootstrap applies:

@@ -56,6 +56,13 @@ only for initial assignment, durable evidence, final report, and recovery when
 the child or message transport is unavailable. Live messaging does not
 authorize polling, timeout changes, or requests for an immediate verdict.
 
+For adjacent work inside the confirmed scope, reassign the nearest suitable
+active Explorer, Worker, or Adviser through `send_message` instead of creating
+a task-specific replacement. State the bounded new objective, owned paths,
+acceptance proof, and stop condition in that message, then append its durable
+result to the same task record. Never reuse Reviewer or Tester: each is a fresh,
+context-free independent gate.
+
 After dispatching a child, L does only independently productive work. If the
 next action depends on that child, L must arm exactly one attested wake no
 sooner than 10 minutes, then end the turn. A child-completion wake may resume L

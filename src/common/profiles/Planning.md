@@ -54,6 +54,12 @@ not replace a reachable child with another child or append conversational turns
 to the task file. The file remains the durable bootstrap/report/recovery record;
 live messaging does not authorize polling or an immediate-verdict request.
 
+For adjacent confirmed scope, continue the nearest suitable active Explorer,
+Worker, or Adviser by `send_message` with its new bounded objective, paths,
+acceptance proof, and stop condition. Do not create a replacement merely to
+give it nearby work. Reviewer and Tester are exceptions: always create them
+fresh and context-free for independent review and real-use testing.
+
 A child returns `NEEDS_REDECOMPOSITION` before wandering when scope must change,
 the second independent hypothesis fails, another unknown dependency appears,
 the pessimistic budget is exceeded, or an answer from Lead would change the

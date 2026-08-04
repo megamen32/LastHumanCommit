@@ -12,5 +12,8 @@ Before every delegated task:
 - If Claude exposes a live child-message channel, use it for every question,
   correction, or status request; do not replace the active child or use the
   task file as chat.
+- For nearby confirmed scope, reassign the same active Explorer, Worker, or
+  Adviser through its message channel; Reviewer and Tester are always fresh,
+  context-free gates.
 - Escalate only after `NEEDS_REDECOMPOSITION` or concrete acceptance evidence
   shows that the selected class cannot complete the bounded package.

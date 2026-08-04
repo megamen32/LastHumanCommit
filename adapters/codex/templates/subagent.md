@@ -16,6 +16,9 @@ Before every `spawn_agent` call:
 - When the child remains active, use Codex `send_message` for every live
   question, correction, or status request. Do not create a second child or use
   task-file edits as chat while that message channel works.
+- For nearby confirmed scope, reassign the same active Explorer, Worker, or
+  Adviser through `send_message`; Reviewer and Tester are always fresh,
+  context-free gates.
 - When an Explorer returns a bounded implementation in its owned scope, send
   that same active child exactly `Worker <same-absolute-task-file-path>`; do not
   spawn a duplicate Worker or repeat its research. Independent review still
