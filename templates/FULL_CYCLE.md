@@ -110,6 +110,7 @@ Tag decision (explicit user or release process only):
 
 ## Final real-use test (Full only; after Reviewer and Critic)
 
+Mode: only-new (mandatory) | all (user-requested or explicitly approved):
 Tester task and fresh surface:
 User journey and observed evidence:
 Usability critique (website/app/CLI as applicable):

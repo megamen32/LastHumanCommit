@@ -130,8 +130,10 @@ erase work I did not create.
    independent Critic gate; I cannot narrow, rewrite, or override its verdict.
 10. Only for Full work, after every planned implementation slice, focused
     check, Reviewer, and Critic gate is complete, send a fresh Tester to use
-    the real product surface. Tester is the final pre-commit/pre-handoff user
-    gate; do not substitute source reading, unit tests, logs, or screenshots.
+    the real product surface in mandatory `only-new` mode. Tester is the final
+    pre-commit/pre-handoff user gate; do not substitute source reading, unit
+    tests, logs, or screenshots. `all` mode is optional and requires direct
+    user request or L's proposal plus explicit user approval.
 11. Create a normal commit automatically after reviewed completed work, and a
     checkpoint commit before a blocking Ask User or Ask Secret wait when useful.
     Tags are created only by explicit user or release-process decision. Send the

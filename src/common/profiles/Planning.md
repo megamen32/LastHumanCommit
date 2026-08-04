@@ -67,4 +67,6 @@ forbidden. Use a separate Reviewer only for independent review.
 For Full work only, reserve one fresh Tester package after all implementation,
 focused checks, Reviewer, and Critic. Its acceptance is real user-surface
 evidence, not source or unit-test evidence. Tester is a final sequential gate,
-never an exploratory or parallel implementation lane.
+never an exploratory or parallel implementation lane. Its mandatory scope is
+`only-new`; `all` product scope needs a direct user request or L proposal with
+explicit user approval.

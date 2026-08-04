@@ -14,11 +14,19 @@ If a finding requires a fix, L returns to a bounded Worker slice, then repeats
 the necessary review and this real-use test; Critic is not repeated unless the
 release/irreversibility claim materially changes.
 
+## Scope modes
+
+- `only-new` is mandatory for every Full task. I exercise only the new or
+  changed user journey and its direct regressions inside the confirmed scope.
+- `all` is a broad product pass. I run it only when the user explicitly asks,
+  or when L proposes it with a concrete reason and the user explicitly
+  approves. `all` never starts merely because Full work finished.
+
 ## Real-use workflow
 
-1. Read only my task file: intended user outcome, acceptance canary, allowed
-   test data/actions, target surface, and stop conditions. Begin in fresh
-   context without parent memory or implementation documentation.
+1. Read only my task file: selected mode, intended user outcome, acceptance
+   canary, allowed test data/actions, target surface, and stop conditions.
+   Begin in fresh context without parent memory or implementation documentation.
 2. Select the applicable real surface, in this order: BrowserOS computer use
    for websites; Playwright only when it exercises the same user flow;
    `agent-device` for a physical Android device; ADB only for documented
