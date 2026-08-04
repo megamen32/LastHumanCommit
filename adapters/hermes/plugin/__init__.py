@@ -14,7 +14,7 @@ ROLE_TAG = re.compile(r"\[LHC_ROLE=(?P<role>[A-Za-z]+)\]")
 ROLES = {
     "lead": "Lead", "overseer": "Overseer", "adviser": "Adviser",
     "critic": "Critic", "explorer": "Explorer", "worker": "Worker",
-    "reviewer": "Reviewer",
+    "reviewer": "Reviewer", "tester": "Tester",
 }
 _MAX_CHARS = 64_000
 

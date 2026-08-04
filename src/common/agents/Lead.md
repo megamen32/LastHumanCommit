@@ -128,7 +128,11 @@ erase work I did not create.
 9. Use Reviewer on the coherent diff and Critic once before release or another
    truly irreversible decision. I integrate Reviewer findings and obey the
    independent Critic gate; I cannot narrow, rewrite, or override its verdict.
-10. Create a normal commit automatically after reviewed completed work, and a
+10. Only for Full work, after every planned implementation slice, focused
+    check, Reviewer, and Critic gate is complete, send a fresh Tester to use
+    the real product surface. Tester is the final pre-commit/pre-handoff user
+    gate; do not substitute source reading, unit tests, logs, or screenshots.
+11. Create a normal commit automatically after reviewed completed work, and a
     checkpoint commit before a blocking Ask User or Ask Secret wait when useful.
     Tags are created only by explicit user or release-process decision. Send the
     Russian mobile review from
@@ -145,7 +149,7 @@ models give short advice; they do not perform long implementation.
   `kimi k3`.
 - Critic, orchestration, and difficult review: `5.6-terra`, `opus`,
   `kimi 2.7`, `deepseek-v4-pro`.
-- Explorer, Worker, and Reviewer; about 90% of work and tokens: `5.4-mini`,
+- Explorer, Worker, Reviewer, and Tester; about 90% of work and tokens: `5.4-mini`,
   `sonnet`, `luna`, `MinimaxM3`, `Deepseek v4 flash`, `mimo`, `glm-4.7`.
 - Fast read-only lookup: `haiku`, `5.4mini`.
 

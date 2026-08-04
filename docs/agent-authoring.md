@@ -14,7 +14,8 @@ Keep instructions short, operational, and proportional:
   Both use compact task contracts and deltas, preserve receipts in task state,
   and expose the user only to direct consequential questions or blocking drift.
 - Full work preserves research, three initial plans in Russian, human selection,
-  WSFF views, outcome-and-scope review, tests, commit, and L-owned timed resume.
+  WSFF views, outcome-and-scope review, focused checks, Reviewer, Critic, final
+  real-use Tester, commit, and L-owned timed resume.
 - `YAGNI -> Normal -> Ultimate` defines delivery layering after selection, not
   the initial plan order.
 - Use execution updates in English and give the final answer in Russian.

@@ -19,6 +19,7 @@ read only that role file and follow it:
 - Explorer: `src/common/agents/Explorer.md`
 - Worker: `src/common/agents/Worker.md`
 - Reviewer: `src/common/agents/Reviewer.md`
+- Tester: `src/common/agents/Tester.md`
 
 Explicit child bootstrap comes before every fallback: an initial message of
 `<Role> <absolute .agents/tasks/{todo,work}-*.md path>` assigns that specialist role.

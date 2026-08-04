@@ -108,6 +108,14 @@ Review evidence:
 Automatic normal/checkpoint commits:
 Tag decision (explicit user or release process only):
 
+## Final real-use test (Full only; after Reviewer and Critic)
+
+Tester task and fresh surface:
+User journey and observed evidence:
+Usability critique (website/app/CLI as applicable):
+Verdict: PASS | CHANGES_REQUIRED | STOP_MISSING_REAL_SURFACE
+Repair/retest loop, if needed:
+
 ## Финальный ответ
 
 Финальный ответ - только на русском

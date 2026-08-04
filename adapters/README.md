@@ -15,6 +15,7 @@ contracts:
 role contract × harness adapter
 Lead          × Codex / OpenCode / Claude Code / Hermes
 Worker        × Codex / OpenCode / Claude Code / Hermes
+Tester        × Codex / OpenCode / Claude Code / Hermes
 ```
 
 Do not duplicate a role in an adapter. An adapter may add a small optional

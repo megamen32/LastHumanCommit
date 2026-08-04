@@ -63,3 +63,8 @@ If an Explorer's accepted result yields a bounded implementation in the same
 owned scope, L reassigns that exact child `Worker <same-task-file-path>`. The
 same file records both role passes; a second Worker for the same evidence is
 forbidden. Use a separate Reviewer only for independent review.
+
+For Full work only, reserve one fresh Tester package after all implementation,
+focused checks, Reviewer, and Critic. Its acceptance is real user-surface
+evidence, not source or unit-test evidence. Tester is a final sequential gate,
+never an exploratory or parallel implementation lane.

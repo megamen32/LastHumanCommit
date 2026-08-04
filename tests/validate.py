@@ -15,6 +15,7 @@ ROLES = (
     "Explorer",
     "Worker",
     "Reviewer",
+    "Tester",
 )
 
 ADAPTERS = ("codex", "opencode", "claude-code", "hermes")
