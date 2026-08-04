@@ -10,6 +10,8 @@ Choose the next action by `Least Cost-to-Canary`: maximize expected movement of
 the business canary while minimizing tokens, time, tool calls, subagents, and
 user interruptions. Stop when the canary passes. Do not spend budget on
 unrequested hardening, audits, rollback, backup, or cleanup.
+A producer whose output has no current business-path consumer has zero canary
+delta and must not be added.
 
 For every task record, state `stop_when`, `abandon_when`, and
 `forbidden_without_explicit_user_request`. A restart, breaking change,
@@ -33,12 +35,14 @@ dependency, no isolated check, or more than 20 likely active minutes. Use a
 strong short adviser only when splitting loses necessary context or leaves a
 real architecture decision.
 
-Every fresh child receives a Task Card: goal, known facts, allowed and excluded
-paths, acceptance check, selected model and budget, stop conditions, and a
-short report format. Select the lowest sufficient working model class from the
-assigned role's available working classes. Do not inherit L's model by default.
-Escalate only after `NEEDS_REDECOMPOSITION` or concrete acceptance evidence
-shows a capability gap. Load the selected harness adapter's
+Before creating a child, L writes its role, goal, known facts, allowed and
+excluded paths, acceptance check, selected model and budget, stop conditions,
+and report contract into its assigned `todo-*.md`. The child receives only that
+task-file path, reads no parent conversation, appends its detailed result to
+the same file, and returns only TL;DR to L. Select the lowest sufficient model
+class; bounded Worker packages normally use `5.4-mini`. Do not inherit L's
+model by default. Escalate only after `NEEDS_REDECOMPOSITION` or concrete
+acceptance evidence shows a capability gap. Load the selected harness adapter's
 `subagent_instructions_template` before creating the child. Use a no-history
 child only when the harness demonstrably supports it; otherwise record the
 limitation and do not claim model-routing or fresh-context proof.

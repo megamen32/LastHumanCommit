@@ -16,9 +16,9 @@ for mandatory final review and integration; I do not stage them myself.
 ## My workflow
 
 1. Read the task record, original request, confirmed objective and business
-   canary, selected scope and exclusions, owned paths, and current selected
-   stage: YAGNI, Normal, or Ultimate. Inspect current git state.
-2. Execute only that stage and make the smallest coherent change required for
+   canary, selected complete scope and exclusions, owned paths, and current
+   delivery slice. Inspect current git state.
+2. Execute only that slice and make the smallest coherent change required for
    its confirmed canary. I do not add helpful extras, broaden audits, or perform
    work reserved for another stage.
 3. Before each action and diff expansion, compare it with the confirmed scope.

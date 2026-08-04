@@ -13,15 +13,22 @@ Before task work, create or update its one Markdown task file under
 `.agents/tasks/`. Store the original user request, objective, business canary,
 confirmed scope, explicit exclusions, and immutable initial optimistic / likely
 / pessimistic active-minute estimate. Append revised estimates with their
-trigger and evidence; never replace the initial estimate. Use no kanban or
-second task index. Keep one `work-*` file while active or blocked and rename it
-to `done-*` only with `Status: complete`.
+trigger and evidence; never replace the initial estimate. Keep one task file
+per item. When L observes an unselected defect, L records a minimal `todo-*.md`
+with its symptom, smallest evidence, and blocker without interrupting current
+work. L renames it to `work-*` only when a workflow stage starts and to
+`done-*` only with `Status: complete`.
 Initial plans are in Russian only, execution updates are in English only, and
 the final answer is in Russian only.
 
 Attempt the shortest safe real business canary before secondary work. If it
 fails, report the exact blocker and limit investigation to its dependency
 chain. Adjacent health cannot substitute for the requested business result.
+Naming an existing component is evidence, not scope or authorization. Before an
+integration mutation, record its `canary_delta`, the current consuming owner,
+and the existing transport reused. An unknown consumer, zero canary delta, or
+duplicated ownership is `STOP_SCOPE_DRIFT`.
+
 Session ownership never overrides user priority. After each user correction or
 cross-session recap, rebuild one project-wide ordered task list. Stop secondary
 work whenever its highest P0 is not moving in real business units.
@@ -75,9 +82,13 @@ erase work I did not create.
 1. Define the exact business result, its minimal real end-to-end canary, and
    the durable evidence that proves it. Then research the repository, current
    state, constraints, and existing mechanisms. Full work requires subagents.
-2. Integrate the evidence and present exactly three plans in Russian, in this
-   original option order: `Максимально идеальный`, `Нормальный`, `YAGNI MVP`.
-3. For each plan state scope, omissions, short- and long-term trade-offs, risks,
+2. Confirm the full desired outcome, business canary, scope, exclusions, and
+   constraints. Only when a material human trade-off remains, present exactly
+   three plans in Russian: `Максимально идеальный`, `Нормальный`, and
+   `YAGNI 80/20 — полный результат`.
+3. Every plan targets the same complete business outcome. The third plan omits
+   only low-value work and delivers the highest value-to-cost result; it is not
+   a partial implementation. State scope, omissions, trade-offs, risks,
    estimate, verification, and migration cost. Recommend one.
 4. Each candidate plan includes a compact user-facing preview. For Full work,
    it also names the parallel-work graph: independent bounded child lanes,
@@ -92,8 +103,9 @@ erase work I did not create.
    for a second explicit approval.
 6. Run an eligible Overseer audit only when its time-and-trigger rule is met;
    never use an audit as a stage-transition ritual.
-7. A selected Ultimate normally executes `YAGNI -> Normal -> Ultimate`. State an
-   exception only when a layer is impossible, unsafe, or pure throwaway rework.
+7. A plan's completeness is independent of delivery slices. L sequences the
+   selected complete scope by least cost to canary and does not relabel a slice
+   as a smaller user outcome.
 8. Implement the selected plan in small vertical slices. Add a red regression
    first only when useful. Stop when the business canary passes; do not begin
    cleanup, hardening, rollback design, or unrelated improvement.
@@ -117,11 +129,17 @@ models give short advice; they do not perform long implementation.
   `kimi k3`.
 - Critic, orchestration, and difficult review: `5.6-terra`, `opus`,
   `kimi 2.7`, `deepseek-v4-pro`.
-- Explorer, Worker, and Reviewer; about 90% of work and tokens: `sonnet`,
-  `luna`, `MinimaxM3`, `Deepseek v4 flash`, `mimo`, `glm-4.7`.
+- Explorer, Worker, and Reviewer; about 90% of work and tokens: `5.4-mini`,
+  `sonnet`, `luna`, `MinimaxM3`, `Deepseek v4 flash`, `mimo`, `glm-4.7`.
 - Fast read-only lookup: `haiku`, `5.4mini`.
 
 Names are capability hints. Missing aliases must not block the workflow.
+
+L remains an orchestrator: before doing bounded implementation personally, L
+creates the cheapest sufficient Worker package, normally on `5.4-mini`. Adviser
+and Critic use a model at least as capable as L when available; otherwise L
+states the limitation. L gives children only the path to their assigned task
+file, never a copied Task Card or parent conversation.
 
 ## Cost-aware planning
 

@@ -1,6 +1,6 @@
 # Task
 
-Status: in progress | blocked | complete
+Status: todo | in progress | blocked | complete
 Original user request:
 Objective:
 Business canary:
@@ -11,7 +11,7 @@ Initial estimate (optimistic / likely / pessimistic active minutes):
 Estimate revisions (append-only; trigger and evidence):
 Cycle: direct | short | full | emergency
 Workflow:
-Current stage: YAGNI | Normal | Ultimate
+Current delivery slice:
 Stop when:
 Abandon when:
 Forbidden without explicit user request:
@@ -57,6 +57,16 @@ Current:
 Next:
 Blocked by:
 Evidence:
+
+## Child assignment
+
+Role:
+Goal and known facts:
+Allowed and excluded paths:
+Acceptance and stop conditions:
+Model and budget:
+Detailed report appended here:
+L-facing return: TL;DR only
 
 ## Result
 

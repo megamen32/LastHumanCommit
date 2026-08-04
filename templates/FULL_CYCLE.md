@@ -63,33 +63,31 @@ Evidence:
 Unknowns:
 Bounded subagents (scope, model class, reason, result):
 
-## Планы
+## Решение
 
-Все планы должны оставаться в подтвержденных границах задачи.
+Полный desired outcome, business canary, scope, exclusions, constraints:
+Material human trade-off: yes | no
 
-### 1. Максимально идеальный
+Если `no`, один рекомендуемый полный путь, его preview и подтверждение:
 
-Объем, исключения, компромиссы, риски, оценка, проверка, миграция:
+Если `yes`, покажи ровно три полных варианта с кратким preview:
 
-### 2. Нормальный
+1. Максимально идеальный — объем, исключения, компромиссы, риски, оценка,
+   проверка, миграция:
+2. Нормальный — объем, исключения, компромиссы, риски, оценка, проверка,
+   миграция:
+3. YAGNI 80/20 — полный результат; исключения только низкоценной работы,
+   компромиссы, риски, оценка, проверка, миграция:
 
-Объем, исключения, компромиссы, риски, оценка, проверка, миграция:
+Рекомендация и выбор человека (дословно):
 
-### 3. YAGNI MVP
+## Delivery-slice rule
 
-Объем, исключения, компромиссы, риски, оценка, проверка, миграция:
-
-Рекомендация:
-Выбор человека (дословно):
-Краткий preview каждого варианта:
-
-## Stage rule
-
-Default delivery order is YAGNI -> Normal -> Ultimate, stopping at the
-human-selected target. Do not start a later stage unless it is inside the exact
-confirmed scope and selected target. Any skipped, reordered, or collapsed stage
-requires recorded exception evidence; run an eligible Overseer audit only when
-the time-and-trigger rule is met.
+Delivery slices do not reduce or relabel the selected complete outcome. Sequence
+them by least cost to canary; do not start a later slice outside exact confirmed
+scope. Any skipped, reordered, or collapsed slice requires recorded exception
+evidence; run an eligible Overseer audit only when the time-and-trigger rule is
+met.
 
 ## Selected-plan WSFF
 
@@ -102,10 +100,9 @@ Second approval of full preview (verbatim):
 
 ## Delivery
 
-YAGNI MVP slice, canary, evidence:
-Normal slice, canary, evidence:
-Ultimate slice, canary, evidence:
-Stage exceptions (evidence, risk):
+Least-cost slice, canary, evidence:
+Later slices, canary, evidence:
+Slice exceptions (evidence, risk):
 Test evidence:
 Review evidence:
 Automatic normal/checkpoint commits:

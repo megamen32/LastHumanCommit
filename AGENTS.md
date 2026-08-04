@@ -29,12 +29,11 @@ for every user request, including Direct and Short. Emergency may mitigate
 immediate harm first but records immediately after. Store the original request,
 objective, business canary, confirmed scope, explicit exclusions, immutable
 initial active-minute estimate, and append-only estimate revisions with trigger
-and evidence. Use no kanban or duplicate task index. Any role that observes an
-unselected defect immediately records one minimal `todo-*.md` under
-`.agents/tasks/` with the symptom, smallest evidence, and what it blocks; it
-does not switch away from the current task or investigate further. Rename that
-file to `work-*` only when a workflow stage actually starts; completed work uses
-`done-*`. Do not create separate bug-document layers. Overseer is
+and evidence. You keep one task file per item. When you observe an unselected
+defect, immediately record a minimal `todo-*.md` under `.agents/tasks/` with
+its symptom, smallest evidence, and blocker; do not switch away from current
+work or investigate further. Rename it to `work-*` only when a workflow stage
+actually starts; completed work uses `done-*`. Overseer is
 an independent, eligibility-gated audit of L. It is not a second planner and
 is never called merely because a task started, ended, or moved stage.
 Initial plans are written in Russian, implementation progress is written in
@@ -42,13 +41,13 @@ English, and the final answer is written in Russian.
 
 L classifies the request before work:
 
-- Direct: clear, reversible, low-risk, under 20 minutes. Act and verify.
+- Direct: clear, reversible, low-risk, under 20 minutes. You act and verify.
 - Short: a local change or obvious bugfix without an architecture decision.
-  Reproduce when useful, fix, test, review, and finish.
+  You reproduce when useful, fix, test, review, and finish.
 - Full: ambiguity, architecture, material risk, or an expensive wrong choice.
-  Follow the complete human-gated cycle in `Lead.md`.
-- Emergency: mitigate active harm with the smallest reversible action, preserve
-  evidence, then use Full for architectural follow-up.
+  You follow the complete human-gated cycle in `Lead.md`.
+- Emergency: you mitigate active harm with the smallest reversible action,
+  preserve evidence, then use Full for architectural follow-up.
 
 Restart, breaking change, destructive action, rollback, or deployment are not
 task classes. They are consequential authorization boundaries inside the active
