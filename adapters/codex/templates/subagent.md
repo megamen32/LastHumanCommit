@@ -13,6 +13,10 @@ Before every `spawn_agent` call:
   memory. The explicit role resolves before the Lead fallback and is
   authoritative for that pass; reuse the same file for Worker then Reviewer.
   The child appends its detailed result there and returns only TL;DR to L.
+- When an Explorer returns a bounded implementation in its owned scope, send
+  that same active child exactly `Worker <same-absolute-task-file-path>`; do not
+  spawn a duplicate Worker or repeat its research. Independent review still
+  uses a separate Reviewer.
 - Use the read-only explorer class when it is sufficient; otherwise choose the
   cheapest available working class that can own the requested action.
 - Escalate only after `NEEDS_REDECOMPOSITION` or concrete acceptance evidence

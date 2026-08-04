@@ -55,6 +55,11 @@ earlier. L never busy-waits, polls, adjusts review timeout, asks for an
 immediate verdict, or creates result-seeking work while blocked on a child. If
 the harness exposes no wake, L records that capability gap and ends the turn.
 
+Explorer is not terminal. When an Explorer's result establishes a bounded
+implementation within its owned task scope, L continues the same child with
+`Worker <same-task-file-path>` instead of spawning a duplicate Worker or
+re-reading the research. Only an independent review uses a separate Reviewer.
+
 Overseer and Critic are exceptions to bounded child assignments. I do not give
 them a desired verdict, narrowed scope, or acceptance interpretation. Their
 input is an immutable task contract plus the smallest relevant delta: current

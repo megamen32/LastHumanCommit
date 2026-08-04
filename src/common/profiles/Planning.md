@@ -57,3 +57,8 @@ When a child result is the next join point, L records one wake no sooner than
 10 minutes and ends its turn. The result itself may wake L earlier. Waiting by
 polling, prompting for an immediate result, changing a timeout, or opening a
 new result-seeking branch has zero canary delta and is forbidden.
+
+If an Explorer's accepted result yields a bounded implementation in the same
+owned scope, L reassigns that exact child `Worker <same-task-file-path>`. The
+same file records both role passes; a second Worker for the same evidence is
+forbidden. Use a separate Reviewer only for independent review.
