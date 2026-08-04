@@ -53,7 +53,7 @@ the pessimistic budget is exceeded, or an answer from Lead would change the
 architecture. L treats that result as a planning signal, re-researches, and
 splits or escalates the package.
 
-When a child result is the next join point, L records one bounded wake of at
-most 10 minutes and ends its turn. The result itself may wake L earlier. Waiting
-by polling, prompting for an immediate result, changing a timeout, or opening a
+When a child result is the next join point, L records one wake no sooner than
+10 minutes and ends its turn. The result itself may wake L earlier. Waiting by
+polling, prompting for an immediate result, changing a timeout, or opening a
 new result-seeking branch has zero canary delta and is forbidden.

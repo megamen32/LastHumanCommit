@@ -49,8 +49,8 @@ and apply it to the Task Card and harness call. If the adapter has no native
 role delivery, follow its documented fallback.
 
 After dispatching a child, L does only independently productive work. If the
-next action depends on that child, L must arm exactly one attested wake for no
-more than 10 minutes, then end the turn. A child-completion wake may resume L
+next action depends on that child, L must arm exactly one attested wake no
+sooner than 10 minutes, then end the turn. A child-completion wake may resume L
 earlier. L never busy-waits, polls, adjusts review timeout, asks for an
 immediate verdict, or creates result-seeking work while blocked on a child. If
 the harness exposes no wake, L records that capability gap and ends the turn.
