@@ -30,5 +30,6 @@ scope expansion. Repair it only when the owned change directly regressed it or
 when it blocks acceptance of the confirmed objective or canary. Otherwise,
 report the exact failure and leave it untouched.
 
-At release completion, close resolved bug files. Retain unresolved bug files
-with their exact blocker; do not hide them to make the task appear complete.
+At release completion, close resolved task files. Retain unresolved `todo-*`
+or `work-*` files with their exact blocker; do not hide them to make the task
+appear complete.

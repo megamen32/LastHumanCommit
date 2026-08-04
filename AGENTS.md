@@ -29,8 +29,12 @@ for every user request, including Direct and Short. Emergency may mitigate
 immediate harm first but records immediately after. Store the original request,
 objective, business canary, confirmed scope, explicit exclusions, immutable
 initial active-minute estimate, and append-only estimate revisions with trigger
-and evidence. Use no kanban or duplicate task index: active or blocked work uses
-one `work-*` file and completed work uses one `done-*` file. Overseer is
+and evidence. Use no kanban or duplicate task index. Any role that observes an
+unselected defect immediately records one minimal `todo-*.md` under
+`.agents/tasks/` with the symptom, smallest evidence, and what it blocks; it
+does not switch away from the current task or investigate further. Rename that
+file to `work-*` only when a workflow stage actually starts; completed work uses
+`done-*`. Do not create separate bug-document layers. Overseer is
 an independent, eligibility-gated audit of L. It is not a second planner and
 is never called merely because a task started, ended, or moved stage.
 Initial plans are written in Russian, implementation progress is written in
