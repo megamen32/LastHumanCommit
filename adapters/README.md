@@ -62,7 +62,7 @@ An adapter should answer these questions without changing the core role text:
 - How is one complete role delivered to a child?
 - How are project marker blocks discovered without overwriting project text?
 - Can a fresh child context and the actual model be proven?
-- How is the 30-minute resume/wake transported?
+- How are native child completion and external/human-request resume transported?
 - What does the adapter do when a capability is unavailable?
 
 `scripts/lhc-block` remains a narrow marker utility. It is not an installer,

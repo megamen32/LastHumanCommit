@@ -66,10 +66,12 @@ the pessimistic budget is exceeded, or an answer from Lead would change the
 architecture. L treats that result as a planning signal, re-researches, and
 splits or escalates the package.
 
-When a child result is the next join point, L records one wake no sooner than
-10 minutes and ends its turn. The result itself may wake L earlier. Waiting by
-polling, prompting for an immediate result, changing a timeout, or opening a
-new result-seeking branch has zero canary delta and is forbidden.
+When a child result is the next join point, L ends its turn and waits only for
+the harness's native child-completion notification. Do not arm Agent Resume, a
+timer, or a parent-PID watcher for that child. Agent Resume is reserved for an
+external background PID/job, timer, or pending human wait. Polling, prompting
+for an immediate result, changing a timeout, or opening a new result-seeking
+branch has zero canary delta and is forbidden.
 
 If an Explorer's accepted result yields a bounded implementation in the same
 owned scope, L reassigns that exact child `Worker <same-task-file-path>`. The

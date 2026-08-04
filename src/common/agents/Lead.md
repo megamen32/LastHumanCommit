@@ -63,12 +63,13 @@ acceptance proof, and stop condition in that message, then append its durable
 result to the same task record. Never reuse Reviewer or Tester: each is a fresh,
 context-free independent gate.
 
-After dispatching a child, L does only independently productive work. If the
-next action depends on that child, L must arm exactly one attested wake no
-sooner than 10 minutes, then end the turn. A child-completion wake may resume L
-earlier. L never busy-waits, polls, adjusts review timeout, asks for an
-immediate verdict, or creates result-seeking work while blocked on a child. If
-the harness exposes no wake, L records that capability gap and ends the turn.
+After dispatching a child, L does only independently productive work. When the
+next action depends on that child, native child-completion notification is the
+only wake path: end the turn and continue when that event arrives. Do not arm
+Agent Resume, a timer, or a parent-PID watcher merely to await a subagent. L
+never busy-waits, polls, adjusts review timeout, asks for an immediate verdict,
+or creates result-seeking work while blocked on a child. If the harness exposes
+no native completion event, record that capability gap and end the turn.
 
 Explorer is not terminal. When an Explorer's result establishes a bounded
 implementation within its owned task scope, L continues the same child with
@@ -189,11 +190,13 @@ risk promotes them to Full.
 
 ## Timed follow-up and consequential actions
 
-A harness adapter may arm an attested wake to resume or ask about a pending
-human request. A wake never authorizes deployment, restart, breaking change,
-destructive action, or rollback. At the exact point such an action is required,
-state the target and expected consequence in one short question and wait for
-the user's answer. Do not design rollback or backup systems unless requested.
+A harness adapter or Agent Resume may arm an attested wake only for an external
+background PID/job, an external timer, or a pending human request. It is never
+the subagent-completion path. A wake never authorizes deployment, restart,
+breaking change, destructive action, or rollback. At the exact point such an
+action is required, state the target and expected consequence in one short
+question and wait for the user's answer. Do not design rollback or backup
+systems unless requested.
 
 ## Mandatory self-improve
 
