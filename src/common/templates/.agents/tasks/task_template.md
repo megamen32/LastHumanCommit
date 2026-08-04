@@ -1,7 +1,7 @@
 # Task
 
 Status: todo | in progress | blocked | complete
-Role: Lead | Overseer | Adviser | Critic | Explorer | Worker | Reviewer
+Initial role (informational):
 Original user request:
 Objective:
 Business canary:
@@ -61,14 +61,21 @@ Evidence:
 
 ## Child assignment
 
-For a path-only child, `Role:` above is required and appears before all task
-body. A child reads this file first, then only that role file.
+The explicit role in `<Role> <task-file-path>` is authoritative for this pass.
+Reuse this same file for sequential passes such as Worker then Reviewer; append
+each pass and its detailed result below.
 Goal and known facts:
 Allowed and excluded paths:
 Acceptance and stop conditions:
 Model and budget:
 Detailed report appended here:
 L-facing return: TL;DR only
+
+## Role passes (append-only)
+
+- Role:
+  Started:
+  Detailed result:
 
 ## Result
 

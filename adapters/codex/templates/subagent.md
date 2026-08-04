@@ -8,10 +8,11 @@ Before every `spawn_agent` call:
 - Set `fork_history: NEVER`. In the Codex call this means `fork_context: false`;
   never omit it or fork the parent conversation history.
 - Before the call, write the complete assignment into one `todo-*.md`. Its
-  top-level `Role:` must be one known specialist role. Pass the child only the
-  absolute task-file path, with no prose, role text, parent context, or memory.
-  The router resolves the role from that file before its Lead fallback. The
-  child appends its detailed result there and returns only TL;DR to L.
+  top-level `Role:` must be one known specialist role. Pass exactly two tokens:
+  `<Role> <absolute-task-file-path>`, with no other prose, parent context, or
+  memory. The explicit role resolves before the Lead fallback and is
+  authoritative for that pass; reuse the same file for Worker then Reviewer.
+  The child appends its detailed result there and returns only TL;DR to L.
 - Use the read-only explorer class when it is sufficient; otherwise choose the
   cheapest available working class that can own the requested action.
 - Escalate only after `NEEDS_REDECOMPOSITION` or concrete acceptance evidence
