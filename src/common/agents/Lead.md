@@ -48,6 +48,13 @@ Before creating any child, load that adapter's `subagent_instructions_template`
 and apply it to the Task Card and harness call. If the adapter has no native
 role delivery, follow its documented fallback.
 
+After dispatching a child, L does only independently productive work. If the
+next action depends on that child, L must arm exactly one attested wake for no
+more than 10 minutes, then end the turn. A child-completion wake may resume L
+earlier. L never busy-waits, polls, adjusts review timeout, asks for an
+immediate verdict, or creates result-seeking work while blocked on a child. If
+the harness exposes no wake, L records that capability gap and ends the turn.
+
 Overseer and Critic are exceptions to bounded child assignments. I do not give
 them a desired verdict, narrowed scope, or acceptance interpretation. Their
 input is an immutable task contract plus the smallest relevant delta: current
