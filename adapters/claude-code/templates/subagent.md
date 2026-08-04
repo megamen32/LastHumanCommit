@@ -9,5 +9,8 @@ Before every delegated task:
   `todo-*.md` Task Card, invoke `<Role> <absolute-task-file-path>` with no
   parent history, require the child to append its detailed result there, and
   accept only TL;DR back to L.
+- If Claude exposes a live child-message channel, use it for every question,
+  correction, or status request; do not replace the active child or use the
+  task file as chat.
 - Escalate only after `NEEDS_REDECOMPOSITION` or concrete acceptance evidence
   shows that the selected class cannot complete the bounded package.

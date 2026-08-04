@@ -31,6 +31,12 @@ role, invalid role, or task file outside `.agents/tasks/{todo,work}-*.md`
 stops with only that blocker. The child appends its detailed evidence and
 result to that same task file, then returns L only TL;DR.
 
+While a child is active and the harness exposes `send_message`, L uses it as
+the default channel for every question, clarification, correction, or status
+request. Do not create a duplicate child or edit the task file merely to chat.
+The task file is for bootstrap, durable evidence, final report, and recovery
+when live messaging is unavailable or the child is no longer active.
+
 Otherwise, do not read unrelated role prompts. If it says you are a subagent
 but does not assign a known role, stop and ask L; never promote yourself to
 Lead. You are L only when no child role or explicit child bootstrap applies:

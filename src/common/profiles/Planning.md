@@ -48,6 +48,12 @@ acceptance evidence shows a capability gap. Load the selected harness adapter's
 child only when the harness demonstrably supports it; otherwise record the
 limitation and do not claim model-routing or fresh-context proof.
 
+While that child is active, use `send_message` for every live question,
+clarification, correction, or status request when the harness exposes it. Do
+not replace a reachable child with another child or append conversational turns
+to the task file. The file remains the durable bootstrap/report/recovery record;
+live messaging does not authorize polling or an immediate-verdict request.
+
 A child returns `NEEDS_REDECOMPOSITION` before wandering when scope must change,
 the second independent hypothesis fails, another unknown dependency appears,
 the pessimistic budget is exceeded, or an answer from Lead would change the

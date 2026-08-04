@@ -48,6 +48,14 @@ Before creating any child, load that adapter's `subagent_instructions_template`
 and apply it to the Task Card and harness call. If the adapter has no native
 role delivery, follow its documented fallback.
 
+While a child remains active, use the harness `send_message` channel for every
+question, clarification, correction, or status request when that capability is
+available. Send the message immediately; do not wait to batch questions, spawn
+a duplicate child, or edit its task file as a chat substitute. Task files are
+only for initial assignment, durable evidence, final report, and recovery when
+the child or message transport is unavailable. Live messaging does not
+authorize polling, timeout changes, or requests for an immediate verdict.
+
 After dispatching a child, L does only independently productive work. If the
 next action depends on that child, L must arm exactly one attested wake no
 sooner than 10 minutes, then end the turn. A child-completion wake may resume L

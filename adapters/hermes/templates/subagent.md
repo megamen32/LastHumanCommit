@@ -9,5 +9,8 @@ Before every delegated goal:
   the delegated goal carries `[LHC_ROLE=<role>]` and its absolute task-file
   path. The child reads that file, appends its detailed result there, and
   returns only TL;DR to L.
+- If Hermes exposes a live child-message channel, use it for every question,
+  correction, or status request; do not replace the active child or use the
+  task file as chat.
 - Escalate only after `NEEDS_REDECOMPOSITION` or concrete acceptance evidence
   shows that the selected class cannot complete the bounded package.

@@ -13,6 +13,9 @@ Before every `spawn_agent` call:
   memory. The explicit role resolves before the Lead fallback and is
   authoritative for that pass; reuse the same file for Worker then Reviewer.
   The child appends its detailed result there and returns only TL;DR to L.
+- When the child remains active, use Codex `send_message` for every live
+  question, correction, or status request. Do not create a second child or use
+  task-file edits as chat while that message channel works.
 - When an Explorer returns a bounded implementation in its owned scope, send
   that same active child exactly `Worker <same-absolute-task-file-path>`; do not
   spawn a duplicate Worker or repeat its research. Independent review still
