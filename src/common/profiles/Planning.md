@@ -37,10 +37,11 @@ real architecture decision.
 
 Before creating a child, L writes its role, goal, known facts, allowed and
 excluded paths, acceptance check, selected model and budget, stop conditions,
-and report contract into its assigned `todo-*.md`. The child receives only that
-task-file path, reads no parent conversation, appends its detailed result to
-the same file, and returns only TL;DR to L. Select the lowest sufficient model
-class; bounded Worker packages normally use `5.4-mini`. Do not inherit L's
+and report contract into its assigned `todo-*.md`. The child receives exactly
+`<Role> <absolute-task-file-path>`, reads no parent conversation, appends its
+detailed result to the same file, and returns only TL;DR to L. The same task
+may later be `work-*` for an explicit continuation. Select the lowest
+sufficient model class; bounded Worker packages normally use `5.4-mini`. Do not inherit L's
 model by default. Escalate only after `NEEDS_REDECOMPOSITION` or concrete
 acceptance evidence shows a capability gap. Load the selected harness adapter's
 `subagent_instructions_template` before creating the child. Use a no-history

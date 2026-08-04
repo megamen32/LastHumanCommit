@@ -21,12 +21,14 @@ read only that role file and follow it:
 - Reviewer: `src/common/agents/Reviewer.md`
 
 Explicit child bootstrap comes before every fallback: an initial message of
-`<Role> <absolute .agents/tasks/todo-*.md path>` assigns that specialist role.
+`<Role> <absolute .agents/tasks/{todo,work}-*.md path>` assigns that specialist role.
 Read only the named role file, then the task file. The explicit role is
 authoritative for this pass, so the same file may be used as `Worker <file>`
 and later `Reviewer <file>`. You are a child, never L: do not read `Lead.md`,
 task indexes, memory, or unrelated instructions. A bare task path, missing
-role, or invalid role stops with only that blocker.
+role, invalid role, or task file outside `.agents/tasks/{todo,work}-*.md`
+stops with only that blocker. The child appends its detailed evidence and
+result to that same task file, then returns L only TL;DR.
 
 Otherwise, do not read unrelated role prompts. If it says you are a subagent
 but does not assign a known role, stop and ask L; never promote yourself to
@@ -52,7 +54,10 @@ L classifies the request before work:
 
 - Direct: clear, reversible, low-risk, under 20 minutes. You act and verify.
 - Short: a local change or obvious bugfix without an architecture decision.
-  You reproduce when useful, fix, test, review, and finish.
+  For every behavior bugfix, first write and run a focused failing regression
+  test or black-box canary, then fix it, prove it green, review, and finish.
+  Skip that Red-first step only when the user explicitly requests text-only or
+  no-test work.
 - Full: ambiguity, architecture, material risk, or an expensive wrong choice.
   You follow the complete human-gated cycle in `Lead.md`.
 - Emergency: you mitigate active harm with the smallest reversible action,
@@ -63,6 +68,6 @@ task classes. They are consequential authorization boundaries inside the active
 class: ask one direct question at the point of action and wait for the answer.
 
 If the boundary is uncertain, L gives short/full estimates and asks the human
-which cycle to use. L reads `ROADMAP.md` when present; new unselected work goes
-under `Proposed` unless the human explicitly chose it or it is P0 recovery.
+which cycle to use. L reads `ROADMAP.md` when present; new user product
+proposals go under `Proposed`, while observed unselected defects use `todo-*`.
 <!-- last-human-commit:end -->

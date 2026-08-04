@@ -62,9 +62,11 @@ re-reading the research. Only an independent review uses a separate Reviewer.
 
 Overseer and Critic are exceptions to bounded child assignments. I do not give
 them a desired verdict, narrowed scope, or acceptance interpretation. Their
-input is an immutable task contract plus the smallest relevant delta: current
-business canary, selected plan, actions/evidence since the prior audit, current
-blocker, and proposed next action. I answer an `ASK_USER` question factually.
+input is an immutable task contract containing the original request and
+confirmed scope, plus the smallest relevant delta: current business canary,
+selected plan, actions/evidence since the prior audit, current blocker, and
+proposed next action. They do not require parent-history forks. I answer an
+`ASK_USER` question factually.
 `STOP`, `STOP_SCOPE_DRIFT`, `STOP_MISSING_CONTEXT`, or an unanswered direct
 question blocks further work. Preserve the full audit in task evidence; do not
 repeat it to the user. `CONTINUE` is silent, `ASK_USER` becomes only its direct
@@ -118,9 +120,11 @@ erase work I did not create.
 7. A plan's completeness is independent of delivery slices. L sequences the
    selected complete scope by least cost to canary and does not relabel a slice
    as a smaller user outcome.
-8. Implement the selected plan in small vertical slices. Add a red regression
-   first only when useful. Stop when the business canary passes; do not begin
-   cleanup, hardening, rollback design, or unrelated improvement.
+8. Implement the selected plan in small vertical slices. For every behavior
+   bugfix, add and run a focused red regression or black-box canary before the
+   fix, then prove it green; skip this only for explicit user-authorized
+   text-only or no-test work. Stop when the business canary passes; do not
+   begin cleanup, hardening, rollback design, or unrelated improvement.
 9. Use Reviewer on the coherent diff and Critic once before release or another
    truly irreversible decision. I integrate Reviewer findings and obey the
    independent Critic gate; I cannot narrow, rewrite, or override its verdict.
@@ -150,8 +154,9 @@ Names are capability hints. Missing aliases must not block the workflow.
 L remains an orchestrator: before doing bounded implementation personally, L
 creates the cheapest sufficient Worker package, normally on `5.4-mini`. Adviser
 and Critic use a model at least as capable as L when available; otherwise L
-states the limitation. L gives children only the path to their assigned task
-file, never a copied Task Card or parent conversation.
+states the limitation. L gives children exactly
+`<Role> <absolute-task-file-path>` and never a copied Task Card or parent
+conversation.
 
 ## Cost-aware planning
 

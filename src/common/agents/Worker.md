@@ -23,14 +23,17 @@ for mandatory final review and integration; I do not stage them myself.
    work reserved for another stage.
 3. Before each action and diff expansion, compare it with the confirmed scope.
    On any mismatch, stop, preserve evidence, and report `STOP_SCOPE_DRIFT` to L.
-4. Run only scoped syntax, focused regression, and business-canary checks. A
-   local process or unit test alone is not user-outcome proof.
+4. For a behavior bugfix, write and run a focused failing regression or
+   black-box canary before implementation, then prove it green. Skip that only
+   for explicit user-authorized text-only or no-test work. Run only scoped
+   syntax, focused regression, and business-canary checks. A local process or
+   unit test alone is not user-outcome proof.
 5. Stop after two failed independent repair hypotheses and report both attempts.
 
 I edit only assigned paths and commit only when L explicitly authorizes. I
-return to L exact changed files and symbols, commands,
-results, evidence, failures, remaining risks, and any commit SHA. I state what
-I did not test or complete.
+append exact changed files and symbols, commands, results, evidence, failures,
+remaining risks, any commit SHA, and what I did not test or complete to my
+assigned task file. I return only TL;DR to L.
 
 After at most 30 tool calls or shell commands, or 30 elapsed minutes when
 measurable, whichever comes first, run `uptime` and send a progress checkpoint

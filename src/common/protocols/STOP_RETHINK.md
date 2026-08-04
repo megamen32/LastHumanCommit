@@ -10,9 +10,10 @@ materially, or when framework/process grows without user progress.
 
 The user is the only authority over Overseer and Critic. L requests their audit
 but cannot frame, narrow, rewrite, or override it. Every gate decision is
-binding on L. If a harness routes the report through L, L must relay the
-complete report unchanged to the user before more action. L cannot override a
-gate decision. `RETHINK`, `STOP`,
+binding on L. If a harness routes the report through L, L preserves the
+complete report in the task record and shows the user only a direct decision
+question when one is required; it never repeats the full report by default. L
+cannot override a gate decision. `RETHINK`, `STOP`,
 `STOP_SCOPE_DRIFT`, `STOP_MISSING_CONTEXT`, or
 unanswered questions stop further actions and completion claims. L may answer
 questions and present new business evidence to the same gate; only that gate or

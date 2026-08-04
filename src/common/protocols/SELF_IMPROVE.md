@@ -36,7 +36,8 @@ four questions:
   duplicate. A fingerprint is the same friction source plus the same proposed
   remedy.
 - Classify each signal as `fixed now`, `Proposed`, `needs human decision`, or
-  `not actionable`. Put unselected work under `ROADMAP.md` → `Proposed`.
+  `not actionable`. Record an observed unselected defect as minimal `todo-*`;
+  only a new user product proposal belongs under `ROADMAP.md` → `Proposed`.
 - Do not silently rewrite LHC, add a skill, install an MCP, or change
   harness configuration from one retrospective. Make an immediate small fix
   only when it is clearly in the user's current scope; otherwise preserve the

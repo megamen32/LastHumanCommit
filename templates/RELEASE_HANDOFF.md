@@ -12,9 +12,10 @@
 Риски и rollback:
 Commit:
 
-Ответьте `да` для немедленного deploy или `нет` / `стоп` для отмены.
-Без ответа L возобновит эту задачу через 30 минут, повторно проверит состояние и
-выполнит deploy только если handoff остался неизменным.
+Перед deploy L обязан вызвать `Ask User` при attested capability, либо задать
+тот же прямой вопрос в harness: `да` для deploy, `нет` / `стоп` для отмены.
+Без явного положительного ответа deploy запрещён; wake может только напомнить
+или повторно проверить handoff, но не выполнить deploy.
 
 ## L-owned handoff state
 
@@ -39,9 +40,7 @@ deployment_result:
 ## State transitions
 
 ```text
-pending + да + current + single_serialized_L
-  -> deploying -> deployed | deploy_failed
-pending + due + unanswered + current + single_serialized_L
+pending + explicit_yes + current + single_serialized_L
   -> deploying -> deployed | deploy_failed
 pending + нет | стоп -> vetoed
 pending + other human reply -> answered

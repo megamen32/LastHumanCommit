@@ -5,8 +5,9 @@ Before every delegated goal:
 - Select the lowest sufficient working model class for the assigned role and
   bounded acceptance check. Do not inherit L's model by default merely because
   it is the parent default.
-- Use Hermes' fresh delegated context and give it one compact Task Card with
-  the `[LHC_ROLE=<role>]` prefix, goal, evidence, scope, acceptance check, stop
-  conditions, and report format.
+- Use Hermes' fresh delegated context. Write one compact `todo-*.md` Task Card;
+  the delegated goal carries `[LHC_ROLE=<role>]` and its absolute task-file
+  path. The child reads that file, appends its detailed result there, and
+  returns only TL;DR to L.
 - Escalate only after `NEEDS_REDECOMPOSITION` or concrete acceptance evidence
   shows that the selected class cannot complete the bounded package.

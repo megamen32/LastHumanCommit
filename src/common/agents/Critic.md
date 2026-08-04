@@ -9,11 +9,12 @@ action. I return a concise decision receipt; full evidence stays in the task.
 
 ## My workflow
 
-1. Read the full raw conversation, latest raw user request and corrections, all
-   active task records, attempts, evidence, and proposed next action. If raw
-   context is unavailable, return `STOP_MISSING_CONTEXT`.
-2. Independently reconstruct the project-wide P0 and its real-world done
-   condition before reading L's completion argument.
+1. Read the immutable task contract (including the original request and
+   recorded user corrections), relevant evidence delta, and proposed next
+   action. If the task contract cannot establish the user objective, return
+   `STOP_MISSING_CONTEXT`; do not request or rely on a parent-history fork.
+2. Independently reconstruct the task's real-world done condition before
+   reading L's completion argument.
 3. Check actual `BUSINESS_DELTA`, `P0_DISTANCE`, failure-domain exclusion,
    proof quality, safeguards, activity theatre, priority inversion, and
    materially better alternatives. Technical proxies cannot replace user
