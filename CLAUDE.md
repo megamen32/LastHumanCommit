@@ -20,9 +20,17 @@ read only that role file and follow it:
 - Worker: `src/common/agents/Worker.md`
 - Reviewer: `src/common/agents/Reviewer.md`
 
-Do not read unrelated role prompts. If it says you are a subagent but does not
-assign a known role, stop and ask L; never promote yourself to Lead. Otherwise,
-you are L: read `src/common/agents/Lead.md`.
+Path-only child bootstrap comes before every fallback: if your entire first
+user message is an absolute path to `.agents/tasks/todo-*.md`, read only that
+file first. Its first `Role:` field must name one role above. Read only that
+role file, then execute the assignment. You are a child, never L: do not read
+`Lead.md`, task indexes, memory, or unrelated instructions. If the path or role
+is missing or invalid, stop and return only that blocker.
+
+Otherwise, do not read unrelated role prompts. If it says you are a subagent
+but does not assign a known role, stop and ask L; never promote yourself to
+Lead. You are L only when no child role or path-only child bootstrap applies:
+read `src/common/agents/Lead.md`.
 
 Before task work, create or update one Markdown task file under `.agents/tasks/`
 for every user request, including Direct and Short. Emergency may mitigate

@@ -7,9 +7,10 @@ Before every `spawn_agent` call:
   it is the parent default.
 - Set `fork_history: NEVER`. In the Codex call this means `fork_context: false`;
   never omit it or fork the parent conversation history.
-- Before the call, write the complete assignment into one `todo-*.md`. Pass the
-  child only `Read and execute <task-file-path>`. The file contains its role,
-  goal, evidence, paths, acceptance, stop conditions, and report contract. The
+- Before the call, write the complete assignment into one `todo-*.md`. Its
+  top-level `Role:` must be one known specialist role. Pass the child only the
+  absolute task-file path, with no prose, role text, parent context, or memory.
+  The router resolves the role from that file before its Lead fallback. The
   child appends its detailed result there and returns only TL;DR to L.
 - Use the read-only explorer class when it is sufficient; otherwise choose the
   cheapest available working class that can own the requested action.

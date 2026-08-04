@@ -1,6 +1,7 @@
 # Task
 
 Status: todo | in progress | blocked | complete
+Role: Lead | Overseer | Adviser | Critic | Explorer | Worker | Reviewer
 Original user request:
 Objective:
 Business canary:
@@ -60,7 +61,8 @@ Evidence:
 
 ## Child assignment
 
-Role:
+For a path-only child, `Role:` above is required and appears before all task
+body. A child reads this file first, then only that role file.
 Goal and known facts:
 Allowed and excluded paths:
 Acceptance and stop conditions:
