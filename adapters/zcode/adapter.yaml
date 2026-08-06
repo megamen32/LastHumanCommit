@@ -1,0 +1,13 @@
+schema_version: 1
+harness: zcode
+kind: external-adapter
+role_source: ../../src/common/agents
+optional_instructions: instructions.md
+subagent_instructions_template: templates/subagent.md
+delivery: claude-project-or-agent-profile
+self_improve: required-core-protocol
+capabilities:
+  native_role_profile: adapter-dependent
+  fresh_child_context: adapter-dependent
+  model_override: adapter-dependent
+  resume_transport: adapter-dependent

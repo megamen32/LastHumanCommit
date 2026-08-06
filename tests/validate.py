@@ -18,7 +18,7 @@ ROLES = (
     "Tester",
 )
 
-ADAPTERS = ("codex", "opencode", "claude-code", "hermes")
+ADAPTERS = ("codex", "opencode", "claude-code", "hermes", "zcode")
 
 
 def fail(message: str) -> None:

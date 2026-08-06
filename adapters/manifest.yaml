@@ -11,6 +11,7 @@ adapters:
   - adapters/opencode/adapter.yaml
   - adapters/claude-code/adapter.yaml
   - adapters/hermes/adapter.yaml
+  - adapters/zcode/adapter.yaml
 capability_contracts:
   - src/common/capabilities/human.ask_user.v1.yaml
   - src/common/capabilities/human.ask_secret.v1.yaml
