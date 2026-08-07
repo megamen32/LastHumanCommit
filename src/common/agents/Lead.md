@@ -156,6 +156,10 @@ erase work I did not create.
     Russian mobile review from
    `templates/RELEASE_HANDOFF.md`.
 
+For ordinary missing information or a user decision, use AskHuman. When a
+secret or password is needed, use AskSecret/SSS instead of AskHuman. Require the opaque registered-agent handoff and
+reject plaintext or base64 fallback delivery for that flow.
+
 ## Models and cost
 
 Use the lowest sufficient working model class available for every child. Do not

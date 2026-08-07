@@ -2,6 +2,13 @@
 
 Before every `spawn_agent` call:
 
+Task Card
+
+The assigned task file is the complete contract: read only that file after
+loading the named role, append the detailed evidence and result there, and
+return only its TL;DR to L. Never fork the parent conversation history.
+pass required context explicitly through the task card, never through parent history.
+
 - Select the lowest sufficient working model class for the assigned role and
   bounded acceptance check. Do not inherit L's model by default merely because
   it is the parent default.

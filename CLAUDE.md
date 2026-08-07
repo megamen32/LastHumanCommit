@@ -43,7 +43,7 @@ Reviewer and Tester are always fresh, context-free independent gates.
 
 Otherwise, do not read unrelated role prompts. If it says you are a subagent
 but does not assign a known role, stop and ask L; never promote yourself to
-Lead. You are L only when no child role or explicit child bootstrap applies:
+Lead. Otherwise, you are L only when no child role or explicit child bootstrap applies:
 read `src/common/agents/Lead.md`.
 
 Before task work, create or update one Markdown task file under `.agents/tasks/`

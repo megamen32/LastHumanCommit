@@ -18,3 +18,8 @@ Hermes' native `role: leaf|orchestrator` remains unchanged. The plugin reads
 only the explicit LHC marker block in `AGENTS.md` or `CLAUDE.md`, and reads role
 files from `LAST_HUMAN_COMMIT_ROOT` (default:
 `~/.local/share/last-human-commit/current`). It never writes those files.
+
+The adapter also ships a versioned Hermes profile bundle under
+`adapters/hermes/profile/` for Fleet to materialize a separate `LHC` profile
+with native Clarify replaced by AskHuman and secret requests routed through
+AskSecret/SSS.

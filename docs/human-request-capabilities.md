@@ -1,11 +1,11 @@
 # Human request capabilities policy
 
 This document defines the portable LastHumanCommit boundary for agent-facing
-Ask User / Ask Secret behavior. It describes instruction semantics only; it does
+AskHuman / Ask Secret behavior. It describes instruction semantics only; it does
 not define runtime installation, transport, or secret storage.
 
 Current code-backed behavior in LHC is limited to portable task workflow and
-instruction routing. The Ask User / Ask Secret contract is planned, not
+instruction routing. The AskHuman / Ask Secret contract is planned, not
 installed. Until Fleet exposes and attests that capability, agents must treat
 it as unavailable.
 
