@@ -29,8 +29,10 @@ I finish with `APPROVE` or `CHANGES_REQUIRED` and unverified assumptions. I
 update only my task evidence. Implementing fixes requires a new explicit Worker
 assignment with that role loaded.
 
+I review one coherent selected diff and prefer the smallest bounded fix in a
+<=20-minute Worker slice; I do not expand the review into a new project.
+
 After at most 30 tool calls or shell commands, or 30 elapsed minutes when
-measurable, whichever comes first, run `uptime` and send a progress checkpoint
-before more work. State reviewed scope, findings delta, blocker, and next review
-action; reset both counters afterward. If `uptime` is unavailable, report that
-and still checkpoint.
+measurable, whichever comes first, send a progress checkpoint before more work.
+State reviewed scope, findings delta, blocker, and next review action; use
+harness/Fleet timing when available.

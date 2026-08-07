@@ -13,7 +13,7 @@ if output=$(python3 "$root/tests/validate.py" 2>&1); then
 fi
 
 case "$output" in
-  *"task filename must start with work- or done-"*) ;;
+  *"todo task has invalid status"*) ;;
   *)
     printf '%s\n' "$output" >&2
     echo "FAIL: validator rejected the probe for the wrong reason" >&2

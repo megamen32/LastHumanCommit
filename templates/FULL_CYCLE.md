@@ -29,9 +29,10 @@ Forbidden without explicit user request:
 Initial estimate (UTC+3, range, assumptions):
 Revisions (UTC+3, previous -> new, evidence/reason, scope impact):
 
-## Eligible Overseer audit receipts
+## Mandatory initial Overseer audit and later receipts
 
-Eligibility source and trigger:
+Initial audit: completed after task contract and selected plan, before implementation:
+Later eligibility source and trigger:
 Business delta:
 Avoidable spend:
 Next minimal action:
@@ -52,9 +53,11 @@ branch.
 
 ## Audit eligibility
 
-An attested harness or Fleet clock may make Overseer eligible no more often than
-once in 30 minutes after material progress, plateau, repeat failure, budget
-pressure, scope drift, or a consequential user question. No `uptime` ritual.
+Every task has one mandatory initial Overseer audit after its contract and
+selected plan are recorded and before implementation. An attested harness or
+Fleet clock may make later audits eligible no more often than once in 30 minutes
+after material progress, plateau, repeat failure, budget pressure, scope drift,
+or a consequential user question.
 
 ## Research
 
@@ -67,16 +70,19 @@ Bounded subagents (scope, model class, reason, result):
 
 Полный desired outcome, business canary, scope, exclusions, constraints:
 Material human trade-off: yes | no
+Full is selected only when Worker research confirms both development over 30
+active minutes and a material product, architecture, migration, or
+expensive-wrong-path choice.
 
 Если `no`, один рекомендуемый полный путь, его preview и подтверждение:
 
 Если `yes`, покажи ровно три полных варианта с кратким preview:
 
-1. Максимально идеальный — объем, исключения, компромиссы, риски, оценка,
+### 1. Максимально идеальный — объем, исключения, компромиссы, риски, оценка,
    проверка, миграция:
-2. Нормальный — объем, исключения, компромиссы, риски, оценка, проверка,
+### 2. Нормальный — объем, исключения, компромиссы, риски, оценка, проверка,
    миграция:
-3. YAGNI 80/20 — полный результат; исключения только низкоценной работы,
+### 3. YAGNI 80/20 — полный результат; исключения только низкоценной работы,
    компромиссы, риски, оценка, проверка, миграция:
 
 Рекомендация и выбор человека (дословно):
@@ -86,17 +92,19 @@ Material human trade-off: yes | no
 Delivery slices do not reduce or relabel the selected complete outcome. Sequence
 them by least cost to canary; do not start a later slice outside exact confirmed
 scope. Any skipped, reordered, or collapsed slice requires recorded exception
-evidence; run an eligible Overseer audit only when the time-and-trigger rule is
-met.
+evidence; later Overseer audits still follow the 30-minute time-and-trigger rule.
 
 ## Selected-plan WSFF
 
 Call-stack tree:
 File-tree diff:
 Key types and method signatures:
-Pseudocode and migration:
+Pseudocode:
+Migration description:
 Consequential authorization boundaries:
-Second approval of full preview (verbatim):
+Execution graph nodes use one owner, one acceptance gate, and maximum <=20
+active minutes:
+Second explicit approval of full preview (verbatim):
 
 ## Delivery
 

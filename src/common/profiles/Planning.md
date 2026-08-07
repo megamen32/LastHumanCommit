@@ -1,9 +1,11 @@
 # Cost-aware planning
 
-Use this profile for every task. Keep Direct, Short, and Emergency work fast.
+Use this profile for every task. Use for every non-Direct task and keep Direct,
+Short, and Emergency work fast.
 
 Every task record has an initial estimate as optimistic / likely / pessimistic
-active minutes. It is immutable. Append each revision with its trigger and
+active minutes. Record the immutable initial minimum / maximum active minutes.
+It is immutable. Append each revision with its trigger and
 evidence instead of replacing the initial estimate.
 
 Choose the next action by `Least Cost-to-Canary`: maximize expected movement of
@@ -54,17 +56,31 @@ not replace a reachable child with another child or append conversational turns
 to the task file. The file remains the durable bootstrap/report/recovery record;
 live messaging does not authorize polling or an immediate-verdict request.
 
-For adjacent confirmed scope, continue the nearest suitable active Explorer,
-Worker, or Adviser by `send_message` with its new bounded objective, paths,
+For adjacent confirmed scope, continue the nearest suitable active Worker or
+Adviser by `send_message` with its new bounded objective, paths,
 acceptance proof, and stop condition. Do not create a replacement merely to
 give it nearby work. Reviewer and Tester are exceptions: always create them
 fresh and context-free for independent review and real-use testing.
+
+Workers have two modes: `research` is read-only and `implement` owns one
+bounded slice. Each Worker assignment has one acceptance gate and maximum <=20
+active minutes; split unresolved architecture, overlapping writes, or
+multiple gates before dispatch. Reassign the same Worker from research to
+implementation after the research join point.
+Resume the same Worker when the harness supports the research-to-implementation
+lane; otherwise pass the compact research section to a fresh Worker.
 
 A child returns `NEEDS_REDECOMPOSITION` before wandering when scope must change,
 the second independent hypothesis fails, another unknown dependency appears,
 the pessimistic budget is exceeded, or an answer from Lead would change the
 architecture. L treats that result as a planning signal, re-researches, and
 splits or escalates the package.
+
+Every task receives a fresh Overseer verdict after its contract and selected
+plan are recorded and before implementation; later audits require the
+30-minute trigger rule.
+Overseer and Critic are the opposite independent gates: Overseer audits the
+route during work, while Critic gates the completed release diff.
 
 When a child result is the next join point, L ends its turn and waits only for
 the harness's native child-completion notification. Do not arm Agent Resume, a
@@ -73,10 +89,10 @@ external background PID/job, timer, or pending human wait. Polling, prompting
 for an immediate result, changing a timeout, or opening a new result-seeking
 branch has zero canary delta and is forbidden.
 
-If an Explorer's accepted result yields a bounded implementation in the same
-owned scope, L reassigns that exact child `Worker <same-task-file-path>`. The
-same file records both role passes; a second Worker for the same evidence is
-forbidden. Use a separate Reviewer only for independent review.
+If a research Worker's accepted result yields a bounded implementation in the
+same owned scope, L reassigns that exact child `Worker <same-task-file-path>`.
+The same file records both role passes; a second Worker for the same evidence
+is forbidden. Use a separate Reviewer only for independent review.
 
 For Full work only, reserve one fresh Tester package after all implementation,
 focused checks, Reviewer, and Critic. Its acceptance is real user-surface
@@ -84,3 +100,7 @@ evidence, not source or unit-test evidence. Tester is a final sequential gate,
 never an exploratory or parallel implementation lane. Its mandatory scope is
 `only-new`; `all` product scope needs a direct user request or L proposal with
 explicit user approval.
+ A whole plan may exceed 60 minutes only as a known graph of bounded slices
+ with explicit dependencies and joins.
+ A single unresolved block above 60 minutes means more research, not one long
+ assignment.

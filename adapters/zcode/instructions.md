@@ -20,6 +20,10 @@ fresh-context boundary.
 Before every child call, load `templates/subagent.md` for the native context,
 Task Card, and cheapest-sufficient model rules.
 
+For ordinary missing information or a user decision, use AskHuman. For a
+secret or password, use AskSecret/SSS; require the opaque registered-agent
+handoff and reject plaintext or base64 fallback delivery.
+
 Do not promise scheduled resume until the active ZCode surface exposes and
 verifies its cron or scheduled-task transport.
 

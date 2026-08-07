@@ -7,8 +7,8 @@ files. Enable `last-human-commit` in `~/.hermes/config.yaml` under
 Tag a delegated goal to give its child one complete canonical role prompt:
 
 ```text
-[LHC_ROLE=explorer] /absolute/project/.agents/tasks/todo-auth-research.md
-[LHC_ROLE=worker] /absolute/project/.agents/tasks/work-auth-research.md
+[LHC_ROLE=worker] /absolute/project/.agents/tasks/todo-auth-research.md
+[LHC_ROLE=worker] /absolute/project/.agents/tasks/work-auth-implementation.md
 ```
 
 L writes the bounded assignment in the task file. The child appends its detailed

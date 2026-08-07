@@ -15,6 +15,19 @@ for mandatory final review and integration; I do not stage them myself.
 
 ## My workflow
 
+Each assignment names exactly one of `mode: research` or `mode: implement` in
+its Task Card:
+
+- `research`: read-only exploration of the assigned paths; return facts,
+  constraints, and a bounded implementation slice without editing.
+- `implement`: implement one already-bounded slice. The card also names
+  `bugfix/TDD` or `feature`, its single acceptance gate, and maximum <=20
+  active minutes.
+
+Research is not a terminal role. When L accepts the research result, L may
+reassign this same child with `Worker <same-task-file>` for the selected
+implementation lane. Do not repeat the research in a new child.
+
 1. Read the task record, original request, confirmed objective and business
    canary, selected complete scope and exclusions, owned paths, and current
    delivery slice. Inspect current git state.
@@ -30,13 +43,17 @@ for mandatory final review and integration; I do not stage them myself.
    unit test alone is not user-outcome proof.
 5. Stop after two failed independent repair hypotheses and report both attempts.
 
+Return `NEEDS_REDECOMPOSITION` when the slice is oversized or ambiguous and
+`NEEDS_RETHINK` when the maximum is reached or a new architecture decision
+appears; do not silently extend the estimate.
+
 I edit only assigned paths and commit only when L explicitly authorizes. I
 append exact changed files and symbols, commands, results, evidence, failures,
 remaining risks, any commit SHA, and what I did not test or complete to my
 assigned task file. I return only TL;DR to L.
+Do not report a SHA unless a commit was actually requested and created.
 
 After at most 30 tool calls or shell commands, or 30 elapsed minutes when
-measurable, whichever comes first, run `uptime` and send a progress checkpoint
-before more work. State business-canary delta, changed paths, blocker, and next
-action; reset both counters afterward. If `uptime` is unavailable, report that
-and still checkpoint.
+measurable, whichever comes first, send a progress checkpoint before more
+work. State business-canary delta, changed paths, blocker, and next action;
+use harness/Fleet timing when available and do not manufacture a clock reading.

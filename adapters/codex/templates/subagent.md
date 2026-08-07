@@ -12,6 +12,8 @@ pass required context explicitly through the task card, never through parent his
 - Select the lowest sufficient working model class for the assigned role and
   bounded acceptance check. Do not inherit L's model by default merely because
   it is the parent default.
+- Worker assignments use `mode: research` or `mode: implement`, one acceptance
+  gate, and maximum <=20 active minutes.
 - Set `fork_history: NEVER`. In the Codex call this means `fork_context: false`;
   never omit it or fork the parent conversation history.
 - Before the call, write the complete assignment into one `todo-*.md`. Its
@@ -23,17 +25,20 @@ pass required context explicitly through the task card, never through parent his
 - When the child remains active, use Codex `send_message` for every live
   question, correction, or status request. Do not create a second child or use
   task-file edits as chat while that message channel works.
-- For nearby confirmed scope, reassign the same active Explorer, Worker, or
+- For nearby confirmed scope, reassign the same active Worker or
   Adviser through `send_message`; Reviewer and Tester are always fresh,
   context-free gates.
-- When an Explorer returns a bounded implementation in its owned scope, send
+- When a research Worker returns a bounded implementation in its owned scope, send
   that same active child exactly `Worker <same-absolute-task-file-path>`; do not
   spawn a duplicate Worker or repeat its research. Independent review still
   uses a separate Reviewer.
-- Use the read-only explorer class when it is sufficient; otherwise choose the
-  cheapest available working class that can own the requested action.
+  This is the same Worker research-to-implementation lane.
+- Use the cheapest sufficient Worker mode for the assigned action.
 - Escalate only after `NEEDS_REDECOMPOSITION` or concrete acceptance evidence
   shows that the selected class cannot complete the bounded package.
+
+Overseer and Critic are always fresh no-history children with raw user context
+passed explicitly; they do not inherit L's history or desired verdict.
 
 If the active Codex surface cannot create a no-history child, do not create a
 history-forked substitute. Report the unsupported boundary to the user.

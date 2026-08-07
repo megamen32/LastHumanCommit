@@ -4,6 +4,14 @@
 
 > A small, human-gated instruction set for cheaper multi-agent coding.
 
+LHC is orchestrator-first: L owns decisions and integration, while bounded
+Workers handle repository research, implementation, and repetitive checks.
+Each Worker slice has one acceptance gate and maximum <=20 active minutes.
+Full work presents three complete plans for human selection and uses a second
+technical approval before implementation.
+The full preview requires a second explicit approval.
+User-requested worktrees live only below `.worktrees/` in the primary project.
+
 The root agent keeps decisions and integration. Specialist prompts are loaded
 only by the agent doing that job, so the Lead does not carry every role in
 context.
@@ -42,23 +50,20 @@ backup and restores the original content if the editor fails.
 - Every request, including Direct and Short work, gets one Markdown task file
   under `.agents/tasks/` with an estimate; `work-*` is active or blocked and the
   same file becomes `done-*` when complete. There is no duplicate kanban.
-- Overseer is mandatory for every task and Critic gates release. Both audit the
-  raw user context independently, obey the user rather than L, and their stops
-  and unanswered questions bind L. Other bounded subagents are used only when
-  the selected scope needs them.
-- Full work researches first and presents the initial plans in Russian:
-  Ultimate, Normal, and YAGNI. It then waits for the human to choose.
-- `YAGNI -> Normal -> Ultimate` is the delivery order after selection, not the
-  initial plan order.
+- Overseer is mandatory once for every task after the contract and selected plan
+  and before implementation; later audits are no more frequent than every 30
+  minutes and require a material trigger. Critic gates release.
+- L is orchestrator-first. Worker has read-only `research` and bounded
+  `implement` modes; every slice has one acceptance gate and maximum <=20
+  active minutes. There is no separate Explorer role.
+- Full work researches first and presents three complete plans in Russian:
+  `Максимально идеальный`, `Нормальный`, and `YAGNI 80/20 — полный результат`.
+  It waits for human selection and a second technical approval.
 - Use execution updates in English to keep collaboration inspectable. The
   final answer in Russian gives the human the tested outcome and remaining risks.
-- Every agent runs `uptime` and sends a progress checkpoint after at most 30
-  tool calls or shell commands, or 30 elapsed minutes when measurable,
-  whichever comes first.
 - Review follows the selected outcome and affected scope. Unsolicited secondary
   work is forbidden unless it is user-confirmed or a minimal safe-canary
   prerequisite.
-- L schedules its own 30-minute wake and revalidates before deploy.
 - On Codex, OpenCode, and Claude Code, L records a compact self-improvement
   retrospective; Hermes keeps its native memory/skill learning loop.
 - L assumes a shared worktree: recent foreign edits are hands-off; older ones
@@ -70,11 +75,10 @@ backup and restores the original content if the editor fails.
 L (Lead)
 ├─ Adviser             5.6-sol | fable | glm5.2 | kimi k3
 ├─ Critic / Overseer   5.6-terra | opus | kimi 2.7 | deepseek-v4-pro
-├─ Explorer            sonnet | luna | MinimaxM3 | Deepseek v4 flash | mimo | glm-4.7
 ├─ Worker (~90%)       sonnet | luna | MinimaxM3 | Deepseek v4 flash | mimo | glm-4.7
-└─ Reviewer            sonnet | luna | MinimaxM3 | Deepseek v4 flash | mimo | glm-4.7
+├─ Reviewer / Tester   sonnet | luna | MinimaxM3 | Deepseek v4 flash | mimo | glm-4.7
+└─ Fast Worker research: haiku | 5.4mini
 
-Fast read-only lookup: haiku | 5.4mini
 ```
 
 The strongest models are short strategic advisers, not long-running workers.

@@ -7,6 +7,10 @@ startup; it must not spend a turn reading `src/common/agents/<Role>.md`.
 Before every child call, load `templates/subagent.md` for the fresh-context,
 Task Card, and cheapest-sufficient model rules.
 
+For ordinary missing information or a user decision, use AskHuman. For a
+secret or password, use AskSecret/SSS; require the opaque registered-agent
+handoff and reject plaintext or base64 fallback delivery.
+
 Keep the core role unchanged. This adapter owns profile frontmatter, native
 permissions, and any harness-specific resume/session metadata. When a rendered
 role lazily names a companion profile or protocol relative to its role file,

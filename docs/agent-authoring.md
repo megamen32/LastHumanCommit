@@ -3,25 +3,30 @@
 `AGENTS.md` and `CLAUDE.md` are byte-identical, marker-delimited entry routers.
 `Lead.md` owns the root workflow. Every other role file is a self-contained
 subagent prompt.
+L is an orchestrator by default; Workers have read-only `research` and bounded
+`implement` modes, and there is no separate Explorer role.
+Each Worker slice has one acceptance gate and maximum <=20 active minutes.
 
 Keep instructions short, operational, and proportional:
 
 - Every request, including Direct and Short work, creates one Markdown task file
   under `.agents/tasks/` and records an estimate; rename the same file from
   `work-*` to `done-*` on completion. Never maintain a duplicate kanban.
-- Overseer is an eligibility-gated least-cost route audit; it is not a second
-  planner or a per-stage ritual. Critic gates a release or irreversible claim.
+- Overseer is mandatory once for every task after the contract and selected plan
+  and before implementation; later audits are eligibility-gated and no more
+  often than once in 30 minutes. It is not a second planner. Critic gates a
+  release or irreversible claim.
   Both use compact task contracts and deltas, preserve receipts in task state,
   and expose the user only to direct consequential questions or blocking drift.
 - Full work preserves research, three initial plans in Russian, human selection,
   WSFF views, outcome-and-scope review, focused checks, Reviewer, Critic, final
   real-use Tester, commit, native child-completion, and L-owned external/human
   timed follow-up.
-- `YAGNI -> Normal -> Ultimate` defines delivery layering after selection, not
-  the initial plan order.
+- The third Full plan is `YAGNI 80/20` and must still deliver the complete
+  desired result; it omits only low-value work.
 - Use execution updates in English and give the final answer in Russian.
 - Harness or Fleet timing, when attested, makes Overseer eligible no more than
-  once in 30 minutes after a material trigger. Do not use `uptime` as ritual.
+  once in 30 minutes after a material trigger.
 - Unsolicited secondary work is forbidden unless the user confirms it or it is
   a minimal safe-canary prerequisite for the selected outcome.
 - The router names roles and paths but does not repeat their instructions.
@@ -29,7 +34,7 @@ Keep instructions short, operational, and proportional:
 - Profiles supplement an assigned role; protocols load only when triggered.
 - Templates store decisions and state, not a second normative workflow. A Full
   task has a compact option preview, human selection, then a detailed technical
-  preview and second human approval before implementation.
+  preview and second explicit approval before implementation.
 - `profiles/Planning.md` owns Full-work estimate and re-decomposition rules.
 - Every adapter manifest names `subagent_instructions_template`; L loads it
   immediately before creating a child. Keep harness API syntax there, while the
@@ -39,7 +44,8 @@ Keep instructions short, operational, and proportional:
   it records concrete friction and proposals without silently changing LHC.
 - `protocols/SHARED_WORKTREE.md` owns collaboration safety: no cleanup of
   foreign edits, five-minute active-edit protection, and final integration
-  review by L.
+  review by L. User-requested worktrees live under `.worktrees/` in the primary
+  project only.
 
 When changing instructions:
 

@@ -8,6 +8,10 @@ to the child context before Hermes builds the child. Hermes' native
 Before every delegated goal, load `templates/subagent.md` for the Hermes role
 prefix, Task Card, and cheapest-sufficient model rules.
 
+For ordinary missing information or a user decision, use AskHuman. For a
+secret or password, use AskSecret/SSS; require the opaque registered-agent
+handoff and reject plaintext or base64 fallback delivery.
+
 The plugin reads the explicit Last Human Commit marker block and role source but
 never edits project instructions. A missing or unknown role is left untouched
 so Hermes retains its normal behavior.

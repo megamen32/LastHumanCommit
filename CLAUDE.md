@@ -9,6 +9,20 @@ five minutes is hands-off because someone is probably editing it; L reviews
 older foreign changes at the end and includes reviewed-safe changes in L's
 commit.
 
+## Workspace first
+
+Before task work, inspect the current repository root, `git worktree list`,
+current branch, and default branch when it can be identified. If the current
+checkout is auxiliary, detached, or non-default, the first user-visible update
+must warn the user and show the exact worktree path and branch.
+If the user explicitly asks for a worktree, create it only below
+`<primary-project-root>/.worktrees/<task-slug>`; never create project worktrees
+in `/tmp` or harness-owned storage.
+
+L is an orchestrator by default. Short and Full work is delegated to bounded
+Workers; a Worker Task Card declares `mode: research` or `mode: implement` and
+has a maximum <=20 active minutes.
+
 Resolve identity before task work. If an enclosing instruction explicitly assigns one of these roles,
 read only that role file and follow it:
 
@@ -16,7 +30,6 @@ read only that role file and follow it:
 - Overseer: `src/common/agents/Overseer.md`
 - Adviser: `src/common/agents/Adviser.md`
 - Critic: `src/common/agents/Critic.md`
-- Explorer: `src/common/agents/Explorer.md`
 - Worker: `src/common/agents/Worker.md`
 - Reviewer: `src/common/agents/Reviewer.md`
 - Tester: `src/common/agents/Tester.md`
@@ -37,27 +50,37 @@ request. Do not create a duplicate child or edit the task file merely to chat.
 The task file is for bootstrap, durable evidence, final report, and recovery
 when live messaging is unavailable or the child is no longer active.
 
-For adjacent confirmed scope, L reassigns the nearest suitable active Explorer,
-Worker, or Adviser through `send_message`, rather than creating a replacement.
+For adjacent confirmed scope, L reassigns the nearest suitable active Worker
+or Adviser through `send_message`, rather than creating a replacement.
 Reviewer and Tester are always fresh, context-free independent gates.
+
+There is no separate Explorer role. A Worker task card declares `mode:
+research` or `mode: implement`; research uses
+`src/common/protocols/WORKER_RESEARCH.md`, and implementation uses
+`src/common/protocols/WORKER_IMPLEMENT.md`. When research establishes a bounded
+implementation lane, L reassigns that same child with `Worker <same-task-file>`.
 
 Otherwise, do not read unrelated role prompts. If it says you are a subagent
 but does not assign a known role, stop and ask L; never promote yourself to
 Lead. Otherwise, you are L only when no child role or explicit child bootstrap applies:
 read `src/common/agents/Lead.md`.
 
-Before task work, create or update one Markdown task file under `.agents/tasks/`
+Before task work, create or update one Markdown file under `.agents/tasks/`
 for every user request, including Direct and Short. Emergency may mitigate
 immediate harm first but records immediately after. Store the original request,
 objective, business canary, confirmed scope, explicit exclusions, immutable
-initial active-minute estimate, and append-only estimate revisions with trigger
-and evidence. You keep one task file per item. When you observe an unselected
+initial minimum / maximum active minutes estimate, and append-only estimate revisions with trigger
+and evidence. You keep one task file per item. Never create a second ledger,
+kanban, specification, or recovery file for the same task. When you observe an unselected
 defect, immediately record a minimal `todo-*.md` under `.agents/tasks/` with
 its symptom, smallest evidence, and blocker; do not switch away from current
 work or investigate further. Rename it to `work-*` only when a workflow stage
-actually starts; completed work uses `done-*`. Overseer is
-an independent, eligibility-gated audit of L. It is not a second planner and
-is never called merely because a task started, ended, or moved stage.
+actually starts; completed work uses `done-*`. Overseer is mandatory for every task:
+it is an independent audit
+of L and is mandatory once for every task after the task contract and selected
+plan are recorded and before implementation. It is not a second planner. Any
+later audit is eligibility-gated: no more often than once in 30 minutes and
+only after a material trigger.
 Initial plans are written in Russian, implementation progress is written in
 English, and the final answer is written in Russian.
 
@@ -81,4 +104,5 @@ class: ask one direct question at the point of action and wait for the answer.
 If the boundary is uncertain, L gives short/full estimates and asks the human
 which cycle to use. L reads `ROADMAP.md` when present; new user product
 proposals go under `Proposed`, while observed unselected defects use `todo-*`.
+Silence never authorizes them.
 <!-- last-human-commit:end -->
