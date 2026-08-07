@@ -41,7 +41,7 @@ Status: done
 - [x] M4.1 Replace `CANON.md` with byte-identical `AGENTS.md` and `CLAUDE.md`.
 - [x] M4.2 Route every known role to one independently loadable prompt.
 - [x] M4.3 Restore the full provider/model role map.
-- [x] M4.4 Make L own timed self-resume, revalidation, and deployment.
+- [x] M4.4 Make L own timed self-resume and revalidation; deployment still requires explicit human approval.
 - [x] M4.5 Complete an outcome-and-affected-scope contract review and close
   stale contracts within that boundary.
 
@@ -64,9 +64,9 @@ Status: in progress
 - [x] M5.7 Add a mandatory, bounded self-improve record for every non-Hermes
   L. Hermes retains its native post-response memory/skill review instead of a
   duplicate LHC loop.
-- [x] M5.8 Treat every worktree as shared: preserve foreign edits, protect
-  files changed within five minutes, and review older changes before L commits
-  them with the completed task.
+- [x] M5.8 Treat every checkout as shared, keep routine work in the primary checkout,
+  require immediate branch/worktree disclosure, and allow explicit new worktrees
+  only under the project-local `.worktrees/` directory.
 
 ## M6 — Outcome-first workflow contract
 
@@ -79,6 +79,23 @@ Status: done
   validation, applied project markers, and the installed version before making
   any runtime deployment claim. Plan selection is recorded in
   `.agents/tasks/done-20260801-outcome-first-lhc.md`.
+
+## M7 — Orchestrator-first execution
+
+Status: done
+
+- [x] M7.1 Make Lead orchestrate by default and reserve direct execution for
+  obvious <=5-minute work.
+- [x] M7.2 Replace Explorer with Worker research/implementation modes and resume
+  the researching Worker for its implementation lane when supported.
+- [x] M7.3 Enforce one acceptance gate and maximum <=20 active minutes per Worker
+  slice; require more research for unresolved >60-minute blocks.
+- [x] M7.4 Restore mandatory fresh/no-history Overseer audits and make estimate
+  overruns block continuation until a new verdict.
+- [x] M7.5 Preserve the complete Full human layer: three plans, technical preview,
+  execution graph, and two explicit approvals.
+- [x] M7.6 Keep one task file as the complete task memory and make silence
+  incapable of authorizing deploy or workspace operations.
 
 ## Proposed
 
@@ -93,7 +110,7 @@ Status: done
   full-history expensive fork control. Measure accepted tasks, end-to-end
   proof, scarce-quota use, wall-clock, human interventions, retries,
   wandering time, rework, and estimate error.
-- [ ] Calibrate estimate ranges from completed task cards. The objective is
+- [ ] Calibrate minimum/maximum estimate ranges from completed task cards. The objective is
   accepted tasks per scarce quota without moving rework to the human.
 - [ ] Turn the current hand-tuned role map into an evaluated router: begin with
   an explainable rule matrix by task, risk, scope, tools, and quota bucket;

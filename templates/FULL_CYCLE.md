@@ -1,124 +1,130 @@
 # Full cycle
 
-## Language contract
+Use Full only after Worker research confirms both development over 30 active
+minutes and a material product, architecture, migration, or expensive-wrong-path
+choice. Keep every decision and result in the same `.agents/tasks/work-*` file.
 
-- Планы - только на русском
-- Execution updates - English only
-- Финальный ответ - только на русском
+## Language
 
-## Confirmed outcome and boundary
+- Планы — только на русском.
+- Execution updates — English only.
+- Финальный ответ — только на русском.
 
-Outcome (exact):
-Acceptance canary (exact):
-Confirmed scope (exact):
-Exclusions (exact):
+## Outcome and boundary
+
+Outcome:
+Exact business canary:
+Durable proof:
+Confirmed scope:
+Explicit exclusions:
 Constraints:
-Scope changes with verbatim human confirmation:
+Started at (UTC+3):
+Initial estimate (minimum / maximum active minutes):
+Estimate revisions (append-only, never replace the initial range):
 Stop when:
-Abandon when:
-Forbidden without explicit user request:
-
-## Scope scenarios
-
-- Failed canary + unrelated secondary work -> STOP_SCOPE_DRIFT
-- Green canary + direct regression -> review the direct regression
-- User-confirmed secondary objective -> in scope
-
-## Estimate history
-
-Initial estimate (UTC+3, range, assumptions):
-Revisions (UTC+3, previous -> new, evidence/reason, scope impact):
-
-## Eligible Overseer audit receipts
-
-Eligibility source and trigger:
-Business delta:
-Avoidable spend:
-Next minimal action:
-Direct user question:
-Decision: CONTINUE | ASK_USER | STOP_DRIFT
-
-## Mandatory Critic release decision
-
-Raw user context supplied (location):
-Current user P0 reconstructed by Critic:
-Business delta and P0 distance:
-Questions for L:
-Release verdict (evidence, independent decision):
-
-L preserves the complete receipt in the task record. `CONTINUE` is silent;
-`ASK_USER` is shown only as its direct question; `STOP_DRIFT` stops the extra
-branch.
-
-## Audit eligibility
-
-An attested harness or Fleet clock may make Overseer eligible no more often than
-once in 30 minutes after material progress, plateau, repeat failure, budget
-pressure, scope drift, or a consequential user question. No `uptime` ritual.
+Rethink when:
+Consequential actions requiring explicit authorization:
 
 ## Research
 
-Repository/request meaning:
-Evidence:
+L delegates repository research to `Worker(mode=research)` and does not search
+or write code itself.
+
+Findings and existing mechanism:
+Canary blocker:
 Unknowns:
-Bounded subagents (scope, model class, reason, result):
+Proposed execution graph:
 
-## Решение
+Every implementation node must have one owner, owned paths, one acceptance gate,
+known dependencies/join point, and maximum <=20 active minutes. A whole plan may
+exceed one hour only as such a graph. One unresolved block above one hour means
+more research, not a vague long Worker assignment.
 
-Полный desired outcome, business canary, scope, exclusions, constraints:
-Material human trade-off: yes | no
+## Mandatory Overseer route audit
 
-Если `no`, один рекомендуемый полный путь, его preview и подтверждение:
+Run a fresh no-history Overseer after research and before plans. Pass the raw
+user request, the same task file, estimate delta, business delta, blocker, and
+proposed next action. Record the compact verdict. A non-`CONTINUE` verdict binds
+L.
 
-Если `yes`, покажи ровно три полных варианта с кратким preview:
+## Планы
 
-1. Максимально идеальный — объем, исключения, компромиссы, риски, оценка,
-   проверка, миграция:
-2. Нормальный — объем, исключения, компромиссы, риски, оценка, проверка,
-   миграция:
-3. YAGNI 80/20 — полный результат; исключения только низкоценной работы,
-   компромиссы, риски, оценка, проверка, миграция:
+Все планы остаются в подтверждённых границах задачи.
 
-Рекомендация и выбор человека (дословно):
+### 1. Максимально идеальный
 
-## Delivery-slice rule
+Результат, объём, исключения, кратко- и долгосрочные компромиссы, риски,
+минимальная/максимальная оценка, проверка, миграция, параллельный граф:
 
-Delivery slices do not reduce or relabel the selected complete outcome. Sequence
-them by least cost to canary; do not start a later slice outside exact confirmed
-scope. Any skipped, reordered, or collapsed slice requires recorded exception
-evidence; run an eligible Overseer audit only when the time-and-trigger rule is
-met.
+### 2. Нормальный
 
-## Selected-plan WSFF
+Результат, объём, исключения, кратко- и долгосрочные компромиссы, риски,
+минимальная/максимальная оценка, проверка, миграция, параллельный граф:
+
+### 3. YAGNI MVP
+
+Результат, объём, исключения, кратко- и долгосрочные компромиссы, риски,
+минимальная/максимальная оценка, проверка, миграция, параллельный граф:
+
+Рекомендация L:
+Первый выбор человека (дословно):
+
+Do not implement before explicit selection.
+
+## Full technical preview of the selected plan
 
 Call-stack tree:
 File-tree diff:
 Key types and method signatures:
-Pseudocode and migration:
+Pseudocode:
+Migration description:
+Exact business canary:
 Consequential authorization boundaries:
-Second approval of full preview (verbatim):
+Execution graph:
+
+The execution graph shows every <=20-minute Worker lane, owned paths,
+dependencies, parallel waves, and integration/review joins.
+
+Second explicit approval (verbatim):
+
+Do not implement before the second approval.
 
 ## Delivery
 
-Least-cost slice, canary, evidence:
-Later slices, canary, evidence:
-Slice exceptions (evidence, risk):
-Test evidence:
-Review evidence:
-Automatic normal/checkpoint commits:
-Tag decision (explicit user or release process only):
+Default stage order is `YAGNI -> Normal -> Ultimate`, stopping at the selected
+target. Skip or collapse a layer only when it is impossible, unsafe, or pure
+throwaway rework; record the reason in the same task file.
 
-## Final real-use test (Full only; after Reviewer and Critic)
+For each wave:
 
-Mode: only-new (mandatory) | all (user-requested or explicitly approved):
-Tester task and fresh surface:
-User journey and observed evidence:
-Usability critique (website/app/CLI as applicable):
-Verdict: PASS | CHANGES_REQUIRED | STOP_MISSING_REAL_SURFACE
-Repair/retest loop, if needed:
+1. dispatch independent <=20-minute Worker implementation slices;
+2. resume the researching Worker for its lane when supported;
+3. run focused checks and the exact canary;
+4. review the coherent diff;
+5. run a fresh no-history Overseer audit;
+6. on maximum overrun, two failed slices, or no business delta, stop and
+   RETHINK instead of extending the route.
+
+YAGNI slice and evidence:
+Normal slice and evidence:
+Ultimate slice and evidence:
+Stage exceptions:
+Test/canary evidence:
+Reviewer evidence:
+Overseer receipts:
+
+## Release gate
+
+Run Critic once with raw user context, the same task file, selected plan,
+approvals, review, estimate history, and fresh canary proof. L cannot prescribe,
+narrow, rewrite, or override the verdict.
+
+Critic verdict:
+Commit:
+Tag decision (explicit release choice only):
 
 ## Финальный ответ
 
-Финальный ответ - только на русском
+Финальный ответ — только на русском.
 
-Мобильный обзор релиза:
+Мобильный обзор результата:

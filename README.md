@@ -2,136 +2,137 @@
 
 <img width="1672" height="941" alt="Last Human Commit role map" src="https://github.com/user-attachments/assets/7b259f64-50c1-45a4-af27-07a5101d8120" />
 
-> A small, human-gated instruction set for cheaper multi-agent coding.
+> A human-gated orchestration layer for strong Leads and cheap coding Workers.
 
-The root agent keeps decisions and integration. Specialist prompts are loaded
-only by the agent doing that job, so the Lead does not carry every role in
-context.
+LHC keeps expensive models on decisions, decomposition, and proof. Repository
+search, implementation, and repetitive checks go to bounded Workers. The human
+still sees and approves the important product and technical decisions.
 
 ## Use
 
-Copy `src/common/` and `templates/` into the project root. The two entry files
-are intentionally identical and route each agent to exactly one role file.
-
-Never copy `AGENTS.md` or `CLAUDE.md` over an existing project file. They are
-canonical marker blocks. Add or update only that block with the explicit,
-POSIX-standard adapter:
+Copy `src/common/` and `templates/` into the project root. Install the canonical
+marker block without overwriting project-owned instructions:
 
 ```sh
 scripts/lhc-block init AGENTS.md /path/to/project/AGENTS.md
 scripts/lhc-block init CLAUDE.md /path/to/project/CLAUDE.md
 
-# After updating this repository, update an already initialized project:
+# Update an existing valid block later:
 scripts/lhc-block apply AGENTS.md /path/to/project/AGENTS.md
 scripts/lhc-block apply CLAUDE.md /path/to/project/CLAUDE.md
 ```
 
-`init` appends the canonical LHC block only when the target has no marker lines;
-`apply` requires one valid block and replaces only its contents. Both refuse
-malformed, nested, or duplicate blocks without writing. The adapter never
-discovers paths, creates project directories, changes host configuration, or
-installs a runtime service.
+The POSIX adapter edits one explicit block in one explicit file and fails closed
+for malformed, nested, duplicate, or missing markers. It does not discover
+projects, install services, create worktrees, or change host configuration.
 
-The adapter needs only standard POSIX `sh`, `awk`, `ed`, `cp`, and `tail`
-utilities. It edits an existing target in place, preserving its ownership,
-permissions, and surrounding text; before an edit it keeps a private adjacent
-backup and restores the original content if the editor fails.
+## Core workflow
 
-## Workflow
+- One user request has one Markdown file under `.agents/tasks/`. That same file
+  contains research, estimates, plans, approvals, execution, audits, and result.
+  There is no duplicate kanban, specification, ledger, or recovery record.
+- L is an orchestrator by default. Only an obvious <=5-minute Direct action may
+  be done by L. Short and Full work delegate repository search and code to
+  Worker.
+- Worker has two modes: read-only `research`, then `implement`. Implementation
+  explicitly follows either `bugfix/TDD` or `feature` protocol. The same Worker
+  should be resumed for its implementation lane when the harness supports it.
+- Every Worker assignment has one acceptance gate and maximum <=20 active
+  minutes. Bigger or vague work is researched and split before dispatch.
+- A plan above one hour is acceptable only as an understood graph of <=20-minute
+  slices. One unresolved block above one hour means the route is not understood.
+- Every task records an immutable initial `minimum / maximum` estimate. Crossing
+  the current maximum stops the route for a fresh Overseer audit; L cannot hide
+  the miss by merely extending the estimate.
+- Overseer is mandatory and fresh/no-history on every invocation. It audits the
+  raw user request, actual business delta, estimate, and proposed route rather
+  than inheriting L's tunnel vision. Critic independently gates release.
+- Full is used only after research confirms both development over 30 active
+  minutes and a material product/architecture/migration or expensive-wrong-path
+  choice.
+- Full preserves the complete human layer: three Russian plans, first human
+  selection, call-stack tree, file-tree diff, key signatures, pseudocode,
+  migration description, canary, execution graph, and second explicit approval.
+- Selected Full work is delivered `YAGNI -> Normal -> Ultimate`, stopping at the
+  human-selected level.
+- Initial plans are in Russian, execution updates in English, and the final
+  answer in Russian.
 
-- Every request, including Direct and Short work, gets one Markdown task file
-  under `.agents/tasks/` with an estimate; `work-*` is active or blocked and the
-  same file becomes `done-*` when complete. There is no duplicate kanban.
-- Overseer is mandatory for every task and Critic gates release. Both audit the
-  raw user context independently, obey the user rather than L, and their stops
-  and unanswered questions bind L. Other bounded subagents are used only when
-  the selected scope needs them.
-- Full work researches first and presents the initial plans in Russian:
-  Ultimate, Normal, and YAGNI. It then waits for the human to choose.
-- `YAGNI -> Normal -> Ultimate` is the delivery order after selection, not the
-  initial plan order.
-- Use execution updates in English to keep collaboration inspectable. The
-  final answer in Russian gives the human the tested outcome and remaining risks.
-- Every agent runs `uptime` and sends a progress checkpoint after at most 30
-  tool calls or shell commands, or 30 elapsed minutes when measurable,
-  whichever comes first.
-- Review follows the selected outcome and affected scope. Unsolicited secondary
-  work is forbidden unless it is user-confirmed or a minimal safe-canary
-  prerequisite.
-- L schedules its own 30-minute wake and revalidates before deploy.
-- On Codex, OpenCode, and Claude Code, L records a compact self-improvement
-  retrospective; Hermes keeps its native memory/skill learning loop.
-- L assumes a shared worktree: recent foreign edits are hands-off; older ones
-  get final review and, when safe, are committed with the reviewed result.
+## Workspace rule
 
-## Roles and models
+LHC does not create branches or worktrees for routine isolation. It works in the
+primary project checkout by default.
+
+If the harness starts in an auxiliary worktree, detached HEAD, or a non-default
+branch, the agent must warn the user in its first visible update with the exact
+path and branch. If the user explicitly requests a worktree, LHC may create it
+only under:
 
 ```text
-L (Lead)
+<primary-project-root>/.worktrees/<task-slug>
+```
+
+The repository ignores `.worktrees/`, so the project remains self-contained.
+Branch/worktree creation, switching, merging, and deletion are never silent.
+
+## Roles and model classes
+
+```text
+L (Lead: decisions and orchestration)
 ├─ Adviser             5.6-sol | fable | glm5.2 | kimi k3
-├─ Critic / Overseer   5.6-terra | opus | kimi 2.7 | deepseek-v4-pro
-├─ Explorer            sonnet | luna | MinimaxM3 | Deepseek v4 flash | mimo | glm-4.7
+├─ Overseer / Critic   5.6-terra | opus | kimi 2.7 | deepseek-v4-pro
 ├─ Worker (~90%)       sonnet | luna | MinimaxM3 | Deepseek v4 flash | mimo | glm-4.7
 └─ Reviewer            sonnet | luna | MinimaxM3 | Deepseek v4 flash | mimo | glm-4.7
 
-Fast read-only lookup: haiku | 5.4mini
+Fast Worker research: haiku | 5.4mini
 ```
 
-The strongest models are short strategic advisers, not long-running workers.
-Aliases are capability hints and may be replaced by the nearest available
-equivalent.
+The aliases are capability hints. Strong models make short strategic decisions;
+cheap Workers perform long repository and implementation work.
 
 ## Why this shape
 
-- [ManagerWorker](https://arxiv.org/abs/2603.26458) found that a strong manager
-  plus a cheap coding worker matched a strong solo agent on its experiment; the
-  manager's early research and direction mattered more than a final review.
+- [ManagerWorker](https://arxiv.org/abs/2603.26458) motivates separating strong
+  management from cheaper implementation work.
 - [Single-agent or Multi-agent Systems? Why Not Both?](https://arxiv.org/abs/2505.18286)
-  finds coordination has a cost: add agents only for bounded, useful work.
+  shows that coordination itself has cost, so children must be bounded.
 - [DecisionBench](https://arxiv.org/abs/2605.19099) and
-  [TwinRouterBench](https://arxiv.org/abs/2605.18859) motivate measuring routing
-  on held-out end-to-end tasks, not trusting a model's routing claim.
+  [TwinRouterBench](https://arxiv.org/abs/2605.18859) motivate evaluating the
+  final routed outcome rather than trusting a router's own claim.
 - [WSFF](https://github.com/humanlayer/advanced-context-engineering-for-coding-agents/blob/main/wsff.md)
-  motivates research before a human-gated plan and compact planning views.
+  motivates research before a human-gated technical plan.
 
-These are preprints and design input, not a promise that one routing policy
-wins everywhere. `ROADMAP.md` keeps local benchmark work separate from the
-small instruction set.
-
-## Routing boundary
-
-LHC names model classes and requires fresh, scoped cheap-child work. It
-does not claim that every harness can select every child model. Add a
-harness-specific profile only after a live child test proves its role, model,
-and no-history boundary. Each adapter may enforce its own child-call syntax via
-`subagent_instructions_template`; Codex requires `fork_context: false` and must
-pass needed context explicitly instead of forking the parent conversation.
-These templates are source policy, not fleet-wide runtime proof; manifest
-capability statuses change only after separate live evidence.
+These are design inputs, not a claim that one policy wins on every repository.
+`ROADMAP.md` keeps benchmark work separate from the small instruction set.
 
 ## Harness adapters
 
-The portable LHC instructions are capability-first; harness adapters are a separate,
-optional delivery layer. Start at `adapters/manifest.yaml` when installing a
-Codex, OpenCode, Claude Code, or Hermes integration. An adapter may provide
-small harness-specific instructions and a subagent-call template, but it must
-not duplicate or redefine a core role. The Hermes adapter is an external
-plugin; the other manifests record their current proof status and remain
-opt-in.
+The portable core defines roles and protocols. Optional adapters only translate
+them to Codex, OpenCode, Claude Code, or Hermes APIs. Start at
+`adapters/manifest.yaml`.
+
+A Worker may be resumed from research to implementation when the harness proves
+resume support. Overseer and Critic are always fresh no-history children with
+raw user context passed explicitly. Do not claim model selection, isolation, or
+resume support until a live child event proves it.
 
 ## Files
 
-- `AGENTS.md`, `CLAUDE.md` — canonical marked role router for explicit targets.
-- `src/common/agents/Lead.md` — root workflow, human gate, and release action.
-- `src/common/agents/*.md` — independently loadable specialist roles.
-- `src/common/profiles/*.md` — optional domain rules for an assigned role.
-- `src/common/protocols/*.md` — event-triggered procedures.
-- `templates/` — planning, handoff, and optional `.agents/` records.
-- `adapters/` — modular harness manifests, optional instructions, and plugins.
-- `scripts/lhc-block` — explicit, marker-only add/update/check/remove adapter.
-- `docs/agent-authoring.md` — maintainer rules.
+- `AGENTS.md`, `CLAUDE.md` — byte-identical marked entry router.
+- `src/common/agents/Lead.md` — orchestration and human gates.
+- `src/common/agents/Worker.md` — bounded research/implementation owner.
+- `src/common/agents/Overseer.md`, `Critic.md`, `Reviewer.md`, `Adviser.md` —
+  independent checks and bounded advice.
+- `src/common/protocols/WORKER_RESEARCH.md` and `WORKER_IMPLEMENT.md` — Worker
+  mode procedures.
+- `src/common/profiles/*.md` — code, test, infrastructure, and planning rules.
+- `src/common/protocols/SHARED_WORKTREE.md` — visible, project-local workspace
+  policy and concurrent-edit safety.
+- `templates/` — the Full cycle, release handoff, and single task record.
+- `adapters/` — optional harness delivery.
+- `scripts/lhc-block` — marker-only installer/updater.
 
-Validation stays deliberately small:
+Validation stays dependency-free:
 
 ```bash
 python3 tests/validate.py

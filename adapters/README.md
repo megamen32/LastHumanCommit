@@ -1,69 +1,59 @@
 # Harness adapters
 
-The adapter layer is the boundary between the portable Last Human Commit instructions
-and a host's agent API. It is intentionally modular: installing or enabling
-one adapter does not install, configure, or rewrite another harness.
+The adapter layer translates portable Last Human Commit roles into a host's
+agent API. Enabling one adapter must not install, configure, or rewrite another
+harness.
 
-## Two axes
+## Core × harness
 
-The core defines capability contracts in `src/common/agents/`, optional domain
-profiles in `src/common/profiles/`, and triggered protocols in
-`src/common/protocols/`. An adapter defines how one harness delivers those
-contracts:
+The core owns behavior:
 
 ```text
-role contract × harness adapter
-Lead          × Codex / OpenCode / Claude Code / Hermes
-Worker        × Codex / OpenCode / Claude Code / Hermes
-Tester        × Codex / OpenCode / Claude Code / Hermes
+Lead / Worker / Overseer / Critic / Reviewer / Adviser
+                    ×
+Codex / OpenCode / Claude Code / Hermes
 ```
 
-Do not duplicate a role in an adapter. An adapter may add a small optional
-overlay when its API needs extra syntax, file-loading, permissions, or resume
-instructions. The overlay is additive and is loaded only by that adapter.
-Every manifest also names one `subagent_instructions_template`. L loads that
-template immediately before creating a child, so API-specific spawn rules stay
-outside the portable roles. The common contract still chooses the lowest
-sufficient working model class and forbids inheriting L's model by default.
-Templates define source policy; they do not upgrade a runtime capability claim
-without separate live evidence for that harness and installation.
+Worker is one role with `research` and `implement` modes. Adapters must not
+recreate an Explorer role or duplicate common prompts.
 
-Every adapter manifest records evidence as `proven`, `unproven`, or `unsupported`.
-Names in a manifest are capability claims, not promises that every model or
-provider is routable on every installation.
+Every adapter manifest names:
 
-## Agent-facing capabilities
+- complete role source;
+- optional harness instructions;
+- `subagent_instructions_template`;
+- evidence for native profile, fresh child, model override, and resume support.
 
-Portable capability descriptors describe semantic contracts only. A descriptor
-can provide a short agent fragment, but it never contains endpoint URLs,
-credentials, installation commands, or delivery policy. Fleet or a harness
-attests one exact binding as `proven`, `unproven`, `absent`, or `unsupported`.
-Render a fragment only for `proven`; an optional absent capability is omitted and
-a required absent capability fails preflight explicitly. LHC does not install,
-probe, or remove runtime capabilities.
+Before a child call, L loads the adapter template. The common core still selects
+the lowest sufficient model, caps each Worker assignment at 20 active minutes,
+and defines the compact assignment.
 
-`human.ask_user.v1` and `human.ask_secret.v1` are planned semantic contracts.
-They do not claim a particular Notify, SSS, Agent Herder, or agent-resume
-implementation.
+## Context boundaries
+
+Two child lifecycles are intentionally different:
+
+- A Worker begins in a fresh context, researches one lane, and should be resumed
+  for that lane's implementation when the harness proves resume support.
+- Overseer and Critic are always fresh no-history children. Raw user context and
+  the current task file are passed explicitly; L's reasoning history and desired
+  verdict are not.
+
+An adapter must not claim fresh context, actual model selection, or resume until
+a live child event proves it. Evidence states are `proven`, `unproven`, or
+`unsupported`.
+
+## Project boundary
+
+Adapters do not create project branches or worktrees. If a harness starts an
+agent in an auxiliary workspace, core instructions require immediate disclosure
+to the user. An explicitly requested LHC worktree belongs only under the primary
+project's `.worktrees/` directory.
+
+`scripts/lhc-block` remains a narrow marker utility. It is not an installer,
+renderer, daemon, scheduler, or adapter manager.
 
 ## Self-improve ownership
 
-Codex, OpenCode, and Claude Code run the core `SELF_IMPROVE.md` retrospective
-before L's final answer. It records concrete friction and a small proposed
-remedy in the project-local LHC log; it does not mutate LHC or install
-tools by itself. Hermes declares `self_improve: hermes-native`: its own
-post-response memory/skill review and `/learn` flow already own this work, so
-the adapter must not duplicate the loop.
-
-## Delivery contract
-
-An adapter should answer these questions without changing the core role text:
-
-- How is one complete role delivered to a child?
-- How are project marker blocks discovered without overwriting project text?
-- Can a fresh child context and the actual model be proven?
-- How are native child completion and external/human-request resume transported?
-- What does the adapter do when a capability is unavailable?
-
-`scripts/lhc-block` remains a narrow marker utility. It is not an installer,
-renderer, daemon, or adapter manager.
+Codex, OpenCode, and Claude Code run the core `SELF_IMPROVE.md` record. Hermes
+uses its native memory/skill review and `/learn` flow, so the adapter does not
+duplicate it.

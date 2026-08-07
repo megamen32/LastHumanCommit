@@ -1,86 +1,48 @@
 # Cost-aware planning
 
-Use this profile for every task. Keep Direct, Short, and Emergency work fast.
+Use for every non-Direct task.
 
-Every task record has an initial estimate as optimistic / likely / pessimistic
-active minutes. It is immutable. Append each revision with its trigger and
-evidence instead of replacing the initial estimate.
+## Estimates
 
-Choose the next action by `Least Cost-to-Canary`: maximize expected movement of
-the business canary while minimizing tokens, time, tool calls, subagents, and
-user interruptions. Stop when the canary passes. Do not spend budget on
-unrequested hardening, audits, rollback, backup, or cleanup.
-A producer whose output has no current business-path consumer has zero canary
-delta and must not be added.
+Record UTC+3 start and immutable initial `minimum / maximum active minutes`.
+Append only material revisions with old/new range, trigger, and evidence. At
+each Worker return compare elapsed time and business delta with the current
+maximum. An overrun requires a fresh Overseer verdict; increasing the number
+alone never authorizes the same route.
 
-For every task record, state `stop_when`, `abandon_when`, and
-`forbidden_without_explicit_user_request`. A restart, breaking change,
-destructive action, deployment, or rollback is an authorization boundary, not a
-task class: ask one short question when that exact action becomes necessary.
+## Decomposition
 
-For every candidate plan and selected child package, record:
+L orchestrates; Workers search and implement. Every Worker assignment has one
+mode, one acceptance gate, and maximum <=20 active minutes. Split it first when
+it contains an unresolved architecture/interface decision, unknown dependency,
+multiple gates, overlapping write ownership, no independent check, or a larger
+maximum.
 
-- outcome, allowed scope, acceptance proof, and separately runnable check;
-- model, reasoning effort, provider or quota bucket;
-- active minutes as `optimistic / likely / pessimistic`;
-- `relative cost` as low, medium, or high, plus tool overhead and uncertainty.
+A whole plan may exceed 60 minutes only as a known graph of <=20-minute slices
+with explicit dependencies and joins. A single unresolved block above 60
+minutes means more `Worker(mode=research)`, not one long assignment.
 
-Waiting for a child is not Lead inference cost. Sum parallel child budgets for
-quota cost; use the critical path for wall-clock. Do not invent a currency
-price when a subscription or provider limit is unknown.
+Parallelize independent write sets and stable contracts. Sum parallel quota cost
+but use the critical path for wall-clock. Never parallelize overlaps or
+unresolved shared interfaces.
 
-Split a cheap-child package before assignment when it has an unmade
-architecture decision, more than one independent acceptance gate, an unknown
-dependency, no isolated check, or more than 20 likely active minutes. Use a
-strong short adviser only when splitting loses necessary context or leaves a
-real architecture decision.
+## Least Cost-to-Canary
 
-Before creating a child, L writes its role, goal, known facts, allowed and
-excluded paths, acceptance check, selected model and budget, stop conditions,
-and report contract into its assigned `todo-*.md`. The child receives exactly
-`<Role> <absolute-task-file-path>`, reads no parent conversation, appends its
-detailed result to the same file, and returns only TL;DR to L. The same task
-may later be `work-*` for an explicit continuation. Select the lowest
-sufficient model class; bounded Worker packages normally use `5.4-mini`. Do not inherit L's
-model by default. Escalate only after `NEEDS_REDECOMPOSITION` or concrete
-acceptance evidence shows a capability gap. Load the selected harness adapter's
-`subagent_instructions_template` before creating the child. Use a no-history
-child only when the harness demonstrably supports it; otherwise record the
-limitation and do not claim model-routing or fresh-context proof.
+Choose the next action by real expected canary movement against scarce-model
+tokens, wall-clock, tool overhead, retries, and human interruptions. Strong
+models make short decisions; the lowest sufficient Worker model searches,
+edits, and runs checks. Do not inherit L's model by default. Record model/quota
+only when it affects cost, capability, or recovery.
 
-While that child is active, use `send_message` for every live question,
-clarification, correction, or status request when the harness exposes it. Do
-not replace a reachable child with another child or append conversational turns
-to the task file. The file remains the durable bootstrap/report/recovery record;
-live messaging does not authorize polling or an immediate-verdict request.
+Before a child call load the harness `subagent_instructions_template` and send a
+compact package: role/mode, goal, decisive evidence, allowed/excluded paths, one
+acceptance check, minimum/maximum estimate, stop conditions, and report format.
 
-For adjacent confirmed scope, continue the nearest suitable active Explorer,
-Worker, or Adviser by `send_message` with its new bounded objective, paths,
-acceptance proof, and stop condition. Do not create a replacement merely to
-give it nearby work. Reviewer and Tester are exceptions: always create them
-fresh and context-free for independent review and real-use testing.
+Resume the same Worker from research into its implementation lane when proven
+supported; otherwise pass the task-file Research section to a fresh Worker.
+Overseer and Critic are the opposite: always fresh no-history children with raw
+user context passed explicitly.
 
-A child returns `NEEDS_REDECOMPOSITION` before wandering when scope must change,
-the second independent hypothesis fails, another unknown dependency appears,
-the pessimistic budget is exceeded, or an answer from Lead would change the
-architecture. L treats that result as a planning signal, re-researches, and
-splits or escalates the package.
-
-When a child result is the next join point, L ends its turn and waits only for
-the harness's native child-completion notification. Do not arm Agent Resume, a
-timer, or a parent-PID watcher for that child. Agent Resume is reserved for an
-external background PID/job, timer, or pending human wait. Polling, prompting
-for an immediate result, changing a timeout, or opening a new result-seeking
-branch has zero canary delta and is forbidden.
-
-If an Explorer's accepted result yields a bounded implementation in the same
-owned scope, L reassigns that exact child `Worker <same-task-file-path>`. The
-same file records both role passes; a second Worker for the same evidence is
-forbidden. Use a separate Reviewer only for independent review.
-
-For Full work only, reserve one fresh Tester package after all implementation,
-focused checks, Reviewer, and Critic. Its acceptance is real user-surface
-evidence, not source or unit-test evidence. Tester is a final sequential gate,
-never an exploratory or parallel implementation lane. Its mandatory scope is
-`only-new`; `all` product scope needs a direct user request or L proposal with
-explicit user approval.
+A Worker returns `NEEDS_REDECOMPOSITION` before a vague/oversized package and
+`NEEDS_RETHINK` on maximum overrun, two failed hypotheses, or a new architecture
+decision.

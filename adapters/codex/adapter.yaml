@@ -6,7 +6,6 @@ optional_instructions: instructions.md
 subagent_instructions_template: templates/subagent.md
 delivery: configured-profile-or-fallback-file
 self_improve: required-core-protocol
-ask_secret_transport: sss-opaque-registered-agent
 capabilities:
   native_role_profile: unproven
   fresh_child_context: unproven

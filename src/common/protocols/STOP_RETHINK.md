@@ -1,77 +1,65 @@
 # STOP / RETHINK
 
-Trigger when 30 minutes or 30 tool calls or shell commands pass without real
-business delta toward an end-to-end P0 slice, after two failed independent
-attempts, on conflicting evidence, when the user repeats that P0/P1 still
-fails, when the target shares the failed failure domain, when scope must expand
-materially, or when framework/process grows without user progress.
+Use this protocol when the current route is no longer a bounded least-cost path
+to the user's canary.
+
+## Triggers
+
+Trigger immediately when any of these occurs:
+
+- the current minimum/maximum estimate is exceeded;
+- a proposed Worker assignment exceeds 20 maximum active minutes;
+- one unresolved block is estimated above 60 minutes;
+- two independent hypotheses or repair slices fail;
+- a completed wave produces no real business-canary delta;
+- evidence conflicts with the selected architecture;
+- the user repeats that P0/P1 still fails;
+- scope must expand materially;
+- process, framework, safety, observability, or cleanup work grows without user
+  progress.
+
+Do not silently revise the estimate and continue. Preserve evidence in the same
+task file and request a fresh Overseer audit.
 
 ## Independent gate authority
 
-The user is the only authority over Overseer and Critic. L requests their audit
-but cannot frame, narrow, rewrite, or override it. Every gate decision is
-binding on L. If a harness routes the report through L, L preserves the
-complete report in the task record and shows the user only a direct decision
-question when one is required; it never repeats the full report by default. L
-cannot override a gate decision. `RETHINK`, `STOP`,
-`STOP_SCOPE_DRIFT`, `STOP_MISSING_CONTEXT`, or
-unanswered questions stop further actions and completion claims. L may answer
-questions and present new business evidence to the same gate; only that gate or
-the user may release the stop. Conflicting gate decisions resolve to the
-stricter verdict until the user decides.
+The user is the only authority over Overseer and Critic. L invokes them but
+cannot prescribe, narrow, rewrite, or override their verdict. Every invocation
+is a fresh no-history child with raw user context passed explicitly.
 
-## Uptime checkpoint
-
-After at most 30 tool calls or shell commands, or 30 elapsed minutes when
-measurable, whichever comes first, every agent must run `uptime` and send a
-progress checkpoint before more work. The checkpoint states current P0, real
-business delta, elapsed time when available, blocker, and next action. It resets
-both counters. If `uptime` is unavailable, the agent reports that fact and still
-sends the checkpoint.
+`RETHINK`, `STOP`, `STOP_SCOPE_DRIFT`, `STOP_MISSING_CONTEXT`, or unanswered
+questions block further action and completion claims. L may provide new evidence
+to a new audit or ask the user; it may not continue the same route by changing
+wording.
 
 ## Terminal scope drift
 
-`STOP_SCOPE_DRIFT` is terminal for unauthorized scope expansion beyond the
-original user request, confirmed scope, explicit exclusions, or the failed
-canary's dependency chain. When it is raised:
+`STOP_SCOPE_DRIFT` is terminal for unauthorized expansion beyond the original
+request, confirmed scope, exclusions, or the failed canary's dependency chain.
 
-1. Preserve the evidence without changing or cleaning the conflicting work.
-2. Report the exact mismatch and required stop directly to the user and L.
-3. Update the task record with the timestamp, stage, evidence, and
-   `STOP_SCOPE_DRIFT` decision.
-4. After plan selection, write in English; before plan selection, write in
-   Russian.
-5. Do not launch Explorer.
-6. Do not generate alternatives.
-7. Stop until explicit human scope confirmation is recorded in the task.
+1. Preserve evidence without cleaning or changing conflicting work.
+2. Report the exact mismatch to L and the user.
+3. Append the decision to the same task file with UTC+3 time and evidence.
+4. Do not start research, alternatives, implementation, or review outside scope.
+5. Resume only after explicit human scope confirmation is stored in the task.
 
-Do not investigate, implement, review, or otherwise resume work after this
-decision until that confirmation exists.
+Before plan selection, communicate in Russian. After selection, execution
+updates are in English.
 
-## Architectural STOP/RETHINK
+## Architectural RETHINK
 
-Architectural STOP/RETHINK applies to the non-scope triggers above. It may use
-one bounded Explorer for external/current solution research when known tools,
-projects, official documentation, or alternative components may exist. Give
-the child the Explorer role; L does not load the Explorer prompt. This branch
-may generate alternatives because it is choosing a path inside confirmed
-scope, not seeking permission to expand scope.
+For non-scope triggers, L may assign one or more bounded
+`Worker(mode=research)` slices to find a fundamentally different path inside
+confirmed scope. There is no Explorer role.
 
-The user message must contain:
+The user-facing RETHINK contains only:
 
-1. Exact current blocker.
-2. Why the selected path has not reached P0; if P0 is reached or absent, whether
-   current P1/CORE is truly foundational or merely one possible, possibly worse,
-   solution.
-3. Concrete evidence.
-4. What was checked and excluded.
-5. At least two fundamentally different paths, selected from: manual/emergency
-   workaround, limited vertical slice, another component or independent failure
-   domain, and full long-term solution.
-6. Time, risk, and expected result for each path.
-7. L's recommendation.
-8. One user question only when a decision is genuinely required; none when the
-   answer is already clear.
+1. exact blocker and evidence;
+2. original estimate versus actual route;
+3. why the selected path has not moved the canary;
+4. two fundamentally different in-scope paths when they really exist;
+5. minimum/maximum estimate, risk, and expected result for each;
+6. L's recommendation;
+7. one question only when human choice is genuinely required.
 
-Before plan selection, write in Russian. After plan selection, write in English.
-Do not silently resume the same path after sending architectural STOP/RETHINK.
+Do not silently resume the failed path after sending RETHINK.

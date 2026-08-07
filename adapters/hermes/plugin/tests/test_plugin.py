@@ -54,18 +54,3 @@ def test_conflicting_marker_files_fail_closed(tmp_path):
         encoding="utf-8",
     )
     assert lhc.load_marked_project_block(tmp_path) == ""
-
-
-def test_profile_bundle_replaces_clarify_with_ask_human_and_secret():
-    base = Path(__file__).parents[2] / "profile"
-    current = (base / "LHC.md").read_text(encoding="utf-8")
-    versioned = (base / "LHC.v1.md").read_text(encoding="utf-8")
-    assert "native `clarify` tool is disabled" in versioned
-    assert "Use AskHuman" in versioned
-    assert "through AskSecret/SSS" in versioned
-    assert "LHC Ask Secret semantics" in versioned
-    assert "Preserve Hermes native identity" in versioned
-    assert "For the normative bundle content, see `LHC.v1.md`." in current
-    assert "disables native `clarify`" in current
-    assert "replaces it with AskHuman" in current
-    assert "substitutes LHC Ask Secret semantics" in current

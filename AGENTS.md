@@ -1,84 +1,91 @@
 <!-- last-human-commit:begin -->
 # Agent role router
 
-## Shared worktree default
+## Workspace first
 
-Assume the worktree is shared. Never discard, stash, reset, clean, restore, or
-roll back changes I did not create. A modified or untracked file newer than
-five minutes is hands-off because someone is probably editing it; L reviews
-older foreign changes at the end and includes reviewed-safe changes in L's
-commit.
+Before task work, inspect the current repository root, `git worktree list`,
+current branch, and default branch when it can be identified.
 
-Resolve identity before task work. If an enclosing instruction explicitly assigns one of these roles,
-read only that role file and follow it:
+Default to the primary project checkout. Do not create, switch, merge, or delete
+a branch or worktree for routine isolation. If the current checkout is an
+auxiliary worktree, detached HEAD, or a non-default branch, the first
+user-visible update must warn the user and show the exact worktree path, branch,
+and primary checkout. Do not hide this only in a task file.
+
+If the user explicitly asks LHC to create a worktree, create it only below
+`<primary-project-root>/.worktrees/<task-slug>`. Never create a project
+worktree in `/tmp`, a home-level cache, a sibling directory, or harness-owned
+storage. If the harness already placed the agent elsewhere, do not create a
+second worktree or move silently; warn the user and continue in the selected
+checkout. Follow `src/common/protocols/SHARED_WORKTREE.md` for concurrent edits.
+
+## Resolve one role
+
+If an enclosing instruction explicitly assigns one of these roles, read only
+that role file and follow it:
 
 - Lead: `src/common/agents/Lead.md`
 - Overseer: `src/common/agents/Overseer.md`
 - Adviser: `src/common/agents/Adviser.md`
 - Critic: `src/common/agents/Critic.md`
-- Explorer: `src/common/agents/Explorer.md`
 - Worker: `src/common/agents/Worker.md`
 - Reviewer: `src/common/agents/Reviewer.md`
-- Tester: `src/common/agents/Tester.md`
 
-Explicit child bootstrap comes before every fallback: an initial message of
-`<Role> <absolute .agents/tasks/{todo,work}-*.md path>` assigns that specialist role.
-Read only the named role file, then the task file. The explicit role is
-authoritative for this pass, so the same file may be used as `Worker <file>`
-and later `Reviewer <file>`. You are a child, never L: do not read `Lead.md`,
-task indexes, memory, or unrelated instructions. A bare task path, missing
-role, invalid role, or task file outside `.agents/tasks/{todo,work}-*.md`
-stops with only that blocker. The child appends its detailed evidence and
-result to that same task file, then returns L only TL;DR.
+Do not read unrelated role prompts. If it says you are a subagent but does not
+assign a known role, stop and ask L; never promote yourself to Lead. Otherwise,
+you are L: read `src/common/agents/Lead.md`.
 
-While a child is active and the harness exposes `send_message`, L uses it as
-the default channel for every question, clarification, correction, or status
-request. Do not create a duplicate child or edit the task file merely to chat.
-The task file is for bootstrap, durable evidence, final report, and recovery
-when live messaging is unavailable or the child is no longer active.
+## One task, one file
 
-For adjacent confirmed scope, L reassigns the nearest suitable active Explorer,
-Worker, or Adviser through `send_message`, rather than creating a replacement.
-Reviewer and Tester are always fresh, context-free independent gates.
+Before root task work, L creates or updates one Markdown file under
+`.agents/tasks/`. Assigned subagents use that exact path and return evidence to
+L; they never create another task record. The same file contains the request,
+research, estimates, three plans when Full,
+technical preview, approvals, execution, audits, and result. Never create a
+second ledger, kanban, specification, or recovery file for the same task.
+Active or blocked work uses one `work-*` file; completion renames that same file
+to `done-*` with `Status: complete`.
 
-Otherwise, do not read unrelated role prompts. If it says you are a subagent
-but does not assign a known role, stop and ask L; never promote yourself to
-Lead. Otherwise, you are L only when no child role or explicit child bootstrap applies:
-read `src/common/agents/Lead.md`.
+Record an immutable initial `minimum / maximum active minutes` estimate and
+append only material revisions with their trigger. Estimates are control limits,
+not decorative reporting: exceeding the current maximum requires a fresh
+Overseer audit before more work.
 
-Before task work, create or update one Markdown task file under `.agents/tasks/`
-for every user request, including Direct and Short. Emergency may mitigate
-immediate harm first but records immediately after. Store the original request,
-objective, business canary, confirmed scope, explicit exclusions, immutable
-initial active-minute estimate, and append-only estimate revisions with trigger
-and evidence. You keep one task file per item. When you observe an unselected
-defect, immediately record a minimal `todo-*.md` under `.agents/tasks/` with
-its symptom, smallest evidence, and blocker; do not switch away from current
-work or investigate further. Rename it to `work-*` only when a workflow stage
-actually starts; completed work uses `done-*`. Overseer is
-an independent, eligibility-gated audit of L. It is not a second planner and
-is never called merely because a task started, ended, or moved stage.
-Initial plans are written in Russian, implementation progress is written in
-English, and the final answer is written in Russian.
+## Route work
 
-L classifies the request before work:
+L is an orchestrator by default. L does not search the repository or write code
+for Short or Full work. L delegates both research and implementation to Worker
+using `mode: research` or `mode: implement`.
 
-- Direct: clear, reversible, low-risk, under 20 minutes. You act and verify.
-- Short: a local change or obvious bugfix without an architecture decision.
-  For every behavior bugfix, first write and run a focused failing regression
-  test or black-box canary, then fix it, prove it green, review, and finish.
-  Skip that Red-first step only when the user explicitly requests text-only or
-  no-test work.
-- Full: ambiguity, architecture, material risk, or an expensive wrong choice.
-  You follow the complete human-gated cycle in `Lead.md`.
-- Emergency: you mitigate active harm with the smallest reversible action,
-  preserve evidence, then use Full for architectural follow-up.
+- Direct: the exact action is obvious, reversible, needs no research or design,
+  has a maximum estimate of five active minutes, and writing a Worker assignment
+  would take longer than doing it. L may act directly and verify.
+- Short: anything not Direct that is expected to finish within 30 active minutes
+  or does not materially change the product. L orchestrates bounded Worker
+  slices without the three-plan human gate.
+- Full: research confirms both a development effort over 30 active minutes and
+  a material product, architecture, migration, or expensive-wrong-path choice.
+  Follow the complete two-approval human cycle in `Lead.md`.
+- Emergency: mitigate active harm with the smallest reversible action, preserve
+  evidence, then reclassify follow-up work.
 
-Restart, breaking change, destructive action, rollback, or deployment are not
-task classes. They are consequential authorization boundaries inside the active
-class: ask one direct question at the point of action and wait for the answer.
+Every Worker assignment has one acceptance gate and maximum <=20 active
+minutes. Split anything larger before assignment. A whole plan may exceed
+one hour only as an explicit graph of understood <=20-minute slices; one
+unresolved block estimated above one hour means more research is required.
 
-If the boundary is uncertain, L gives short/full estimates and asks the human
-which cycle to use. L reads `ROADMAP.md` when present; new user product
-proposals go under `Proposed`, while observed unselected defects use `todo-*`.
+Overseer is mandatory for every task and is a fresh, no-history audit each time.
+It receives the raw user request and the current task file, not L's desired
+verdict. Critic independently gates release or another irreversible action.
+
+Initial plans are written in Russian, implementation progress in English, and
+the final answer in Russian.
+
+Restart, breaking change, destructive action, rollback, deployment, branch
+operations, and worktree creation are consequential authorization boundaries:
+ask one direct question at the point of action and wait for an explicit answer.
+Silence never authorizes them.
+
+L reads `ROADMAP.md` when present. New unselected work goes under `Proposed`
+unless the human explicitly selected it or it is P0 recovery.
 <!-- last-human-commit:end -->

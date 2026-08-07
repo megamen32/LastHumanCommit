@@ -1,55 +1,75 @@
 # Authoring agent instructions
 
-`AGENTS.md` and `CLAUDE.md` are byte-identical, marker-delimited entry routers.
-`Lead.md` owns the root workflow. Every other role file is a self-contained
-subagent prompt.
+`AGENTS.md` and `CLAUDE.md` are byte-identical marker-delimited routers.
+`Lead.md` owns orchestration. Every other role file is a self-contained child
+prompt.
 
-Keep instructions short, operational, and proportional:
+## Non-negotiable shape
 
-- Every request, including Direct and Short work, creates one Markdown task file
-  under `.agents/tasks/` and records an estimate; rename the same file from
-  `work-*` to `done-*` on completion. Never maintain a duplicate kanban.
-- Overseer is an eligibility-gated least-cost route audit; it is not a second
-  planner or a per-stage ritual. Critic gates a release or irreversible claim.
-  Both use compact task contracts and deltas, preserve receipts in task state,
-  and expose the user only to direct consequential questions or blocking drift.
-- Full work preserves research, three initial plans in Russian, human selection,
-  WSFF views, outcome-and-scope review, focused checks, Reviewer, Critic, final
-  real-use Tester, commit, native child-completion, and L-owned external/human
-  timed follow-up.
-- `YAGNI -> Normal -> Ultimate` defines delivery layering after selection, not
-  the initial plan order.
-- Use execution updates in English and give the final answer in Russian.
-- Harness or Fleet timing, when attested, makes Overseer eligible no more than
-  once in 30 minutes after a material trigger. Do not use `uptime` as ritual.
-- Unsolicited secondary work is forbidden unless the user confirms it or it is
-  a minimal safe-canary prerequisite for the selected outcome.
-- The router names roles and paths but does not repeat their instructions.
-- L sends a role name to a child and does not load that role prompt itself.
-- Profiles supplement an assigned role; protocols load only when triggered.
-- Templates store decisions and state, not a second normative workflow. A Full
-  task has a compact option preview, human selection, then a detailed technical
-  preview and second human approval before implementation.
-- `profiles/Planning.md` owns Full-work estimate and re-decomposition rules.
-- Every adapter manifest names `subagent_instructions_template`; L loads it
-  immediately before creating a child. Keep harness API syntax there, while the
-  common rule selects the lowest sufficient working model class and does not
-  inherit L's model by default.
-- `protocols/SELF_IMPROVE.md` owns the non-Hermes end-of-task retrospective;
-  it records concrete friction and proposals without silently changing LHC.
-- `protocols/SHARED_WORKTREE.md` owns collaboration safety: no cleanup of
-  foreign edits, five-minute active-edit protection, and final integration
-  review by L.
+- One request uses one Markdown `.agents/tasks/work-*` file from start to finish. Rename
+  that same file to `done-*`; never add a duplicate kanban, spec, ledger,
+  recovery file, or review package.
+- L is an orchestrator by default. It may execute only an obvious <=5-minute Direct
+  action. Short and Full repository search and code belong to Worker.
+- There is no Explorer role. Worker uses `mode: research` and
+  `mode: implement`; implementation names `bugfix/TDD` or `feature`.
+- Every Worker assignment has one acceptance gate and maximum <=20 active
+  minutes. Split larger work before dispatch. A whole task above one hour must
+  be an explicit graph of understood <=20-minute slices.
+- Estimates are `minimum / maximum`. Keep the initial range immutable. A maximum
+  overrun requires a fresh Overseer audit before continuation.
+- Overseer is mandatory for every task and fresh/no-history every time. Full
+  invokes it after research, after each implementation wave, and before release.
+  Critic independently gates release or irreversible action.
+- Full is reserved for researched work over 30 minutes with material product,
+  architecture, migration, or expensive-wrong-path impact.
+- Full must preserve three Russian plans, first selection, full technical
+  preview, and second explicit approval. Never remove call-stack tree, file-tree
+  diff, key signatures, pseudocode, migration description, canary, or execution
+  graph from that human layer.
+- `YAGNI -> Normal -> Ultimate` is delivery order after selection, not the plan
+  presentation order.
+- Plans are Russian, execution updates English, final answer Russian.
+- Silence never authorizes deploy, rollback, destructive action, branch, or
+  worktree operations.
 
-When changing instructions:
+## Workspace ownership
 
-1. Update the one file that owns the rule.
-2. Align only direct references and record schemas.
-3. Keep validation literal, dependency-free, and readable in one sitting.
-4. For text-only instruction work, review the diff and run `git diff --check`;
-   do not invent a test programme. Run validation only when behavior changes.
+Routine work stays in the primary checkout. At startup, inspect worktree and
+branch identity. An auxiliary worktree, detached HEAD, or non-default branch is
+reported in the first visible update.
 
-The marker lines are an ownership boundary:
+Do not create a branch/worktree for cleanliness or isolation. With explicit
+human authorization, a new worktree may exist only under
+`<primary-project-root>/.worktrees/<task-slug>`. The repository must ignore
+`.worktrees/`. `protocols/SHARED_WORKTREE.md` owns concurrent-edit safety.
+
+## Prompt ownership
+
+- The router names roles and paths but does not duplicate their workflows.
+- L sends one role and mode to a child; it does not load that role into its own
+  context.
+- Profiles supplement an assigned role. Protocols load only on their trigger.
+- Templates store the same task's decisions and evidence; they are not a second
+  normative workflow.
+- `profiles/Planning.md` owns estimate, decomposition, and model-routing rules.
+- `profiles/Code.md` owns code-as-docs, structured/rotated logs,
+  cross-platform rules, file-size limits, and explicit legacy removal dates.
+- Adapter manifests name `subagent_instructions_template`. Harness syntax stays
+  in adapters; portable behavior stays in common roles/protocols.
+- Worker research may resume into implementation when supported. Independent
+  gates must never resume or fork L's history.
+
+## Changing instructions
+
+1. Change the file that owns the rule.
+2. Align only direct references, templates, adapters, and validation.
+3. Keep the runtime prompt concise; tests may enforce the invariant instead of
+   repeating prose everywhere.
+4. For instruction-only changes, review the diff, run `git diff --check`, and
+   run `python3 tests/validate.py`.
+
+The marker lines are the ownership boundary:
 
 ```html
 <!-- last-human-commit:begin -->
@@ -57,21 +77,6 @@ The marker lines are an ownership boundary:
 <!-- last-human-commit:end -->
 ```
 
-When applying LHC to a project, preserve every byte outside the block.
-Use `scripts/lhc-block` with an explicit source and target; it must fail closed
-for missing, duplicate, nested, reversed, or malformed marker pairs. A project
-may have different project-owned text in `AGENTS.md` and `CLAUDE.md`; never make
-installed targets byte-identical by overwriting that text.
-
-Do not add a harness-specific profile until a live child test proves the role,
-actual model, fresh-context boundary, and returned result. A profile cannot
-force a harness to change a full-history fork. Put proven delivery details in
-`adapters/<harness>/`; keep the role contract in `src/common/agents/`.
-
-Codex is stricter: its subagent template always sends `fork_context: false`.
-When an independent gate needs raw user context, pass that context explicitly
-in its Task Card; never satisfy the gate by forking the parent history.
-
-Do not expand `scripts/lhc-block` into an installer, daemon, hook, generator,
-or harness adapter. It owns only one explicit text block in one explicit file;
-harness-specific delivery belongs in the modular `adapters/` layer.
+Preserve every byte outside the block. `scripts/lhc-block` remains a narrow
+explicit marker utility, not an installer, daemon, generator, scheduler, or
+harness adapter.

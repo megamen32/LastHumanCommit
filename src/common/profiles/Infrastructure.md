@@ -27,10 +27,9 @@ and never changes agent identity.
    ingress, backend, expected response, failed domain, and proof that the request
    bypassed it. Config validation, listeners, local curl, and service status are
    insufficient alone.
-5. Prefer forward-fix. Before a risky live change, define its verification gate.
-   Do not design a rollback, backup, or recovery mechanism unless the user
-   explicitly requests it; if a rollback, restart, or destructive action is
-   necessary, ask the user directly at that boundary.
+5. Prefer forward-fix. Before risky live changes preserve current state, define
+   the verification gate, and retain an emergency recovery command. Roll back
+   only to stop active damage, data loss, or a security event.
 6. Break-glass changes must be minimal and immediately verified, then moved into
    the canonical source and committed.
 7. Do not build a universal recovery platform before the concrete P0 service is

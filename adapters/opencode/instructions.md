@@ -4,8 +4,8 @@ Native profiles are Markdown files under the configured OpenCode agents
 directory. The installed profile must contain the complete role prompt at
 startup; it must not spend a turn reading `src/common/agents/<Role>.md`.
 
-Before every child call, load `templates/subagent.md` for the fresh-context,
-Task Card, and cheapest-sufficient model rules.
+Before every child call, load `templates/subagent.md` for the Worker mode/resume, fresh-gate context,
+compact child assignment, and cheapest-sufficient model rules.
 
 Keep the core role unchanged. This adapter owns profile frontmatter, native
 permissions, and any harness-specific resume/session metadata. When a rendered

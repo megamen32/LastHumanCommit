@@ -6,7 +6,7 @@ to the child context before Hermes builds the child. Hermes' native
 `leaf/orchestrator` role remains independent.
 
 Before every delegated goal, load `templates/subagent.md` for the Hermes role
-prefix, Task Card, and cheapest-sufficient model rules.
+prefix, compact child assignment, and cheapest-sufficient model rules.
 
 The plugin reads the explicit Last Human Commit marker block and role source but
 never edits project instructions. A missing or unknown role is left untouched

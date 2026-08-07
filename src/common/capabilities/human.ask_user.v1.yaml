@@ -1,10 +1,10 @@
 schema_version: 1
 id: human.ask_user.v1
 state: planned
-requirement: required
+requirement: optional
 purpose: Request a blocking human decision without exposing delivery mechanics to the agent.
 agent_interface:
-  name: AskHuman
+  name: Ask User
   inputs: [question, urgency, blocking]
   outputs: [request_id, state]
 invariants:
