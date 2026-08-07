@@ -30,3 +30,28 @@ limited by the 30-minute trigger rule.
 
 Evidence: `python3 tests/validate.py`; Hermes plugin pytest (5 passed);
 `tests/test_task_states.sh`; `tests/test_block_adapter.sh`; `git diff --check`.
+
+## Overseer audit
+
+Run a fresh no-history audit after the merge and before closing this task.
+Check that the selected merge satisfies the business canary, preserves
+AskHuman/AskSecret/SSS, keeps Hermes LHC separate from Fleet installation, and
+does not introduce unnecessary scope. Append the complete verdict here; return
+only TL;DR to L.
+
+- Verdict: `CONTINUE`
+- Business delta: validator, task-state, block-adapter, Hermes pytest 5/5, and
+  diff-check are green.
+- Scope check: AskHuman/AskSecret/SSS, Hermes LHC profile, and separate Fleet
+  installation boundary are preserved; no unnecessary changes found.
+- Next action: close this task after receipt.
+
+### Overseer verdict — 2026-08-08
+
+CONTINUE
+
+Business delta: the selected merge satisfies the canary: `python3 tests/validate.py`, `tests/test_task_states.sh`, `tests/test_block_adapter.sh`, Hermes plugin pytest (5 passed), and `git diff --check` pass; AGENTS/CLAUDE and all five adapter instruction surfaces retain AskHuman plus AskSecret/SSS markers, the Hermes profile bundle is present, and no Explorer role remains.
+
+Avoidable spend: none identified; the 35 changed paths are within the declared routing, Worker/Planning protocol, adapter-template, validator, and directly related documentation scope, with no Hermes source or Fleet deployment changes.
+
+Minimum next action: L may close this task using the recorded merge and verification receipts; no additional research, implementation, security, or deployment work is justified by this audit.
