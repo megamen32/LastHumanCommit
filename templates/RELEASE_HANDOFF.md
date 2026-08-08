@@ -8,7 +8,7 @@
 Ключевые файлы и контракты:
 Что доказал реальный canary:
 Что доказали тесты:
-Reviewer / Critic:
+Overseer / Reviewer / Tester / Critic:
 Текущий worktree и ветка:
 Что не проверено:
 Риски и существующий rollback reference, если он уже есть:

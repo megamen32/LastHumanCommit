@@ -1,24 +1,17 @@
 # Codex adapter instructions
 
-These instructions are optional Codex integration details, not part of a core
-role. When a configured Codex profile embeds the complete role prompt, do not
-ask the child to read the role file again. Use the file fallback only when the
-active Codex surface has no native profile delivery.
+These are optional Codex integration details, not a core role. When a configured
+profile embeds the complete role prompt, do not ask the child to read the role
+file again. Use file fallback only when native profile delivery is absent.
 
 Before every child call, load `templates/subagent.md`. It requires
-`fork_context: false`, explicit Task Card context, and the cheapest sufficient
-working model class. A Codex surface that cannot honor the no-history boundary
-must not create a history-forked substitute.
+`fork_context: false`, explicit compact assignment context, the root-task read-
+only boundary, and the cheapest sufficient working model. A Codex surface that
+cannot honor no-history must not create a history-forked substitute.
 
-For ordinary missing information or a user decision, use AskHuman rather than
-the native clarification path. When a secret or password is needed, route it
-through AskSecret/SSS rather than AskHuman. The only acceptable handoff is the
-opaque registered-agent SSS path; reject plaintext and base64 fallback
-delivery for this flow.
+For ordinary missing information use AskHuman. For a secret or password route
+through AskSecret/SSS only when attested. The only acceptable handoff is an opaque registered-agent SSS path; reject plaintext and base64 fallback.
 
-Do not claim model selection, fresh-context isolation, or resume support until
-a live child event proves the actual role, model, context boundary, and result.
-
-Before L sends its final answer, run the core `SELF_IMPROVE.md` protocol and
-persist its compact record. This is required even when native profile delivery
-is unavailable.
+Do not claim model selection, fresh-context isolation, or resume support until a
+live child event proves it. Before L's final answer, run `SELF_IMPROVE.md` only
+when its trigger occurred.

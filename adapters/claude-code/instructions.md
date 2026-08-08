@@ -1,19 +1,17 @@
 # Claude Code adapter instructions
 
-Use the Claude Code surface's native role/profile mechanism when one is
-configured. Otherwise the marker-preserving `CLAUDE.md` block is the portable
-fallback. The adapter must keep the complete role context in the child prompt
-and must not overwrite project-owned text outside the marker pair.
+Use the native role/profile mechanism when configured. Otherwise the marker-
+preserving `CLAUDE.md` block is the portable fallback. Keep the complete role
+context in the child prompt and never overwrite project-owned text outside the
+marker pair.
 
-Before every child call, load `templates/subagent.md` for the native context,
-Task Card, and cheapest-sufficient model rules.
+Before every child call, load `templates/subagent.md` for the compact assignment,
+assigned task-file boundary, Worker continuity, and cheapest-sufficient model
+rules.
 
-For ordinary missing information or a user decision, use AskHuman. For a
-secret or password, use AskSecret/SSS; require the opaque registered-agent
-handoff and reject plaintext or base64 fallback delivery.
+For ordinary missing information use AskHuman. For a secret or password use
+AskSecret/SSS only when attested; require the opaque registered-agent handoff and
+reject plaintext or base64 fallback. Otherwise report the capability unavailable.
 
-Do not promise scheduled resume until the active Claude surface exposes and
-verifies its cron or scheduled-task transport.
-
-Before L sends its final answer, run the core `SELF_IMPROVE.md` protocol and
-persist its compact record.
+Do not promise scheduled resume until the active surface proves it. Before L's
+final answer, run `SELF_IMPROVE.md` only when its trigger occurred.

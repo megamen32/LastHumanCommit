@@ -1,13 +1,18 @@
 # Orchestrator
 
 Outcome:
-Acceptance:
+Business canary:
 Cycle:
+Started at (UTC+3):
+Initial estimate (minimum / maximum):
 Current stage:
 Current owner:
+Current <=20-minute slice:
+Workspace / branch:
+Business delta:
 Next action:
 Blocker:
-Evidence:
 
-For full work, list each bounded subagent with scope, model class, reason, and
-result. L owns integration and the final decision.
+Use the root task file as the only detailed record. Only L writes it. For Full,
+keep the three plans, full technical preview, two human approvals, execution
+graph, gates, and result there; do not create another card, ledger, or spec.

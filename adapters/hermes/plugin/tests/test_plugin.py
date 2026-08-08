@@ -56,6 +56,10 @@ def test_conflicting_marker_files_fail_closed(tmp_path):
     assert lhc.load_marked_project_block(tmp_path) == ""
 
 
+def test_tester_is_a_known_role():
+    assert lhc.ROLES["tester"] == "Tester"
+
+
 def test_profile_bundle_replaces_clarify_with_ask_human_and_secret():
     base = Path(__file__).parents[2] / "profile"
     current = (base / "LHC.md").read_text(encoding="utf-8")

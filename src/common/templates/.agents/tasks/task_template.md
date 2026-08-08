@@ -99,6 +99,28 @@ Second explicit human approval (verbatim):
   Decision: PASS | RETHINK | STOP | STOP_SCOPE_DRIFT | STOP_MISSING_CONTEXT
   Minimum proof to proceed:
 
+## Child assignment and detailed report — append-only
+
+The explicit `<Role> <absolute-task-file-path>` bootstrap is authoritative.
+The child reads only this assigned task file. Children append their detailed
+evidence and result to that file, then return only TL;DR to L. Children never create a second task
+card, report, ledger, specification, or recovery file.
+
+- Role:
+  Mode:
+  Started:
+  Allowed/excluded paths:
+  Acceptance and stop conditions:
+  Detailed evidence and result:
+  L-facing return: TL;DR only
+
+## Independent gates — append-only
+
+Overseer:
+Reviewer:
+Tester:
+Critic:
+
 ## Result
 
 Summary:

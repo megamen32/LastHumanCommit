@@ -41,7 +41,7 @@ Status: done
 - [x] M4.1 Replace `CANON.md` with byte-identical `AGENTS.md` and `CLAUDE.md`.
 - [x] M4.2 Route every known role to one independently loadable prompt.
 - [x] M4.3 Restore the full provider/model role map.
-- [x] M4.4 Make L own timed self-resume, revalidation, and deployment.
+- [x] M4.4 Make L own revalidation and explicit human-authorized deployment; silence never deploys.
 - [x] M4.5 Complete an outcome-and-affected-scope contract review and close
   stale contracts within that boundary.
 
@@ -61,12 +61,12 @@ Status: in progress
   model, role, fresh-context, or resume capability `proven`.
 - [x] M5.6 Keep adapter overlays additive; do not create subtractive
   `Agents Capable Start/End` variants of the portable LHC instructions.
-- [x] M5.7 Add a mandatory, bounded self-improve record for every non-Hermes
-  L. Hermes retains its native post-response memory/skill review instead of a
-  duplicate LHC loop.
-- [x] M5.8 Treat every worktree as shared: preserve foreign edits, protect
-  files changed within five minutes, and review older changes before L commits
-  them with the completed task.
+- [x] M5.7 Make the non-Hermes self-improve record event-triggered by user correction, material route failure, or repeated friction. Hermes retains its native loop.
+- [x] M5.8 Default to the primary checkout, keep authorized worktrees under project-local `.worktrees/`, preserve foreign edits, and never silently include them in the current task commit.
+
+- [x] M5.9 Add the ZCode adapter without per-child task files.
+- [x] M5.10 Preserve Tester, Hermes LHC profile, AskHuman, and fail-closed
+  AskSecret/SSS contracts through the orchestrator-first merge.
 
 ## M6 — Outcome-first workflow contract
 

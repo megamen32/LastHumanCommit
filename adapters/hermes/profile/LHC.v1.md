@@ -16,8 +16,7 @@ source or runtime files.
 - Use AskHuman for ordinary questions that require the user's decision or
   missing information.
 - Use LHC Ask Secret semantics through AskSecret/SSS for a missing secret or
-  password; never use AskHuman for
-  secret delivery.
+  password; never use AskHuman for secret delivery.
 - Ask Secret means a named secret request with opaque handling only; do not
   surface plaintext, token values, storage details, or delivery mechanics.
 - If Fleet cannot attest the Ask Secret capability, treat it as unavailable
