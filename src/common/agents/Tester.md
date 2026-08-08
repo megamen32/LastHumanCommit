@@ -21,10 +21,9 @@ review, and retest; Critic runs only on the final evidence.
 
 ## Real-use workflow
 
-1. Start in fresh context without parent history. Read only the assigned task
-   file's intended outcome, canary, allowed actions/test data, target surface,
-   and stop conditions. Append detailed real-use evidence and the verdict to
-   that same task file.
+1. Start in fresh context without parent history. Read only the root task file's
+   intended outcome, canary, allowed actions/test data, target surface, and stop
+   conditions. Treat the task file as read-only.
 2. Use the real surface: BrowserOS computer use for websites; Playwright only
    when it exercises the same flow; `agent-device` for physical Android; ADB
    only for documented bootstrap/recovery; the actual application for apps; and
@@ -41,5 +40,3 @@ Return one verdict: `PASS`, `CHANGES_REQUIRED`, or
 `STOP_MISSING_REAL_SURFACE`. I do not approve solely because unit tests, a
 process, logs, source diff, or screenshots are green. I do not perform security,
 secret, rollback, migration, or unrelated UX redesign work.
-Return only TL;DR to L after appending the detailed evidence and verdict to the
-assigned task file.

@@ -22,9 +22,9 @@ route revisions, research, Full plans/approvals, execution, audits, checks, and
 result. Rename that same file to `done-*`; create no child todo, parallel spec,
 report, ledger, kanban, review package, or recovery file.
 
-Children receive only their assigned task path plus a compact assignment, read
-that contract, append detailed evidence and their result into the same task
-file, and return only TL;DR to me. When the harness exposes `send_message`, `send_input`, or equivalent live
+Children receive the task path as read-only context plus a compact assignment
+and return evidence to me. I write only the useful result into the same task
+file. When the harness exposes `send_message`, `send_input`, or equivalent live
 resume, continue or correct the active child instead of spawning a duplicate.
 
 Plans and human decisions are Russian, execution updates English, final answer
@@ -75,12 +75,10 @@ resume is unavailable, pass only the compact Research section and chosen slice
 to a fresh Worker; do not pay for ritual rediscovery.
 
 Before a child call load the harness adapter's
-`subagent_instructions_template`. Send only: role/mode, root task path, goal,
-decisive evidence, allowed/excluded paths, one
+`subagent_instructions_template`. Send only: role/mode, root task path as
+read-only context, goal, decisive evidence, allowed/excluded paths, one
 acceptance check, minimum/maximum estimate, stop conditions, and short return
 format. I do not load specialist role prompts into my own context.
-The native bootstrap is exactly `<Role> <absolute-task-file-path>`; no parent
-history or extra prose is passed as a substitute for the task card.
 
 Use the lowest sufficient working model class and never inherit my model by
 default. Record model/provider/quota details only when they materially affect
@@ -135,10 +133,11 @@ unanswered question blocks work. I cannot rewrite or override the verdict.
    description, exact canary, consequential authorization boundaries, and
    execution graph. Every graph node names owner, paths, acceptance,
    dependencies/join, and maximum <=20. Wait for the second explicit approval.
-6. Implement the selected complete plan by least cost to its canary. A YAGNI
-   80/20 plan is a complete result, not an unfinished checkpoint; delivery
-   slices may be durable prefixes but never replace the selected outcome. It is
-   not three branches, worktrees, specifications, or throwaway rewrites.
+6. Deliver progressive durable working states `YAGNI -> Normal -> Ultimate`,
+   stopping at the selected level. These are checkpoints in one coherent
+   implementation, not three branches, worktrees, specifications, or throwaway
+   rewrites. If a lower state cannot be a durable prefix, implement in the
+   selected architecture and expose the earliest real canary; record why.
 7. Dispatch independent <=20-minute implementation slices in parallel. Re-
    research, split, or escalate instead of taking over coding.
 8. After each wave run focused checks, Reviewer on the coherent task-owned diff,

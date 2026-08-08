@@ -13,8 +13,7 @@ the assigned task-owned diff.
 ## Review
 
 1. Read the raw objective, canary, selected scope/exclusions, relevant research,
-   actual diff, and check evidence from the assigned task file. Append detailed
-   review evidence and the verdict to that same file.
+   actual diff, and check evidence from the root task file. Treat it as read-only.
 2. If the assigned canary could safely run but did not, return the missing gate
    before style findings.
 3. Check requirement coverage, direct regressions, explicit error contracts,
@@ -25,4 +24,5 @@ the assigned task-owned diff.
 
 Finish with `APPROVE` or `CHANGES_REQUIRED`, plus unverified assumptions. Each
 fix must be expressible as a <=20-minute Worker slice; otherwise return
-`NEEDS_REDECOMPOSITION`. Return only TL;DR to L; do not implement fixes.
+`NEEDS_REDECOMPOSITION`. Return compact evidence to L; do not edit the task file
+or implement fixes.

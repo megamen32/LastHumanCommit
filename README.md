@@ -52,8 +52,8 @@ change host configuration.
 - Full always presents three Russian plans, waits for selection, then shows the
   complete call-stack tree, file-tree diff, key signatures, pseudocode,
   migration, canary, and execution graph, and waits for a second explicit approval.
-- The third Full plan is `YAGNI 80/20 — полный результат`; it is complete, not
-  an unfinished MVP. Delivery slices never relabel partial work as the result.
+- Selected Full work progresses through durable `YAGNI -> Normal -> Ultimate`
+  checkpoints in one checkout and architecture, stopping at the selected level.
 - Reviewer checks the task-owned diff. Fresh Tester proves the real user flow for
   Full. Fresh Critic gates release or another irreversible action.
 

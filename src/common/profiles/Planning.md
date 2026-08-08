@@ -36,11 +36,9 @@ edits, and runs checks. Do not inherit L's model by default. Record model or
 quota only when it affects cost, capability, or recovery.
 
 Before a child call load the harness `subagent_instructions_template` and send a
-compact package: role/mode, root task path, goal, decisive evidence,
-allowed/excluded paths, one acceptance check, minimum/maximum estimate, stop
-conditions, and return format. The child appends detailed evidence and its
-result to the assigned task file and returns only TL;DR; it does not create a
-second task file.
+compact package: role/mode, root task path as read-only context, goal, decisive
+evidence, allowed/excluded paths, one acceptance check, minimum/maximum
+estimate, stop conditions, and return format. Do not create a child task file.
 
 Resume the same Worker from research into its implementation lane when proven
 supported; otherwise pass the compact Research section to a fresh Worker.

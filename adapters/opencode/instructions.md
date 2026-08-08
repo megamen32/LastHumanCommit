@@ -5,7 +5,7 @@ directory. The installed profile contains the complete role prompt at startup;
 it must not spend a turn rereading `src/common/agents/<Role>.md`.
 
 Before every child call, load `templates/subagent.md` for the compact assignment,
-assigned task-file boundary, Worker continuity, fresh gates, and cheapest-
+root-task read-only boundary, Worker continuity, fresh gates, and cheapest-
 sufficient model rules.
 
 For ordinary missing information use AskHuman. For a secret or password use

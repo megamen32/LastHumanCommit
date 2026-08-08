@@ -6,24 +6,18 @@ Objective:
 Business canary:
 Confirmed scope:
 Explicit exclusions:
-Acceptance proof:
 Cycle: direct | short | full | emergency
-Current stage: research | planning | YAGNI | Normal | Ultimate | review | release
-Current owner:
 Started at (UTC+3):
 Workspace: primary checkout | auxiliary worktree | detached HEAD
 Worktree path:
 Branch:
 Initial estimate (minimum / maximum active minutes):
-Estimate revisions (append-only: UTC+3, previous -> new, trigger, evidence):
+Current estimate (only if route changed; keep initial above):
 Stop when:
-Abandon/rethink when:
-Forbidden without explicit user authorization:
-Consequential authorization questions (append-only):
+Rethink when:
+Consequential actions requiring explicit user authorization:
 
 ## Research
-
-Use this section for compact Worker findings only.
 
 Decisive findings:
 Existing mechanism:
@@ -36,17 +30,17 @@ Proposed <=20-minute slices and dependencies:
 
 ### 1. Максимально идеальный
 
-Outcome / scope / omissions / trade-offs / risks / minimum-maximum estimate /
+Outcome / scope / conscious omissions / trade-offs / risks / minimum-maximum /
 verification / migration / execution graph:
 
 ### 2. Нормальный
 
-Outcome / scope / omissions / trade-offs / risks / minimum-maximum estimate /
+Outcome / scope / conscious omissions / trade-offs / risks / minimum-maximum /
 verification / migration / execution graph:
 
-### 3. YAGNI 80/20 — полный результат
+### 3. YAGNI 80/20 — полный результат сейчас
 
-Outcome / scope / omissions / trade-offs / risks / minimum-maximum estimate /
+Outcome / scope / conscious omissions / trade-offs / risks / minimum-maximum /
 verification / migration / execution graph:
 
 Recommendation:
@@ -64,69 +58,29 @@ Consequential authorization boundaries:
 Execution graph (each node: owner, paths, acceptance, dependencies, max <=20):
 Second explicit human approval (verbatim):
 
-## Execution — append-only
+## Work
+
+Keep entries short. L writes them; children return evidence and never append here.
 
 - UTC+3:
-  Slice:
-  Mode: research | implement: bugfix/TDD | implement: feature
-  Owner:
-  Estimate (minimum / maximum; maximum <=20):
-  Paths:
-  Acceptance check:
+  Slice / owner / mode:
+  Minimum / maximum (maximum <=20):
+  Acceptance:
   Result: DONE | BLOCKED | NEEDS_REDECOMPOSITION | NEEDS_RETHINK
-  Business delta:
-  Evidence:
-  Next:
+  Business delta / evidence / next:
 
-## Overseer receipts — append-only
+## Gates
 
-- UTC+3:
-  Trigger:
-  VERDICT: CONTINUE | RETHINK | ASK_USER | STOP_SCOPE_DRIFT | STOP_MISSING_CONTEXT
-  BUSINESS_DELTA:
-  ESTIMATE:
-  WASTE:
-  NEXT:
-  QUESTION:
-
-## Critic decisions — append-only
-
-- UTC+3:
-  Current user P0:
-  Evidence:
-  P0 distance: CLOSER | SAME | FARTHER
-  Questions for L:
-  Decision: PASS | RETHINK | STOP | STOP_SCOPE_DRIFT | STOP_MISSING_CONTEXT
-  Minimum proof to proceed:
-
-## Child assignment and detailed report — append-only
-
-The explicit `<Role> <absolute-task-file-path>` bootstrap is authoritative.
-The child reads only this assigned task file. Children append their detailed
-evidence and result to that file, then return only TL;DR to L. Children never create a second task
-card, report, ledger, specification, or recovery file.
-
-- Role:
-  Mode:
-  Started:
-  Allowed/excluded paths:
-  Acceptance and stop conditions:
-  Detailed evidence and result:
-  L-facing return: TL;DR only
-
-## Independent gates — append-only
-
-Overseer:
-Reviewer:
-Tester:
-Critic:
+- Overseer: <trigger + one-line verdict>
+- Reviewer: <verdict + decisive findings>
+- Tester: <surface + verdict + evidence; Full only>
+- Critic: <verdict + minimum proof; release/irreversible action only>
 
 ## Result
 
 Summary:
 Business canary evidence:
 Tests/checks:
-Review:
 Workspace/branch at finish:
 Commit (only if created):
 Unresolved:

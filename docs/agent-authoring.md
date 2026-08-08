@@ -25,8 +25,8 @@ prompt.
 - Full always preserves three Russian plans, first selection, full technical
   preview, and second explicit approval. Never remove call-stack tree, file-tree
   diff, key signatures, pseudocode, migration, canary, or execution graph.
-- `YAGNI 80/20` is a complete third plan, not an unfinished MVP or a partial
-  delivery state.
+- `YAGNI -> Normal -> Ultimate` is durable delivery order after selection, not
+  three branches or three specifications.
 - Reviewer sees only task-owned diff; Tester is the fresh real-user gate before
   Critic; Critic independently gates release or irreversible action.
 - Silence never authorizes deploy, rollback, destructive action, branch, or
@@ -43,8 +43,7 @@ never silently staged or committed with the current task.
 ## Prompt ownership
 
 - The router names roles and paths but does not duplicate their workflows.
-- L sends one role/mode and compact assignment; children append detailed
-  evidence to the assigned task file and return only TL;DR to L.
+- L sends one role/mode and compact assignment; children return evidence to L.
 - Profiles supplement an assigned role. Protocols load only on their trigger.
 - Templates are views of the same root task, not a second workflow.
 - `profiles/Code.md` deliberately owns code-as-docs, structured/rotated logs,

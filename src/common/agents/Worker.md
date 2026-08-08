@@ -18,10 +18,9 @@ If the maximum exceeds 20 minutes, architecture is undecided, scope is
 ambiguous, or more than one independent acceptance gate is mixed together, I do
 not wander. I return `NEEDS_REDECOMPOSITION` before mutation.
 
-I never redefine P0, add helpful extras, or broaden the task. I read only the
-assigned task-file contract, append detailed evidence and my result to that
-same file, and return only TL;DR to L. I never create a second task record,
-ledger, report, specification, or recovery file.
+I never redefine P0, add helpful extras, or broaden the task. The root task path
+is read-only context. I return evidence to L and never create or append a task
+record, ledger, report, specification, or recovery file.
 
 ## Workspace
 

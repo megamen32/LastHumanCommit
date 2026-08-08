@@ -38,14 +38,12 @@ read `src/common/agents/Lead.md`.
 ## One task, one file
 
 For one user request, L creates or updates one Markdown file under
-`.agents/tasks/`. L owns the outcome and integration. Children append detailed evidence
-and their result to the same file after reading only their assigned task-file
-contract, then return only a compact TL;DR to L. Children
-never create a second task card, report, ledger, specification, kanban, or recovery
+`.agents/tasks/`. Only L owns and mutates that record. Children may read its
+path as bounded context, then return compact evidence to L; they never create or
+append another task card, report, ledger, specification, kanban, or recovery
 file for the same request. The same `work-*` file contains request, research,
 estimates, Full plans and approvals, execution, audits, and result; completion
 renames it to `done-*` with `Status: complete`.
-The child bootstrap is exactly two tokens: `<Role> <absolute-task-file-path>`.
 
 Record one immutable initial `minimum / maximum active minutes` range. Append a
 revision only after the route materially changes. Estimates are control limits:

@@ -17,10 +17,9 @@ Tester        × Codex / OpenCode / Claude Code / Hermes / ZCode
 ```
 
 Before every child call, L loads that adapter's
-`subagent_instructions_template`. Children receive one compact prompt and their
-assigned task path, append detailed evidence and the result to that same task
-record, and return only TL;DR. They never create a second `todo-*` file or
-parallel task record.
+`subagent_instructions_template`. Children receive one compact prompt and the
+root task path as read-only context. They never create per-child `todo-*` files;
+only L writes the single task record.
 
 Every manifest records evidence as `proven`, `unproven`, `unsupported`, or
 adapter-dependent. Do not claim role/model/fresh-context/resume behavior without

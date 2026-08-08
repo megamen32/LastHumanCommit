@@ -25,7 +25,7 @@ def text(path: str) -> str:
 
 
 def normalized(value: str) -> str:
-    return " ".join(value.split()).casefold()
+    return " ".join(value.split())
 
 
 def require(value: str, phrase: str, source: str) -> None:
@@ -86,8 +86,8 @@ for phrase in (
     "Routine work stays in the current primary checkout",
     "first user-visible update must warn the user",
     "<primary-project-root>/.worktrees/<task-slug>",
-    "children append detailed evidence",
-    "children never create a second task card",
+    "Only L owns and mutates that record",
+    "they never create or append another task card",
     "minimum / maximum active minutes",
     "L is an orchestrator by default",
     "maximum five active minutes",
@@ -109,7 +109,7 @@ for phrase in (
     "maximum <=20 active minutes",
     "one unresolved block above one hour requires more research",
     "There is no separate Explorer role",
-    "root task path",
+    "root task path as read-only context",
     "after the first concrete Worker result",
     "after research and before the three plans",
     "after every implementation wave or selected delivery stage",
@@ -125,6 +125,7 @@ for phrase in (
     "migration description",
     "execution graph",
     "second explicit approval",
+    "YAGNI -> Normal -> Ultimate",
     "not three branches, worktrees, specifications, or throwaway rewrites",
     "fresh Tester",
     "invoke fresh Critic once",
@@ -140,6 +141,7 @@ for bad in (
     "Later audits are allowed only after 30 minutes",
     "Before every final answer",
     "creates the cheapest sufficient Worker package, normally on",
+    "<Role> <absolute-task-file-path>",
 ):
     forbid(lead, bad, "Lead.md")
 
@@ -147,8 +149,8 @@ for bad in (
 for phrase in (
     "`mode: research` or `mode: implement`",
     "maximum <=20",
-    "assigned task-file contract",
-    "append detailed evidence",
+    "root task path is read-only context",
+    "never create or append a task record",
     "NEEDS_REDECOMPOSITION",
     "NEEDS_RETHINK",
     "Do not silently extend the estimate",
@@ -197,15 +199,15 @@ for phrase in (
     "Never touch, stage, or propose silently including foreign edits",
     "smallest bounded fix",
     "<=20-minute Worker slice",
-    "append detailed review evidence",
+    "do not edit the task file",
 ):
     require(reviewer, phrase, "Reviewer.md")
 for phrase in (
     "actual user-facing surface",
     "before the final Critic release gate",
     "`only-new` is mandatory",
-    "append detailed real-use evidence",
-    "Return only TL;DR",
+    "Treat the task file as read-only",
+    "Return compact evidence to L",
     "STOP_MISSING_REAL_SURFACE",
 ):
     require(tester, phrase, "Tester.md")
@@ -219,7 +221,7 @@ for phrase in (
     "Every Worker assignment has one mode, one acceptance gate, and maximum <=20",
     "whole plan may exceed 60 minutes only as a known graph",
     "single unresolved block above 60 minutes",
-    "does not create a second task file",
+    "Do not create a child task file",
     "Resume the same Worker",
 ):
     require(planning, phrase, "Planning.md")
@@ -288,7 +290,7 @@ for phrase in (
     "Migration description:",
     "Execution graph (each node: owner, paths, acceptance, dependencies, max <=20):",
     "Second explicit human approval",
-    "Children append their detailed evidence and result to that file",
+    "L writes them; children return evidence and never append here",
     "Overseer:",
     "Reviewer:",
     "Tester:",
@@ -310,6 +312,7 @@ for phrase in (
     "Pseudocode:",
     "Migration description:",
     "Second explicit approval",
+    "YAGNI -> Normal -> Ultimate",
     "not create three branches, worktrees, specifications",
     "run fresh Tester",
     "run Critic once",
@@ -395,9 +398,8 @@ for adapter in ADAPTERS:
     for phrase in (
         "lowest sufficient",
         "maximum <=20",
-        "root task path",
-        "child reads only the assigned task file",
-        "appends detailed evidence",
+        "root task path as read-only context",
+        "Do not create a child `todo-*`, Task Card, report, ledger, or spec file",
         "same Worker",
         "Overseer and Critic are always",
         "Reviewer and Tester are fresh independent gates",
@@ -405,7 +407,8 @@ for adapter in ADAPTERS:
         require(template, phrase, f"{adapter}/templates/subagent.md")
     for old in (
         "Write one compact `todo-*.md`",
-        "only L writes the root task file",
+        "require the child to append its detailed result there",
+        "append detailed results here",
     ):
         forbid(template, old, f"{adapter}/templates/subagent.md")
     for key in ("role_source", "optional_instructions", "subagent_instructions_template"):
@@ -444,20 +447,15 @@ runtime_paths = [
 for relative in runtime_paths:
     forbid(text(relative), "uptime", relative)
 
-# Existing task files retain the one-file status matrix; minimal todo records are
-# allowed for unselected defects and do not require a full status contract.
+# Existing task files retain the exact one-file status matrix; old child todo files are absent.
 for path in sorted((ROOT / ".agents/tasks").glob("*.md")):
     value = path.read_text(encoding="utf-8")
-    if not path.name.startswith(("todo-", "work-", "done-")):
-        fail(f"task filename must start with todo-, work-, or done-: {path.relative_to(ROOT)}")
+    if not path.name.startswith(("work-", "done-")):
+        fail(f"task filename must start with work- or done-: {path.relative_to(ROOT)}")
     match = re.search(r"^Status:\s*(.+)$", value, re.MULTILINE)
     if not match:
-        if path.name.startswith("todo-"):
-            continue
         fail(f"task lacks Status: {path.relative_to(ROOT)}")
     status = match.group(1).strip().lower()
-    if path.name.startswith("todo-") and status not in {"todo", "blocked", "work", "in progress"}:
-        fail(f"todo task has invalid status {status!r}: {path.relative_to(ROOT)}")
     if path.name.startswith("work-") and status not in {"in progress", "blocked"}:
         fail(f"work task has invalid status {status!r}: {path.relative_to(ROOT)}")
     if path.name.startswith("done-") and status != "complete":

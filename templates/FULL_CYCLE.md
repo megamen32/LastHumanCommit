@@ -3,8 +3,7 @@
 Use Full only after Worker research confirms both development over 30 active
 minutes and a material product, architecture, migration, or expensive-wrong-
 path choice. Keep every decision and result in the same `.agents/tasks/work-*`
-file. Children append their detailed evidence and result to that file and return
-only TL;DR to L; no child creates a second task record.
+file; only L writes it.
 
 ## Language
 
@@ -90,10 +89,11 @@ Do not implement before the second approval.
 
 ## Delivery
 
-The selected plan targets the complete desired outcome. `YAGNI 80/20` is a
-complete result, not an unfinished MVP. Delivery slices may be durable prefixes
-of that plan, but never relabel a partial slice as the selected outcome or
-not create three branches, worktrees, specifications, or throwaway implementations.
+Default durable checkpoint order is `YAGNI -> Normal -> Ultimate`, stopping at
+the selected target. These checkpoints share one architecture and checkout;
+they do not create three branches, worktrees, specifications, or throwaway
+implementations. Collapse a lower checkpoint only when it cannot be a durable
+prefix; record why and expose the earliest real canary.
 
 For each wave:
 
