@@ -1,44 +1,28 @@
 # Codex subagent instructions template
 
-Before every `spawn_agent` call:
+Before every `spawn_agent` or resumed Worker call:
 
-Task Card
+Bootstrap the child with exactly `<Role> <absolute-task-file-path>`.
 
-The assigned task file is the complete contract: read only that file after
-loading the named role, append the detailed evidence and result there, and
-return only its TL;DR to L. Never fork the parent conversation history.
-pass required context explicitly through the task card, never through parent history.
+- Select the lowest sufficient working model class; do not inherit L's model by
+  default.
+- Every new child starts with `fork_context: false`. Never fork parent history;
+  pass only required context explicitly.
+- Send one compact assignment: role, Worker mode when applicable, root task path,
+  goal, decisive evidence, allowed/excluded paths, one
+  acceptance check, minimum/maximum with maximum <=20, stop conditions, and
+  compact return format.
+- The child reads only the assigned task file, appends detailed evidence
+  and its result there, and returns only TL;DR to L. It never creates a second
+  task card, report, ledger, or spec file.
+- Resume the same Worker from research with `send_input` for its selected
+  implementation lane when supported; otherwise pass the compact Research
+  section to a fresh Worker.
+- Overseer and Critic are always new no-history children with raw user context
+  and no desired verdict from L. Reviewer and Tester are fresh independent
+  gates as required by their roles.
+- Escalate only after `NEEDS_REDECOMPOSITION`, `NEEDS_RETHINK`, or concrete
+  acceptance evidence proves a capability gap.
 
-- Select the lowest sufficient working model class for the assigned role and
-  bounded acceptance check. Do not inherit L's model by default merely because
-  it is the parent default.
-- Worker assignments use `mode: research` or `mode: implement`, one acceptance
-  gate, and maximum <=20 active minutes.
-- Set `fork_history: NEVER`. In the Codex call this means `fork_context: false`;
-  never omit it or fork the parent conversation history.
-- Before the call, write the complete assignment into one `todo-*.md`. Its
-  top-level `Role:` must be one known specialist role. Pass exactly two tokens:
-  `<Role> <absolute-task-file-path>`, with no other prose, parent context, or
-  memory. The explicit role resolves before the Lead fallback and is
-  authoritative for that pass; reuse the same file for Worker then Reviewer.
-  The child appends its detailed result there and returns only TL;DR to L.
-- When the child remains active, use Codex `send_message` for every live
-  question, correction, or status request. Do not create a second child or use
-  task-file edits as chat while that message channel works.
-- For nearby confirmed scope, reassign the same active Worker or
-  Adviser through `send_message`; Reviewer and Tester are always fresh,
-  context-free gates.
-- When a research Worker returns a bounded implementation in its owned scope, send
-  that same active child exactly `Worker <same-absolute-task-file-path>`; do not
-  spawn a duplicate Worker or repeat its research. Independent review still
-  uses a separate Reviewer.
-  This is the same Worker research-to-implementation lane.
-- Use the cheapest sufficient Worker mode for the assigned action.
-- Escalate only after `NEEDS_REDECOMPOSITION` or concrete acceptance evidence
-  shows that the selected class cannot complete the bounded package.
-
-Overseer and Critic are always fresh no-history children with raw user context
-passed explicitly; they do not inherit L's history or desired verdict.
-
-If the active Codex surface cannot create a no-history child, do not create a
-history-forked substitute. Report the unsupported boundary to the user.
+If the active Codex surface cannot create a no-history gate child, report the
+unsupported boundary instead of using a history-forked substitute.

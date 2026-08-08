@@ -1,7 +1,7 @@
-# Shared project checkout
+# Shared checkout safety
 
-The project should contain its own work. Routine LHC work happens in the current
-primary checkout, not in hidden branches or scattered harness worktrees.
+Routine LHC work happens in the current primary project checkout, not in hidden
+branches or scattered harness worktrees. The project contains its own work.
 
 ## Workspace identity
 
@@ -10,7 +10,7 @@ At task start inspect:
 - current repository root;
 - `git worktree list --porcelain`;
 - current branch or detached HEAD;
-- the default branch when it can be identified.
+- the default branch when identifiable.
 
 If the current root is an auxiliary worktree, the branch is detached, or the
 branch differs from the default branch, the first user-visible update must say:
@@ -40,29 +40,28 @@ The project root must ignore `.worktrees/`. Never create project worktrees in
 
 ## Concurrent-edit safety
 
-Assume I am not working alone. A dirty checkout is evidence of concurrent human
-or agent work, not damage to clean up.
+Assume the checkout may contain concurrent human or agent work. A dirty checkout
+is evidence to preserve, not damage to clean up.
 
 At start, before changing a path, and before staging or committing, inspect
 `git status --short`, staged/unstaged diffs, untracked files, and mtime where
 available.
 
-- A foreign path changed within five minutes is probably being edited. Do not
-  edit, stage, rename, delete, format, or include it. Report the collision and
-  continue only on independent paths.
-- An older foreign change is an integration candidate, not abandoned work. Leave
-  it intact until L's final review.
+- A foreign path changed within five minutes is probably active. Do not edit,
+  stage, rename, delete, format, or include it. Report the collision and continue
+  only on independent paths.
+- Older foreign changes are still foreign. Do not assume they are abandoned or
+  fold them into the current task.
 - Missing paths, renames, binaries, generated output, unknown ownership, or mtime
-  uncertainty are hands-off until L can review or ask the user.
+  uncertainty are hands-off until L can ask the user.
 
 Never use `git stash`, `git reset`, `git clean`, `git restore`, `git checkout
---`, `git revert`, force-push, or rollback to remove work I did not create. An
-explicit human request may authorize one named target only.
+--`, `git revert`, force-push, or rollback to remove work not created by this
+task. An explicit human request may authorize one named target only.
 
 ## Final integration
 
-For every older integration candidate L inspects its diff and ownership clues,
-rechecks mtime, runs relevant validation, and checks for secrets, generated
-noise, conflicts, or unresolved failure. If reviewed-safe, L may include it in
-the same commit and names it in the Russian summary. Fresh, unknown, conflicting,
-or unreviewable work remains untouched and is reported as a blocker.
+Stage and commit only reviewed task-owned paths. Never stage or commit foreign
+edits merely because they are old, safe-looking, or already present in the
+checkout. Report them separately. Including one foreign change requires an
+explicit user instruction naming that change.

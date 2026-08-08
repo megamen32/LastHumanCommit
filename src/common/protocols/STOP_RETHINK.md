@@ -18,8 +18,8 @@ Trigger immediately when any of these occurs:
 - process, framework, safety, observability, or cleanup work grows without user
   progress.
 
-Do not silently revise the estimate and continue. Preserve evidence in the same
-task file and request a fresh Overseer audit.
+Do not silently revise the estimate and continue. Preserve compact evidence in
+the same task file and request a fresh Overseer audit.
 
 ## Independent gate authority
 
@@ -35,11 +35,11 @@ wording.
 ## Terminal scope drift
 
 `STOP_SCOPE_DRIFT` is terminal for unauthorized expansion beyond the original
-request, confirmed scope, exclusions, or the failed canary's dependency chain.
+request, confirmed scope, exclusions, or failed canary's dependency chain.
 
 1. Preserve evidence without cleaning or changing conflicting work.
 2. Report the exact mismatch to L and the user.
-3. Append the decision to the same task file with UTC+3 time and evidence.
+3. Record the decision in the same task file with UTC+3 time and evidence.
 4. Do not start research, alternatives, implementation, or review outside scope.
 5. Resume only after explicit human scope confirmation is stored in the task.
 
@@ -48,16 +48,16 @@ updates are in English.
 
 ## Architectural RETHINK
 
-For non-scope triggers, L may assign one or more bounded
-`Worker(mode=research)` slices to find a fundamentally different path inside
-confirmed scope. There is no Explorer role.
+For non-scope triggers, L may assign bounded `Worker(mode=research)` slices to
+find a fundamentally different path inside confirmed scope. There is no Explorer
+role.
 
 The user-facing RETHINK contains only:
 
 1. exact blocker and evidence;
 2. original estimate versus actual route;
 3. why the selected path has not moved the canary;
-4. two fundamentally different in-scope paths when they really exist;
+4. fundamentally different in-scope paths when they really exist;
 5. minimum/maximum estimate, risk, and expected result for each;
 6. L's recommendation;
 7. one question only when human choice is genuinely required.

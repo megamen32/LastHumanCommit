@@ -4,7 +4,15 @@ set -eu
 
 BEGIN='<!-- last-human-commit:begin -->'
 END='<!-- last-human-commit:end -->'
-ED=${LHC_BLOCK_ED:-ed}
+if [ "${LHC_BLOCK_ED+x}" = x ]; then
+    ED=$LHC_BLOCK_ED
+elif command -v ed >/dev/null 2>&1; then
+    ED=ed
+elif command -v ex >/dev/null 2>&1; then
+    ED=ex
+else
+    ED=ed
+fi
 
 fail() { printf '%s\n' "last-human-commit: $*" >&2; exit 1; }
 usage() {

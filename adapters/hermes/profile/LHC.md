@@ -7,7 +7,6 @@ stable while the versioned bundle remains explicit. Use this profile to create
 the Hermes profile `LHC` without changing Hermes source code or runtime files.
 
 The profile:
-
 - preserves Hermes identity and the adapter delegation overlay;
 - disables native `clarify` for this profile;
 - replaces it with AskHuman for ordinary user questions;

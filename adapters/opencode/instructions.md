@@ -1,21 +1,17 @@
 # OpenCode adapter instructions
 
 Native profiles are Markdown files under the configured OpenCode agents
-directory. The installed profile must contain the complete role prompt at
-startup; it must not spend a turn reading `src/common/agents/<Role>.md`.
+directory. The installed profile contains the complete role prompt at startup;
+it must not spend a turn rereading `src/common/agents/<Role>.md`.
 
-Before every child call, load `templates/subagent.md` for the fresh-context,
-Task Card, and cheapest-sufficient model rules.
+Before every child call, load `templates/subagent.md` for the compact assignment,
+assigned task-file boundary, Worker continuity, fresh gates, and cheapest-
+sufficient model rules.
 
-For ordinary missing information or a user decision, use AskHuman. For a
-secret or password, use AskSecret/SSS; require the opaque registered-agent
-handoff and reject plaintext or base64 fallback delivery.
+For ordinary missing information use AskHuman. For a secret or password use
+AskSecret/SSS only when attested; require opaque registered-agent handoff and
+reject plaintext or base64 fallback.
 
-Keep the core role unchanged. This adapter owns profile frontmatter, native
-permissions, and any harness-specific resume/session metadata. When a rendered
-role lazily names a companion profile or protocol relative to its role file,
-resolve that path from the installed canonical role source; the role body stays
-embedded and is never read again at runtime.
-
-Before L sends its final answer, run the core `SELF_IMPROVE.md` protocol and
-persist its compact record.
+Keep core roles unchanged. This adapter owns profile frontmatter, native
+permissions, and harness-specific resume metadata. Before L's final answer, run
+`SELF_IMPROVE.md` only when its trigger occurred.
