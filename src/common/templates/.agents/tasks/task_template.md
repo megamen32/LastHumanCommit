@@ -8,6 +8,12 @@ Confirmed scope:
 Explicit exclusions:
 Acceptance proof:
 Cycle: direct | short | full | emergency
+Harness:
+PID:
+Agent session:
+PID status: alive | completed | dead | unknown
+Last PID signal (UTC+3):
+Last task-file transition (UTC+3): todo | work | done
 Current stage: research | planning | YAGNI | Normal | Ultimate | review | release
 Current owner:
 Started at (UTC+3):

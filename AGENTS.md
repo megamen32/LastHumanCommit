@@ -47,6 +47,15 @@ estimates, Full plans and approvals, execution, audits, and result; completion
 renames it to `done-*` with `Status: complete`.
 The child bootstrap is exactly two tokens: `<Role> <absolute-task-file-path>`.
 
+Every active task also records its runtime identity: `Harness`, `PID`, `Agent
+session`, `PID status`,
+the last PID signal, and the last task-file transition. A `todo-*` or `work-*`
+filename is not proof that an agent is still
+working. If the child completion signal is present but the task file was not
+renamed, treat it as a stale transition and repair the file state; if PID is
+dead or no completion signal exists, report the task as dead or unknown rather
+than inventing completion.
+
 Record one immutable initial `minimum / maximum active minutes` range. Append a
 revision only after the route materially changes. Estimates are control limits:
 exceeding the current maximum stops work until a fresh Overseer verdict.

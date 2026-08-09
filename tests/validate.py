@@ -446,6 +446,10 @@ for relative in runtime_paths:
 
 # Existing task files retain the one-file status matrix; minimal todo records are
 # allowed for unselected defects and do not require a full status contract.
+task_template = text("src/common/templates/.agents/tasks/task_template.md")
+for phrase in ("Harness:", "PID:", "Agent session:", "PID status:", "Last PID signal", "Last task-file transition"):
+    require(task_template, phrase, "task template lifecycle identity")
+
 for path in sorted((ROOT / ".agents/tasks").glob("*.md")):
     value = path.read_text(encoding="utf-8")
     if not path.name.startswith(("todo-", "work-", "done-")):
