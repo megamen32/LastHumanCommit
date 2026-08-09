@@ -685,3 +685,25 @@ Exact journey attempted: fresh black-box read of the task file to determine whet
 Observed result: no usable real-use surface is available yet for Tester. The task is still centered on L1 migration/materialization and does not present a finished surface I can exercise without simulating success or inspecting implementation context.
 
 Smallest in-scope repair: finish L1 freezing/materialization, then provide the concrete benchmark surface so Tester can run the only-new black-box journey.
+
+## Matched product-outcome canary evidence (2026-08-09)
+
+- L0 commit `44da5d900fe631d45cff292efb7284fcedb25ba1`: product acceptance
+  passed `1/1`; wall-clock `64.70s`; 148,691 diagnostic tokens; provider
+  receipt exposed no billable charge (`cost_usd: null`).
+- L1 commit `3c79d6c445447a8be94ed59608db8c4946ee4f7f`: the same fixture and
+  topology passed `1/1`; wall-clock `79.34s`; 169,050 diagnostic tokens;
+  provider receipt exposed no billable charge (`cost_usd: null`).
+- The user-visible task was a real checkout bug: unknown discount codes must
+  charge full price, known discounts must remain correct, and a runnable
+  regression test must remain. Both arms changed the producer and passed the
+  acceptance script.
+- L0 was `14.63s` faster (`18.4%`) on this single pilot task. Quality tied;
+  this is not a universal workflow ranking. Models.dev's current entries for
+  GPT-5.6 Luna/Terra list `$0.00/$0.00`, consistent with the subscription route;
+  no synthetic dollar price was substituted.
+- Full redacted dialogue archives and receipts are committed in the public
+  benchmark repository under `results/lhc-skills-product-outcome-20260809/`.
+- Budget gate state after the two matched cells: cumulative effective cost
+  `0.00`, threshold `$5.00`, not triggered. No further paid cell is needed for
+  the selected one-task YAGNI pilot unless the human requests broader coverage.
