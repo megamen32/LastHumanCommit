@@ -11,6 +11,14 @@ import subprocess
 ROOT = Path(__file__).resolve().parents[1]
 ROLES = ("Lead", "Overseer", "Adviser", "Critic", "Worker", "Reviewer", "Tester")
 ADAPTERS = ("codex", "opencode", "claude-code", "hermes", "zcode")
+CANONICAL_SKILL_OWNERS = {
+    "planning": "Lead",
+    "bugfix-tdd": "Worker",
+    "feature-implementation": "Worker",
+    "real-use-testing": "Tester",
+    "business-delivery": "Lead",
+    "release": "Lead",
+}
 
 
 def fail(message: str) -> None:
@@ -43,6 +51,75 @@ def require_before(value: str, first: str, second: str, source: str) -> None:
     b = normalized(value).find(normalized(second))
     if a < 0 or b < 0 or a >= b:
         fail(f"{source} must place {first!r} before {second!r}")
+
+
+def canonical_skill_contract(manifest_value: str) -> tuple[str, dict[str, str]]:
+    skills_root_match = re.search(r"^  skills:\s*(\S+)\s*$", manifest_value, re.MULTILINE)
+    if not skills_root_match:
+        fail("adapters/manifest.yaml lacks core.skills")
+    skills_root = skills_root_match.group(1)
+    skills_root_path = Path(skills_root)
+    if skills_root_path.is_absolute() or ".." in skills_root_path.parts:
+        fail("adapters/manifest.yaml core.skills must stay inside the repository")
+
+    lines = manifest_value.splitlines()
+    try:
+        start = lines.index("canonical_skills:") + 1
+    except ValueError:
+        fail("adapters/manifest.yaml lacks canonical_skills")
+
+    owners: dict[str, str] = {}
+    index = start
+    while index < len(lines) and (not lines[index].strip() or lines[index].startswith("  ")):
+        line = lines[index]
+        if not line.strip():
+            index += 1
+            continue
+        name_match = re.fullmatch(r"  - name: ([a-z0-9]+(?:-[a-z0-9]+)*)", line)
+        if not name_match or index + 1 >= len(lines):
+            fail("adapters/manifest.yaml has malformed canonical_skills entry")
+        name = name_match.group(1)
+        owner_match = re.fullmatch(r"    owner: ([A-Za-z]+)", lines[index + 1])
+        if not owner_match or name in owners:
+            fail(f"adapters/manifest.yaml has malformed or duplicate skill: {name}")
+        owners[name] = owner_match.group(1)
+        index += 2
+
+    if set(owners) != set(CANONICAL_SKILL_OWNERS) or len(owners) != 6:
+        fail("adapters/manifest.yaml must declare exactly the six canonical skills")
+    for name, expected_owner in CANONICAL_SKILL_OWNERS.items():
+        if owners[name] != expected_owner:
+            fail(f"canonical skill {name} owner mismatch: expected {expected_owner}, got {owners[name]}")
+
+    for name, owner in owners.items():
+        skill_path = (ROOT / skills_root_path / name / "SKILL.md").resolve()
+        try:
+            skill_path.relative_to(ROOT.resolve())
+        except ValueError:
+            fail(f"canonical skill path escapes repository: {name}")
+        if not skill_path.is_file():
+            fail(f"missing canonical skill: {skill_path.relative_to(ROOT)}")
+        skill_lines = skill_path.read_text(encoding="utf-8").splitlines()
+        if not skill_lines or skill_lines[0] != "---":
+            fail(f"{skill_path.relative_to(ROOT)} lacks YAML frontmatter")
+        try:
+            end = skill_lines.index("---", 1)
+        except ValueError:
+            fail(f"{skill_path.relative_to(ROOT)} has unterminated YAML frontmatter")
+        fields: dict[str, str] = {}
+        for field in skill_lines[1:end]:
+            match = re.fullmatch(r"([a-z][a-z0-9_-]*):\s*(.+\S)", field)
+            if not match or match.group(1) in fields:
+                fail(f"{skill_path.relative_to(ROOT)} has invalid frontmatter")
+            fields[match.group(1)] = match.group(2)
+        if set(fields) != {"name", "description"}:
+            fail(f"{skill_path.relative_to(ROOT)} frontmatter must contain name and description")
+        if fields["name"] != name or not fields["description"].strip():
+            fail(f"{skill_path.relative_to(ROOT)} frontmatter does not match manifest name")
+        role_value = text(f"src/common/agents/{owner}.md")
+        require(role_value, f"`{name}`", f"{owner}.md")
+
+    return skills_root, owners
 
 
 router = text("AGENTS.md")
@@ -384,6 +461,7 @@ for adapter in ADAPTERS:
 # Adapter manifests and child templates preserve one root file, continuity, and fresh gates.
 manifest_text = text("adapters/manifest.yaml")
 require(manifest_text, "schema_version: 1", "adapters/manifest.yaml")
+canonical_skill_contract(manifest_text)
 for adapter in ADAPTERS:
     base = ROOT / "adapters" / adapter
     manifest = text(f"adapters/{adapter}/adapter.yaml")

@@ -43,3 +43,11 @@ process, logs, source diff, or screenshots are green. I do not perform security,
 secret, rollback, migration, or unrelated UX redesign work.
 Return only TL;DR to L after appending the detailed evidence and verdict to the
 assigned task file.
+
+## Canonical skill I select
+
+I explicitly select `real-use-testing`. That skill means fresh-context,
+user-facing, only-new verification on the actual surface, after the selected
+implementation and review pass. It does not move scope, and it does not replace
+the Tester role's gatekeeping authority or the harness capabilities used to
+reach the surface.

@@ -3,9 +3,23 @@ core:
   roles: src/common/agents
   profiles: src/common/profiles
   protocols: src/common/protocols
+  skills: skills
   marker_router:
     - AGENTS.md
     - CLAUDE.md
+canonical_skills:
+  - name: planning
+    owner: Lead
+  - name: bugfix-tdd
+    owner: Worker
+  - name: feature-implementation
+    owner: Worker
+  - name: real-use-testing
+    owner: Tester
+  - name: business-delivery
+    owner: Lead
+  - name: release
+    owner: Lead
 adapters:
   - adapters/codex/adapter.yaml
   - adapters/opencode/adapter.yaml

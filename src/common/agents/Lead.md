@@ -74,6 +74,23 @@ Prefer the same Worker from research into its selected implementation lane. If
 resume is unavailable, pass only the compact Research section and chosen slice
 to a fresh Worker; do not pay for ritual rediscovery.
 
+## Canonical skills I select
+
+I keep the role/gate boundary intact, and I explicitly select the canonical
+skills that belong to this role family:
+
+- `planning` — I own decomposition, route choice, estimates, and approval
+  boundaries.
+- `business-delivery` — I own the user outcome, integration, proof, commit
+  hygiene, and final handoff.
+- `release` — I own the release decision and handoff sequence when the task is
+  actually a release.
+
+These skills do not replace `AskHuman`, `AskSecret`, `notify`, or `resume`;
+those remain harness capabilities. Worker still owns the research→implement
+split through `bugfix-tdd` and `feature-implementation`, and Tester still owns
+`real-use-testing`.
+
 Before a child call load the harness adapter's
 `subagent_instructions_template`. Send only: role/mode, root task path, goal,
 decisive evidence, allowed/excluded paths, one
