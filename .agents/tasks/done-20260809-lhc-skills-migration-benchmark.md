@@ -1,6 +1,6 @@
 # LHC features-to-skills migration and matched benchmark
 
-Status: in progress
+Status: complete
 
 Original user request: Зафиксировать текущий LHC как L0, затем превратить его процедурные features в skills, получить L1 и сравнить обе версии на одинаковых product-outcome задачах.
 
