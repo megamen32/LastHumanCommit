@@ -8,8 +8,8 @@ Record UTC+3 start and one immutable initial `minimum / maximum active minutes`
 range. Do not add optimistic/likely/pessimistic variants. Append a revision only
 when new evidence changes the route, with old/new range and one-line reason. At
 each Worker return compare elapsed work and business delta with the current
-maximum. An overrun requires a fresh Overseer verdict; increasing the number
-alone never authorizes the same route.
+maximum. An overrun requires an Overseer verdict; increasing the number alone
+never authorizes the same route.
 
 ## Decomposition
 
@@ -44,8 +44,8 @@ second task file.
 
 Resume the same Worker from research into its implementation lane when proven
 supported; otherwise pass the compact Research section to a fresh Worker.
-Overseer, Reviewer, Tester, and Critic are independent gates and start fresh as
-required by their roles.
+Overseer continues from persistent shared-session files; Reviewer, Tester, and
+Critic are independent gates and start fresh as required by their roles.
 
 A Worker returns `NEEDS_REDECOMPOSITION` before a vague/oversized package and
 `NEEDS_RETHINK` on maximum overrun, two failed hypotheses, or a new architecture

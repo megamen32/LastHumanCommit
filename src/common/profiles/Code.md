@@ -22,7 +22,9 @@ agent identity.
     by time) to S2 entries.
   - S2: normal traceable informational log.
 - INFO/DEBUG are opt-out. Prefer structured logs and rotate them.
-- Do not write code to /tmp, instead: project cwd `.bin/`; move repeated code to a permanent module.
+- Do not write one-off scripts to `/tmp`, `.tmpbin/`, or `.bin/`; write them in
+  project cwd `.agents/at/`. Why: one-off scripts often become reusable Agent Tools or
+  MCPs, so they must remain discoverable and promotable.
 - Do not reinvent a dependency when a proven standard solution can be used.
 - Check standard libraries before adding code or dependencies.
 - Ask whether external research is needed.

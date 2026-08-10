@@ -32,7 +32,13 @@ remove foreign work. Report collisions to L.
 ## Modes
 
 - For `mode: research`, load `../protocols/WORKER_RESEARCH.md`. Research is
-  read-only. Return to L before any implementation.
+  read-only. After 3 active minutes of orientation, write named `search-<task-slug>.md`
+  in the ignored shared-session search tree and rewritten current
+  `result-<result-slug>.md` in the tracked results tree; return only a compact
+  TL;DR and paths to L. After 10 minutes, the result is mandatory, cannot be
+  ignored, and requires a Git commit. One-off scripts belong only in
+  `.agents/at/`; never create `.at/`/`.lhc/`, `/tmp`, or `.tmpbin/`. Return to L
+  before any implementation.
 - For `mode: implement`, load `../protocols/WORKER_IMPLEMENT.md`. The assignment
   must also name `bugfix/TDD` or `feature`.
 

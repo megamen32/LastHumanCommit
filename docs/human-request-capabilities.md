@@ -4,16 +4,19 @@ This document defines the portable LastHumanCommit boundary for agent-facing
 AskHuman / Ask Secret behavior. It describes instruction semantics only; it does
 not define runtime installation, transport, or secret storage.
 
-Current code-backed behavior in LHC is limited to portable task workflow and
-instruction routing. The AskHuman / Ask Secret contract is planned, not
-installed. Until Fleet exposes and attests that capability, agents must treat
-it as unavailable.
+NoticePlace is the canonical human-request capability for LHC. When its live
+adapter is available, `response_stop` must deliver the waiting-state notice
+through NoticePlace rather than merely printing a question in the transcript.
+The portable contract does not claim installation or transport; if NoticePlace
+is not attested, agents must report it unavailable.
 
 ## Boundary
 
 - LHC owns portable instructions, task flow, and role-bound policy text.
 - Fleet owns capability resolution, installation, transport, and attestation.
 - LHC must not own SSS secret values, Notify timing, or session resumption.
+- LHC must not replace NoticePlace with an untracked chat question or a second
+  notification path.
 
 ## Rendering rule
 

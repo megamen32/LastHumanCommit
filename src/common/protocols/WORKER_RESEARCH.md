@@ -2,6 +2,23 @@
 
 Use only for `Worker(mode=research)`. This protocol is read-only.
 
+The first 3 active minutes are basic project orientation. At the 3-minute
+boundary, create two named files in different trees: `search-<task-slug>.md` for
+the append-only search journal under
+`.agents/shared-session/search/<task-id>/`, and `result-<result-slug>.md` for
+the separately rewritten current final result under
+`.agents/shared-session/results/<task-id>/`. The search tree is physically
+Git-ignored but retained for later bulk analysis. After 10 active minutes,
+`result-<result-slug>.md` is mandatory evidence, may never be
+ignored, and the completed change must include a Git commit. Chat returns only a
+compact TL;DR and the file paths; never leave the detailed result only in a
+transcript that a dead harness may discard.
+
+One-off scripts must be written under `.agents/at/`; never create a separate
+`.at/` or `.lhc/`, and `/tmp` and `.tmpbin/` are forbidden. Why: useful one-off
+scripts are often promoted into reusable Agent Tools or MCPs, so one `.agents/`
+root keeps them discoverable.
+
 ## Goal
 
 Reduce uncertainty until L can choose a route and split implementation into

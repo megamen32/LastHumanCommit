@@ -2,9 +2,11 @@
 
 Use Full only after Worker research confirms both development over 30 active
 minutes and a material product, architecture, migration, or expensive-wrong-
-path choice. Keep every decision and result in the same `.agents/tasks/work-*`
-file. Children append their detailed evidence and result to that file and return
-only TL;DR to L; no child creates a second task record.
+path choice. Keep every decision and result in one `.agents/tasks/` lineage:
+copy `todo-*` to `work-*`, then `work-*` to `done-*`, commit each snapshot, and
+preserve all copies. The latest committed snapshot is current. Children append
+detailed evidence, handoff, and result to the task file and return only TL;DR to
+L; no child creates a separate handoff file or second task record.
 
 ## Language
 
@@ -43,10 +45,16 @@ more research, not a vague long Worker assignment.
 
 ## Mandatory Overseer route audit
 
-Run a fresh no-history Overseer after research and before plans. Pass the raw
-user request, the same task file, estimate/business delta, blocker, and proposed
-next action. A non-`CONTINUE` verdict binds L. No 30-minute cooldown may suppress
-this or another required event-triggered audit.
+If the active harness has no lifecycle hooks, retain this explicit capability
+marker and do not pretend the timer fired: `<cap-off:hooks>каждые 30 минут </cap-off:hooks>`.
+When hooks are attested, count from `session_start` and inject the continuing
+Overseer at each 30-minute boundary.
+
+Continue the persistent Overseer after research and before plans. It reads the
+append-only user-message file, the same task file, shared-session state,
+estimate/business delta, blocker, and proposed next action. Do not resend the
+full conversation. A non-`CONTINUE` verdict binds L. No 30-minute cooldown may
+suppress this or another required event-triggered audit.
 
 ## Планы — всегда ровно три
 
@@ -67,6 +75,13 @@ this or another required event-triggered audit.
 
 Рекомендация L:
 Первый выбор человека (дословно):
+
+## Plan criticism and revision
+
+Before human selection, run the fresh Critic in `plan-review` mode over all
+three plans. It attacks long-term consequences, reuse assumptions, false YAGNI,
+and rewrite risk, and may propose alternatives. Pass its criticism to Adviser;
+Adviser revises/recommends the three plans, then L presents them for selection.
 
 Do not implement before explicit selection.
 
@@ -101,17 +116,21 @@ For each wave:
 2. resume the researching Worker for its lane when supported;
 3. run focused checks and the exact canary;
 4. review the coherent task-owned diff;
-5. run a fresh no-history Overseer audit;
+5. continue the persistent Overseer audit;
 6. on maximum overrun, two failed slices, or no business delta, stop and RETHINK
    instead of extending the route.
 
-After the selected implementation and Reviewer pass, run fresh Tester in
-`only-new` mode on the real user-facing surface. Repair findings through bounded
-Worker slices, scoped re-review, and retest.
+Only at the end, after the selected implementation and Reviewer pass, run
+exactly two fresh Testers on the real user-facing surface: one
+`blast-radius` Tester who knows the whole session scope, and one
+`zero-knowledge` typical user who reads no code, Git changes, plans, or session
+history. Both must attach durable business-result evidence such as screenshots
+or video. Repair findings through bounded Worker slices, scoped re-review, and
+repeat both passes.
 
 ## Release gate
 
-After fresh Tester and canary evidence, run Critic once with raw user context,
+After both Tester evidence packages and canary evidence, run Critic once with raw user context,
 the same task file, selected plan, approvals, review, estimate history, and
 proof. L cannot prescribe, narrow, rewrite, or override the verdict.
 

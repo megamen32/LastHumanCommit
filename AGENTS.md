@@ -37,14 +37,15 @@ read `src/common/agents/Lead.md`.
 
 ## One task, one file
 
-For one user request, L creates or updates one Markdown file under
-`.agents/tasks/`. L owns the outcome and integration. Children append detailed evidence
-and their result to the same file after reading only their assigned task-file
-contract, then return only a compact TL;DR to L. Children
-never create a second task card, report, ledger, specification, kanban, or recovery
-file for the same request. The same `work-*` file contains request, research,
-estimates, Full plans and approvals, execution, audits, and result; completion
-renames it to `done-*` with `Status: complete`.
+For one user request, L creates one task lineage under `.agents/tasks/`: copy the
+business request as `todo-*`, copy it to `work-*` before implementation, and copy
+the completed result to `done-*`. Commit each snapshot and preserve every
+earlier copy; never `git mv`, rename, or delete a lifecycle snapshot. The latest
+committed snapshot is the current state. L owns the outcome and integration.
+Children append detailed evidence and their result to the same task file after
+reading only their assigned task-file contract, then return only a compact TL;DR
+to L. Children never create a second task card, separate handoff file, or
+duplicate task/report package.
 The child bootstrap is exactly two tokens: `<Role> <absolute-task-file-path>`.
 
 Every active task also records its runtime identity: `Harness`, `PID`, `Agent
@@ -56,9 +57,20 @@ renamed, treat it as a stale transition and repair the file state; if PID is
 dead or no completion signal exists, report the task as dead or unknown rather
 than inventing completion.
 
+Every `todo-*` and `work-*` card must also contain non-empty `Started at`,
+`Lifecycle provenance`, and `Last task-file mtime observed` fields. Missing
+legacy start/PID/session data is recorded as `unknown (legacy)`, never inferred
+from mtime; mtime is last-write evidence only, not proof of task start or liveness.
+
+Use one project-local state root: `.agents/`. Write one-off Agent Tools only
+under `.agents/at/`; never create a separate `.at/` or `.lhc/`, and never use
+`/tmp` or `.tmpbin/`.
+Why: one-off scripts are frequently reusable and can later be promoted into an
+Agent Tool or MCP without multiplying agent-state roots.
+
 Record one immutable initial `minimum / maximum active minutes` range. Append a
 revision only after the route materially changes. Estimates are control limits:
-exceeding the current maximum stops work until a fresh Overseer verdict.
+exceeding the current maximum stops work until an Overseer verdict.
 
 ## Route work
 
@@ -81,15 +93,17 @@ active minutes. Split anything larger before dispatch. A whole plan may exceed
 one hour only as an explicit graph of understood <=20-minute slices; one
 unresolved block above one hour means more research is required.
 
-Overseer is mandatory for every task and fresh/no-history on every invocation.
+Overseer is mandatory for every task and normally continues from persistent
+shared-session files; fresh/no-history is only recovery or explicitly requested
+independent audit behavior.
 Event-triggered audits cannot be suppressed by a 30-minute cooldown. Critic is
-the independent release or irreversible-action gate; Tester is the fresh real-
-user gate for Full work.
+the independent plan and release gate; Full ends with two fresh real-user
+Testers: blast-radius and zero-knowledge typical-user.
 
 Plans and human decisions are written in Russian, implementation progress in
 English, and the final answer in Russian.
 
-For ordinary missing information use an attested AskHuman capability. For a
+For ordinary missing information use the attested NoticePlace capability. For a
 secret or password use only an attested AskSecret/SSS opaque registered-agent
 handoff; never request plaintext or accept base64 fallback. If the capability is
 not attested, report it unavailable.

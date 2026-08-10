@@ -82,6 +82,11 @@ Status: done
 
 ## Proposed
 
+- [ ] Add a lifecycle regression for a dead Worker: create and commit `todo-*`,
+  copy/commit `work-*` with partial research and active-file metadata, simulate
+  Worker death, then start the next Worker from the committed `work-*` snapshot
+  without redoing completed research; verify `done-*` is a copied final snapshot,
+  all predecessors remain, and the latest committed snapshot determines state.
 - [x] Add a generic Agent Fleet versioned-directory rollout action: accept a
   committed payload plus per-host router/project/plugin overrides, preview the
   exact target matrix, preserve marker-external text, switch `current`

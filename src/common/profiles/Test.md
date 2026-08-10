@@ -30,6 +30,7 @@ scope expansion. Repair it only when the owned change directly regressed it or
 when it blocks acceptance of the confirmed objective or canary. Otherwise,
 report the exact failure and leave it untouched.
 
-At release completion, close resolved task files. Retain unresolved `todo-*` or
-`work-*` files with their exact blocker; do not hide them to make the task appear
-complete.
+At release completion, copy the resolved `work-*` snapshot to `done-*`, commit
+the copy, and retain the `todo-*` and `work-*` predecessors. The latest
+committed lifecycle snapshot is current. Retain unresolved `todo-*` or `work-*`
+files with their exact blocker; do not hide them to make the task appear complete.

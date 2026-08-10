@@ -6,9 +6,12 @@ prompt.
 
 ## Non-negotiable shape
 
-- One request uses one Markdown `.agents/tasks/work-*` file from start to finish. Only L
-  writes it. Rename the same file to `done-*`; never add a child todo, duplicate
-  kanban, spec, ledger, recovery file, or review package.
+- One request uses one Markdown `.agents/tasks/` lineage: copy `todo-*` to `work-*`, then
+  copy `work-*` to `done-*`, committing each snapshot and preserving all earlier
+  copies. Never `git mv`, rename, or delete a lifecycle snapshot; the latest
+  committed snapshot is current. Only L writes the task content. Never add a
+  child todo, separate handoff file, duplicate kanban, spec, ledger, recovery
+  file, or review package.
 - L is an orchestrator by default. It may execute only an obvious <=5-minute
   Direct action. Short and Full repository search and code belong to Worker.
 - There is no Explorer role. Worker uses `mode: research` and `mode: implement`;
@@ -17,9 +20,11 @@ prompt.
   minutes. A whole task above one hour must be an explicit graph of understood
   <=20-minute slices.
 - Estimates are `minimum / maximum`, never a three-value report. Keep the initial
-  range immutable. A maximum overrun requires fresh Overseer before continuation.
-- Overseer is mandatory for every task and fresh/no-history every time. Event-
-  triggered audits are never suppressed by a 30-minute cooldown.
+  range immutable. A maximum overrun requires an Overseer verdict before continuation.
+- Overseer is mandatory for every task and normally continues from the
+  persistent shared-session files; fresh/no-history is only recovery or an
+  explicitly requested independent audit. Event-triggered audits are never
+  suppressed by a 30-minute cooldown.
 - Full is reserved for researched work over 30 minutes with material product,
   architecture, migration, or expensive-wrong-path impact.
 - Full always preserves three Russian plans, first selection, full technical

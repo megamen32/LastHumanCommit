@@ -19,7 +19,8 @@ Trigger immediately when any of these occurs:
   progress.
 
 Do not silently revise the estimate and continue. Preserve compact evidence in
-the same task file and request a fresh Overseer audit.
+the same task file and request a continued Overseer audit. Use a fresh Overseer
+only for explicit independent review or persistent-state recovery.
 
 ## Independent gate authority
 

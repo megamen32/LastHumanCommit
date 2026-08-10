@@ -1,6 +1,10 @@
 # Task
 
 Status: in progress | blocked | complete
+Lifecycle snapshot: todo | work | done
+Supersedes: <previous lifecycle snapshot path or none>
+Snapshot commit: <commit or pending>
+Result file: `.agents/shared-session/results/<task-id>/result-<result-slug>.md`
 Original user request:
 Objective:
 Business canary:
@@ -17,6 +21,8 @@ Last task-file transition (UTC+3): todo | work | done
 Current stage: research | planning | YAGNI | Normal | Ultimate | review | release
 Current owner:
 Started at (UTC+3):
+Lifecycle provenance: recorded at creation | legacy-missing (do not infer)
+Last task-file mtime observed (UTC+3):
 Workspace: primary checkout | auxiliary worktree | detached HEAD
 Worktree path:
 Branch:

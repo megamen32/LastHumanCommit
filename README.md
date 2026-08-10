@@ -27,9 +27,10 @@ change host configuration.
 
 ## Core workflow
 
-- One user request has one Markdown file under `.agents/tasks/`. Only L writes
-  it. The same file holds research, estimates, plans, approvals, execution,
-  audits, and result; children never create separate Task Cards or reports.
+- One user request has one Markdown `.agents/tasks/` lineage: `todo-*` is copied to
+  `work-*`, then to `done-*`, with a commit for each snapshot and all copies
+  preserved. The latest committed snapshot is current. Handoff and result
+  summary stay in the task file; children never create a separate handoff.
 - L is an orchestrator by default. Only an obvious <=5-minute Direct action may
   be done by L. Short and Full repository search and code go to Worker.
 - Worker has read-only `research`, then bounded `implement` with subtype
@@ -39,9 +40,10 @@ change host configuration.
 - A plan above one hour is valid only as an understood graph of <=20-minute
   slices. One unresolved block above one hour means the route is not understood.
 - Every task keeps one immutable initial `minimum / maximum` estimate. Crossing
-  maximum stops the route for fresh Overseer; changing the number alone is not
+  maximum stops the route for an Overseer verdict; changing the number alone is not
   progress.
-- Overseer is mandatory and fresh/no-history. It runs on events: before Direct
+- Overseer is mandatory and normally persistent/continued from shared-session
+  files; fresh/no-history is only recovery or explicitly requested. It runs on events: before Direct
   completion; after the first Short result; after Full research and every wave;
   before release; and immediately on overrun, two failures, route/scope change,
   Lead doing Worker work, or activity without canary movement. Thirty minutes is
@@ -49,13 +51,26 @@ change host configuration.
 - Full is used only after research confirms both development over 30 active
   minutes and a material product/architecture/migration or expensive-wrong-path
   choice.
-- Full always presents three Russian plans, waits for selection, then shows the
+- Full drafts three Russian plans, runs adversarial Critic review, lets Adviser
+  revise/recommend them, then presents the three plans and waits for selection,
+  then shows the
   complete call-stack tree, file-tree diff, key signatures, pseudocode,
   migration, canary, and execution graph, and waits for a second explicit approval.
 - The third Full plan is `YAGNI 80/20 — полный результат`; it is complete, not
   an unfinished MVP. Delivery slices never relabel partial work as the result.
-- Reviewer checks the task-owned diff. Fresh Tester proves the real user flow for
-  Full. Fresh Critic gates release or another irreversible action.
+- Reviewer checks the task-owned diff. Full ends with two fresh blind Testers:
+  one blast-radius pass and one zero-knowledge typical-user pass, both with
+  durable business-result evidence. Critic gates release or another irreversible action.
+
+## Shared session abstraction
+
+LHC defines a file-first shared-session contract for future Agent Plugin/MCP
+adapters: parallel workers, declared active files, recent mtime observations,
+task create/update/complete, lifecycle hooks, durable research, parent handoff,
+and response-stop human notification. The durable paths and fallback behavior
+are documented in [docs/shared-session-abstraction.md](docs/shared-session-abstraction.md).
+The MCP is an index/convenience layer; it is never the only copy of task or
+Overseer state.
 
 ## Workspace rule
 

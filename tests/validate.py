@@ -141,6 +141,7 @@ self_improve = text("src/common/protocols/SELF_IMPROVE.md")
 task_template = text("src/common/templates/.agents/tasks/task_template.md")
 full_cycle = text("templates/FULL_CYCLE.md")
 release = text("templates/RELEASE_HANDOFF.md")
+shared_session = text("docs/shared-session-abstraction.md")
 readme = text("README.md")
 authoring = text("docs/agent-authoring.md")
 adapters_readme = text("adapters/README.md")
@@ -175,6 +176,8 @@ for phrase in (
     "Overseer is mandatory for every task",
     "Event-triggered audits cannot be suppressed by a 30-minute cooldown",
     "Silence never authorizes them",
+    "Use one project-local state root",
+    "never create a separate `.at/` or `.lhc/`",
 ):
     require(router, phrase, "AGENTS.md")
 
@@ -191,7 +194,7 @@ for phrase in (
     "after research and before the three plans",
     "after every implementation wave or selected delivery stage",
     "Thirty minutes is an extra trigger, never a cooldown",
-    "Present exactly three Russian plans, always",
+    "Draft exactly three Russian plans, always",
     "Максимально идеальный",
     "Нормальный",
     "YAGNI 80/20",
@@ -203,7 +206,7 @@ for phrase in (
     "execution graph",
     "second explicit approval",
     "not three branches, worktrees, specifications, or throwaway rewrites",
-    "fresh Tester",
+    "exactly two fresh Testers",
     "invoke fresh Critic once",
     "never silently include foreign edits",
     "AskSecret/SSS",
@@ -211,7 +214,7 @@ for phrase in (
     "only when its trigger occurred",
 ):
     require(lead, phrase, "Lead.md")
-require_before(lead, "invoke a fresh Tester", "invoke fresh Critic once", "Lead.md")
+require_before(lead, "invoke exactly two fresh Testers", "invoke fresh Critic once", "Lead.md")
 for bad in (
     "optimistic / likely / pessimistic",
     "Later audits are allowed only after 30 minutes",
@@ -241,6 +244,25 @@ for phrase in (
 ):
     require(research, phrase, "WORKER_RESEARCH.md")
 for phrase in (
+    "search-<task-slug>.md",
+    "result-<result-slug>.md",
+    "After 10 active minutes",
+    "Git commit",
+    ".agents/at/",
+    "/tmp",
+    ".tmpbin/",
+):
+    require(research, phrase, "WORKER_RESEARCH.md durable research contract")
+for phrase in (
+    "search-<task-slug>.md",
+    "result-<result-slug>.md",
+    "physically Git-ignored",
+    "must include a Git commit",
+    "One-off scripts are forbidden",
+    "<working-directory>/.agents/at/",
+):
+    require(shared_session, phrase, "shared-session abstraction")
+for phrase in (
     "Bugfix / TDD",
     "Feature",
     "Reproduce the real reported symptom",
@@ -250,11 +272,12 @@ for phrase in (
 ):
     require(implement, phrase, "WORKER_IMPLEMENT.md")
 
-# Fresh oversight, review, real-user test, and release gate.
+# Persistent oversight, plus independent review, real-user test, and release gate.
 for phrase in (
-    "fresh, independent route auditor",
-    "never resumed",
-    "raw user request",
+    "continuing route auditor",
+    "persistent shared-session",
+    "full conversation",
+    "fresh context only",
     "Reject any Worker assignment above 20 minutes",
     "current maximum is exceeded",
     "default to `RETHINK`",
@@ -265,6 +288,8 @@ for phrase in (
 for phrase in (
     "fresh no-history child",
     "Raw user context is passed explicitly",
+    "plan-review",
+    "long-term rewrite traps",
     "PASS",
     "STOP_MISSING_CONTEXT",
 ):
@@ -280,7 +305,10 @@ for phrase in (
 for phrase in (
     "actual user-facing surface",
     "before the final Critic release gate",
-    "`only-new` is mandatory",
+    "Exactly two fresh",
+    "blast-radius",
+    "zero-knowledge",
+    "mandatory screenshot/video",
     "append detailed real-use evidence",
     "Return only TL;DR",
     "STOP_MISSING_REAL_SURFACE",
@@ -292,7 +320,7 @@ require(adviser, "maximum 20 active minutes", "Adviser.md")
 for phrase in (
     "minimum / maximum active minutes",
     "Do not add optimistic/likely/pessimistic variants",
-    "fresh Overseer verdict",
+    "Overseer verdict",
     "Every Worker assignment has one mode, one acceptance gate, and maximum <=20",
     "whole plan may exceed 60 minutes only as a known graph",
     "single unresolved block above 60 minutes",
@@ -311,7 +339,7 @@ for phrase in (
     "current minimum/maximum estimate is exceeded",
     "proposed Worker assignment exceeds 20",
     "one unresolved block is estimated above 60",
-    "fresh Overseer audit",
+    "continued Overseer audit",
     "Worker(mode=research)",
     "There is no Explorer role",
 ):
@@ -341,7 +369,7 @@ for bad in (
 require(text(".gitignore"), ".worktrees/", ".gitignore")
 
 # Protect the user's deliberately strict Code profile byte-for-byte.
-expected_code_sha256 = "ad84a4730acc89b720afaff0e0d5bf3b72457d51769e74af29bc1e6449682ecc"
+expected_code_sha256 = "971a8342a45b38a3a7fdd3b24c272fc12707e2d3ae3919370819e393ac15d4df"
 actual_code_sha256 = hashlib.sha256((ROOT / "src/common/profiles/Code.md").read_bytes()).hexdigest()
 if actual_code_sha256 != expected_code_sha256:
     fail(f"Code.md changed: expected {expected_code_sha256}, got {actual_code_sha256}")
@@ -371,6 +399,10 @@ for phrase in (
     "Tester:",
     "Critic:",
     "Commit (only if created):",
+    "Lifecycle snapshot: todo | work | done",
+    "Supersedes: <previous lifecycle snapshot path or none>",
+    "Snapshot commit: <commit or pending>",
+    "Result file:",
 ):
     require(task_template, phrase, "task_template.md")
 for phrase in (
@@ -388,13 +420,13 @@ for phrase in (
     "Migration description:",
     "Second explicit approval",
     "not create three branches, worktrees, specifications",
-    "run fresh Tester",
+    "exactly two fresh Testers",
     "run Critic once",
 ):
     require(full_cycle, phrase, "FULL_CYCLE.md")
 if full_cycle.count("### 1. Максимально идеальный") != 1 or full_cycle.count("### 2. Нормальный") != 1 or full_cycle.count("### 3. YAGNI 80/20") != 1:
     fail("FULL_CYCLE.md must contain exactly three plan headings")
-require_before(full_cycle, "run fresh Tester", "run Critic once", "FULL_CYCLE.md")
+require_before(full_cycle, "exactly two fresh Testers", "run Critic once", "FULL_CYCLE.md")
 
 # Self-improve is event-triggered, not a tax on every completion.
 for phrase in (
@@ -458,7 +490,7 @@ for adapter in ADAPTERS:
     for phrase in ("AskHuman", "AskSecret/SSS", "opaque registered-agent", "plaintext", "base64 fallback"):
         require(instructions, phrase, f"{adapter}/instructions.md")
 
-# Adapter manifests and child templates preserve one root file, continuity, and fresh gates.
+# Adapter manifests and child templates preserve one root file, continuity, and independent gates.
 manifest_text = text("adapters/manifest.yaml")
 require(manifest_text, "schema_version: 1", "adapters/manifest.yaml")
 canonical_skill_contract(manifest_text)
@@ -477,7 +509,8 @@ for adapter in ADAPTERS:
         "child reads only the assigned task file",
         "appends detailed evidence",
         "same Worker",
-        "Overseer and Critic are always",
+        "Overseer continues the persistent shared-session context",
+        "Critic is a",
         "Reviewer and Tester are fresh independent gates",
     ):
         require(template, phrase, f"{adapter}/templates/subagent.md")
@@ -522,10 +555,15 @@ runtime_paths = [
 for relative in runtime_paths:
     forbid(text(relative), "uptime", relative)
 
-# Existing task files retain the one-file status matrix; minimal todo records are
-# allowed for unselected defects and do not require a full status contract.
+# Every todo/work card must retain enough lifecycle identity to distinguish a
+# live task from a stale file. Legacy cards may say unknown, but may not omit
+# the fields or present filesystem mtime as a fabricated start time.
 task_template = text("src/common/templates/.agents/tasks/task_template.md")
-for phrase in ("Harness:", "PID:", "Agent session:", "PID status:", "Last PID signal", "Last task-file transition"):
+for phrase in (
+    "Harness:", "PID:", "Agent session:", "PID status:",
+    "Last PID signal", "Last task-file transition", "Started at (UTC+3):",
+    "Lifecycle provenance:", "Last task-file mtime observed (UTC+3):",
+):
     require(task_template, phrase, "task template lifecycle identity")
 
 for path in sorted((ROOT / ".agents/tasks").glob("*.md")):
@@ -534,8 +572,6 @@ for path in sorted((ROOT / ".agents/tasks").glob("*.md")):
         fail(f"task filename must start with todo-, work-, or done-: {path.relative_to(ROOT)}")
     match = re.search(r"^Status:\s*(.+)$", value, re.MULTILINE)
     if not match:
-        if path.name.startswith("todo-"):
-            continue
         fail(f"task lacks Status: {path.relative_to(ROOT)}")
     status = match.group(1).strip().lower()
     if path.name.startswith("todo-") and status not in {"todo", "blocked", "work", "in progress"}:
@@ -544,6 +580,22 @@ for path in sorted((ROOT / ".agents/tasks").glob("*.md")):
         fail(f"work task has invalid status {status!r}: {path.relative_to(ROOT)}")
     if path.name.startswith("done-") and status != "complete":
         fail(f"done task has invalid status {status!r}: {path.relative_to(ROOT)}")
+    if path.name.startswith(("todo-", "work-")):
+        lifecycle_fields = (
+            "Harness", "PID", "Agent session", "PID status",
+            "Last PID signal", "Last task-file transition",
+            "Started at (UTC+3)", "Lifecycle provenance",
+            "Last task-file mtime observed (UTC+3)",
+        )
+        for field in lifecycle_fields:
+            field_pattern = re.escape(field)
+            if field in {"Last PID signal", "Last task-file transition"}:
+                field_pattern += r"(?: \(UTC\+3\))?"
+            field_match = re.search(rf"^{field_pattern}:[ \t]*(.*)$", value, re.MULTILINE)
+            if not field_match:
+                fail(f"{path.name.split('-', 1)[0]} task lacks lifecycle field {field!r}: {path.relative_to(ROOT)}")
+            if not field_match.group(1).strip():
+                fail(f"{path.name.split('-', 1)[0]} task has empty lifecycle field {field!r}: {path.relative_to(ROOT)}")
 
 for obsolete in (
     ROOT / ".agents/kanban.md",
