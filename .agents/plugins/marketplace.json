@@ -1,0 +1,20 @@
+{
+  "name": "megamen32-plugins",
+  "interface": {
+    "displayName": "Megamen32 Plugins"
+  },
+  "plugins": [
+    {
+      "name": "last-human-commit",
+      "source": {
+        "source": "local",
+        "path": "./plugins/last-human-commit"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

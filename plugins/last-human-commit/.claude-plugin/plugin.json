@@ -2,5 +2,9 @@
   "name": "last-human-commit",
   "version": "0.1.0",
   "description": "Portable workflow skills for planning, implementation, testing, and delivery.",
+  "author": {
+    "name": "megamen32",
+    "url": "https://github.com/megamen32"
+  },
   "skills": "./skills/"
 }

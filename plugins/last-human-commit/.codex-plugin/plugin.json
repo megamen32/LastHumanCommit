@@ -2,5 +2,23 @@
   "name": "last-human-commit",
   "version": "0.1.0",
   "description": "Portable workflow skills for planning, implementation, testing, and delivery.",
-  "skills": "./skills/"
+  "author": {
+    "name": "megamen32",
+    "url": "https://github.com/megamen32"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Last Human Commit",
+    "shortDescription": "Reviewed workflow skills for engineering delivery",
+    "longDescription": "Plan, implement, test, review, and deliver bounded engineering changes with reusable workflow skills.",
+    "developerName": "megamen32",
+    "category": "Productivity",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Use Last Human Commit to plan and deliver a reviewed engineering change."
+    ]
+  }
 }
