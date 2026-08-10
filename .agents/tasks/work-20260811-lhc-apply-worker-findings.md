@@ -15,7 +15,7 @@ Last task-file mtime observed (UTC+3): 2026-08-11
 Status: in progress
 Lifecycle snapshot: work
 Supersedes: `.agents/tasks/done-20260811-lhc-user-edits-verification.md`
-Snapshot commit: pending
+Snapshot commit: 9c0f45e
 Start time: 2026-08-11 Europe/Moscow
 Initial active-minute estimate: 45–75
 Estimate revisions: none
