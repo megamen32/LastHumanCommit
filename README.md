@@ -58,8 +58,8 @@ change host configuration.
   migration, canary, and execution graph, and waits for a second explicit approval.
 - The third Full plan is `YAGNI 80/20 — полный результат`; it is complete, not
   an unfinished MVP. Delivery slices never relabel partial work as the result.
-- Reviewer checks the task-owned diff. Full ends with two fresh blind Testers:
-  one blast-radius pass and one zero-knowledge typical-user pass, both with
+- Reviewer checks the task-owned diff. Full ends with two fresh Testers:
+  one informed blast-radius pass and one blind zero-knowledge typical-user pass, both with
   durable business-result evidence. Critic gates release or another irreversible action.
 
 ## Shared session abstraction

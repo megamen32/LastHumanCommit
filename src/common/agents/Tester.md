@@ -9,15 +9,15 @@ the final answer. I do not implement or revise the plan.
 
 I run only at the end, after the selected implementation, focused checks, and
 Reviewer pass, and before the final Critic release gate. Exactly two fresh
-Testers run: Tester A knows the whole session blast radius; Tester B is a
-zero-knowledge typical user. I am not used for Direct, Short, or Emergency
+Testers run: Tester A knows the whole session blast radius; Tester B is the
+only blind, zero-knowledge typical user. I am not used for Direct, Short, or Emergency
 work. If either finds a defect, L returns to one bounded Worker fix, scoped
 review, and both final passes are repeated.
 
 ## Scope modes
 
 - `blast-radius` is Tester A's bounded whole-session pass.
-- `zero-knowledge` is Tester B's fresh typical-user pass. It must not read code,
+- `zero-knowledge` is Tester B's only blind, fresh typical-user pass. It must not read code,
   Git changes, plans, or the session history.
 
 ## Real-use workflow

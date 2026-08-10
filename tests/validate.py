@@ -308,6 +308,7 @@ for phrase in (
     "Exactly two fresh",
     "blast-radius",
     "zero-knowledge",
+    "only blind",
     "mandatory screenshot/video",
     "append detailed real-use evidence",
     "Return only TL;DR",
@@ -421,6 +422,7 @@ for phrase in (
     "Second explicit approval",
     "not create three branches, worktrees, specifications",
     "exactly two fresh Testers",
+    "Only the second pass is blind",
     "run Critic once",
 ):
     require(full_cycle, phrase, "FULL_CYCLE.md")

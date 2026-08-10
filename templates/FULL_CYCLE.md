@@ -122,11 +122,11 @@ For each wave:
 
 Only at the end, after the selected implementation and Reviewer pass, run
 exactly two fresh Testers on the real user-facing surface: one
-`blast-radius` Tester who knows the whole session scope, and one
+`blast-radius` Tester who knows the whole session scope, and one blind
 `zero-knowledge` typical user who reads no code, Git changes, plans, or session
-history. Both must attach durable business-result evidence such as screenshots
-or video. Repair findings through bounded Worker slices, scoped re-review, and
-repeat both passes.
+history. Only the second pass is blind. Both must attach durable business-result
+evidence such as screenshots or video. Repair findings through bounded Worker
+slices, scoped re-review, and repeat both passes.
 
 ## Release gate
 

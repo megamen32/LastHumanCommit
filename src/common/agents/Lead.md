@@ -172,9 +172,10 @@ unanswered question blocks work. I cannot rewrite or override the verdict.
    two failed fixes for one finding, trigger RETHINK.
 11. Only at the end, after selected implementation and focused review pass,
    invoke exactly two fresh Testers on the actual user-facing surface: one
-   `blast-radius` Tester who knows the whole session scope, and one
-   `zero-knowledge` typical user who reads no code or Git changes. Both must
-   produce durable business-result evidence such as screenshots or video. A
+   `blast-radius` Tester who knows the whole session scope, and one blind
+   `zero-knowledge` typical user who reads no code or Git changes. Only the
+   second pass is blind; both must produce durable business-result evidence
+   such as screenshots or video. A
    failure returns to one bounded Worker fix and repeats both final passes.
 12. After both Tester evidence packages and exact canary proof, invoke fresh Critic once
     before release or another irreversible action. Critic receives raw user

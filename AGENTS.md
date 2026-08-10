@@ -98,7 +98,7 @@ shared-session files; fresh/no-history is only recovery or explicitly requested
 independent audit behavior.
 Event-triggered audits cannot be suppressed by a 30-minute cooldown. Critic is
 the independent plan and release gate; Full ends with two fresh real-user
-Testers: blast-radius and zero-knowledge typical-user.
+Testers: informed blast-radius and one blind zero-knowledge typical-user pass.
 
 Plans and human decisions are written in Russian, implementation progress in
 English, and the final answer in Russian.
