@@ -111,6 +111,24 @@ Reviewer: PASS — fresh read-only review confirmed observational-only timeout, 
 Tester: not applicable — this is an instruction/adapter contract change; static acceptance is the canary.
 Critic: pending before irreversible release action if required by the selected release route.
 
+## Release handoff — append-only
+
+- handoff_id: lhc-codex-wait-deadline-2c749fb
+- status: pending
+- review_sent_at (UTC+3): 2026-08-12 00:23 +0300
+- execution_guard: single_serialized_L
+- commit_or_artifact: `2c749fbbe3cbc58963d55b5fb2fd7fb6bf5d122e`
+- tests: focused contract PASS; py_compile PASS; AGENTS/CLAUDE cmp PASS; diff-check PASS; full validator blocked by pre-existing foreign task-card defect.
+- target: canonical LHC Fleet manifest `100/44/88/mac` via `lhc-rollout`.
+- acceptance_proof: preview status PASS; 52 files; digest `sha256:8a02925a47216d615c0c8566405de63abd0003da786cd4015a78e57c77d2ba89`; all targets currentBefore `versions/591ed96`; rollback roots present in preview.
+- preview_confirmation: `sha256:0f17a6dec683295f05c9d276d213f2be5db7bebb0ad7fcb1813e6235568da13a`
+- rollback_reference_if_existing: previewed per-target `.../rollbacks/2c749fb-lhc-rollout`.
+- veto_state: none
+- last_human_reply_at_or_id: user request to push and apply/deploy; exact confirmation still required by release policy.
+- deployment_started_at (UTC+3): pending
+- deployment_result: pending
+- exact pending action: `git push origin main`, then apply the exact preview confirmation above, then independent verify and physical router canary.
+
 ## Result
 
 Summary: pending
