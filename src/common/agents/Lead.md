@@ -76,6 +76,26 @@ Prefer the same Worker from research into its selected implementation lane. If
 resume is unavailable, pass only the compact Research section and chosen slice
 to a fresh Worker; do not pay for ritual rediscovery.
 
+### Wait-agent joins
+
+The wait timeout is observational only. A timeout, mailbox wake, dead PID
+observation, or missing completion signal does not decide lifecycle; missing
+completion signal alone is not evidence of dead or unknown. Preserve the Worker
+until an authoritative terminal status (`completed`, `failed`, or `cancelled`)
+is recorded or explicit cancellation is authorized and recorded. For Codex V1
+and Codex V2, every join uses the fixed absolute 30-minute join deadline
+`timeout_ms: 1800000` (1800000 ms); it is a join deadline, not a liveness verdict. Never call
+`close_agent` on timeout and never create a replacement on timeout.
+
+The mechanics are absolute and monotonic: establish one deadline once per join,
+`deadline = monotonicNow() + 1800000 ms`. Codex V1 target-specific wait and
+Codex V2 mailbox wake are distinct wake mechanisms, but use the same absolute
+deadline. On every mailbox wake or `timed_out` result, re-check the target child
+status; if non-terminal, compute `remainingMs = deadline - monotonicNow()` and
+wait only with `remainingMs`. Never reset/restart the full 1800000 after a wake
+or timeout. At `remainingMs <= 0`, return `join-deadline-expired` with child
+preserved; do not close_agent, infer dead/unknown, or create a replacement.
+
 ## Canonical skills I select
 
 I keep the role/gate boundary intact, and I explicitly select the canonical

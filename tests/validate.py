@@ -223,6 +223,56 @@ for bad in (
 ):
     forbid(lead, bad, "Lead.md")
 
+# Codex wait joins are observation points, never lifecycle decisions. Keep the
+# mechanics fail-closed across the aggregate contract while requiring only the
+# policy/surface markers that belong in each individual file.
+codex_instructions = text("adapters/codex/instructions.md")
+codex_template = text("adapters/codex/templates/subagent.md")
+wait_contract_aggregate = "\n".join((router, claude, lead, codex_instructions, codex_template))
+for phrase in (
+    "deadline = monotonicNow() + 1800000 ms",
+    "on every mailbox wake or `timed_out` result, re-check the target child status",
+    "if non-terminal, compute `remainingMs = deadline - monotonicNow()`",
+    "wait only with `remainingMs`",
+    "never reset/restart the full 1800000 after a wake or timeout",
+    "remainingMs <= 0",
+    "return `join-deadline-expired`",
+    "child preserved",
+    "Codex V1 target-specific wait",
+    "Codex V2 mailbox wake",
+    "same absolute deadline",
+):
+    require(wait_contract_aggregate, phrase, "Codex wait-agent contract aggregate")
+for source, value in (("AGENTS.md", router), ("CLAUDE.md", claude)):
+    for phrase in (
+        "wait timeout is observational only",
+        "missing completion signal alone is not evidence of dead or unknown",
+        "authoritative terminal status",
+        "explicit cancellation",
+    ):
+        require(value, phrase, source)
+for source, value in (
+    ("Lead.md", lead),
+    ("adapters/codex/instructions.md", codex_instructions),
+    ("adapters/codex/templates/subagent.md", codex_template),
+):
+    require(value, "fixed absolute 30-minute join deadline", source)
+    require(value, "timeout_ms: 1800000", source)
+    require(value, "never call `close_agent` on timeout", source)
+    require(value, "never create a replacement on timeout", source)
+for source, value, phrase in (
+    ("Lead.md", lead, "deadline = monotonicNow() + 1800000 ms"),
+    ("adapters/codex/instructions.md", codex_instructions, "Codex V1 target-specific wait"),
+    ("adapters/codex/templates/subagent.md", codex_template, "Codex V2 mailbox wake"),
+):
+    require(value, phrase, source)
+for bad in (
+    "if PID is dead or no completion signal exists, report the task as dead or unknown",
+    "timeout authorizes `close_agent`",
+    "timeout authorizes replacement",
+):
+    forbid(wait_contract_aggregate, bad, "Codex wait-agent contract aggregate")
+
 # Worker modes and strict bounded ownership.
 for phrase in (
     "`mode: research` or `mode: implement`",

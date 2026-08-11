@@ -54,13 +54,33 @@ the last PID signal, and the last task-file transition. A `todo-*` or `work-*`
 filename is not proof that an agent is still
 working. If the child completion signal is present but the task file was not
 renamed, treat it as a stale transition and repair the file state; if PID is
-dead or no completion signal exists, report the task as dead or unknown rather
-than inventing completion.
+dead or no completion signal exists, treat those as observations only and do not
+infer a terminal state.
 
 Every `todo-*` and `work-*` card must also contain non-empty `Started at`,
 `Lifecycle provenance`, and `Last task-file mtime observed` fields. Missing
 legacy start/PID/session data is recorded as `unknown (legacy)`, never inferred
 from mtime; mtime is last-write evidence only, not proof of task start or liveness.
+
+Wait-agent safety contract: wait timeout is observational only. A timeout,
+mailbox wake, dead PID observation, or missing completion signal does not by
+itself decide lifecycle; missing completion signal alone is not evidence of dead
+or unknown. Preserve the worker until an authoritative terminal status
+(`completed`, `failed`, or `cancelled`) is recorded or explicit cancellation is
+authorized and recorded. For Codex V1 and Codex V2, use the fixed absolute
+30-minute join deadline exactly as `timeout_ms: 1800000` (1800000 ms); this is a join deadline,
+not a liveness verdict. Never call `close_agent` on timeout and never create a
+replacement on timeout.
+
+Join mechanics are absolute and monotonic: establish one deadline once per
+join, `deadline = monotonicNow() + 1800000 ms`. Codex V1 target-specific wait
+and Codex V2 mailbox wake are distinct wake mechanisms, but use the same
+absolute deadline. On every mailbox wake or `timed_out` result, re-check the
+target child status; if non-terminal, compute
+`remainingMs = deadline - monotonicNow()` and wait only with `remainingMs`.
+Never reset/restart the full 1800000 after a wake or timeout. At `remainingMs <=
+0`, return `join-deadline-expired` with child preserved; do not close_agent,
+infer dead/unknown, or create a replacement.
 
 Use one project-local state root: `.agents/`. Write one-off Agent Tools only
 under `.agents/at/`; never create a separate `.at/` or `.lhc/`, and never use

@@ -68,6 +68,18 @@ Proposed <=20-minute slices and dependencies: Worker research/implementation of 
   Evidence: pending
   Next: Worker implementation.
 
+- 2026-08-12 00:21 +03:
+  Slice: Integrate corrected Worker result and independent review.
+  Mode: review
+  Owner: Lead
+  Estimate (minimum / maximum; maximum <=20): 3 / 8
+  Paths: `AGENTS.md`, `CLAUDE.md`, `src/common/agents/Lead.md`, `adapters/codex/instructions.md`, `adapters/codex/templates/subagent.md`, `tests/validate.py`, this task card.
+  Acceptance check: Reviewer PASS; focused contract, parity, diff check, and scoped-name check pass; full validator blocker is explicitly recorded.
+  Result: DONE
+  Business delta: The Codex adapter now has a fail-closed absolute join contract that cannot turn a wait timeout/mailbox wake into worker termination or replacement.
+  Evidence: Fresh Reviewer PASS; focused mechanics PASS; `cmp AGENTS.md CLAUDE.md` PASS; `git diff --check` PASS; `python3 tests/validate.py` reaches the pre-existing foreign task-card defect and fails there.
+  Next: Commit reviewed task-owned changes, then prepare release handoff and preview.
+
 ## Overseer receipts — append-only
 
 - 2026-08-12 00:03 +03:
@@ -95,7 +107,7 @@ Children append detailed evidence and result to this file, then return only TL;D
 ## Independent gates — append-only
 
 Overseer: CONTINUE receipt recorded above; no dedicated Overseer capability exposed in this harness.
-Reviewer: pending
+Reviewer: PASS — fresh read-only review confirmed observational-only timeout, authoritative terminal/cancellation gate, V1/V2 monotonic deadline, remaining-time/no-reset semantics, child preservation, scoped diff, and aggregate/surface-specific regression checks.
 Tester: not applicable — this is an instruction/adapter contract change; static acceptance is the canary.
 Critic: pending before irreversible release action if required by the selected release route.
 
@@ -108,3 +120,31 @@ Review: pending
 Workspace/branch at finish: pending
 Commit (only if created): pending
 Unresolved: pending
+
+## Worker implementation evidence — append-only
+
+- 2026-08-12 00:08 +03:
+  Slice: Implement the Codex wait-agent safety contract and fail-closed static regression.
+  Owner: Worker.
+  Changed paths: `AGENTS.md`, `CLAUDE.md`, `src/common/agents/Lead.md`, `adapters/codex/instructions.md`, `adapters/codex/templates/subagent.md`, `tests/validate.py`.
+  Red proof: Before documentation changes, `python3 tests/validate.py` failed with `AGENTS.md lacks: wait timeout is observational only` after the new assertions were added.
+  Implementation: Replaced the unsafe missing-signal dead/unknown inference with observational-only wording; required authoritative terminal status or explicit cancellation; documented Codex V1/V2 fixed absolute 30-minute join deadline as `timeout_ms: 1800000` (1800000 ms); prohibited `close_agent` and replacement on timeout; added fail-closed assertions for all five contract surfaces.
+  Green focused proof: A normalized static assertion over all five files passed (`focused wait-agent contract: PASS`); `AGENTS.md == CLAUDE.md: PASS`; `git diff --check` passed.
+  Full validation: `python3 tests/validate.py` reaches the pre-existing foreign task-card scan and fails at `.agents/tasks/work-20260811-lhc-three-identical-zero-knowledge-reviews.md` because `Last task-file mtime observed (UTC+3)` is missing. That path is outside the assignment, was not changed, and blocks a clean full-validator result.
+  Safety: No Codex runtime source, branch/worktree, push, deploy/apply, restart, rollback, or destructive cleanup was performed. Existing unrelated dirty files were preserved.
+  Result: DONE for the scoped implementation; full validation BLOCKED by the unrelated lifecycle-card defect.
+  L-facing return: TL;DR only with changed paths, checks, and blocker.
+
+## Worker correction evidence — append-only
+
+- 2026-08-12 00:16 +03:
+  Slice: Correct the Reviewer `NEEDS_RETHINK` by making V1/V2 join mechanics explicit and fail-closed.
+  Owner: Worker.
+  Red proof: After replacing the brittle per-file assertion loop with aggregate/surface assertions, `python3 tests/validate.py` failed on the missing `deadline = monotonicNow() + 1800000 ms` invariant.
+  Implementation: Added one monotonic absolute deadline per join; distinct Codex V1 target-specific wait and Codex V2 mailbox wake mechanics using the same absolute deadline; status re-check on every mailbox wake or `timed_out` result; `remainingMs = deadline - monotonicNow()` and wait-only-with-remainingMs behavior; no reset/restart after wake/timeout; `remainingMs <= 0` returns `join-deadline-expired` with child preserved and no close/dead-inference/replacement.
+  Test correction: `tests/validate.py` now checks the mechanics in a contract aggregate, requires only surface-specific markers per relevant file, and retains fail-closed forbidden legacy inferences without requiring every phrase in every file.
+  Green focused proof: Aggregate/surface mechanics check passed; `AGENTS.md == CLAUDE.md` parity passed; `git diff --check` passed.
+  Full validation: `python3 tests/validate.py` passes the new wait-contract assertions and remains blocked at the unchanged foreign `.agents/tasks/work-20260811-lhc-three-identical-zero-knowledge-reviews.md` lifecycle-field defect. The foreign file remains untouched.
+  Safety: Only the six scoped files and this append-only task evidence changed; no runtime Codex source, branch/worktree, push, deploy/apply, or destructive cleanup was performed.
+  Result: DONE for the correction; full validation BLOCKED by the same unrelated lifecycle-card defect.
+  L-facing return: TL;DR only with changed paths, checks, and blocker.

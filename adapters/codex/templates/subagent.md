@@ -29,5 +29,23 @@ Bootstrap the child with exactly `<Role> <absolute-task-file-path>`.
 - Escalate only after `NEEDS_REDECOMPOSITION`, `NEEDS_RETHINK`, or concrete
   acceptance evidence proves a capability gap.
 
+Codex V1 and Codex V2 wait-agent joins use the fixed absolute 30-minute join
+deadline exactly as `timeout_ms: 1800000` (1800000 ms). The wait timeout is observational
+only: a timeout, mailbox wake, dead PID observation, or missing completion
+signal does not decide lifecycle, and missing completion signal alone is not
+evidence of dead or unknown. Preserve the child until an authoritative terminal
+status is recorded or explicit cancellation is authorized and recorded. Never
+call `close_agent` on timeout and never create a replacement on timeout.
+
+Join mechanics are absolute and monotonic. Establish one deadline once per
+join: `deadline = monotonicNow() + 1800000 ms`. Codex V1 target-specific wait
+and Codex V2 mailbox wake are distinct wake mechanisms, but use the same
+absolute deadline. On every mailbox wake or `timed_out` result, re-check the
+target child status; if non-terminal, compute
+`remainingMs = deadline - monotonicNow()` and wait only with `remainingMs`.
+Never reset/restart the full 1800000 after a wake or timeout. At `remainingMs <=
+0`, return `join-deadline-expired` with child preserved; do not close_agent,
+infer dead/unknown, or create a replacement.
+
 If the active Codex surface cannot create a no-history gate child, report the
 unsupported boundary instead of using a history-forked substitute.
