@@ -5,7 +5,7 @@
       "evidence": [
         "rg -n 'worker-research|worker-code|worker-bugfix' src/common/agents/Worker.md skills plugins/last-human-commit/scripts/validate.py"
       ],
-      "git_head": "9581aa1410472628fb6caad43b0697822207469b",
+      "git_head": "22670c58b971f1f5ecadce5dc02022a1052a97da",
       "key": "lhc-worker-skill-routing",
       "kind": "decision",
       "locations": [
@@ -19,7 +19,7 @@
         {
           "exists_at_verification": true,
           "observed_kind": "file",
-          "observed_sha256": "6dc8c32da57dd870d29c2ea4aacb1b8912cf8e9aa3819a5bdae6d913b0e52240",
+          "observed_sha256": "53ee015546ed3782798bad1eec0c46870b1b55e1a03539c7eabee87bc1b2c9d2",
           "path": "skills/worker-research/SKILL.md",
           "symbol": "Tool order"
         },
@@ -32,7 +32,7 @@
         }
       ],
       "summary": "Worker mode selects worker-research, worker-code, or worker-bugfix; canonical skills sync into the Agent Plugin and its validator pins discovery.",
-      "verified_at": "2026-08-12T13:50:19.114858+03:00"
+      "verified_at": "2026-08-12T13:53:25.340715+03:00"
     }
   },
   "schema_version": 1
