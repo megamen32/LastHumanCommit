@@ -1,7 +1,7 @@
 # Task
 
-Status: in progress
-Lifecycle snapshot: work
+Status: complete
+Lifecycle snapshot: done
 Supersedes: none
 Snapshot commit: pending
 Result file: `.agents/shared-session/results/lhc-codex-wait-deadline/result.md`
@@ -15,11 +15,11 @@ Cycle: short
 Harness: Codex desktop / multi_agent_v1
 PID: 38141
 Agent session: current Codex task
-PID status: alive
+PID status: completed
 Last PID signal (UTC+3): 2026-08-12 00:03:49 +0300
-Last task-file transition (UTC+3): work
-Current stage: implementation
-Current owner: Worker
+Last task-file transition (UTC+3): done
+Current stage: release
+Current owner: Lead
 Started at (UTC+3): 2026-08-12 00:03:49 +0300
 Lifecycle provenance: recorded at creation
 Last task-file mtime observed (UTC+3): 2026-08-12 00:05:00 +0300
