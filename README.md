@@ -7,8 +7,8 @@
 LHC keeps expensive models on decisions, decomposition, human-readable planning,
 and proof. Repository search, implementation, and repetitive checks go to
 bounded Workers. The active harness owns approval policy.
-Two consecutive byte-identical approval prompts for the same still-pending action
-and unchanged context count as confirmation.
+Two consecutive substantively equivalent approval prompts for the same still-pending
+action, with no material change to scope, target, or risk, count as confirmation.
 
 ## Use
 

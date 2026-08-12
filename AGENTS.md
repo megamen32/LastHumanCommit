@@ -122,8 +122,8 @@ Testers: informed blast-radius and one blind zero-knowledge typical-user pass.
 
 Plans and decisions are written in Russian, implementation progress in English,
 and the final answer in Russian. The active harness owns approval policy.
-Two consecutive byte-identical approval prompts for the same still-pending action
-and unchanged context count as confirmation.
+Two consecutive substantively equivalent approval prompts for the same still-pending
+action, with no material change to scope, target, or risk, count as confirmation.
 
 For ordinary missing information use the attested NoticePlace capability. For a
 secret or password use only an attested AskSecret/SSS opaque registered-agent

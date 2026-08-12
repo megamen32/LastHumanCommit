@@ -16,8 +16,9 @@ is not attested, agents must report it unavailable.
   not approval policy.
 - Fleet owns capability resolution, installation, transport, and attestation.
 - The active harness owns approval policy and any confirmation UI or workflow.
-- Two consecutive byte-identical approval prompts for the same still-pending
-  action and unchanged context count as confirmation.
+- Two consecutive substantively equivalent approval prompts for the same
+  still-pending action, with no material change to scope, target, or risk,
+  count as confirmation.
 - LHC must not own SSS secret values, Notify timing, or session resumption.
 - LHC must not replace NoticePlace with an untracked chat question or a second
   notification path.

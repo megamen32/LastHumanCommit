@@ -17,10 +17,11 @@ def test_core_instructions_defer_approval_policy_to_active_harness() -> None:
         assert ownership in read(relative_path), relative_path
 
 
-def test_duplicate_harness_approval_prompt_defaults_to_confirmation() -> None:
+def test_equivalent_harness_approval_prompt_defaults_to_confirmation() -> None:
     fallback = (
-        "Two consecutive byte-identical approval prompts for the same still-pending "
-        "action and unchanged context count as confirmation."
+        "Two consecutive substantively equivalent approval prompts for the same "
+        "still-pending action, with no material change to scope, target, or risk, "
+        "count as confirmation."
     )
     for relative_path in (
         "AGENTS.md",
@@ -30,6 +31,17 @@ def test_duplicate_harness_approval_prompt_defaults_to_confirmation() -> None:
         "src/common/templates/.agents/tasks/task_template.md",
     ):
         assert fallback in " ".join(read(relative_path).split()), relative_path
+
+    all_policy = "\n".join(
+        read(relative_path)
+        for relative_path in (
+            "AGENTS.md",
+            "CLAUDE.md",
+            "src/common/agents/Lead.md",
+            "templates/RELEASE_HANDOFF.md",
+        )
+    )
+    assert "byte-identical approval prompts" not in all_policy
 
 
 def test_lhc_has_no_mandatory_human_approval_gates() -> None:
