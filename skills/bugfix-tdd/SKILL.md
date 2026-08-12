@@ -1,9 +1,12 @@
 ---
 name: bugfix-tdd
-description: Worker-owned least-cost red-green procedure for a bounded behavior fix.
+description: Compatibility alias for older LHC assignments that request bugfix TDD. Prefer worker-bugfix for new Worker defect tasks; use this only when an existing task or caller explicitly names bugfix-tdd.
 ---
 
 # Bugfix red/green
+
+For new assignments, load `worker-bugfix`; it supersedes this compact alias with
+reusable failure-shield and `rg` guidance.
 
 Use for a bounded behavior failure where a discriminating failing proof is worth
 its setup cost.

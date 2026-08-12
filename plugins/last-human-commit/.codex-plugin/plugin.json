@@ -1,7 +1,7 @@
 {
   "name": "last-human-commit",
-  "version": "0.2.1",
-  "description": "Portable workflow skills for planning, implementation, testing, and delivery.",
+  "version": "0.3.0",
+  "description": "Portable business-first workflow and reusable Worker research skills.",
   "author": {
     "name": "megamen32",
     "url": "https://github.com/megamen32"
@@ -11,7 +11,7 @@
   "interface": {
     "displayName": "Last Human Commit",
     "shortDescription": "Reviewed workflow skills for engineering delivery",
-    "longDescription": "Plan, implement, test, review, and deliver bounded engineering changes with reusable workflow skills.",
+    "longDescription": "Research once, implement the thinnest business path, fix bounded failures, and deliver with reusable workflow skills.",
     "developerName": "megamen32",
     "category": "Productivity",
     "capabilities": [

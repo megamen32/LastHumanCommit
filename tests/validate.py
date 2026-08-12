@@ -20,6 +20,9 @@ SKILLS = (
     "business-delivery",
     "release",
     "task-decomposition",
+    "worker-research",
+    "worker-code",
+    "worker-bugfix",
 )
 
 

@@ -1,9 +1,12 @@
 ---
 name: feature-implementation
-description: Worker-owned procedure for the thinnest working vertical on the actual business path.
+description: Compatibility alias for older LHC assignments that request feature implementation. Prefer worker-code for new Worker coding tasks; use this only when an existing task or caller explicitly names feature-implementation.
 ---
 
 # Feature Implementation
+
+For new assignments, load `worker-code`; it supersedes this compact alias with
+reusable research-map and `rg` guidance.
 
 Use when one coherent vertical feature contribution is cheaper to delegate than
 to execute directly.

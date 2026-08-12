@@ -24,6 +24,9 @@ EXPECTED_SKILLS = {
     "real-use-testing",
     "release",
     "task-decomposition",
+    "worker-bugfix",
+    "worker-code",
+    "worker-research",
 }
 
 

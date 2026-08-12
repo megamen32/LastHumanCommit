@@ -1,7 +1,7 @@
 # Last Human Commit plugin
 
 This directory is a local, skills-only plugin package for Codex, OpenCode, and
-Claude Code. The six skills under `skills/` are generated from the repository
+Claude Code. The ten skills under `skills/` are generated from the repository
 source at `LastHumanCommit/skills/`; the generated files must not be edited by
 hand.
 

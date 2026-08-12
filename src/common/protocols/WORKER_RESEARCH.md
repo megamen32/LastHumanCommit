@@ -5,16 +5,26 @@ the cheapest route to the next real business proof.
 
 ## Method
 
-1. Read the latest user outcome, accepted proof strength, scope, exclusions, and
-   known evidence.
-2. Trace the actual production consumer path and owning files/symbols/config
-   before inspecting nearby abstractions or proposed architecture.
-3. Find the existing mechanism, first real blocker, and cheapest discriminating
-   probe.
-4. Stop once L can implement directly or assign a coherent execution lane. Do
-   not continue toward repository completeness.
-5. Recommend the shortest vertical action and proof, plus only decision-relevant
-   unknowns.
+Prefer the installed `worker-research` skill as the executable procedure. Its
+tool order is normative:
+
+1. Search the project-local reusable code map and check hit freshness.
+2. Use `rg --files` and targeted `rg -n -C` as the default source-of-truth
+   search. Trace the actual production consumer path before nearby
+   abstractions, beginning at the real consumer.
+3. Use context-mode to process large outputs without flooding the Worker
+   context; do not treat its index as the durable canonical project map.
+4. Use an existing Graphify graph only for genuinely multi-hop architecture or
+   ownership questions; verify decisive edges with current source and do not
+   build a graph for a simple lookup.
+5. Find the existing mechanism, first real blocker, and cheapest discriminating
+   probe. Stop once L can implement directly or assign a coherent lane.
+
+Upsert verified, likely-to-recur production paths, ownership, configuration,
+test paths, decisions, and failure shields into
+`.agents/shared-session/knowledge/code-map.json`. The map is bounded and
+rewritable by stable key, not append-only. Never store secrets, raw logs,
+temporary status, or guesses as verified facts.
 
 Persist research when handoff, recovery, reuse, or the cost of rediscovery
 justifies it. Use a named file under `.agents/shared-session/results/<task-id>/`
@@ -35,6 +45,6 @@ continue safe independent research while waiting.
 
 Return `READY_TO_IMPLEMENT`, `PROGRESS`, `NEEDS_MORE_RESEARCH`, or `BLOCKED`,
 with decisive evidence, production path, existing mechanism, checked/excluded
-hypotheses, unknowns that affect the decision, and the cheapest next action. Do
-not write code, mutate configuration, deploy, or produce an unrelated
-architecture essay.
+hypotheses, reused/updated code-map keys, unknowns that affect the decision, and
+the cheapest next action. Do not write code, mutate configuration, deploy, or
+produce an unrelated architecture essay.

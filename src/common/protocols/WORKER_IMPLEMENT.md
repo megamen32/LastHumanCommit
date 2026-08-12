@@ -3,15 +3,23 @@
 Use only for `Worker(mode=implement)`. Load `../profiles/Code.md` for code and
 `../profiles/Test.md` when tests add claim-relevant value.
 
+Prefer the installed `worker-code` skill for feature/code work and
+`worker-bugfix` for behavior fixes. Use this file as the portable fallback when
+skills are unavailable.
+
 ## Common route
 
 1. Confirm the latest accepted business claim and actual production consumer
    path.
-2. Reproduce or observe the shortest failing condition when doing so is cheap
+2. Reuse fresh verified code-map findings, but confirm decisive locations with
+   targeted `rg`; current source wins over graph/index/map history.
+3. Reproduce or observe the shortest failing condition when doing so is cheap
    and discriminating.
-3. Make the smallest coherent vertical change on the real path.
-4. Re-run the same proof and the narrowest direct-regression checks.
-5. Stop as soon as the assigned claim is proven.
+4. Make the smallest coherent vertical change on the real path.
+5. Re-run the same proof and the narrowest direct-regression checks.
+6. Update a reusable code-map key only when the change affects a durable path,
+   owner, config, or recurring failure shield.
+7. Stop as soon as the assigned claim is proven.
 
 For a bugfix, a focused failing regression or black-box canary is preferred but
 not ceremonial. For a feature, implement a usable vertical slice before

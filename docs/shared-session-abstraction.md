@@ -83,6 +83,21 @@ remain a compact child return when that is the cheapest sufficiently durable
 handoff. A commit is created only when requested or when the actual deliverable
 requires one.
 
+Verified cross-task code location knowledge uses one separate, bounded,
+rewritable map:
+
+```text
+.agents/shared-session/knowledge/code-map.json
+```
+
+This is not a search journal or task result. Stable keys describe durable
+production paths, ownership, configuration, test paths, decisions, and failure
+shields. An upsert replaces the same key; file digests expose stale locations.
+Workers search it before broad investigation and confirm decisive hits against
+current source with `rg`. Graphify remains optional multi-hop orientation and
+context-mode remains large-output processing; neither silently becomes the
+canonical business map.
+
 ## Failure behavior
 
 If an MCP, hook, parent transport, or adapter fails, use available files or chat

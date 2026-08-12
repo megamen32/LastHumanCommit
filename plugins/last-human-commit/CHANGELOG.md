@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.0 - 2026-08-12
+
+- Added dedicated Worker research, code, and bugfix skills.
+- Added a bounded project-local code map so verified production paths,
+  ownership, configuration, and recurring failure shields can be reused.
+- Made `rg` the default fresh source locator, with Graphify limited to
+  multi-hop orientation and context-mode to large-output processing.
+
 ## 0.2.1 - 2026-08-12
 
 - Preserve a full prompt-based compaction handoff when a least-cost direct task

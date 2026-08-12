@@ -1,12 +1,13 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "last-human-commit",
-  "version": "0.2.1",
-  "description": "Portable workflow skills for planning, implementation, testing, and delivery.",
+  "version": "0.3.0",
+  "description": "Portable business-first workflow and reusable Worker research skills.",
   "license": "MIT",
   "keywords": [
     "workflow",
     "engineering",
+    "research",
     "testing",
     "delivery"
   ],

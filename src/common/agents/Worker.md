@@ -54,9 +54,17 @@ threshold alone requires files or a Git commit.
 
 ## Modes
 
-- `mode: research` loads `../protocols/WORKER_RESEARCH.md` and remains read-only.
-- `mode: implement` loads `../protocols/WORKER_IMPLEMENT.md` and names subtype
-  `bugfix/TDD` or `feature` when useful.
+- `mode: research` loads the installed `worker-research` skill when available,
+  otherwise `../protocols/WORKER_RESEARCH.md`, and remains read-only.
+- `mode: implement subtype=feature|code` loads the installed `worker-code`
+  skill when available, otherwise `../protocols/WORKER_IMPLEMENT.md`.
+- `mode: implement subtype=bugfix|bugfix/TDD` loads the installed
+  `worker-bugfix` skill when available, otherwise
+  `../protocols/WORKER_IMPLEMENT.md`.
+
+I load exactly one primary Worker skill for the current mode. I do not stack
+legacy `feature-implementation` or `bugfix-tdd` on top of it. L may explicitly
+select another skill when its contract is narrower.
 
 L may resume me into implementation or redirect me to a shorter in-scope path.
 Prefer that continuity over a replacement when my context remains useful.
