@@ -1,6 +1,6 @@
 ---
 name: worker-research
-description: Worker-owned least-cost codebase research for tracing real production paths, locating symbols and ownership, testing hypotheses, and handing Lead a decision-ready implementation route. Use for read-only repository investigation, architecture orientation, root-cause localization, or any task likely to repeat earlier code-location research. Search the reusable project code map first, prefer rg for fresh source truth, use Graphify only for genuinely multi-hop relationships, and use context-mode to process large outputs without flooding context.
+description: Worker-owned least-cost codebase research for tracing real production paths, locating symbols and ownership, testing hypotheses, and handing Lead a decision-ready implementation route. Use for read-only repository investigation, architecture orientation, root-cause localization, the research stage of a bounded bugfix, or any task likely to repeat earlier code-location research. Search the reusable project code map first, prefer rg for fresh source truth, use Graphify only for genuinely multi-hop relationships, and use context-mode to process large outputs without flooding context.
 ---
 
 # Worker Research
@@ -38,6 +38,45 @@ useful orientation for multi-hop structure but can be stale or over-broad;
 context-mode is highly effective for preserving context on large output but
 does not by itself prevent future rediscovery.
 
+## Bugfix route
+
+For a defect, preserve this order in the research receipt:
+`telemetry -> reproduction -> smallest failing test -> root cause -> patch ->
+regression`.
+
+1. Use telemetry to locate the failing boundary; do not infer the fix from a
+   stack trace, alert, or log alone.
+2. Reproduce the same failure through the real consumer path with the smallest
+   deterministic probe available.
+3. Add or specify the smallest failing test that proves the accepted behavior,
+   not an implementation detail.
+4. Patch only the verified root cause when mutation is authorized.
+5. Re-run the failing proof, proportional regression checks, and the cheapest
+   claim-matching business canary.
+
+For a read-only assignment, stop before mutation and return the exact test,
+patch location, and regression command. If the assignment authorizes the fix,
+continue through regression without starting a second broad investigation.
+
+## Measure the result
+
+Record a compact baseline/candidate measurement block in the returned receipt:
+
+- `lead_time`: assignment or defect intake to accepted business proof;
+- `rework`: failed or abandoned routes, repeated patch/review cycles, and
+  repeated manual steps;
+- `effective_cost`: known model/API/compute spend plus measured human and agent
+  active time required to reach the proof;
+- `latency`: end-to-end time from real request to usable result; report
+  P50/P95/P99 only from a representative sample and label a single observation
+  as a canary, not a benchmark;
+- `quality`: the business success metric against the baseline, an explicit
+  quality floor, and a non-inferiority margin when equivalence is claimed.
+
+Include the source and confidence for every value. Write `unknown` when a value
+was not measured; never manufacture precision from wall-clock, file mtimes, or
+one warm run. Compare cost or latency only at the same quality floor.
+
 ## Preserve reusable findings
 
 Upsert a code-map entry before returning when a verified finding is likely to
@@ -61,6 +100,10 @@ never store secrets, raw logs, guesses as facts, temporary PIDs, or task-only
 status. Use `--confidence inferred` for a useful but unproven lead. Remove
 invalid knowledge with `code_map.py remove`.
 
+Store reusable paths and failure shields in the code map. Keep per-run timing,
+cost, latency, and quality measurements in the task result or research receipt;
+do not turn the reusable map into an append-only metrics log.
+
 ## Lead interaction and return
 
 Ask Lead non-blockingly when its user context can change scope, priority,
@@ -70,4 +113,5 @@ under every answer.
 
 Return `READY_TO_IMPLEMENT`, `PROGRESS`, `QUESTION_FOR_L`, or `BLOCKED` with:
 the real path, owning files/symbols, checked hypotheses, code-map keys reused or
-updated, unknowns that change the decision, and the shortest next action.
+updated, bugfix-cycle position when applicable, the measurement block, unknowns
+that change the decision, and the shortest next action.
