@@ -18,7 +18,7 @@ Last PID signal: none observed
 Last task-file transition: work copied to done
 Last task-file mtime observed: 2026-08-12T13:54:00+03:00
 Current blocker: none
-Next shortest action: roll out the committed LHC revision and verify installed skill discovery.
+Next shortest action: use the three skills on real Worker assignments and refine only from observed failures.
 
 ## Result
 
@@ -34,3 +34,8 @@ Next shortest action: roll out the committed LHC revision and verify installed s
   `code_map.py` with upsert/search/check/remove and file freshness evidence.
 - Verified code-map behavior with 5 tests; plugin validation and Codex/Claude/
   OpenCode loader canaries discover 10 skills; core validators pass.
+- Rolled out common Worker routing at committed revision `6ca39ad` with digest
+  `sha256:20d19fa13665efb85579de07cdf19441ddacbc6ea95d070a4cca7a1f1e6ed2d1`.
+- Installed Agent Plugin `0.3.0`; Codex cache validates 10 skills. Fresh
+  OpenCode and Hermes skill discovery both expose `worker-research`,
+  `worker-code`, and `worker-bugfix`.
