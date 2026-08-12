@@ -9,5 +9,10 @@
     "engineering",
     "testing",
     "delivery"
-  ]
+  ],
+  "extensions": {
+    "com.openai": {
+      "hooks": "./hooks/hooks.json"
+    }
+  }
 }

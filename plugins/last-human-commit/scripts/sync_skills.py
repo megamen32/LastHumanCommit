@@ -84,6 +84,19 @@ def sync(source_root: Path, output_root: Path) -> int:
     return 0
 
 
+def sync_tool(source: Path, output: Path, check: bool) -> list[str]:
+    """Keep the package's executable guard identical to its canonical source."""
+
+    if check:
+        return [] if output.is_file() and output.read_bytes() == source.read_bytes() else [
+            f"generated time guard differs from source: {output}"
+        ]
+    output.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(source, output, follow_symlinks=False)
+    output.chmod(source.stat().st_mode)
+    return []
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source-root", type=Path, default=default_source_root())
@@ -93,6 +106,15 @@ def main() -> int:
     try:
         source_root = args.source_root.expanduser().resolve()
         output_root = args.output_root.expanduser().resolve()
+        tool_errors = sync_tool(
+            plugin_root().parent.parent / "src" / "common" / "tools" / "lhc_time_guard.py",
+            plugin_root() / "tools" / "lhc_time_guard.py",
+            args.check,
+        )
+        if tool_errors:
+            for error in tool_errors:
+                print(f"parity error: {error}", file=sys.stderr)
+            return 1
         if args.check:
             errors = compare(source_root, output_root)
             if errors:

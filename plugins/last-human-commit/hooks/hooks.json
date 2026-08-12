@@ -1,0 +1,27 @@
+{
+  "description": "Fail-open LHC business and estimate time guard",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${PLUGIN_ROOT}/tools/lhc_time_guard.py hook --runtime codex --event SessionStart",
+            "timeout": 3
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${PLUGIN_ROOT}/tools/lhc_time_guard.py hook --runtime codex --event PostToolUse",
+            "timeout": 3
+          }
+        ]
+      }
+    ]
+  }
+}

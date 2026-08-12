@@ -32,6 +32,7 @@ def build_config(root: Path, output_format: str) -> dict[str, object]:
     return {
         "$schema": "https://opencode.ai/config.json",
         "skills": skills_value,
+        "plugin": [os.fspath(root / "opencode" / "lhc-time-guard.ts")],
     }
 
 
