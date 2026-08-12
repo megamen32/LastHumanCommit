@@ -19,6 +19,7 @@ from typing import Any
 
 BUSINESS_FIRST_HEADER = "Меньше безопасности, больше бизнес-результата."
 MAX_HANDOFF_TASK_CHARS = 16_000
+MAX_NATIVE_HANDOFF_CHARS = 16_000
 STARTED_AT = re.compile(
     r"^\s*(?:-\s*)?Started at(?:\s*\(UTC\+3\))?:\s*([^\s(]+)",
     re.MULTILINE | re.IGNORECASE,
@@ -369,6 +370,7 @@ def render_handoff(
     payload: dict[str, Any],
     recent: list[dict[str, Any]],
     cwd: Path,
+    native_handoff: str = "",
 ) -> str:
     """Build one decision-complete, bounded current handoff."""
 
@@ -388,6 +390,22 @@ def render_handoff(
             + "]\n\n"
             + bounded_task_text[-tail:]
         )
+    native_handoff = native_handoff.strip()
+    if len(native_handoff) > MAX_NATIVE_HANDOFF_CHARS:
+        native_handoff = (
+            native_handoff[:MAX_NATIVE_HANDOFF_CHARS]
+            + "\n...[native runtime handoff truncated]"
+        )
+    native_section = (
+        [
+            "## Native runtime compaction handoff (bounded)",
+            "",
+            native_handoff,
+            "",
+        ]
+        if native_handoff
+        else []
+    )
     return "\n".join(
         [
             "# LHC Current Handoff",
@@ -409,6 +427,7 @@ def render_handoff(
             "",
             bounded_task_text,
             "",
+            *native_section,
             "## Workspace snapshot",
             "",
             "```text",
@@ -488,6 +507,7 @@ def compaction_hook(
                 payload=payload,
                 recent=recent,
                 cwd=cwd,
+                native_handoff=str(payload.get("native_handoff") or ""),
             )
             write_text(handoff_path, handoff)
         elif event == "postcompact":
@@ -515,6 +535,7 @@ def compaction_hook(
                 payload=payload,
                 recent=recent,
                 cwd=cwd,
+                native_handoff=str(payload.get("native_handoff") or ""),
             )
             write_text(handoff_path, handoff)
         else:
@@ -680,7 +701,9 @@ def parser() -> argparse.ArgumentParser:
         default="reported",
     )
     native = subcommands.add_parser("hook", help="adapt one native Codex or OpenCode hook")
-    native.add_argument("--runtime", choices=("codex", "opencode"), required=True)
+    native.add_argument(
+        "--runtime", choices=("codex", "opencode", "hermes"), required=True
+    )
     native.add_argument("--event", required=True)
     native.add_argument("--now", type=parse_time)
     native.add_argument("--idle-cap-seconds", type=positive, default=300)

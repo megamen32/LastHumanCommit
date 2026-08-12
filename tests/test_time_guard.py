@@ -257,6 +257,22 @@ def test_opencode_compaction_returns_handoff_for_summary_prompt(tmp_path: Path) 
     assert result["handoff_path"].endswith("/current-handoff.md")
 
 
+def test_hermes_handoff_preserves_native_compaction_summary(tmp_path: Path) -> None:
+    make_active_project(tmp_path)
+
+    result = run_native_hook(
+        tmp_path,
+        "PreCompact",
+        runtime="hermes",
+        extra_payload={"native_handoff": "Hermes kept the decisive business route."},
+    )
+
+    assert result is not None
+    assert result["compaction_count"] == 1
+    assert "Native runtime compaction handoff (bounded)" in result["handoff"]
+    assert "Hermes kept the decisive business route." in result["handoff"]
+
+
 def test_legacy_large_task_card_cannot_make_handoff_append_forever(tmp_path: Path) -> None:
     task = make_active_project(tmp_path)
     task.write_text(task.read_text(encoding="utf-8") + ("legacy evidence\n" * 4000), encoding="utf-8")

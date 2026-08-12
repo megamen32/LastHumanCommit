@@ -1,5 +1,6 @@
 from pathlib import Path
 import importlib.util
+import json
 
 SPEC = importlib.util.spec_from_file_location(
     "lhc_plugin", Path(__file__).parents[1] / "__init__.py"
@@ -73,3 +74,98 @@ def test_profile_bundle_replaces_clarify_with_ask_human_and_secret():
     assert "disables native `clarify`" in current
     assert "replaces it with AskHuman" in current
     assert "substitutes LHC Ask Secret semantics" in current
+
+
+def test_registers_middleware_and_pre_llm_hook():
+    registered = {"middleware": [], "hooks": []}
+
+    class Context:
+        def register_middleware(self, name, callback):
+            registered["middleware"].append((name, callback))
+
+        def register_hook(self, name, callback):
+            registered["hooks"].append((name, callback))
+
+    lhc.register(Context())
+
+    assert registered["middleware"] == [("tool_request", lhc.rewrite_delegate_task)]
+    assert registered["hooks"] == [("pre_llm_call", lhc.observe_pre_llm)]
+
+
+def test_pre_llm_counts_each_native_summary_once_and_injects_handoff(tmp_path, monkeypatch):
+    (tmp_path / ".agents").mkdir()
+    source_root = Path(__file__).parents[4]
+    monkeypatch.setenv("LAST_HUMAN_COMMIT_ROOT", str(source_root / "src"))
+    monkeypatch.chdir(tmp_path)
+    history = [
+        {
+            "role": "assistant",
+            "content": "[CONTEXT COMPACTION — REFERENCE ONLY]\nBusiness route A",
+            "_compressed_summary": True,
+        }
+    ]
+
+    first = lhc.observe_pre_llm(
+        session_id="hermes-one",
+        user_message="continue",
+        conversation_history=history,
+    )
+    duplicate = lhc.observe_pre_llm(
+        session_id="hermes-one",
+        user_message="continue",
+        conversation_history=history,
+    )
+    history[0]["content"] += " then route B"
+    second = lhc.observe_pre_llm(
+        session_id="hermes-one",
+        user_message="continue",
+        conversation_history=history,
+    )
+
+    state_path = tmp_path / ".agents/shared-session/compaction/hermes-one/state.json"
+    state = json.loads(state_path.read_text(encoding="utf-8"))
+    assert first is not None and "Compaction count: 1" in first["context"]
+    assert duplicate is None
+    assert second is not None and "Compaction count: 2" in second["context"]
+    assert state["compaction_count"] == 2
+
+
+def test_rotated_hermes_session_keeps_one_compaction_lineage(tmp_path, monkeypatch):
+    (tmp_path / ".agents").mkdir()
+    source_root = Path(__file__).parents[4]
+    monkeypatch.setenv("LAST_HUMAN_COMMIT_ROOT", str(source_root / "src"))
+    monkeypatch.chdir(tmp_path)
+
+    lhc.observe_pre_llm(
+        session_id="parent",
+        user_message="first",
+        conversation_history=[{"content": "[CONTEXT COMPACTION]\none"}],
+    )
+    result = lhc.observe_pre_llm(
+        session_id="child",
+        parent_session_id="parent",
+        user_message="second",
+        conversation_history=[{"content": "[CONTEXT COMPACTION]\ntwo"}],
+    )
+
+    state_path = tmp_path / ".agents/shared-session/compaction/parent/state.json"
+    state = json.loads(state_path.read_text(encoding="utf-8"))
+    assert result is not None and "Compaction count: 2" in result["context"]
+    assert state["compaction_count"] == 2
+
+
+def test_hermes_session_alias_map_is_bounded(tmp_path):
+    agents_root = tmp_path / ".agents"
+    agents_root.mkdir()
+
+    for index in range(lhc._MAX_SESSION_ALIASES + 3):
+        lhc._logical_session_id(agents_root, f"session-{index}", "")
+
+    mapping = json.loads(
+        (agents_root / "shared-session/compaction/hermes-session-map.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert len(mapping["aliases"]) == lhc._MAX_SESSION_ALIASES
+    assert len(mapping["recent"]) == lhc._MAX_SESSION_ALIASES
+    assert "session-0" not in mapping["aliases"]
