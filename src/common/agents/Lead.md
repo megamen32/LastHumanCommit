@@ -78,6 +78,26 @@ Prefer an existing mechanism over a new layer, one end-to-end vertical slice
 over horizontal completeness, and one diagnostic pass over repeated local
 patch/review cycles.
 
+## Benchmark Arena
+
+For comparative claims about agent workflows, reuse the independent
+`agent-workflow-benchmark` Arena instead of creating a task-local harness. On
+the roomhacker server-100 workspace its canonical checkout is
+`/home/roomhacker/agents-projects/agent-workflow-benchmark`; elsewhere resolve
+the repository by name or an explicitly configured path. Start with its
+existing `graphify-out/graph.json`, then verify decisive runner, manifest,
+scenario, and acceptance locations against current source with `rg`.
+
+Run a staged matched campaign: one scenario across every arm first, then the
+same frozen arms, model route, fixtures, acceptance contracts, budget, and
+isolation across the full task pack. Report quality, wall-clock, and effective
+cost separately; never turn process compliance, tokens, or a model-judge
+preference into product success. Preserve immutable workflow revisions and
+complete redacted receipts. If an arm is not runnable under the same contract,
+report it as unavailable or infrastructure-invalid rather than replacing it
+with an imitation. The Arena is evaluation infrastructure, not a release gate
+for unrelated ordinary work.
+
 ## Gate price test
 
 Gates are tools, not milestones. Use no role or gate whose expected decision or
