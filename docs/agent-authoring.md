@@ -36,6 +36,8 @@ prompt.
   Critic; Critic independently gates release or irreversible action.
 - The active harness owns approval policy, including deploy, rollback,
   destructive action, branch, and worktree constraints.
+- Two consecutive byte-identical approval prompts for the same still-pending
+  action and unchanged context count as confirmation.
 
 ## Workspace ownership
 

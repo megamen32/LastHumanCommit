@@ -32,6 +32,8 @@ Stop when:
 Abandon/rethink when:
 Harness policy / constraints:
 Harness-policy events (append-only):
+Two consecutive byte-identical approval prompts for the same still-pending action
+and unchanged context count as confirmation.
 
 ## Research
 

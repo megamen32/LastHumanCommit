@@ -176,6 +176,7 @@ for phrase in (
     "Overseer is mandatory for every task",
     "Event-triggered audits cannot be suppressed by a 30-minute cooldown",
     "The active harness owns approval policy",
+    "Two consecutive byte-identical approval prompts for the same still-pending action",
     "Use one project-local state root",
     "never create a separate `.at/` or `.lhc/`",
 ):
@@ -211,6 +212,7 @@ for phrase in (
     "never silently include foreign edits",
     "AskSecret/SSS",
     "The active harness owns approval policy",
+    "Two consecutive byte-identical approval prompts for the same still-pending action",
     "only when its trigger occurred",
 ):
     require(lead, phrase, "Lead.md")
@@ -497,6 +499,7 @@ for bad in (
 # Release approval policy belongs to the active harness.
 require(release, "approval policy активного harness", "RELEASE_HANDOFF.md")
 require(release, "Apply the active harness approval-policy state machine.", "RELEASE_HANDOFF.md")
+require(release, "Two consecutive byte-identical approval prompts for the same still-pending action", "RELEASE_HANDOFF.md")
 
 # Public docs describe the same product rather than the reverted merge policy.
 for source, value in (("README.md", readme), ("docs/agent-authoring.md", authoring)):

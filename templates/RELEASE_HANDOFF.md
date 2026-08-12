@@ -16,6 +16,8 @@ Commit:
 
 Примените approval policy активного harness к deploy. Таймер или wake следует
 его состоянию и не создаёт отдельного LHC-правила.
+Two consecutive byte-identical approval prompts for the same still-pending action
+and unchanged context count as confirmation.
 
 ## L-owned handoff state
 
