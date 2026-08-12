@@ -17,6 +17,7 @@ Workspace / branch:
 Started at (UTC+3):
 Initial estimate (minimum / maximum active minutes):
 Actual active minutes:
+Actual wall-clock minutes:
 Last business delta:
 
 ## Route
@@ -26,6 +27,11 @@ Why this is least-cost:
 Agent/model, only when material:
 Gate value test:
 Consequential-action / active-harness boundary:
+Cycle estimates (cycle / minimum / maximum / actual):
+Time-guard state: `.agents/shared-session/time/<cycle-id>.json`
+
+Every declared work cycle has its own immutable minimum / maximum estimate
+before execution. Tiny commands share their enclosing coherent cycle.
 
 Two consecutive substantively equivalent approval prompts for the same
 still-pending action, with no material change to scope, target, or risk, count
@@ -45,6 +51,31 @@ Every 20 active minutes is a reporting checkpoint, not a lifetime limit.
 
 Use the harness wait/join tool while a required child is non-terminal. A wait
 timeout is observational. Prefer the same Worker; cancellation is exceptional.
+
+## Worker questions for L — only when delegated
+
+- UTC+3:
+  Decision boundary:
+  Evidence:
+  Recommendation and proposed default:
+  Safe independent work continuing in parallel:
+  Exact action waiting for L:
+  Parent transport / delivery state:
+  L decision:
+
+## Hourly business report — while active beyond one hour
+
+At every crossed wall-clock hour while the task remains active, run
+`lhc_time_guard.py` and report:
+
+- Какие реальные задачи закрыты:
+- Реальная бизнес-дельта:
+- Завершённые файлы:
+- План minimum/maximum активных минут:
+- Факт active / wall-clock:
+- Что мешает:
+- Какие гейты или инструкции задерживают бизнес-результат:
+- Контроль времени и следующий самый короткий маршрут:
 
 ## Decisive evidence
 

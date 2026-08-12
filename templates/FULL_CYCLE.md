@@ -15,6 +15,8 @@ Confirmed scope:
 Explicit exclusions:
 Current blocker:
 Initial minimum / maximum active minutes:
+Cycle estimates (each named route/canary/review/rollout):
+Time-guard state:
 
 ## Least-cost route
 
@@ -58,6 +60,15 @@ is exceptional.
 
 Use the harness wait/join tool for required children. Do not complete the task
 while a required child is non-terminal.
+
+Workers ask L at each decision boundary through a non-blocking parent transport
+when available, include recommendation/proposed default, and continue safe
+independent work while waiting. L owns and promptly returns the decision.
+
+At every crossed wall-clock hour while active, run `lhc_time_guard.py` and report
+real tasks closed, business delta, completed files, planned versus actual time,
+blockers, delaying gates/instructions, time-control evidence, and the shortest
+next route. Crossing a cycle maximum emits the full overrun diagnostic.
 
 ## Result
 

@@ -17,6 +17,12 @@ Before every `spawn_agent` or resumed Worker call:
   recovery, reuse, or rediscovery cost justifies it.
 - Escalate to Overseer, Reviewer, Tester, Adviser, or Critic only for the
   concrete risk that makes the role worth its cost.
+- At a decision boundary, ask L through a proven non-blocking parent transport
+  with evidence, recommendation/default, parallel-safe work, and blocked action.
+  Continue safe independent work while waiting; otherwise return the question at
+  the next checkpoint.
+- Run `common/tools/lhc_time_guard.py` at observable lifecycle/checkpoint events;
+  deliver new hourly/overrun prompts to L and never claim an unavailable wake.
 
 Use the harness wait/join tool after dispatch whenever the result is required.
 Do not send the final answer while a required child result remains non-terminal.

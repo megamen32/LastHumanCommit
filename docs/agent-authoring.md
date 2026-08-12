@@ -27,6 +27,12 @@ cost.
   exceed 20 minutes.
 - Every 20 active minutes is a reporting checkpoint. Lead continues,
   redirects/resumes the same Worker, or consults Overseer when useful.
+- At every context-dependent decision boundary, Worker asks Lead through a
+  proven non-blocking parent transport, supplies recommendation/default and
+  parallel-safe work, and blocks only the divergent action.
+- Every declared work cycle has an immutable minimum/maximum estimate. The
+  business time guard produces one report per crossed wall-clock hour and one
+  original-maximum overrun diagnostic.
 - Use a real wait/join mechanism for required children; never finish merely
   because one wait returned no terminal result.
 - Overseer, Adviser, Critic, Reviewer, and Tester are risk-triggered.

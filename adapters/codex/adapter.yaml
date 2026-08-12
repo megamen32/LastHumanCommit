@@ -12,3 +12,5 @@ capabilities:
   fresh_child_context: unproven
   model_override: unproven
   resume_transport: unproven
+  nonblocking_parent_transport: unproven
+  lifecycle_time_guard_hook: unproven

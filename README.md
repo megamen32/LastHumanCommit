@@ -24,6 +24,17 @@ and proof, and adds governance only when a concrete risk justifies its cost.
    decision/risk-reduction value exceeds delay and token cost.
 8. Match evidence to the claim and stop when that claim is proven.
 
+Workers ask Lead at decision boundaries because Lead retains the broader user
+context and owns business decisions. With a proven non-blocking parent
+transport, the Worker sends evidence, recommendation/default, parallel-safe
+work, and the exact blocked action, then continues safe work while Lead decides.
+
+Every declared work cycle records an immutable minimum/maximum estimate. The
+dependency-free `src/common/tools/lhc_time_guard.py` emits idempotent hourly
+business reports and original-maximum overrun diagnostics. Native hooks call it
+when attested; otherwise Lead calls it at observable checkpoints and reports any
+delayed hourly delivery honestly.
+
 Overseer, Adviser, Critic, Reviewer, and Tester are risk-triggered. Gates are
 tools, not milestones. Full work may have one, two, or three genuine plans; LHC
 does not manufacture options, double testing, per-wave reviews, or hardening
@@ -66,6 +77,7 @@ Validation:
 
 ```bash
 python3 -m pytest -q tests/test_business_first_contract.py
+python3 -m pytest -q tests/test_time_guard.py
 python3 tests/validate.py
 sh tests/test_task_states.sh
 python3 -m pytest -q adapters/hermes/plugin/tests/test_plugin.py

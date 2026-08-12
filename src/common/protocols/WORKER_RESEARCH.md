@@ -28,6 +28,11 @@ route remains shortest, and the smallest next probe. The expected total range
 may exceed 20 minutes. The checkpoint does not end the Worker; remain available
 for L to continue, redirect, or resume.
 
+Ask L at every decision boundary that needs its broader user/session context.
+Send evidence, recommendation, proposed default, parallel-safe work, and the
+exact blocked action through a non-blocking parent transport when available;
+continue safe independent research while waiting.
+
 Return `READY_TO_IMPLEMENT`, `PROGRESS`, `NEEDS_MORE_RESEARCH`, or `BLOCKED`,
 with decisive evidence, production path, existing mechanism, checked/excluded
 hypotheses, unknowns that affect the decision, and the cheapest next action. Do

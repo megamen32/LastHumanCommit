@@ -82,7 +82,7 @@ Status: done
 
 ## M7 — Business-first least-cost execution
 
-Status: done in source; runtime rollout is separate
+Status: done and installed as `e49eeeb`
 
 - [x] M7.1 Put the accepted business claim, actual production consumer path,
   shortest real canary, and cheapest sufficient proof before role/process
@@ -96,6 +96,21 @@ Status: done in source; runtime rollout is separate
 - [x] M7.5 Enforce semantic ordering and forbid the old unconditional gates in
   regression validation. The motivating audit is
   `docs/business-first-error-audit.md`.
+
+## M8 — Lead feedback and business time control
+
+Status: in progress
+
+- [x] M8.1 Make Worker ask Lead at context-dependent decision boundaries with a
+  recommendation/default while continuing safe independent work through a
+  proven non-blocking parent transport.
+- [x] M8.2 Require an immutable minimum/maximum estimate for each declared work
+  cycle and an hourly Lead report of real closed tasks, business delta,
+  completed files, blockers, gates/instructions, and next route.
+- [x] M8.3 Add dependency-free `lhc_time_guard.py` with persistent idempotent
+  crossed-hour, original-maximum overrun, and estimate-mutation events.
+- [ ] M8.4 Validate, commit, and install the updated source on the Fleet; keep
+  native hook/wake claims adapter-dependent until physically attested.
 
 ## Proposed
 

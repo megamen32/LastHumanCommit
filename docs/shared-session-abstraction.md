@@ -20,6 +20,7 @@ parallel top-level `.lhc/` or `.at/` roots.
 ├── results/<task-id>/result-<result-slug>.md
 ├── overseer/context.md
 ├── overseer/state.md
+├── time/<cycle-id>.json
 └── events/<UTC>-<event>.json
 ```
 
@@ -39,6 +40,8 @@ separate handoff/review packages.
 | `research_record` | Persist only when handoff/recovery/reuse/rediscovery economics justify it. |
 | `send_parent` | Deliver the same compact checkpoint/result to L; do not duplicate it. |
 | `overseer_continue` | Resume optional route audit when a concrete trigger justifies it. |
+| `time_guard` | Run `common/tools/lhc_time_guard.py` and deliver new hourly/overrun prompts to L. |
+| `ask_lead` | Deliver a Worker decision question non-blockingly; record recommendation, default, parallel work, and blocked action. |
 
 Filesystem mtime, missing completion signal, dead PID observation, timeout, and
 mailbox wake are observations only. None independently proves agent completion,
@@ -57,6 +60,16 @@ window may expire without deciding lifecycle. Inspect authoritative status,
 request/consume the checkpoint, take one control action, and join again if the
 child remains required. Do not finish the parent response while a required
 child is non-terminal.
+
+Worker questions use a live non-blocking parent transport when available. The
+Worker continues safe independent work while L decides and blocks only the exact
+divergent action. If transport is absent, record the question and return it at
+the next natural checkpoint; do not claim delivery.
+
+Call the business time guard at cycle start, material updates, response
+finalizers, and scheduler wakes. Every declared work cycle has an immutable
+minimum/maximum estimate. The guard emits each crossed-hour report and original-
+maximum overrun once, even when the next observable hook arrives late.
 
 ## Cost-triggered research persistence
 

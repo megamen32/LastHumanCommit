@@ -17,6 +17,11 @@ Before every delegated task:
   cost justifies it.
 - Use optional independent roles only for a concrete risk whose expected value
   exceeds delay.
+- Ask L at decision boundaries through a proven non-blocking parent transport,
+  include recommendation/default and parallel-safe work, and continue safe work
+  while waiting. Otherwise return the question at the next checkpoint.
+- Run `common/tools/lhc_time_guard.py` at observable lifecycle/checkpoint events
+  and deliver new hourly/overrun prompts without simulating scheduler wakes.
 
 Use the harness wait/join tool when the child result is required. Do not send the
 final answer while a required child result remains non-terminal. A timeout is

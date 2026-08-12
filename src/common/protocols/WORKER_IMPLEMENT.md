@@ -23,3 +23,8 @@ shortest next action. The checkpoint is not a lifetime limit. Remain available
 for L to continue, redirect, or resume. Stop independently only for active harm,
 foreign-write collision, lost authority, unavoidable scope decision, or a
 concrete unrecoverable capability failure.
+
+Ask L at every decision boundary that needs its broader user/session context.
+Use a non-blocking parent transport with evidence, recommendation, proposed
+default, parallel-safe work, and the exact action that must wait. Continue only
+work valid under every plausible answer until L decides.

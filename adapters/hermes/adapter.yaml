@@ -13,3 +13,5 @@ capabilities:
   fresh_child_context: proven
   model_override: existing-hermes-delegation
   resume_transport: adapter-dependent
+  nonblocking_parent_transport: adapter-dependent
+  lifecycle_time_guard_hook: adapter-dependent

@@ -18,8 +18,16 @@ its completeness is not a product result.
 
 ## Estimates and checkpoints
 
-When useful, record UTC+3 start and one immutable initial `minimum / maximum
-active minutes` range. Do not add optimistic/likely/pessimistic variants.
+Load `../protocols/TIME_CONTROL.md`. Every declared work cycle has its own
+immutable minimum / maximum estimate before execution. Record UTC+3 start and
+do not add optimistic/likely/pessimistic variants. Tiny commands may share one
+coherent enclosing-cycle estimate; estimates are for control, not ceremony.
+
+Call `../tools/lhc_time_guard.py` at cycle start and every observable
+checkpoint. At every crossed wall-clock hour while the task remains active, L
+reports closed real tasks, business delta, completed files, planned versus
+actual time, blockers, delaying gates/instructions, control evidence, and the
+shortest next route.
 
 Every 20 active minutes is a control checkpoint, not a Worker lifetime limit.
 The Worker reports progress, business delta, blocker, and the shortest next

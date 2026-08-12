@@ -16,6 +16,9 @@ its setup cost.
 3. Implement the smallest coherent fix on that path.
 4. Re-run the same proof and proportional direct-regression checks.
 5. Stop when the accepted claim is proven.
+6. Ask Lead instead of guessing at a context-dependent business decision; use a
+   non-blocking parent transport and continue answer-independent work when
+   available.
 
 ## Do not
 

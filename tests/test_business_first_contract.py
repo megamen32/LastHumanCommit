@@ -144,3 +144,33 @@ def test_adapter_templates_preserve_checkpoint_semantics() -> None:
         assert "20-minute reporting checkpoint" in value, adapter
         assert "expected total range may exceed 20 minutes" in value, adapter
         assert "lowest sufficient" in value, adapter
+
+
+def test_worker_questions_lead_without_blocking_safe_parallel_work() -> None:
+    lead = compact(read("src/common/agents/Lead.md"))
+    worker = compact(read("src/common/agents/Worker.md"))
+    aggregate = lead + " " + worker
+
+    for phrase in (
+        "Ask L at every decision boundary",
+        "recommendation and proposed default",
+        "non-blocking parent transport",
+        "continue safe independent work while waiting",
+        "L owns the decision",
+    ):
+        assert phrase in aggregate, phrase
+
+
+def test_hourly_business_report_and_cycle_estimates_are_required() -> None:
+    lead = compact(read("src/common/agents/Lead.md"))
+    planning = compact(read("src/common/profiles/Planning.md"))
+    task = compact(read("src/common/templates/.agents/tasks/task_template.md"))
+
+    for phrase in (
+        "At every crossed wall-clock hour while the task remains active",
+        "Какие реальные задачи закрыты",
+        "Every declared work cycle has its own immutable minimum / maximum estimate",
+    ):
+        assert phrase in lead + " " + planning + " " + task, phrase
+
+    assert "lhc_time_guard.py" in lead + " " + planning + " " + task

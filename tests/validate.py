@@ -82,6 +82,7 @@ test_profile = text("src/common/profiles/Test.md")
 research = text("src/common/protocols/WORKER_RESEARCH.md")
 implement = text("src/common/protocols/WORKER_IMPLEMENT.md")
 control = text("src/common/protocols/STOP_RETHINK.md")
+time_control = text("src/common/protocols/TIME_CONTROL.md")
 workspace = text("src/common/protocols/SHARED_WORKTREE.md")
 shared_session = text("docs/shared-session-abstraction.md")
 task_template = text("src/common/templates/.agents/tasks/task_template.md")
@@ -142,6 +143,17 @@ require(planning, "The expected total range may exceed 20 minutes", "Planning.md
 require(overseer, "Prefer redirecting or resuming the same Worker", "Overseer.md")
 require(control, "Cancellation is exceptional", "STOP_RETHINK.md")
 
+# Worker asks Lead without blocking independent progress.
+for phrase in (
+    "Ask L at every decision boundary",
+    "recommendation and proposed default",
+    "non-blocking parent transport",
+    "continue safe independent work while waiting",
+    "L owns the decision",
+):
+    require(worker + lead, phrase, "Lead/Worker decision feedback contract")
+forbid(worker, "stop all work until L answers", "Worker.md")
+
 # Required children are really joined and managed.
 codex_instructions = text("adapters/codex/instructions.md")
 codex_template = text("adapters/codex/templates/subagent.md")
@@ -180,6 +192,27 @@ require(task_template, "Accepted business outcome / Definition of Done", "task t
 require(task_template, "Why this is least-cost", "task template")
 require(full_cycle, "Record one, two, or three options; never invent options", "FULL_CYCLE.md")
 
+# Every declared cycle is estimated and time-controlled.
+time_guard = ROOT / "src/common/tools/lhc_time_guard.py"
+if not time_guard.is_file() or not time_guard.stat().st_mode & 0o111:
+    fail("src/common/tools/lhc_time_guard.py must exist and be executable")
+for source, value in (
+    ("Lead.md", lead),
+    ("Planning.md", planning),
+    ("TIME_CONTROL.md", time_control),
+    ("task template", task_template),
+):
+    require(value, "Every declared work cycle", source)
+    require(value, "minimum / maximum", source)
+for phrase in (
+    "At every crossed wall-clock hour while the task remains active",
+    "Какие реальные задачи закрыты",
+    "Завершённые файлы",
+    "Какие гейты или инструкции задерживают бизнес-результат",
+    "lhc_time_guard.py",
+):
+    require(lead + time_control + task_template, phrase, "business time-control contract")
+
 # Old executable process contracts may not re-enter any behavior surface.
 behavior_paths = [
     "AGENTS.md",
@@ -198,6 +231,7 @@ behavior_paths = [
     "src/common/protocols/WORKER_RESEARCH.md",
     "src/common/protocols/WORKER_IMPLEMENT.md",
     "src/common/protocols/STOP_RETHINK.md",
+    "src/common/protocols/TIME_CONTROL.md",
     "templates/FULL_CYCLE.md",
     "src/common/templates/.agents/tasks/task_template.md",
 ] + [f"adapters/{adapter}/templates/subagent.md" for adapter in ADAPTERS] + [
@@ -228,6 +262,7 @@ for relative in behavior_paths:
 
 # Adapter contracts and generated skill source are complete and local.
 manifest = text("adapters/manifest.yaml")
+require(manifest, "tools: src/common/tools", "adapters/manifest.yaml")
 for adapter in ADAPTERS:
     base = ROOT / "adapters" / adapter
     adapter_manifest = text(f"adapters/{adapter}/adapter.yaml")
@@ -239,6 +274,10 @@ for adapter in ADAPTERS:
     require(template, "lowest sufficient", f"{adapter}/templates/subagent.md")
     require(template, "expected total range may exceed 20 minutes", f"{adapter}/templates/subagent.md")
     require(template, "20-minute reporting checkpoint", f"{adapter}/templates/subagent.md")
+    require(template, "non-blocking parent transport", f"{adapter}/templates/subagent.md")
+    require(template, "lhc_time_guard.py", f"{adapter}/templates/subagent.md")
+    require(adapter_manifest, "nonblocking_parent_transport:", f"{adapter}/adapter.yaml")
+    require(adapter_manifest, "lifecycle_time_guard_hook:", f"{adapter}/adapter.yaml")
     for key in ("role_source", "optional_instructions", "subagent_instructions_template"):
         match = re.search(rf"^{key}:\s*(.+)$", adapter_manifest, re.MULTILINE)
         if not match or not (base / match.group(1).strip()).exists():
@@ -283,6 +322,8 @@ require(audit, "Новый обязательный порядок", "business-f
 
 # Run the narrow behavioral validators owned by this repository.
 subprocess.run([sys.executable, "-m", "pytest", "-q", "tests/test_business_first_contract.py"], cwd=ROOT, check=True)
+subprocess.run([sys.executable, "-m", "pytest", "-q", "tests/test_time_guard.py"], cwd=ROOT, check=True)
+subprocess.run([sys.executable, "-m", "py_compile", str(time_guard)], cwd=ROOT, check=True)
 subprocess.run(["sh", str(ROOT / "tests/test_block_adapter.sh")], cwd=ROOT, check=True)
 
 print(

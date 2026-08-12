@@ -20,6 +20,11 @@ require 'Why this is least-cost:'
 require 'Every 20 active minutes is a reporting checkpoint, not a lifetime limit.'
 require 'Use the harness wait/join tool while a required child is non-terminal.'
 require 'Overseer, Adviser, Critic, Reviewer, and Tester are risk-triggered'
+require 'Cycle estimates (cycle / minimum / maximum / actual):'
+require 'Time-guard state:'
+require 'Какие реальные задачи закрыты:'
+require 'Recommendation and proposed default:'
+require 'Safe independent work continuing in parallel:'
 
 if grep -Fq 'Lifecycle snapshot: todo | work | done' "$template"; then
   echo 'FAIL: task template still requires snapshot lifecycle copies' >&2

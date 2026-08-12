@@ -40,3 +40,37 @@ restart, foreign dirty edits, or weakening of essential safety/authority.
 - Fleet verify: `verified` on `100`, `44`, `88`, and `mac`
 - Physical readback: all four active Lead files contain business-first,
   gate-price, and wait/join markers.
+
+## Source implementation evidence
+
+- Worker asks L at context-dependent decision boundaries with evidence,
+  recommendation/default, parallel-safe work, and exact blocked action.
+- Lead owns and promptly returns the decision; safe independent work continues
+  through a proven non-blocking transport.
+- Every declared coherent work cycle has an immutable minimum/maximum estimate.
+- `src/common/tools/lhc_time_guard.py` persists the original estimate, catches
+  each crossed wall-clock hour, emits original-maximum overrun and estimate-
+  mutation events once, and writes state atomically.
+- `src/common/protocols/TIME_CONTROL.md` defines hook/manual invocation and the
+  hourly business report.
+- Native scheduler/hook capabilities remain explicitly unproven or
+  adapter-dependent; no automatic wake claim is made.
+
+## Verification so far
+
+- Red phase: 5 expected failures before tool/contracts existed.
+- Focused green: 11 passed.
+- Full semantic/time behavior: business contract 8 passed; time guard 3 passed.
+- Full pytest: 20 passed.
+- CLI canary: events `hourly, overrun`; crossed hours `1, 2`; original plan
+  `30–90`; actual `100 active / 125 wall-clock`; overrun `10`.
+- Plugin skill parity and package validation: PASS.
+- `AGENTS.md` and `CLAUDE.md`: byte-identical.
+
+## Current control
+
+- Business delta: baseline installed; new tool and instruction contract pass
+  source and CLI canaries.
+- Estimate state: within initial 60 / 120 active-minute range.
+- Next shortest action: final validation, source commit, exact Fleet preview,
+  apply, verify, and physical runtime readback.

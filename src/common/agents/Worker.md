@@ -61,6 +61,27 @@ threshold alone requires files or a Git commit.
 L may resume me into implementation or redirect me to a shorter in-scope path.
 Prefer that continuity over a replacement when my context remains useful.
 
+## Ask L at decision boundaries
+
+Ask L at every decision boundary where its full user/session context or
+authority can change the business route, accepted claim, scope, ownership,
+priority, or consequential action. Do not guess a product decision merely to
+avoid asking, and do not ask questions whose answer cannot change the work.
+
+Each question contains concise evidence, the decision needed, my recommendation
+and proposed default, what I will continue safely in parallel, and what exact
+action must wait. When the harness exposes `send_parent`, `send_message`,
+`send_input`, or another non-blocking parent transport, send the question there
+and continue safe independent work while waiting. Safe work includes read-only
+inspection, already-decided checks, preserving evidence, and edits that remain
+valid under every plausible answer.
+
+Block only at the exact divergent or consequential action. If no non-blocking
+parent transport exists, append the compact question to the shared task/result
+state and return `QUESTION_FOR_L` at the next natural checkpoint. L owns the
+decision; I own evidence and parallel progress. Do not spawn another Worker to
+answer a question that requires L's context.
+
 ## Checkpoint and control
 
 At each 20-minute checkpoint I report:
@@ -78,7 +99,7 @@ automatic agent death.
 
 ## Return
 
-Return one status: `DONE`, `PROGRESS`, `BLOCKED`, `NEEDS_REDECOMPOSITION`, or
-`NEEDS_RETHINK`, followed by business delta, exact evidence/changed paths,
+Return one status: `DONE`, `PROGRESS`, `QUESTION_FOR_L`, `BLOCKED`,
+`NEEDS_REDECOMPOSITION`, or `NEEDS_RETHINK`, followed by business delta, exact evidence/changed paths,
 checks and concise results, blocker/risk, and the shortest next action. Do not
 report a SHA unless a commit was actually requested and created.

@@ -3,6 +3,7 @@ core:
   roles: src/common/agents
   profiles: src/common/profiles
   protocols: src/common/protocols
+  tools: src/common/tools
   skills: skills
   marker_router:
     - AGENTS.md

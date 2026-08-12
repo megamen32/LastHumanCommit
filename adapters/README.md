@@ -18,6 +18,11 @@ Every manifest records capabilities as `proven`, `unproven`, `unsupported`, or
 adapter-dependent. Do not claim role/model/fresh-context/wait/resume behavior
 without a live child event.
 
+When available, adapters map a non-blocking child-to-parent message to Worker
+decision questions and map lifecycle/checkpoint/finalizer/scheduler events to
+`common/tools/lhc_time_guard.py`. Without either capability, preserve the
+question/time state and report delayed delivery; never simulate a live event.
+
 ## Human requests
 
 `human.ask_user.v1` and `human.ask_secret.v1` are semantic contracts. Fleet or

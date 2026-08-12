@@ -19,6 +19,9 @@ code-only proxy.
 5. Report source/test proof, deployment state, and real-canary proof separately.
 6. Stop when the accepted claim is proven and hand off deferred optional work as
    non-blocking.
+7. For work crossing an hour or its original maximum, include the time guard's
+   completed-task/file, planned-versus-actual, blocker/gate, and route-change
+   report.
 
 ## Do not
 

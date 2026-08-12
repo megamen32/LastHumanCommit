@@ -17,7 +17,10 @@ Use only when planning can materially reduce wrong-path or coordination cost.
 5. Decompose only at real ownership/dependency/acceptance boundaries.
 6. Treat every 20 active minutes as a progress and route checkpoint, not an
    agent lifetime limit.
-7. Add governance only for a concrete risk whose expected loss exceeds gate
+7. Give every declared work cycle an immutable minimum/maximum estimate and run
+   the business time guard at observable checkpoints; report every crossed hour
+   and original-maximum overrun.
+8. Add governance only for a concrete risk whose expected loss exceeds gate
    cost.
 
 ## Do not

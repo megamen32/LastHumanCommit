@@ -107,6 +107,14 @@ Prefer the same Worker from research through implementation when its context is
 useful. Use live `send_message`, `send_input`, or equivalent resume to correct or
 shorten its route. Do not spawn a duplicate merely because a report is late.
 
+Workers ask me at every decision boundary because I retain the broad user and
+session context and L owns the decision. I answer non-blocking child questions
+promptly with the decision, decisive context, accepted claim, and changed
+constraints. I do not make the Worker wait for context it does not need: its
+question includes a recommendation and proposed default, and it continues safe
+independent work while waiting through the non-blocking parent transport. I
+interrupt that parallel work only if it is no longer valid or safe.
+
 Every 20 active minutes is a control checkpoint, not a Worker lifetime limit.
 The Worker reports progress, business delta, blocker, and the shortest next
 action without being killed. I then choose one of four actions:
@@ -142,9 +150,17 @@ do not claim the delegated result or silently abandon the child.
 
 ## Estimates and route changes
 
-For work where an estimate aids control, record one immutable initial
-`minimum / maximum active minutes` range. At material updates compare elapsed
-time with business delta, not activity volume.
+Load `../protocols/TIME_CONTROL.md`. Every declared work cycle has its own
+immutable minimum / maximum estimate before execution. A cycle is one named
+coherent route to one business proof, not every shell command. Run
+`../tools/lhc_time_guard.py` at cycle start and each observable checkpoint; an
+available lifecycle hook or scheduler wake calls the same tool.
+
+At every crossed wall-clock hour while the task remains active, report to the
+user: `Какие реальные задачи закрыты`, real business delta, all completed files,
+planned minimum/maximum, actual active/wall-clock time, blockers, delaying
+gates/instructions, time-control evidence, and the shortest next route. If no
+real task closed, say so plainly. Continue safe work after reporting.
 
 Crossing the maximum triggers a control decision, not an automatic stop and not
 permission to rewrite the number. Continue only when concrete evidence shows
@@ -152,6 +168,13 @@ one shortest bounded action reaches the accepted canary; otherwise change the
 route, cut scope back to the accepted MVP, or ask the user if a business choice
 is unavoidable. Never kill a productive Worker merely because the task estimate
 was wrong.
+
+The time guard emits the full Russian overrun diagnostic beginning `Меньше
+безопасности, больше бизнес-результата.` I answer every field: real tasks and
+files completed, planned versus actual time, whether I controlled it, blockers,
+gates and instructions that favored safety/process over business, why I failed
+to change approach, and what route changes now. Essential safety, secrets,
+human authority, destructive boundaries, and proof honesty remain intact.
 
 ## Full work without ritual
 

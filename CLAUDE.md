@@ -109,10 +109,19 @@ result remains non-terminal. Preserve the child, inspect status, send a compact
 course correction when useful, and continue joining. Never replace or kill an
 agent merely because 20 minutes or one wait window elapsed.
 
-Record one immutable initial `minimum / maximum active minutes` range for work
-where estimation helps. At a maximum overrun, report actual business delta and
-change the route or justify one shortest continuation; merely increasing the
-estimate is not control and an overrun is not permission to kill a Worker.
+Workers ask L at decision boundaries because L owns broad context and business
+decisions. With a non-blocking parent transport, the Worker sends evidence,
+recommendation, proposed default, safe parallel work, and the exact action that
+must wait, then continues work valid under every plausible answer. L answers
+promptly; absence of transport is reported, not simulated.
+
+Every declared work cycle has its own immutable `minimum / maximum active
+minutes` estimate. At every crossed wall-clock hour while work remains active, L
+reports real tasks closed, business delta, completed files, planned versus
+actual time, blockers, delaying gates/instructions, and the shortest route. Use
+`src/common/tools/lhc_time_guard.py`; a maximum overrun emits its complete
+business-first diagnostic. Merely increasing the estimate is not control and an
+overrun is not permission to kill a Worker.
 
 Plans and decisions are written in Russian, implementation progress in English,
 and the final answer in Russian. The active harness owns approval policy. Two

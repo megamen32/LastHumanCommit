@@ -17,6 +17,9 @@ to execute directly.
 4. Add only proportional direct-regression evidence.
 5. At each 20-minute checkpoint report business delta and remain available for
    continuation or redirection.
+6. Ask Lead at every context-dependent decision boundary with evidence,
+   recommendation/default, parallel-safe work, and the exact blocked action;
+   continue safe work through a non-blocking parent transport when available.
 
 ## Do not
 
