@@ -332,6 +332,14 @@ for phrase in (
     "Plaintext and base64 fallback delivery are rejected",
 ):
     require(ask_secret, phrase, "human.ask_secret.v1.yaml")
+for phrase in ("state: available", "provider: AskSecret", "transport: streamable_http", "ask_secret_run"):
+    require(ask_secret, phrase, "human.ask_secret.v1.yaml")
+ask_human = text("src/common/capabilities/human.ask_user.v1.yaml")
+for phrase in ("state: available", "provider: AskHuman", "transport: streamable_http", "ask_human"):
+    require(ask_human, phrase, "human.ask_user.v1.yaml")
+installer = ROOT / "src/common/tools/install_http_capabilities.py"
+if not installer.is_file():
+    fail("src/common/tools/install_http_capabilities.py must exist")
 for adapter in ADAPTERS:
     instructions = text(f"adapters/{adapter}/instructions.md")
     for phrase in ("AskHuman", "AskSecret/SSS", "opaque registered-agent", "plaintext", "base64 fallback"):

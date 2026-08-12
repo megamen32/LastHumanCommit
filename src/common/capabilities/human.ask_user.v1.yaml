@@ -1,7 +1,10 @@
 schema_version: 1
 id: human.ask_user.v1
-state: planned
+state: available
 requirement: required
+provider: AskHuman
+transport: streamable_http
+endpoint: https://notify.bezrabotnyi.com/mcp
 purpose: Request a blocking human decision without exposing delivery mechanics to the agent.
 agent_interface:
   name: AskHuman
@@ -11,4 +14,4 @@ invariants:
   - The agent does not choose phone, messenger, timing, or delivery route.
   - One authorized response resolves only its correlated request_id.
   - A resolved request cannot escalate again.
-rendering: Render only when an exact Fleet or harness attestation is proven.
+rendering: Render only when the AskHuman HTTP MCP is registered and tools/list attests ask_human.
