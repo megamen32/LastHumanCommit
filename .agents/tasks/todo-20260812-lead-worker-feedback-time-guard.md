@@ -44,7 +44,7 @@ secrets, user authority, or destructive-action boundaries.
 
 ## Time
 
-- Started at: 2026-08-12T11:10:00+03:00
+- Started at: 2026-08-12T10:21:52+03:00 (first committed task snapshot)
 - Initial estimate: 60 / 120 active minutes
 - 20-minute checkpoint: business delta and shortest next action
 - Hourly report: required at every crossed wall-clock hour while active

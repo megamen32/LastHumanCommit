@@ -1,6 +1,6 @@
 # Lead/Worker feedback and business time guard
 
-Status: in progress
+Status: complete
 
 ## Latest user request
 
@@ -26,7 +26,7 @@ restart, foreign dirty edits, or weakening of essential safety/authority.
 
 ## Time control
 
-- Started at: 2026-08-12T11:10:00+03:00
+- Started at: 2026-08-12T10:21:52+03:00 (first committed task snapshot)
 - Initial estimate: 60 / 120 active minutes
 - Current business delta: previous version installed; new contract research done
 - Next shortest action: add failing semantic/tool tests
@@ -74,3 +74,19 @@ restart, foreign dirty edits, or weakening of essential safety/authority.
 - Estimate state: within initial 60 / 120 active-minute range.
 - Next shortest action: final validation, source commit, exact Fleet preview,
   apply, verify, and physical runtime readback.
+
+## Fleet completion evidence
+
+- Committed version: `53e883d`
+- Digest:
+  `sha256:e1f532648c69e1c0854fcd497ae97beec35c9c0857cbfbc81fb5c7ec13c3c288`
+- Fleet verify: `verified`, 54 files on `100`, `44`, `88`, and `mac`
+- Active runtime readback: all four targets resolve `current` to
+  `versions/53e883d` and contain Lead hourly and Worker decision-boundary text.
+- Installed executable canary on every target: events `hourly, overrun`, crossed
+  hours `[1, 2]`, overrun `10`, prompt starts `Меньше безопасности, больше
+  бизнес-результата.`
+- Rollback roots:
+  `.local/share/last-human-commit/rollbacks/53e883d-lhc-rollout`
+- Native parent-message and scheduler/lifecycle hook events were not attested;
+  their manifest state remains `unproven` or `adapter-dependent`.

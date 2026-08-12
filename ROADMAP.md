@@ -99,7 +99,7 @@ Status: done and installed as `e49eeeb`
 
 ## M8 — Lead feedback and business time control
 
-Status: in progress
+Status: done and installed as `53e883d`
 
 - [x] M8.1 Make Worker ask Lead at context-dependent decision boundaries with a
   recommendation/default while continuing safe independent work through a
@@ -109,7 +109,7 @@ Status: in progress
   completed files, blockers, gates/instructions, and next route.
 - [x] M8.3 Add dependency-free `lhc_time_guard.py` with persistent idempotent
   crossed-hour, original-maximum overrun, and estimate-mutation events.
-- [ ] M8.4 Validate, commit, and install the updated source on the Fleet; keep
+- [x] M8.4 Validate, commit, and install the updated source on the Fleet; keep
   native hook/wake claims adapter-dependent until physically attested.
 
 ## Proposed

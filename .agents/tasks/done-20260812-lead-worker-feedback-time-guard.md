@@ -1,6 +1,6 @@
 # Lead/Worker feedback and business time guard
 
-Status: complete in source; Fleet rollout pending this snapshot
+Status: complete and installed
 
 ## Result
 
@@ -53,15 +53,33 @@ and physically read from active Lead files on `100`, `44`, `88`, and `mac`.
 - `AGENTS.md` / `CLAUDE.md`: byte-identical.
 - `git diff --check`: clean.
 
+## Installed result
+
+- Version: `53e883d`
+- Digest:
+  `sha256:e1f532648c69e1c0854fcd497ae97beec35c9c0857cbfbc81fb5c7ec13c3c288`
+- Fleet verification: `verified` on `100`, `44`, `88`, and `mac`; 54 files per
+  immutable runtime.
+- Physical readback: active `current` resolves to `versions/53e883d`; Lead and
+  Worker contain the new contracts; `common/tools/lhc_time_guard.py` is
+  executable.
+- Installed-tool canary: every target emitted `hourly + overrun`, crossed hours
+  `[1, 2]`, overrun `10`, and the Russian business-first prompt.
+- Rollback roots:
+  `.local/share/last-human-commit/rollbacks/53e883d-lhc-rollout`.
+
 ## Time
 
-- Started at: 2026-08-12T11:10:00+03:00
+- Started at: 2026-08-12T10:21:52+03:00 (first committed task snapshot)
+- Installed canary completed by: 2026-08-12T10:34:51+03:00
 - Initial estimate: 60 / 120 active minutes
-- Estimate status: within maximum at source completion
+- Observed wall-clock after first snapshot: about 13 minutes; active time was not
+  separately metered and did not exceed wall-clock
+- Estimate status: below minimum; no hourly boundary or overrun occurred in the
+  real implementation cycle
 - Control: explicit 20-minute business-delta checkpoint and CLI time-guard
   canary were performed
-- Next route: commit, exact Fleet preview, apply, verify, physical tool/role
-  readback
+- Next route: none; native hook attestation is a separate optional future task
 
 ## Files completed
 
