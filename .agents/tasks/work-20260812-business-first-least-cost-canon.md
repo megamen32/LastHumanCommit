@@ -82,11 +82,11 @@ these normative contracts across the authoritative instruction surface:
 - PID: unknown (harness-owned)
 - Agent session: current user task
 - PID status: active
-- Last PID signal: user request received
-- Last task-file transition: todo created
-- Started at: 2026-08-12T09:43:42+03:00
+- Last PID signal: source corpus read completed
+- Last task-file transition: todo copied to work
+- Started at (UTC+3): 2026-08-12T09:43:42+03:00
 - Lifecycle provenance: direct root-agent execution explicitly requested by user
-- Last task-file mtime observed (UTC+3): 2026-08-12T09:43:42+03:00
+- Last task-file mtime observed (UTC+3): 2026-08-12T10:10:00+03:00
 
 ## Estimate
 
@@ -101,6 +101,13 @@ these normative contracts across the authoritative instruction surface:
 
 ## Current state
 
-Status: todo
+Status: in progress
 
-Direct corpus reading is in progress.
+- Direct read completed: router, all roles, profiles, protocols, templates,
+  public docs, adapter instructions/templates/manifests, canonical skills,
+  capability contracts, and semantic validation/tests.
+- Primary contradiction confirmed: declarative business-first language is
+  dominated by stronger unconditional process gates in executable instructions
+  and validators.
+- No child agent or plugin/skill was used.
+
