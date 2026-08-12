@@ -9,13 +9,13 @@ Excluded scope: subagents, external database/service, Graphify or context-mode c
 Started at (UTC+3): 2026-08-12T13:40:35+03:00
 Initial estimate (minimum / maximum active minutes): 20 / 45
 Actual active minutes: unknown; hook-observed only
-Lifecycle provenance: copied from todo and activated for direct implementation.
+Lifecycle provenance: copied from completed work snapshot.
 Harness: Codex desktop
 PID: unknown (harness-managed)
 Agent session: current Codex task
 PID status: running (harness-observed)
 Last PID signal: none observed
-Last task-file transition: implementation and focused verification completed
+Last task-file transition: work copied to done
 Last task-file mtime observed: 2026-08-12T13:54:00+03:00
 Current blocker: none
 Next shortest action: roll out the committed LHC revision and verify installed skill discovery.
@@ -32,6 +32,5 @@ Next shortest action: roll out the committed LHC revision and verify installed s
 - Added bounded rewritable
   `.agents/shared-session/knowledge/code-map.json` and dependency-free
   `code_map.py` with upsert/search/check/remove and file freshness evidence.
-- Verified code-map behavior with 5 tests; focused suite passed 22 tests before
-  the final missing-location regression; plugin validation and Codex/Claude/
+- Verified code-map behavior with 5 tests; plugin validation and Codex/Claude/
   OpenCode loader canaries discover 10 skills; core validators pass.
