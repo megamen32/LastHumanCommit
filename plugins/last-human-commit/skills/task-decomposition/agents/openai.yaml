@@ -1,0 +1,4 @@
+interface:
+  display_name: "Task Decomposition"
+  short_description: "Split work into parallel business-proof slices"
+  default_prompt: "Use $task-decomposition to split this outcome into the smallest parallel business-proof slices."

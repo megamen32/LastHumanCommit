@@ -9,6 +9,7 @@ import hashlib
 import json
 import os
 import re
+import subprocess
 import sys
 import tempfile
 from datetime import datetime
@@ -17,9 +18,14 @@ from typing import Any
 
 
 BUSINESS_FIRST_HEADER = "Меньше безопасности, больше бизнес-результата."
-STARTED_AT = re.compile(r"^\s*-\s*Started at:\s*([^\s(]+)", re.MULTILINE)
+MAX_HANDOFF_TASK_CHARS = 16_000
+STARTED_AT = re.compile(
+    r"^\s*(?:-\s*)?Started at(?:\s*\(UTC\+3\))?:\s*([^\s(]+)",
+    re.MULTILINE | re.IGNORECASE,
+)
 INITIAL_ESTIMATE = re.compile(
-    r"^\s*-\s*Initial estimate:\s*(\d+)\s*/\s*(\d+)\s+active minutes",
+    r"^\s*(?:-\s*)?Initial estimate(?:\s*\(minimum\s*/\s*maximum\s+active minutes\))?:\s*"
+    r"(\d+)\s*/\s*(\d+)(?:\s+active minutes)?",
     re.MULTILINE | re.IGNORECASE,
 )
 ACTIVE_MINUTES = re.compile(
@@ -86,6 +92,25 @@ def write_state(path: Path, value: dict[str, Any]) -> None:
         raise
 
 
+def write_text(path: Path, value: str) -> None:
+    """Atomically replace one UTF-8 text file."""
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, temporary = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+            handle.write(value)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, path)
+    except BaseException:
+        try:
+            os.unlink(temporary)
+        except FileNotFoundError:
+            pass
+        raise
+
+
 def list_line(label: str, values: list[str], empty: str) -> str:
     """Render one compact diagnostic line from repeated CLI values."""
 
@@ -105,6 +130,7 @@ def render_prompt(
     instructions: list[str],
     controlled: str,
     route_changed: str,
+    active_source: str,
 ) -> str:
     """Render the Russian Lead-facing control prompt for new events."""
 
@@ -112,13 +138,19 @@ def render_prompt(
         return ""
 
     planned = state["planned_minutes"]
+    active_note = {
+        "reported": "явно передано вызывающей стороной",
+        "task-card": "явно записано в task-card",
+        "hook-observed": "наблюдалось хуком; точное active-time не контролировалось",
+    }[active_source]
     lines = [
         BUSINESS_FIRST_HEADER,
         f"Цикл: {state['cycle_id']}",
         (
             "План: "
             f"{planned['minimum']}–{planned['maximum']} активных минут; "
-            f"факт: {active_minutes} активных / {wall_minutes} wall-clock минут."
+            f"факт: {active_minutes} активных ({active_note}) / "
+            f"{wall_minutes} wall-clock минут."
         ),
         "Какие реальные задачи закрыты?",
         list_line("Закрытые задачи", completed_tasks, "не указаны"),
@@ -230,6 +262,7 @@ def check(args: argparse.Namespace) -> dict[str, Any]:
         instructions=args.instruction,
         controlled=args.controlled,
         route_changed=args.route_changed,
+        active_source=args.active_source,
     )
     return {
         "active_minutes": args.active_minutes,
@@ -273,6 +306,218 @@ def find_active_task(cwd: Path) -> tuple[Path, datetime, int, int, int | None] |
     return None
 
 
+def safe_session_id(payload: dict[str, Any]) -> str:
+    """Return a filesystem-safe native session identity without inventing one."""
+
+    raw = str(payload.get("session_id") or payload.get("sessionID") or "unknown-session")
+    safe = re.sub(r"[^A-Za-z0-9._-]+", "-", raw).strip("-.")
+    return safe[:120] or "unknown-session"
+
+
+def find_agents_root(cwd: Path) -> Path | None:
+    """Find the nearest project-local .agents root."""
+
+    for root in (cwd, *cwd.parents):
+        candidate = root / ".agents"
+        if candidate.is_dir():
+            return candidate
+    return None
+
+
+def git_snapshot(cwd: Path) -> str:
+    """Return bounded branch/HEAD/changed-file continuity evidence."""
+
+    commands = (
+        ("Repository", ["git", "rev-parse", "--show-toplevel"]),
+        ("Branch", ["git", "branch", "--show-current"]),
+        ("HEAD", ["git", "rev-parse", "--short=12", "HEAD"]),
+        ("Changed paths", ["git", "status", "--short"]),
+    )
+    lines: list[str] = []
+    for label, command in commands:
+        completed = subprocess.run(
+            command,
+            cwd=cwd,
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=1,
+        )
+        value = completed.stdout.strip() if completed.returncode == 0 else "unavailable"
+        if label == "Changed paths":
+            changed = value.splitlines()
+            value = "\n".join(changed[:200]) or "clean"
+            if len(changed) > 200:
+                value += f"\n... {len(changed) - 200} more paths omitted"
+        lines.append(f"{label}:\n{value}")
+    return "\n\n".join(lines)
+
+
+def compaction_paths(agents_root: Path, payload: dict[str, Any]) -> tuple[Path, Path, Path]:
+    """Resolve bounded per-session compaction state paths."""
+
+    root = agents_root / "shared-session" / "compaction" / safe_session_id(payload)
+    return root / "state.json", root / "current-handoff.md", root / "state.lock"
+
+
+def render_handoff(
+    *,
+    count: int,
+    now: datetime,
+    task: Path,
+    task_text: str,
+    payload: dict[str, Any],
+    recent: list[dict[str, Any]],
+    cwd: Path,
+) -> str:
+    """Build one decision-complete, bounded current handoff."""
+
+    recent_lines = [
+        f"- #{mark['count']} at {mark['at']} — {mark['status']}"
+        for mark in recent[-3:]
+    ]
+    bounded_task_text = task_text.rstrip()
+    if len(bounded_task_text) > MAX_HANDOFF_TASK_CHARS:
+        head = MAX_HANDOFF_TASK_CHARS * 2 // 3
+        tail = MAX_HANDOFF_TASK_CHARS - head
+        bounded_task_text = (
+            bounded_task_text[:head]
+            + "\n\n[legacy task-card middle omitted from handoff; authoritative file: "
+            + os.fspath(task)
+            + "]\n\n"
+            + bounded_task_text[-tail:]
+        )
+    return "\n".join(
+        [
+            "# LHC Current Handoff",
+            "",
+            f"Compaction count: {count}",
+            f"Prepared at: {now.isoformat()}",
+            f"Runtime session: {safe_session_id(payload)}",
+            f"Trigger: {payload.get('trigger') or 'unknown'}",
+            f"Active task: {task}",
+            "",
+            "Continue from this handoff. Do not restart completed investigation, "
+            "silently widen the accepted DoD, or infer missing timing/status data.",
+            "",
+            "## Last three compaction marks",
+            "",
+            *(recent_lines or ["- none"]),
+            "",
+            "## Current task contract and handoff (bounded; source path above is authoritative)",
+            "",
+            bounded_task_text,
+            "",
+            "## Workspace snapshot",
+            "",
+            "```text",
+            git_snapshot(cwd),
+            "```",
+            "",
+        ]
+    )
+
+
+def compaction_hook(
+    args: argparse.Namespace,
+    payload: dict[str, Any],
+    cwd: Path,
+) -> dict[str, Any] | None:
+    """Persist, count, and restore one bounded current compaction handoff."""
+
+    agents_root = find_agents_root(cwd)
+    if agents_root is None:
+        return None
+    state_path, handoff_path, lock_path = compaction_paths(agents_root, payload)
+    event = args.event.casefold()
+
+    if event == "sessionstart":
+        if not handoff_path.is_file():
+            return None
+        handoff = handoff_path.read_text(encoding="utf-8")
+        if args.runtime == "codex":
+            return {
+                "hookSpecificOutput": {
+                    "hookEventName": args.event,
+                    "additionalContext": handoff,
+                }
+            }
+        return {"handoff": handoff, "handoff_path": os.fspath(handoff_path)}
+
+    task = find_active_task(cwd)
+    if task is None:
+        return None
+    card = task[0]
+    now = args.now or datetime.now().astimezone()
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    with lock_path.open("a", encoding="utf-8") as handle:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        state = load_state(state_path) or {
+            "schema_version": 1,
+            "compaction_count": 0,
+            "recent": [],
+        }
+        recent = list(state.get("recent", []))
+        count = int(state.get("compaction_count", 0))
+
+        if event == "precompact":
+            for mark in recent:
+                if mark.get("status") == "pending":
+                    mark["status"] = "completion-unknown"
+            count += 1
+            recent.append({"count": count, "at": now.isoformat(), "status": "pending"})
+            recent = recent[-3:]
+            handoff = render_handoff(
+                count=count,
+                now=now,
+                task=card,
+                task_text=card.read_text(encoding="utf-8"),
+                payload=payload,
+                recent=recent,
+                cwd=cwd,
+            )
+            write_text(handoff_path, handoff)
+        elif event == "postcompact":
+            if recent and recent[-1].get("status") == "pending":
+                recent[-1]["status"] = "completed"
+            handoff = render_handoff(
+                count=count,
+                now=now,
+                task=card,
+                task_text=card.read_text(encoding="utf-8"),
+                payload=payload,
+                recent=recent,
+                cwd=cwd,
+            )
+            write_text(handoff_path, handoff)
+        else:
+            return None
+
+        state.update(
+            {
+                "compaction_count": count,
+                "handoff_path": os.fspath(handoff_path),
+                "last_event": args.event,
+                "last_event_at": now.isoformat(),
+                "recent": recent[-3:],
+            }
+        )
+        write_state(state_path, state)
+
+    if args.runtime == "codex":
+        return {
+            "systemMessage": (
+                f"LHC compaction #{count}: current handoff saved at {handoff_path}. "
+                "The next SessionStart must restore it before work continues."
+            )
+        }
+    return {
+        "compaction_count": count,
+        "handoff": handoff,
+        "handoff_path": os.fspath(handoff_path),
+    }
+
+
 def hook(args: argparse.Namespace) -> dict[str, Any] | None:
     """Adapt one native runtime hook to the existing persistent guard."""
 
@@ -281,9 +526,12 @@ def hook(args: argparse.Namespace) -> dict[str, Any] | None:
     if not isinstance(payload, dict):
         return None
     cwd = Path(str(payload.get("cwd") or os.getcwd())).expanduser().resolve()
+    if args.event.casefold() in {"precompact", "postcompact"}:
+        return compaction_hook(args, payload, cwd)
+    restored = compaction_hook(args, payload, cwd) if args.event.casefold() == "sessionstart" else None
     task = find_active_task(cwd)
     if task is None:
-        return None
+        return restored
     card, started_at, minimum, maximum, explicit_active = task
     now = args.now or datetime.now().astimezone()
     digest = hashlib.sha256(os.fspath(card).encode()).hexdigest()[:12]
@@ -315,8 +563,9 @@ def hook(args: argparse.Namespace) -> dict[str, Any] | None:
             completed_file=[],
             gate=[],
             instruction=[],
-            controlled="unknown",
+            controlled="yes" if explicit_active is not None else "no",
             route_changed="unknown",
+            active_source="task-card" if explicit_active is not None else "hook-observed",
         )
         result = check(check_args)
         persisted = load_state(state) or {}
@@ -326,6 +575,29 @@ def hook(args: argparse.Namespace) -> dict[str, Any] | None:
         write_state(state, persisted)
 
     prompt = str(result.get("prompt") or "")
+    if args.event.casefold() in {"userpromptsubmit", "chat.message"}:
+        wall_minutes = int((now - started_at).total_seconds() // 60)
+        active_source = "task-card" if explicit_active is not None else "hook-observed"
+        source_note = (
+            "task-card explicitly reports active time"
+            if explicit_active is not None
+            else "hook-observed estimate only; exact active time was not continuously controlled"
+        )
+        status = (
+            "LHC timing truth for any status/AskHuman answer: "
+            f"started {started_at.isoformat()}; planned {minimum}–{maximum} active minutes; "
+            f"actual {active_minutes} active minutes ({source_note}); "
+            f"{wall_minutes} wall-clock minutes; active source={active_source}. "
+            "Never infer an unknown start or active duration from file mtime or wall-clock."
+        )
+        prompt = "\n\n".join(value for value in (prompt, status) if value)
+    restored_text = ""
+    if isinstance(restored, dict):
+        if args.runtime == "codex":
+            restored_text = str(restored.get("hookSpecificOutput", {}).get("additionalContext") or "")
+        else:
+            restored_text = str(restored.get("handoff") or "")
+    prompt = "\n\n".join(value for value in (restored_text, prompt) if value)
     if not prompt:
         return None
     if args.runtime == "codex":
@@ -358,6 +630,11 @@ def parser() -> argparse.ArgumentParser:
     command.add_argument("--instruction", action="append", default=[])
     command.add_argument("--controlled", choices=("yes", "no", "unknown"), default="unknown")
     command.add_argument("--route-changed", choices=("yes", "no", "unknown"), default="unknown")
+    command.add_argument(
+        "--active-source",
+        choices=("reported", "task-card", "hook-observed"),
+        default="reported",
+    )
     native = subcommands.add_parser("hook", help="adapt one native Codex or OpenCode hook")
     native.add_argument("--runtime", choices=("codex", "opencode"), required=True)
     native.add_argument("--event", required=True)

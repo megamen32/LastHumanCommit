@@ -23,6 +23,11 @@ Before every `spawn_agent` or resumed Worker call:
   the next checkpoint.
 - Run `common/tools/lhc_time_guard.py` at observable lifecycle/checkpoint events;
   deliver new hourly/overrun prompts to L and never claim an unavailable wake.
+- Every status/question reports exact known start, original min/max, wall-clock,
+  and active time with its measurement source. If continuous active time is
+  unavailable, say `не контролировал`; never infer it from wall-clock or mtime.
+- After compaction, read the bounded `current-handoff.md`, state its compaction
+  count, and checkpoint to L if the count rose without business delta.
 
 Use the harness wait/join tool after dispatch whenever the result is required.
 Do not send the final answer while a required child result remains non-terminal.

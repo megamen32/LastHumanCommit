@@ -51,18 +51,26 @@ def compare(source_root: Path, output_root: Path) -> list[str]:
     if expected != actual:
         errors.append(f"skill directories differ: expected {sorted(expected)}, got {sorted(actual)}")
     for source_dir in source_dirs:
-        target_file = output_root / source_dir.name / "SKILL.md"
-        source_file = source_dir / "SKILL.md"
-        if not target_file.is_file() or target_file.is_symlink():
-            errors.append(f"missing generated skill: {target_file}")
-            continue
-        if target_file.read_bytes() != source_file.read_bytes():
-            errors.append(f"generated skill differs from source: {source_dir.name}")
-        unexpected = [
-            path.relative_to(target_file.parent).as_posix()
-            for path in target_file.parent.rglob("*")
-            if path.name != "SKILL.md"
-        ]
+        target_dir = output_root / source_dir.name
+        source_files = {
+            path.relative_to(source_dir).as_posix(): path
+            for path in source_dir.rglob("*")
+            if path.is_file()
+        }
+        target_files = {
+            path.relative_to(target_dir).as_posix(): path
+            for path in target_dir.rglob("*")
+            if path.is_file()
+        } if target_dir.is_dir() else {}
+        missing = sorted(set(source_files) - set(target_files))
+        unexpected = sorted(set(target_files) - set(source_files))
+        for relative in missing:
+            errors.append(f"missing generated skill file: {source_dir.name}/{relative}")
+        for relative in sorted(set(source_files) & set(target_files)):
+            if target_files[relative].is_symlink() or (
+                target_files[relative].read_bytes() != source_files[relative].read_bytes()
+            ):
+                errors.append(f"generated skill differs from source: {source_dir.name}/{relative}")
         if unexpected:
             errors.append(f"unexpected generated files in {source_dir.name}: {unexpected}")
     return errors
@@ -73,8 +81,9 @@ def sync(source_root: Path, output_root: Path) -> int:
     output_root.mkdir(parents=True, exist_ok=True)
     for source_dir in source_dirs:
         target_dir = output_root / source_dir.name
-        target_dir.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(source_dir / "SKILL.md", target_dir / "SKILL.md", follow_symlinks=False)
+        if target_dir.exists():
+            shutil.rmtree(target_dir)
+        shutil.copytree(source_dir, target_dir, symlinks=False)
     errors = compare(source_root, output_root)
     if errors:
         for error in errors:

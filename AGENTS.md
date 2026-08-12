@@ -123,6 +123,24 @@ actual time, blockers, delaying gates/instructions, and the shortest route. Use
 business-first diagnostic. Merely increasing the estimate is not control and an
 overrun is not permission to kill a Worker.
 
+For every timing/status or AskHuman answer, state exact known start, original
+minimum/maximum, wall-clock, and active time with its source. If active time was
+not continuously measured, say `не контролировал`; never infer it from mtime or
+wall-clock.
+
+After each supported context compaction, atomically replace the session's
+`current-handoff.md`, increment its compaction count, and retain only three recent
+marks. This state is not append-only. Lead and Worker read the current handoff
+before continuing and treat repeated compactions without business delta as a
+route-loop signal.
+
+When route choice is useful, present exactly two genuinely different approaches.
+Compress each internally from ideal/full to normal to YAGNI/Pareto MVP, then
+show the two compressed variants with pros, cons, time, discarded scope, and
+real canary. Prefer the least-cost YAGNI route. These compression levels are not
+three plans. Use `$task-decomposition` for the smallest independent business-
+verifiable leaves and maximum non-conflicting parallelism.
+
 Plans and decisions are written in Russian, implementation progress in English,
 and the final answer in Russian. The active harness owns approval policy. Two
 consecutive substantively equivalent approval prompts for the same

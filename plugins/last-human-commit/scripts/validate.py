@@ -23,6 +23,7 @@ EXPECTED_SKILLS = {
     "planning",
     "real-use-testing",
     "release",
+    "task-decomposition",
 }
 
 

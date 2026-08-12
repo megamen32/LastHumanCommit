@@ -61,3 +61,24 @@ task-card repair slices merely to satisfy a timer.
 Persist a task/result artifact only when recovery, handoff, reuse, audit, or
 rediscovery cost justifies it. Keep it compact and current. No elapsed-time
 threshold requires a file or commit.
+
+## Two compressed approaches
+
+When a real human route decision remains, propose exactly two genuinely
+different approaches. Do not make ideal, normal, and MVP three selectable
+plans. For each approach perform one internal compression: `ideal/full -> normal
+-> YAGNI/Pareto MVP`.
+
+1. sketch the ideal/full route;
+2. reduce it to a normal sufficient route;
+3. remove every element not required by the accepted claim, current canary, or
+   essential boundary to produce the YAGNI/Pareto MVP.
+
+Show the human only the two compressed MVP routes with their discarded scope,
+advantages, disadvantages, minimum/maximum active time, dependencies, and real
+canary. Recommend the least-cost YAGNI/Pareto route by default. Skip the two-
+approach presentation entirely when one route is already obvious and reversible.
+
+Load `$task-decomposition` when work still spans parallel or multiple cycles.
+Decompose into the smallest independent business-verifiable leaves; maximize
+parallelism only where dependencies, decisions, and writes do not conflict.

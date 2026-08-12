@@ -36,9 +36,10 @@ when attested; otherwise Lead calls it at observable checkpoints and reports any
 delayed hourly delivery honestly.
 
 Overseer, Adviser, Critic, Reviewer, and Tester are risk-triggered. Gates are
-tools, not milestones. Full work may have one, two, or three genuine plans; LHC
-does not manufacture options, double testing, per-wave reviews, or hardening
-loops merely because a task is important.
+tools, not milestones. When a route choice matters, LHC compares two genuinely
+different approaches after compressing each from ideal to normal to YAGNI/Pareto
+MVP. It does not manufacture a third option, double testing, per-wave reviews,
+or hardening loops merely because a task is important.
 
 ## State and workspace
 

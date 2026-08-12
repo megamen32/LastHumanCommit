@@ -29,9 +29,21 @@ Gate value test:
 Consequential-action / active-harness boundary:
 Cycle estimates (cycle / minimum / maximum / actual):
 Time-guard state: `.agents/shared-session/time/<cycle-id>.json`
+Compaction count / last loaded count:
+Current handoff: `.agents/shared-session/compaction/<session-id>/current-handoff.md`
 
 Every declared work cycle has its own immutable minimum / maximum estimate
 before execution. Tiny commands share their enclosing coherent cycle.
+
+Actual active time always names its source. If it was not continuously measured,
+write `не контролировал`; never infer it from wall-clock or file mtime.
+
+## Decomposition — only when multiple leaves remain
+
+- Leaf / owner / dependency / artifact-or-proof / primary check / min-max:
+
+Use the smallest independent business-verifiable leaves and parallelize only
+non-conflicting work. Load `$task-decomposition` for the complete contract.
 
 Two consecutive substantively equivalent approval prompts for the same
 still-pending action, with no material change to scope, target, or risk, count

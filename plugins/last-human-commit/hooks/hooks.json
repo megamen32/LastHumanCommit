@@ -22,6 +22,39 @@
           }
         ]
       }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${PLUGIN_ROOT}/tools/lhc_time_guard.py hook --runtime codex --event UserPromptSubmit",
+            "timeout": 3
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${PLUGIN_ROOT}/tools/lhc_time_guard.py hook --runtime codex --event PreCompact",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${PLUGIN_ROOT}/tools/lhc_time_guard.py hook --runtime codex --event PostCompact",
+            "timeout": 5
+          }
+        ]
+      }
     ]
   }
 }

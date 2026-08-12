@@ -51,3 +51,17 @@ finalizer, and scheduler wake. Without hooks, L calls it manually on each
 observable update. Without hourly wake support, the next call reports every
 crossed hour once; report the delayed-delivery limitation rather than pretending
 the reminder fired on time.
+
+## Compaction continuity
+
+Native compaction hooks write one atomically replaced
+`.agents/shared-session/compaction/<session-id>/current-handoff.md` plus a small
+`state.json`. This is not append-only. `state.json` keeps a monotonic compaction
+count and only the last three marks so repeated loops remain visible without
+creating a new context-growth problem.
+
+The handoff includes the current task contract, accepted result/canary, timing
+truth, blockers, next action, and bounded workspace/changed-path evidence. It
+must say unknown when active time or historical pre-install compaction count is
+not known. Codex restores it through SessionStart after PreCompact/PostCompact;
+OpenCode injects it directly through `experimental.session.compacting`.

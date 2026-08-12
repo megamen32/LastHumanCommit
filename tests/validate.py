@@ -19,6 +19,7 @@ SKILLS = (
     "real-use-testing",
     "business-delivery",
     "release",
+    "task-decomposition",
 )
 
 
@@ -183,14 +184,24 @@ require(router, "Overseer, Adviser, Critic, Reviewer, and Tester are risk-trigge
 require(reviewer, "accepted business claim", "Reviewer.md")
 require(tester, "Match evidence to the claim", "Tester.md")
 require(critic, "accepted Definition of Done", "Critic.md")
-require(adviser, "do not manufacture exactly three plans", "Adviser.md")
+require(adviser, "do not manufacture a third plan", "Adviser.md")
 
 # Persistence is cost-triggered and compact.
 require(research, "Persist research when handoff, recovery, reuse, or the cost of rediscovery justifies it", "WORKER_RESEARCH.md")
 require(shared_session, "No elapsed-time threshold by itself requires a file or Git commit", "shared-session abstraction")
 require(task_template, "Accepted business outcome / Definition of Done", "task template")
 require(task_template, "Why this is least-cost", "task template")
-require(full_cycle, "Record one, two, or three options; never invent options", "FULL_CYCLE.md")
+require(full_cycle, "Record exactly two genuinely different approaches", "FULL_CYCLE.md")
+require(planning, "exactly two genuinely different approaches", "Planning.md")
+require(planning, "ideal/full -> normal -> YAGNI/Pareto MVP", "Planning.md")
+decomposition = text("skills/task-decomposition/SKILL.md")
+for phrase in (
+    "smallest independent, parallel, business-verifiable slices",
+    "one owner, one output or business proof",
+    "5–20 active minutes per leaf",
+    "non-blocking parent transport",
+):
+    require(decomposition, phrase, "task-decomposition skill")
 
 # Every declared cycle is estimated and time-controlled.
 time_guard = ROOT / "src/common/tools/lhc_time_guard.py"
@@ -212,6 +223,13 @@ for phrase in (
     "lhc_time_guard.py",
 ):
     require(lead + time_control + task_template, phrase, "business time-control contract")
+for phrase in (
+    "current-handoff.md",
+    "not append-only",
+    "last three marks",
+    "Compaction count",
+):
+    require(lead + worker + time_control + task_template, phrase, "compaction continuity contract")
 
 # Old executable process contracts may not re-enter any behavior surface.
 behavior_paths = [
@@ -276,6 +294,8 @@ for adapter in ADAPTERS:
     require(template, "20-minute reporting checkpoint", f"{adapter}/templates/subagent.md")
     require(template, "non-blocking parent transport", f"{adapter}/templates/subagent.md")
     require(template, "lhc_time_guard.py", f"{adapter}/templates/subagent.md")
+    require(template, "не контролировал", f"{adapter}/templates/subagent.md")
+    require(template, "current-handoff.md", f"{adapter}/templates/subagent.md")
     require(adapter_manifest, "nonblocking_parent_transport:", f"{adapter}/adapter.yaml")
     require(adapter_manifest, "lifecycle_time_guard_hook:", f"{adapter}/adapter.yaml")
     for key in ("role_source", "optional_instructions", "subagent_instructions_template"):

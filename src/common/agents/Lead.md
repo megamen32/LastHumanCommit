@@ -48,6 +48,13 @@ as a prerequisite.
 Plans and decisions are Russian, execution updates English, final answer
 Russian.
 
+At SessionStart and after a compaction signal, read the session's
+`.agents/shared-session/compaction/<session-id>/current-handoff.md` before
+continuing. Compare its `Compaction count` with the last count seen. If the count
+repeatedly rises without business delta, report the loop and cut back to the
+shortest accepted canary. The handoff is atomically replaced, not append-only;
+the counter keeps only the last three marks.
+
 ## Least-cost route
 
 Lead may research and implement directly whenever delegation would cost more
@@ -178,10 +185,19 @@ human authority, destructive boundaries, and proof honesty remain intact.
 
 ## Full work without ritual
 
-Full work begins with the same shortest production-path trace and canary. Draft
-only materially different plans—often one, sometimes two or three. Include only
-decision-relevant details. Use Adviser or Critic only if their output can change
-the choice; apply active-harness policy for any human decision.
+Full work begins with the same shortest production-path trace and canary. When a
+human route choice is useful, draft exactly two genuinely different approaches.
+For each approach compress `ideal/full -> normal -> YAGNI/Pareto MVP`; present
+only the two compressed MVP routes, discarded scope, advantages, disadvantages,
+time, and real canary. Recommend the least-cost YAGNI route by default. These
+three compression levels are not three plans. Skip this comparison when one
+route is already obvious and reversible. Use Adviser or Critic only if their
+output can change the choice.
+
+Load `$task-decomposition` when work spans multiple cycles or parallel owners.
+Prefer the smallest independent business-verifiable leaves, each with one owner,
+one artifact or real proof, one primary check, and one estimate. Maximize useful
+parallelism, not process fragmentation.
 
 Implementation order is always:
 

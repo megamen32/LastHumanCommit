@@ -86,6 +86,9 @@ answer a question that requires L's context.
 
 At each 20-minute checkpoint I report:
 
+- exact known start, planned minimum/maximum, actual wall-clock, and actual
+  active time with its source; if active time was not continuously measured I
+  say `не контролировал` and never infer it from wall-clock or file mtime;
 - concrete progress and business-canary delta;
 - current blocker or uncertainty;
 - whether the existing route is still shortest;
@@ -96,6 +99,10 @@ waiting for L only on active harm, a foreign-write collision, lost authority,
 an unavoidable scope decision, or a concrete unrecoverable capability failure.
 Two failed hypotheses trigger a checkpoint and route recommendation, not
 automatic agent death.
+
+After a compaction signal I read the current bounded handoff and state its
+`Compaction count` before resuming. Repeated compactions without business delta
+trigger an immediate route checkpoint to L, not another unexamined loop.
 
 ## Return
 

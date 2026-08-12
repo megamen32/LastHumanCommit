@@ -174,3 +174,43 @@ def test_hourly_business_report_and_cycle_estimates_are_required() -> None:
         assert phrase in lead + " " + planning + " " + task, phrase
 
     assert "lhc_time_guard.py" in lead + " " + planning + " " + task
+
+
+def test_planning_has_two_compressed_approaches_and_decomposition_skill() -> None:
+    planning = compact(read("src/common/profiles/Planning.md"))
+    lead = compact(read("src/common/agents/Lead.md"))
+    decomposition = compact(read("skills/task-decomposition/SKILL.md"))
+
+    for phrase in (
+        "exactly two genuinely different approaches",
+        "ideal/full -> normal -> YAGNI/Pareto MVP",
+        "Recommend the least-cost YAGNI",
+    ):
+        assert phrase in planning + " " + lead, phrase
+    for phrase in (
+        "smallest independent, parallel, business-verifiable slices",
+        "one owner, one output or business proof",
+        "non-blocking parent transport",
+    ):
+        assert phrase in decomposition, phrase
+
+
+def test_compaction_handoff_is_bounded_not_append_only() -> None:
+    aggregate = compact(
+        "\n".join(
+            read(path)
+            for path in (
+                "AGENTS.md",
+                "src/common/agents/Lead.md",
+                "src/common/agents/Worker.md",
+                "src/common/protocols/TIME_CONTROL.md",
+            )
+        )
+    )
+    for phrase in (
+        "current-handoff.md",
+        "not append-only",
+        "last three marks",
+        "Compaction count",
+    ):
+        assert phrase in aggregate, phrase

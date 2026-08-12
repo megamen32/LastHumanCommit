@@ -27,9 +27,12 @@ First 20-minute reporting checkpoint:
 Stop when:
 Redirect when:
 
-## Material options — only when genuinely distinct
+## Material options — only when a route choice matters
 
-Record one, two, or three options; never invent options to fill a template.
+Record exactly two genuinely different approaches. For each, compress the
+ideal/full route to normal and then to the YAGNI/Pareto MVP. Present the two
+compressed variants; never invent a third option to fill a template. Skip this
+comparison when one route is already obvious and reversible.
 
 For each option:
 
