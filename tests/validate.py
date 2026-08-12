@@ -172,10 +172,10 @@ for phrase in (
     "mode: research",
     "mode: implement",
     "maximum <=20 active minutes",
-    "Full always uses three plans and two explicit human approvals",
+    "Full always uses three plans; the active harness governs any approval flow",
     "Overseer is mandatory for every task",
     "Event-triggered audits cannot be suppressed by a 30-minute cooldown",
-    "Silence never authorizes them",
+    "The active harness owns approval policy",
     "Use one project-local state root",
     "never create a separate `.at/` or `.lhc/`",
 ):
@@ -204,13 +204,13 @@ for phrase in (
     "pseudocode",
     "migration description",
     "execution graph",
-    "second explicit approval",
+    "select the route under active-harness policy",
     "not three branches, worktrees, specifications, or throwaway rewrites",
     "exactly two fresh Testers",
     "invoke fresh Critic once",
     "never silently include foreign edits",
     "AskSecret/SSS",
-    "silence means pending",
+    "The active harness owns approval policy",
     "only when its trigger occurred",
 ):
     require(lead, phrase, "Lead.md")
@@ -443,7 +443,7 @@ for phrase in (
     "Pseudocode:",
     "Migration description:",
     "Execution graph (each node: owner, paths, acceptance, dependencies, max <=20):",
-    "Second explicit human approval",
+    "Active-harness policy evidence",
     "Children append their detailed evidence and result to that file",
     "Overseer:",
     "Reviewer:",
@@ -469,7 +469,7 @@ for phrase in (
     "Key types and method signatures:",
     "Pseudocode:",
     "Migration description:",
-    "Second explicit approval",
+    "Выбранный маршрут / evidence active harness",
     "not create three branches, worktrees, specifications",
     "exactly two fresh Testers",
     "Only the second pass is blind",
@@ -494,16 +494,9 @@ for bad in (
 ):
     forbid(self_improve + lead, bad, "self-improve policy")
 
-# Explicit deploy authorization only.
-for phrase in (
-    "Без явного `да` deploy не выполняется",
-    "молчание не является разрешением",
-    "pending + explicit да + current + single_serialized_L",
-    "pending + due + unanswered",
-    "pending (revalidate and remind only; never deploy)",
-):
-    require(release, phrase, "RELEASE_HANDOFF.md")
-forbid(release, "pending + due + unanswered + current + single_serialized_L -> deploying", "RELEASE_HANDOFF.md")
+# Release approval policy belongs to the active harness.
+require(release, "approval policy активного harness", "RELEASE_HANDOFF.md")
+require(release, "Apply the active harness approval-policy state machine.", "RELEASE_HANDOFF.md")
 
 # Public docs describe the same product rather than the reverted merge policy.
 for source, value in (("README.md", readme), ("docs/agent-authoring.md", authoring)):
@@ -513,7 +506,7 @@ for source, value in (("README.md", readme), ("docs/agent-authoring.md", authori
         "<=20",
         "Overseer",
         "three",
-        "second explicit approval",
+        "active harness",
         ".worktrees/",
         "Tester",
         "ZCode",

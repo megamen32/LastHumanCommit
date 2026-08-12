@@ -104,7 +104,7 @@ repository or write code; L delegates both to Worker with `mode: research` or
   bounded Worker slices without the three-plan gate.
 - Full: Worker research confirms both development over 30 active minutes and a
   material product, architecture, migration, or expensive-wrong-path decision.
-  Full always uses three plans and two explicit human approvals.
+  Full always uses three plans; the active harness governs any approval flow.
 - Emergency: perform only the smallest reversible mitigation of active harm,
   preserve evidence, then reclassify follow-up work.
 
@@ -120,17 +120,13 @@ Event-triggered audits cannot be suppressed by a 30-minute cooldown. Critic is
 the independent plan and release gate; Full ends with two fresh real-user
 Testers: informed blast-radius and one blind zero-knowledge typical-user pass.
 
-Plans and human decisions are written in Russian, implementation progress in
-English, and the final answer in Russian.
+Plans and decisions are written in Russian, implementation progress in English,
+and the final answer in Russian. The active harness owns approval policy.
 
 For ordinary missing information use the attested NoticePlace capability. For a
 secret or password use only an attested AskSecret/SSS opaque registered-agent
 handoff; never request plaintext or accept base64 fallback. If the capability is
 not attested, report it unavailable.
-
-Restart, breaking/destructive change, rollback, deployment, branch operations,
-and worktree creation require one direct question at the exact action and an
-explicit answer. Silence never authorizes them.
 
 L reads `ROADMAP.md` when present. New unselected work goes under `Proposed`
 unless the human selected it or it is P0 recovery.

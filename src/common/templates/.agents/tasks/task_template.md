@@ -30,8 +30,8 @@ Initial estimate (minimum / maximum active minutes):
 Estimate revisions (append-only: UTC+3, previous -> new, trigger, evidence):
 Stop when:
 Abandon/rethink when:
-Forbidden without explicit user authorization:
-Consequential authorization questions (append-only):
+Harness policy / constraints:
+Harness-policy events (append-only):
 
 ## Research
 
@@ -62,7 +62,7 @@ Outcome / scope / omissions / trade-offs / risks / minimum-maximum estimate /
 verification / migration / execution graph:
 
 Recommendation:
-First human selection (verbatim):
+Selected route / active-harness evidence:
 
 ## Selected-plan technical preview — Full only
 
@@ -72,9 +72,9 @@ Key types and method signatures:
 Pseudocode:
 Migration description:
 Exact canary:
-Consequential authorization boundaries:
+Harness policy / constraints:
 Execution graph (each node: owner, paths, acceptance, dependencies, max <=20):
-Second explicit human approval (verbatim):
+Active-harness policy evidence:
 
 ## Execution — append-only
 

@@ -2,12 +2,11 @@
 
 <img width="1672" height="941" alt="Last Human Commit role map" src="https://github.com/user-attachments/assets/7b259f64-50c1-45a4-af27-07a5101d8120" />
 
-> A human-gated orchestration layer for strong Leads and cheap coding Workers.
+> A harness-integrated orchestration layer for strong Leads and cheap coding Workers.
 
 LHC keeps expensive models on decisions, decomposition, human-readable planning,
 and proof. Repository search, implementation, and repetitive checks go to
-bounded Workers. The human still sees exactly what a long, product-changing
-implementation will do before it starts.
+bounded Workers. The active harness owns approval policy.
 
 ## Use
 
@@ -52,10 +51,9 @@ change host configuration.
   minutes and a material product/architecture/migration or expensive-wrong-path
   choice.
 - Full drafts three Russian plans, runs adversarial Critic review, lets Adviser
-  revise/recommend them, then presents the three plans and waits for selection,
-  then shows the
-  complete call-stack tree, file-tree diff, key signatures, pseudocode,
-  migration, canary, and execution graph, and waits for a second explicit approval.
+  revise/recommend them, then presents the selected route with the complete
+  call-stack tree, file-tree diff, key signatures, pseudocode, migration,
+  canary, execution graph, and any active-harness constraints.
 - The third Full plan is `YAGNI 80/20 — полный результат`; it is complete, not
   an unfinished MVP. Delivery slices never relabel partial work as the result.
 - Reviewer checks the task-owned diff. Full ends with two fresh Testers:

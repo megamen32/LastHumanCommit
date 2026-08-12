@@ -27,21 +27,21 @@ prompt.
   suppressed by a 30-minute cooldown.
 - Full is reserved for researched work over 30 minutes with material product,
   architecture, migration, or expensive-wrong-path impact.
-- Full always preserves three Russian plans, first selection, full technical
-  preview, and second explicit approval. Never remove call-stack tree, file-tree
+- Full always preserves three Russian plans and a full technical preview. Never
+  remove call-stack tree, file-tree
   diff, key signatures, pseudocode, migration, canary, or execution graph.
 - `YAGNI 80/20` is a complete third plan, not an unfinished MVP or a partial
   delivery state.
 - Reviewer sees only task-owned diff; Tester is the fresh real-user gate before
   Critic; Critic independently gates release or irreversible action.
-- Silence never authorizes deploy, rollback, destructive action, branch, or
-  worktree operations.
+- The active harness owns approval policy, including deploy, rollback,
+  destructive action, branch, and worktree constraints.
 
 ## Workspace ownership
 
 Routine work stays in the primary checkout. An auxiliary worktree, detached
-HEAD, or non-default branch is reported in the first visible update. With
-explicit authorization, a new worktree may exist only under
+HEAD, or non-default branch is reported in the first visible update. A new
+worktree may exist only under
 `<primary-project-root>/.worktrees/<task-slug>`. Foreign edits are preserved but
 never silently staged or committed with the current task.
 

@@ -12,8 +12,8 @@ code changes.
 
 1. Confirm the business canary and the acceptance evidence required for the
    outcome.
-2. Integrate the reviewed work only after the scope, tester gate, and any
-   explicit human approvals are satisfied.
+2. Integrate the reviewed work after the scope, tester gate, and applicable
+   active-harness policy are satisfied.
 3. Keep quality, cost, and time as separate records when they matter to the
    delivery.
 4. Hand off with the exact result, the evidence trail, and the remaining

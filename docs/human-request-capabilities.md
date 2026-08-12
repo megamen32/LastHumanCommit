@@ -12,8 +12,10 @@ is not attested, agents must report it unavailable.
 
 ## Boundary
 
-- LHC owns portable instructions, task flow, and role-bound policy text.
+- LHC owns portable instructions, task flow, and role-bound policy text, but
+  not approval policy.
 - Fleet owns capability resolution, installation, transport, and attestation.
+- The active harness owns approval policy and any confirmation UI or workflow.
 - LHC must not own SSS secret values, Notify timing, or session resumption.
 - LHC must not replace NoticePlace with an untracked chat question or a second
   notification path.

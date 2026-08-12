@@ -26,7 +26,7 @@ Started at (UTC+3):
 Initial estimate (minimum / maximum active minutes):
 Stop when:
 Rethink when:
-Consequential actions requiring explicit authorization:
+Harness policy / constraints:
 
 ## Research
 
@@ -74,16 +74,15 @@ suppress this or another required event-triggered audit.
 риски, минимальная/максимальная оценка, проверка, миграция, execution graph:
 
 Рекомендация L:
-Первый выбор человека (дословно):
+Выбранный маршрут / evidence active harness:
 
 ## Plan criticism and revision
 
-Before human selection, run the fresh Critic in `plan-review` mode over all
+Before route selection, run the fresh Critic in `plan-review` mode over all
 three plans. It attacks long-term consequences, reuse assumptions, false YAGNI,
 and rewrite risk, and may propose alternatives. Pass its criticism to Adviser;
-Adviser revises/recommends the three plans, then L presents them for selection.
-
-Do not implement before explicit selection.
+Adviser revises/recommends the three plans, then L presents them under the
+active-harness policy.
 
 ## Full technical preview of the selected plan
 
@@ -93,15 +92,11 @@ Key types and method signatures:
 Pseudocode:
 Migration description:
 Exact business canary:
-Consequential authorization boundaries:
+Harness policy / constraints:
 Execution graph:
 
 The graph shows every <=20-minute Worker lane, owned paths, dependencies,
 parallel waves, and integration/review joins.
-
-Second explicit approval (verbatim):
-
-Do not implement before the second approval.
 
 ## Delivery
 
@@ -131,7 +126,7 @@ slices, scoped re-review, and repeat both passes.
 ## Release gate
 
 After both Tester evidence packages and canary evidence, run Critic once with raw user context,
-the same task file, selected plan, approvals, review, estimate history, and
+the same task file, selected plan, harness-policy evidence, review, estimate history, and
 proof. L cannot prescribe, narrow, rewrite, or override the verdict.
 
 Critic verdict:

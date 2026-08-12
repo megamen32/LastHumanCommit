@@ -14,10 +14,8 @@ Overseer / Reviewer / Tester / Critic:
 Риски и существующий rollback reference, если он уже есть:
 Commit:
 
-Для deploy ответьте `да`. `нет` / `стоп` отменяет действие.
-Без явного `да` deploy не выполняется. Таймер или wake может только повторно
-проверить состояние и напомнить о pending handoff; молчание не является
-разрешением.
+Примените approval policy активного harness к deploy. Таймер или wake следует
+его состоянию и не создаёт отдельного LHC-правила.
 
 ## L-owned handoff state
 
@@ -41,20 +39,8 @@ deployment_result:
 ## State transitions
 
 ```text
-pending + explicit да + current + single_serialized_L
-  -> deploying -> deployed | deploy_failed
-pending + due + unanswered
-  -> pending (revalidate and remind only; never deploy)
-pending + нет | стоп
-  -> vetoed
-pending + other human reply
-  -> answered (ask again only if deployment intent remains unclear)
-pending + stale | unprovable | unverified serialization
-  -> invalidated
-non-pending + any repeated wake
-  -> no-op
+Apply the active harness approval-policy state machine.
 ```
 
 Before deployment, revalidate that the handoff, commit/artifact, target, tests,
-workspace, and user authorization are still current. A repeated wake is a no-op
-after the handoff leaves `pending`.
+workspace, and applicable active-harness policy state are current.
