@@ -1,66 +1,44 @@
-# STOP / RETHINK
+# Control checkpoint / redirect / rethink
 
-Use this protocol when the current route is no longer a bounded least-cost path
-to the user's canary.
+Use this protocol when evidence suggests the current route may no longer be the
+least-cost path to the user's accepted canary.
 
 ## Triggers
 
-Trigger immediately when any of these occurs:
+- task maximum exceeded without proportional business delta;
+- two failed hypotheses or repeated fix/review cycles;
+- production-path evidence contradicts the chosen implementation surface;
+- the user repeats that the same P0 still fails;
+- material scope or consequential authority is required;
+- process, hardening, lifecycle repair, or proof strength grows without moving
+  the accepted claim;
+- a 20-minute Worker checkpoint reports uncertainty or a shorter route.
 
-- the current minimum/maximum estimate is exceeded;
-- a proposed Worker assignment exceeds 20 maximum active minutes;
-- one unresolved block is estimated above 60 minutes;
-- two independent hypotheses or repair slices fail;
-- a completed wave produces no real business-canary delta;
-- evidence conflicts with the selected architecture;
-- the user repeats that P0/P1 still fails;
-- scope must expand materially;
-- process, framework, safety, observability, or cleanup work grows without user
-  progress.
+A trigger requires a control decision, not automatic cancellation, replacement,
+or a mandatory Overseer call. L may use direct evidence when the decision is
+clear; consult Overseer only when independent route judgment is worth its cost.
 
-Do not silently revise the estimate and continue. Preserve compact evidence in
-the same task file and request a continued Overseer audit. Use a fresh Overseer
-only for explicit independent review or persistent-state recovery.
+## Decision
 
-## Independent gate authority
+1. Restate the latest accepted result and proof strength.
+2. Record actual business delta and total cost spent.
+3. Identify whether one shortest continuation is credibly canary-reaching.
+4. Prefer redirecting or resuming the same Worker when its context remains
+   useful.
+5. Change route, cut back to the accepted MVP, or ask one necessary business
+   question when continuation is not justified.
 
-The user is the only authority over Overseer and Critic. L invokes them but
-cannot prescribe, narrow, rewrite, or override their verdict. Every invocation
-is a fresh no-history child with raw user context passed explicitly.
+Every 20 active minutes is a control checkpoint, not a Worker lifetime limit.
+The Worker reports progress, business delta, blocker, and the shortest next
+action. Cancellation is exceptional and allowed only for active harm,
+conflicting writes, an obsolete duplicate, explicit user direction, or an
+unrecoverably stuck child.
 
-`RETHINK`, `STOP`, `STOP_SCOPE_DRIFT`, `STOP_MISSING_CONTEXT`, or unanswered
-questions block further action and completion claims. L may provide new evidence
-to a new audit or ask the user; it may not continue the same route by changing
-wording.
+`STOP_SCOPE_DRIFT` applies only to concrete action outside the latest accepted
+scope. Preserve evidence and stop that action; do not let stale P0s, old task
+sections, or optional findings block current in-scope business work.
 
-## Terminal scope drift
-
-`STOP_SCOPE_DRIFT` is terminal for unauthorized expansion beyond the original
-request, confirmed scope, exclusions, or failed canary's dependency chain.
-
-1. Preserve evidence without cleaning or changing conflicting work.
-2. Report the exact mismatch to L and the user.
-3. Record the decision in the same task file with UTC+3 time and evidence.
-4. Do not start research, alternatives, implementation, or review outside scope.
-5. Resume only after explicit human scope confirmation is stored in the task.
-
-Before plan selection, communicate in Russian. After selection, execution
-updates are in English.
-
-## Architectural RETHINK
-
-For non-scope triggers, L may assign bounded `Worker(mode=research)` slices to
-find a fundamentally different path inside confirmed scope. There is no Explorer
-role.
-
-The user-facing RETHINK contains only:
-
-1. exact blocker and evidence;
-2. original estimate versus actual route;
-3. why the selected path has not moved the canary;
-4. fundamentally different in-scope paths when they really exist;
-5. minimum/maximum estimate, risk, and expected result for each;
-6. L's recommendation;
-7. one question only when human choice is genuinely required.
-
-Do not silently resume the failed path after sending RETHINK.
+The user-facing rethink contains the blocker, evidence, original estimate versus
+actual cost, business delta, genuinely different in-scope routes, and L's
+shortest recommendation. Do not silently continue the failed route by changing
+the estimate or terminology.

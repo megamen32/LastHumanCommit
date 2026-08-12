@@ -1,42 +1,35 @@
 # Code profile
 
-Load only for code changes. This supplements the assigned role and never changes
-agent identity.
+Load only for code changes. This profile serves the accepted business claim; it
+does not silently enlarge it.
 
-## Scope gate
+## Business-first scope
 
-- This profile constrains work inside the exact user-confirmed objective and
-  acceptance canary; it never adds deliverables, audits, repairs, migrations,
-  hardening, or follow-up work.
-- Apply a rule below only when it is necessary for that objective or is the
-  minimal safe prerequisite for running its confirmed canary.
-- Do not initiate security, secrets, PII, permissions, ACL, database, schema,
-  Grafana, dashboard, observability, log, or provider work unless the user
-  confirmed it or it is that minimal safe-canary prerequisite. Record and keep
-  any prerequisite exception as narrow as possible.
+- Trace the real production consumer and call chain before editing a nearby
+  abstraction or unused adapter.
+- Implement the thinnest coherent vertical change that can prove the accepted
+  outcome.
+- Reuse an existing mechanism when it is cheaper and adequate. Add an
+  abstraction or dependency only when it reduces present total cost.
+- Stop when the accepted canary and direct regression checks pass.
 
-- Use explicit types and explicit errors.
-- Log errors and notify the operator:
-  - S0: direct alert to the operator or webhook.
-  - S1: a compact, structured log for AI review, with references (for example,
-    by time) to S2 entries.
-  - S2: normal traceable informational log.
-- INFO/DEBUG are opt-out. Prefer structured logs and rotate them.
-- Do not write one-off scripts to `/tmp`, `.tmpbin/`, or `.bin/`; write them in
-  project cwd `.agents/at/`. Why: one-off scripts often become reusable Agent Tools or
-  MCPs, so they must remain discoverable and promotable.
-- Do not reinvent a dependency when a proven standard solution can be used.
-- Check standard libraries before adding code or dependencies.
-- Ask whether external research is needed.
-- Split code files over 800 lines unless generated or externally constrained.
-- Use f-strings in Python.
-- Document every function, including private ones: inputs, outputs, errors.
-- Prefer pure functions. Use OOP when state is required.
-- Build and test a concrete class before adding an abstraction.
-- Use YAGNI, but remove old workarounds when the base design is wrong.
-- Prefer dependency-free Python over shell scripts when practical.
-- Keep project-owned config, services, environment, and logs visible in project;
-  use symlinks or rsync for required OS paths.
-- Check cross-OS behavior before claiming portability.
-- Mark legacy or deprecated code explicitly as `LEGACY` or `DEPRECATED`, with a
-  date and end-of-support target. If support has expired, create a TODO task.
+## Proportional engineering
+
+Use explicit types, errors, logs, documentation, compatibility work, migration,
+cleanup, and refactoring only to the degree required by changed risk, project
+conventions, or the current claim. None is an automatic deliverable.
+
+Do not initiate security, secrets, PII, permissions, ACL, database/schema,
+Grafana/dashboard, observability, provider, cross-OS, deprecation, file-splitting,
+or broad logging work unless the user requested it or the real canary exposes it
+as the shortest necessary blocker. Report unrelated concerns without repairing
+them.
+
+Prefer the simplest readable local pattern. Build a concrete working vertical
+before introducing a general abstraction. Preserve explicit existing project
+conventions unless following them would block the accepted result.
+
+Use one-off tooling only when it is cheaper than direct commands. Reusable Agent
+Tools belong under `.agents/at/`; disposable diagnostics may use the project's
+established ignored scratch path. Never expose secrets in tools, logs, task
+records, or output.

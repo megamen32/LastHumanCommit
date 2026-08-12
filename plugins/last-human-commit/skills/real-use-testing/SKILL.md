@@ -1,26 +1,23 @@
 ---
 name: real-use-testing
-description: Tester-owned black-box procedure for proving the user-facing result on the real surface with fresh context.
+description: Optional claim-calibrated black-box procedure for proving a real user-facing result.
 ---
 
 # Real Use Testing
 
-Use this skill for the final black-box gate that checks the user-visible result
-on the real product surface.
+Use when the accepted user-facing claim still needs real-surface proof and the
+test's expected value exceeds its cost.
 
 ## Procedure
 
-1. Start from the accepted implementation and choose the smallest real surface
-   that exercises the outcome.
-2. Run the check as a fresh, black-box flow without reading source or relying
-   on synthetic internals.
-3. Capture the exact observed result, the acceptance decision, and the
-   evidence needed to reproduce the run.
-4. If the real surface is missing or unusable, stop and report that boundary
-   instead of substituting a weaker proxy.
+1. Start from the accepted claim, target surface, allowed actions, and stop
+   conditions.
+2. Run the shortest actual user journey without source-based shortcuts.
+3. Capture evidence appropriate to that claim and surface.
+4. Report claim blockers and material direct regressions only.
 
 ## Do not
 
-- Do not implement fixes.
-- Do not replace real-user evidence with unit tests or logs alone.
-- Do not inspect source to explain away a failing surface.
+- Do not make two Testers, blindness, screenshots, or video ceremonial defaults.
+- Do not replace real-user evidence with unit tests or logs for a stronger claim.
+- Do not raise the accepted Definition of Done while testing it.

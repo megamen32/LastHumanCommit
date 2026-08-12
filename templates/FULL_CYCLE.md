@@ -1,140 +1,71 @@
-# Full cycle
+# Material-decision cycle
 
-Use Full only after Worker research confirms both development over 30 active
-minutes and a material product, architecture, migration, or expensive-wrong-
-path choice. Keep every decision and result in one `.agents/tasks/` lineage:
-copy `todo-*` to `work-*`, then `work-*` to `done-*`, commit each snapshot, and
-preserve all copies. The latest committed snapshot is current. Children append
-detailed evidence, handoff, and result to the task file and return only TL;DR to
-L; no child creates a separate handoff file or second task record.
+Use this view only when a material product, architecture, migration, or
+expensive-wrong-path choice remains after the real production path is known.
+Full is not a synonym for long, important, polished, or release-bound work.
 
-## Language
+## Business claim
 
-- Планы и решения человека — только на русском.
-- Execution updates — English only.
-- Финальный ответ — только на русском.
-
-## Outcome and boundary
-
-Outcome:
-Exact business canary:
-Durable proof:
+Latest user outcome:
+Accepted MVP / Definition of Done:
+Exact real user/business canary:
+Cheapest sufficient proof:
+Actual production consumer path:
 Confirmed scope:
 Explicit exclusions:
-Constraints:
-Started at (UTC+3):
-Initial estimate (minimum / maximum active minutes):
+Current blocker:
+Initial minimum / maximum active minutes:
+
+## Least-cost route
+
+Smallest reversible change that moves the canary:
+Why direct Lead work or delegation is cheaper:
+Chosen model/agent and why it is sufficient:
+First 20-minute reporting checkpoint:
 Stop when:
-Rethink when:
-Harness policy / constraints:
+Redirect when:
 
-## Research
+## Material options — only when genuinely distinct
 
-L delegates repository research to `Worker(mode=research)` and does not search
-or write code itself.
+Record one, two, or three options; never invent options to fill a template.
 
-Findings and existing mechanism:
-Canary blocker:
-Unknowns:
-Proposed execution graph:
+For each option:
 
-Every implementation node must have one owner, owned paths, one acceptance gate,
-known dependencies/join point, and maximum <=20 active minutes. A whole plan may
-exceed one hour only as such a graph. One unresolved block above one hour means
-more research, not a vague long Worker assignment.
+- business result delivered now;
+- time/cost to first canary;
+- reuse and migration economics;
+- wrong-path and rollback cost;
+- consciously omitted quality dimensions;
+- exact proof and smallest execution route.
 
-## Mandatory Overseer route audit
+Adviser/Critic value test:
+Decision under active-harness policy:
 
-If the active harness has no lifecycle hooks, retain this explicit capability
-marker and do not pretend the timer fired: `<cap-off:hooks>каждые 30 минут </cap-off:hooks>`.
-When hooks are attested, count from `session_start` and inject the continuing
-Overseer at each 30-minute boundary.
+## Delivery order
 
-Continue the persistent Overseer after research and before plans. It reads the
-append-only user-message file, the same task file, shared-session state,
-estimate/business delta, blocker, and proposed next action. Do not resend the
-full conversation. A non-`CONTINUE` verdict binds L. No 30-minute cooldown may
-suppress this or another required event-triggered audit.
+1. Trace the actual consumer call chain.
+2. Implement the thinnest working vertical on that path.
+3. Run the real canary as early as safely possible.
+4. Fix only the first claim-blocking failure.
+5. Run proportional direct-regression checks.
+6. Add Reviewer, Tester, Overseer, Critic, hardening, or broader proof only when
+   its expected risk-reduction value exceeds its cost for this claim/action.
 
-## Планы — всегда ровно три
+Every 20 active minutes is a reporting checkpoint, not a Worker lifetime limit.
+The Worker reports progress, business delta, blocker, and the shortest next
+action. Prefer continuing, redirecting, or resuming the same Worker. Cancellation
+is exceptional.
 
-### 1. Максимально идеальный
+Use the harness wait/join tool for required children. Do not complete the task
+while a required child is non-terminal.
 
-Результат, объём, сознательные исключения, кратко- и долгосрочные компромиссы,
-риски, минимальная/максимальная оценка, проверка, миграция, execution graph:
+## Result
 
-### 2. Нормальный
-
-Результат, объём, сознательные исключения, кратко- и долгосрочные компромиссы,
-риски, минимальная/максимальная оценка, проверка, миграция, execution graph:
-
-### 3. YAGNI 80/20 — полный результат сейчас
-
-Результат, объём, сознательные исключения, кратко- и долгосрочные компромиссы,
-риски, минимальная/максимальная оценка, проверка, миграция, execution graph:
-
-Рекомендация L:
-Выбранный маршрут / evidence active harness:
-
-## Plan criticism and revision
-
-Before route selection, run the fresh Critic in `plan-review` mode over all
-three plans. It attacks long-term consequences, reuse assumptions, false YAGNI,
-and rewrite risk, and may propose alternatives. Pass its criticism to Adviser;
-Adviser revises/recommends the three plans, then L presents them under the
-active-harness policy.
-
-## Full technical preview of the selected plan
-
-Call-stack tree:
-File-tree diff:
-Key types and method signatures:
-Pseudocode:
-Migration description:
-Exact business canary:
-Harness policy / constraints:
-Execution graph:
-
-The graph shows every <=20-minute Worker lane, owned paths, dependencies,
-parallel waves, and integration/review joins.
-
-## Delivery
-
-The selected plan targets the complete desired outcome. `YAGNI 80/20` is a
-complete result, not an unfinished MVP. Delivery slices may be durable prefixes
-of that plan, but never relabel a partial slice as the selected outcome or
-not create three branches, worktrees, specifications, or throwaway implementations.
-
-For each wave:
-
-1. dispatch independent <=20-minute Worker implementation slices;
-2. resume the researching Worker for its lane when supported;
-3. run focused checks and the exact canary;
-4. review the coherent task-owned diff;
-5. continue the persistent Overseer audit;
-6. on maximum overrun, two failed slices, or no business delta, stop and RETHINK
-   instead of extending the route.
-
-Only at the end, after the selected implementation and Reviewer pass, run
-exactly two fresh Testers on the real user-facing surface: one
-`blast-radius` Tester who knows the whole session scope, and one blind
-`zero-knowledge` typical user who reads no code, Git changes, plans, or session
-history. Only the second pass is blind. Both must attach durable business-result
-evidence such as screenshots or video. Repair findings through bounded Worker
-slices, scoped re-review, and repeat both passes.
-
-## Release gate
-
-After both Tester evidence packages and canary evidence, run Critic once with raw user context,
-the same task file, selected plan, harness-policy evidence, review, estimate history, and
-proof. L cannot prescribe, narrow, rewrite, or override the verdict.
-
-Critic verdict:
-Commit (only if created):
-Tag decision (explicit release choice only):
-
-## Финальный ответ
-
-Финальный ответ — только на русском.
-
-Мобильный обзор результата:
+Business result:
+Claim strength actually proven:
+Source/test evidence:
+Deployment state:
+Real canary evidence:
+Optional deferred hardening/findings:
+Current workspace/branch:
+Commit, only if requested/created:

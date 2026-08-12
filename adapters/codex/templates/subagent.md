@@ -2,50 +2,34 @@
 
 Before every `spawn_agent` or resumed Worker call:
 
-Bootstrap the child with exactly `<Role> <absolute-task-file-path>`.
-
 - Select the lowest sufficient working model class; do not inherit L's model by
   default.
-- Every new child starts with `fork_context: false`. Never fork parent history;
-  pass only required context explicitly.
-- Send one compact assignment: role, Worker mode when applicable, root task path,
-  goal, decisive evidence, allowed/excluded paths, one
-  acceptance check, minimum/maximum with maximum <=20, stop conditions, and
-  compact return format.
-- The child reads only the assigned task file, appends detailed evidence
-  and its result there, and returns only TL;DR to L. It never creates a second
-  task card, report, ledger, or spec file.
-- After 3 active minutes of research orientation, write the exact query and
-  detailed answer to named files: ignored `.agents/shared-session/search/<task-id>/search-<task-slug>.md`
-  and tracked `.agents/shared-session/results/<task-id>/result-<result-slug>.md`;
-  chat carries only a compact TL;DR and paths.
-- Resume the same Worker from research with `send_input` for its selected
-  implementation lane when supported; otherwise pass the compact Research
-  section to a fresh Worker.
-- Overseer continues the persistent shared-session context; use fresh/no-history
-  only for recovery or an explicitly requested independent audit. Critic is a
-  fresh no-history child with no desired verdict from L. Reviewer and Tester are fresh independent
-  gates as required by their roles.
-- Escalate only after `NEEDS_REDECOMPOSITION`, `NEEDS_RETHINK`, or concrete
-  acceptance evidence proves a capability gap.
+- Start a new child with `fork_context: false` and pass only the compact context
+  it needs: role/mode, current business outcome, actual production-path evidence,
+  allowed/excluded scope, one acceptance check, expected total range, stop
+  conditions, and return format.
+- The expected total range may exceed 20 minutes. Include a 20-minute reporting
+  checkpoint for progress, business delta, blocker, route value, and shortest
+  next action. This is not a cancellation deadline.
+- Prefer `send_input`/resume for course correction and continuity. Do not replace
+  the same Worker merely because a checkpoint or wait window elapsed.
+- Persist detailed evidence in the assigned task/result path only when handoff,
+  recovery, reuse, or rediscovery cost justifies it.
+- Escalate to Overseer, Reviewer, Tester, Adviser, or Critic only for the
+  concrete risk that makes the role worth its cost.
 
-Codex V1 and Codex V2 wait-agent joins use the fixed absolute 30-minute join
-deadline exactly as `timeout_ms: 1800000` (1800000 ms). The wait timeout is observational
-only: a timeout, mailbox wake, dead PID observation, or missing completion
-signal does not decide lifecycle, and missing completion signal alone is not
-evidence of dead or unknown. Preserve the child until an authoritative terminal
-status is recorded or explicit cancellation is authorized and recorded. Never
-call `close_agent` on timeout and never create a replacement on timeout.
+Use the harness wait/join tool after dispatch whenever the result is required.
+Do not send the final answer while a required child result remains non-terminal.
 
-Join mechanics are absolute and monotonic. Establish one deadline once per
-join: `deadline = monotonicNow() + 1800000 ms`. Codex V1 target-specific wait
-and Codex V2 mailbox wake are distinct wake mechanisms, but use the same
-absolute deadline. On every mailbox wake or `timed_out` result, re-check the
-target child status; if non-terminal, compute
-`remainingMs = deadline - monotonicNow()` and wait only with `remainingMs`.
-Never reset/restart the full 1800000 after a wake or timeout. At `remainingMs <=
-0`, return `join-deadline-expired` with child preserved; do not close_agent,
-infer dead/unknown, or create a replacement.
+One Codex V1/V2 wait window uses the absolute monotonic deadline
+`deadline = monotonicNow() + 1800000 ms`. On each target-specific wait, mailbox
+wake, or `timed_out`, re-check authoritative child status and compute
+`remainingMs = deadline - monotonicNow()`; wait only with `remainingMs` and never
+reset that window. At `remainingMs <= 0`, preserve the child and return
+`join-window-expired` for a control decision. Request/inspect the checkpoint,
+redirect through `send_input` when useful, and start another join window when
+continuation remains least-cost. Never call `close_agent` or create a replacement
+solely because 20 minutes, a timeout, or one 30-minute window elapsed.
 
-If the active Codex surface cannot create a no-history gate child, report the
-unsupported boundary instead of using a history-forked substitute.
+If the active Codex surface cannot create, wait for, or resume the needed child,
+report that exact capability boundary instead of claiming a delegated result.

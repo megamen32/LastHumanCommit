@@ -3,28 +3,20 @@
 The adapter layer translates portable Last Human Commit roles to one host's
 agent API. Enabling one adapter does not install, configure, or rewrite another.
 
-## Boundary
+The core owns business-first routing, optional roles, cost-triggered persistence,
+claim-calibrated proof, and secret/workspace safety. An adapter owns only
+delivery syntax, profile frontmatter, child context boundaries, model hooks,
+wait/join, and resume transport.
 
-The core owns roles, profiles, protocols, the one-root-task rule, and human
-approval semantics. An adapter owns only delivery syntax, profile frontmatter,
-child context boundaries, model selection hooks, and resume transport.
+Before a child call, L loads that adapter's
+`subagent_instructions_template`. The child receives the smallest sufficient
+context. A task/result path is included only when durable handoff, recovery,
+reuse, or rediscovery economics justify it; no adapter makes a task card or
+duplicate detailed report mandatory.
 
-```text
-role contract × harness adapter
-Lead          × Codex / OpenCode / Claude Code / Hermes / ZCode
-Worker        × Codex / OpenCode / Claude Code / Hermes / ZCode
-Tester        × Codex / OpenCode / Claude Code / Hermes / ZCode
-```
-
-Before every child call, L loads that adapter's
-`subagent_instructions_template`. Children receive one compact prompt and their
-assigned task path, append detailed evidence and the result to that same task
-record, and return only TL;DR. They never create a second `todo-*` file or
-parallel task record.
-
-Every manifest records evidence as `proven`, `unproven`, `unsupported`, or
-adapter-dependent. Do not claim role/model/fresh-context/resume behavior without
-a live child event.
+Every manifest records capabilities as `proven`, `unproven`, `unsupported`, or
+adapter-dependent. Do not claim role/model/fresh-context/wait/resume behavior
+without a live child event.
 
 ## Human requests
 
@@ -35,9 +27,9 @@ base64 fallback never enter an LLM-facing flow.
 
 ## Self-improve
 
-Codex, OpenCode, Claude Code, and ZCode load `SELF_IMPROVE.md` only when its
-concrete trigger occurred. Hermes uses its native memory/skill loop. Ordinary
-success adds no retrospective record.
+Codex, OpenCode, Claude Code, and ZCode load `SELF_IMPROVE.md` only on its
+concrete trigger. Hermes uses its native memory/skill loop. Ordinary success
+adds no retrospective record.
 
-`scripts/lhc-block` remains a narrow marker utility. It is not an installer,
-renderer, daemon, or adapter manager.
+`scripts/lhc-block` remains a narrow marker utility, not an installer, daemon,
+scheduler, or adapter manager.

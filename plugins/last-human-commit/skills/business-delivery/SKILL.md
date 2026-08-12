@@ -1,26 +1,29 @@
 ---
 name: business-delivery
-description: Lead-owned outcome procedure for integrating reviewed work, proving the business canary, and handing off the result.
+description: Lead-owned least-cost procedure for proving and handing off the accepted business result.
 ---
 
 # Business Delivery
 
-Use this skill when the work must be finished as a product outcome, not only as
-code changes.
+Use when work must end in the user's accepted outcome rather than activity or a
+code-only proxy.
 
 ## Procedure
 
-1. Confirm the business canary and the acceptance evidence required for the
-   outcome.
-2. Integrate the reviewed work only after the scope, tester gate, and any
-   explicit human approvals are satisfied.
-3. Keep quality, cost, and time as separate records when they matter to the
-   delivery.
-4. Hand off with the exact result, the evidence trail, and the remaining
-   follow-up if any.
+1. Confirm the current business claim, accepted MVP Definition of Done, actual
+   production consumer path, and shortest real canary.
+2. Choose direct Lead work or delegation by total expected cost.
+3. Use the cheapest evidence sufficient for the exact business claim.
+4. Add Reviewer, Tester, Overseer, Critic, or hardening only when concrete risk
+   makes their expected value exceed their cost.
+5. Report source/test proof, deployment state, and real-canary proof separately.
+6. Stop when the accepted claim is proven and hand off deferred optional work as
+   non-blocking.
 
 ## Do not
 
-- Do not collapse different acceptance dimensions into one score.
-- Do not skip reviewer or tester gates.
-- Do not claim delivery without outcome evidence.
+- Do not substitute process completion or technical proxies for the requested
+  result.
+- Do not silently strengthen an accepted MVP claim.
+- Do not skip a role that is genuinely required by current risk, but do not run
+  a role merely because a template once made it mandatory.

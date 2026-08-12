@@ -1,52 +1,55 @@
-# Cost-aware planning
+# Business-first cost-aware planning
 
-Use for every non-Direct task.
+Load only when planning adds more decision value than implementation delay.
+Simple and clear work does not need a planning artifact.
 
-## Estimates
+## Decision order
 
-Record UTC+3 start and one immutable initial `minimum / maximum active minutes`
-range. Do not add optimistic/likely/pessimistic variants. Append a revision only
-when new evidence changes the route, with old/new range and one-line reason. At
-each Worker return compare elapsed work and business delta with the current
-maximum. An overrun requires an Overseer verdict; increasing the number alone
-never authorizes the same route.
+1. State the user's current business outcome and accepted Definition of Done.
+2. Trace the actual production consumer path enough to identify the next change.
+3. Name the shortest safe business canary and cheapest sufficient proof.
+4. Choose direct Lead work or delegation by total expected cost.
+5. Add governance only for a concrete risk whose expected loss exceeds gate
+   cost.
 
-## Decomposition
+Do not plan a horizontal layer before the first vertical user path. A plan is
+successful when it reduces wrong-path risk or coordinates useful parallel work;
+its completeness is not a product result.
 
-L orchestrates; Workers search and implement. Every Worker assignment has one
-mode, one acceptance gate, and maximum <=20 active minutes. Split it first when
-it contains an unresolved architecture/interface decision, unknown dependency,
-multiple gates, overlapping write ownership, no independent check, or a larger
-maximum.
+## Estimates and checkpoints
 
-A whole plan may exceed 60 minutes only as a known graph of <=20-minute slices
-with explicit dependencies and joins. A single unresolved block above 60
-minutes means more `Worker(mode=research)`, not one long assignment.
+When useful, record UTC+3 start and one immutable initial `minimum / maximum
+active minutes` range. Do not add optimistic/likely/pessimistic variants.
 
-Parallelize independent write sets and stable contracts. Sum parallel quota cost
-but use the critical path for wall-clock. Never parallelize overlaps or
-unresolved shared interfaces.
+Every 20 active minutes is a control checkpoint, not a Worker lifetime limit.
+The Worker reports progress, business delta, blocker, and the shortest next
+action. The expected total range may exceed 20 minutes. L may continue, redirect
+or resume the same Worker, ask Overseer for a genuinely valuable route verdict,
+or exceptionally cancel for active harm/conflict/stuck state.
 
-## Least Cost-to-Canary
+A task maximum overrun requires an evidence-based route decision. Do not merely
+increase the estimate. Continue only for one concrete shortest action with a
+credible canary delta; otherwise change route, return to the accepted MVP, or ask
+the user for a necessary business choice. Estimate overrun alone is never
+authority to kill an agent.
 
-Choose the next action by real expected canary movement against scarce-model
-tokens, wall-clock, tool overhead, retries, and human interruptions. Strong
-models make short decisions; the lowest sufficient Worker model searches,
-edits, and runs checks. Do not inherit L's model by default. Record model or
-quota only when it affects cost, capability, or recovery.
+## Least cost-to-canary
 
-Before a child call load the harness `subagent_instructions_template` and send a
-compact package: role/mode, root task path, goal, decisive evidence,
-allowed/excluded paths, one acceptance check, minimum/maximum estimate, stop
-conditions, and return format. The child appends detailed evidence and its
-result to the assigned task file and returns only TL;DR; it does not create a
-second task file.
+Rank actions by expected real canary movement against wall-clock, scarce-model
+tokens, handoff/context cost, process maintenance, retries, human interruption,
+and wrong-path risk.
 
-Resume the same Worker from research into its implementation lane when proven
-supported; otherwise pass the compact Research section to a fresh Worker.
-Overseer continues from persistent shared-session files; Reviewer, Tester, and
-Critic are independent gates and start fresh as required by their roles.
+Lead acts directly when delegation costs more than the next proof. Delegate
+when a lower-cost Worker can sustain useful work, independent parallelism pays,
+specialized capability is needed, or isolation has concrete review value. Use
+the lowest sufficient model and resume the same Worker when its context remains
+valuable.
 
-A Worker returns `NEEDS_REDECOMPOSITION` before a vague/oversized package and
-`NEEDS_RETHINK` on maximum overrun, two failed hypotheses, or a new architecture
-decision.
+Decompose only at real ownership, dependency, or acceptance boundaries. A
+coherent Worker assignment may exceed 20 minutes; checkpoint it every 20. Do not
+split one vertical fix into artificial research, implementation, review, and
+task-card repair slices merely to satisfy a timer.
+
+Persist a task/result artifact only when recovery, handoff, reuse, audit, or
+rediscovery cost justifies it. Keep it compact and current. No elapsed-time
+threshold requires a file or commit.

@@ -1,75 +1,58 @@
 # Authoring agent instructions
 
 `AGENTS.md` and `CLAUDE.md` are byte-identical marker-delimited routers.
-`Lead.md` owns orchestration. Every other role file is a self-contained child
-prompt.
+`Lead.md` owns business routing. Other role prompts are optional execution or
+risk-control tools.
 
-## Non-negotiable shape
+## Non-negotiable ordering
 
-- One request uses one Markdown `.agents/tasks/` lineage: copy `todo-*` to `work-*`, then
-  copy `work-*` to `done-*`, committing each snapshot and preserving all earlier
-  copies. Never `git mv`, rename, or delete a lifecycle snapshot; the latest
-  committed snapshot is current. Only L writes the task content. Never add a
-  child todo, separate handoff file, duplicate kanban, spec, ledger, recovery
-  file, or review package.
-- L is an orchestrator by default. It may execute only an obvious <=5-minute
-  Direct action. Short and Full repository search and code belong to Worker.
-- There is no Explorer role. Worker uses `mode: research` and `mode: implement`;
-  implementation names `bugfix/TDD` or `feature`.
-- Every Worker assignment has one acceptance gate and maximum <=20 active
-  minutes. A whole task above one hour must be an explicit graph of understood
-  <=20-minute slices.
-- Estimates are `minimum / maximum`, never a three-value report. Keep the initial
-  range immutable. A maximum overrun requires an Overseer verdict before continuation.
-- Overseer is mandatory for every task and normally continues from the
-  persistent shared-session files; fresh/no-history is only recovery or an
-  explicitly requested independent audit. Event-triggered audits are never
-  suppressed by a 30-minute cooldown.
-- Full is reserved for researched work over 30 minutes with material product,
-  architecture, migration, or expensive-wrong-path impact.
-- Full always preserves three Russian plans and a full technical preview. Never
-  remove call-stack tree, file-tree
-  diff, key signatures, pseudocode, migration, canary, or execution graph.
-- `YAGNI 80/20` is a complete third plan, not an unfinished MVP or a partial
-  delivery state.
-- Reviewer sees only task-owned diff; Tester is the fresh real-user gate before
-  Critic; Critic independently gates release or irreversible action.
-- The active harness owns approval policy, including deploy, rollback,
-  destructive action, branch, and worktree constraints.
-- Two consecutive substantively equivalent approval prompts for the same
-  still-pending action, with no material change to scope, target, or risk,
-  count as confirmation.
+1. Latest user outcome and accepted MVP Definition of Done.
+2. Actual production consumer path.
+3. Shortest real business canary and cheapest sufficient proof.
+4. Least-cost execution: direct Lead or delegated Worker.
+5. Earliest safe canary.
+6. Only observed blocker fixes and proportional direct-regression checks.
+7. Optional governance/hardening only when expected value exceeds cost.
 
-## Workspace ownership
+Do not encode a role, card transition, plan count, review count, timer, test
+style, or evidence format as a prerequisite ahead of business movement. Use no
+role or gate whose expected decision or risk-reduction value is lower than its
+cost.
 
-Routine work stays in the primary checkout. An auxiliary worktree, detached
-HEAD, or non-default branch is reported in the first visible update. A new
-worktree may exist only under
-`<primary-project-root>/.worktrees/<task-slug>`. Foreign edits are preserved but
-never silently staged or committed with the current task.
+## Role semantics
 
-## Prompt ownership
+- Lead may research and implement directly when delegation costs more than the
+  next proof.
+- Worker receives a coherent outcome lane and an expected total range that may
+  exceed 20 minutes.
+- Every 20 active minutes is a reporting checkpoint. Lead continues,
+  redirects/resumes the same Worker, or consults Overseer when useful.
+- Use a real wait/join mechanism for required children; never finish merely
+  because one wait returned no terminal result.
+- Overseer, Adviser, Critic, Reviewer, and Tester are risk-triggered.
+- One real-use Tester is enough unless independent/blind coverage has concrete
+  additional value.
+- Full may contain however many material options actually exist.
 
-- The router names roles and paths but does not duplicate their workflows.
-- L sends one role/mode and compact assignment; children append detailed
-  evidence to the assigned task file and return only TL;DR to L.
-- Profiles supplement an assigned role. Protocols load only on their trigger.
-- Templates are views of the same root task, not a second workflow.
-- `profiles/Code.md` deliberately owns code-as-docs, structured/rotated logs,
-  cross-platform rules, file-size limits, and dated legacy removal.
-- Adapter syntax for Codex, OpenCode, Claude Code, Hermes, and ZCode stays in adapters; portable behavior stays in common roles.
-- Worker research may resume into implementation. Independent gates start fresh.
-- AskHuman/AskSecret render only when the exact active capability is attested.
+## State and evidence
 
-## Changing instructions
+One compact current task record is preferred when it pays for recovery,
+coordination, or audit. Durable research/result files are cost-triggered; no
+elapsed-time threshold mandates files or commits. Do not duplicate task,
+handoff, report, and evidence content.
 
-1. Change the file that owns the rule.
-2. Align only direct references, templates, adapters, and validation.
-3. Keep runtime prompts concise; tests may enforce invariants instead of
-   repeating prose everywhere.
-4. Review the diff, run `git diff --check`, and run
-   `python3 tests/validate.py`.
+Match proof to claim. Source, tests, deployment, and real-business canary are
+reported separately. An accepted MVP is not silently upgraded to strict
+admission, perfect atomicity, broad hardening, portability, or visual polish.
 
-The marker lines are the ownership boundary. Preserve every byte outside them.
-`scripts/lhc-block` remains an explicit marker utility, not an installer,
-daemon, scheduler, or harness manager.
+## Workspace and adapters
+
+Stay in the primary checkout, warn on auxiliary/detached/non-default state, and
+preserve foreign changes. Adapter syntax remains under `adapters/`; portable
+behavior remains in `src/common/`. AskHuman/AskSecret fragments render only when
+the exact capability is attested.
+
+When changing instructions, update the owning source, direct mirrors/templates,
+and semantic validators. Require ordering and forbidden old behavior, not mere
+phrase presence. Run `git diff --check`, the business-first regression, and
+`python3 tests/validate.py`.

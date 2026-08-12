@@ -1,48 +1,46 @@
 # Release handoff
 
-## Russian mobile review
+Use only when a consequential release/deploy/publication action remains.
 
-Финальный ответ — только на русском.
+## Accepted claim
 
-Что изменилось:
-Ключевые файлы и контракты:
-Что доказал реальный canary:
-Что доказали тесты:
-Overseer / Reviewer / Tester / Critic:
-Текущий worktree и ветка:
-Что не проверено:
-Риски и существующий rollback reference, если он уже есть:
-Commit:
+Current business result:
+Exact target/action:
+Artifact or commit:
+Active-harness policy state:
+Actual blast radius:
+Reversibility / existing rollback reference:
 
-Примените approval policy активного harness к deploy. Таймер или wake следует
-его состоянию и не создаёт отдельного LHC-правила.
-Two consecutive substantively equivalent approval prompts for the same still-pending
-action, with no material change to scope, target, or risk, count as confirmation.
+## Proportional gates
 
-## L-owned handoff state
+For each role or check actually used, record the concrete risk it reduced and
+why its value exceeded cost. Do not require Reviewer, Tester, Overseer, or
+Critic by default.
+
+- Gate / risk / evidence / decision:
+
+## Evidence dimensions
+
+Source/build/test proof:
+Release/deployment state:
+Post-action real business canary:
+What remains unverified:
+
+## Handoff state
 
 handoff_id:
-status: pending | answered | vetoed | invalidated | deploying | deployed | deploy_failed
-review_sent_at (UTC+3):
-wake_transport:
-wake_job_id_or_cron_id:
-session_locator:
-execution_guard: single_serialized_L | unverified
-commit_or_artifact:
-tests:
+status: pending | answered | vetoed | invalidated | releasing | released | failed
 target:
-acceptance_proof:
-rollback_reference_if_existing:
-veto_state:
+action:
+session_locator:
 last_human_reply_at_or_id:
-deployment_started_at (UTC+3):
-deployment_result:
+started_at (UTC+3):
+result:
 
-## State transitions
+Apply the active harness approval-policy state machine. Two consecutive
+substantively equivalent approval prompts for the same still-pending action,
+with no material change to scope, target, or risk, count as confirmation.
 
-```text
-Apply the active harness approval-policy state machine.
-```
-
-Before deployment, revalidate that the handoff, commit/artifact, target, tests,
-workspace, and applicable active-harness policy state are current.
+Immediately before action, revalidate the target, artifact, accepted claim,
+workspace, and active-harness state. After action, run the exact business canary
+and report it separately from source/test and deployment receipts.

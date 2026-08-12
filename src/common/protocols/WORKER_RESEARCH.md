@@ -1,59 +1,35 @@
 # Worker research protocol
 
-Use only for `Worker(mode=research)`. This protocol is read-only.
-
-The first 3 active minutes are basic project orientation. At the 3-minute
-boundary, create two named files in different trees: `search-<task-slug>.md` for
-the append-only search journal under
-`.agents/shared-session/search/<task-id>/`, and `result-<result-slug>.md` for
-the separately rewritten current final result under
-`.agents/shared-session/results/<task-id>/`. The search tree is physically
-Git-ignored but retained for later bulk analysis. After 10 active minutes,
-`result-<result-slug>.md` is mandatory evidence, may never be
-ignored, and the completed change must include a Git commit. Chat returns only a
-compact TL;DR and the file paths; never leave the detailed result only in a
-transcript that a dead harness may discard.
-
-One-off scripts must be written under `.agents/at/`; never create a separate
-`.at/` or `.lhc/`, and `/tmp` and `.tmpbin/` are forbidden. Why: useful one-off
-scripts are often promoted into reusable Agent Tools or MCPs, so one `.agents/`
-root keeps them discoverable.
-
-## Goal
-
-Reduce uncertainty until L can choose a route and split implementation into
-concrete <=20-minute slices. Find the existing mechanism before proposing new
-infrastructure.
+Use only for `Worker(mode=research)`. Research is read-only and exists to find
+the cheapest route to the next real business proof.
 
 ## Method
 
-1. Read the raw task objective, canary, scope, exclusions, and known evidence.
-2. Locate the actual user path, owning files/symbols/config, interfaces,
-   dependencies, and failure boundary.
-3. Verify assumptions with the smallest useful probes. Prefer repository and
-   live source-of-truth evidence over speculation.
-4. Identify reuse, contradictions, unknowns, and the exact fact blocking a
-   confident implementation package.
-5. Propose an execution graph of independent slices. Every slice has one owner,
-   owned paths, one acceptance check, dependencies/join point, and maximum <=20
-   active minutes.
+1. Read the latest user outcome, accepted proof strength, scope, exclusions, and
+   known evidence.
+2. Trace the actual production consumer path and owning files/symbols/config
+   before inspecting nearby abstractions or proposed architecture.
+3. Find the existing mechanism, first real blocker, and cheapest discriminating
+   probe.
+4. Stop once L can implement directly or assign a coherent execution lane. Do
+   not continue toward repository completeness.
+5. Recommend the shortest vertical action and proof, plus only decision-relevant
+   unknowns.
 
-A whole plan may exceed one hour only as an understood graph of such slices. If
-one unresolved block still appears to exceed one hour, return
-`NEEDS_MORE_RESEARCH` and the next bounded probe; do not disguise uncertainty as
-a long implementation estimate.
+Persist research when handoff, recovery, reuse, or the cost of rediscovery
+justifies it. Use a named file under `.agents/shared-session/results/<task-id>/`
+when a durable result is valuable, and an ignored search journal only when the
+search history itself has reuse value. No elapsed-time threshold by itself
+requires a file or Git commit. Chat may carry the complete compact answer when
+that is cheaper and recoverable enough.
 
-## Return
+At every 20 active minutes report progress, business delta, blocker, whether the
+route remains shortest, and the smallest next probe. The expected total range
+may exceed 20 minutes. The checkpoint does not end the Worker; remain available
+for L to continue, redirect, or resume.
 
-Return one of `READY_FOR_PLAN`, `READY_TO_IMPLEMENT`, `NEEDS_MORE_RESEARCH`, or
-`BLOCKED`, followed by:
-
-- decisive findings with `path:line`, symbol, command result, or dated source;
-- existing mechanism and real canary blocker;
-- checked and excluded hypotheses;
-- unknowns;
-- proposed <=20-minute slices and dependencies;
-- recommended next probe or lane.
-
-Do not write code, edit configuration, deploy, commit, or produce an architecture
-essay unrelated to the decision.
+Return `READY_TO_IMPLEMENT`, `PROGRESS`, `NEEDS_MORE_RESEARCH`, or `BLOCKED`,
+with decisive evidence, production path, existing mechanism, checked/excluded
+hypotheses, unknowns that affect the decision, and the cheapest next action. Do
+not write code, mutate configuration, deploy, or produce an unrelated
+architecture essay.

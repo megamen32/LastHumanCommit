@@ -6,8 +6,8 @@ Hermes builds the child. Hermes' native `leaf/orchestrator` role remains
 independent.
 
 Before every delegated goal, load `templates/subagent.md` for the role prefix,
-compact assignment, assigned task-file boundary, and cheapest-sufficient model
-rules.
+compact business context, optional durable task/result boundary,
+checkpoint/join control, and cheapest-sufficient model rules.
 
 For ordinary missing information use AskHuman. For a secret or password use
 AskSecret/SSS only when attested; require opaque registered-agent handoff and

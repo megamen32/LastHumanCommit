@@ -5,9 +5,9 @@ preserving `CLAUDE.md` block is the portable fallback. Keep the complete role
 context in the child prompt and never overwrite project-owned text outside the
 marker pair.
 
-Before every child call, load `templates/subagent.md` for the compact assignment,
-assigned task-file boundary, Worker continuity, and cheapest-sufficient model
-rules.
+Before every child call, load `templates/subagent.md` for compact business
+context, the optional durable task/result boundary, Worker continuity,
+checkpoint/join control, and cheapest-sufficient model rules.
 
 For ordinary missing information use AskHuman. For a secret or password use
 AskSecret/SSS only when attested; require the opaque registered-agent handoff and

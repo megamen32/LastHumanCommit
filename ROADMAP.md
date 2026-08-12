@@ -80,6 +80,23 @@ Status: done
   any runtime deployment claim. Plan selection is recorded in
   `.agents/tasks/done-20260801-outcome-first-lhc.md`.
 
+## M7 — Business-first least-cost execution
+
+Status: done in source; runtime rollout is separate
+
+- [x] M7.1 Put the accepted business claim, actual production consumer path,
+  shortest real canary, and cheapest sufficient proof before role/process
+  routing.
+- [x] M7.2 Let Lead research and implement directly when delegation costs more
+  than the next proof; make all governance roles risk-triggered.
+- [x] M7.3 Make every 20 active minutes a Worker reporting/control checkpoint,
+  not a lifetime limit, and require real wait/join for required children.
+- [x] M7.4 Replace mandatory snapshot/research artifacts with compact,
+  cost-triggered state and persistence.
+- [x] M7.5 Enforce semantic ordering and forbid the old unconditional gates in
+  regression validation. The motivating audit is
+  `docs/business-first-error-audit.md`.
+
 ## Proposed
 
 - [ ] Add a lifecycle regression for a dead Worker: create and commit `todo-*`,

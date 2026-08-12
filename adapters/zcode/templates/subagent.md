@@ -2,27 +2,23 @@
 
 Before every delegated task:
 
-Bootstrap the child with exactly `<Role> <absolute-task-file-path>`.
+- Select the lowest sufficient model in profile frontmatter. Do not pass an
+  explicit model key when the active guard forbids it, and do not inherit L's
+  model merely because it is the parent default.
+- Send one compact fresh-context assignment: role/mode, current business
+  outcome, actual production-path evidence, allowed/excluded scope, one
+  acceptance check, expected total range, stop conditions, and return format.
+- The expected total range may exceed 20 minutes. Include a 20-minute reporting
+  checkpoint for progress, business delta, blocker, route value, and shortest
+  next action; it is not a cancellation deadline.
+- Use `send_message` to continue or redirect the same Worker when available and
+  its context remains useful.
+- Persist task/result detail only when handoff, recovery, reuse, or rediscovery
+  cost justifies it.
+- Use optional independent roles only for a concrete risk whose expected value
+  exceeds delay.
 
-- Select the lowest sufficient model in the role profile frontmatter. Do not
-  pass an explicit `model` key to the Agent tool when the active guard forbids
-  it, and do not inherit L's model merely because it is the parent default.
-- Send one compact assignment through the native fresh-agent boundary: role,
-  Worker mode when applicable, root task path, goal,
-  decisive evidence, allowed/excluded paths, one acceptance check,
-  minimum/maximum with maximum <=20, stop conditions, and compact return format.
-- The child reads only the assigned task file, appends detailed evidence and its
-  result there, and returns only TL;DR to L. It never creates a second task
-  card, report, ledger, or spec file.
-- After 3 active minutes of research orientation, write the exact query and
-  detailed answer to named files: ignored `.agents/shared-session/search/<task-id>/search-<task-slug>.md`
-  and tracked `.agents/shared-session/results/<task-id>/result-<result-slug>.md`;
-  chat carries only a compact TL;DR and paths.
-- If ZCode exposes `send_message`, use it to correct or resume the same Worker rather than replacing it. Otherwise pass the compact Research section
-  to a fresh Worker.
-- Overseer continues the persistent shared-session context; use fresh/no-history
-  only for recovery or an explicitly requested independent audit. Critic is a
-  fresh no-history child with no desired verdict from L. Reviewer and Tester are fresh independent
-  gates as required by their roles.
-- Escalate only after `NEEDS_REDECOMPOSITION`, `NEEDS_RETHINK`, or concrete
-  acceptance evidence proves a capability gap.
+Use the harness wait/join tool when the child result is required. Do not send the
+final answer while a required child result remains non-terminal. A timeout is
+observational: inspect status, request the checkpoint, continue/redirect the same
+Worker, and join again. Cancellation or replacement is exceptional.

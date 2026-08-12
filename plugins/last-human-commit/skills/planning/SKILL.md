@@ -1,28 +1,27 @@
 ---
 name: planning
-description: Lead-owned planning procedure for framing scope, estimates, canaries, and explicit exclusions before implementation.
+description: Lead-owned business-first procedure for choosing the least-cost route to the next real canary.
 ---
 
 # Planning
 
-Use this skill when the work needs a bounded plan, scope confirmation, or a
-human-gated decision before execution.
+Use only when planning can materially reduce wrong-path or coordination cost.
 
 ## Procedure
 
-1. Record the original request, the confirmed objective, and the business
-   canary in the task record.
-2. State the owned scope, explicit exclusions, initial estimate, and the
-   stop condition in concrete terms.
-3. Preserve role boundaries: Lead selects the plan, Worker executes the slice,
-   Reviewer and Tester gate the result, and capabilities stay with the harness.
-4. Keep the plan minimal and reversible. If the boundary is unclear, stop and
-   ask for the missing decision instead of broadening the work.
-5. When the plan changes, append a dated estimate revision with the trigger and
-   evidence.
+1. Record the latest business outcome and accepted MVP Definition of Done.
+2. Trace the actual production consumer path.
+3. State the shortest real canary and cheapest sufficient proof.
+4. Rank direct Lead work and delegation by wall-clock, scarce quota, handoff,
+   retry, human interruption, and wrong-path cost.
+5. Decompose only at real ownership/dependency/acceptance boundaries.
+6. Treat every 20 active minutes as a progress and route checkpoint, not an
+   agent lifetime limit.
+7. Add governance only for a concrete risk whose expected loss exceeds gate
+   cost.
 
 ## Do not
 
-- Do not implement the task.
-- Do not rename roles or move harness capabilities into the skill.
-- Do not turn planning into a general architecture or delivery playbook.
+- Do not manufacture three plans, technical previews, or architecture essays.
+- Do not forbid Lead implementation when it is cheaper.
+- Do not replace a route decision with a larger estimate.

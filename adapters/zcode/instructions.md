@@ -10,9 +10,9 @@ ZCode dispatches children through its `Agent` tool. When an active `PreToolUse`
 guard forbids an explicit `model` key, select the model in profile frontmatter.
 Never fork parent history; rely on the fresh-context boundary.
 
-Before every child call, load `templates/subagent.md` for the compact assignment,
-assigned task-file boundary, Worker continuity, and cheapest-sufficient role
-profile.
+Before every child call, load `templates/subagent.md` for compact business
+context, the optional durable task/result boundary, Worker continuity,
+checkpoint/join control, and cheapest-sufficient role profile.
 
 For ordinary missing information use AskHuman. For a secret or password use
 AskSecret/SSS only when attested; require opaque registered-agent handoff and

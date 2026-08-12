@@ -1,36 +1,27 @@
 # Test profile
 
-Load only for test design, test repair, or validation work. This supplements the
-assigned role and never changes agent identity.
+Load only for test design, repair, or validation. Tests support the accepted
+business claim; they do not define a stronger product by themselves.
 
-## Scope gate
+## Proof selection
 
-- This profile constrains work inside the exact user-confirmed objective and
-  acceptance canary; it never adds deliverables, audits, repairs, migrations,
-  hardening, or follow-up work.
-- Apply a rule below only when it is necessary for that objective or is the
-  minimal safe prerequisite for running its confirmed canary.
-- Do not initiate security, secrets, PII, permissions, ACL, database, schema,
-  Grafana, dashboard, observability, log, or provider work unless the user
-  confirmed it or it is that minimal safe-canary prerequisite. Record and keep
-  any prerequisite exception as narrow as possible.
+Choose the cheapest evidence sufficient for the exact claim:
 
-Blackbox better than integration
-Integration better than unit
-Unit? good only if fast : <3 sec and written Red first, Green last (or write later but verify the failing condition first)
-You can mock freely on internal, BUT if mocking external, write BLACKBOX test to verify mock structure will not become outdated. Depth-3 tests are prohibited (tests for tests).
+- use the real user/business canary when the claim is user-facing;
+- use a black-box check for an interface or process contract;
+- use integration tests for component interaction;
+- use focused unit tests for local behavior and cheap regression protection;
+- use source/build/type checks only for the narrower properties they prove.
 
-Any Test must be complete < 30s.
-All tests must has fewest flags possible, all flags must be described in one place. good start: E2E(long, can use network, write files etc), FAST(safe enough) ,SMOKE(unit,mock, readonly). opt-in TEST4TEST
+For a bugfix, first prove the reported failing condition when doing so is cheap,
+safe, and discriminating. A new test is optional when the real canary or an
+existing check gives a better red/green proof. Do not write tests for ceremony.
 
-Must be at least one command to run all tests. Best effort read-only. opt-in fast only [smoke].
+Run the narrowest decisive check first, then only direct-regression checks whose
+expected defect value exceeds their runtime and maintenance cost. Broad suites,
+mock-contract tests, portability matrices, and exhaustive edge cases are
+optional unless the changed blast radius or release claim justifies them.
 
-An unrelated failure that existed before this work does not authorize repair or
-scope expansion. Repair it only when the owned change directly regressed it or
-when it blocks acceptance of the confirmed objective or canary. Otherwise,
-report the exact failure and leave it untouched.
-
-At release completion, copy the resolved `work-*` snapshot to `done-*`, commit
-the copy, and retain the `todo-*` and `work-*` predecessors. The latest
-committed lifecycle snapshot is current. Retain unresolved `todo-*` or `work-*`
-files with their exact blocker; do not hide them to make the task appear complete.
+An unrelated pre-existing failure does not authorize repair. Report it and keep
+working only when it does not invalidate the accepted proof. Never use a green
+unit/build result as a substitute for a requested real business path.

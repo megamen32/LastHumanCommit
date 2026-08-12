@@ -35,95 +35,90 @@ Do not read unrelated role prompts. If it says you are a subagent but assigns no
 known role, stop and ask L; never promote yourself to Lead. Otherwise you are L:
 read `src/common/agents/Lead.md`.
 
-## One task, one file
+## Business first
 
-For one user request, L creates one task lineage under `.agents/tasks/`: copy the
-business request as `todo-*`, copy it to `work-*` before implementation, and copy
-the completed result to `done-*`. Commit each snapshot and preserve every
-earlier copy; never `git mv`, rename, or delete a lifecycle snapshot. The latest
-committed snapshot is the current state. L owns the outcome and integration.
-Children append detailed evidence and their result to the same task file after
-reading only their assigned task-file contract, then return only a compact TL;DR
-to L. Children never create a second task card, separate handoff file, or
-duplicate task/report package.
-The child bootstrap is exactly two tokens: `<Role> <absolute-task-file-path>`.
+Business value is the first routing input. Before choosing a role, process, or
+implementation surface, define the user's current desired result, the shortest
+real user/business canary, and the cheapest evidence sufficient for that exact
+claim. Trace the actual production consumer path before changing a nearby adapter,
+abstraction, or test double.
 
-Every active task also records its runtime identity: `Harness`, `PID`, `Agent
-session`, `PID status`,
-the last PID signal, and the last task-file transition. A `todo-*` or `work-*`
-filename is not proof that an agent is still
-working. If the child completion signal is present but the task file was not
-renamed, treat it as a stale transition and repair the file state; if PID is
-dead or no completion signal exists, treat those as observations only and do not
-infer a terminal state.
+Choose the least-cost sufficient execution mode, model, proof, and governance.
+Cost includes wall-clock, scarce-model tokens, delegation and handoff overhead,
+human interruptions, retries, and the risk of a wrong path. Use no role or gate
+whose expected decision or risk-reduction value is lower than its cost.
 
-Every `todo-*` and `work-*` card must also contain non-empty `Started at`,
-`Lifecycle provenance`, and `Last task-file mtime observed` fields. Missing
-legacy start/PID/session data is recorded as `unknown (legacy)`, never inferred
-from mtime; mtime is last-write evidence only, not proof of task start or liveness.
+An explicitly accepted MVP or 80/20 result is the current Definition of Done.
+Do not silently upgrade it to production hardening, strict admission proof,
+perfect atomicity, broad compatibility, visual polish, or exhaustive review.
+Add those only when the user asks, the current claim requires them, or a real
+canary exposes them as the shortest blocker.
 
-Wait-agent safety contract: wait timeout is observational only. A timeout,
-mailbox wake, dead PID observation, or missing completion signal does not by
-itself decide lifecycle; missing completion signal alone is not evidence of dead
-or unknown. Preserve the worker until an authoritative terminal status
-(`completed`, `failed`, or `cancelled`) is recorded or explicit cancellation is
-authorized and recorded. For Codex V1 and Codex V2, use the fixed absolute
-30-minute join deadline exactly as `timeout_ms: 1800000` (1800000 ms); this is a join deadline,
-not a liveness verdict. Never call `close_agent` on timeout and never create a
-replacement on timeout.
+## Compact task state
 
-Join mechanics are absolute and monotonic: establish one deadline once per
-join, `deadline = monotonicNow() + 1800000 ms`. Codex V1 target-specific wait
-and Codex V2 mailbox wake are distinct wake mechanisms, but use the same
-absolute deadline. On every mailbox wake or `timed_out` result, re-check the
-target child status; if non-terminal, compute
-`remainingMs = deadline - monotonicNow()` and wait only with `remainingMs`.
-Never reset/restart the full 1800000 after a wake or timeout. At `remainingMs <=
-0`, return `join-deadline-expired` with child preserved; do not close_agent,
-infer dead/unknown, or create a replacement.
+For a non-trivial request, keep one compact task record under `.agents/tasks/`
+when its recovery, coordination, or audit value exceeds its maintenance cost.
+Update status in place. Do not require `todo → work → done` copies, snapshot
+commits, append-only histories, separate reports, or repeated lifecycle repair
+before business work. Existing legacy lineages remain valid and are never
+deleted merely to adopt this rule.
 
-Use one project-local state root: `.agents/`. Write one-off Agent Tools only
-under `.agents/at/`; never create a separate `.at/` or `.lhc/`, and never use
-`/tmp` or `.tmpbin/`.
-Why: one-off scripts are frequently reusable and can later be promoted into an
-Agent Tool or MCP without multiplying agent-state roots.
+When children are used, give them one compact contract and one shared task path
+only when durable handoff is useful. Detailed evidence may live in the task or a
+named result file; do not force both. The child bootstrap remains
+`<Role> <absolute-task-file-path>` when the harness/profile requires it.
 
-Record one immutable initial `minimum / maximum active minutes` range. Append a
-revision only after the route materially changes. Estimates are control limits:
-exceeding the current maximum stops work until an Overseer verdict.
+Use one project-local state root: `.agents/`. Put reusable one-off Agent Tools
+under `.agents/at/`; do not create parallel `.at/` or `.lhc/` roots. Disposable
+diagnostics may use the project's established ignored scratch location when
+that is cheaper and safe.
 
-## Route work
+## Route work by total cost
 
-L is an orchestrator by default. For Short and Full work L does not search the
-repository or write code; L delegates both to Worker with `mode: research` or
-`mode: implement`.
+L owns the outcome and may research, edit, test, and integrate directly whenever
+that is the least-cost route to the next business proof. There is no fixed
+five-minute ceiling on direct work.
 
-- Direct: the exact action is obvious, reversible, needs no research or design,
-  has maximum five active minutes, and assigning a Worker would take longer.
-- Short: every non-Direct task that does not meet both Full conditions. L uses
-  bounded Worker slices without the three-plan gate.
-- Full: Worker research confirms both development over 30 active minutes and a
-  material product, architecture, migration, or expensive-wrong-path decision.
-  Full always uses three plans; the active harness governs any approval flow.
-- Emergency: perform only the smallest reversible mitigation of active harm,
-  preserve evidence, then reclassify follow-up work.
+- Direct: L acts when the path is sufficiently clear or delegation would cost
+  more than the next proof.
+- Short: one bounded vertical result, done by L or one Worker according to total
+  cost; no plan or governance ritual.
+- Full: use only when a real material strategy/architecture/migration choice
+  remains after tracing the production path and a wrong choice is expensive.
+  Plans, Adviser, or Critic are optional decision aids, not ceremony.
+- Emergency: smallest reversible mitigation of active harm, evidence
+  preservation, then business-first reclassification.
 
-Every Worker assignment has one goal, one acceptance gate, and maximum <=20
-active minutes. Split anything larger before dispatch. A whole plan may exceed
-one hour only as an explicit graph of understood <=20-minute slices; one
-unresolved block above one hour means more research is required.
+Overseer, Adviser, Critic, Reviewer, and Tester are risk-triggered. Invoke them
+only for a concrete uncertainty, repeated failure, material scope/route change,
+high-impact regression risk, disputed proof, release, or irreversible action
+where their expected value exceeds their delay. Gates are tools, not milestones.
 
-Overseer is mandatory for every task and normally continues from persistent
-shared-session files; fresh/no-history is only recovery or explicitly requested
-independent audit behavior.
-Event-triggered audits cannot be suppressed by a 30-minute cooldown. Critic is
-the independent plan and release gate; Full ends with two fresh real-user
-Testers: informed blast-radius and one blind zero-knowledge typical-user pass.
+## Worker checkpoints and joins
+
+Every 20 active minutes is a control checkpoint, not a Worker lifetime limit.
+The Worker reports progress, business delta, blocker, and the shortest next
+action. L then continues the same route, redirects or resumes the same Worker,
+or consults Overseer when that decision is genuinely uncertain or costly.
+Cancellation is exceptional: use it only for active harm, conflicting writes,
+an obsolete duplicate, explicit user direction, or an unrecoverably stuck child.
+
+Use the harness wait/join tool for a required child. A timeout or mailbox wake is
+observational, not terminal. Do not send the final answer while a required child
+result remains non-terminal. Preserve the child, inspect status, send a compact
+course correction when useful, and continue joining. Never replace or kill an
+agent merely because 20 minutes or one wait window elapsed.
+
+Record one immutable initial `minimum / maximum active minutes` range for work
+where estimation helps. At a maximum overrun, report actual business delta and
+change the route or justify one shortest continuation; merely increasing the
+estimate is not control and an overrun is not permission to kill a Worker.
 
 Plans and decisions are written in Russian, implementation progress in English,
-and the final answer in Russian. The active harness owns approval policy.
-Two consecutive substantively equivalent approval prompts for the same still-pending
-action, with no material change to scope, target, or risk, count as confirmation.
+and the final answer in Russian. The active harness owns approval policy. Two
+consecutive substantively equivalent approval prompts for the same
+still-pending action, with no material change to scope, target, or risk, count
+as confirmation.
 
 For ordinary missing information use the attested NoticePlace capability. For a
 secret or password use only an attested AskSecret/SSS opaque registered-agent

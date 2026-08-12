@@ -1,146 +1,72 @@
 # Task
 
-Status: in progress | blocked | complete
-Lifecycle snapshot: todo | work | done
-Supersedes: <previous lifecycle snapshot path or none>
-Snapshot commit: <commit or pending>
-Result file: `.agents/shared-session/results/<task-id>/result-<result-slug>.md`
-Original user request:
-Objective:
-Business canary:
-Confirmed scope:
+Status: todo | in progress | waiting | blocked | complete
+Latest user request:
+Accepted business outcome / Definition of Done:
+Exact business canary:
+Cheapest sufficient proof:
+Actual production consumer path:
+Scope:
 Explicit exclusions:
-Acceptance proof:
-Cycle: direct | short | full | emergency
+Current blocker:
+Next shortest action:
+
 Harness:
-PID:
 Agent session:
-PID status: alive | completed | dead | unknown
-Last PID signal (UTC+3):
-Last task-file transition (UTC+3): todo | work | done
-Current stage: research | planning | YAGNI | Normal | Ultimate | review | release
-Current owner:
+Workspace / branch:
 Started at (UTC+3):
-Lifecycle provenance: recorded at creation | legacy-missing (do not infer)
-Last task-file mtime observed (UTC+3):
-Workspace: primary checkout | auxiliary worktree | detached HEAD
-Worktree path:
-Branch:
 Initial estimate (minimum / maximum active minutes):
-Estimate revisions (append-only: UTC+3, previous -> new, trigger, evidence):
-Stop when:
-Abandon/rethink when:
-Harness policy / constraints:
-Harness-policy events (append-only):
-Two consecutive substantively equivalent approval prompts for the same still-pending
-action, with no material change to scope, target, or risk, count as confirmation.
+Actual active minutes:
+Last business delta:
 
-## Research
+## Route
 
-Use this section for compact Worker findings only.
+Execution mode: direct Lead | Worker research | Worker implement | mixed
+Why this is least-cost:
+Agent/model, only when material:
+Gate value test:
+Consequential-action / active-harness boundary:
 
-Decisive findings:
-Existing mechanism:
-Canary blocker:
-Checked/excluded:
-Unknowns:
-Proposed <=20-minute slices and dependencies:
+Two consecutive substantively equivalent approval prompts for the same
+still-pending action, with no material change to scope, target, or risk, count
+as confirmation.
 
-## Three plans — Full only
+## Worker checkpoint — only when delegated
 
-### 1. Максимально идеальный
-
-Outcome / scope / omissions / trade-offs / risks / minimum-maximum estimate /
-verification / migration / execution graph:
-
-### 2. Нормальный
-
-Outcome / scope / omissions / trade-offs / risks / minimum-maximum estimate /
-verification / migration / execution graph:
-
-### 3. YAGNI 80/20 — полный результат
-
-Outcome / scope / omissions / trade-offs / risks / minimum-maximum estimate /
-verification / migration / execution graph:
-
-Recommendation:
-Selected route / active-harness evidence:
-
-## Selected-plan technical preview — Full only
-
-Call-stack tree:
-File-tree diff:
-Key types and method signatures:
-Pseudocode:
-Migration description:
-Exact canary:
-Harness policy / constraints:
-Execution graph (each node: owner, paths, acceptance, dependencies, max <=20):
-Active-harness policy evidence:
-
-## Execution — append-only
+Every 20 active minutes is a reporting checkpoint, not a lifetime limit.
 
 - UTC+3:
-  Slice:
-  Mode: research | implement: bugfix/TDD | implement: feature
-  Owner:
-  Estimate (minimum / maximum; maximum <=20):
-  Paths:
-  Acceptance check:
-  Result: DONE | BLOCKED | NEEDS_REDECOMPOSITION | NEEDS_RETHINK
+  Progress:
   Business delta:
-  Evidence:
-  Next:
+  Blocker:
+  Route still shortest:
+  Shortest next action:
+  L action: continue | redirect/resume | consult Overseer | exceptional cancel
 
-## Overseer receipts — append-only
+Use the harness wait/join tool while a required child is non-terminal. A wait
+timeout is observational. Prefer the same Worker; cancellation is exceptional.
 
-- UTC+3:
-  Trigger:
-  VERDICT: CONTINUE | RETHINK | ASK_USER | STOP_SCOPE_DRIFT | STOP_MISSING_CONTEXT
-  BUSINESS_DELTA:
-  ESTIMATE:
-  WASTE:
-  NEXT:
-  QUESTION:
+## Decisive evidence
 
-## Critic decisions — append-only
+- Evidence / changed path / check:
 
-- UTC+3:
-  Current user P0:
-  Evidence:
-  P0 distance: CLOSER | SAME | FARTHER
-  Questions for L:
-  Decision: PASS | RETHINK | STOP | STOP_SCOPE_DRIFT | STOP_MISSING_CONTEXT
-  Minimum proof to proceed:
+Keep this section compact. Use a named result file only when handoff, recovery,
+reuse, audit, or rediscovery cost justifies it. Do not duplicate the same detail
+in both places.
 
-## Child assignment and detailed report — append-only
+## Optional risk-triggered roles
 
-The explicit `<Role> <absolute-task-file-path>` bootstrap is authoritative.
-The child reads only this assigned task file. Children append their detailed
-evidence and result to that file, then return only TL;DR to L. Children never create a second task
-card, report, ledger, specification, or recovery file.
+Overseer, Adviser, Critic, Reviewer, and Tester are risk-triggered, not required
+milestones. Record only roles actually used and why their value exceeded cost.
 
-- Role:
-  Mode:
-  Started:
-  Allowed/excluded paths:
-  Acceptance and stop conditions:
-  Detailed evidence and result:
-  L-facing return: TL;DR only
-
-## Independent gates — append-only
-
-Overseer:
-Reviewer:
-Tester:
-Critic:
+- Role / trigger / decision:
 
 ## Result
 
-Summary:
-Business canary evidence:
-Tests/checks:
-Review:
-Workspace/branch at finish:
-Commit (only if created):
-Unresolved:
+Business result:
+Claim strength proven:
+Source/test proof:
+Deployment state:
+Real canary proof:
+Deferred non-blocking findings:
+Commit, only if requested/created:

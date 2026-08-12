@@ -2,72 +2,34 @@
 set -eu
 
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-probe=$(mktemp "$root/.agents/tasks/todo-validator-probe.XXXXXX.md")
-trap 'rm -f -- "$probe"' EXIT HUP INT TERM
+template="$root/src/common/templates/.agents/tasks/task_template.md"
 
-printf '%s\n' '# Invalid task probe' '' 'Status: nonsense' >"$probe"
+require() {
+  grep -Fq "$1" "$template" || {
+    printf '%s\n' "FAIL: task template lacks $1" >&2
+    exit 1
+  }
+}
 
-if output=$(python3 "$root/tests/validate.py" 2>&1); then
-  echo "FAIL: validator accepted an unknown task prefix" >&2
+require 'Accepted business outcome / Definition of Done:'
+require 'Exact business canary:'
+require 'Cheapest sufficient proof:'
+require 'Actual production consumer path:'
+require 'Next shortest action:'
+require 'Why this is least-cost:'
+require 'Every 20 active minutes is a reporting checkpoint, not a lifetime limit.'
+require 'Use the harness wait/join tool while a required child is non-terminal.'
+require 'Overseer, Adviser, Critic, Reviewer, and Tester are risk-triggered'
+
+if grep -Fq 'Lifecycle snapshot: todo | work | done' "$template"; then
+  echo 'FAIL: task template still requires snapshot lifecycle copies' >&2
   exit 1
 fi
 
-case "$output" in
-  *"todo task has invalid status"*) ;;
-  *)
-    printf '%s\n' "$output" >&2
-    echo "FAIL: validator rejected the probe for the wrong reason" >&2
-    exit 1
-    ;;
-esac
+if grep -Fq 'Snapshot commit:' "$template"; then
+  echo 'FAIL: task template still requires a snapshot commit' >&2
+  exit 1
+fi
 
-rm -f -- "$probe"
-trap - EXIT HUP INT TERM
 python3 "$root/tests/validate.py" >/dev/null
-echo "PASS: task filenames and statuses use the exact canonical matrix"
-
-probe=$(mktemp "$root/.agents/tasks/todo-lifecycle-probe.XXXXXX.md")
-trap 'rm -f -- "$probe"' EXIT HUP INT TERM
-
-printf '%s\n' '# Missing lifecycle probe' '' 'Status: todo' >"$probe"
-
-if output=$(python3 "$root/tests/validate.py" 2>&1); then
-  echo "FAIL: validator accepted a todo task without lifecycle identity" >&2
-  exit 1
-fi
-
-case "$output" in
-  *"todo task lacks lifecycle field"*) ;;
-  *)
-    printf '%s\n' "$output" >&2
-    echo "FAIL: validator rejected the lifecycle probe for the wrong reason" >&2
-    exit 1
-    ;;
-esac
-
-rm -f -- "$probe"
-trap - EXIT HUP INT TERM
-echo "PASS: todo tasks require lifecycle identity"
-
-probe=$(mktemp "$root/.agents/tasks/work-lifecycle-empty-probe.XXXXXX.md")
-trap 'rm -f -- "$probe"' EXIT HUP INT TERM
-
-printf '%s\n' '# Empty lifecycle probe' '' 'Status: in progress' 'Harness: codex' 'PID:' 'Agent session: known' 'PID status: alive' 'Last PID signal: now' 'Last task-file transition: work' 'Started at (UTC+3): now' 'Lifecycle provenance: recorded' 'Last task-file mtime observed (UTC+3): now' >"$probe"
-
-if output=$(python3 "$root/tests/validate.py" 2>&1); then
-  echo "FAIL: validator accepted a work task with an empty PID" >&2
-  exit 1
-fi
-
-case "$output" in
-  *"work task has empty lifecycle field"*) ;;
-  *)
-    printf '%s\n' "$output" >&2
-    echo "FAIL: validator rejected the empty lifecycle probe for the wrong reason" >&2
-    exit 1
-    ;;
-esac
-
-rm -f -- "$probe"
-trap - EXIT HUP INT TERM
-echo "PASS: lifecycle identity values cannot be empty"
+echo 'PASS: compact task state keeps business routing ahead of lifecycle ceremony'

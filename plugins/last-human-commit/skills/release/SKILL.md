@@ -1,23 +1,26 @@
 ---
 name: release
-description: Lead-owned release procedure for gated tags, explicit approvals, and controlled handoff after the product result is proven.
+description: Lead-owned claim-calibrated procedure for a controlled consequential release action.
 ---
 
 # Release
 
-Use this skill when the verified outcome needs a controlled release step.
+Use only when the accepted result needs a release, deploy, tag, publication, or
+another consequential action.
 
 ## Procedure
 
-1. Confirm the release boundary, the target state, and the explicit approval
-   required for the action.
-2. Release only after the reviewed work and final tester gate are complete.
-3. Keep the action reversible when possible and record the exact release
-   evidence, tag, or handoff state.
-4. If approval is missing or ambiguous, stop before the release action.
+1. Confirm the target, artifact/commit, accepted claim, active-harness policy,
+   and exact release canary.
+2. Use only the review/testing/rollback gates justified by this action's actual
+   blast radius and reversibility.
+3. Revalidate target and evidence immediately before action.
+4. Record source/test proof, release state, and post-action business proof
+   separately.
 
 ## Do not
 
-- Do not invent a deployment mechanism.
-- Do not broaden the skill into runtime or fleet maintenance.
-- Do not treat a reminder or timer as authorization.
+- Do not treat every release as requiring the same roles or number of tests.
+- Do not invent deployment or rollback work outside the accepted boundary.
+- Do not treat a timer, wake, or process health as authorization or business
+  success.
