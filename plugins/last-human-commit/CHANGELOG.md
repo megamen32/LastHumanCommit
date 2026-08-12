@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.1 - 2026-08-12
+
+- Preserve a full prompt-based compaction handoff when a least-cost direct task
+  intentionally has no task-card.
+
 ## 0.2.0 - 2026-08-12
 
 - Added bounded compaction handoff/count hooks for Codex and OpenCode.

@@ -50,6 +50,7 @@ def run_native_hook(
     *,
     runtime: str = "codex",
     session_id: str = "session-demo",
+    extra_payload: dict[str, object] | None = None,
 ) -> dict[str, object] | None:
     """Run one native hook against a disposable project root."""
 
@@ -71,6 +72,7 @@ def run_native_hook(
                 "hook_event_name": event,
                 "session_id": session_id,
                 "trigger": "automatic",
+                **(extra_payload or {}),
             }
         ),
         check=True,
@@ -267,3 +269,22 @@ def test_legacy_large_task_card_cannot_make_handoff_append_forever(tmp_path: Pat
     assert len(handoff) < 30_000
     assert "legacy task-card middle omitted from handoff" in handoff
     assert "source path above is authoritative" in handoff
+
+
+def test_compaction_falls_back_to_captured_prompt_without_task_card(tmp_path: Path) -> None:
+    (tmp_path / ".agents").mkdir()
+    run_native_hook(
+        tmp_path,
+        "UserPromptSubmit",
+        extra_payload={"prompt": "Ship the real payment canary without extra hardening."},
+    )
+
+    result = run_native_hook(tmp_path, "PreCompact")
+
+    assert result is not None
+    handoff = (
+        tmp_path / ".agents/shared-session/compaction/session-demo/current-handoff.md"
+    ).read_text(encoding="utf-8")
+    assert "No active task-card was available" in handoff
+    assert "Ship the real payment canary without extra hardening." in handoff
+    assert "active time: unknown / не контролировал" in handoff

@@ -364,7 +364,7 @@ def render_handoff(
     *,
     count: int,
     now: datetime,
-    task: Path,
+    task: Path | None,
     task_text: str,
     payload: dict[str, Any],
     recent: list[dict[str, Any]],
@@ -377,13 +377,14 @@ def render_handoff(
         for mark in recent[-3:]
     ]
     bounded_task_text = task_text.rstrip()
+    task_label = os.fspath(task) if task is not None else "unavailable; native prompt fallback"
     if len(bounded_task_text) > MAX_HANDOFF_TASK_CHARS:
         head = MAX_HANDOFF_TASK_CHARS * 2 // 3
         tail = MAX_HANDOFF_TASK_CHARS - head
         bounded_task_text = (
             bounded_task_text[:head]
             + "\n\n[legacy task-card middle omitted from handoff; authoritative file: "
-            + os.fspath(task)
+            + task_label
             + "]\n\n"
             + bounded_task_text[-tail:]
         )
@@ -395,7 +396,7 @@ def render_handoff(
             f"Prepared at: {now.isoformat()}",
             f"Runtime session: {safe_session_id(payload)}",
             f"Trigger: {payload.get('trigger') or 'unknown'}",
-            f"Active task: {task}",
+            f"Active task: {task_label}",
             "",
             "Continue from this handoff. Do not restart completed investigation, "
             "silently widen the accepted DoD, or infer missing timing/status data.",
@@ -445,9 +446,7 @@ def compaction_hook(
         return {"handoff": handoff, "handoff_path": os.fspath(handoff_path)}
 
     task = find_active_task(cwd)
-    if task is None:
-        return None
-    card = task[0]
+    card = task[0] if task is not None else None
     now = args.now or datetime.now().astimezone()
     lock_path.parent.mkdir(parents=True, exist_ok=True)
     with lock_path.open("a", encoding="utf-8") as handle:
@@ -467,11 +466,25 @@ def compaction_hook(
             count += 1
             recent.append({"count": count, "at": now.isoformat(), "status": "pending"})
             recent = recent[-3:]
+            fallback_prompt = str(state.get("last_user_prompt") or "unknown")
+            task_text = (
+                card.read_text(encoding="utf-8")
+                if card is not None
+                else (
+                    "No active task-card was available.\n\n"
+                    f"Latest captured user prompt: {fallback_prompt}\n"
+                    "Started at: unknown\n"
+                    "Initial estimate: unknown\n"
+                    "Actual active time: unknown / не контролировал\n"
+                    "Current blocker: unknown\n"
+                    "Next shortest action: reconstruct only from the prompt and workspace snapshot."
+                )
+            )
             handoff = render_handoff(
                 count=count,
                 now=now,
                 task=card,
-                task_text=card.read_text(encoding="utf-8"),
+                task_text=task_text,
                 payload=payload,
                 recent=recent,
                 cwd=cwd,
@@ -480,11 +493,25 @@ def compaction_hook(
         elif event == "postcompact":
             if recent and recent[-1].get("status") == "pending":
                 recent[-1]["status"] = "completed"
+            fallback_prompt = str(state.get("last_user_prompt") or "unknown")
+            task_text = (
+                card.read_text(encoding="utf-8")
+                if card is not None
+                else (
+                    "No active task-card was available.\n\n"
+                    f"Latest captured user prompt: {fallback_prompt}\n"
+                    "Started at: unknown\n"
+                    "Initial estimate: unknown\n"
+                    "Actual active time: unknown / не контролировал\n"
+                    "Current blocker: unknown\n"
+                    "Next shortest action: reconstruct only from the prompt and workspace snapshot."
+                )
+            )
             handoff = render_handoff(
                 count=count,
                 now=now,
                 task=card,
-                task_text=card.read_text(encoding="utf-8"),
+                task_text=task_text,
                 payload=payload,
                 recent=recent,
                 cwd=cwd,
@@ -526,6 +553,23 @@ def hook(args: argparse.Namespace) -> dict[str, Any] | None:
     if not isinstance(payload, dict):
         return None
     cwd = Path(str(payload.get("cwd") or os.getcwd())).expanduser().resolve()
+    if args.event.casefold() in {"userpromptsubmit", "chat.message"}:
+        agents_root = find_agents_root(cwd)
+        prompt = payload.get("prompt")
+        if not isinstance(prompt, str):
+            prompt = payload.get("text")
+        if agents_root is not None and isinstance(prompt, str) and prompt.strip():
+            compaction_state, _, compaction_lock = compaction_paths(agents_root, payload)
+            compaction_lock.parent.mkdir(parents=True, exist_ok=True)
+            with compaction_lock.open("a", encoding="utf-8") as handle:
+                fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+                current = load_state(compaction_state) or {
+                    "schema_version": 1,
+                    "compaction_count": 0,
+                    "recent": [],
+                }
+                current["last_user_prompt"] = prompt.strip()
+                write_state(compaction_state, current)
     if args.event.casefold() in {"precompact", "postcompact"}:
         return compaction_hook(args, payload, cwd)
     restored = compaction_hook(args, payload, cwd) if args.event.casefold() == "sessionstart" else None
