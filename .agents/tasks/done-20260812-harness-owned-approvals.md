@@ -16,13 +16,13 @@ Harness: Codex desktop / multi_agent_v1
 PID: current Codex process
 Agent session: current Codex task
 PID status: completed
-Last PID signal (UTC+3): 2026-08-12 07:17 +0300
+Last PID signal (UTC+3): 2026-08-12 07:20 +0300
 Last task-file transition (UTC+3): done
 Current stage: release
 Current owner: Lead
 Started at (UTC+3): 2026-08-12 07:04 +0300
 Lifecycle provenance: recorded at creation
-Last task-file mtime observed (UTC+3): 2026-08-12 07:17 +0300
+Last task-file mtime observed (UTC+3): 2026-08-12 07:20 +0300
 Workspace: primary checkout
 Worktree path: `/home/roomhacker/agents-projects/LastHumanCommit`
 Branch: main
@@ -87,5 +87,5 @@ Business canary evidence: The router and Lead role state `The active harness own
 Tests/checks: Red `pytest` proof before implementation; green `python3 -m pytest -q tests/test_harness_owned_approvals.py` (`2 passed`); `git diff --check` passed; `python3 tests/validate.py` blocked by unrelated `.agents/tasks/work-20260811-lhc-three-identical-zero-knowledge-reviews.md` missing a legacy lifecycle field.
 Review: Scoped source/template/docs/validator review complete; no contradiction found with capability-based AskHuman or AskSecret/SSS.
 Workspace/branch at finish: `/home/roomhacker/agents-projects/LastHumanCommit`, `main`.
-Commit (only if created): pending final snapshot and implementation commit.
-Unresolved: Local installed version remains `968fea0`; versioned rollout was intentionally not run.
+Commit (only if created): `474286f` (todo snapshot); `b4dbb2f` (implementation, work and done snapshots).
+Unresolved: The installed version remains `968fea0`; no versioned rollout was run. Applying the marker updater to `/home/roomhacker/agents-projects/AGENTS.md` was safely rejected because that file has no LHC marker block, so it was not modified.
