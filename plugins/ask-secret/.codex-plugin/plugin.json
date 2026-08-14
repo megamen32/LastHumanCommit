@@ -1,0 +1,18 @@
+{
+  "name": "ask-secret",
+  "version": "0.1.0",
+  "description": "Create a one-time browser handoff link for entering a secret without putting the value in chat.",
+  "author": {
+    "name": "megamen32",
+    "url": "https://github.com/megamen32"
+  },
+  "interface": {
+    "displayName": "Ask Secret",
+    "shortDescription": "Request a secret through a one-time link.",
+    "longDescription": "Ask Secret creates a one-time browser link where a person can enter a password, token, or other secret. The value is never requested, displayed, or echoed in the agent conversation.",
+    "developerName": "megamen32",
+    "category": "Productivity",
+    "capabilities": ["Interactive"],
+    "defaultPrompt": ["Create a secure link for entering a secret"]
+  }
+}

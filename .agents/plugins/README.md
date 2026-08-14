@@ -7,14 +7,15 @@ package.
 
 The repository marketplace is intentionally source-only. It does not install or
 enable anything on a user's machine. The catalog points at plugin directories
-inside this repository, and each plugin owns its own Codex manifest, skills,
+inside this repository, and each plugin owns its own Codex manifest, commands, skills,
 optional Claude/OpenCode projections, and optional MCP companion files.
 
 ## Current catalog
 
 | Plugin | Version | Contents | Source |
 | --- | --- | --- | --- |
-| `last-human-commit` | `0.2.1` | Codex, OpenCode, Claude Code workflow skills | `./plugins/last-human-commit` |
+| `last-human-commit` | `0.3.0` | Codex, OpenCode, Claude Code workflow skills | `./plugins/last-human-commit` |
+| `ask-secret` | `0.1.0` | One-time browser secret handoff command | `./plugins/ask-secret` |
 
 ## Validate
 
