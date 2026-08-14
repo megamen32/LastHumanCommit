@@ -16,6 +16,7 @@ optional Claude/OpenCode projections, and optional MCP companion files.
 | --- | --- | --- | --- |
 | `last-human-commit` | `0.3.0` | Codex, OpenCode, Claude Code workflow skills | `./plugins/last-human-commit` |
 | `ask-secret` | `0.1.0` | One-time browser secret handoff command | `./plugins/ask-secret` |
+| `ask-human` | `0.1.0` | Correlated ordinary human question command | `./plugins/ask-human` |
 
 ## Validate
 

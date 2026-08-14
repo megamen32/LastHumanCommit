@@ -1,0 +1,18 @@
+{
+  "name": "ask-human",
+  "version": "0.1.0",
+  "description": "Request an ordinary human decision or missing non-secret information through the configured AskHuman capability.",
+  "author": {
+    "name": "megamen32",
+    "url": "https://github.com/megamen32"
+  },
+  "interface": {
+    "displayName": "Ask Human",
+    "shortDescription": "Ask a blocking human question safely.",
+    "longDescription": "Ask Human routes an ordinary decision or missing non-secret detail through the configured AskHuman MCP capability and exposes only opaque request status in the agent conversation.",
+    "developerName": "megamen32",
+    "category": "Productivity",
+    "capabilities": ["Interactive"],
+    "defaultPrompt": ["Ask me one blocking project question"]
+  }
+}
