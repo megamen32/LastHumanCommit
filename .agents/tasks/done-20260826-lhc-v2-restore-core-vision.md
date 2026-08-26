@@ -118,3 +118,17 @@ self-improve сразу в evaluator_optimizer-цикл с Arena-гейтом. �
 - Leftover AskSecret/AskHuman/NoticePlace mentions are intentional
   prohibition lines (AGENTS/CLAUDE/Lead), test forbid-lists, and ROADMAP
   history.
+
+## Result (2026-08-26)
+
+- Commit 46356ed (v2 canon) on main; all validators green
+  (validate.py, 37 pytest, task_states, marketplace, hermes plugin 10, plugin validate).
+- Rollout 46356ed applied and verified on targets 100, 44, 88, mac
+  (digest sha256:16d0330cc..., 50 files); rollback root
+  ~/.local/share/last-human-commit/rollbacks/46356ed-lhc-rollout.
+- Physical canary: installed ~/.zcode/AGENTS.md block carries v2 contract,
+  4 role refs resolve to deployed current/common/agents.
+- zcode SessionStart time-anchor hook live (config backup:
+  ~/.zcode/cli/config.json.bak-lhc-time-20260826).
+- ServersAdministartion/CLAUDE.md got its managed marker block initialized
+  (graphify text preserved outside the block).
