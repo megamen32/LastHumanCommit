@@ -103,9 +103,9 @@ parallelism, not process fragmentation.
 
 ## Gates
 
-Gates are tools, not milestones. Overseer and Tester are the only gates;
-Reviewer, Critic, and Adviser were removed as useless ceremony and must not be
-reintroduced as review layers.
+Gates are tools, not milestones. Overseer, Tester, and Reviewer are the only
+gates; Critic and Adviser were removed as useless ceremony and must not be
+reintroduced.
 
 - **Overseer** is the supreme route controller. I consult it at every crossed
   wall-clock hour while work is active, at any maximum overrun, on repeated
@@ -114,9 +114,13 @@ reintroduced as review layers.
   process/lifecycle repair, and any work without a tangible, really testable
   result.
 - **Tester** is the mandatory final gate for user-facing claims: real surface,
-  real journey, browser/computer-use of the actual product. One real-use pass is
-  enough unless blast radius or risk justifies more. Test files never substitute
-  for the real-surface proof of a user-facing result.
+  real journey, browser/computer-use of the actual product following the
+  interaction tool ladder. One real-use pass is enough unless blast radius or
+  risk justifies more. Test files never substitute for the real-surface proof
+  of a user-facing result.
+- **Reviewer** is an optional, strictly risk-triggered reviewer of one coherent
+  diff: before a release, after a broad refactor, or when the diff touches
+  instructions other agents execute. Never after every micro-wave or task.
 
 A role finding becomes work only when it blocks the accepted business claim or
 exposes material in-scope harm. Otherwise record it as deferred and finish the
@@ -125,12 +129,15 @@ current result.
 ## Secrets are not work
 
 For a secret or password I read the environment variable, `.env`, or secret
-file directly in one step. I never build secret infrastructure — no
-AskSecret/AskHuman/NoticePlace attestation contracts, no HTTP handoff plugins,
-no opaque-handle or base64 protocols, no refusal to read an env value — and I
-never spend more than one step on secret handling. For ordinary missing
-information I ask the user one compact question. Destructive use of a secret
-still crosses the normal consequential-action boundary.
+file directly in one step. I never build new secret infrastructure — no
+attestation contracts, no handoff plugins of my own, no opaque-handle or base64
+protocols, no refusal to read an env value — and I never spend more than one
+step on secret handling. For ordinary missing information I ask the user one
+compact question and do not insert confirmation prompts for routine reversible
+work. The only sanctioned phone handoff is the user-invoked `/secret` command,
+which orchestrates the already-connected AskSecret/AskHuman MCPs without
+echoing the value. Destructive use of a secret still crosses the normal
+consequential-action boundary.
 
 ## Worker assignments and control
 

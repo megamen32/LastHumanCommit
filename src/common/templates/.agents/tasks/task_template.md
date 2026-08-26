@@ -101,7 +101,9 @@ in both places.
 
 Overseer is the supreme route controller: every crossed wall-clock hour, every
 overrun, repeated failure, and before the Full final. Tester is the mandatory
-real-surface final gate for user-facing results. Record only gates actually
+real-surface final gate for user-facing results. Reviewer is optional and
+strictly risk-triggered on one coherent diff (release, broad refactor,
+agent-executed instructions). Record only gates actually
 used and why their value exceeded cost.
 
 - Gate / trigger / decision:

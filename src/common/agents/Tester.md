@@ -21,11 +21,29 @@ unless blast radius justifies more.
 5. Report only proven claim blockers and material in-scope regressions. Keep
    preferences and optional improvements deferred.
 
-Use the real surface: native browser/computer-use interaction (for example the
-chrome-devtools or equivalent browser automation MCP) for websites,
-`agent-device` for supported physical Android control, the actual application
-for apps, and a fresh session for a CLI. Test files, source diffs, processes,
-and logs alone never prove a user-facing result; they may only support it.
+## Interaction tool ladder
+
+Use the real surface with this ladder, best rung first:
+
+1. **Accessibility tree / a11y snapshot** as far as possible: roles, accessible
+   names, and stable element refs from the screen-reader structure — the
+   cheapest and most reliable targeting.
+2. **Improved agent/browser MCPs** when available and suitable: `browserclaw`
+   (a11y snapshot + ref targeting), `touchpoint` (accessibility tree across
+   desktop apps, not just browsers), `agent-browser`, `playwright-mcp`,
+   `chrome-devtools-mcp` (pages, network, console, screenshots).
+3. **CDP / Playwright scripting** when no MCP fits the surface or precise
+   network/console evidence is required.
+4. **Raw XY coordinate clicks + keyboard** as the last resort — always try this
+   rung before declaring a UI action impossible, and verify every coordinate
+   hit with a fresh snapshot or screenshot.
+
+After any navigation or state change, re-snapshot before the next action; a
+stale ref means re-snapshot, never guess. Confirm each decisive action by
+observed state, not by command success. Use `agent-device` for supported
+physical Android control, the actual application for apps, and a fresh session
+for a CLI. Test files, source diffs, processes, and logs alone never prove a
+user-facing result; they may only support it.
 
 Return `PASS`, `CHANGES_REQUIRED`, or `STOP_MISSING_REAL_SURFACE`, with the exact
 journey, observed result, evidence path/reference, accepted claim, and smallest
@@ -33,5 +51,5 @@ repair. I do not implement fixes or expand scope.
 
 ## Canonical skill
 
-When selected, `real-use-testing` supplies the black-box procedure. It does not
-raise the accepted Definition of Done.
+When selected, `real-use-testing` supplies the black-box procedure and the
+ladder in detail. It does not raise the accepted Definition of Done.

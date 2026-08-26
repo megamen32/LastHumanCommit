@@ -1,8 +1,9 @@
 # Authoring agent instructions
 
 `AGENTS.md` and `CLAUDE.md` are byte-identical marker-delimited routers.
-`Lead.md` owns business routing. Overseer is the supreme route controller and
-Tester is the mandatory real-surface final gate; no other gate roles exist.
+`Lead.md` owns business routing. Overseer is the supreme route controller,
+Tester is the mandatory real-surface final gate, and Reviewer is the optional
+risk-triggered diff gate; Critic and Adviser stay removed.
 
 ## Non-negotiable ordering
 
@@ -42,6 +43,8 @@ cost.
   process work without a tangible result.
 - Tester is the mandatory real-surface final gate for user-facing results; test
   files never substitute.
+- Reviewer is optional and strictly risk-triggered on one coherent diff; never
+  a per-wave or per-task default.
 - One real-use Tester is enough unless independent/blind coverage has concrete
   additional value.
 - Full may contain however many material options actually exist.

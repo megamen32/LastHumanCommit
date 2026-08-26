@@ -53,8 +53,8 @@ Decision under active-harness policy:
 3. Run the real canary as early as safely possible.
 4. Fix only the first claim-blocking failure.
 5. Run proportional direct-regression checks.
-6. Add Tester, Overseer, hardening, or broader proof only when their expected
-   risk-reduction value exceeds their cost for this claim/action.
+6. Add Tester, Overseer, Reviewer, hardening, or broader proof only when their
+   expected risk-reduction value exceeds their cost for this claim/action.
 
 Every 20 active minutes is a reporting checkpoint, not a Worker lifetime limit.
 The Worker reports progress, business delta, blocker, and the shortest next

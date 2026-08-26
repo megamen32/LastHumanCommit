@@ -10,8 +10,8 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-ROLES = ("Lead", "Overseer", "Worker", "Tester")
-REMOVED_ROLES = ("Adviser", "Critic", "Reviewer")
+ROLES = ("Lead", "Overseer", "Worker", "Tester", "Reviewer")
+REMOVED_ROLES = ("Adviser", "Critic")
 ADAPTERS = ("codex", "opencode", "claude-code", "hermes", "zcode")
 SKILLS = (
     "planning",
@@ -78,6 +78,7 @@ lead = text("src/common/agents/Lead.md")
 worker = text("src/common/agents/Worker.md")
 overseer = text("src/common/agents/Overseer.md")
 tester = text("src/common/agents/Tester.md")
+reviewer = text("src/common/agents/Reviewer.md")
 planning = text("src/common/profiles/Planning.md")
 code = text("src/common/profiles/Code.md")
 test_profile = text("src/common/profiles/Test.md")
@@ -149,7 +150,9 @@ for source, value in (("AGENTS.md", router), ("Lead.md", lead)):
 
 ## Gates v2: supreme Overseer plus mandatory real-surface Tester.
 require(router, "Overseer is the supreme route controller", "AGENTS.md")
-require(router, "Overseer and Tester are the only gates", "AGENTS.md")
+require(router, "Overseer, Tester, and Reviewer are the only gates", "AGENTS.md")
+require(reviewer, "risk-triggered", "Reviewer.md")
+require(reviewer, "APPROVE", "Reviewer.md")
 require(overseer, "supreme route controller", "Overseer.md")
 require(overseer, "Security theater is the canonical drift", "Overseer.md")
 require(overseer, "Started at", "Overseer.md")
@@ -157,6 +160,12 @@ require(tester, "mandatory final gate for user-facing results", "Tester.md")
 require(tester, "Use the real surface", "Tester.md")
 require(tester, "never prove a user-facing result", "Tester.md")
 require(lead, "Test files never substitute", "Lead.md")
+skill_rut = text("skills/real-use-testing/SKILL.md")
+for source, value in (("Tester.md", tester), ("real-use-testing", skill_rut)):
+    for phrase in ("Accessibility tree", "browserclaw", "touchpoint", "agent-browser", "Playwright", "XY"):
+        require(value, phrase, source)
+require(lead + router, "/secret", "secret handoff contract")
+require(router, "never echoes the value", "AGENTS.md")
 
 ## Checkpoint, join, and worker-question semantics.
 checkpoint_sources = {

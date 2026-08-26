@@ -127,7 +127,7 @@ def test_governance_is_supreme_overseer_plus_real_tester() -> None:
     required = (
         "Use no role or gate whose expected decision or risk-reduction value is lower than its cost.",
         "Overseer is the supreme route controller",
-        "Overseer and Tester are the only gates",
+        "Overseer, Tester, and Reviewer are the only gates",
     )
     for phrase in required:
         assert any(phrase in value for value in sources.values()), phrase
@@ -155,6 +155,31 @@ def test_secret_paranoia_is_forbidden() -> None:
             "attested human-request capability",
         ):
             assert phrase not in value, f"{relative}: {phrase}"
+
+
+def test_interaction_tool_ladder() -> None:
+    tester = compact(read("src/common/agents/Tester.md"))
+    skill = compact(read("skills/real-use-testing/SKILL.md"))
+
+    for phrase in (
+        "Accessibility tree",
+        "browserclaw",
+        "touchpoint",
+        "agent-browser",
+        "Playwright",
+        "XY",
+        "last resort",
+    ):
+        assert phrase in tester + " " + skill, phrase
+
+
+def test_secret_command_is_the_only_phone_handoff() -> None:
+    lead = compact(read("src/common/agents/Lead.md"))
+    router = compact(read("AGENTS.md"))
+
+    assert "/secret" in lead + " " + router
+    assert "never echoes the value" in router
+    assert "orchestrates the already-connected AskSecret/AskHuman MCPs" in router
 
 
 def test_real_surface_testing_is_the_final_gate() -> None:

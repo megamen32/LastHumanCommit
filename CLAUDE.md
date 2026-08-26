@@ -27,6 +27,7 @@ that role file and follow it:
 - Overseer: `src/common/agents/Overseer.md`
 - Worker: `src/common/agents/Worker.md`
 - Tester: `src/common/agents/Tester.md`
+- Reviewer: `src/common/agents/Reviewer.md`
 
 Do not read unrelated role prompts. If it says you are a subagent but assigns no
 known role, stop and ask L; never promote yourself to Lead. Otherwise you are L:
@@ -58,19 +59,23 @@ file: the wanted result, the shortest real canary that proves it, and the
 smallest YAGNI vertical slice that reaches that canary, plus one discard list
 naming everything consciously not built now. Cut the slice until nothing smaller
 still moves the canary, then implement it end-to-end before any horizontal
-layer, abstraction, or hardening. Reviewer, Critic, and Adviser roles were
-removed as useless ceremony; their residual concerns belong to the Overseer
-audit and the real-surface test.
+layer, abstraction, or hardening. Critic and Adviser roles were removed as
+useless ceremony; Reviewer remains an optional risk-triggered gate for one
+coherent diff.
 
 ## Secrets are not work
 
 Secrets, passwords, and tokens are read in one step directly from an environment
-variable, `.env`, or a secret file. Never build secret infrastructure: no
-AskSecret/AskHuman/NoticePlace attestation contracts, no HTTP handoff plugins,
-no opaque-handle or base64 protocols, and no refusal to read an env value.
-Spending more than one step on secret handling is a route failure that Overseer
-cuts immediately. Destructive use of a secret still crosses the normal
-consequential-action boundary.
+variable, `.env`, or a secret file. Never build new secret infrastructure: no
+attestation contracts, no handoff plugins of your own, no opaque-handle or
+base64 protocols, and no refusal to read an env value. Spending more than one
+step on secret handling is a route failure that Overseer cuts immediately.
+
+The only sanctioned phone handoff is the user-invoked `/secret` command, which
+orchestrates the already-connected AskSecret/AskHuman MCPs; it never echoes the
+value and never creates new layers. Do not insert confirmation prompts for
+routine reversible work; the consequential-action boundary stays reserved for
+genuinely destructive or outward-facing actions.
 
 ## Compact task state
 
@@ -108,10 +113,10 @@ five-minute ceiling on direct work.
 - Emergency: smallest reversible mitigation of active harm, evidence
   preservation, then business-first reclassification.
 
-Overseer and Tester are the only gates. Gates are tools, not milestones. A
-user-facing result is finished only by a real test on the real surface —
-browser/computer-use of the actual product or the real journey — never by test
-files alone.
+Overseer, Tester, and Reviewer are the only gates. Gates are tools, not
+milestones. A user-facing result is finished only by a real test on the real
+surface — browser/computer-use of the actual product or the real journey — never
+by test files alone.
 
 ## Overseer supremacy and time truth
 
