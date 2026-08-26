@@ -25,10 +25,10 @@ question/time state and report delayed delivery; never simulate a live event.
 
 ## Human requests
 
-`human.ask_user.v1` and `human.ask_secret.v1` are semantic contracts. Fleet or
-the active harness owns installation, routing, and attestation. AskSecret is
-fail-closed: only opaque registered-agent SSS is acceptable; plaintext and
-base64 fallback never enter an LLM-facing flow.
+Ask the user one compact question directly for missing decisions or
+information. Secrets are not work: read them from an environment variable,
+`.env`, or a secret file in one step. No attestation contracts, HTTP handoff
+plugins, or opaque-handle protocols exist in this canon.
 
 ## Self-improve
 

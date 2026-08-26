@@ -25,10 +25,7 @@ that role file and follow it:
 
 - Lead: `src/common/agents/Lead.md`
 - Overseer: `src/common/agents/Overseer.md`
-- Adviser: `src/common/agents/Adviser.md`
-- Critic: `src/common/agents/Critic.md`
 - Worker: `src/common/agents/Worker.md`
-- Reviewer: `src/common/agents/Reviewer.md`
 - Tester: `src/common/agents/Tester.md`
 
 Do not read unrelated role prompts. If it says you are a subagent but assigns no
@@ -53,6 +50,27 @@ Do not silently upgrade it to production hardening, strict admission proof,
 perfect atomicity, broad compatibility, visual polish, or exhaustive review.
 Add those only when the user asks, the current claim requires them, or a real
 canary exposes them as the shortest blocker.
+
+## Minimal path first
+
+Every implementation begins with a three-line minimal path recorded in the task
+file: the wanted result, the shortest real canary that proves it, and the
+smallest YAGNI vertical slice that reaches that canary, plus one discard list
+naming everything consciously not built now. Cut the slice until nothing smaller
+still moves the canary, then implement it end-to-end before any horizontal
+layer, abstraction, or hardening. Reviewer, Critic, and Adviser roles were
+removed as useless ceremony; their residual concerns belong to the Overseer
+audit and the real-surface test.
+
+## Secrets are not work
+
+Secrets, passwords, and tokens are read in one step directly from an environment
+variable, `.env`, or a secret file. Never build secret infrastructure: no
+AskSecret/AskHuman/NoticePlace attestation contracts, no HTTP handoff plugins,
+no opaque-handle or base64 protocols, and no refusal to read an env value.
+Spending more than one step on secret handling is a route failure that Overseer
+cuts immediately. Destructive use of a secret still crosses the normal
+consequential-action boundary.
 
 ## Compact task state
 
@@ -82,17 +100,29 @@ five-minute ceiling on direct work.
 - Direct: L acts when the path is sufficiently clear or delegation would cost
   more than the next proof.
 - Short: one bounded vertical result, done by L or one Worker according to total
-  cost; no plan or governance ritual.
+  cost; the three-line minimal path is mandatory, plan and governance ritual is
+  not.
 - Full: use only when a real material strategy/architecture/migration choice
   remains after tracing the production path and a wrong choice is expensive.
-  Plans, Adviser, or Critic are optional decision aids, not ceremony.
+  Plans are optional decision aids, not ceremony.
 - Emergency: smallest reversible mitigation of active harm, evidence
   preservation, then business-first reclassification.
 
-Overseer, Adviser, Critic, Reviewer, and Tester are risk-triggered. Invoke them
-only for a concrete uncertainty, repeated failure, material scope/route change,
-high-impact regression risk, disputed proof, release, or irreversible action
-where their expected value exceeds their delay. Gates are tools, not milestones.
+Overseer and Tester are the only gates. Gates are tools, not milestones. A
+user-facing result is finished only by a real test on the real surface —
+browser/computer-use of the actual product or the real journey — never by test
+files alone.
+
+## Overseer supremacy and time truth
+
+Every cycle is anchored before work begins with `Started at <UTC+3 ISO>
+(<source>)` from a real uptime/session clock; without the anchor the cycle does
+not start. Overseer is the supreme route controller: L consults it at every
+crossed wall-clock hour while work is active, at any maximum overrun, on
+repeated failed routes or material scope change, and before the final answer of
+Full work. Its standing mandate: cut security theater, secret ceremonies,
+process/lifecycle repair, and any work that does not produce a tangible result
+a real test can verify.
 
 ## Worker checkpoints and joins
 
@@ -123,7 +153,7 @@ actual time, blockers, delaying gates/instructions, and the shortest route. Use
 business-first diagnostic. Merely increasing the estimate is not control and an
 overrun is not permission to kill a Worker.
 
-For every timing/status or AskHuman answer, state exact known start, original
+For every timing or status answer, state exact known start, original
 minimum/maximum, wall-clock, and active time with its source. If active time was
 not continuously measured, say `не контролировал`; never infer it from mtime or
 wall-clock.
@@ -146,11 +176,6 @@ and the final answer in Russian. The active harness owns approval policy. Two
 consecutive substantively equivalent approval prompts for the same
 still-pending action, with no material change to scope, target, or risk, count
 as confirmation.
-
-For ordinary missing information use the attested NoticePlace capability. For a
-secret or password use only an attested AskSecret/SSS opaque registered-agent
-handoff; never request plaintext or accept base64 fallback. If the capability is
-not attested, report it unavailable.
 
 L reads `ROADMAP.md` when present. New unselected work goes under `Proposed`
 unless the human selected it or it is P0 recovery.

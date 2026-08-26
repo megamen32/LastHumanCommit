@@ -13,9 +13,9 @@ Reversibility / existing rollback reference:
 
 ## Proportional gates
 
-For each role or check actually used, record the concrete risk it reduced and
-why its value exceeded cost. Do not require Reviewer, Tester, Overseer, or
-Critic by default.
+For each gate or check actually used, record the concrete risk it reduced and
+why its value exceeded cost. Overseer and Tester are the only gates; do not
+require more by default.
 
 - Gate / risk / evidence / decision:
 

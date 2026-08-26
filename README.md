@@ -20,8 +20,8 @@ and proof, and adds governance only when a concrete risk justifies its cost.
    exceptionally.
 6. Use the harness wait/join mechanism for required children. A timeout is an
    observation, never proof of terminal state.
-7. Invoke Overseer, Adviser, Critic, Reviewer, or Tester only when expected
-   decision/risk-reduction value exceeds delay and token cost.
+7. Consult the supreme Overseer at every crossed hour, overrun, and repeated
+   failure; finish user-facing results only with a real-surface test.
 8. Match evidence to the claim and stop when that claim is proven.
 
 Workers ask Lead at decision boundaries because Lead retains the broader user
@@ -35,8 +35,8 @@ business reports and original-maximum overrun diagnostics. Native hooks call it
 when attested; otherwise Lead calls it at observable checkpoints and reports any
 delayed hourly delivery honestly.
 
-Overseer, Adviser, Critic, Reviewer, and Tester are risk-triggered. Gates are
-tools, not milestones. When a route choice matters, LHC compares two genuinely
+Overseer and Tester are the only gates. Gates are tools, not milestones. When
+a route choice matters, LHC compares two genuinely
 different approaches after compressing each from ideal to normal to YAGNI/Pareto
 MVP. It does not manufacture a third option, double testing, per-wave reviews,
 or hardening loops merely because a task is important.
@@ -54,10 +54,10 @@ worktree. A user-requested worktree lives only at
 
 ## Human and secret boundaries
 
-The active harness owns approval policy. Ordinary missing decisions use an
-attested human-request capability. Secrets use only attested opaque
-AskSecret/SSS registered-agent handoff; plaintext and base64 fallbacks are
-rejected.
+The active harness owns approval policy. Ordinary missing decisions use one
+compact direct question. Secrets are not work: read them from an environment
+variable, `.env`, or a secret file in one step; secret-handoff infrastructure
+is forbidden.
 
 ## Install the portable router
 

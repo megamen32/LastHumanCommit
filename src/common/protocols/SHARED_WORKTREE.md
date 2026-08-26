@@ -61,7 +61,13 @@ task. An explicit human request may authorize one named target only.
 
 ## Final integration
 
-Stage and commit only reviewed task-owned paths. Never stage or commit foreign
-edits merely because they are old, safe-looking, or already present in the
-checkout. Report them separately. Including one foreign change requires an
-explicit user instruction naming that change.
+Before every integration or release, review the complete target-branch diff,
+including foreign and pre-existing changes, so the resulting project state is
+coherent rather than merely the current task's patch. Revalidate that the target
+branch is the current remote/default-branch tip before choosing the integration
+route; report any divergence and do not silently merge, rebase, or discard it.
+
+Stage and commit only task-owned paths unless the user explicitly authorizes the
+named foreign changes. A full review is required for awareness and coordination;
+it is not authorization to absorb another owner's work. Report unapproved
+foreign changes and the exact target-branch divergence separately.

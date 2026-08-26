@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate the business-first, least-cost Last Human Commit contract."""
+"""Validate the LHC v2 contract: minimal path, time truth, real-surface tests, no secret theater."""
 
 from __future__ import annotations
 
@@ -10,7 +10,8 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-ROLES = ("Lead", "Overseer", "Adviser", "Critic", "Worker", "Reviewer", "Tester")
+ROLES = ("Lead", "Overseer", "Worker", "Tester")
+REMOVED_ROLES = ("Adviser", "Critic", "Reviewer")
 ADAPTERS = ("codex", "opencode", "claude-code", "hermes", "zcode")
 SKILLS = (
     "planning",
@@ -76,10 +77,7 @@ claude = text("CLAUDE.md")
 lead = text("src/common/agents/Lead.md")
 worker = text("src/common/agents/Worker.md")
 overseer = text("src/common/agents/Overseer.md")
-reviewer = text("src/common/agents/Reviewer.md")
 tester = text("src/common/agents/Tester.md")
-critic = text("src/common/agents/Critic.md")
-adviser = text("src/common/agents/Adviser.md")
 planning = text("src/common/profiles/Planning.md")
 code = text("src/common/profiles/Code.md")
 test_profile = text("src/common/profiles/Test.md")
@@ -87,49 +85,80 @@ research = text("src/common/protocols/WORKER_RESEARCH.md")
 implement = text("src/common/protocols/WORKER_IMPLEMENT.md")
 control = text("src/common/protocols/STOP_RETHINK.md")
 time_control = text("src/common/protocols/TIME_CONTROL.md")
+self_improve = text("src/common/protocols/SELF_IMPROVE.md")
 workspace = text("src/common/protocols/SHARED_WORKTREE.md")
 shared_session = text("docs/shared-session-abstraction.md")
+authoring = text("docs/agent-authoring.md")
 task_template = text("src/common/templates/.agents/tasks/task_template.md")
 full_cycle = text("templates/FULL_CYCLE.md")
 release = text("templates/RELEASE_HANDOFF.md")
-readme = text("README.md")
-authoring = text("docs/agent-authoring.md")
-audit = text("docs/business-first-error-audit.md")
 
-# Portable router and role ownership.
-if router.encode() != claude.encode():
-    fail("AGENTS.md and CLAUDE.md must be byte-identical")
-for marker in ("<!-- last-human-commit:begin -->", "<!-- last-human-commit:end -->"):
-    if router.splitlines().count(marker) != 1:
-        fail(f"router needs exactly one {marker}")
+if router != claude:
+    fail("AGENTS.md and CLAUDE.md must stay byte-identical marker routers")
+
+## Role set: exactly the four v2 roles, removed roles stay gone.
 for role in ROLES:
-    require(router, f"{role}: `src/common/agents/{role}.md`", "AGENTS.md")
     text(f"src/common/agents/{role}.md")
+    require(router, f"- {role}: `src/common/agents/{role}.md`", "AGENTS.md")
+for role in REMOVED_ROLES:
+    if (ROOT / "src/common/agents" / f"{role}.md").exists():
+        fail(f"removed role file still present: src/common/agents/{role}.md")
 
-# Business logic must precede execution/process routing.
+## Secret-theater infrastructure stays deleted.
+for removed in (
+    "src/common/capabilities",
+    "plugins/ask-secret",
+    "plugins/ask-human",
+    "src/common/tools/install_http_capabilities.py",
+    "scripts/install_http_capabilities.py",
+    "tests/test_install_http_capabilities.py",
+):
+    if (ROOT / removed).exists():
+        fail(f"secret-theater path still present: {removed}")
+
+## Business-first ordering in Lead.
 require_before(
     lead,
     "Business value is the first routing input.",
     "Choose the least-cost sufficient execution mode",
     "Lead.md",
 )
-for source, value in (("AGENTS.md", router), ("Lead.md", lead)):
-    for phrase in (
-        "Business value is the first routing input",
-        "actual production consumer path",
-        "least-cost sufficient execution mode",
-        "accepted MVP",
-        "Gates are tools, not milestones",
-    ):
-        require(value, phrase, source)
-require(lead, "Lead may research and implement directly whenever delegation would cost more", "Lead.md")
-require(lead, "Proof strength matches the exact claim the user needs now", "Lead.md")
-require(code, "Trace the real production consumer", "Code.md")
-require(test_profile, "Choose the cheapest evidence sufficient for the exact claim", "Test.md")
-require(implement, "smallest coherent vertical change on the real path", "WORKER_IMPLEMENT.md")
-require(research, "Trace the actual production consumer path", "WORKER_RESEARCH.md")
+for phrase in (
+    "Trace the actual production consumer path before choosing an implementation surface.",
+    "Lead may research and implement directly whenever delegation would cost more",
+    "Proof strength matches the exact claim the user needs now.",
+    "An accepted MVP or 80/20 definition remains the Definition of Done",
+    "Gates are tools, not milestones.",
+):
+    require(lead, phrase, "Lead.md")
 
-# Twenty minutes is management, not process death.
+## Minimal path is mandatory.
+for source, value in (
+    ("AGENTS.md", router),
+    ("Lead.md", lead),
+    ("docs/agent-authoring.md", authoring),
+):
+    require(value, "three-line minimal path", source)
+require(router, "smallest YAGNI vertical slice", "AGENTS.md")
+require(lead, "discard list", "Lead.md")
+
+## Secrets are not work.
+for source, value in (("AGENTS.md", router), ("Lead.md", lead)):
+    require(value, "Secrets are not work", source)
+    require(value, "environment variable", source)
+
+## Gates v2: supreme Overseer plus mandatory real-surface Tester.
+require(router, "Overseer is the supreme route controller", "AGENTS.md")
+require(router, "Overseer and Tester are the only gates", "AGENTS.md")
+require(overseer, "supreme route controller", "Overseer.md")
+require(overseer, "Security theater is the canonical drift", "Overseer.md")
+require(overseer, "Started at", "Overseer.md")
+require(tester, "mandatory final gate for user-facing results", "Tester.md")
+require(tester, "Use the real surface", "Tester.md")
+require(tester, "never prove a user-facing result", "Tester.md")
+require(lead, "Test files never substitute", "Lead.md")
+
+## Checkpoint, join, and worker-question semantics.
 checkpoint_sources = {
     "AGENTS.md": router,
     "Lead.md": lead,
@@ -137,76 +166,25 @@ checkpoint_sources = {
     "Overseer.md": overseer,
     "Planning.md": planning,
     "STOP_RETHINK.md": control,
-    "FULL_CYCLE.md": full_cycle,
 }
-for source, value in checkpoint_sources.items():
-    require(value, "20 active minutes", source)
-require(router, "Every 20 active minutes is a control checkpoint, not a Worker lifetime limit", "AGENTS.md")
-require(worker, "The expected total range may exceed 20 minutes", "Worker.md")
-require(planning, "The expected total range may exceed 20 minutes", "Planning.md")
-require(overseer, "Prefer redirecting or resuming the same Worker", "Overseer.md")
-require(control, "Cancellation is exceptional", "STOP_RETHINK.md")
-
-# Worker asks Lead without blocking independent progress.
+aggregate = "\n".join(checkpoint_sources.values())
 for phrase in (
-    "Ask L at every decision boundary",
+    "Every 20 active minutes is a control checkpoint, not a Worker lifetime limit.",
+    "Prefer redirecting or resuming the same Worker",
+    "Cancellation is exceptional",
+):
+    require(aggregate, phrase, "checkpoint contract")
+for phrase in (
+    "ask L at every decision boundary",
     "recommendation and proposed default",
     "non-blocking parent transport",
     "continue safe independent work while waiting",
     "L owns the decision",
 ):
-    require(worker + lead, phrase, "Lead/Worker decision feedback contract")
-forbid(worker, "stop all work until L answers", "Worker.md")
+    require(lead + worker, phrase, "worker question contract")
+require(lead, "Do not send the final answer while a required child result remains non-terminal", "Lead.md")
 
-# Required children are really joined and managed.
-codex_instructions = text("adapters/codex/instructions.md")
-codex_template = text("adapters/codex/templates/subagent.md")
-for source, value in (("Lead.md", lead), ("Codex template", codex_template)):
-    require(value, "Use the harness wait/join tool", source)
-    require(value, "Do not send the final answer while a required child result remains non-terminal", source)
-for phrase in (
-    "deadline = monotonicNow() + 1800000 ms",
-    "remainingMs = deadline - monotonicNow()",
-    "preserve the child",
-    "start another join window",
-    "Never call `close_agent`",
-):
-    require(lead + codex_template + codex_instructions, phrase, "Codex join contract")
-
-# Governance is selected by risk/value rather than route classification.
-for source, value in (
-    ("Lead.md", lead),
-    ("Overseer.md", overseer),
-    ("Reviewer.md", reviewer),
-    ("Tester.md", tester),
-    ("Critic.md", critic),
-    ("Adviser.md", adviser),
-):
-    require(value, "optional" if source != "Lead.md" else "risk-triggered", source)
-require(router, "Overseer, Adviser, Critic, Reviewer, and Tester are risk-triggered", "AGENTS.md")
-require(reviewer, "accepted business claim", "Reviewer.md")
-require(tester, "Match evidence to the claim", "Tester.md")
-require(critic, "accepted Definition of Done", "Critic.md")
-require(adviser, "do not manufacture a third plan", "Adviser.md")
-
-# Persistence is cost-triggered and compact.
-require(research, "Persist research when handoff, recovery, reuse, or the cost of rediscovery justifies it", "WORKER_RESEARCH.md")
-require(shared_session, "No elapsed-time threshold by itself requires a file or Git commit", "shared-session abstraction")
-require(task_template, "Accepted business outcome / Definition of Done", "task template")
-require(task_template, "Why this is least-cost", "task template")
-require(full_cycle, "Record exactly two genuinely different approaches", "FULL_CYCLE.md")
-require(planning, "exactly two genuinely different approaches", "Planning.md")
-require(planning, "ideal/full -> normal -> YAGNI/Pareto MVP", "Planning.md")
-decomposition = text("skills/task-decomposition/SKILL.md")
-for phrase in (
-    "smallest independent, parallel, business-verifiable slices",
-    "one owner, one output or business proof",
-    "5–20 active minutes per leaf",
-    "non-blocking parent transport",
-):
-    require(decomposition, phrase, "task-decomposition skill")
-
-# Every declared cycle is estimated and time-controlled.
+## Time truth: start anchor, estimates, hourly report.
 time_guard = ROOT / "src/common/tools/lhc_time_guard.py"
 if not time_guard.is_file() or not time_guard.stat().st_mode & 0o111:
     fail("src/common/tools/lhc_time_guard.py must exist and be executable")
@@ -218,14 +196,17 @@ for source, value in (
 ):
     require(value, "Every declared work cycle", source)
     require(value, "minimum / maximum", source)
+for phrase in ("Start anchor", "Started at", "manual clock", "lhc_time_guard.py", "не контролировал"):
+    require(time_control, phrase, "TIME_CONTROL.md")
 for phrase in (
     "At every crossed wall-clock hour while the task remains active",
     "Какие реальные задачи закрыты",
     "Завершённые файлы",
     "Какие гейты или инструкции задерживают бизнес-результат",
-    "lhc_time_guard.py",
 ):
     require(lead + time_control + task_template, phrase, "business time-control contract")
+
+## Compaction continuity stays bounded.
 for phrase in (
     "current-handoff.md",
     "not append-only",
@@ -234,7 +215,29 @@ for phrase in (
 ):
     require(lead + worker + time_control + task_template, phrase, "compaction continuity contract")
 
-# Old executable process contracts may not re-enter any behavior surface.
+## Self-evolution loop: patch, canary, reviewed commit, bounded iterations.
+for phrase in (
+    "minimal proposed patch",
+    "verification canary",
+    "one reviewed commit",
+    "three refinement iterations",
+):
+    require(self_improve, phrase, "SELF_IMPROVE.md")
+require(lead, "Self-evolution", "Lead.md")
+
+## Workspace boundaries remain intact.
+for phrase in (
+    "current primary project checkout",
+    "git worktree list --porcelain",
+    "first user-visible update",
+    "<primary-project-root>/.worktrees/<task-slug>",
+    "Never create project worktrees in `/tmp`",
+    "Stage and commit only task-owned paths",
+):
+    require(workspace, phrase, "SHARED_WORKTREE.md")
+require(text(".gitignore"), ".worktrees/", ".gitignore")
+
+## Secret theater and removed-role contracts may not re-enter any behavior surface.
 behavior_paths = [
     "AGENTS.md",
     "CLAUDE.md",
@@ -244,21 +247,38 @@ behavior_paths = [
     "src/common/agents/Lead.md",
     "src/common/agents/Worker.md",
     "src/common/agents/Overseer.md",
-    "src/common/agents/Reviewer.md",
     "src/common/agents/Tester.md",
-    "src/common/agents/Critic.md",
-    "src/common/agents/Adviser.md",
     "src/common/profiles/Planning.md",
+    "src/common/profiles/Code.md",
+    "src/common/profiles/Test.md",
     "src/common/protocols/WORKER_RESEARCH.md",
     "src/common/protocols/WORKER_IMPLEMENT.md",
     "src/common/protocols/STOP_RETHINK.md",
     "src/common/protocols/TIME_CONTROL.md",
+    "src/common/protocols/SELF_IMPROVE.md",
     "templates/FULL_CYCLE.md",
+    "templates/RELEASE_HANDOFF.md",
     "src/common/templates/.agents/tasks/task_template.md",
 ] + [f"adapters/{adapter}/templates/subagent.md" for adapter in ADAPTERS] + [
     f"adapters/{adapter}/instructions.md" for adapter in ADAPTERS
 ] + ["adapters/README.md"]
 obsolete = (
+    # secret theater
+    "AskSecret/SSS",
+    "Use AskHuman",
+    "use AskHuman",
+    "opaque registered-agent",
+    "base64 fallback",
+    "NoticePlace capability",
+    "attested human-request capability",
+    "ask_secret_transport",
+    "human.ask_secret",
+    "human.ask_user",
+    "attested AskSecret",
+    # removed roles as required gates
+    "Adviser, Critic",
+    "Reviewer, Tester, Overseer, or Critic",
+    # old process rituals
     "Overseer is mandatory for every task",
     "For Short and Full work I do not search the repository or write code",
     "L does not search the repository or write code",
@@ -281,7 +301,7 @@ for relative in behavior_paths:
     for phrase in obsolete:
         forbid(value, phrase, relative)
 
-# Adapter contracts and generated skill source are complete and local.
+## Adapter contracts stay complete, local, and secret-theater-free.
 manifest = text("adapters/manifest.yaml")
 require(manifest, "tools: src/common/tools", "adapters/manifest.yaml")
 for adapter in ADAPTERS:
@@ -299,6 +319,7 @@ for adapter in ADAPTERS:
     require(template, "lhc_time_guard.py", f"{adapter}/templates/subagent.md")
     require(template, "не контролировал", f"{adapter}/templates/subagent.md")
     require(template, "current-handoff.md", f"{adapter}/templates/subagent.md")
+    require(adapter_instructions, "Secrets are not work", f"{adapter}/instructions.md")
     require(adapter_manifest, "nonblocking_parent_transport:", f"{adapter}/adapter.yaml")
     require(adapter_manifest, "lifecycle_time_guard_hook:", f"{adapter}/adapter.yaml")
     for key in ("role_source", "optional_instructions", "subagent_instructions_template"):
@@ -306,6 +327,7 @@ for adapter in ADAPTERS:
         if not match or not (base / match.group(1).strip()).exists():
             fail(f"{adapter} manifest has invalid {key}")
 
+## Canonical skills stay identical to their generated plugin copies.
 for skill in SKILLS:
     source = ROOT / "skills" / skill / "SKILL.md"
     generated = ROOT / "plugins" / "last-human-commit" / "skills" / skill / "SKILL.md"
@@ -314,50 +336,14 @@ for skill in SKILLS:
     if source.read_bytes() != generated.read_bytes():
         fail(f"generated skill differs from source: {skill}")
 
-# Existing safety boundaries remain independent of optional governance.
-for phrase in (
-    "current primary project checkout",
-    "git worktree list --porcelain",
-    "first user-visible update",
-    "<primary-project-root>/.worktrees/<task-slug>",
-    "Never create project worktrees in `/tmp`",
-    "Never stage or commit foreign edits",
-):
-    require(workspace, phrase, "SHARED_WORKTREE.md")
-require(text(".gitignore"), ".worktrees/", ".gitignore")
-ask_secret = text("src/common/capabilities/human.ask_secret.v1.yaml")
-for phrase in (
-    "registered-agent SSS handoff",
-    "Opaque handle is never secret plaintext",
-    "Plaintext and base64 fallback delivery are rejected",
-):
-    require(ask_secret, phrase, "human.ask_secret.v1.yaml")
-for phrase in ("state: available", "provider: AskSecret", "transport: streamable_http", "ask_secret_run"):
-    require(ask_secret, phrase, "human.ask_secret.v1.yaml")
-ask_human = text("src/common/capabilities/human.ask_user.v1.yaml")
-for phrase in ("state: available", "provider: AskHuman", "transport: streamable_http", "ask_human"):
-    require(ask_human, phrase, "human.ask_user.v1.yaml")
-installer = ROOT / "src/common/tools/install_http_capabilities.py"
-if not installer.is_file():
-    fail("src/common/tools/install_http_capabilities.py must exist")
-for adapter in ADAPTERS:
-    instructions = text(f"adapters/{adapter}/instructions.md")
-    for phrase in ("AskHuman", "AskSecret/SSS", "opaque registered-agent", "plaintext", "base64 fallback"):
-        require(instructions, phrase, f"{adapter}/instructions.md")
-
-# The requested analysis remains a substantial, explicit causal audit.
-if len(re.findall(r"^\d+\.", audit, re.MULTILINE)) < 200:
-    fail("business-first error audit must retain at least 200 numbered errors")
-require(audit, "Общий диагноз", "business-first error audit")
-require(audit, "Новый обязательный порядок", "business-first error audit")
-
-# Run the narrow behavioral validators owned by this repository.
+## Run the narrow behavioral validators owned by this repository.
 subprocess.run([sys.executable, "-m", "pytest", "-q", "tests/test_business_first_contract.py"], cwd=ROOT, check=True)
 subprocess.run([sys.executable, "-m", "pytest", "-q", "tests/test_time_guard.py"], cwd=ROOT, check=True)
 subprocess.run([sys.executable, "-m", "py_compile", str(time_guard)], cwd=ROOT, check=True)
 subprocess.run(["sh", str(ROOT / "tests/test_block_adapter.sh")], cwd=ROOT, check=True)
 
 print(
-    f"PASS: business-first order, least-cost routing, checkpoint/join semantics, "
-    f"{len(ROLES)} optional roles, {len(ADAPTERS)} adapters, and safety boundaries"
+    f"PASS: minimal path, supreme Overseer, real-surface Tester, time anchors, "
+    f"self-evolution loop, {len(ROLES)} roles, {len(ADAPTERS)} adapters, "
+    f"zero secret theater"
 )

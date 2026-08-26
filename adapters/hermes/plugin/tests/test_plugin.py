@@ -61,19 +61,18 @@ def test_tester_is_a_known_role():
     assert lhc.ROLES["tester"] == "Tester"
 
 
-def test_profile_bundle_replaces_clarify_with_ask_human_and_secret():
+def test_profile_bundle_replaces_clarify_with_direct_question_and_env_secrets():
     base = Path(__file__).parents[2] / "profile"
     current = (base / "LHC.md").read_text(encoding="utf-8")
     versioned = (base / "LHC.v1.md").read_text(encoding="utf-8")
     assert "native `clarify` tool is disabled" in versioned
-    assert "Use AskHuman" in versioned
-    assert "through AskSecret/SSS" in versioned
-    assert "LHC Ask Secret semantics" in versioned
+    assert "Ask the user one compact question directly" in versioned
+    assert "Secrets are not work" in versioned
     assert "Preserve Hermes native identity" in versioned
     assert "For the normative bundle content, see `LHC.v1.md`." in current
     assert "disables native `clarify`" in current
-    assert "replaces it with AskHuman" in current
-    assert "substitutes LHC Ask Secret semantics" in current
+    assert "replaces it with one compact direct question" in current
+    assert "Secrets are not work" in current
 
 
 def test_registers_middleware_and_pre_llm_hook():

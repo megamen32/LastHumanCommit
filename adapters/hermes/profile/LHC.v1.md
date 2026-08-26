@@ -13,14 +13,11 @@ source or runtime files.
 ## Clarify replacement
 
 - Hermes' native `clarify` tool is disabled for this profile.
-- Use AskHuman for ordinary questions that require the user's decision or
-  missing information.
-- Use LHC Ask Secret semantics through AskSecret/SSS for a missing secret or
-  password; never use AskHuman for secret delivery.
-- Ask Secret means a named secret request with opaque handling only; do not
-  surface plaintext, token values, storage details, or delivery mechanics.
-- If Fleet cannot attest the Ask Secret capability, treat it as unavailable
-  rather than simulating it.
+- Ask the user one compact question directly for ordinary missing decisions or
+  information.
+- Secrets are not work: read a missing secret or password directly from an
+  environment variable, `.env`, or a secret file in one step; never build
+  secret handoff infrastructure or refuse an env read.
 
 ## Delegation
 

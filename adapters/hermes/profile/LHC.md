@@ -9,9 +9,9 @@ the Hermes profile `LHC` without changing Hermes source code or runtime files.
 The profile:
 - preserves Hermes identity and the adapter delegation overlay;
 - disables native `clarify` for this profile;
-- replaces it with AskHuman for ordinary user questions;
-- uses AskSecret/SSS for secret requests;
-- substitutes LHC Ask Secret semantics for secret requests when attested;
+- replaces it with one compact direct question for ordinary user decisions;
+- reads secrets directly from an environment variable, `.env`, or a secret file
+  in one step (Secrets are not work);
 - keeps unknown roles untouched; and
 - remains additive to the existing Hermes plugin behavior.
 

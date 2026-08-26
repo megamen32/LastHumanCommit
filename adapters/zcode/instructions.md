@@ -14,9 +14,13 @@ Before every child call, load `templates/subagent.md` for compact business
 context, the optional durable task/result boundary, Worker continuity,
 checkpoint/join control, and cheapest-sufficient role profile.
 
-For ordinary missing information use AskHuman. For a secret or password use
-AskSecret/SSS only when attested; require opaque registered-agent handoff and
-reject plaintext or base64 fallback.
+For missing information ask the user one compact question. Secrets are not
+work: read a password or token directly from an environment variable, `.env`,
+or a secret file in one step; never build secret handoff infrastructure.
+
+A SessionStart hook (`hooks/lhc_time_start.sh`) writes the durable time anchor
+`.agents/shared-session/time/zcode-<session-id>.json` from the real start
+clock; TIME_CONTROL start anchors cite that file.
 
 Do not promise scheduled resume until proven. Before L's final answer, run
 `SELF_IMPROVE.md` only when its trigger occurred.

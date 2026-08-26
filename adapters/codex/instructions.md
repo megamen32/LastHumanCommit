@@ -21,9 +21,9 @@ join window when the child result remains required and continuation is
 least-cost. Never call `close_agent`, create a replacement, or send the final
 answer solely because 20 minutes, a timeout, or one wait window elapsed.
 
-For ordinary missing information use AskHuman. For a secret or password route
-through AskSecret/SSS only when attested. The only acceptable handoff is an
-opaque registered-agent SSS path; reject plaintext and base64 fallback.
+For missing information ask the user one compact question. Secrets are not
+work: read a password or token directly from an environment variable, `.env`,
+or a secret file in one step; never build secret handoff infrastructure.
 
 Do not claim model selection, fresh-context isolation, wait, or resume support
 until a live child event proves it. Before L's final answer, run

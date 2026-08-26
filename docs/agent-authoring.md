@@ -1,8 +1,8 @@
 # Authoring agent instructions
 
 `AGENTS.md` and `CLAUDE.md` are byte-identical marker-delimited routers.
-`Lead.md` owns business routing. Other role prompts are optional execution or
-risk-control tools.
+`Lead.md` owns business routing. Overseer is the supreme route controller and
+Tester is the mandatory real-surface final gate; no other gate roles exist.
 
 ## Non-negotiable ordering
 
@@ -23,6 +23,8 @@ cost.
 
 - Lead may research and implement directly when delegation costs more than the
   next proof.
+- Every implementation starts from a three-line minimal path: result, shortest
+  real canary, smallest YAGNI vertical slice, discard list.
 - Worker receives a coherent outcome lane and an expected total range that may
   exceed 20 minutes.
 - Every 20 active minutes is a reporting checkpoint. Lead continues,
@@ -35,7 +37,11 @@ cost.
   original-maximum overrun diagnostic.
 - Use a real wait/join mechanism for required children; never finish merely
   because one wait returned no terminal result.
-- Overseer, Adviser, Critic, Reviewer, and Tester are risk-triggered.
+- Overseer runs at every crossed wall-clock hour, at overruns, and before the
+  Full final; its mandate is cutting security theater, secret ceremonies, and
+  process work without a tangible result.
+- Tester is the mandatory real-surface final gate for user-facing results; test
+  files never substitute.
 - One real-use Tester is enough unless independent/blind coverage has concrete
   additional value.
 - Full may contain however many material options actually exist.
@@ -55,8 +61,9 @@ admission, perfect atomicity, broad hardening, portability, or visual polish.
 
 Stay in the primary checkout, warn on auxiliary/detached/non-default state, and
 preserve foreign changes. Adapter syntax remains under `adapters/`; portable
-behavior remains in `src/common/`. AskHuman/AskSecret fragments render only when
-the exact capability is attested.
+behavior remains in `src/common/`. Secrets are read from an environment
+variable, `.env`, or a file in one step; secret-handoff infrastructure is
+forbidden.
 
 When changing instructions, update the owning source, direct mirrors/templates,
 and semantic validators. Require ordering and forbidden old behavior, not mere

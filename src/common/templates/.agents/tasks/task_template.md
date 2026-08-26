@@ -14,7 +14,7 @@ Next shortest action:
 Harness:
 Agent session:
 Workspace / branch:
-Started at (UTC+3):
+Started at (UTC+3) + anchor source (hook file / manual clock):
 Initial estimate (minimum / maximum active minutes):
 Actual active minutes:
 Actual wall-clock minutes:
@@ -97,12 +97,14 @@ Keep this section compact. Use a named result file only when handoff, recovery,
 reuse, audit, or rediscovery cost justifies it. Do not duplicate the same detail
 in both places.
 
-## Optional risk-triggered roles
+## Gates
 
-Overseer, Adviser, Critic, Reviewer, and Tester are risk-triggered, not required
-milestones. Record only roles actually used and why their value exceeded cost.
+Overseer is the supreme route controller: every crossed wall-clock hour, every
+overrun, repeated failure, and before the Full final. Tester is the mandatory
+real-surface final gate for user-facing results. Record only gates actually
+used and why their value exceeded cost.
 
-- Role / trigger / decision:
+- Gate / trigger / decision:
 
 ## Result
 

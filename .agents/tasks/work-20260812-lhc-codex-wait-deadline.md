@@ -129,6 +129,23 @@ Critic: pending before irreversible release action if required by the selected r
 - deployment_result: pending
 - exact pending action: `git push origin main`, then apply the exact preview confirmation above, then independent verify and physical router canary.
 
+- 2026-08-12 05:34 +03:
+  Release result: push completed `591ed96..968fea0 main -> main`; exact preview `968fea0` applied through canonical `lhc_rollout.py` with confirmation `sha256:233525...`.
+  Apply evidence: local receipt `/home/roomhacker/.local/share/last-human-commit/rollbacks/968fea0-lhc-rollout/rollout.json` has `status=complete`, identity commit `968fea024e20469b79088d241201a1b170ce0f97`, digest `sha256:f7599fb6d70a160affb71a144be4e01c99b7f4fd4426c42118270a18e59cfca8`, 52 files.
+  Independent canary: `100`, `44`, `88`, and `mac` all report `current -> versions/968fea0`, `VERSION=968fea0`, Codex payload marker `timeout_ms: 1800000`, router marker `wait timeout is observational only`, and rollback receipt present.
+  Verify qualification: canonical `verify` first hit the expected 300-second freshness guard for Hermes profile, then after the window hit `rollback receipt target exists: .../rollbacks/968fea0-lhc-rollout`; no rollback was deleted and apply was not repeated. Therefore canonical verify is NOT CONFIRMED, while apply receipt and independent target canary are PASS.
+  Result: DONE for requested push/apply and independent canary; remaining qualification is the rollout verifier's receipt-reuse guard.
+
+## Final result
+
+Summary: LHC Codex wait-timeout safety fix committed, pushed to `origin/main`, applied to canonical fleet, and independently canaried on all four targets.
+Business canary evidence: All four installed routers and payloads expose the new observational-only wait contract and fixed `timeout_ms: 1800000` deadline; all current symlinks point to `968fea0`.
+Tests/checks: focused contract PASS; reviewer PASS; critic PASS after exact-preview regeneration; core validator PASS excluding pre-existing `.agents/tasks/**` ledger; canonical full validator NOT CONFIRMED due foreign legacy task cards; canonical rollout verify NOT CONFIRMED due existing complete rollback receipt guard.
+Review: Reviewer PASS; Critic PASS; Overseer CONTINUE receipt.
+Workspace/branch at finish: primary checkout, `main`, pushed at `968fea024e20469b79088d241201a1b170ce0f97`; unrelated dirty files preserved.
+Commit (only if created): `1630fed`, `9ed7555`, `2c749fb`, `968fea0`.
+Unresolved: rollout verifier should support post-apply verification without treating a complete receipt as a new apply-plan conflict; foreign legacy task-card defects remain outside scope.
+
 ## Result
 
 Summary: pending

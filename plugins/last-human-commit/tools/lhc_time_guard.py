@@ -649,7 +649,7 @@ def hook(args: argparse.Namespace) -> dict[str, Any] | None:
             else "hook-observed estimate only; exact active time was not continuously controlled"
         )
         status = (
-            "LHC timing truth for any status/AskHuman answer: "
+            "LHC timing truth for any status or human answer: "
             f"started {started_at.isoformat()}; planned {minimum}–{maximum} active minutes; "
             f"actual {active_minutes} active minutes ({source_note}); "
             f"{wall_minutes} wall-clock minutes; active source={active_source}. "

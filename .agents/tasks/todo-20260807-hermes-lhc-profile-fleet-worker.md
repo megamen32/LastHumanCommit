@@ -2,6 +2,17 @@ Role: Worker
 
 # Worker: Fleet Hermes LHC profile rollout
 
+Status: todo
+Harness: unknown (legacy; not recorded)
+PID: unknown (legacy; not recorded)
+Agent session: unknown (legacy; not recorded)
+PID status: unknown (legacy)
+Last PID signal (UTC+3): unknown (legacy; not recorded)
+Last task-file transition (UTC+3): unknown (legacy; filename was todo-)
+Started at (UTC+3): unknown (legacy; cannot infer from mtime)
+Lifecycle provenance: legacy-missing; audited 2026-08-10
+Last task-file mtime observed (UTC+3): 2026-08-07 19:22:29 +0300 (last write observed, not start)
+
 Goal: implement the Fleet rollout operation that clones the Hermes default
 profile into a separate `LHC` profile, applies the committed LHC profile
 overlay and SSS MCP configuration, and leaves default untouched.

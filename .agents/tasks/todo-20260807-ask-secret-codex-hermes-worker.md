@@ -2,6 +2,17 @@ Role: Worker
 
 # Worker: Ask Secret capability contract and harness instructions
 
+Status: todo
+Harness: unknown (legacy; not recorded)
+PID: unknown (legacy; not recorded)
+Agent session: unknown (legacy; not recorded)
+PID status: unknown (legacy)
+Last PID signal (UTC+3): unknown (legacy; not recorded)
+Last task-file transition (UTC+3): unknown (legacy; filename was todo-)
+Started at (UTC+3): unknown (legacy; cannot infer from mtime)
+Lifecycle provenance: legacy-missing; audited 2026-08-10
+Last task-file mtime observed (UTC+3): 2026-08-07 19:00:12 +0300 (last write observed, not start)
+
 Goal: make Ask Secret an explicit required agent behavior for Codex and Hermes,
 with SSS as the named transport and fail-closed opaque-handoff semantics.
 

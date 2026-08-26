@@ -8,6 +8,22 @@
 - What operation or error repeated? Two release checks exposed the same gap: source Git state versus active harness state. Guard: after every LHC release, verify `current` and each configured profile, not only `origin/main`.
 - State: fixed now
 
+## 2026-08-10 — GitHub marketplace catalog (Full)
+
+- What slowed or confused L? Codex plugin validation exposed missing native `author`/`interface` metadata; my first clean-copy `cp` command flattened directory paths.
+- Which instruction should change? `plugin-creator/SKILL.md` — add a cross-format manifest check note for existing packages before marketplace publication. Proposed.
+- Which skill, MCP, or tool is missing? none; local validators plus `gh api` supplied the needed evidence.
+- What operation or error repeated? 1 clean-copy layout error; guard with explicit destination directories and copy commands.
+- State: fixed now
+
+## 2026-08-09 — LHC benchmark topology (Full)
+
+- What slowed or confused L? Quorum receipts exposed the outer Codex model but not native child Worker model IDs; declared Lead→Worker routing was easy to overstate.
+- Which instruction should change? Proposed: `adapters/codex/adapter.yaml` and its verification contract should require a machine-readable child model receipt before claiming `model_override: proven`.
+- Which skill, MCP, or tool is missing? Proposed: a Codex/Quorum receipt normalizer that records each native child session, role, provider, and model without raw prompt history.
+- What operation or error repeated? Two L0 cells needed reruns after invalid `wire_api=chat`; guard by validating harness wire mode before any paid batch.
+- State: Proposed
+
 ## 2026-07-31 — 9901949 (Short)
 
 - What slowed or confused L? A source push does not prove that global marker routers, native profiles, and remote Hermes' `current` use the new LHC release.
@@ -70,4 +86,116 @@
 - Which instruction should change? Fixed in Fleet commit `7f97fba`: the rollout manifest now packages `adapters -> adapters`, with a regression test.
 - Which skill, MCP, or tool is missing? `none` — `$lhc-rollout` plus generic `skill-sync` exposed and repaired the gap.
 - What operation or error repeated? One preview was invalidated before apply; guard by asserting required payload roots and file count before accepting every release preview.
+- State: fixed now
+
+## 2026-08-10 — governance audits and blind release testing (Short)
+
+- What slowed or confused L? The request combined a TODO record with future runtime behavior; scope was resolved as documentation only, with scheduler/deployment explicitly deferred.
+- Which instruction should change? Proposed: `src/common/agents/Lead.md` should state how a user-requested governance TODO is distinguished from activating the runtime workflow.
+- Which skill, MCP, or tool is missing? `none` — repository role prompts and `lhc-rollout`/`graphify` guidance were sufficient for this text-only handoff.
+- What operation or error repeated? `none` — one task card was created; pre-existing dirty task files and `.serena/`/`plugins/` were preserved.
+- State: Proposed
+
+## 2026-08-10 — corrected governance priority (Short)
+
+- What slowed or confused L? The first TODO wording incorrectly made cost/result optimization sound primary instead of making strict invariants an absolute veto.
+- Which instruction should change? Proposed: `src/common/agents/Overseer.md` should lead with hard-invariant rejection before any plan comparison.
+- Which skill, MCP, or tool is missing? `none` — the task card was corrected directly.
+- What operation or error repeated? One scope rewrite was needed after user correction; guard: every plan section now states fail-closed veto before optimization.
+- State: fixed now
+
+## 2026-08-10 — adviser and critic role correction (Short)
+
+- What slowed or confused L? The role timing and stance needed another clarification: Adviser is pre-implementation and constructive; Critic is post-decision fresh/no-history and adversarial.
+- Which instruction should change? Proposed: `src/common/agents/Adviser.md` and `src/common/agents/Critic.md` should encode these different context and authority boundaries.
+- Which skill, MCP, or tool is missing? `none` — the TODO contract was updated directly.
+- What operation or error repeated? Two task-card rewrites followed user corrections; guard: keep original request and explicit role matrix together before editing prose.
+- State: fixed now
+
+## 2026-08-10 — task lifecycle migration (Short)
+
+- What slowed or confused L? Legacy todo/work cards mixed absent, blank, and renamed lifecycle fields; a reporting regex also initially mishandled optional UTC+3 labels.
+- Which instruction should change? Fixed now: `AGENTS.md`/`CLAUDE.md` and the task template require explicit provenance and mtime-as-last-write semantics.
+- Which skill, MCP, or tool is missing? `none` — context-mode batch audit plus the dependency-free validator were sufficient.
+- What operation or error repeated? Two focused regressions were needed: missing fields, then empty PID; guard: validator checks presence and non-empty values for all todo/work cards.
+- State: fixed now
+
+## 2026-08-10 — shared-session abstraction (Short)
+
+- What slowed or confused L? The existing shared-session implementation was outside LHC (`~/.claude/hooks/shared_session_register.sh`), while the requested contract spans hooks, MCP, files, human requests, and persistent Overseer state.
+- Which instruction should change? Fixed now: `docs/shared-session-abstraction.md` defines file-first ownership and `src/common/agents/Overseer.md` defines continuation by durable state.
+- Which skill, MCP, or tool is missing? Proposed: an attested cross-harness LHC MCP with response-stop human-request integration.
+- What operation or error repeated? Existing validator assumptions required fresh Overseer wording after the role correction; guard: validator now checks persistent Overseer plus fresh Critic semantics.
+- State: Proposed
+
+## 2026-08-10 — three-minute durable research (Short)
+
+- What slowed or confused L? The abstraction initially retained a 10-minute research threshold, while the user required file persistence from 3 minutes after orientation.
+- Which instruction should change? Fixed now: `WORKER_RESEARCH.md`, `Worker.md`, and adapter templates make 3 minutes and file-first detailed findings explicit.
+- Which skill, MCP, or tool is missing? Proposed: a runtime response/harness event that can surface the durable research path without injecting the full child transcript.
+- What operation or error repeated? none — focused validation stayed green after the threshold update.
+- State: fixed now
+
+## 2026-08-10 — separate search/result files and `.at/` (Short)
+
+- What slowed or confused L? The previous abstraction conflated search journal and final result, and the first validation run exposed the intentional `Code.md` SHA pin after adding the `.at/` rule.
+- Which instruction should change? Fixed now: `WORKER_RESEARCH.md`, `Code.md`, and shared-session docs distinguish `search.md` from `result.md` and forbid `/tmp`/`.tmpbin` one-off scripts.
+- Which skill, MCP, or tool is missing? Proposed: runtime commit enforcement when research crosses 10 active minutes.
+- What operation or error repeated? One validator SHA update was required after the scoped Code profile change; guard: keep the digest update in the same reviewed diff.
+- State: fixed now
+
+## 2026-08-10 — named ignored search and tracked result trees (Short)
+
+- What slowed or confused L? The prior abstraction used generic `search.md`/`result.md` in one folder and described “ignored” semantically rather than as Git ignore.
+- Which instruction should change? Fixed now: shared-session docs and Worker adapters use named files in separate search/results trees, with `.gitignore` covering only search.
+- Which skill, MCP, or tool is missing? `none` — `git check-ignore` directly proved the boundary.
+- What operation or error repeated? Two validator phrase updates followed the intentional naming correction; guard: validate task-specific filename patterns and physical ignore behavior.
+- State: fixed now
+
+## 2026-08-10 — single agent-state root (Short)
+
+- What slowed or confused L? The instructions had introduced a top-level `.at/` alongside `.agents/`, making the documented state model more fragmented than necessary.
+- Which instruction should change? Fixed now: routers, Code/Worker rules, and shared-session docs require one `.agents/` root and `.agents/at/` for Agent Tools.
+- Which skill, MCP, or tool is missing? `none` — local tree inspection and validator were sufficient.
+- What operation or error repeated? One Code SHA update was required after relocating the documented path; guard: keep the digest change with the instruction change.
+- State: fixed now
+
+## 2026-08-10 — core specification consistency audit (Short)
+
+- What slowed or confused L? The core spec mixes one task-file ownership with shared-session result/handoff artifacts and mixes read-only research with a later mandatory commit.
+- Which instruction should change? Needs human decision: do not edit until the user chooses the intended ownership and commit model.
+- Which skill, MCP, or tool is missing? `none` — targeted indexed excerpts were sufficient; plugin directories were excluded.
+- What operation or error repeated? none — read-only audit only; no specification source was modified.
+- State: needs human decision
+
+## 2026-08-11 — copy-and-commit lifecycle snapshots (Short)
+
+- What slowed or confused L? Existing lifecycle prose required renaming the same task file, conflicting with the requested preserved `todo/work/done` history.
+- Which instruction should change? Fixed now: routers, Lead, templates, Test profile, README, and task template define copy+commit snapshots and latest committed state.
+- Which skill, MCP, or tool is missing? Proposed: a regression harness that kills a Worker and resumes from committed `work-*` without repeating research.
+- What operation or error repeated? Three validator wording mismatches appeared after replacing rename semantics; guard: run the full validator after lifecycle prose changes.
+- State: fixed now
+
+## 2026-08-12 — compaction continuity and plugin update (Short)
+
+- Friction: Codex compacted before LHC had a counter; plugin upgrade twice left a stale 0.1.0 hook path, and the first handoff required a task-card.
+- Owning correction: fixed now in native compaction hooks with atomic current handoff, bounded count history, and prompt fallback; package bumped to 0.2.1.
+- Missing tool: Codex PreCompact cannot inject compaction context directly; SessionStart restore is the supported fallback, while OpenCode injects output.context.
+- Repetition/evidence: stale-path error repeated twice; installed Codex/OpenCode prompt-only canaries now pass and five Codex hooks are trusted.
+- State: fixed now
+
+## 2026-08-12 — benchmark research routing (Short)
+
+- Friction: three context-mode batches hung on broad multi-repository or scenario scans; exact `rg`/bounded reads were faster and unblocked the Arena run.
+- Owning correction: Proposed for `worker-research`: after one repeated context-mode timeout on the same route, cut scope and return to exact `rg`/source reads instead of a third broad batch.
+- Missing tool: none; existing `rg`, Graphify fast-path, and context-mode are sufficient when each is used at the right granularity.
+- Repetition/evidence: 3 terminated context-mode cells; route change then produced 40/40 terminal benchmark receipts.
+- State: Proposed
+
+## 2026-08-26 — LHC v2: restore core vision (Full)
+
+- What slowed or confused L? Agent-era commits built secret-handoff theater (AskSecret/AskHuman HTTP capabilities, plugins, marketplace) against the maintainer contract "No harness hooks, plugins, network fetches", plus Reviewer/Critic/Adviser ceremony, and Overseer was effectively never invoked without a hard start-time anchor.
+- Which instruction should change? Fixed now: canon v2 — Secrets are not work (env/.env/file in one step), minimal-path-first, Overseer supreme with mandatory hourly/overrun consults, Tester as mandatory real-surface final gate, SELF_IMPROVE became a bounded patch loop with reviewed commits.
+- Which skill, MCP, or tool is missing? none — existing chrome-devtools/browser MCPs cover real-surface testing.
+- What operation or error repeated? GPT-era drift into security infrastructure repeated across 77629a5/059bc8d/898c901/64290f2; guard: validate.py forbids AskSecret/SSS, opaque registered-agent, base64 fallback, NoticePlace capability phrases and fails if secret-theater paths reappear.
 - State: fixed now

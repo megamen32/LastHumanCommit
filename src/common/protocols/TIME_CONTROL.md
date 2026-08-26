@@ -6,6 +6,21 @@ business proof: direct Lead work, one Worker lane, one real canary, one review,
 one rollout, or another named operation. Tiny atomic commands may share the
 estimate of their enclosing cycle; do not create an estimate per shell command.
 
+## Start anchor
+
+A cycle does not start before its task record carries
+`Started at <UTC+3 ISO> (<source>)` taken from a real clock anchor:
+
+- ZCode: the SessionStart hook writes
+  `.agents/shared-session/time/zcode-<session-id>.json`; cite that file.
+- Codex, Hermes, OpenCode: the native lifecycle time-guard hook state.
+- No hook available: capture `date --iso-8601=seconds` at cycle start and name
+  the source `manual clock`.
+
+Wall-clock and active minutes are computed from this anchor, never from file
+mtimes or guesses. If active time was not continuously measured, report
+`не контролировал`. Overseer treats a missing anchor as a redirect-level finding.
+
 Use `../tools/lhc_time_guard.py` at cycle start and every observable checkpoint.
 When the harness exposes lifecycle hooks or scheduler wakeups, connect the same
 tool there. Its JSON state belongs under
