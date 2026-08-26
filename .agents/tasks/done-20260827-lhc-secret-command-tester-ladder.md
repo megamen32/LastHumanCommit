@@ -40,3 +40,13 @@ CDP/Playwright; XY-клики — последний шанс, не забыва
 ## Прогресс
 
 - 2026-08-27 — исследование завершено (см. Evidence); реализация начата.
+
+## Result (2026-08-27)
+
+- Commit cd470f6; validators green (validate.py 5 roles, 39 pytest, task_states,
+  marketplace, hermes plugin 10, plugin parity 10).
+- Rollout cd470f6 preview/apply/verify complete on targets 100/44/88/mac.
+- /secret installed: ~/.zcode/skills/secret/SKILL.md, ~/.codex/prompts/secret.md,
+  canonical src/common/commands/secret.md (deploys via bundle).
+- MiniMax: no slash-command mechanism found on disk (~/.minimax empty,
+  ~/.config/minimax has only env) — not installed there, noted to user.
