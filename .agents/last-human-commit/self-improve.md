@@ -215,3 +215,11 @@
 - Which skill, MCP, or tool is missing? none.
 - What operation or error repeated? Suspected fcntl lock contention between the nested test run and live time-guard hooks from other harness sessions on `.agents/shared-session/time/`; guard candidate: make time-guard tests use an isolated tmp lock dir.
 - State: Proposed
+
+## 2026-08-28 — AskHuman rehabilitation (Short)
+
+- What slowed or confused L? The v2 purge deleted the AskHuman channel along with the confirmation ceremony; the user corrected: AskHuman was an excellent, appropriately-used way to deliver important info to the human. Only forced routine confirmations were the pain.
+- Which instruction should change? Fixed now: "AskHuman — the human channel" section in AGENTS.md/Lead.md (important info = yes; routine confirmations = never; secrets = only /secret); lean plugins/ask-human 0.2.0 restored with marketplace entry; /askhuman skill + canonical command; validator forbids ceremony ("confirmation for every") instead of the tool.
+- Which skill, MCP, or tool is missing? none — AskHuman/notify MCP already connected.
+- What operation or error repeated? Overcorrection pendulum: delete-everything vs keep-everything; guard: validators now name the exact ceremony patterns, not the tools.
+- State: fixed now

@@ -269,10 +269,13 @@ for unrelated ordinary work.
 ## Human requests and finish
 
 For ordinary missing information or a user decision, ask one compact question.
-For a secret, read the environment or secret file directly (see Secrets are not
-work). The active harness owns approval policy, including deployment, restart,
-destructive changes, rollback, branch operations, and worktree creation. A wake
-or timer is not business proof.
+Genuinely important information or a needed decision may be delivered to the
+user through the connected AskHuman/notify MCP — one compact message, choices
+when a decision is needed, plain notification when information is enough —
+never as routine confirmation ceremony. For a secret, read the environment or
+secret file directly (see Secrets are not work). The active harness owns
+approval policy, including deployment, restart, destructive changes, rollback,
+branch operations, and worktree creation. A wake or timer is not business proof.
 
 Claim success only at the strength proven after the last relevant change. Report
 source/test proof, deployment state, and real business-canary proof separately.

@@ -111,7 +111,6 @@ for role in REMOVED_ROLES:
 for removed in (
     "src/common/capabilities",
     "plugins/ask-secret",
-    "plugins/ask-human",
     "src/common/tools/install_http_capabilities.py",
     "scripts/install_http_capabilities.py",
     "tests/test_install_http_capabilities.py",
@@ -168,6 +167,9 @@ for source, value in (("Tester.md", tester), ("real-use-testing", skill_rut)):
         require(value, phrase, source)
 require(lead + router, "/secret", "secret handoff contract")
 require(router, "never echoes the value", "AGENTS.md")
+require(router, "AskHuman", "AGENTS.md")
+require(router, "Never routine confirmations", "AGENTS.md")
+require(lead, "AskHuman", "Lead.md")
 
 ## Checkpoint, join, and worker-question semantics.
 checkpoint_sources = {
@@ -286,8 +288,6 @@ behavior_paths = [
 obsolete = (
     # secret theater
     "AskSecret/SSS",
-    "Use AskHuman",
-    "use AskHuman",
     "opaque registered-agent",
     "base64 fallback",
     "NoticePlace capability",
@@ -296,6 +296,8 @@ obsolete = (
     "human.ask_secret",
     "human.ask_user",
     "attested AskSecret",
+    # forced-confirmation ceremony (AskHuman itself is sanctioned)
+    "confirmation for every",
     # removed roles as required gates
     "Adviser, Critic",
     "Reviewer, Tester, Overseer, or Critic",

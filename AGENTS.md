@@ -77,6 +77,17 @@ value and never creates new layers. Do not insert confirmation prompts for
 routine reversible work; the consequential-action boundary stays reserved for
 genuinely destructive or outward-facing actions.
 
+## AskHuman — the human channel
+
+AskHuman (the already-connected notify MCP, Telegram) is the sanctioned
+channel for delivering genuinely important information to the user: a needed
+business decision with options, a hard blocker, a timing/status answer, or
+long-cycle completion when the user is away. One compact message — choices
+when a decision is needed, plain notification when information is enough —
+and keep working unless the answer truly blocks. Never routine confirmations
+for reversible work, never spam, and never a secret in plaintext: secrets
+travel only through `/secret`.
+
 ## Compact task state
 
 For a non-trivial request, keep one compact task record under `.agents/tasks/`

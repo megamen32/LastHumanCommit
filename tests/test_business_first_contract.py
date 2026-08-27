@@ -148,7 +148,6 @@ def test_secret_paranoia_is_forbidden() -> None:
         value = compact(read(relative))
         for phrase in (
             "AskSecret/SSS",
-            "Use AskHuman",
             "opaque registered-agent",
             "base64 fallback",
             "NoticePlace capability",
@@ -171,6 +170,15 @@ def test_interaction_tool_ladder() -> None:
         "last resort",
     ):
         assert phrase in tester + " " + skill, phrase
+
+
+def test_askhuman_is_the_important_info_channel() -> None:
+    router = compact(read("AGENTS.md"))
+    lead = compact(read("src/common/agents/Lead.md"))
+
+    assert "AskHuman" in router + " " + lead
+    for phrase in ("Never routine confirmations", "/secret"):
+        assert phrase in router, phrase
 
 
 def test_secret_command_is_the_only_phone_handoff() -> None:
