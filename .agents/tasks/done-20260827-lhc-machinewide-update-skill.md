@@ -29,4 +29,14 @@ lhc-update-agents переписан; дерево чистое; всё запу
 
 ## Результат
 
-- (заполняется при закрытии)
+- lhc_rollout.py: machine-wide режим (projectRuntime: null) + критический фикс
+  has_changes (вложенные роутеры проектов; без фикса apply молча пропускал
+  замену роутеров — поймано на живом rollout).
+- Rollout 6669696 verified на 100/44/88/mac; роутеры проектов ссылаются на
+  machine store (напр. gptadmin: 6 absolute refs, 0 старых).
+- Удалено 135 устаревших per-project рантаймов: 100=47, 44=42, 88=18, mac=28;
+  residual = 0 на всех хостах.
+- ~/.zcode/skills/lhc-update-agents переписан: baseline push → правки →
+  валидаторы → commit+push → rollout (zcode/codex/opencode/hermes) → канарей;
+  установка на отсутствующие харнессы.
+- Финальный rollout HEAD после закрытия задачи — deployed == HEAD.
