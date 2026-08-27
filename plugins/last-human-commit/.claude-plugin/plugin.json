@@ -1,7 +1,7 @@
 {
   "name": "last-human-commit",
-  "version": "0.3.0",
-  "description": "Portable business-first workflow and reusable Worker research skills.",
+  "version": "1.0.0",
+  "description": "Portable business-first workflow, Worker research skills, and LHC operator skills (update + fleet rollout).",
   "author": {
     "name": "megamen32",
     "url": "https://github.com/megamen32"

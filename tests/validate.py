@@ -24,6 +24,8 @@ SKILLS = (
     "worker-research",
     "worker-code",
     "worker-bugfix",
+    "lhc-rollout",
+    "lhc-update-agents",
 )
 
 

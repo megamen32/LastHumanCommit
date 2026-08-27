@@ -14,7 +14,7 @@ optional Claude/OpenCode projections, and optional MCP companion files.
 
 | Plugin | Version | Contents | Source |
 | --- | --- | --- | --- |
-| `last-human-commit` | `0.3.0` | Codex, OpenCode, Claude Code workflow skills | `./plugins/last-human-commit` |
+| `last-human-commit` | `1.0.0` | Codex, OpenCode, Claude Code workflow + LHC operator skills (lhc-update-agents, lhc-rollout) | `./plugins/last-human-commit` |
 
 ## Validate
 

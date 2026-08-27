@@ -20,6 +20,8 @@ EXPECTED_SKILLS = {
     "bugfix-tdd",
     "business-delivery",
     "feature-implementation",
+    "lhc-rollout",
+    "lhc-update-agents",
     "planning",
     "real-use-testing",
     "release",

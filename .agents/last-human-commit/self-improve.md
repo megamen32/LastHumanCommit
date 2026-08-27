@@ -207,3 +207,11 @@
 - Which skill, MCP, or tool is missing? none.
 - What operation or error repeated? Fragmented end states across cycles (4 unpushed commits, 63 untracked files at rule time); guard: validate.py now forbids "Stage and commit only task-owned paths" and requires the unified-history phrases.
 - State: fixed now
+
+## 2026-08-28 — nested time-guard flake (Short)
+
+- What slowed or confused L? tests/validate.py intermittently fails its nested `pytest tests/test_time_guard.py` subprocess (3 occurrences over 2 days) while the same suite always passes standalone and via `pytest -q tests/`.
+- Which instruction should change? none yet — not reproducible on demand (3/3 green).
+- Which skill, MCP, or tool is missing? none.
+- What operation or error repeated? Suspected fcntl lock contention between the nested test run and live time-guard hooks from other harness sessions on `.agents/shared-session/time/`; guard candidate: make time-guard tests use an isolated tmp lock dir.
+- State: Proposed

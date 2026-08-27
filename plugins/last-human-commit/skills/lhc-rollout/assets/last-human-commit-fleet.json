@@ -1,0 +1,312 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "repo": "/home/roomhacker/agents-projects/LastHumanCommit",
+    "revision": "main",
+    "versionLength": 7,
+    "version": [
+      {
+        "source": "src/common",
+        "destination": "common"
+      },
+      {
+        "source": "templates",
+        "destination": "templates"
+      },
+      {
+        "source": "adapters",
+        "destination": "adapters"
+      }
+    ],
+    "routers": {
+      "AGENTS.md": "AGENTS.md",
+      "CLAUDE.md": "CLAUDE.md"
+    },
+    "copies": {
+      "hermes": "adapters/hermes/plugin"
+    }
+  },
+  "install": {
+    "store": ".local/share/last-human-commit",
+    "projectRuntime": null,
+    "rollback": "rollbacks/{version}-lhc-rollout",
+    "markerBegin": "<!-- last-human-commit:begin -->",
+    "markerEnd": "<!-- last-human-commit:end -->",
+    "freshSeconds": 300,
+    "globalReplace": {
+      "src/common/": "{current}/common/"
+    }
+  },
+  "targets": [
+    {
+      "name": "100",
+      "transport": "ssh",
+      "sshTarget": "100",
+      "port": 22104,
+      "python": "python3",
+      "home": "/home/roomhacker",
+      "routers": [
+        {
+          "path": ".codex/AGENTS.md",
+          "template": "AGENTS.md"
+        },
+        {
+          "path": ".claude/CLAUDE.md",
+          "template": "CLAUDE.md"
+        },
+        {
+          "path": ".claude-code-orchestrator/CLAUDE.md",
+          "template": "CLAUDE.md"
+        },
+        {
+          "path": ".claude-rpc/CLAUDE.md",
+          "template": "CLAUDE.md"
+        },
+        {
+          "path": ".claude-trace/CLAUDE.md",
+          "template": "CLAUDE.md"
+        },
+        {
+          "path": ".claude-w1/CLAUDE.md",
+          "template": "CLAUDE.md"
+        },
+        {
+          "path": ".config/opencode/AGENTS.md",
+          "template": "AGENTS.md"
+        },
+        {
+          "path": ".zcode/AGENTS.md",
+          "template": "AGENTS.md"
+        }
+      ],
+      "projects": [
+        {
+          "path": "ServersAdministartion",
+          "routers": [
+            {
+              "path": "AGENTS.md",
+              "template": "AGENTS.md"
+            },
+            {
+              "path": "CLAUDE.md",
+              "template": "CLAUDE.md"
+            }
+          ]
+        },
+        {
+          "path": "PycharmProjects/video_watching",
+          "routers": []
+        },
+        {
+          "path": "PycharmProjects/TelegramAuto",
+          "routers": [
+            {
+              "path": "AGENTS.md",
+              "template": "AGENTS.md"
+            },
+            {
+              "path": "CLAUDE.md",
+              "template": "CLAUDE.md"
+            }
+          ]
+        },
+        {
+          "path": "gptadmin",
+          "routers": [
+            {
+              "path": "AGENTS.md",
+              "template": "AGENTS.md"
+            },
+            {
+              "path": "CLAUDE.md",
+              "template": "CLAUDE.md"
+            }
+          ]
+        }
+      ],
+      "copies": [
+        {
+          "source": "hermes",
+          "path": ".hermes/plugins/last-human-commit"
+        }
+      ]
+    },
+    {
+      "name": "44",
+      "transport": "ssh",
+      "sshTarget": "44",
+      "python": "python3",
+      "home": "/home/roomhacker",
+      "routers": [
+        {
+          "path": ".codex/AGENTS.md",
+          "template": "AGENTS.md"
+        },
+        {
+          "path": ".claude/CLAUDE.md",
+          "template": "CLAUDE.md"
+        },
+        {
+          "path": ".config/opencode/AGENTS.md",
+          "template": "AGENTS.md"
+        },
+        {
+          "path": ".zcode/AGENTS.md",
+          "template": "AGENTS.md"
+        }
+      ],
+      "projects": [
+        {
+          "path": "ServersAdministartion",
+          "routers": [
+            {
+              "path": "AGENTS.md",
+              "template": "AGENTS.md"
+            },
+            {
+              "path": "CLAUDE.md",
+              "template": "CLAUDE.md"
+            }
+          ]
+        },
+        {
+          "path": "PycharmProjects/video_watching",
+          "routers": [
+            {
+              "path": "AGENTS.md",
+              "template": "AGENTS.md"
+            },
+            {
+              "path": "CLAUDE.md",
+              "template": "CLAUDE.md"
+            }
+          ]
+        },
+        {
+          "path": "gptadmin",
+          "routers": [
+            {
+              "path": "AGENTS.md",
+              "template": "AGENTS.md"
+            },
+            {
+              "path": "CLAUDE.md",
+              "template": "CLAUDE.md"
+            }
+          ]
+        }
+      ],
+      "copies": []
+    },
+    {
+      "name": "88",
+      "transport": "ssh",
+      "sshTarget": "88",
+      "python": "python3",
+      "home": "/home/roomhacker",
+      "routers": [
+        {
+          "path": ".codex/AGENTS.md",
+          "template": "AGENTS.md"
+        },
+        {
+          "path": ".claude/CLAUDE.md",
+          "template": "CLAUDE.md"
+        },
+        {
+          "path": ".config/opencode/AGENTS.md",
+          "template": "AGENTS.md"
+        },
+        {
+          "path": ".zcode/AGENTS.md",
+          "template": "AGENTS.md"
+        }
+      ],
+      "projects": [
+        {
+          "path": "gptadmin",
+          "routers": [
+            {
+              "path": "AGENTS.md",
+              "template": "AGENTS.md"
+            },
+            {
+              "path": "CLAUDE.md",
+              "template": "CLAUDE.md"
+            }
+          ]
+        }
+      ],
+      "copies": [
+        {
+          "source": "hermes",
+          "path": ".hermes/plugins/last-human-commit"
+        }
+      ]
+    },
+    {
+      "name": "mac",
+      "transport": "ssh",
+      "sshTarget": "user@localhost",
+      "port": 2222,
+      "python": "/opt/homebrew/bin/python3",
+      "home": "/Users/user",
+      "routers": [
+        {
+          "path": ".codex/AGENTS.md",
+          "template": "AGENTS.md"
+        },
+        {
+          "path": ".claude/CLAUDE.md",
+          "template": "CLAUDE.md"
+        },
+        {
+          "path": ".claude-code-orchestrator/CLAUDE.md",
+          "template": "CLAUDE.md"
+        },
+        {
+          "path": ".claude-switcher/CLAUDE.md",
+          "template": "CLAUDE.md"
+        },
+        {
+          "path": ".config/opencode/AGENTS.md",
+          "template": "AGENTS.md"
+        },
+        {
+          "path": ".zcode/AGENTS.md",
+          "template": "AGENTS.md"
+        }
+      ],
+      "projects": [
+        {
+          "path": "PycharmProjects/video_watching",
+          "routers": [
+            {
+              "path": "AGENTS.md",
+              "template": "AGENTS.md"
+            },
+            {
+              "path": "CLAUDE.md",
+              "template": "CLAUDE.md"
+            }
+          ]
+        },
+        {
+          "path": "Documents/ServerAdministartion/.worktrees/opencodex-fleet-resilience",
+          "routers": [
+            {
+              "path": "AGENTS.md",
+              "template": "AGENTS.md"
+            }
+          ]
+        }
+      ],
+      "copies": [
+        {
+          "source": "hermes",
+          "path": ".hermes/plugins/last-human-commit"
+        }
+      ]
+    }
+  ]
+}
