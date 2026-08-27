@@ -24,6 +24,7 @@ do not require more by default.
 Source/build/test proof:
 Release/deployment state:
 Post-action real business canary:
+Tree clean / pushed:
 What remains unverified:
 
 ## Handoff state

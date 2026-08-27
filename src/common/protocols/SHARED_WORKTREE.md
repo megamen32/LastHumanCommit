@@ -50,8 +50,10 @@ available.
 - A foreign path changed within five minutes is probably active. Do not edit,
   stage, rename, delete, format, or include it. Report the collision and continue
   only on independent paths.
-- Older foreign changes are still foreign. Do not assume they are abandoned or
-  fold them into the current task.
+- Older foreign changes are still foreign: do not assume they are abandoned and
+  do not fold them in blindly. At integration L reviews them, absorbs
+  reviewed-safe edits into the integration commit, and reports exactly what was
+  absorbed.
 - Missing paths, renames, binaries, generated output, unknown ownership, or mtime
   uncertainty are hands-off until L can ask the user.
 
@@ -63,11 +65,11 @@ task. An explicit human request may authorize one named target only.
 
 Before every integration or release, review the complete target-branch diff,
 including foreign and pre-existing changes, so the resulting project state is
-coherent rather than merely the current task's patch. Revalidate that the target
-branch is the current remote/default-branch tip before choosing the integration
-route; report any divergence and do not silently merge, rebase, or discard it.
+coherent. Revalidate that the target branch is the current remote/default-branch
+tip; report any divergence and do not silently merge, rebase, or discard it.
 
-Stage and commit only task-owned paths unless the user explicitly authorizes the
-named foreign changes. A full review is required for awareness and coordination;
-it is not authorization to absorb another owner's work. Report unapproved
-foreign changes and the exact target-branch divergence separately.
+Unified history: absorb reviewed-safe foreign edits into the integration commit
+and report exactly what was absorbed. Only harmful or unreviewable foreign work
+is left uncommitted and reported separately. Every cycle ends with a clean
+working tree; a Full cycle also ends pushed, deployed where deployable, and
+real-surface tested.

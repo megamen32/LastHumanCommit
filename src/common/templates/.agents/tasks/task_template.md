@@ -115,5 +115,7 @@ Claim strength proven:
 Source/test proof:
 Deployment state:
 Real canary proof:
+Tree clean (nothing uncommitted):
+Pushed (Full cycle):
 Deferred non-blocking findings:
-Commit, only if requested/created:
+Commit (each completed step):

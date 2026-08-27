@@ -80,6 +80,7 @@ Claim strength actually proven:
 Source/test evidence:
 Deployment state:
 Real canary evidence:
+Tree clean / pushed / deployed:
 Optional deferred hardening/findings:
 Current workspace/branch:
-Commit, only if requested/created:
+Commit (each completed step):

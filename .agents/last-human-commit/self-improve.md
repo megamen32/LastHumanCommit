@@ -199,3 +199,11 @@
 - Which skill, MCP, or tool is missing? none — existing chrome-devtools/browser MCPs cover real-surface testing.
 - What operation or error repeated? GPT-era drift into security infrastructure repeated across 77629a5/059bc8d/898c901/64290f2; guard: validate.py forbids AskSecret/SSS, opaque registered-agent, base64 fallback, NoticePlace capability phrases and fails if secret-theater paths reappear.
 - State: fixed now
+
+## 2026-08-27 — unified history rule (Short)
+
+- What slowed or confused L? L repeatedly left unpushed commits and untracked dirt, and canon told L to stage only task-owned paths, leaving foreign edits to rot — the opposite of the user's standing expectation.
+- Which instruction should change? Fixed now: "Unified history" section in AGENTS.md/Lead.md/SHARED_WORKTREE.md/task template — commit each completed step, absorb reviewed-safe foreign edits and report them, every cycle ends clean; Full cycles end pushed, deployed, real-surface tested. .agents/at/ ignored so "clean" is achievable.
+- Which skill, MCP, or tool is missing? none.
+- What operation or error repeated? Fragmented end states across cycles (4 unpushed commits, 63 untracked files at rule time); guard: validate.py now forbids "Stage and commit only task-owned paths" and requires the unified-history phrases.
+- State: fixed now

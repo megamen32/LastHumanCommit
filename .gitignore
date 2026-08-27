@@ -4,5 +4,9 @@ __pycache__/
 
 .worktrees/
 graphify-out/
+.agents/at/
 .agents/shared-session/search/
+.agents/shared-session/time/
+.agents/shared-session/compaction/
 .agents/shared-session/knowledge/*.lock
+.serena/

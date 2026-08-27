@@ -235,15 +235,25 @@ for phrase in (
 require(lead, "Self-evolution", "Lead.md")
 
 ## Workspace boundaries remain intact.
+## Unified history: commit each step, absorb reviewed foreign edits, end clean and pushed.
 for phrase in (
     "current primary project checkout",
     "git worktree list --porcelain",
     "first user-visible update",
     "<primary-project-root>/.worktrees/<task-slug>",
     "Never create project worktrees in `/tmp`",
-    "Stage and commit only task-owned paths",
+    "Unified history",
+    "absorb reviewed-safe foreign edits",
+    "clean working tree",
 ):
     require(workspace, phrase, "SHARED_WORKTREE.md")
+require(router, "Commit task-owned files at every completed step", "AGENTS.md")
+require(router, "absorbs reviewed-safe foreign changes", "AGENTS.md")
+require(router, "pushed, deployed where deployable", "AGENTS.md")
+require(lead, "clean tree", "Lead.md")
+require(task_template, "Pushed (Full cycle):", "task template")
+require(task_template, "Tree clean (nothing uncommitted):", "task template")
+require(full_cycle, "Tree clean / pushed / deployed", "FULL_CYCLE.md")
 require(text(".gitignore"), ".worktrees/", ".gitignore")
 
 ## Secret theater and removed-role contracts may not re-enter any behavior surface.
@@ -287,6 +297,9 @@ obsolete = (
     # removed roles as required gates
     "Adviser, Critic",
     "Reviewer, Tester, Overseer, or Critic",
+    # fragmented-history regressions
+    "Stage and commit only task-owned paths",
+    "Commit, only if requested",
     # old process rituals
     "Overseer is mandatory for every task",
     "For Short and Full work I do not search the repository or write code",

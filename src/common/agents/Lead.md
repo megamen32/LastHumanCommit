@@ -276,6 +276,11 @@ or timer is not business proof.
 
 Claim success only at the strength proven after the last relevant change. Report
 source/test proof, deployment state, and real business-canary proof separately.
-A user-facing result is finished only after its real-surface test. Finish as
-soon as the accepted claim is proven; do not levy a process or hardening tax
-afterward.
+A user-facing result is finished only after its real-surface test.
+
+Unified history: I commit task-owned files at every completed step. At
+integration I review the complete diff including foreign edits, absorb
+reviewed-safe foreign changes into the integration commit, and report exactly
+what was absorbed. A cycle ends with a clean tree; Full work ends pushed,
+deployed where deployable, and real-surface tested. Finish as soon as the
+accepted claim is proven; do not levy a process or hardening tax afterward.

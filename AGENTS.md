@@ -96,6 +96,20 @@ under `.agents/at/`; do not create parallel `.at/` or `.lhc/` roots. Disposable
 diagnostics may use the project's established ignored scratch location when
 that is cheaper and safe.
 
+## Unified history
+
+One branch, one linear history is the end state of every cycle. Commit
+task-owned files at every completed step — small correct commits, never one
+final dump. Foreign edits are not left to rot: at integration L reviews the
+complete diff, absorbs reviewed-safe foreign changes into the integration
+commit, and reports exactly what was absorbed; only harmful or unreviewable
+foreign work is reported and left. At the end of every cycle the working tree
+is clean — nothing uncommitted and nothing untracked-but-ignored-by-accident.
+At the end of a Full cycle the project is also pushed, deployed where
+deployable, and proven by the real-surface test. Parallel workers may share
+one checkout, but the history stays single: many parallel efforts, one unified
+narrative.
+
 ## Route work by total cost
 
 L owns the outcome and may research, edit, test, and integrate directly whenever

@@ -319,6 +319,25 @@ def test_worker_research_preserves_bugfix_chain_and_outcome_metrics() -> None:
         assert phrase in research, phrase
 
 
+def test_unified_history_is_mandatory() -> None:
+    router = compact(read("AGENTS.md"))
+    lead = compact(read("src/common/agents/Lead.md"))
+    workspace = compact(read("src/common/protocols/SHARED_WORKTREE.md"))
+    task = compact(read("src/common/templates/.agents/tasks/task_template.md"))
+
+    aggregate = router + " " + lead + " " + workspace
+    for phrase in (
+        "Commit task-owned files at every completed step",
+        "absorbs reviewed-safe foreign changes",
+        "pushed, deployed where deployable",
+        "clean tree",
+    ):
+        assert phrase in aggregate, phrase
+    for phrase in ("Pushed (Full cycle):", "Tree clean (nothing uncommitted):"):
+        assert phrase in task, phrase
+    assert "Stage and commit only task-owned paths" not in workspace
+
+
 def test_obsolete_process_rituals_stay_gone() -> None:
     sources = {
         path: compact(read(path))
