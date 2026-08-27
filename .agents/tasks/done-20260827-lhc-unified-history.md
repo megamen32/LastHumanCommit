@@ -32,4 +32,8 @@ rollout verified, валидаторы зелёные, канон содержи
 
 ## Результат
 
-- (заполняется при закрытии)
+- Коммит 08b198a (после rebase поверх чужого c096e71 — новый hash в логе);
+  валидаторы зелёные; дерево чистое (0); всё запушено в origin/main;
+  rollout verified 100/44/88/mac; deployed current = pushed tip.
+- Push чинился: SSH remote упал из-за смены host-key GitHub — remote
+  переведён на HTTPS + gh credential helper; host-key НЕ принимался молча.
