@@ -30,4 +30,11 @@ marketplace PASS, pytest 40 passed, зеркала идентичны, deployed 
 
 ## Результат
 
-- (заполняется при закрытии)
+- Commit 377a9eb запушен; validate.py PASS (12 skills), plugin 1.0.0
+  parity=PASS 12, marketplace PASS, pytest 40 passed; зеркала идентичны
+  (repo = plugin = ~/.zcode/skills).
+- Rollout 377a9eb verified на 100/44/88/mac; deployed == HEAD; дерево чистое.
+- Ответ пользователю: 10 канонических скиллов LHC (planning, bugfix-tdd,
+  feature-implementation, real-use-testing, business-delivery, release,
+  task-decomposition, worker-research, worker-code, worker-bugfix) жили и
+  живут в skills/ + зеркало в плагине; удаляли только ask-secret/ask-human.
