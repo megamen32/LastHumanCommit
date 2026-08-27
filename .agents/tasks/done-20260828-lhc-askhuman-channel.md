@@ -27,4 +27,7 @@ entries=2, pytest green, всё запушено, rollout verified, дерево
 
 ## Результат
 
-- (заполняется при закрытии)
+- Commit 00dab94 запушен; все валидаторы зелёные (validate.py, 41 pytest,
+  marketplace entries=2, plugin parity 12, task_states).
+- Rollout verified на 100/44/88/mac; канон несёт секцию AskHuman; в
+  маркетплейсе снова два плагина (last-human-commit 1.0.0 + ask-human 0.2.0).
