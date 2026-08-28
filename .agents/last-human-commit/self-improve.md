@@ -231,3 +231,11 @@
 - Which skill, MCP, or tool is missing? none.
 - What operation or error repeated? 4th nested time-guard flake in validate.py; guard partially applied: nested validators now print full output on failure for one-look diagnosis; root cause (suspected live-hook fcntl contention) still unconfirmed.
 - State: fixed now
+
+## 2026-08-28 — universal manifest drift (Short)
+
+- What slowed or confused L? The version bump touched per-harness projections but missed the root universal plugin.json (agent-plugins.org 1.0.0) — the canonical manifest drifted to 0.3.0 vs 1.0.0.
+- Which instruction should change? Fixed now: plugin validator checks version parity root + projections; negative test confirms drift detection.
+- Which skill, MCP, or tool is missing? none.
+- What operation or error repeated? Manual multi-manifest bumps drift; guard: parity check in the plugin validator.
+- State: fixed now

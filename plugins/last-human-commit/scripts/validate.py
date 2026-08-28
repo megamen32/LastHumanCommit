@@ -52,6 +52,19 @@ def check_no_symlinks(root: Path) -> None:
             raise ValidationError(f"symlink is not allowed in package: {path}")
 
 
+def check_version_parity(root: Path) -> None:
+    versions = {}
+    for rel in ("plugin.json", ".codex-plugin/plugin.json", ".claude-plugin/plugin.json"):
+        path = root / rel
+        if path.is_file():
+            versions[rel] = str(load_json(path).get("version"))
+    unique = set(versions.values())
+    if len(unique) > 1:
+        raise ValidationError(f"manifest versions drifted: {versions}")
+    if len(versions) < 2:
+        raise ValidationError("expected at least root and one projection manifest")
+
+
 def check_root_manifest(root: Path) -> None:
     path = root / "plugin.json"
     manifest = load_json(path)
@@ -197,6 +210,7 @@ def main() -> int:
     source_root = args.source_root.expanduser().resolve() if args.source_root else default_source_root()
     try:
         check_no_symlinks(root)
+        check_version_parity(root)
         check_root_manifest(root)
         codex_skills = check_native_manifest(root, ".codex-plugin/plugin.json", "Codex")
         claude_skills = check_native_manifest(root, ".claude-plugin/plugin.json", "Claude Code")
