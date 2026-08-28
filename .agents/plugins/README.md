@@ -15,7 +15,20 @@ optional Claude/OpenCode projections, and optional MCP companion files.
 | Plugin | Version | Contents | Source |
 | --- | --- | --- | --- |
 | `last-human-commit` | `1.0.0` | Codex, OpenCode, Claude Code workflow + LHC operator skills (lhc-update-agents, lhc-rollout) | `./plugins/last-human-commit` |
-| `ask-human` | `0.2.0` | Important-info channel to the human (AskHuman/notify MCP) | `./plugins/ask-human` |
+| `ask-human` | `0.3.0` | Important-info channel to the human (AskHuman/notify MCP) | `./plugins/ask-human` |
+
+## Relationship between the plugins
+
+`last-human-commit` and `ask-human` are companions, not dependencies: both
+degrade gracefully when the other is absent, so keeping only one on a given
+host is valid. `ask-human` is opt-in (`AVAILABLE`); the marketplace never
+forces the pair. Both use whatever AskHuman/AskSecret-compatible MCP
+endpoints the host has configured — nothing in this repository hardcodes an
+endpoint. Bring your own via env or `.env`
+(`LHC_ASKHUMAN_MCP_URL`, `LHC_ASKSECRET_MCP_URL`, optional `..._MCP_TOKEN`)
+and register it with `plugins/ask-human/scripts/setup_mcp.py`
+(dry-run by default, `--apply` writes `~/.codex/config.toml` with a backup;
+other harnesses get a printed snippet).
 
 ## Validate
 

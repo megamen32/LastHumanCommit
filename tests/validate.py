@@ -363,10 +363,17 @@ for skill in SKILLS:
         fail(f"generated skill differs from source: {skill}")
 
 ## Run the narrow behavioral validators owned by this repository.
-subprocess.run([sys.executable, "-m", "pytest", "-q", "tests/test_business_first_contract.py"], cwd=ROOT, check=True)
-subprocess.run([sys.executable, "-m", "pytest", "-q", "tests/test_time_guard.py"], cwd=ROOT, check=True)
-subprocess.run([sys.executable, "-m", "py_compile", str(time_guard)], cwd=ROOT, check=True)
-subprocess.run(["sh", str(ROOT / "tests/test_block_adapter.sh")], cwd=ROOT, check=True)
+def run_quiet(command: list[str]) -> None:
+    completed = subprocess.run(command, cwd=ROOT, capture_output=True, text=True)
+    if completed.returncode != 0:
+        print(completed.stdout[-4000:], file=sys.stderr)
+        print(completed.stderr[-2000:], file=sys.stderr)
+        raise SystemExit(f"FAIL: nested validator failed: {' '.join(command)}")
+
+run_quiet([sys.executable, "-m", "pytest", "-q", "tests/test_business_first_contract.py"])
+run_quiet([sys.executable, "-m", "pytest", "-q", "tests/test_time_guard.py"])
+run_quiet([sys.executable, "-m", "py_compile", str(time_guard)])
+run_quiet(["sh", str(ROOT / "tests/test_block_adapter.sh")])
 
 print(
     f"PASS: minimal path, supreme Overseer, real-surface Tester, time anchors, "

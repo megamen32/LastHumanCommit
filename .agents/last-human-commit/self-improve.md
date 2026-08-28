@@ -223,3 +223,11 @@
 - Which skill, MCP, or tool is missing? none — AskHuman/notify MCP already connected.
 - What operation or error repeated? Overcorrection pendulum: delete-everything vs keep-everything; guard: validators now name the exact ceremony patterns, not the tools.
 - State: fixed now
+
+## 2026-08-28 — endpoint-agnostic MCP (Short)
+
+- What slowed or confused L? The AskHuman/AskSecret plumbing assumed the author's personal endpoints; public consumers need their own, and marketplace installs cannot take parameters (no env-at-install).
+- Which instruction should change? Fixed now: endpoints are BYO via LHC_ASKHUMAN_MCP_URL / LHC_ASKSECRET_MCP_URL (+optional ..._MCP_TOKEN) read from env/.env; plugins/ask-human/scripts/setup_mcp.py registers the MCP (codex config.toml, dry-run default, --apply with backup, snippet for others); ask-human marketplace policy AVAILABLE so keeping only one plugin is valid.
+- Which skill, MCP, or tool is missing? none.
+- What operation or error repeated? 4th nested time-guard flake in validate.py; guard partially applied: nested validators now print full output on failure for one-look diagnosis; root cause (suspected live-hook fcntl contention) still unconfirmed.
+- State: fixed now

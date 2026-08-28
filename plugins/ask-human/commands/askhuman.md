@@ -25,3 +25,18 @@ infrastructure.
   consequential-action boundary stays with the active harness;
 - secrets never travel through AskHuman — use `/secret` (AskSecret) instead;
 - if the MCP is not connected, say so and continue in-session.
+
+## Endpoint — bring your own
+
+The command is endpoint-agnostic: any AskHuman-compatible MCP works. Yours is
+configured per harness, not by the marketplace:
+
+```bash
+export LHC_ASKHUMAN_MCP_URL="https://your-notify.example/mcp"   # or .env
+python3 plugins/ask-human/scripts/setup_mcp.py --apply          # registers it in Codex
+```
+
+`LHC_ASKSECRET_MCP_URL` does the same for `/secret`
+(`--name AskSecret`). Optional `..._MCP_TOKEN` becomes a Bearer header. The
+script is dry-run by default and keeps a backup on `--apply`; for other
+harnesses it prints the snippet to add manually.
