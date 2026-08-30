@@ -1,7 +1,13 @@
 #!/usr/bin/env python3
 """Semantic regressions for the LHC v2 contract: minimal path, time truth, real tests, no secret theater."""
 
+import ast
+import importlib.util
+import json
 from pathlib import Path
+import subprocess
+
+import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -345,6 +351,162 @@ def test_unified_history_is_mandatory() -> None:
     for phrase in ("Pushed (Full cycle):", "Tree clean (nothing uncommitted):"):
         assert phrase in task, phrase
     assert "Stage and commit only task-owned paths" not in workspace
+
+
+def test_project_local_tmp_is_mandatory_and_self_enforced() -> None:
+    router = compact(read("AGENTS.md"))
+    workspace = compact(read("src/common/protocols/SHARED_WORKTREE.md"))
+    code = compact(read("src/common/profiles/Code.md"))
+    aggregate = " ".join((router, workspace, code))
+
+    for phrase in (
+        "<project-root>/.tmp/",
+        "source code",
+        "repository clones",
+        "build trees and caches",
+        "binaries",
+        "packages",
+        "APK/DMG",
+        "archives",
+        "checksums",
+        "release artifacts",
+        "even when they exist only briefly",
+        "system `/tmp`",
+        "`$TMPDIR`",
+        "default temp directory",
+        "tiny non-code OS primitives",
+        "never for project data or deliverables",
+    ):
+        assert phrase in aggregate, phrase
+
+    assert ".tmp/" in read(".gitignore").splitlines()
+    pytest_config = read("conftest.py")
+    for phrase in (
+        'f"pytest-{os.getpid()}-{secrets.token_hex(8)}"',
+        "must not be a symlink",
+        "escapes project root",
+        '"check-ignore", "--quiet", "--", ".tmp/"',
+    ):
+        assert phrase in pytest_config, phrase
+
+    for relative in (
+        "tests/test_block_adapter.sh",
+        "tests/test_task_resume_snapshots.sh",
+    ):
+        shell = read(relative)
+        assert "${TMPDIR" not in shell, relative
+        assert "${TMPDIR:-/tmp}" not in shell, relative
+        assert "/.tmp/" in shell, relative
+
+    canonical = ROOT / "skills/lhc-rollout/scripts/lhc_rollout.py"
+    generated = ROOT / "plugins/last-human-commit/skills/lhc-rollout/scripts/lhc_rollout.py"
+    assert canonical.read_bytes() == generated.read_bytes()
+
+    tree = ast.parse(canonical.read_text(encoding="utf-8"))
+    creators = {"TemporaryDirectory", "NamedTemporaryFile", "mkdtemp", "mkstemp"}
+    for call in (node for node in ast.walk(tree) if isinstance(node, ast.Call)):
+        function = call.func
+        if not (
+            isinstance(function, ast.Attribute)
+            and isinstance(function.value, ast.Name)
+            and function.value.id == "tempfile"
+            and function.attr in creators
+        ):
+            continue
+        assert any(keyword.arg == "dir" for keyword in call.keywords), (
+            f"tempfile.{function.attr} must use an explicit project-local or "
+            "same-directory dir"
+        )
+
+
+def test_rollout_rejects_symlink_tmp_escape(tmp_path: Path) -> None:
+    canonical = ROOT / "skills/lhc-rollout/scripts/lhc_rollout.py"
+    spec = importlib.util.spec_from_file_location("lhc_rollout_escape_test", canonical)
+    assert spec is not None and spec.loader is not None
+    rollout = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(rollout)
+
+    repo = tmp_path / "source-repo"
+    repo.mkdir()
+    subprocess.run(["git", "init", "-q", str(repo)], check=True)
+    (repo / ".gitignore").write_text(".tmp/\n", encoding="utf-8")
+    outside = tmp_path / "escaped"
+    outside.mkdir()
+    (repo / ".tmp").symlink_to(outside, target_is_directory=True)
+
+    with pytest.raises(RuntimeError, match="must not be a symlink"):
+        rollout._project_tmp(repo)
+
+
+def test_pytest_basetemp_is_unique_and_project_local() -> None:
+    spec = importlib.util.spec_from_file_location("lhc_pytest_config_test", ROOT / "conftest.py")
+    assert spec is not None and spec.loader is not None
+    pytest_config = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(pytest_config)
+
+    first = pytest_config._new_pytest_basetemp()
+    second = pytest_config._new_pytest_basetemp()
+    expected_parent = (ROOT / ".tmp").resolve(strict=True)
+    assert first != second
+    assert first.parent == expected_parent
+    assert second.parent == expected_parent
+    assert first.name.startswith(f"pytest-{pytest_config.os.getpid()}-")
+    assert second.name.startswith(f"pytest-{pytest_config.os.getpid()}-")
+
+
+def test_ssh_rollout_stages_only_in_target_project_tmp(tmp_path: Path, monkeypatch) -> None:
+    canonical = ROOT / "skills/lhc-rollout/scripts/lhc_rollout.py"
+    spec = importlib.util.spec_from_file_location("lhc_rollout_ssh_test", canonical)
+    assert spec is not None and spec.loader is not None
+    rollout = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(rollout)
+
+    bundle = tmp_path / "bundle"
+    bundle.mkdir()
+    (bundle / "identity.json").write_text(
+        json.dumps({"version": "abc1234"}) + "\n", encoding="utf-8"
+    )
+    (bundle / "payload").write_text("fixture\n", encoding="utf-8")
+    remote = "/srv/operator/project/.tmp/lhc-rollout/incoming/abc1234-123"
+    calls: list[list[str]] = []
+
+    def fake_run(command, *, input_text=None, timeout=300):
+        del input_text, timeout
+        value = list(command)
+        calls.append(value)
+        if value[0] == "scp":
+            return subprocess.CompletedProcess(value, 0, "", "")
+        remote_command = value[-1]
+        if "sh -c" in remote_command:
+            return subprocess.CompletedProcess(value, 0, remote + "\n", "")
+        if "remote-preview" in remote_command:
+            report = rollout.REPORT_PREFIX + json.dumps({"name": "fake"}) + "\n"
+            return subprocess.CompletedProcess(value, 0, report, "")
+        return subprocess.CompletedProcess(value, 0, "", "")
+
+    monkeypatch.setattr(rollout, "_run", fake_run)
+    result = rollout._remote_call(
+        "preview",
+        {
+            "name": "fake",
+            "transport": "ssh",
+            "sshTarget": "fake-host",
+            "home": "/srv/operator",
+            "projectRoot": "project",
+            "python": "python3",
+        },
+        bundle,
+        {},
+    )
+
+    assert result == {"name": "fake"}
+    rendered = "\n".join(" ".join(call) for call in calls)
+    assert ".agent-harness-sync" not in rendered
+    assert "/.tmp/lhc-rollout/incoming/" in rendered
+    assert "check-ignore --quiet -- .tmp/" in rendered
+    assert '[ ! -L "$tmp" ]' in rendered
+    scp = next(call for call in calls if call[0] == "scp")
+    assert scp[-1] == f"fake-host:{remote}/"
 
 
 def test_obsolete_process_rituals_stay_gone() -> None:

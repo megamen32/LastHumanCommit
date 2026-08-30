@@ -30,6 +30,8 @@ before introducing a general abstraction. Preserve explicit existing project
 conventions unless following them would block the accepted result.
 
 Use one-off tooling only when it is cheaper than direct commands. Reusable Agent
-Tools belong under `.agents/at/`; disposable diagnostics may use the project's
-established ignored scratch path. Never expose secrets in tools, logs, task
+Tools belong under `.agents/at/`. Disposable diagnostics, generated helpers,
+source exports, build trees, caches, binaries, packages, and release artifacts
+belong under the project's ignored `.tmp/`, never system `/tmp`, `$TMPDIR`, or a
+runtime's default temp directory. Never expose secrets in tools, logs, task
 records, or output.

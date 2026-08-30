@@ -2,7 +2,8 @@
 set -eu
 
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-tmpdir=$(mktemp -d "$root/.agents/at/task-resume.XXXXXX")
+mkdir -p "$root/.tmp"
+tmpdir=$(mktemp -d "$root/.tmp/task-resume.XXXXXX")
 trap 'rm -rf -- "$tmpdir"' EXIT HUP INT TERM
 
 task="$tmpdir/task-repair.md"

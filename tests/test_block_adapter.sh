@@ -6,7 +6,8 @@ ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 ADAPTER="$ROOT/scripts/lhc-block"
 BEGIN='<!-- last-human-commit:begin -->'
 END='<!-- last-human-commit:end -->'
-TMPDIR_TEST=$(mktemp -d "${TMPDIR:-/tmp}/lhc-block-test.XXXXXX")
+mkdir -p "$ROOT/.tmp"
+TMPDIR_TEST=$(mktemp -d "$ROOT/.tmp/lhc-block-test.XXXXXX")
 trap 'rm -rf "$TMPDIR_TEST"' EXIT HUP INT TERM
 
 fail() { printf '%s\n' "FAIL: $*" >&2; exit 1; }

@@ -3,6 +3,7 @@ __pycache__/
 .env
 
 .worktrees/
+.tmp/
 graphify-out/
 .agents/at/
 .agents/shared-session/search/

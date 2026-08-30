@@ -3,6 +3,9 @@
 
 from __future__ import annotations
 
+import argparse
+import importlib.util
+import io
 import json
 import subprocess
 import sys
@@ -13,6 +16,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 TOOL = ROOT / "src/common/tools/lhc_time_guard.py"
 PLUGIN = ROOT / "plugins/last-human-commit"
+SPEC = importlib.util.spec_from_file_location("lhc_time_guard_native_test", TOOL)
+assert SPEC is not None and SPEC.loader is not None
+TIME_GUARD = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(TIME_GUARD)
 
 
 def task(root: Path, *, active: int | None = None) -> None:
@@ -54,8 +61,17 @@ def test_opencode_hook_reports_explicit_active_overrun(tmp_path: Path) -> None:
     assert "Превышение исходного maximum: 5 активных минут" in result["prompt"]
 
 
-def test_hook_is_fail_open_without_task_card(tmp_path: Path) -> None:
-    assert run(tmp_path, "codex", "SessionStart") is None
+def test_hook_is_fail_open_without_task_card(tmp_path: Path, monkeypatch) -> None:
+    (tmp_path / ".agents").mkdir()
+    monkeypatch.setattr(TIME_GUARD, "find_active_task", lambda _cwd: None)
+    monkeypatch.setattr(sys, "stdin", io.StringIO(json.dumps({"cwd": str(tmp_path)})))
+    args = argparse.Namespace(
+        runtime="codex",
+        event="SessionStart",
+        now=None,
+        idle_cap_seconds=300,
+    )
+    assert TIME_GUARD.hook(args) is None
 
 
 def test_package_declares_both_native_adapters() -> None:

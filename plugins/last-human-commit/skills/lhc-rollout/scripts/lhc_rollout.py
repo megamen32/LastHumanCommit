@@ -71,6 +71,32 @@ def _git(repo: Path, *arguments: str) -> str:
     return completed.stdout.strip()
 
 
+def _source_repo(manifest: Mapping[str, Any]) -> Path:
+    source = manifest.get("source")
+    if not isinstance(source, Mapping):
+        raise ValueError("source must be an object")
+    return Path(_text(source.get("repo"), "source.repo")).expanduser().resolve(strict=True)
+
+
+def _project_tmp(repo: Path) -> Path:
+    resolved_repo = repo.resolve(strict=True)
+    root = resolved_repo / ".tmp"
+    if root.is_symlink():
+        raise RuntimeError(f"{root} must not be a symlink")
+    root.mkdir(parents=True, exist_ok=True)
+    resolved_root = root.resolve(strict=True)
+    try:
+        resolved_root.relative_to(resolved_repo)
+    except ValueError as error:
+        raise RuntimeError(f"{root} escapes project root {resolved_repo}") from error
+    ignored = _run(
+        ["git", "-C", str(resolved_repo), "check-ignore", "--quiet", "--", ".tmp/"]
+    )
+    if ignored.returncode != 0:
+        raise RuntimeError(f"{resolved_repo} must ignore .tmp/ before rollout staging")
+    return resolved_root
+
+
 def tree_digest(root: Path) -> tuple[str, int]:
     digest = hashlib.sha256()
     count = 0
@@ -89,7 +115,9 @@ def tree_digest(root: Path) -> tuple[str, int]:
 
 def _export_git_tree(repo: Path, commit: str, destination: Path) -> None:
     destination.mkdir(parents=True, exist_ok=False)
-    with tempfile.NamedTemporaryFile(prefix="lhc-rollout-", suffix=".tar") as archive_file:
+    with tempfile.NamedTemporaryFile(
+        prefix="lhc-rollout-", suffix=".tar", dir=destination.parent
+    ) as archive_file:
         completed = subprocess.run(
             ["git", "-C", str(repo), "archive", "--format=tar", commit],
             check=False,
@@ -127,7 +155,7 @@ def build_bundle(manifest: Mapping[str, Any], destination: Path) -> dict[str, An
     source = manifest.get("source")
     if not isinstance(source, Mapping):
         raise ValueError("source must be an object")
-    repo = Path(_text(source.get("repo"), "source.repo")).expanduser().resolve(strict=True)
+    repo = _source_repo(manifest)
     revision = _text(source.get("revision", "HEAD"), "source.revision")
     commit = _git(repo, "rev-parse", f"{revision}^{{commit}}")
     version_length = int(source.get("versionLength", 7))
@@ -136,7 +164,9 @@ def build_bundle(manifest: Mapping[str, Any], destination: Path) -> dict[str, An
     version = commit[:version_length]
 
     destination.mkdir(parents=True, exist_ok=False)
-    with tempfile.TemporaryDirectory(prefix="lhc-rollout-source-") as temporary:
+    with tempfile.TemporaryDirectory(
+        prefix="lhc-rollout-source-", dir=_project_tmp(repo)
+    ) as temporary:
         checkout = Path(temporary) / "checkout"
         _export_git_tree(repo, commit, checkout)
         version_root = destination / "version"
@@ -577,6 +607,47 @@ def _ssh_base(target: Mapping[str, Any]) -> list[str]:
     return command
 
 
+def _remote_project_staging(target: Mapping[str, Any], identity: Mapping[str, Any]) -> str:
+    home = _text(target.get("home"), "target.home")
+    project_relative = _relative(target.get("projectRoot"), "target.projectRoot")
+    if project_relative == Path("."):
+        raise ValueError("target.projectRoot must name a project below target.home")
+    project = f"{home.rstrip('/')}/{project_relative.as_posix()}"
+    incoming_name = f"{identity['version']}-{os.getpid()}"
+    script = "\n".join(
+        (
+            "set -eu",
+            f"home={shlex.quote(home)}",
+            f"project={shlex.quote(project)}",
+            'home=$(cd -- "$home" && pwd -P)',
+            'project=$(cd -- "$project" && pwd -P)',
+            'case "$project/" in "$home/"*) ;; *) exit 41 ;; esac',
+            'gitroot=$(git -C "$project" rev-parse --show-toplevel)',
+            'gitroot=$(cd -- "$gitroot" && pwd -P)',
+            '[ "$gitroot" = "$project" ]',
+            'tmp="$project/.tmp"',
+            '[ ! -L "$tmp" ]',
+            'mkdir -p -- "$tmp"',
+            'tmp=$(cd -- "$tmp" && pwd -P)',
+            'case "$tmp/" in "$project/"*) ;; *) exit 42 ;; esac',
+            'git -C "$project" check-ignore --quiet -- .tmp/',
+            'incoming="$tmp/lhc-rollout/incoming/' + incoming_name + '"',
+            'mkdir -p -- "$incoming"',
+            'printf "%s\\n" "$incoming"',
+        )
+    )
+    completed = _run([*_ssh_base(target), f"sh -c {shlex.quote(script)}"])
+    if completed.returncode != 0:
+        raise RuntimeError(
+            completed.stderr.strip()
+            or f"{target.get('name')}: project-local remote staging failed"
+        )
+    lines = [line.strip() for line in completed.stdout.splitlines() if line.strip()]
+    if len(lines) != 1 or "/.tmp/lhc-rollout/incoming/" not in lines[0]:
+        raise RuntimeError(f"{target.get('name')}: invalid project-local staging path")
+    return lines[0]
+
+
 def _remote_call(
     mode: str,
     target: Mapping[str, Any],
@@ -585,14 +656,13 @@ def _remote_call(
     expected_plan: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     identity = _read_json(bundle / "identity.json")
-    remote = f".agent-harness-sync/lhc-rollout/incoming/{identity['version']}-{os.getpid()}"
-    mkdir = _run([*_ssh_base(target), f"mkdir -p {shlex.quote(remote)}"])
-    if mkdir.returncode != 0:
-        raise RuntimeError(mkdir.stderr.strip() or f"{target.get('name')}: remote staging failed")
+    remote = _remote_project_staging(target, identity)
     python = _text(target.get("python", "python3"), "target.python")
     cleanup = f"import pathlib,shutil;p=pathlib.Path({remote!r});shutil.rmtree(p) if p.is_dir() else None"
     try:
-        with tempfile.TemporaryDirectory(prefix="lhc-rollout-remote-") as temporary:
+        with tempfile.TemporaryDirectory(
+            prefix="lhc-rollout-remote-", dir=bundle.parent
+        ) as temporary:
             root = Path(temporary)
             archive_path = root / "bundle.tar.gz"
             request_path = root / "request.json"
@@ -646,6 +716,11 @@ def _targets(manifest: Mapping[str, Any]) -> list[dict[str, Any]]:
         transport = target.get("transport", "local")
         if transport not in {"local", "ssh"}:
             raise ValueError(f"targets[{index}].transport must be local or ssh")
+        project_root = _relative(
+            target.get("projectRoot"), f"targets[{index}].projectRoot"
+        )
+        if project_root == Path("."):
+            raise ValueError(f"targets[{index}].projectRoot must name a project")
         result.append(target)
     return result
 
@@ -682,7 +757,9 @@ def _public_preview(preview: Mapping[str, Any]) -> dict[str, Any]:
 
 def preview_manifest(manifest_path: str | Path) -> dict[str, Any]:
     manifest = _read_json(Path(manifest_path))
-    with tempfile.TemporaryDirectory(prefix="lhc-rollout-bundle-") as temporary:
+    with tempfile.TemporaryDirectory(
+        prefix="lhc-rollout-bundle-", dir=_project_tmp(_source_repo(manifest))
+    ) as temporary:
         bundle = Path(temporary) / "bundle"
         build_bundle(manifest, bundle)
         return _public_preview(_preview_with_bundle(manifest, bundle))
@@ -960,7 +1037,9 @@ def apply_target(target: Mapping[str, Any], bundle: Path, install: Mapping[str, 
 
 def apply_manifest(manifest_path: str | Path, confirmation: str) -> dict[str, Any]:
     manifest = _read_json(Path(manifest_path))
-    with tempfile.TemporaryDirectory(prefix="lhc-rollout-bundle-") as temporary:
+    with tempfile.TemporaryDirectory(
+        prefix="lhc-rollout-bundle-", dir=_project_tmp(_source_repo(manifest))
+    ) as temporary:
         bundle = Path(temporary) / "bundle"
         build_bundle(manifest, bundle)
         preview = _preview_with_bundle(manifest, bundle)
@@ -984,7 +1063,9 @@ def apply_manifest(manifest_path: str | Path, confirmation: str) -> dict[str, An
 
 def verify_manifest(manifest_path: str | Path) -> dict[str, Any]:
     manifest = _read_json(Path(manifest_path))
-    with tempfile.TemporaryDirectory(prefix="lhc-rollout-bundle-") as temporary:
+    with tempfile.TemporaryDirectory(
+        prefix="lhc-rollout-bundle-", dir=_project_tmp(_source_repo(manifest))
+    ) as temporary:
         bundle = Path(temporary) / "bundle"
         identity = build_bundle(manifest, bundle)
         install = _install(manifest)
@@ -1005,7 +1086,11 @@ def _remote(mode: str, archive_path: Path, request_path: Path) -> dict[str, Any]
         raise ValueError("remote request is invalid")
     local_target = dict(target)
     local_target["transport"] = "local"
-    with tempfile.TemporaryDirectory(prefix="lhc-rollout-remote-") as temporary:
+    staging = archive_path.parent / ".tmp"
+    staging.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(
+        prefix="lhc-rollout-remote-", dir=staging
+    ) as temporary:
         bundle = Path(temporary) / "bundle"
         bundle.mkdir()
         _extract_bundle(archive_path, bundle)

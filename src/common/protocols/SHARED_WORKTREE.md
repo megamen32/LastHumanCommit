@@ -38,6 +38,23 @@ When the user explicitly requests a new worktree, create it only at:
 The project root must ignore `.worktrees/`. Never create project worktrees in
 `/tmp`, a home cache, a sibling directory, or harness-specific storage.
 
+## Project-local temporary storage
+
+The project root must also ignore `.tmp/`. Create that directory when temporary
+project work is needed and keep all source code, repository clones or exports,
+build trees and caches, binaries, packages, APK/DMG files, archives, checksums,
+and release artifacts there. This applies even to short-lived staging that is
+deleted at command exit.
+
+Never place those materials in system `/tmp`, `$TMPDIR`, a home cache, a sibling
+directory, or a language runtime's default temporary directory. Do not redirect
+`TMPDIR` to another non-project location as a workaround. System temporary
+storage is reserved for tiny non-code OS primitives such as a required socket,
+lock, FIFO, or anonymous atomic handle when the OS or API cannot use the project
+path. It must never contain project source, business data, build output, or a
+deliverable. Same-directory atomic replacement files remain valid because they
+are created beside their durable target, not in system temporary storage.
+
 ## Concurrent-edit safety
 
 Assume the checkout may contain concurrent human or agent work. A dirty checkout

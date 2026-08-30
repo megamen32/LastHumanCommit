@@ -45,6 +45,7 @@
       "port": 22104,
       "python": "python3",
       "home": "/home/roomhacker",
+      "projectRoot": "ServersAdministartion",
       "routers": [
         {
           "path": ".codex/AGENTS.md",
@@ -137,6 +138,7 @@
       "sshTarget": "44",
       "python": "python3",
       "home": "/home/roomhacker",
+      "projectRoot": "ServersAdministartion",
       "routers": [
         {
           "path": ".codex/AGENTS.md",
@@ -204,6 +206,7 @@
       "sshTarget": "88",
       "python": "python3",
       "home": "/home/roomhacker",
+      "projectRoot": "gptadmin",
       "routers": [
         {
           "path": ".codex/AGENTS.md",
@@ -251,6 +254,7 @@
       "port": 2222,
       "python": "/opt/homebrew/bin/python3",
       "home": "/Users/user",
+      "projectRoot": "Documents/ServerAdministartion/.worktrees/opencodex-fleet-resilience",
       "routers": [
         {
           "path": ".codex/AGENTS.md",

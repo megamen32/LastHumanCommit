@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 import subprocess
 import sys
@@ -261,6 +262,37 @@ require(task_template, "Tree clean (nothing uncommitted):", "task template")
 require(full_cycle, "Tree clean / pushed / deployed", "FULL_CYCLE.md")
 require(text(".gitignore"), ".worktrees/", ".gitignore")
 
+## Temporary project material never escapes the project-local ignored root.
+temporary_contract = router + "\n" + workspace + "\n" + code
+for phrase in (
+    "<project-root>/.tmp/",
+    "source code",
+    "repository clones",
+    "build trees and caches",
+    "binaries",
+    "packages",
+    "APK/DMG",
+    "archives",
+    "checksums",
+    "release artifacts",
+    "even when they exist only briefly",
+    "system `/tmp`",
+    "`$TMPDIR`",
+    "default temp directory",
+    "tiny non-code OS primitives",
+    "never for project data or deliverables",
+):
+    require(temporary_contract, phrase, "project-local temporary storage contract")
+require(text(".gitignore"), ".tmp/", ".gitignore")
+pytest_config = text("conftest.py")
+for phrase in (
+    'f"pytest-{os.getpid()}-{secrets.token_hex(8)}"',
+    "must not be a symlink",
+    "escapes project root",
+    '"check-ignore", "--quiet", "--", ".tmp/"',
+):
+    require(pytest_config, phrase, "conftest.py")
+
 ## Secret theater and removed-role contracts may not re-enter any behavior surface.
 behavior_paths = [
     "AGENTS.md",
@@ -362,6 +394,41 @@ for skill in SKILLS:
         fail(f"missing canonical/generated skill: {skill}")
     if source.read_bytes() != generated.read_bytes():
         fail(f"generated skill differs from source: {skill}")
+
+rollout_source = ROOT / "skills/lhc-rollout/scripts/lhc_rollout.py"
+rollout_generated = ROOT / "plugins/last-human-commit/skills/lhc-rollout/scripts/lhc_rollout.py"
+if rollout_source.read_bytes() != rollout_generated.read_bytes():
+    fail("generated lhc-rollout script differs from source")
+for relative in (
+    "assets/last-human-commit-fleet.json",
+    "references/manifest.md",
+):
+    source = ROOT / "skills/lhc-rollout" / relative
+    generated = ROOT / "plugins/last-human-commit/skills/lhc-rollout" / relative
+    if source.read_bytes() != generated.read_bytes():
+        fail(f"generated lhc-rollout {relative} differs from source")
+
+fleet = json.loads(text("skills/lhc-rollout/assets/last-human-commit-fleet.json"))
+for target in fleet.get("targets", []):
+    if not isinstance(target.get("projectRoot"), str) or not target["projectRoot"].strip():
+        fail(f"fleet target {target.get('name')} lacks projectRoot")
+manifest_reference = text("skills/lhc-rollout/references/manifest.md")
+for phrase in (
+    '"projectRoot": "gptadmin"',
+    "<home>/<projectRoot>/.tmp/lhc-rollout/incoming/",
+    "must not be a symlink",
+    "different Git top-level",
+):
+    require(manifest_reference, phrase, "lhc-rollout manifest reference")
+rollout_text = rollout_source.read_text(encoding="utf-8")
+for phrase in (
+    "target.projectRoot",
+    "check-ignore",
+    'case "$tmp/" in "$project/"*',
+    '[ ! -L "$tmp" ]',
+):
+    require(rollout_text, phrase, "lhc-rollout project-local staging")
+forbid(rollout_text, ".agent-harness-sync", "lhc-rollout project-local staging")
 
 ## Run the narrow behavioral validators owned by this repository.
 def run_quiet(command: list[str]) -> None:

@@ -43,6 +43,7 @@ host work.
       "port": 22104,
       "python": "python3",
       "home": "/home/roomhacker",
+      "projectRoot": "gptadmin",
       "routers": [
         {"path": ".codex/AGENTS.md", "template": "AGENTS.md"},
         {"path": ".claude/CLAUDE.md", "template": "CLAUDE.md"},
@@ -68,6 +69,12 @@ host work.
 `transport` is `local` or `ssh`. For `local`, omit SSH fields. For macOS, set
 `python` to the actual Python 3 path when `python3` is unavailable in a remote
 non-login shell.
+
+Every target requires `projectRoot`, a safe path relative to `home` naming the
+exact Git project used for temporary rollout staging. Its `.tmp/` must be
+Git-ignored and must not be a symlink. SSH upload staging is created only below
+`<home>/<projectRoot>/.tmp/lhc-rollout/incoming/`; a missing project, path escape,
+different Git top-level, unignored `.tmp/`, or symlink fails before upload.
 
 Set `install.projectRuntime` to `null` for machine-wide mode: no per-project `.last-human-commit/` copy is created or verified, and project routers reference the machine store (`{current}`) through `globalReplace`. A string value keeps the legacy per-project runtime mode.
 

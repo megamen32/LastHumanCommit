@@ -18,6 +18,16 @@ in `/tmp`, a home cache, a sibling directory, or harness-owned storage. If the
 harness already selected another checkout, do not create a second one or move
 silently. Follow `src/common/protocols/SHARED_WORKTREE.md` for concurrent edits.
 
+## Project-local temporary storage
+
+All temporary project material lives under `<project-root>/.tmp/`, which the
+project must ignore in Git. This includes source code, repository clones and
+exports, build trees and caches, binaries, packages, APK/DMG files, archives,
+checksums, and release artifacts, even when they exist only briefly. Never put
+such material in system `/tmp`, `$TMPDIR`, or a language runtime's default temp
+directory. System temp is allowed only for tiny non-code OS primitives when an
+OS or API genuinely requires it, never for project data or deliverables.
+
 ## Resolve one role
 
 If an enclosing instruction explicitly assigns one of these roles, read only
@@ -103,9 +113,9 @@ named result file; do not force both. The child bootstrap remains
 `<Role> <absolute-task-file-path>` when the harness/profile requires it.
 
 Use one project-local state root: `.agents/`. Put reusable one-off Agent Tools
-under `.agents/at/`; do not create parallel `.at/` or `.lhc/` roots. Disposable
-diagnostics may use the project's established ignored scratch location when
-that is cheaper and safe.
+under `.agents/at/`; do not create parallel `.at/` or `.lhc/` roots. Put every
+disposable diagnostic, generated helper, and temporary output under the
+project's ignored `.tmp/`, not under `.agents/at/` or a system temp directory.
 
 ## Unified history
 

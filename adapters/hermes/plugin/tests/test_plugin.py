@@ -10,6 +10,18 @@ assert SPEC.loader is not None
 SPEC.loader.exec_module(lhc)
 
 
+def isolated_active_task(root: Path) -> None:
+    """Keep project-local fixture hooks from inheriting this repository's cards."""
+
+    tasks = root / ".agents/tasks"
+    tasks.mkdir(parents=True)
+    (tasks / "work-hermes-fixture.md").write_text(
+        "- Started at: 2026-08-12T10:00:00+03:00\n"
+        "- Initial estimate: 5 / 120 active minutes\n",
+        encoding="utf-8",
+    )
+
+
 def test_marker_reader_is_outside_text_safe(tmp_path):
     (tmp_path / "AGENTS.md").write_text(
         "original\n<!-- last-human-commit:begin -->\ncanonical\n"
@@ -93,6 +105,7 @@ def test_registers_middleware_and_pre_llm_hook():
 
 def test_pre_llm_counts_each_native_summary_once_and_injects_handoff(tmp_path, monkeypatch):
     (tmp_path / ".agents").mkdir()
+    isolated_active_task(tmp_path)
     source_root = Path(__file__).parents[4]
     monkeypatch.setenv("LAST_HUMAN_COMMIT_ROOT", str(source_root / "src"))
     monkeypatch.chdir(tmp_path)
@@ -124,13 +137,14 @@ def test_pre_llm_counts_each_native_summary_once_and_injects_handoff(tmp_path, m
     state_path = tmp_path / ".agents/shared-session/compaction/hermes-one/state.json"
     state = json.loads(state_path.read_text(encoding="utf-8"))
     assert first is not None and "Compaction count: 1" in first["context"]
-    assert duplicate is None
+    assert duplicate is None or "Compaction count:" not in duplicate["context"]
     assert second is not None and "Compaction count: 2" in second["context"]
     assert state["compaction_count"] == 2
 
 
 def test_rotated_hermes_session_keeps_one_compaction_lineage(tmp_path, monkeypatch):
     (tmp_path / ".agents").mkdir()
+    isolated_active_task(tmp_path)
     source_root = Path(__file__).parents[4]
     monkeypatch.setenv("LAST_HUMAN_COMMIT_ROOT", str(source_root / "src"))
     monkeypatch.chdir(tmp_path)

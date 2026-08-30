@@ -3,6 +3,9 @@
 
 from __future__ import annotations
 
+import argparse
+import importlib.util
+import io
 import json
 import subprocess
 import sys
@@ -11,6 +14,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 TOOL = ROOT / "src/common/tools/lhc_time_guard.py"
+SPEC = importlib.util.spec_from_file_location("lhc_time_guard_test", TOOL)
+assert SPEC is not None and SPEC.loader is not None
+TIME_GUARD = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(TIME_GUARD)
 
 
 def run_guard(state: Path, now: str, active_minutes: int, *extra: str) -> dict[str, object]:
@@ -80,6 +87,42 @@ def run_native_hook(
         text=True,
     )
     return json.loads(completed.stdout) if completed.stdout.strip() else None
+
+
+def run_native_hook_without_task(
+    root: Path,
+    event: str,
+    monkeypatch,
+    *,
+    runtime: str = "codex",
+    session_id: str = "session-demo",
+    extra_payload: dict[str, object] | None = None,
+) -> dict[str, object] | None:
+    """Exercise no-task behavior without inheriting this repository's task cards."""
+
+    monkeypatch.setattr(TIME_GUARD, "find_active_task", lambda _cwd: None)
+    monkeypatch.setattr(
+        sys,
+        "stdin",
+        io.StringIO(
+            json.dumps(
+                {
+                    "cwd": str(root),
+                    "hook_event_name": event,
+                    "session_id": session_id,
+                    "trigger": "automatic",
+                    **(extra_payload or {}),
+                }
+            )
+        ),
+    )
+    args = argparse.Namespace(
+        runtime=runtime,
+        event=event,
+        now=TIME_GUARD.parse_time("2026-08-12T12:00:00+03:00"),
+        idle_cap_seconds=300,
+    )
+    return TIME_GUARD.hook(args)
 
 
 def make_active_project(root: Path) -> Path:
@@ -287,15 +330,18 @@ def test_legacy_large_task_card_cannot_make_handoff_append_forever(tmp_path: Pat
     assert "source path above is authoritative" in handoff
 
 
-def test_compaction_falls_back_to_captured_prompt_without_task_card(tmp_path: Path) -> None:
+def test_compaction_falls_back_to_captured_prompt_without_task_card(
+    tmp_path: Path, monkeypatch
+) -> None:
     (tmp_path / ".agents").mkdir()
-    run_native_hook(
+    run_native_hook_without_task(
         tmp_path,
         "UserPromptSubmit",
+        monkeypatch,
         extra_payload={"prompt": "Ship the real payment canary without extra hardening."},
     )
 
-    result = run_native_hook(tmp_path, "PreCompact")
+    result = run_native_hook_without_task(tmp_path, "PreCompact", monkeypatch)
 
     assert result is not None
     handoff = (
