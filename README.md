@@ -23,9 +23,9 @@ and proof, and adds governance only when a concrete risk justifies its cost.
 7. Consult the supreme Overseer at every crossed hour, overrun, and repeated
    failure; finish user-facing results only with a real-surface test.
 8. Match evidence to the claim and stop when that claim is proven.
-9. Keep one unified history: commit each completed step, review and absorb
-   foreign edits at integration, and end every cycle with a clean tree — Full
-   cycles pushed, deployed, and real-surface tested.
+9. Keep one unified history: review every path, repair unsafe or unreviewable
+   work, commit the complete result, and end every Full cycle with every
+   repository clean, pushed, deployed, and real-surface tested.
 
 Workers ask Lead at decision boundaries because Lead retains the broader user
 context and owns business decisions. With a proven non-blocking parent

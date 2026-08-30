@@ -239,7 +239,7 @@ for phrase in (
 require(lead, "Self-evolution", "Lead.md")
 
 ## Workspace boundaries remain intact.
-## Unified history: commit each step, absorb reviewed foreign edits, end clean and pushed.
+## Unified history: review every path, repair blockers, end clean and pushed.
 for phrase in (
     "current primary project checkout",
     "git worktree list --porcelain",
@@ -247,12 +247,13 @@ for phrase in (
     "<primary-project-root>/.worktrees/<task-slug>",
     "Never create project worktrees in `/tmp`",
     "Unified history",
-    "absorb reviewed-safe foreign edits",
-    "clean working tree",
+    "review every change",
+    "fix every unsafe or unreviewable item",
+    "clean repositories",
 ):
     require(workspace, phrase, "SHARED_WORKTREE.md")
 require(router, "Commit task-owned files at every completed step", "AGENTS.md")
-require(router, "absorbs reviewed-safe foreign changes", "AGENTS.md")
+require(router, "fixes unsafe or unreviewable", "AGENTS.md")
 require(router, "pushed, deployed where deployable", "AGENTS.md")
 require(lead, "clean tree", "Lead.md")
 require(task_template, "Pushed (Full cycle):", "task template")

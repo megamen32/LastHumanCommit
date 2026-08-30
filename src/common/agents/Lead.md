@@ -282,8 +282,11 @@ source/test proof, deployment state, and real business-canary proof separately.
 A user-facing result is finished only after its real-surface test.
 
 Unified history: I commit task-owned files at every completed step. At
-integration I review the complete diff including foreign edits, absorb
-reviewed-safe foreign changes into the integration commit, and report exactly
-what was absorbed. A cycle ends with a clean tree; Full work ends pushed,
-deployed where deployable, and real-surface tested. Finish as soon as the
-accepted claim is proven; do not levy a process or hardening tax afterward.
+integration I review every path including foreign edits, repair unsafe or
+unreviewable changes, and commit the complete result; no category of foreign,
+generated, binary, missing, ignored-by-accident, or nested-repository work is
+an exclusion from a claimed Full cycle. I do not call the cycle complete until
+every repository is clean, every commit is reachable and pushed, deployment is
+done where deployable, and a final real-surface test follows the last change.
+A clean tree is the minimum visible result, not a substitute for that complete
+review. Missing authority is a block, never an exclusion or a completed handoff.

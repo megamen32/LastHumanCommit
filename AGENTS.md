@@ -111,15 +111,15 @@ that is cheaper and safe.
 
 One branch, one linear history is the end state of every cycle. Commit
 task-owned files at every completed step — small correct commits, never one
-final dump. Foreign edits are not left to rot: at integration L reviews the
-complete diff, absorbs reviewed-safe foreign changes into the integration
-commit, and reports exactly what was absorbed; only harmful or unreviewable
-foreign work is reported and left. At the end of every cycle the working tree
-is clean — nothing uncommitted and nothing untracked-but-ignored-by-accident.
-At the end of a Full cycle the project is also pushed, deployed where
-deployable, and proven by the real-surface test. Parallel workers may share
-one checkout, but the history stays single: many parallel efforts, one unified
-narrative.
+final dump. At integration L reviews every path, fixes unsafe or unreviewable
+work, and commits the complete repaired result; foreign, generated, binary,
+missing, ignored-by-accident, and nested-repository paths are not exclusions.
+Do not call a Full cycle complete with any dirty repository or unreachable
+commit. If repair requires missing authority, the cycle is blocked, not
+complete. Every Full cycle ends clean, pushed, deployed where deployable, and
+proven by the real-surface test after the last change. Parallel workers may
+share one checkout, but the history stays single: many parallel efforts, one
+unified narrative.
 
 ## Route work by total cost
 

@@ -47,15 +47,15 @@ At start, before changing a path, and before staging or committing, inspect
 `git status --short`, staged/unstaged diffs, untracked files, and mtime where
 available.
 
-- A foreign path changed within five minutes is probably active. Do not edit,
-  stage, rename, delete, format, or include it. Report the collision and continue
-  only on independent paths.
-- Older foreign changes are still foreign: do not assume they are abandoned and
-  do not fold them in blindly. At integration L reviews them, absorbs
-  reviewed-safe edits into the integration commit, and reports exactly what was
-  absorbed.
-- Missing paths, renames, binaries, generated output, unknown ownership, or mtime
-  uncertainty are hands-off until L can ask the user.
+- A foreign path changed within five minutes is probably active. Preserve it and
+  resolve the collision with its owner before a claimed Full completion; do not
+  use activity as an exclusion from the final clean history.
+- Older foreign changes are still foreign: review every path, repair every
+  unsafe or incomplete change, and commit the resulting complete set. Never use
+  unknown ownership, generated output, binaries, missing paths, or mtime
+  uncertainty as a reason to leave a path outside a claimed Full cycle.
+- Nested repositories and gitlinks are part of that review: create and publish
+  their reachable commits before recording their pointers in the parent.
 
 Never use `git stash`, `git reset`, `git clean`, `git restore`, `git checkout
 --`, `git revert`, force-push, or rollback to remove work not created by this
@@ -68,8 +68,10 @@ including foreign and pre-existing changes, so the resulting project state is
 coherent. Revalidate that the target branch is the current remote/default-branch
 tip; report any divergence and do not silently merge, rebase, or discard it.
 
-Unified history: absorb reviewed-safe foreign edits into the integration commit
-and report exactly what was absorbed. Only harmful or unreviewable foreign work
-is left uncommitted and reported separately. Every cycle ends with a clean
-working tree; a Full cycle also ends pushed, deployed where deployable, and
-real-surface tested.
+Unified history: review every change, fix every unsafe or unreviewable item,
+and commit the complete repaired result into one reachable history. Never call
+a Full cycle complete with any modified, deleted, untracked, ignored-by-accident,
+or dirty nested-repository path. If required authority to repair a path is
+missing, the cycle is blocked and must not be described as complete. Every Full
+cycle ends with clean repositories, pushed reachable commits, deployment where
+deployable, and a final real-surface test after the last change.

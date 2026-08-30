@@ -336,7 +336,8 @@ def test_unified_history_is_mandatory() -> None:
     aggregate = router + " " + lead + " " + workspace
     for phrase in (
         "Commit task-owned files at every completed step",
-        "absorbs reviewed-safe foreign changes",
+        "review every change",
+        "fix every unsafe or unreviewable item",
         "pushed, deployed where deployable",
         "clean tree",
     ):

@@ -17,7 +17,7 @@ Make this bot's future changes identifiable as one commit range:
 
 ```bash
 cd ~/agents-projects/LastHumanCommit
-git status --porcelain   # must be empty; if dirty: review, absorb reviewed foreign edits, commit
+git status --porcelain   # must be empty; if dirty: review every path, repair blockers, commit the complete result
 git log @{u}..HEAD       # must be empty; if not: push
 git push origin main
 ```
