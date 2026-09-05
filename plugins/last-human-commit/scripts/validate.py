@@ -38,6 +38,7 @@ EXPECTED_SKILLS = {
     "worker-bugfix",
     "worker-code",
     "worker-research",
+    "mini-improvement-loop",
 }
 
 
