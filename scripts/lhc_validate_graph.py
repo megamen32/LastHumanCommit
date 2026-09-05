@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 from pathlib import Path
 import re
 import sys
@@ -29,6 +30,45 @@ def overlaps(left: str, right: str) -> bool:
     return a[:len(b)] == b or b[:len(a)] == a
 
 
+def finite_minutes(value: Any) -> bool:
+    return type(value) is int and value >= 0 or (
+        type(value) is float and math.isfinite(value) and value >= 0
+    )
+
+
+def estimate_summary(by_id: dict[str, dict[str, Any]], layers: list[list[str]]) -> dict[str, Any]:
+    if not any('estimate_minutes' in task for task in by_id.values()):
+        return {'available': False, 'reason': 'No per-node estimates supplied; no total is inferred.'}
+    effort: dict[str, int | float] = {}
+    duration: dict[str, int | float] = {}
+    paths: dict[str, list[str]] = {}
+    predecessors = {dep for task in by_id.values() for dep in task['depends_on']}
+    sinks = sorted(set(by_id) - predecessors)
+    for bound in ('minimum', 'maximum'):
+        effort[bound] = sum(task['estimate_minutes'][bound] for task in by_id.values())
+        totals: dict[str, int | float] = {}
+        routes: dict[str, list[str]] = {}
+        for layer in layers:
+            for tid in layer:
+                deps = by_id[tid]['depends_on']
+                prior = max(sorted(deps), key=lambda dep: totals[dep]) if deps else None
+                totals[tid] = by_id[tid]['estimate_minutes'][bound] + (totals[prior] if prior else 0)
+                routes[tid] = (routes[prior] if prior else []) + [tid]
+        last = max(sinks, key=lambda tid: totals[tid])
+        duration[bound], paths[bound] = totals[last], routes[last]
+        if not finite_minutes(effort[bound]) or not finite_minutes(duration[bound]):
+            raise ValueError('estimate_minutes aggregate exceeds finite numeric range')
+    return {
+        'available': True,
+        'effort_minutes': effort,
+        'dependency_critical_path_minutes': duration,
+        'critical_paths': paths,
+        'limits': 'Estimated dependency path is a lower bound without capacity, resource or queue costs. '
+                  'It assumes ready independent work can run concurrently; actual parallelism must be '
+                  'verified in the harness. These are estimates, not elapsed or measured active time.',
+    }
+
+
 def validate_graph(document: Any, model_classes: tuple[str, ...] = DEFAULT_CLASSES) -> dict[str, Any]:
     """Return structural errors and dependency layers for declared live-path access.
 
@@ -44,6 +84,7 @@ def validate_graph(document: Any, model_classes: tuple[str, ...] = DEFAULT_CLASS
     if not isinstance(tasks, list) or not tasks:
         return {'valid': False, 'errors': ['tasks must be a nonempty list']}
     by_id: dict[str, dict[str, Any]] = {}
+    has_estimates = any(isinstance(task, dict) and 'estimate_minutes' in task for task in tasks)
     for i, task in enumerate(tasks):
         if not isinstance(task, dict):
             errors.append(f'tasks[{i}] must be an object')
@@ -56,6 +97,22 @@ def validate_graph(document: Any, model_classes: tuple[str, ...] = DEFAULT_CLASS
             errors.append(f'duplicate task id: {tid}')
             continue
         by_id[tid] = task
+        if has_estimates:
+            estimate = task.get('estimate_minutes')
+            if not isinstance(estimate, dict):
+                errors.append(f'{tid}: estimate_minutes must be an object on all nodes when any estimate is supplied')
+            else:
+                minimum, maximum = estimate.get('minimum'), estimate.get('maximum')
+                if not finite_minutes(minimum) or not finite_minutes(maximum):
+                    errors.append(f'{tid}: estimate_minutes bounds must be finite nonnegative numbers, not booleans')
+                elif maximum < minimum:
+                    errors.append(f'{tid}: estimate_minutes maximum must be at least minimum')
+                elif maximum > minimum and (
+                    not isinstance(estimate.get('uncertainty'), str) or not estimate['uncertainty'].strip()
+                ):
+                    errors.append(f'{tid}: estimate_minutes uncertainty must explain the range')
+                if not isinstance(estimate.get('basis'), str) or not estimate['basis'].strip():
+                    errors.append(f'{tid}: estimate_minutes basis must explain the work and acceptance proof')
         for key in ('role', 'acceptance'):
             if not isinstance(task.get(key), str) or not task[key].strip():
                 errors.append(f'{tid}: missing {key}')
@@ -113,10 +170,17 @@ def validate_graph(document: Any, model_classes: tuple[str, ...] = DEFAULT_CLASS
             if collisions:
                 a, b = collisions[0]
                 errors.append(f'concurrent mutable-path conflict: {left_id} ({a}) / {right_id} ({b}); declare a dependency or isolate ownership')
+    try:
+        estimate = estimate_summary(by_id, layers) if not errors else {
+            'available': False, 'reason': 'Resolve graph conflicts before using estimates.'}
+    except (ValueError, OverflowError) as exc:
+        errors.append(str(exc))
+        estimate = {'available': False, 'reason': 'Invalid aggregate estimate.'}
     return {
         'valid': not errors,
         'errors': errors,
         'dependency_layers': layers,
+        'estimate': estimate,
         'limits': 'Declared paths/dependencies only. Layers are not runtime schedules; model/tool/resource/semantic suitability still requires verification.',
     }
 

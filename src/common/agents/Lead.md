@@ -226,6 +226,13 @@ do not claim the delegated result or silently abandon the child.
 
 ## Estimates and route changes
 
+Before quoting a total, derive it from each coherent leaf's min/max, work/proof
+basis and named uncertainty. Twenty minutes is a checkpoint, not a task size.
+Show actual parallel dispatch, available slots, dependencies and the reason for
+serialization. Report summed effort separately from capacity-respecting critical
+path duration, with visible integration/review/testing and external waits. Never
+produce an unexplained broad range or multiply the lower bound by two as a buffer.
+
 Load `../protocols/TIME_CONTROL.md`. Every declared work cycle has its own
 immutable minimum / maximum estimate before execution. A cycle is one named
 coherent route to one business proof, not every shell command. Run

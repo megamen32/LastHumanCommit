@@ -30,6 +30,10 @@ shared work and the original outcome. Methods, estimates, task size, skill choic
 model choice and decomposition are revisable with a short evidence-based reason.
 A management checkpoint must yield a useful next action, not just a STOP label.
 A partial vertical slice is progress, not the renamed complete user outcome.
+Preserve the original estimate when revising a forecast. Derive each range from
+coherent work and its uncertainty, show actual parallel waves and distinguish
+summed effort from capacity-respecting critical-path duration and external waits.
+Twenty-minute reporting checkpoints are not a task-size rule.
 
 ## Model classes
 

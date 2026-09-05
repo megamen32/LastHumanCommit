@@ -21,6 +21,11 @@ check and next checkpoint. A cheap executor should not have to reconstruct the
 whole architecture or choose an unmade product decision. Use
 `../model-routing/SKILL.md` for each meaningful allocation.
 
+Estimate each node from its actual work and verification: minimum/maximum minutes,
+known steps or comparable evidence, and the specific uncertainty widening the
+range. Twenty minutes is a checkpoint, not a task size. Do not manufacture
+20-minute slices or turn a small set of leaves into an unexplained 60–120 total.
+
 ## Parallelism with joins
 
 A lane is ready only when its required input contracts/results exist. Independent
@@ -39,6 +44,16 @@ locks, real model capability or whether tasks are conceptually independent.
 Use available concurrency rather than launching all ready jobs without regard to
 quota, context, tool capacity or real costs. Preserve existing workspace conventions;
 creating extra worktrees is not a mandatory part of this method.
+
+Show which ready lanes will actually dispatch together and the available slots.
+Explain each serialization by a dependency, shared mutable resource or capacity
+limit. Quote total effort separately from delivery duration: effort sums nodes;
+the capacity-respecting critical path uses the longest concurrent lane plus
+required sequential joins/review/testing. Include external waits separately.
+Show the arithmetic and each uncertainty rather than doubling a global buffer.
+The checker can summarize declared per-node estimates, but its dependency-only
+critical path is a lower bound until capacity, resource conflicts and waits are
+accounted for. It does not measure active time or run a scheduler.
 
 ## Dispatch and close
 

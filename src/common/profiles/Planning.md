@@ -46,6 +46,15 @@ authority to kill an agent.
 
 ## Least cost-to-canary
 
+Derive the task estimate from coherent leaves, never from the checkpoint period.
+Each leaf records min/max, work/proof basis and the uncertainty between bounds.
+Show actual parallel waves, available slots and why any ready work is serialized.
+Sum leaf effort separately from the capacity-respecting critical path; list
+integration, review, real testing and external waits explicitly. The reported
+total needs its arithmetic, not an arbitrary broad range or doubled buffer.
+If an unknown makes a range wide, use the cheapest probe to narrow it before
+allocating a long implementation lane.
+
 Rank actions by expected real canary movement against wall-clock, scarce-model
 tokens, handoff/context cost, process maintenance, retries, human interruption,
 and wrong-path risk.

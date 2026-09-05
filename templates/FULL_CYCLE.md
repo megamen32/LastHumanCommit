@@ -48,6 +48,13 @@ Initial independent Overseer audit / operational decision:
 Decision under active-harness policy:
 Dependency lanes / owned resources / integration joins:
 Decision model / executor models / suitability and fallback reasons:
+Per-leaf minimum/maximum / basis / specific uncertainty:
+Actual concurrent lanes / available slots / reasons for serialization:
+Summed effort versus capacity-respecting critical path (show arithmetic):
+External waits / evidence or unknown:
+
+Do not derive task size from the 20-minute checkpoint. The total follows the
+dependency and capacity plan, not a broad global buffer.
 
 ## Delivery order
 

@@ -25,6 +25,16 @@ def graph(*tasks):
     return {'schema_version': 1, 'tasks': list(tasks)}
 
 
+def estimated(tid, minimum, maximum, deps=None):
+    node = task(tid, deps)
+    node['estimate_minutes'] = {
+        'minimum': minimum, 'maximum': maximum,
+        'basis': 'Implement the named behavior and run its acceptance check.',
+        'uncertainty': 'A failed acceptance check may require one repair and replay.',
+    }
+    return node
+
+
 class GraphTests(unittest.TestCase):
     def valid(self, document):
         result = mod.validate_graph(document)
@@ -37,6 +47,54 @@ class GraphTests(unittest.TestCase):
         self.assertIn(fragment, ' '.join(result['errors']))
 
     def test_single(self): self.valid(graph(task()))
+    def test_legacy_graph_has_no_invented_estimate(self):
+        self.assertFalse(self.valid(graph(task()))['estimate']['available'])
+
+    def test_estimated_effort_and_distinct_critical_paths(self):
+        result = self.valid(graph(estimated('start', 1, 2),
+                                 estimated('a', 7, 8, ['start']),
+                                 estimated('b', 3, 12, ['start']),
+                                 estimated('join', 2, 3, ['a', 'b'])))['estimate']
+        self.assertEqual(result['effort_minutes'], {'minimum': 13, 'maximum': 25})
+        self.assertEqual(result['dependency_critical_path_minutes'], {'minimum': 10, 'maximum': 17})
+        self.assertEqual(result['critical_paths'],
+                         {'minimum': ['start', 'a', 'join'], 'maximum': ['start', 'b', 'join']})
+        self.assertIn('lower bound', result['limits'])
+        self.assertIn('not elapsed', result['limits'])
+
+    def test_critical_path_does_not_impose_layer_barriers(self):
+        result = self.valid(graph(estimated('a', 2, 2), estimated('b', 9, 9),
+                                 estimated('c', 8, 8, ['a'])))['estimate']
+        self.assertEqual(result['dependency_critical_path_minutes']['minimum'], 10)
+        self.assertEqual(result['critical_paths']['minimum'], ['a', 'c'])
+
+    def test_partial_estimates_rejected(self):
+        self.invalid(graph(estimated('a', 1, 2), task('b')), 'all nodes')
+
+    def test_invalid_estimate_bounds(self):
+        for minimum, maximum in ((True, 2), (1, False), (-1, 2), (3, 2),
+                                 ('1', 2), (0, float('inf')), (float('nan'), 3)):
+            with self.subTest(minimum=minimum, maximum=maximum):
+                self.invalid(graph(estimated('a', minimum, maximum)), 'estimate_minutes')
+
+    def test_explained_estimates_required(self):
+        for change in ({'basis': ''}, {'uncertainty': ''}, {'minimum': None}):
+            node = estimated('a', 1, 2)
+            node['estimate_minutes'].update(change)
+            self.invalid(graph(node), 'estimate_minutes')
+        node = estimated('a', 0, 0)
+        node['estimate_minutes'].pop('uncertainty')
+        self.assertEqual(self.valid(graph(node))['estimate']['effort_minutes']['minimum'], 0)
+
+    def test_malformed_estimate_object(self):
+        for estimate in (None, [], 2, {}):
+            node = task()
+            node['estimate_minutes'] = estimate
+            self.invalid(graph(node), 'estimate_minutes')
+
+    def test_nonfinite_aggregate_is_not_reported_as_a_valid_total(self):
+        self.invalid(graph(estimated('a', 1e308, 1e308),
+                           estimated('b', 1e308, 1e308)), 'finite numeric range')
     def test_parallel_disjoint(self):
         self.assertEqual(self.valid(graph(task('a', writes=['src/a']), task('b', writes=['src/b'])))['dependency_layers'], [['a', 'b']])
     def test_shared_read_only(self): self.valid(graph(task('a', reads=['src/common']), task('b', reads=['src/common'])))
@@ -67,7 +125,10 @@ class GraphTests(unittest.TestCase):
     def test_duplicate_dependency(self): self.invalid(graph(task('a'), task('b', ['a', 'a'])), 'duplicate value')
     def test_full_example(self):
         sample = ROOT/'src/common/skills/decompose-and-dispatch/references/execution-graph.json'
-        self.assertEqual(self.valid(json.loads(sample.read_text()))['dependency_layers'][1], ['backend', 'frontend'])
+        result = self.valid(json.loads(sample.read_text()))
+        self.assertEqual(result['dependency_layers'][1], ['backend', 'frontend'])
+        self.assertEqual(result['estimate']['effort_minutes'], {'minimum': 21, 'maximum': 37})
+        self.assertEqual(result['estimate']['dependency_critical_path_minutes'], {'minimum': 16, 'maximum': 28})
     def test_cli_valid_and_invalid(self):
         (ROOT / '.tmp').mkdir(exist_ok=True)
         with tempfile.TemporaryDirectory(dir=ROOT / '.tmp') as d:

@@ -22,6 +22,10 @@ Use only when planning can materially reduce wrong-path or coordination cost.
 7. Give every declared work cycle an immutable minimum/maximum estimate and run
    the business time guard at observable checkpoints; report every crossed hour
    and original-maximum overrun.
+   Derive that range from per-leaf work/proof and specific uncertainty. Show
+   available slots and actual parallel dispatch; sum effort separately from
+   capacity-respecting critical-path duration, with joins/testing/waits explicit.
+   Twenty minutes is a checkpoint, not a task size; no unexplained doubled buffer.
 8. Obtain the initial independent Overseer audit. Full includes coherent
    technical review and a fresh independent Tester; extra governance needs
    concrete risk-reduction value. Routine technical choices belong to Lead.

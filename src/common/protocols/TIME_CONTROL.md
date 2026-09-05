@@ -8,6 +8,23 @@ estimate of their enclosing cycle; do not create an estimate per shell command.
 
 ## Start anchor
 
+Before setting an anchor, construct the estimate from the work. Twenty minutes
+is a reporting interval, not a task size or estimate quantum. Every coherent
+leaf has a minimum/maximum, a basis in known work or comparable evidence, and a
+named uncertainty explaining the range. Do not mechanically double a minimum.
+
+Show the actual dispatch plan, dependencies and available slots. Sum leaf work
+as effort; calculate delivery duration from the capacity-respecting critical
+path or planned waves, using the maximum of concurrent lanes. Show integration,
+review and real-use testing where required, plus external waits separately.
+Explain why ready independent work must be serialized. A dependency-only graph
+duration is a lower bound, not a complete forecast when capacity is constrained.
+
+Preserve the original estimate for control. A revised remaining-work forecast
+must explain the new evidence and show the old estimate; it cannot reset the
+guard or hide an overrun. Estimated effort and delivery duration are not measured
+active or wall-clock time.
+
 A cycle does not start before its task record carries
 `Started at <UTC+3 ISO> (<source>)` taken from a real clock anchor:
 

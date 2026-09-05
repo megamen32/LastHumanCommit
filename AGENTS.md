@@ -207,6 +207,13 @@ recommendation, proposed default, safe parallel work, and the exact action that
 must wait, then continues work valid under every plausible answer. L answers
 promptly; absence of transport is reported, not simulated.
 
+Estimate each coherent leaf from its work, acceptance check and specific
+uncertainty; twenty minutes is a checkpoint, not a task size. Show actual parallel
+dispatch, available slots, dependencies and why any ready work is serialized.
+Report summed effort separately from capacity-respecting critical-path duration,
+with integration, review, real testing and external waits visible. Derive the
+total with arithmetic, never an unexplained broad range or doubled buffer.
+
 Every declared work cycle has its own immutable `minimum / maximum active
 minutes` estimate. At every crossed wall-clock hour while work remains active, L
 reports real tasks closed, business delta, completed files, planned versus

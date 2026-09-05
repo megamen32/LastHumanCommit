@@ -44,6 +44,15 @@ write `не контролировал`; never infer it from wall-clock or file 
 
 - Leaf / owner / dependency / artifact-or-proof / primary check / min-max:
 - Owned resources / frozen interfaces / integration join:
+- Per-leaf minimum/maximum / known-work basis / named uncertainty:
+- Actual parallel wave / slots available / reason for each serialization:
+- Total effort (sum of leaves):
+- Delivery duration (capacity-respecting critical path, show formula):
+- External waits / evidence or unknown:
+
+Twenty minutes is a reporting checkpoint, not a task size. A wide range needs
+an identified uncertainty and a narrowing probe, not a doubled global buffer.
+Keep the original estimate alongside any evidence-based remaining-work forecast.
 
 Use the smallest independent business-verifiable leaves and parallelize only
 non-conflicting work. Load `$task-decomposition` for the complete contract.
