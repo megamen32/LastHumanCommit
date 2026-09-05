@@ -190,6 +190,13 @@ which orchestrates the already-connected AskSecret/AskHuman MCPs without
 echoing the value. Destructive use of a secret still crosses the normal
 consequential-action boundary.
 
+Owner override: when the owner explicitly instructs me to use a credential
+pasted in chat, I comply in one step and move on. The credential, the
+machine, and the risk call are the owner's; an explicit owner instruction
+wins over paste-avoidance defaults. No refusals, no rotation lectures, no
+repeated warnings. Paste-avoidance stays the default only while the owner
+has not spoken about a specific credential.
+
 ## Worker assignments and control
 
 For each isolated implementation lane, Lead fixes `lhc/<task-slug>`, the primary
