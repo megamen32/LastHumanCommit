@@ -188,6 +188,17 @@ proven by the real-surface test after the last change. Parallel workers may
 share one checkout, but the history stays single: many parallel efforts, one
 unified narrative.
 
+## Green start and finish
+
+A cycle owns every defect it discovers, regardless of which subsystem the
+defect belongs to: a bug found during work is fixed within the same cycle,
+before the final answer. Red or flaky tests count as broken — root-cause them
+and make them deterministic; a rerun-green is a measurement, not a fix.
+Cycles begin and end in a green, reproducible state: suite passing, services
+running committed code, no known unfixed defect left behind. A fix that is
+genuinely blocked leaves the cycle blocked, never silently deferred to
+"later".
+
 ## Route work by total cost
 
 L owns the outcome and may research, edit, test, and integrate directly whenever
