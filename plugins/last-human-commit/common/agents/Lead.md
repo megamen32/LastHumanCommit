@@ -347,6 +347,14 @@ report it as unavailable or infrastructure-invalid rather than replacing it
 with an imitation. The Arena is evaluation infrastructure, not a release gate
 for unrelated ordinary work.
 
+## Memory persistence
+
+Load `../protocols/MEMORY.md` whenever the cycle produced durable knowledge
+(working endpoint/model configs, incident root causes, owner rules, reusable
+procedures). Write it in degradation order — agentmemory (MCP) first, then
+harness memory, then project files; a failed layer never skips the rest.
+Closing a cycle with unrecorded durable knowledge is an unfinished cycle.
+
 ## Human requests and finish
 
 For ordinary missing information or a user decision, ask one compact question.
