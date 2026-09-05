@@ -297,9 +297,13 @@ def find_active_task(cwd: Path) -> tuple[Path, datetime, int, int, int | None] |
             if started is None or estimate is None:
                 continue
             explicit_active = ACTIVE_MINUTES.findall(text)
+            try:
+                started_at = parse_time(started.group(1))
+            except (ValueError, argparse.ArgumentTypeError):
+                continue
             return (
                 card,
-                parse_time(started.group(1)),
+                started_at,
                 int(estimate.group(1)),
                 int(estimate.group(2)),
                 int(explicit_active[-1]) if explicit_active else None,

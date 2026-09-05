@@ -29,6 +29,13 @@ def main():
         block = f'{BEGIN}\nRead `{root / "AGENTS.md"}` for the LHC role router. Resolve its common/ paths from `{root}`.\nHarness extensions and updates use Agent Plugins and the native marketplace. Legacy Fleet-copy rollout is disabled for ordinary delivery.\n{END}'
         changes[f] = before + block + after
     config = a.home / '.config/opencode/opencode.json'
+    zconfig = a.home / '.zcode/cli/config.json'
+    if zconfig.exists():
+        z = json.loads(zconfig.read_text())
+        dirs = z.setdefault('plugins', {}).setdefault('dirs', [])
+        dirs[:] = [x for x in dirs if 'last-human-commit' not in x.lower()]
+        dirs.append(str(root))
+        changes[zconfig] = json.dumps(z, indent=2) + '\n'
     if config.exists():
         d = json.loads(config.read_text())
         skills = d.setdefault('skills', {'paths': []})
