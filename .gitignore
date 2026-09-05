@@ -11,3 +11,4 @@ graphify-out/
 .agents/shared-session/compaction/
 .agents/shared-session/knowledge/*.lock
 .serena/
+.codex-marketplace-install.json
