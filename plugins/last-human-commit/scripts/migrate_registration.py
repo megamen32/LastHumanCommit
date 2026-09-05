@@ -50,6 +50,20 @@ def main():
                 backup.write_bytes(path.read_bytes())
                 backup.chmod(0o600)
             path.write_text(content)
+    # Retire only names shipped by this package; keep unrelated local skills.
+    names = {x.name for x in (root / 'skills').iterdir() if (x / 'SKILL.md').is_file()}
+    for base in ['.codex/skills', '.zcode/skills', '.config/opencode/skills']:
+        for name in sorted(names):
+            old = a.home / base / name
+            if not old.exists() or old.is_symlink():
+                continue
+            backup = a.backup_root / base / name
+            if backup.exists():
+                continue
+            print(('retire ' if a.apply else 'preview retire ') + str(old))
+            if a.apply:
+                backup.parent.mkdir(parents=True, exist_ok=True)
+                old.rename(backup)
 
 if __name__ == '__main__':
     main()
