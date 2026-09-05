@@ -20,6 +20,7 @@ Never create a project worktree
 in `/tmp`, a home cache, a sibling directory, or harness-owned storage. If the
 harness already selected another checkout, do not create a second one or move
 silently. Follow `src/common/protocols/SHARED_WORKTREE.md` for concurrent edits.
+Persist durable knowledge per `src/common/protocols/MEMORY.md` — degradation order: agentmemory (MCP) -> harness memory -> project files; all agents, every cycle with new knowledge.
 
 Harnesses must reuse the assigned checkout instead of auto-creating another.
 Lead integrates reviewed branches into main, verifies and pushes the combined
