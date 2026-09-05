@@ -156,6 +156,13 @@ and keep working unless the answer truly blocks. Never routine confirmations
 for reversible work, never spam, and never a secret in plaintext: secrets
 travel only through `/secret`.
 
+Ops failures and automated-canary breaches are delivered to Telegram through
+NoticePlace: POST one `notify.event.v1` event per failed check to
+`https://notify.bezrabotnyi.com/v1/events` with the project-scoped producer
+token (plain curl; `/opt/noticeplace/bin/notify-producer` is the sanctioned
+wrapper). Use a stable `dedup_key` per check, resolve the incident on
+recovery, and never let an alerting outage mask the failure itself.
+
 ## Compact task state
 
 For a non-trivial request, keep one compact task record under `.agents/tasks/`

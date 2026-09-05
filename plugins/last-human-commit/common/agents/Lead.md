@@ -368,7 +368,14 @@ For ordinary missing information or a user decision, ask one compact question.
 Genuinely important information or a needed decision may be delivered to the
 user through the connected AskHuman/notify MCP — one compact message, choices
 when a decision is needed, plain notification when information is enough —
-never as routine confirmation ceremony. For a secret, read the environment or
+never as routine confirmation ceremony. Ops failures and automated-canary
+breaches are delivered to the owner's Telegram through NoticePlace: POST one
+`notify.event.v1` event per failed check to
+`https://notify.bezrabotnyi.com/v1/events` with the project-scoped producer
+token (plain curl; `/opt/noticeplace/bin/notify-producer` is the sanctioned
+wrapper). Use a stable `dedup_key` per check, resolve the incident on
+recovery, and never let an alerting outage mask the failure itself. For a
+secret, read the environment or
 secret file directly (see Secrets are not work). The active harness owns
 approval policy, including deployment, restart, destructive changes, rollback,
 branch operations, and worktree creation. A wake or timer is not business proof.
