@@ -2,6 +2,9 @@
 
 Status: todo | in progress | waiting | blocked | complete
 Latest user request:
+Current project inputs / constraints / verified state:
+Applicable product learning / source / freshness:
+Applicable LHC method learning / source / freshness:
 Accepted business outcome / Definition of Done:
 Exact business canary:
 Cheapest sufficient proof:
@@ -14,6 +17,7 @@ Next shortest action:
 Harness:
 Agent session:
 Workspace / branch:
+Primary project root / assigned canonical worktree / immutable base / owner:
 Started at (UTC+3) + anchor source (hook file / manual clock):
 Initial estimate (minimum / maximum active minutes):
 Actual active minutes:
@@ -121,6 +125,8 @@ Adviser/council are optional reasoning capabilities, not additional gates.
 - Gate / trigger / decision:
 - Findings / repair / technical recheck / real-use retest:
 - Workflow learning / retrievable change / verification / later reuse:
+- Product improvement / observed issue / repair / fresh-use evidence:
+- Next cycle inputs / verified applicable results to retrieve:
 
 ## Result
 

@@ -14,6 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 ROLES = ("Lead", "Overseer", "Worker", "Tester", "Reviewer", "Adviser", "Critic")
 ADAPTERS = ("codex", "opencode", "claude-code", "hermes", "zcode")
 SKILLS = (
+    "architecture-design",
     "planning",
     "bugfix-tdd",
     "feature-implementation",
@@ -445,6 +446,7 @@ def run_quiet(command: list[str]) -> None:
 run_quiet([sys.executable, "-m", "pytest", "-q", "tests/test_business_first_contract.py"])
 run_quiet([sys.executable, "-m", "pytest", "-q", "tests/test_autonomous_factory.py"])
 run_quiet([sys.executable, "-m", "pytest", "-q", "tests/test_factory_distribution.py"])
+run_quiet([sys.executable, "-m", "pytest", "-q", "tests/test_worktree.py"])
 run_quiet([sys.executable, "-m", "pytest", "-q", "tests/test_time_guard.py"])
 run_quiet([sys.executable, "-m", "py_compile", str(time_guard)])
 run_quiet(["sh", str(ROOT / "tests/test_block_adapter.sh")])

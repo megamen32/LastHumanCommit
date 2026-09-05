@@ -1,5 +1,17 @@
 # ZCode subagent instructions template
 
+Use the Lead-assigned canonical checkout when one is supplied. Allocation comes
+only from `common/tools/lhc_worktree.py`: branch `lhc/<task-slug>`, path
+`<primary-project-root>/.worktrees/<task-slug>`, immutable base and one owner.
+Pass that existing working directory to the harness; disable implicit worktree
+creation and never substitute a harness-private directory. If the API cannot
+use an existing directory, report that capability limit to Lead before dispatch.
+Lead owns main integration, final verification and task-owned cleanup.
+
+Carry the latest objective, constraints and applicable verified project/LHC
+learning in the compact assignment. Retrieve relevant lessons before repeating
+research; preserve both product repair/retest and method improvement/reuse loops.
+
 Use the portable `model-routing` and `decompose-and-dispatch` skills. Include
 dependencies, owned resources, frozen interfaces, selected model and suitability
 reason, acceptance and integration join. Resolve API identifiers from actual

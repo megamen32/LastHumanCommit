@@ -83,6 +83,28 @@ def test_advice_is_an_optional_capability_not_an_extra_gate() -> None:
     assert "Overseer, Tester, and Reviewer are the only gates" in router
 
 
+def test_parallel_worktree_contract_routes_every_adapter_to_one_tool() -> None:
+    protocol = compact(read("src/common/protocols/SHARED_WORKTREE.md"))
+    assert "lhc/<task-slug>" in protocol
+    assert "../tools/lhc_worktree.py" in protocol
+    assert "whose tips are ancestors of confirmed remote main" in protocol
+    for adapter in ("codex", "opencode", "claude-code", "hermes", "zcode"):
+        template = compact(read(f"adapters/{adapter}/templates/subagent.md"))
+        assert "common/tools/lhc_worktree.py" in template, adapter
+        assert "disable implicit worktree creation" in template, adapter
+        assert "<primary-project-root>/.worktrees/<task-slug>" in template, adapter
+
+
+def test_cycle_inputs_retrieve_both_improvement_loops() -> None:
+    lead = compact(read("src/common/agents/Lead.md"))
+    learning = compact(read("src/common/protocols/SELF_IMPROVE.md"))
+    assert "Before planning, review current inputs" in lead
+    assert "Product improvement:" in learning
+    assert "LHC improvement:" in learning
+    assert "next cycle consumes applicable outcomes of both loops" in learning
+    assert "../skills/architecture-design/SKILL.md" in lead
+
+
 def test_worker_twenty_minutes_is_a_management_checkpoint() -> None:
     aggregate = "\n".join(
         read(path)

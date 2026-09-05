@@ -6,17 +6,39 @@
 Before task work, inspect the repository root, `git worktree list --porcelain`,
 the current branch or detached HEAD, and the default branch when identifiable.
 
-Routine work stays in the current primary checkout. Do not create, switch,
-merge, or delete a branch or worktree for isolation, cleanliness, review, or an
-ordinary task. If the harness started in an auxiliary worktree, detached HEAD,
+Simple work stays in the current primary checkout. Lead may allocate canonical
+branches/worktrees for independent parallel implementation within the task.
+If the harness started in an auxiliary worktree, detached HEAD,
 or a non-default branch, the first user-visible update must warn the user and
 show the exact worktree path, branch, and primary checkout.
 
-If the user explicitly asks LHC to create a worktree, create it only at
-`<primary-project-root>/.worktrees/<task-slug>`. Never create a project worktree
+Every assigned branch is `lhc/<task-slug>`; its worktree lives only at
+`<primary-project-root>/.worktrees/<task-slug>`. Use the canonical
+`src/common/tools/lhc_worktree.py` plan/create tool with a Lead-assigned owner
+and immutable base commit. Determine primary through Git, not harness cwd.
+Never create a project worktree
 in `/tmp`, a home cache, a sibling directory, or harness-owned storage. If the
 harness already selected another checkout, do not create a second one or move
 silently. Follow `src/common/protocols/SHARED_WORKTREE.md` for concurrent edits.
+
+Harnesses must reuse the assigned checkout instead of auto-creating another.
+Lead integrates reviewed branches into main, verifies and pushes the combined
+result, then removes only task-owned clean worktrees and branches proven merged
+into remote main. Preserve unrelated and unmerged work.
+
+## Current inputs and both learning loops
+
+Start with the latest objective/corrections, actual project state/constraints,
+and relevant verified learning from prior cycles. Retrieve applicable product
+and LHC method improvements from existing indexes, verify freshness and use them
+before redesign. Do not scan all history or let old lessons override the user.
+
+Use `src/common/skills/architecture-design/SKILL.md` for architectural work.
+Product improvement closes observation → repair → regression → fresh real use.
+LHC improvement closes friction/success → owning method change → independent
+verification → retrieval and next applicable reuse. Review their relevant outputs
+at the next cycle start. Keep existing storage owners and memory permissions;
+neither loop is satisfied by a journal entry alone.
 
 ## Project-local temporary storage
 
@@ -138,7 +160,7 @@ project's ignored `.tmp/`, not under `.agents/at/` or a system temp directory.
 
 ## Unified history
 
-One branch, one linear history is the end state of every cycle. Commit
+One integrated delivery history on main is the end state of every cycle. Commit
 task-owned files at every completed step — small correct commits, never one
 final dump. At integration L reviews every path, fixes unsafe or unreviewable
 work, and commits the complete repaired result; foreign, generated, binary,

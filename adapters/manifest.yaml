@@ -9,6 +9,8 @@ core:
     - AGENTS.md
     - CLAUDE.md
 canonical_skills:
+  - name: architecture-design
+    owner: Lead
   - name: planning
     owner: Lead
   - name: bugfix-tdd

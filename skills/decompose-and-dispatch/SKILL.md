@@ -44,6 +44,11 @@ locks, real model capability or whether tasks are conceptually independent.
 Use available concurrency rather than launching all ready jobs without regard to
 quota, context, tool capacity or real costs. Preserve existing workspace conventions;
 creating extra worktrees is not a mandatory part of this method.
+For independent parallel writes, Lead may allocate canonical branches and
+worktrees through the active SHARED_WORKTREE protocol and its common tool.
+Record primary root, `lhc/<task-slug>`, `.worktrees/<task-slug>`, immutable base
+commit and owner. Give the harness that existing path; never let it create a
+second private checkout. Main integration and task-owned cleanup remain Lead-owned.
 
 Show which ready lanes will actually dispatch together and the available slots.
 Explain each serialization by a dependency, shared mutable resource or capacity

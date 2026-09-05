@@ -5,6 +5,11 @@ Simple and clear work does not need a planning artifact.
 
 ## Decision order
 
+First retrieve current inputs and applicable verified product/LHC learning from
+their existing owners. Confirm freshness against the project; stale lessons do
+not override new instructions. For architecture, use
+`../skills/architecture-design/SKILL.md` before allocating implementation.
+
 1. State the user's current business outcome and accepted Definition of Done.
 2. Trace the actual production consumer path enough to identify the next change.
 3. Name the shortest safe business canary and cheapest sufficient proof.

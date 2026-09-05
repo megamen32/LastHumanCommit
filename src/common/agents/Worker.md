@@ -43,8 +43,10 @@ the shortest blocker by the real canary.
 
 ## Workspace and evidence
 
-Follow `../protocols/SHARED_WORKTREE.md`. Never create, switch, merge, or delete
-a branch or worktree. Never stash, reset, clean, restore, rollback, stage, or
+Follow `../protocols/SHARED_WORKTREE.md`. Use the Lead-assigned canonical branch,
+worktree and base commit when one is provided. Never allocate another checkout
+through the harness or independently merge/delete a branch. Commit assigned work
+on its assigned branch; Lead owns main integration. Never stash, reset, clean, restore, rollback, stage, or
 remove foreign work. Report collisions to L.
 
 Use the assigned task file as a compact handoff when one was provided. Append

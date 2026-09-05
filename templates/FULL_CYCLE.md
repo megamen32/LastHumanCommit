@@ -7,6 +7,7 @@ Full is not a synonym for long, important, polished, or release-bound work.
 ## Business claim
 
 Latest user outcome:
+Current inputs / constraints / applicable verified product and LHC learning:
 Accepted MVP / Definition of Done:
 Exact real user/business canary:
 Cheapest sufficient proof:
@@ -47,6 +48,7 @@ Overseer consult trigger, if any:
 Initial independent Overseer audit / operational decision:
 Decision under active-harness policy:
 Dependency lanes / owned resources / integration joins:
+Canonical branch / worktree / immutable base / owner for isolated lanes:
 Decision model / executor models / suitability and fallback reasons:
 Per-leaf minimum/maximum / basis / specific uncertainty:
 Actual concurrent lanes / available slots / reasons for serialization:
@@ -59,6 +61,8 @@ dependency and capacity plan, not a broad global buffer.
 ## Delivery order
 
 1. Trace the actual consumer call chain.
+   For architecture, use architecture-design: review inputs, probe pivotal risks,
+   verify early end-to-end integration and challenge the improved synthesis.
 2. Obtain the initial independent Overseer audit, then implement the thinnest
    working vertical on that path.
 3. Run the real canary as early as safely possible.

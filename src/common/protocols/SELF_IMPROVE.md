@@ -1,11 +1,31 @@
 # Self-improve evolution loop
 
-This protocol is triggered only when at least one concrete event occurred:
+## Start with applicable learning
+
+At cycle start, review the latest user inputs and current project state, then
+retrieve relevant verified lessons from existing project and LHC indexes. Check
+their conditions and freshness before reusing them; record only decisive applied
+lessons or rejected stale assumptions in the current task. No full-history scan,
+duplicate memory store or forced retrospective is required. Respect the active
+harness's memory-write policy and existing storage owner.
+
+## Two improvement loops
+
+Product improvement: observed user problem → in-scope repair → regression check
+→ fresh real use → update relevant project knowledge. Optional product expansion
+stays Proposed unless selected. Use user-testing/focus-groups for real evidence.
+
+LHC improvement: repeated method friction or useful success → change at the owning
+skill/tool/instruction → independent verification → retrievable publication within
+actual authority → next applicable reuse. Product success does not by itself prove
+the method improved. The next cycle consumes applicable outcomes of both loops.
+
+The LHC change/record procedure is triggered only when at least one concrete event occurred:
 
 - the user corrected LHC's behavior or instruction interpretation;
 - the route materially failed, exceeded its maximum, or required RETHINK;
 - the same friction, command failure, or missing capability repeated;
-- the user explicitly requested a retrospective.
+- the user explicitly requested a retrospective;
 - a method produced a reusable, unexpectedly effective result.
 
 Ordinary successful tasks add nothing. This is a compact evidence record plus a

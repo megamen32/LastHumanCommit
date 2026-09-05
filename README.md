@@ -9,8 +9,8 @@ loop. Model routing optimizes the cost of an accepted result, including rework.
 
 ## Core workflow
 
-1. Define what the user needs now, including an accepted MVP/80/20 Definition of
-   Done.
+1. Review current inputs and applicable verified product/LHC learning. Define
+   what the user needs now, including the accepted Definition of Done.
 2. Trace the actual production consumer path before choosing an implementation
    surface.
 3. Name the shortest real business canary and cheapest sufficient proof.
@@ -47,7 +47,7 @@ different approaches after compressing each from ideal to normal to YAGNI/Pareto
 MVP. It does not manufacture a third option, double testing, per-wave reviews,
 or hardening loops merely because a task is important.
 
-The [factory skill catalog](src/common/skills/README.md) adds model routing,
+The [factory skill catalog](src/common/skills/README.md) adds architecture design, model routing,
 decomposition and dispatch, standalone user testing, focus groups, council,
 independent decision challenge, and workflow improvement through verified reuse.
 Adviser is optional; Critic is a compatibility alias. The
@@ -55,16 +55,27 @@ Adviser is optional; Critic is a compatibility alias. The
 user-defined classes and examples as aliases, not verified provider identifiers.
 These instructions do not install a scheduler or prove a multi-model run.
 
+[Architecture design](src/common/skills/architecture-design/SKILL.md) starts from
+the current inputs and a working solution, probes pivotal risks, verifies an
+early end-to-end skeleton, independently challenges the improved design, then
+derives complete-outcome YAGNI steps and measurable parallel work. Product
+improvement and improvement of LHC's own methods both close with verification
+and feed applicable learning into the next cycle.
+
 ## State and workspace
 
 Use one compact `.agents/tasks/` record when recovery, coordination, or audit
 value justifies it. Update it in place. Legacy `todo/work/done` lineages remain
 valid, but new work does not require snapshot copies or snapshot commits.
 
-Routine work stays in the primary checkout. Preserve foreign edits and stage
-only task-owned paths. Never silently create/switch/merge/delete a branch or
-worktree. A user-requested worktree lives only at
-`<primary-project-root>/.worktrees/<task-slug>`.
+Simple work stays in the primary checkout. For independent parallel writes,
+Lead assigns `lhc/<task-slug>` at
+`<primary-project-root>/.worktrees/<task-slug>` through
+`src/common/tools/lhc_worktree.py plan|create`. The primary root comes from Git
+even when called inside an auxiliary checkout. Every harness reuses that path.
+Lead integrates reviewed lanes into main, checks the combined result and pushes;
+only clean task-owned worktrees and branches merged into remote main are removed.
+Preserve foreign, dirty and unmerged work.
 
 ## Human and secret boundaries
 

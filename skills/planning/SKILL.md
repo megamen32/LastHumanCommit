@@ -9,6 +9,11 @@ Use only when planning can materially reduce wrong-path or coordination cost.
 
 ## Procedure
 
+Begin with current user inputs, project state and applicable verified product
+and LHC learning from existing indexes. Verify freshness and use prior results
+before redesign. Use `$architecture-design` for architectural decisions, risky
+assumptions and the end-to-end path before substantial implementation.
+
 1. Record the latest business outcome and accepted MVP Definition of Done.
 2. Trace the actual production consumer path.
 3. State the shortest real canary and cheapest sufficient proof.

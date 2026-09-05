@@ -68,11 +68,19 @@ admission, perfect atomicity, broad hardening, portability, or visual polish.
 
 ## Workspace and adapters
 
-Stay in the primary checkout, warn on auxiliary/detached/non-default state, and
-preserve foreign changes. Adapter syntax remains under `adapters/`; portable
+Keep simple work in the primary checkout; Lead may allocate independent parallel
+writes through the canonical worktree tool. Every harness uses the same
+`lhc/<task-slug>` and primary `.worktrees/<task-slug>` assignment. Warn on
+auxiliary/detached/non-default state and preserve foreign changes. Adapter syntax remains under `adapters/`; portable
 behavior remains in `src/common/`. Secrets are read from an environment
 variable, `.env`, or a file in one step; secret-handoff infrastructure is
 forbidden.
+
+At cycle start retrieve current inputs and relevant verified product/LHC learning
+from existing indexes. Architecture work uses `architecture-design`: probe risks,
+test early integration, challenge the synthesis, then simplify and dispatch.
+Both product repairs and LHC method improvements need their own evidence and
+applicable reuse; a retrospective entry alone does not close either loop.
 
 When changing instructions, update the owning source, direct mirrors/templates,
 and semantic validators. Require ordering and forbidden old behavior, not mere

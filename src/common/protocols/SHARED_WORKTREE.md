@@ -1,7 +1,9 @@
 # Shared checkout safety
 
-Routine LHC work happens in the current primary project checkout, not in hidden
-branches or scattered harness worktrees. The project contains its own work.
+Simple LHC work happens in the current primary project checkout. Independent
+parallel implementation lanes may use Lead-assigned branches and worktrees.
+All harnesses use the same canonical project-local allocation; the project
+contains its own work.
 
 ## Workspace identity
 
@@ -25,15 +27,39 @@ Primary checkout: <absolute path>
 Do not record this only inside the task file. If a harness selected the checkout
 before startup, do not create another worktree or move silently.
 
-Do not create, switch, merge, or delete a branch or worktree merely for
-isolation, cleanliness, review, or routine task work. Those are explicit human
-authorization boundaries.
+Lead may allocate worktrees for independent parallel writes within the accepted
+task without another permission round. Keep read-only research and small
+non-conflicting work in the existing checkout when isolation adds no value.
+Workers use their assignment and never invent a second branch or location.
 
-When the user explicitly requests a new worktree, create it only at:
+The canonical allocation is:
 
 ```text
+Branch: lhc/<task-slug>
 <primary-project-root>/.worktrees/<task-slug>
 ```
+
+Each lane has a unique stable lowercase hyphen-separated task slug, assigned by
+Lead, plus an immutable base commit and owner in the existing task record. Git
+worktree metadata is the registry; do not create a parallel harness registry.
+Resolve the primary project root from the Git common directory and registered
+worktrees, including when invoked from an auxiliary checkout. Never derive the
+root from the current harness working directory alone.
+
+Use the single portable tool `../tools/lhc_worktree.py`:
+
+```sh
+python3 <common-root>/tools/lhc_worktree.py plan --repo <checkout> --task <task-slug>
+python3 <common-root>/tools/lhc_worktree.py create --repo <checkout> --task <task-slug> --base <commit>
+```
+
+Inspect the plan, record its base commit and use that exact commit for create.
+Repeat the same assignment by reusing its registered worktree. A matching worker
+branch may have advanced through commits; that alone is not a new assignment.
+Conflicting branch/path/base ownership is a real conflict, never permission to
+overwrite, delete, reset or silently pick another directory. The tool must not
+switch the primary checkout. Harness adapters pass the assigned path unchanged
+and disable their own automatic worktree allocation for that lane.
 
 The project root must ignore `.worktrees/`. Never create project worktrees in
 `/tmp`, a home cache, a sibling directory, or harness-specific storage.
@@ -83,7 +109,17 @@ task. An explicit human request may authorize one named target only.
 Before every integration or release, review the complete target-branch diff,
 including foreign and pre-existing changes, so the resulting project state is
 coherent. Revalidate that the target branch is the current remote/default-branch
-tip; report any divergence and do not silently merge, rebase, or discard it.
+tip. Lead integrates reviewed task branches into the delivery branch (`main`
+unless explicitly configured otherwise), using fast-forward when possible or
+a reviewed merge when branches diverge. Resolve conflicts against the accepted
+outcome and rerun the affected integration checks. Do not silently rebase
+published branches, discard foreign changes or force-push.
+
+Check the combined result on main, push main and confirm the remote commit.
+Only then remove task-owned worktrees that are clean and inactive, and delete
+task-owned branches whose tips are ancestors of confirmed remote main. Preserve
+unrelated worktrees, dirty work and unmerged branches; do not sweep old entries.
+Branch cleanup never substitutes for integration proof.
 
 Unified history: review every change, fix every unsafe or unreviewable item,
 and commit the complete repaired result into one reachable history. Never call

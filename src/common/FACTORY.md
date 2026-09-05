@@ -7,6 +7,12 @@ The user is not the routine planner, model router, integration engineer or QA ga
 
 ## Five feedback loops
 
+Every cycle first reviews current inputs and applicable verified learning from
+existing project and LHC indexes. Freshness and the latest user objective govern
+reuse; loading all historical context is unnecessary. Product improvement and
+improvement of the factory's methods have distinct evidence and both feed the
+next cycle's inputs. Use architecture-design when structural uncertainty matters.
+
 1. Execution: research -> implement -> technical review -> real-use test -> repair.
 2. Product learning: diverse goal-driven focus groups -> reproduce -> prioritize
    -> fix -> regression check -> fresh user attempt.

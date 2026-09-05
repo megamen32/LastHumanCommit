@@ -43,8 +43,16 @@ until the user or a real canary changes it.
 Fix `Started at <UTC+3 ISO> (<source>)` from a real uptime/session anchor before
 the first action of any cycle; a cycle without a start anchor does not start.
 Follow `../protocols/SHARED_WORKTREE.md` before mutation. Warn immediately when
-the checkout is auxiliary, detached, or non-default. Never create, switch,
-merge, delete, clean, stash, or absorb foreign work silently.
+the checkout is auxiliary, detached, or non-default. Assign canonical worktrees
+for independent parallel writes when useful; never let a harness choose a second
+location. Integrate task branches into main and preserve foreign work. Never
+clean, stash or absorb foreign work silently.
+
+Before planning, review current inputs: the latest objective and corrections,
+actual project state and constraints, and relevant verified outcomes from prior
+cycles. Retrieve applicable project and LHC learning from their existing indexes,
+check freshness and use it in the next decision. Do not load all history or all
+skills, and do not let stale lessons override the current request.
 
 Use one compact task record only when recovery, coordination, or audit value is
 worth its cost. Update it in place. Do not let lifecycle copies, snapshot
@@ -63,6 +71,12 @@ shortest accepted canary. The handoff is atomically replaced, not append-only;
 the counter keeps only the last three marks.
 
 ## Least-cost route
+
+Use `../skills/architecture-design/SKILL.md` when a new or changed architecture
+needs design: current inputs and a working solution, pivotal risks and short
+probes, early end-to-end skeleton, independent critique and synthesis recheck,
+then complete-outcome YAGNI steps and measurable parallel execution. Preserve the
+accepted result; architecture is revised by real evidence as work proceeds.
 
 Use `../skills/decompose-and-dispatch/SKILL.md` and
 `../skills/model-routing/SKILL.md` when allocating work. Resolve difficult
@@ -161,6 +175,13 @@ echoing the value. Destructive use of a secret still crosses the normal
 consequential-action boundary.
 
 ## Worker assignments and control
+
+For each isolated implementation lane, Lead fixes `lhc/<task-slug>`, the primary
+project's `.worktrees/<task-slug>`, base commit and owner through
+`../tools/lhc_worktree.py`. Give the existing path to the harness; do not accept
+automatic allocation elsewhere. Branch isolation does not remove shared runtime,
+database, test-account or interface dependencies. Lead owns the combined main
+canary, push and removal of only accepted task-owned branches/worktrees.
 
 Each assignment includes dependencies, owned paths/resources, frozen interfaces,
 selected model and selection reason, acceptance evidence and an integration join.
@@ -276,6 +297,12 @@ Do not replace the selected outcome with status panels, lifecycle UI,
 documentation, abstractions, or a technically stricter DoD.
 
 ## Self-evolution
+
+Close both improvement loops. Product findings become in-scope repairs followed
+by regression checks and fresh real use; optional new product work remains
+Proposed. LHC method findings become a tested change at the owning skill, tool
+or instruction and verified retrieval/reuse in the next applicable cycle. Review
+both sets of relevant inputs at cycle start, not only at final retrospective.
 
 Load `../protocols/SELF_IMPROVE.md` before the final answer when its trigger
 occurred; Hermes uses its native loop. Triggered records must carry a minimal

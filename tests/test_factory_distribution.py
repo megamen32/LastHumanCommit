@@ -40,11 +40,13 @@ class FactoryDistributionTests(unittest.TestCase):
                 ROOT / 'src/common', native, check=True))
             self.assertEqual(config.read_text(), '{}', 'check must not repair drift')
 
-    def test_plugin_discovers_nineteen_skills(self):
+    def test_plugin_discovers_architecture_skill_with_existing_skills(self):
         spec = importlib.util.spec_from_file_location('factory_plugin_validator', SCRIPTS / 'validate.py')
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
-        self.assertEqual(len(module.discover_skills(ROOT / 'plugins/last-human-commit')), 19)
+        discovered = module.discover_skills(ROOT / 'plugins/last-human-commit')
+        self.assertIn('architecture-design', discovered)
+        self.assertEqual(len(discovered), 20)
 
 
 if __name__ == '__main__':

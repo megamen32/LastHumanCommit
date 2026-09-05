@@ -59,6 +59,7 @@ active or wall-clock time and not a promise of background execution.
 Outcome:
 Business/canary delta:
 Owner:
+Assigned branch/worktree/base commit (if isolated):
 Depends on:
 Allowed/excluded scope:
 Artifact or real proof:
@@ -74,6 +75,12 @@ default, safe parallel work, and the exact action that waits. They continue work
 valid under every plausible answer through a non-blocking parent transport.
 
 ## Compression check
+
+For independent parallel writes, Lead may assign canonical `lhc/<task-slug>`
+branches at `<primary-project-root>/.worktrees/<task-slug>` through the shared
+LHC worktree tool. Reuse the same assignment across harnesses. Worktree isolation
+does not remove dependencies on shared test accounts, services, data or contracts.
+Keep small non-conflicting work in the existing checkout when that is cheaper.
 
 For every leaf ask: can it be deleted, merged, reused, or replaced by an existing
 mechanism without weakening the accepted MVP? Prefer the resulting YAGNI/Pareto
