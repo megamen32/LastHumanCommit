@@ -39,7 +39,7 @@ separate handoff/review packages.
 | `task_update` | Update one compact current state rather than multiplying snapshots. |
 | `research_record` | Persist only when handoff/recovery/reuse/rediscovery economics justify it. |
 | `send_parent` | Deliver the same compact checkpoint/result to L; do not duplicate it. |
-| `overseer_continue` | Resume optional route audit when a concrete trigger justifies it. |
+| `overseer_continue` | Resume independent route audit on drift, repeated failure, overrun or another concrete trigger. |
 | `time_guard` | Run `common/tools/lhc_time_guard.py` and deliver new hourly/overrun prompts to L. |
 | `ask_lead` | Deliver a Worker decision question non-blockingly; record recommendation, default, parallel work, and blocked action. |
 
@@ -52,8 +52,8 @@ death, ownership, or authorization to replace it.
 Every 20 active minutes is a reporting checkpoint, not a Worker lifetime limit.
 Record progress, business delta, blocker, route value, and the shortest next
 action. L prefers continuing, redirecting, or resuming the same Worker and uses
-Overseer only when independent route judgment is worth its cost. Cancellation
-is exceptional.
+Overseer after the initial audit on required drift, repeated-failure and overrun
+triggers. Additional audits need independent decision value. Cancellation is exceptional.
 
 Use the harness wait/join transport whenever a child result is required. A wait
 window may expire without deciding lifecycle. Inspect authoritative status,

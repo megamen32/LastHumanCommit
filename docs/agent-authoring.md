@@ -2,8 +2,9 @@
 
 `AGENTS.md` and `CLAUDE.md` are byte-identical marker-delimited routers.
 `Lead.md` owns business routing. Overseer is the supreme route controller,
-Tester is the mandatory real-surface final gate, and Reviewer is the optional
-risk-triggered diff gate; Critic and Adviser stay removed.
+Tester is the mandatory real-surface final gate, and Reviewer reviews a coherent
+Full diff or is otherwise risk-triggered. Adviser is optional independent
+reasoning; Critic is its compatibility alias, not another gate.
 
 ## Non-negotiable ordering
 
@@ -13,12 +14,13 @@ risk-triggered diff gate; Critic and Adviser stay removed.
 4. Least-cost execution: direct Lead or delegated Worker.
 5. Earliest safe canary.
 6. Only observed blocker fixes and proportional direct-regression checks.
-7. Optional governance/hardening only when expected value exceeds cost.
+7. Full technical review and fresh independent real-use Tester, repair and
+   retest; additional governance/hardening only when expected value exceeds cost.
 
-Do not encode a role, card transition, plan count, review count, timer, test
-style, or evidence format as a prerequisite ahead of business movement. Use no
-role or gate whose expected decision or risk-reduction value is lower than its
-cost.
+Preserve the initial independent Overseer and Full acceptance gates. Do not add
+card transitions, fixed plan counts, timers, test styles or evidence formats
+that do not improve the accepted result. Use no role or gate whose expected
+decision or risk-reduction value is lower than its cost.
 
 ## Role semantics
 
@@ -38,16 +40,20 @@ cost.
   original-maximum overrun diagnostic.
 - Use a real wait/join mechanism for required children; never finish merely
   because one wait returned no terminal result.
-- Overseer runs at every crossed wall-clock hour, at overruns, and before the
+- Overseer runs initially before implementation, at every crossed wall-clock hour, at overruns, and before the
   Full final; its mandate is cutting security theater, secret ceremonies, and
   process work without a tangible result.
 - Tester is the mandatory real-surface final gate for user-facing results; test
   files never substitute.
-- Reviewer is optional and strictly risk-triggered on one coherent diff; never
-  a per-wave or per-task default.
+- Full requires coherent technical review then a fresh independent Tester.
+  Outside Full, Reviewer is optional and strictly risk-triggered; never per-wave.
 - One real-use Tester is enough unless independent/blind coverage has concrete
   additional value.
 - Full may contain however many material options actually exist.
+- Load skills on demand from `src/common/skills/README.md`. Strong Lead decisions
+  precede bounded model-assigned executor work; verify dependency joins.
+- Council challenges the final synthesis. Focus groups repair/retest observed
+  obstacles. Workflow improvements require verified retrieval and later reuse.
 
 ## State and evidence
 

@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "purpose": "Routing examples, not a provider catalog or verified capability ranking.",
+  "tier_order": [
+    "frontier",
+    "fable",
+    "sonnet",
+    "haiku"
+  ],
+  "tiers": {
+    "frontier": {
+      "label": "Frontier (provisional fourth tier)",
+      "use": "Strongest suitable available model for Lead, hard decisions, decomposition, difficult oversight and council.",
+      "user_examples": []
+    },
+    "fable": {
+      "label": "Fable",
+      "use": "Strong complex execution, reasoning and review when appropriate.",
+      "user_examples": [
+        "GPT-6A",
+        "Star",
+        "GLM 5.3"
+      ]
+    },
+    "sonnet": {
+      "label": "Sonnet",
+      "use": "Medium-complexity coherent execution where verified capability suffices.",
+      "user_examples": [
+        "5.3 Flash",
+        "Panthera"
+      ]
+    },
+    "haiku": {
+      "label": "Haiku",
+      "use": "Well-specified routine execution and checks where verified capability suffices.",
+      "user_examples": [
+        "GLM 4.7",
+        "MiniMax M3"
+      ]
+    }
+  },
+  "selection": {
+    "lead": "strongest_suitable_available",
+    "executors": "lowest_expected_total_cost_that_meets_acceptance",
+    "inherit_lead_model": false,
+    "fixed_cheap_token_quota": null,
+    "allow_direct_strong_assignment": true,
+    "keep_independent_testing": true
+  },
+  "runtime_catalog": "Resolve from the active harness/provider catalog; never send user_examples blindly as API model IDs.",
+  "receipt_fields": [
+    "requested_class",
+    "requested_model",
+    "actual_model",
+    "selection_reason",
+    "capability_limits",
+    "acceptance_result",
+    "usage_if_attested",
+    "rework_reason"
+  ],
+  "fallback": "Use a suitable available model with a recorded limitation. Never claim an unattested model choice or council diversity."
+}

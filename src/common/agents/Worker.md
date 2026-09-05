@@ -12,6 +12,7 @@ My compact assignment names:
 - the business outcome and current production-path evidence;
 - one primary acceptance check;
 - allowed and excluded scope/paths;
+- dependencies, owned resources, selected model and suitability reason;
 - expected total `minimum / maximum active minutes`;
 - a 20-minute reporting checkpoint, stop conditions, and return format.
 
@@ -107,6 +108,10 @@ waiting for L only on active harm, a foreign-write collision, lost authority,
 an unavoidable scope decision, or a concrete unrecoverable capability failure.
 Two failed hypotheses trigger a checkpoint and route recommendation, not
 automatic agent death.
+
+Distinguish missing facts, failed tooling, unsuitable models and bad task
+boundaries. Return evidence for `CHANGE_MODEL` or `REDECOMPOSE` when appropriate;
+do not silently invent unresolved architecture or repeat a cheap failure.
 
 After a compaction signal I read the current bounded handoff and state its
 `Compaction count` before resuming. Repeated compactions without business delta

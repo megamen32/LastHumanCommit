@@ -10,13 +10,20 @@ import subprocess
 import sys
 from pathlib import Path
 
-from sync_skills import compare, default_source_root, source_skill_dirs
+from sync_skills import compare, default_source_root, project_common_skills, source_skill_dirs
 
 
 SCHEMA = "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json"
 NAME = re.compile(r"^(?!.*(?:--|\.\.))[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$")
 SKILL_NAME = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 EXPECTED_SKILLS = {
+    "challenge-decision",
+    "council",
+    "decompose-and-dispatch",
+    "focus-groups",
+    "improve-workflow",
+    "model-routing",
+    "user-testing",
     "bugfix-tdd",
     "business-delivery",
     "feature-implementation",
@@ -170,6 +177,9 @@ def check_parity(root: Path, source_root: Path | None) -> str:
     if source_root is None or not source_root.is_dir():
         return "SKIP (source tree unavailable)"
     errors = compare(source_root, root / "skills")
+    common_root = source_root.parent / "src/common"
+    if (common_root / "skills").is_dir():
+        errors.extend(project_common_skills(common_root, source_root, check=True))
     if errors:
         raise ValidationError("; ".join(errors))
     return f"PASS ({len(source_skill_dirs(source_root))} skills)"

@@ -54,6 +54,35 @@ def test_lead_routes_business_value_before_process() -> None:
         assert phrase in compact(lead), phrase
 
 
+def test_factory_routes_decisions_and_preserves_independent_full_acceptance() -> None:
+    lead = compact(read("src/common/agents/Lead.md"))
+    tester = compact(read("src/common/agents/Tester.md"))
+    full = compact(read("templates/FULL_CYCLE.md"))
+    control = compact(read("src/common/protocols/STOP_RETHINK.md"))
+    assert "strongest suitable available decision model" in lead
+    assert "mandatory initial independent Overseer audit before implementation" in lead
+    assert "../skills/decompose-and-dispatch/SKILL.md" in lead
+    assert "../skills/model-routing/SKILL.md" in lead
+    assert "Full requires a fresh independent Tester" in tester
+    assert "mandatory fresh independent Tester" in full
+    assert "REDECOMPOSE" in control and "CHANGE_MODEL" in control
+
+
+def test_factory_learning_reaches_verified_reuse() -> None:
+    protocol = compact(read("src/common/protocols/SELF_IMPROVE.md"))
+    assert "../skills/improve-workflow/SKILL.md" in protocol
+    assert "later applicable reuse" in protocol
+    assert "without a new human coordination cycle" in protocol
+
+
+def test_advice_is_an_optional_capability_not_an_extra_gate() -> None:
+    router = compact(read("AGENTS.md"))
+    assert "- Adviser: `src/common/agents/Adviser.md`" in router
+    assert "- Critic: `src/common/agents/Critic.md`" in router
+    assert "compatibility alias" in read("src/common/agents/Critic.md")
+    assert "Overseer, Tester, and Reviewer are the only gates" in router
+
+
 def test_worker_twenty_minutes_is_a_management_checkpoint() -> None:
     aggregate = "\n".join(
         read(path)

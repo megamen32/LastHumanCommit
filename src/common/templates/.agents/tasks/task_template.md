@@ -25,6 +25,8 @@ Last business delta:
 Execution mode: direct Lead | Worker research | Worker implement | mixed
 Why this is least-cost:
 Agent/model, only when material:
+Decision model / suitability:
+Executor model / capability needs / fallback reason:
 Gate value test:
 Consequential-action / active-harness boundary:
 Cycle estimates (cycle / minimum / maximum / actual):
@@ -41,6 +43,7 @@ write `не контролировал`; never infer it from wall-clock or file 
 ## Decomposition — only when multiple leaves remain
 
 - Leaf / owner / dependency / artifact-or-proof / primary check / min-max:
+- Owned resources / frozen interfaces / integration join:
 
 Use the smallest independent business-verifiable leaves and parallelize only
 non-conflicting work. Load `$task-decomposition` for the complete contract.
@@ -99,14 +102,16 @@ in both places.
 
 ## Gates
 
-Overseer is the supreme route controller: every crossed wall-clock hour, every
+Overseer is the supreme route controller: initial independent audit, every crossed wall-clock hour, every
 overrun, repeated failure, and before the Full final. Tester is the mandatory
-real-surface final gate for user-facing results. Reviewer is optional and
-strictly risk-triggered on one coherent diff (release, broad refactor,
-agent-executed instructions). Record only gates actually
-used and why their value exceeded cost.
+real-surface final gate for user-facing results; Full requires a fresh independent
+Tester after coherent technical review. Outside Full, Reviewer is optional and
+strictly risk-triggered (release, broad refactor, agent-executed instructions).
+Adviser/council are optional reasoning capabilities, not additional gates.
 
 - Gate / trigger / decision:
+- Findings / repair / technical recheck / real-use retest:
+- Workflow learning / retrievable change / verification / later reuse:
 
 ## Result
 

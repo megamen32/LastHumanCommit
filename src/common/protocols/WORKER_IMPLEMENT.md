@@ -36,3 +36,8 @@ Ask L at every decision boundary that needs its broader user/session context.
 Use a non-blocking parent transport with evidence, recommendation, proposed
 default, parallel-safe work, and the exact action that must wait. Continue only
 work valid under every plausible answer until L decides.
+
+Respect dependency contracts and test integration joins, not only isolated
+helpers. Technical checks do not replace the Full real-use Tester. When blocked,
+use `STOP_RETHINK.md` to distinguish model, context, tooling and decomposition
+failures before repeating the same approach.

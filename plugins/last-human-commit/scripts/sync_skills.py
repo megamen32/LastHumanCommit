@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Synchronize the plugin's generated skills from the repository source tree."""
+"""Project common factory skills into native skills, then synchronize the plugin."""
 
 from __future__ import annotations
 
@@ -37,6 +37,41 @@ def source_skill_dirs(source_root: Path) -> list[Path]:
     if not result:
         raise ValueError(f"no source skills found under {source_root}")
     return result
+
+
+def project_common_skills(common_root: Path, native_root: Path, check: bool) -> list[str]:
+    """Make factory skills self-contained without changing existing native skills.
+
+    Canonical factory content lives in common/skills. Native packages carry the
+    routing example beside its skill, since they have no surrounding common tree.
+    """
+    errors: list[str] = []
+    for source_dir in source_skill_dirs(common_root / "skills"):
+        files = {
+            path.relative_to(source_dir): path.read_bytes()
+            for path in source_dir.rglob("*") if path.is_file()
+        }
+        if source_dir.name == "model-routing":
+            files[Path("SKILL.md")] = files[Path("SKILL.md")].replace(
+                b"../../config/model-routing.example.json",
+                b"references/model-routing.example.json",
+            )
+            files[Path("references/model-routing.example.json")] = (
+                common_root / "config/model-routing.example.json"
+            ).read_bytes()
+        target = native_root / source_dir.name
+        actual = {path.relative_to(target) for path in target.rglob("*") if path.is_file()}
+        for relative in sorted(actual - set(files)):
+            errors.append(f"unexpected native factory file: {source_dir.name}/{relative}")
+        for relative, content in files.items():
+            output = target / relative
+            if check:
+                if output.is_symlink() or not output.is_file() or output.read_bytes() != content:
+                    errors.append(f"native factory skill differs: {source_dir.name}/{relative}")
+            else:
+                output.parent.mkdir(parents=True, exist_ok=True)
+                output.write_bytes(content)
+    return errors
 
 
 def compare(source_root: Path, output_root: Path) -> list[str]:
@@ -115,6 +150,14 @@ def main() -> int:
     try:
         source_root = args.source_root.expanduser().resolve()
         output_root = args.output_root.expanduser().resolve()
+        if source_root == default_source_root().resolve():
+            projection_errors = project_common_skills(
+                plugin_root().parent.parent / "src/common", source_root, args.check,
+            )
+            if projection_errors:
+                for error in projection_errors:
+                    print(f"projection error: {error}", file=sys.stderr)
+                return 1
         tool_errors = sync_tool(
             plugin_root().parent.parent / "src" / "common" / "tools" / "lhc_time_guard.py",
             plugin_root() / "tools" / "lhc_time_guard.py",

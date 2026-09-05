@@ -14,9 +14,13 @@ least-cost path to the user's accepted canary.
   the accepted claim;
 - a 20-minute Worker checkpoint reports uncertainty or a shorter route.
 
-A trigger requires a control decision, not automatic cancellation, replacement,
-or a mandatory Overseer call. L may use direct evidence when the decision is
-clear; consult Overseer only when independent route judgment is worth its cost.
+A trigger requires a control decision, not automatic cancellation or replacement.
+Repeated failures, material drift and maximum overruns require an independent
+Overseer re-audit after the initial audit. L can continue safe independent work
+while waiting, but must not continue the disputed failed route unchanged.
+Use `REDECOMPOSE`, `CHANGE_MODEL`, `REFRESH_CONTEXT` or `COUNCIL` when the evidence
+points to task boundaries, model suitability, degraded context or an unresolved
+decision respectively. Ordinary technical choices remain Lead-owned.
 
 ## Decision
 

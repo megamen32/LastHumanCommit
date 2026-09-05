@@ -8,9 +8,12 @@ Simple and clear work does not need a planning artifact.
 1. State the user's current business outcome and accepted Definition of Done.
 2. Trace the actual production consumer path enough to identify the next change.
 3. Name the shortest safe business canary and cheapest sufficient proof.
-4. Choose direct Lead work or delegation by total expected cost.
-5. Add governance only for a concrete risk whose expected loss exceeds gate
-   cost.
+4. Use `../skills/model-routing/SKILL.md` and
+   `../skills/decompose-and-dispatch/SKILL.md` to choose executors by total
+   accepted-result cost. Lead uses the strongest suitable decision model for
+   difficult decisions; cheaper executors receive coherent resolved work.
+5. Obtain the initial independent Overseer audit. Full includes technical review
+   and a fresh independent Tester; additional governance needs concrete value.
 
 Do not plan a horizontal layer before the first vertical user path. A plan is
 successful when it reduces wrong-path risk or coordinates useful parallel work;
@@ -63,6 +66,12 @@ rediscovery cost justifies it. Keep it compact and current. No elapsed-time
 threshold requires a file or commit.
 
 ## Two compressed approaches
+
+Routine technical route selection belongs to Lead. Use Adviser or
+`../skills/council/SKILL.md` when independent strong-model reasoning can resolve
+an expensive uncertainty. Challenge the final synthesis and verify decisive
+claims; consensus alone is not acceptance. Ask the human only for a missing
+business fact, preference or authority that changes the decision.
 
 When a real human route decision remains, propose exactly two genuinely
 different approaches. Do not make ideal, normal, and MVP three selectable

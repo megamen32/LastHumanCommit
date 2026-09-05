@@ -48,3 +48,9 @@ with decisive evidence, production path, existing mechanism, checked/excluded
 hypotheses, reused/updated code-map keys, unknowns that affect the decision, and
 the cheapest next action. Do not write code, mutate configuration, deploy, or
 produce an unrelated architecture essay.
+
+The implementation handoff names dependencies, owned paths, frozen interfaces,
+acceptance and model-suitability needs. Flag unresolved architecture for Lead or
+Adviser. Continue into implementation in the same useful session when assigned;
+an inconclusive investigation returns the next discriminating step rather than
+another broad search.

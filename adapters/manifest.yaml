@@ -21,6 +21,20 @@ canonical_skills:
     owner: Lead
   - name: release
     owner: Lead
+  - name: model-routing
+    owner: Lead
+  - name: decompose-and-dispatch
+    owner: Lead
+  - name: user-testing
+    owner: Tester
+  - name: focus-groups
+    owner: Lead
+  - name: council
+    owner: Lead
+  - name: challenge-decision
+    owner: Adviser
+  - name: improve-workflow
+    owner: Lead
 adapters:
   - adapters/codex/adapter.yaml
   - adapters/opencode/adapter.yaml

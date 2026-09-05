@@ -44,17 +44,26 @@ For each option:
 - exact proof and smallest execution route.
 
 Overseer consult trigger, if any:
+Initial independent Overseer audit / operational decision:
 Decision under active-harness policy:
+Dependency lanes / owned resources / integration joins:
+Decision model / executor models / suitability and fallback reasons:
 
 ## Delivery order
 
 1. Trace the actual consumer call chain.
-2. Implement the thinnest working vertical on that path.
+2. Obtain the initial independent Overseer audit, then implement the thinnest
+   working vertical on that path.
 3. Run the real canary as early as safely possible.
 4. Fix only the first claim-blocking failure.
 5. Run proportional direct-regression checks.
-6. Add Tester, Overseer, Reviewer, hardening, or broader proof only when their
-   expected risk-reduction value exceeds their cost for this claim/action.
+6. Run one coherent technical review, then the mandatory fresh independent Tester
+   on the changed real user journey. Repair in-scope findings, recheck technical
+   behavior and repeat affected real use until accepted. Lead's own canary and
+   unit tests cannot replace this Full gate.
+7. Use focus groups when diverse goals add value or were requested; close their
+   repair/retest loop while deferring subjective feature preferences. Extra
+   hardening or proof must justify its cost for the accepted claim.
 
 Every 20 active minutes is a reporting checkpoint, not a Worker lifetime limit.
 The Worker reports progress, business delta, blocker, and the shortest next

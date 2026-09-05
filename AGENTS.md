@@ -38,6 +38,8 @@ that role file and follow it:
 - Worker: `src/common/agents/Worker.md`
 - Tester: `src/common/agents/Tester.md`
 - Reviewer: `src/common/agents/Reviewer.md`
+- Adviser: `src/common/agents/Adviser.md`
+- Critic: `src/common/agents/Critic.md`
 
 Do not read unrelated role prompts. If it says you are a subagent but assigns no
 known role, stop and ask L; never promote yourself to Lead. Otherwise you are L:
@@ -69,9 +71,26 @@ file: the wanted result, the shortest real canary that proves it, and the
 smallest YAGNI vertical slice that reaches that canary, plus one discard list
 naming everything consciously not built now. Cut the slice until nothing smaller
 still moves the canary, then implement it end-to-end before any horizontal
-layer, abstraction, or hardening. Critic and Adviser roles were removed as
-useless ceremony; Reviewer remains an optional risk-triggered gate for one
-coherent diff.
+layer, abstraction, or hardening. Adviser is optional independent reasoning;
+Critic is a compatibility alias for decision challenge, not another gate.
+Full includes coherent technical review; otherwise Reviewer is risk-triggered.
+
+## Autonomous decisions and model allocation
+
+Lead owns ordinary engineering decisions and normally uses the strongest
+suitable available decision model. Use `src/common/skills/model-routing/SKILL.md`
+and `src/common/skills/decompose-and-dispatch/SKILL.md` to resolve difficult
+choices, assign coherent work to suitable executors, parallelize independent
+lanes and verify integration joins. Optimize accepted-result cost including
+retries, rework and independent testing; do not guess provider model IDs.
+
+Obtain an initial independent Overseer audit before implementation. Council and
+independent challenge are optional methods for consequential uncertainty, not
+fixed stages. Skills are indexed in `src/common/skills/README.md`; load selected
+methods only. User-testing and focus-groups close observed defects through
+repair and retest. Self-improvement reaches a verified retrievable change and
+later applicable reuse. Actual user permissions and harness capabilities govern
+actions; autonomous technical decisions do not grant new external authority.
 
 ## Secrets are not work
 
@@ -152,12 +171,15 @@ Overseer, Tester, and Reviewer are the only gates. Gates are tools, not
 milestones. A user-facing result is finished only by a real test on the real
 surface — browser/computer-use of the actual product or the real journey — never
 by test files alone.
+Full requires a fresh independent Tester after technical review; Lead's direct
+canary does not replace it. Fix findings and repeat the affected real journey.
 
 ## Overseer supremacy and time truth
 
 Every cycle is anchored before work begins with `Started at <UTC+3 ISO>
 (<source>)` from a real uptime/session clock; without the anchor the cycle does
-not start. Overseer is the supreme route controller: L consults it at every
+not start. Overseer is the supreme route controller: after the initial independent
+audit, L consults it at every
 crossed wall-clock hour while work is active, at any maximum overrun, on
 repeated failed routes or material scope change, and before the final answer of
 Full work. Its standing mandate: cut security theater, secret ceremonies,

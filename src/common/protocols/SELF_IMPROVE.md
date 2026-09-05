@@ -6,13 +6,21 @@ This protocol is triggered only when at least one concrete event occurred:
 - the route materially failed, exceeded its maximum, or required RETHINK;
 - the same friction, command failure, or missing capability repeated;
 - the user explicitly requested a retrospective.
+- a method produced a reusable, unexpectedly effective result.
 
 Ordinary successful tasks add nothing. This is a compact evidence record plus a
 bounded patch loop, not a second planning cycle and not permission to expand the
 user's task.
 
+At meaningful completion, failure or handoff, consider whether there is a
+substantive signal. For one, use `../skills/improve-workflow/SKILL.md`. No signal
+means no ritual entry. The outcome is a retrievable change with evidence and
+later applicable reuse, not merely a growing journal.
+
 Hermes is excluded: its native post-response memory/skill review and `/learn`
 flow own this concern. Do not run a duplicate LHC loop through Hermes.
+Verify the native owner actually saved and retrieved the improvement; a native
+hook alone does not prove learning occurred.
 
 ## Record
 
@@ -37,14 +45,22 @@ creating a duplicate.
 
 ## Apply — reviewed commits
 
-Proposed patches are never applied silently inline. They land in batches through
-a dedicated self-evolve task:
+Authorized local workflow improvements can be implemented and tested without a
+new human coordination cycle. Keep the scope and evidence in the current task,
+or use a dedicated self-evolve task when the change is unrelated to the accepted
+outcome. Preserve user policy and active-harness permissions; changing a method
+never grants new publication, deployment or destructive authority.
+
+Close the loop:
 
 1. collect entries in `Proposed` state;
 2. apply the minimal patch set to the owning source files;
 3. run the repo validators and each patch's verification canary;
 4. land the whole step as exactly one reviewed commit per evolution step and
-   move the entries to `fixed now`.
+   record the retrievable skill/tool location and successful verification;
+5. at the next applicable task, retrieve and reuse the change, record the outcome
+   in the same entry, then mark it `fixed now`; distinguish `verified, awaiting
+   reuse` from proven reusable learning. Refine or retire ineffective methods.
 
 Bound the loop like an evaluator-optimizer: at most three refinement iterations
 per patch, quality floor = the verification canary passes. A patch that still

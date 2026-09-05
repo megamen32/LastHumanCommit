@@ -9,6 +9,11 @@ Use when a user-facing claim needs real-surface proof. This is the final gate
 before "done"; test files never substitute for it. The journey executed is the
 minimal path's shortest real canary, not an invented broader tour.
 
+Full requires a fresh independent Tester after coherent technical review.
+Lead's own canary cannot replace that gate. Use `$user-testing` for standalone
+goal-driven attempts and `$focus-groups` when varied goals add value. Repair
+observed in-scope failures and repeat the affected real journey until accepted.
+
 ## Interaction tool ladder
 
 Climb from the best available rung. Never claim an action is impossible before
@@ -34,6 +39,9 @@ trying the last one.
 Ladder discipline: after any navigation or state change, re-snapshot before the
 next action; a stale ref means re-snapshot, never guess; confirm each decisive
 action by observed state, not by command success.
+On a browser error, timeout or ambiguous UI state, capture and inspect a
+secret-safe screenshot in the owning session before retry, navigation or cleanup.
+If capture is unavailable, record the missing evidence and capability limit.
 
 ## Procedure
 
@@ -53,5 +61,6 @@ action by observed state, not by command success.
 - Do not declare a UI action impossible before trying ladder rung 4 (XY).
 - Do not replace real-user evidence with unit tests or logs for a stronger
   claim.
-- Do not make blindness, double testers, or video ceremonial defaults.
+- Do not add double testers or video ceremonially; preserve Full independence
+  and start goal-driven usability attempts without implementation hints.
 - Do not raise the accepted Definition of Done while testing it.

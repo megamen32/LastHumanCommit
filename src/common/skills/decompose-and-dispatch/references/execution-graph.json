@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "note": "Illustrative graph, not a dispatch record. Model classes must be resolved by the live harness.",
+  "tasks": [
+    {
+      "id": "contract",
+      "role": "Lead",
+      "model_class": "frontier",
+      "depends_on": [],
+      "read_paths": [],
+      "write_paths": [
+        "docs/interface.md"
+      ],
+      "acceptance": "Selected interface and observable acceptance are explicit."
+    },
+    {
+      "id": "backend",
+      "role": "Worker",
+      "model_class": "sonnet",
+      "depends_on": [
+        "contract"
+      ],
+      "read_paths": [
+        "docs/interface.md"
+      ],
+      "write_paths": [
+        "src/backend"
+      ],
+      "acceptance": "Backend contract tests and changed behavior pass."
+    },
+    {
+      "id": "frontend",
+      "role": "Worker",
+      "model_class": "sonnet",
+      "depends_on": [
+        "contract"
+      ],
+      "read_paths": [
+        "docs/interface.md"
+      ],
+      "write_paths": [
+        "src/frontend"
+      ],
+      "acceptance": "Frontend handles success, pending and failed operations."
+    },
+    {
+      "id": "join",
+      "role": "Worker",
+      "model_class": "fable",
+      "depends_on": [
+        "backend",
+        "frontend"
+      ],
+      "read_paths": [
+        "src/backend",
+        "src/frontend"
+      ],
+      "write_paths": [
+        "tests/integration"
+      ],
+      "acceptance": "Combined user path is verified across both lanes."
+    },
+    {
+      "id": "review",
+      "role": "Reviewer",
+      "model_class": "fable",
+      "depends_on": [
+        "join"
+      ],
+      "read_paths": [
+        "src",
+        "tests/integration"
+      ],
+      "write_paths": [],
+      "acceptance": "Independent technical evidence supports the coherent change."
+    },
+    {
+      "id": "real-use",
+      "role": "Tester",
+      "model_class": "sonnet",
+      "depends_on": [
+        "review"
+      ],
+      "read_paths": [],
+      "write_paths": [],
+      "acceptance": "A fresh user attempt on the real surface achieves the changed goal."
+    }
+  ]
+}

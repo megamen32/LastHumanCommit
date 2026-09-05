@@ -3,8 +3,9 @@
 <img width="1672" height="941" alt="Last Human Commit role map" src="https://github.com/user-attachments/assets/7b259f64-50c1-45a4-af27-07a5101d8120" />
 
 Last Human Commit is a business-first, least-cost agent workflow. It keeps the
-next real user result ahead of process, chooses the cheapest sufficient agent
-and proof, and adds governance only when a concrete risk justifies its cost.
+next real user result ahead of process. A strong Lead decides and decomposes,
+suitable executors implement, and independent oversight and testing close the
+loop. Model routing optimizes the cost of an accepted result, including rework.
 
 ## Core workflow
 
@@ -20,8 +21,9 @@ and proof, and adds governance only when a concrete risk justifies its cost.
    exceptionally.
 6. Use the harness wait/join mechanism for required children. A timeout is an
    observation, never proof of terminal state.
-7. Consult the supreme Overseer at every crossed hour, overrun, and repeated
-   failure; finish user-facing results only with a real-surface test.
+7. Obtain the initial independent Overseer audit, then re-audit at every crossed
+   hour, overrun and repeated failure. Full requires coherent technical review
+   and a fresh independent real-use Tester; fix findings and retest.
 8. Match evidence to the claim and stop when that claim is proven.
 9. Keep one unified history: review every path, repair unsafe or unreviewable
    work, commit the complete result, and end every Full cycle with every
@@ -44,6 +46,14 @@ a route choice matters, LHC compares two genuinely
 different approaches after compressing each from ideal to normal to YAGNI/Pareto
 MVP. It does not manufacture a third option, double testing, per-wave reviews,
 or hardening loops merely because a task is important.
+
+The [factory skill catalog](src/common/skills/README.md) adds model routing,
+decomposition and dispatch, standalone user testing, focus groups, council,
+independent decision challenge, and workflow improvement through verified reuse.
+Adviser is optional; Critic is a compatibility alias. The
+[routing configuration](src/common/config/model-routing.example.json) preserves
+user-defined classes and examples as aliases, not verified provider identifiers.
+These instructions do not install a scheduler or prove a multi-model run.
 
 ## State and workspace
 
@@ -75,8 +85,11 @@ scripts/lhc-block apply AGENTS.md /path/to/project/AGENTS.md
 scripts/lhc-block apply CLAUDE.md /path/to/project/CLAUDE.md
 ```
 
-Optional harness adapters live under `adapters/`; canonical skills live under
-`skills/` and are mirrored into `plugins/last-human-commit/skills/`.
+Optional harness adapters live under `adapters/`. Factory skill sources live in
+`src/common/skills/`; `plugins/last-human-commit/scripts/sync_skills.py` generates
+self-contained native copies into `skills/` and mirrors all native skills into
+`plugins/last-human-commit/skills/`. Existing native skill sources remain in
+`skills/`. Edit the owning source, then regenerate and check parity.
 
 Validation:
 

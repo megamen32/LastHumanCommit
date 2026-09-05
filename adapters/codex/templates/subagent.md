@@ -1,5 +1,15 @@
 # Codex subagent instructions template
 
+Use the portable `model-routing` and `decompose-and-dispatch` skills. Include
+dependencies, owned resources, frozen interfaces, selected model and suitability
+reason, acceptance and integration join. Resolve API identifiers from actual
+harness capabilities; never send example aliases blindly. Record actual model
+selection when available and disclose unsupported selection or concurrency.
+Use fresh independent sessions for the initial Overseer audit and Full Tester
+after coherent technical review. Adviser/council are optional reasoning methods;
+Critic is a compatibility alias, not an extra required gate. Resume useful
+Workers but do not reuse the implementation session as its independent Tester.
+
 Before every `spawn_agent` or resumed Worker call:
 
 - Select the lowest sufficient working model class; do not inherit L's model by
@@ -15,8 +25,8 @@ Before every `spawn_agent` or resumed Worker call:
   the same Worker merely because a checkpoint or wait window elapsed.
 - Persist detailed evidence in the assigned task/result path only when handoff,
   recovery, reuse, or rediscovery cost justifies it.
-- Escalate to Overseer, Reviewer, Tester, Adviser, or Critic only for the
-  concrete risk that makes the role worth its cost.
+- Beyond the initial Overseer and Full review/Tester gates, use additional
+  independent roles only for a concrete risk that makes them worth their cost.
 - At a decision boundary, ask L through a proven non-blocking parent transport
   with evidence, recommendation/default, parallel-safe work, and blocked action.
   Continue safe independent work while waiting; otherwise return the question at

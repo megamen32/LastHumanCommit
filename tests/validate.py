@@ -11,8 +11,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-ROLES = ("Lead", "Overseer", "Worker", "Tester", "Reviewer")
-REMOVED_ROLES = ("Adviser", "Critic")
+ROLES = ("Lead", "Overseer", "Worker", "Tester", "Reviewer", "Adviser", "Critic")
 ADAPTERS = ("codex", "opencode", "claude-code", "hermes", "zcode")
 SKILLS = (
     "planning",
@@ -27,6 +26,13 @@ SKILLS = (
     "worker-bugfix",
     "lhc-rollout",
     "lhc-update-agents",
+    "model-routing",
+    "decompose-and-dispatch",
+    "user-testing",
+    "focus-groups",
+    "council",
+    "challenge-decision",
+    "improve-workflow",
 )
 
 
@@ -100,13 +106,12 @@ release = text("templates/RELEASE_HANDOFF.md")
 if router != claude:
     fail("AGENTS.md and CLAUDE.md must stay byte-identical marker routers")
 
-## Role set: exactly the four v2 roles, removed roles stay gone.
+## Responsibility roles plus optional advice and a compatibility alias.
 for role in ROLES:
     text(f"src/common/agents/{role}.md")
     require(router, f"- {role}: `src/common/agents/{role}.md`", "AGENTS.md")
-for role in REMOVED_ROLES:
-    if (ROOT / "src/common/agents" / f"{role}.md").exists():
-        fail(f"removed role file still present: src/common/agents/{role}.md")
+require(text("src/common/agents/Critic.md"), "compatibility alias", "Critic.md")
+require(lead, "never another mandatory gate", "Lead.md")
 
 ## Secret-theater infrastructure stays deleted.
 for removed in (
@@ -332,13 +337,12 @@ obsolete = (
     # forced-confirmation ceremony (AskHuman itself is sanctioned)
     "confirmation for every",
     # removed roles as required gates
-    "Adviser, Critic",
-    "Reviewer, Tester, Overseer, or Critic",
+    "Adviser and Critic are mandatory gates",
     # fragmented-history regressions
     "Stage and commit only task-owned paths",
     "Commit, only if requested",
     # old process rituals
-    "Overseer is mandatory for every task",
+    "Overseer approval requires human confirmation",
     "For Short and Full work I do not search the repository or write code",
     "L does not search the repository or write code",
     "maximum five active minutes",
@@ -439,6 +443,8 @@ def run_quiet(command: list[str]) -> None:
         raise SystemExit(f"FAIL: nested validator failed: {' '.join(command)}")
 
 run_quiet([sys.executable, "-m", "pytest", "-q", "tests/test_business_first_contract.py"])
+run_quiet([sys.executable, "-m", "pytest", "-q", "tests/test_autonomous_factory.py"])
+run_quiet([sys.executable, "-m", "pytest", "-q", "tests/test_factory_distribution.py"])
 run_quiet([sys.executable, "-m", "pytest", "-q", "tests/test_time_guard.py"])
 run_quiet([sys.executable, "-m", "py_compile", str(time_guard)])
 run_quiet(["sh", str(ROOT / "tests/test_block_adapter.sh")])
