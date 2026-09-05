@@ -1,7 +1,7 @@
 # Архитектурный цикл и канонические параллельные ветки
 
 Started at 2026-09-05T05:25:29+03:00 (clock.curr_time, manual clock).
-Статус: реализация и review завершены, ожидается независимый canary. Baseline 0e8bc3043d3d5903f028e91ec2f6e9a00dd79b19, main, исходно чистый checkout.
+Статус: реализация, review и независимые canary завершены. Baseline 0e8bc3043d3d5903f028e91ec2f6e9a00dd79b19, main, исходно чистый checkout. Реализация: 90d41ce.
 
 Результат: добавить согласованный архитектурный цикл и разрешить управляемые параллельные ветки через единый канон для всех harness.
 Canary: новый навык обнаруживается в native/plugin пакете; реальный Git CLI создаёт одинаковую branch/path привязку из primary и auxiliary checkout, затем независимые результаты интегрируются в main без потери чужой работы.
@@ -39,3 +39,8 @@ Canary: новый навык обнаруживается в native/plugin па
 - Основной валидатор PASS: 7 ролей, 5 адаптеров. Reviewer: иных материальных дефектов нет; замечание о pending generation устранено, parity и plugin validator PASS.
 - Уточнение пользователя включено: начало с актуальных вводных и применимого обучения; отдельно замкнуты улучшение продукта и улучшение методов LHC, с проверкой и следующим применимым reuse. Исторические записи не подменяют актуальную задачу.
 - Никакие существующие ветки/worktree, runtime или внешние сервисы не изменялись; реальные Git мутации выполнялись только в project-local test fixtures.
+- Итоговый focused suite: 92 PASS. Reviewer после проверки generation: APPROVE, материальных блокеров нет.
+- Независимый реальный Git canary из экспорта 90d41ce: два worktree от одного base, параллельные коммиты, reuse через advanced auxiliary, интеграция обеих веток в main, push в local bare remote и совпадение SHA; удалены только собственные чистые merged branches/worktrees. Чужой dirty sentinel сохранился. Evidence: `.tmp/architecture-worktrees-acceptance/cli-acceptance.md`.
+- Независимый forward test architecture-design: PASS. Сценарий фоновых CSV-отчётов использовал текущие вводные и проверку применимости product/LHC lessons, критические пробы, challenge, параллельные lanes и приёмку. Это проверка использования навыка, а не запущенное приложение; предполагаемые пробы явно не заявлены выполненными. Artifact: `.tmp/architecture-worktrees-acceptance/architecture-forward-test.md`.
+- Scope: source/native/plugin канон и реальный Git CLI подтверждены. Установленные runtime и live multi-model dispatch не менялись и не проверялись.
+- Final Overseer CONTINUE: согласованный объём соблюдён, canary PASS, гипотетические пробы не выданы за выполненные; завершение — receipt commit, push main и проверка remote SHA. На 05:43:24+03 от старта 05:25:29 прошло 17:55 по clock.curr_time, исходно 16–29 минут; активное время не контролировал.
