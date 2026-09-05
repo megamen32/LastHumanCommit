@@ -93,6 +93,17 @@ available.
 - A foreign path changed within five minutes is probably active. Preserve it and
   resolve the collision with its owner before a claimed Full completion; do not
   use activity as an exclusion from the final clean history.
+- Owner lookup is mandatory before declaring a path orphaned: query Agent
+  Herder (send_message / session list) for a live session matching the path's
+  task record, coordination note, or recent authorship. An owner who answers
+  keeps the path; hand it back and coordinate.
+- Orphan TTL: when no live owner exists via Agent Herder AND the newest
+  foreign mtime is older than thirty minutes (1800s — Agent Herder's own
+  maximum session/note activity window), the acting Lead MUST adopt the
+  path — review it, repair or finish what is unsafe or incomplete, run the
+  relevant validation, and include it in the cycle's complete commit set.
+  Unknown ownership is never permission to leave a path uncommitted, and never
+  permission to delete it.
 - Older foreign changes are still foreign: review every path, repair every
   unsafe or incomplete change, and commit the resulting complete set. Never use
   unknown ownership, generated output, binaries, missing paths, or mtime
@@ -127,4 +138,5 @@ a Full cycle complete with any modified, deleted, untracked, ignored-by-accident
 or dirty nested-repository path. If required authority to repair a path is
 missing, the cycle is blocked and must not be described as complete. Every Full
 cycle ends with clean repositories, pushed reachable commits, deployment where
-deployable, and a final real-surface test after the last change.
+deployable, verified tags moved to the verified commits where the project keeps
+them, and a final real-surface test after the last change.
