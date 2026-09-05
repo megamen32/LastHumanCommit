@@ -1,12 +1,13 @@
 # Last Human Commit plugin
 
-This directory is a local, skills-only plugin package for Codex, OpenCode, and
-Claude Code. The ten skills under `skills/` are generated from the repository
-source at `LastHumanCommit/skills/`; the generated files must not be edited by
-hand.
+This directory is a self-contained Agent Plugin package for Codex, OpenCode,
+Claude Code, and Hermes. Skills, shared role/protocol sources, the Hermes
+adapter, and executable tools are generated from this repository; generated
+files must not be edited by hand.
 
-The package contains no MCP server, credentials, hooks, or runtime configuration
-changes. Nothing is installed or enabled by the validation commands.
+The package contains no MCP server, credentials, or runtime configuration
+changes. Native hooks and the Hermes adapter are included for clients that
+support them. Nothing is installed or enabled by validation commands.
 
 ## Build and validate
 

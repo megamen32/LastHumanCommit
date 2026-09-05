@@ -17,6 +17,7 @@ SCHEMA = "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json"
 NAME = re.compile(r"^(?!.*(?:--|\.\.))[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$")
 SKILL_NAME = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 EXPECTED_SKILLS = {
+    "last-human-commit",
     "architecture-design",
     "challenge-decision",
     "council",

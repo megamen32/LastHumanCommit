@@ -26,6 +26,22 @@ Lead integrates reviewed branches into main, verifies and pushes the combined
 result, then removes only task-owned clean worktrees and branches proven merged
 into remote main. Preserve unrelated and unmerged work.
 
+## Harness extensions and plugin delivery
+
+For every future harness integration or change, package reusable behavior using
+[Agent Plugins](https://agent-plugins.org/specification/): root `plugin.json`,
+`skills/`, and optional `mcp.json`. Keep native hooks and other client-specific
+behavior in supported client extensions; do not assume identical capabilities.
+LHC's canonical package is `plugins/last-human-commit`, generated from source.
+Install and update the versioned package through the harness's native plugin
+marketplace/manager. Never use individual skill copies, installed-source edits,
+or Fleet file rollout as the normal delivery route. If a loader lacks support,
+report the concrete limitation and obtain an explicitly selected compatibility
+route; do not silently fall back to copying files. Automatic updates depend on
+the client and its configuration. Prove the installed loader discovers and uses
+the expected package version before claiming harness delivery. `lhc-rollout` is
+reserved for explicitly selected legacy recovery, including rollback.
+
 ## Current inputs and both learning loops
 
 Start with the latest objective/corrections, actual project state/constraints,

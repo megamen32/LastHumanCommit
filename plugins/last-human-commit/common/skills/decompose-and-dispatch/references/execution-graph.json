@@ -1,0 +1,125 @@
+{
+  "schema_version": 1,
+  "note": "Illustrative graph, not a dispatch record. Model classes must be resolved by the live harness.",
+  "tasks": [
+    {
+      "id": "contract",
+      "role": "Lead",
+      "model_class": "frontier",
+      "depends_on": [],
+      "read_paths": [],
+      "write_paths": [
+        "docs/interface.md"
+      ],
+      "acceptance": "Selected interface and observable acceptance are explicit.",
+      "estimate_minutes": {
+        "minimum": 3,
+        "maximum": 5,
+        "basis": "Read both consumer boundaries, select one interface and write its acceptance criteria.",
+        "uncertainty": "An inconsistent existing consumer may need one additional interface trace."
+      }
+    },
+    {
+      "id": "backend",
+      "role": "Worker",
+      "model_class": "sonnet",
+      "depends_on": [
+        "contract"
+      ],
+      "read_paths": [
+        "docs/interface.md"
+      ],
+      "write_paths": [
+        "src/backend"
+      ],
+      "acceptance": "Backend contract tests and changed behavior pass.",
+      "estimate_minutes": {
+        "minimum": 6,
+        "maximum": 10,
+        "basis": "Implement one bounded backend behavior and run its contract checks.",
+        "uncertainty": "A failed contract check may require one local repair and rerun."
+      }
+    },
+    {
+      "id": "frontend",
+      "role": "Worker",
+      "model_class": "sonnet",
+      "depends_on": [
+        "contract"
+      ],
+      "read_paths": [
+        "docs/interface.md"
+      ],
+      "write_paths": [
+        "src/frontend"
+      ],
+      "acceptance": "Frontend handles success, pending and failed operations.",
+      "estimate_minutes": {
+        "minimum": 5,
+        "maximum": 9,
+        "basis": "Wire the agreed interface into the three visible operation states and verify them.",
+        "uncertainty": "An existing state transition may need correction before verification passes."
+      }
+    },
+    {
+      "id": "join",
+      "role": "Worker",
+      "model_class": "fable",
+      "depends_on": [
+        "backend",
+        "frontend"
+      ],
+      "read_paths": [
+        "src/backend",
+        "src/frontend"
+      ],
+      "write_paths": [
+        "tests/integration"
+      ],
+      "acceptance": "Combined user path is verified across both lanes.",
+      "estimate_minutes": {
+        "minimum": 2,
+        "maximum": 4,
+        "basis": "Run the combined consumer path after both implementation lanes are accepted.",
+        "uncertainty": "One integration mismatch may require a repair and replay."
+      }
+    },
+    {
+      "id": "review",
+      "role": "Reviewer",
+      "model_class": "fable",
+      "depends_on": [
+        "join"
+      ],
+      "read_paths": [
+        "src",
+        "tests/integration"
+      ],
+      "write_paths": [],
+      "acceptance": "Independent technical evidence supports the coherent change.",
+      "estimate_minutes": {
+        "minimum": 2,
+        "maximum": 3,
+        "basis": "Review the bounded coherent diff and its integration evidence independently.",
+        "uncertainty": "One disputed finding may need a focused evidence check."
+      }
+    },
+    {
+      "id": "real-use",
+      "role": "Tester",
+      "model_class": "sonnet",
+      "depends_on": [
+        "review"
+      ],
+      "read_paths": [],
+      "write_paths": [],
+      "acceptance": "A fresh user attempt on the real surface achieves the changed goal.",
+      "estimate_minutes": {
+        "minimum": 3,
+        "maximum": 6,
+        "basis": "A fresh Tester opens the real surface, attempts the goal and verifies resulting state.",
+        "uncertainty": "A recoverable tool problem may require evidence capture and one retry; a product defect triggers re-estimation."
+      }
+    }
+  ]
+}

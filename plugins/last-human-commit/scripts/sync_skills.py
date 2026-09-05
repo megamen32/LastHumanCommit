@@ -11,10 +11,43 @@ from pathlib import Path
 
 
 SKILL_NAME = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+EXCLUDED_PARTS = {"__pycache__"}
 
 
 def plugin_root() -> Path:
     return Path(__file__).resolve().parents[1]
+
+
+def package_files(root: Path) -> dict[Path, bytes]:
+    return {
+        path.relative_to(root): path.read_bytes()
+        for path in root.rglob("*")
+        if path.is_file() and not (set(path.relative_to(root).parts) & EXCLUDED_PARTS)
+        and path.suffix != ".pyc"
+    }
+
+
+def sync_tree(source: Path, target: Path, check: bool, replacements: dict[bytes, bytes] | None = None) -> list[str]:
+    replacements = replacements or {}
+    if source.is_file():
+        expected = {Path(source.name): source.read_bytes()}
+    else:
+        expected = package_files(source)
+    actual = package_files(target) if target.is_dir() else {}
+    errors: list[str] = []
+    for relative in sorted(set(actual) - set(expected)):
+        errors.append(f"unexpected bundled file: {target.name}/{relative}")
+    for relative, content in expected.items():
+        for old, new in replacements.items():
+            content = content.replace(old, new)
+        output = target if source.is_file() else target / relative
+        if check:
+            if output.is_symlink() or not output.is_file() or output.read_bytes() != content:
+                errors.append(f"bundled file differs: {target.name}/{relative}")
+        else:
+            output.parent.mkdir(parents=True, exist_ok=True)
+            output.write_bytes(content)
+    return errors
 
 
 def default_source_root() -> Path:
@@ -90,12 +123,12 @@ def compare(source_root: Path, output_root: Path) -> list[str]:
         source_files = {
             path.relative_to(source_dir).as_posix(): path
             for path in source_dir.rglob("*")
-            if path.is_file()
+            if path.is_file() and path.suffix != ".pyc" and "__pycache__" not in path.parts
         }
         target_files = {
             path.relative_to(target_dir).as_posix(): path
             for path in target_dir.rglob("*")
-            if path.is_file()
+            if path.is_file() and path.suffix != ".pyc" and "__pycache__" not in path.parts
         } if target_dir.is_dir() else {}
         missing = sorted(set(source_files) - set(target_files))
         unexpected = sorted(set(target_files) - set(source_files))
@@ -118,7 +151,7 @@ def sync(source_root: Path, output_root: Path) -> int:
         target_dir = output_root / source_dir.name
         if target_dir.exists():
             shutil.rmtree(target_dir)
-        shutil.copytree(source_dir, target_dir, symlinks=False)
+        shutil.copytree(source_dir, target_dir, symlinks=False, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
     errors = compare(source_root, output_root)
     if errors:
         for error in errors:
@@ -173,6 +206,18 @@ def main() -> int:
                 for error in errors:
                     print(f"parity error: {error}", file=sys.stderr)
                 return 1
+        common_root = plugin_root().parent.parent / "src" / "common"
+        bundle_errors = sync_tree(common_root, plugin_root() / "common", args.check,
+                                  {b"src/common/": b"common/"})
+        bundle_errors += sync_tree(plugin_root().parent.parent / "AGENTS.md", plugin_root() / "AGENTS.md", args.check,
+                                   {b"src/common/": b"common/"})
+        bundle_errors += sync_tree(plugin_root().parent.parent / "adapters" / "hermes" / "plugin",
+                                   plugin_root() / "com.nousresearch.hermes", args.check)
+        if bundle_errors:
+            for error in bundle_errors:
+                print(f"bundle error: {error}", file=sys.stderr)
+            return 1
+        if args.check:
             print(f"parity: PASS ({len(source_skill_dirs(source_root))} skills)")
             return 0
         return sync(source_root, output_root)

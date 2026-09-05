@@ -1,15 +1,16 @@
 ---
 name: lhc-update-agents
-description: Rewrite or update Last Human Commit itself. Sources live at ~/agents-projects/LastHumanCommit. Requires a baseline push before edits when anything is dirty or unpushed, commit+push after, validators green, then rollout to every installed harness (zcode, codex, opencode, hermes minimum) via the lhc-rollout skill and the fleet manifest. Use when the user asks to change LHC prompts, roles, protocols, commands, skills, or deployment.
+description: Update Last Human Commit sources, regenerate the canonical Agent Plugins package, validate, commit and push, then install or update through each selected harness's native plugin marketplace or manager and prove its installed loader. Use for LHC prompts, roles, protocols, commands, skills, or plugin delivery changes.
 ---
 
 # Rewrite Last Human Commit
 
 Sources: `/home/roomhacker/agents-projects/LastHumanCommit` (git, main).
-This skill and `lhc-rollout` live canonically in the repo under `skills/`
-and ship inside the LHC agent plugin. Never edit deployed copies under
-`~/.local/share/last-human-commit/` or project marker blocks directly —
-change the source, then roll out.
+The canonical delivery unit is `plugins/last-human-commit`, following the
+[Agent Plugins specification](https://agent-plugins.org/specification/).
+Change owning source, regenerate the package, and use native marketplace
+install/update. Never hand-edit installed packages or synchronize individual
+skills into harness directories.
 
 ## 1. Baseline push — mandatory before edits
 
@@ -17,59 +18,53 @@ Make this bot's future changes identifiable as one commit range:
 
 ```bash
 cd ~/agents-projects/LastHumanCommit
-git status --porcelain   # must be empty; if dirty: review every path, repair blockers, commit the complete result
-git log @{u}..HEAD       # must be empty; if not: push
+git status --porcelain   # review dirty paths and resolve ownership before committing
+git log @{u}..HEAD       # push reviewed unpushed commits
 git push origin main
 ```
 
-The pushed HEAD is the baseline; everything after it belongs to this bot.
+The pushed HEAD is the baseline. Preserve unrelated work; do not absorb it
+silently or overwrite another worker's changes.
 
-## 2. Edit sources and validate
+## 2. Edit sources and generate the package
 
-- Roles, protocols, templates, commands: `src/common/`; harness adapters:
-  `adapters/`; skills: `skills/` (keep the mirror under
-  `plugins/last-human-commit/skills/` byte-identical; sync harness-local
-  copies such as `~/.zcode/skills/<name>`).
+- Roles, protocols, templates, commands: `src/common/`; native adapter source:
+  `adapters/`; operator skills: `skills/`.
+- Generate and check the package with:
+
+  ```bash
+  python3 plugins/last-human-commit/scripts/sync_skills.py
+  python3 plugins/last-human-commit/scripts/sync_skills.py --check
+  python3 plugins/last-human-commit/scripts/validate.py
+  ```
+
+  Generated package content is not an independent source of truth.
 - Run `python3 tests/validate.py` and fix until green; never delete checks.
+- Keep the portable root `plugin.json`, `skills/`, and optional `mcp.json`
+  conformant. Native hooks, manifests and extension behavior must match each
+  actual client; portability does not promise identical capabilities.
 
-## 3. Commit and push after — unified history
+## 3. Commit and push
 
-Commit task-owned files at each completed step; at the end absorb reviewed
-foreign edits, leave the tree clean, and `git push origin main`.
+Review the diff and commit task-owned files at completed steps. Push the verified
+package and source through the repository's main delivery history.
 
-## 4. Apply to every installed harness
+## 4. Install or update through native loaders
 
-Minimum set: **zcode, codex, opencode, hermes** (claude-code routers ride
-along). One machine-wide store per host:
-`~/.local/share/last-human-commit/current` — no per-project
-`.last-human-commit/` runtimes.
+For each selected installed harness, identify its actual plugin marketplace or
+manager and supported package entrypoint. Publish/register the versioned package
+through that mechanism and request its native install/update. For a missing
+installation, use the same native plugin route. Do not use Fleet copy rollout,
+per-harness skill synchronization, or direct edits of installed runtime files.
 
-```bash
-SKILL=~/agents-projects/LastHumanCommit/skills/lhc-rollout   # or ~/.zcode/skills/lhc-rollout
-python3 $SKILL/scripts/lhc_rollout.py preview --manifest $SKILL/assets/last-human-commit-fleet.json > PREVIEW.json
-confirmation=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["confirmation"])' PREVIEW.json)
-python3 $SKILL/scripts/lhc_rollout.py apply  --manifest $SKILL/assets/last-human-commit-fleet.json --confirm "$confirmation"
-python3 $SKILL/scripts/lhc_rollout.py verify --manifest $SKILL/assets/last-human-commit-fleet.json
-```
+Check the installed package version and run a fresh harness session that
+actually discovers and invokes an LHC skill or supported extension from that
+package. Static manifest checks and reading a file alone do not prove loading.
+Report source tests, package publication, installed version and real loader
+canary separately per target. Automatic refresh/restart and extension support
+are client-specific; do not claim universal auto-updates.
 
-One apply per version: a rollback receipt for version X blocks re-applying
-X; push a new commit to create a new version instead. A freshness window
-(~5 min) protects files a rollout just touched — wait it out, don't force.
-
-Finish with one physical harness canary: read an installed router or role
-file on each harness and confirm it resolves. End state: clean tree,
-pushed, deployed, real-surface tested.
-
-## 5. Install on a harness that is missing LHC
-
-- zcode: router `~/.zcode/AGENTS.md`; roles resolve through the machine
-  store; time-anchor hook `~/.zcode/hooks/lhc_time_start.sh` registered in
-  `~/.zcode/cli/config.json` SessionStart; `/secret` skill in
-  `~/.zcode/skills/secret/`; LHC operator skills copied to
-  `~/.zcode/skills/`.
-- codex: router `~/.codex/AGENTS.md`; `/secret` prompt in `~/.codex/prompts/`.
-- opencode: router `~/.config/opencode/AGENTS.md`.
-- hermes: plugin copy `~/.hermes/plugins/last-human-commit`.
-
-Add the target to the fleet manifest (see
-`skills/lhc-rollout/references/manifest.md`), then preview/apply/verify.
+If the target has no compatible native loader, report that observed limitation
+and ask for an explicitly selected compatibility route. `lhc-rollout` is
+available only for explicitly selected legacy recovery/rollback, never as an
+automatic fallback or normal release step.

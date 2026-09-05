@@ -1111,14 +1111,18 @@ def main() -> int:
     for name in ("preview", "verify"):
         child = subparsers.add_parser(name)
         child.add_argument("--manifest", type=Path, required=True)
+        child.add_argument("--legacy-recovery", action="store_true")
     apply_parser = subparsers.add_parser("apply")
     apply_parser.add_argument("--manifest", type=Path, required=True)
     apply_parser.add_argument("--confirm", required=True)
+    apply_parser.add_argument("--legacy-recovery", action="store_true")
     for name in ("remote-preview", "remote-apply", "remote-verify"):
         child = subparsers.add_parser(name, help=argparse.SUPPRESS)
         child.add_argument("--bundle", type=Path, required=True)
         child.add_argument("--request", type=Path, required=True)
     arguments = parser.parse_args()
+    if arguments.command in {"preview", "apply", "verify"} and not arguments.legacy_recovery:
+        parser.error("Legacy Fleet-copy delivery is disabled. Use the Agent Plugin marketplace; --legacy-recovery is only for explicitly selected recovery.")
     if arguments.command == "preview":
         result = preview_manifest(arguments.manifest)
     elif arguments.command == "apply":

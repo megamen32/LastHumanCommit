@@ -1,8 +1,8 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "last-human-commit",
-  "version": "1.0.0",
-  "description": "Portable business-first workflow, Worker research skills, and LHC operator skills (update + fleet rollout).",
+  "version": "1.1.0",
+  "description": "Self-contained engineering workflow, architecture, learning loops, and native Agent Plugin updates.",
   "license": "MIT",
   "keywords": [
     "workflow",

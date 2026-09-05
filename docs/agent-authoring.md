@@ -66,6 +66,22 @@ Match proof to claim. Source, tests, deployment, and real-business canary are
 reported separately. An accepted MVP is not silently upgraded to strict
 admission, perfect atomicity, broad hardening, portability, or visual polish.
 
+## Harness extensions and plugin delivery
+
+For every future harness integration or change, package reusable behavior using
+[Agent Plugins](https://agent-plugins.org/specification/): root `plugin.json`,
+`skills/`, and optional `mcp.json`. Keep native hooks and other client-specific
+behavior in supported client extensions; do not assume identical capabilities.
+LHC's canonical package is `plugins/last-human-commit`, generated from source.
+Install and update the versioned package through the harness's native plugin
+marketplace/manager. Never use individual skill copies, installed-source edits,
+or Fleet file rollout as the normal delivery route. If a loader lacks support,
+report the concrete limitation and obtain an explicitly selected compatibility
+route; do not silently fall back to copying files. Automatic updates depend on
+the client and its configuration. Prove the installed loader discovers and uses
+the expected package version before claiming harness delivery. `lhc-rollout` is
+reserved for explicitly selected legacy recovery, including rollback.
+
 ## Workspace and adapters
 
 Keep simple work in the primary checkout; Lead may allocate independent parallel
@@ -82,7 +98,7 @@ test early integration, challenge the synthesis, then simplify and dispatch.
 Both product repairs and LHC method improvements need their own evidence and
 applicable reuse; a retrospective entry alone does not close either loop.
 
-When changing instructions, update the owning source, direct mirrors/templates,
-and semantic validators. Require ordering and forbidden old behavior, not mere
+When changing instructions, update the owning source and semantic validators,
+then regenerate the canonical plugin package and its native metadata. Require ordering and forbidden old behavior, not mere
 phrase presence. Run `git diff --check`, the business-first regression, and
 `python3 tests/validate.py`.

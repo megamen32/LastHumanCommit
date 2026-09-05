@@ -1,14 +1,20 @@
 ---
 name: lhc-rollout
-description: Roll out a committed Last Human Commit release or compatible versioned instruction set across local and SSH Fleet hosts with exact preview, confirmation-bound apply, atomic current switching, marker-preserving router updates, machine-wide store, project/plugin copies, rollback receipts, and digest verification. Use when the user asks to deploy, synchronize, update, verify, or preview an LHC release on one or more agent-harness machines.
+description: Legacy recovery only. Use solely when the user explicitly selects old Fleet file rollout or rollback for Last Human Commit; never for ordinary plugin install, update, or delivery. Preserves deterministic preview, exact apply, verification and rollback receipts.
 ---
 
-# LHC Rollout
+# LHC legacy recovery
 
-Use the bundled deterministic script. Do not rediscover or rewrite the rollout
-procedure in the prompt.
+Normal LHC delivery uses the generated `plugins/last-human-commit` Agent Plugins
+package and the target harness native plugin marketplace/manager; see
+`../lhc-update-agents/SKILL.md`. This old file-copy route is disabled for normal
+install/update and must not run as a fallback when a plugin loader is missing.
 
-## Workflow
+Proceed below only when the user explicitly selected legacy Fleet recovery or
+rollback for named targets. Keep existing rollback receipts and capabilities.
+Use the bundled deterministic script; do not rewrite the recovery procedure.
+
+## Explicitly selected legacy workflow
 
 1. Require a committed source revision and an explicit Fleet manifest. When
    creating or changing the manifest, read [references/manifest.md](references/manifest.md).
@@ -17,17 +23,17 @@ procedure in the prompt.
 2. Run preview:
 
    ```bash
-   python3 scripts/lhc_rollout.py preview --manifest MANIFEST.json > PREVIEW.json
+   python3 scripts/lhc_rollout.py preview --legacy-recovery --manifest MANIFEST.json > PREVIEW.json
    ```
 
 3. Check the version, digest, exact targets, actions, and rollback paths. Stop
    on a missing target, freshness conflict, immutable-version collision, or
    unresolved router role reference.
-4. If the user's request already authorizes rollout, apply the exact preview:
+4. If the user's request explicitly authorizes this legacy recovery, apply the exact preview:
 
    ```bash
    confirmation=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["confirmation"])' PREVIEW.json)
-   python3 scripts/lhc_rollout.py apply --manifest MANIFEST.json --confirm "$confirmation"
+   python3 scripts/lhc_rollout.py apply --legacy-recovery --manifest MANIFEST.json --confirm "$confirmation"
    ```
 
    Otherwise return the preview and wait. Never manufacture or reuse a stale
@@ -35,7 +41,7 @@ procedure in the prompt.
 5. Verify independently:
 
    ```bash
-   python3 scripts/lhc_rollout.py verify --manifest MANIFEST.json
+   python3 scripts/lhc_rollout.py verify --legacy-recovery --manifest MANIFEST.json
    ```
 
 6. Run one physical harness canary that reads the installed router or role
@@ -46,8 +52,8 @@ procedure in the prompt.
 
 One LHC store per host: `~/.local/share/last-human-commit/current`. Project
 routers reference the machine store absolutely; per-project
-`.last-human-commit/` runtimes are legacy — remove them after routers are
-re-pointed. One apply per version: a rollback receipt for version X blocks
+`.last-human-commit/` runtimes are legacy. Remove them only when the selected
+recovery includes that migration and the restored consumer path is verified. One apply per version: a rollback receipt for version X blocks
 re-applying X; push a new commit to create a new version. Freshness windows
 (~5 minutes) protect files a rollout just touched — wait them out, don't
 force.
@@ -56,10 +62,10 @@ force.
 
 - Canonical: `~/agents-projects/LastHumanCommit/skills/lhc-rollout` (repo,
   main branch).
-- Mirrors: the LHC plugin package `skills/lhc-rollout/` and harness-local
-  copies such as `~/.zcode/skills/lhc-rollout`.
-- Never hand-edit a mirror; change the repo, then redeploy. The rollout
-  manifest contains no credentials.
+- Distribution: generated inside the canonical LHC plugin package. Do not
+  synchronize this skill separately into harness-local directories.
+- Never hand-edit an installed package; change source and use native package
+  install/update. The legacy recovery manifest contains no credentials.
 
 ## Result
 

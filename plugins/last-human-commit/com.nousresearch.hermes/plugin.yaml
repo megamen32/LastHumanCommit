@@ -1,0 +1,6 @@
+name: last-human-commit
+version: 0.2.0
+description: "Inject LHC role context, business time guards, and bounded compaction handoffs into Hermes."
+author: "Last Human Commit"
+hooks:
+  - pre_llm_call
