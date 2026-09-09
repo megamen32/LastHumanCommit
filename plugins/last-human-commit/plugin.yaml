@@ -1,5 +1,5 @@
 name: last-human-commit
-version: 1.2.5
+version: 1.2.6
 description: Self-contained Agent Plugin with native Hermes hooks and skills.
 hooks:
   - pre_llm_call
