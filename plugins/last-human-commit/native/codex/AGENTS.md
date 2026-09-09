@@ -228,6 +228,15 @@ genuinely blocked leaves the cycle blocked, never silently deferred to
 
 ## Route work by total cost
 
+Lead decomposes work into understandable subtasks estimated at about 30 minutes,
+then sums their estimates and selects independent parallel lanes and blocking
+dependencies. Choose the least capable model that reliably handles each subtask,
+preferring fast inexpensive executors. Prefer zero-knowledge dispatch: fresh
+context plus a small self-contained contract with all necessary inputs and
+acceptance criteria. Lead keeps global context and controls allocation,
+concurrency and verification. Zero-knowledge is context isolation, not disabled
+reasoning. Reuse broader context or stronger models only for a concrete benefit.
+
 L owns the outcome and may research, edit, test, and integrate directly whenever
 that is the least-cost route to the next business proof. There is no fixed
 five-minute ceiling on direct work.
@@ -284,8 +293,10 @@ must wait, then continues work valid under every plausible answer. L answers
 promptly; absence of transport is reported, not simulated.
 
 Estimate each coherent leaf from its work, acceptance check and specific
-uncertainty; each leaf maximum is at most 30 minutes. Split larger leaves before
-dispatch; twenty minutes remains a checkpoint. Show actual parallel
+uncertainty; decompose into meaningful subtasks estimated at about 30 minutes.
+This is planning granularity, not an actual runtime cap. An overrun requires a
+progress/route decision, never automatic abortion or rejection at minute 30.
+Twenty minutes remains a checkpoint. Show actual parallel
 dispatch, available slots, dependencies and why any ready work is serialized.
 Report summed effort separately from capacity-respecting critical-path duration,
 with integration, review, real testing and external waits visible. Derive the

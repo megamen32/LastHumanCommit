@@ -6,7 +6,9 @@ Input: {"serial": false, "tasks": [
     {"id": "build", "min_minutes": 5, "max_minutes": 20, "deps": []},
     {"id": "test", "min_minutes": 2, "max_minutes": 5, "deps": ["build"]}
 ]}
-Each task is a leaf with finite numeric 0 < min_minutes <= max_minutes <= 30.
+Each task has finite numeric 0 < min_minutes <= max_minutes. Estimates above
+30 minutes are flagged for further decomposition, not rejected as invalid tasks.
+Thirty minutes is planning granularity, never an actual execution timeout.
 All execution, integration, review and testing work must be included as leaves
 by the caller. Optional metadata (e.g. role) does not affect the calculation.
 Dependencies may reference tasks later in the list; deps defaults to [].
@@ -54,11 +56,12 @@ def validate_plan(plan: object) -> dict:
             raise ValueError(f"duplicate task id: {task_id}")
         low, high = task.get("min_minutes"), task.get("max_minutes")
         for field, value in (("min_minutes", low), ("max_minutes", high)):
-            # Check the small range before isfinite so oversized JSON integers
-            # cannot overflow the conversion to float.
-            if (type(value) not in (int, float) or not 0 < value <= 30
-                    or not math.isfinite(value)):
-                raise ValueError(f"{task_id}.{field} must be finite and 0 < minutes <= 30")
+            try:
+                valid = type(value) in (int, float) and value > 0 and math.isfinite(value)
+            except OverflowError:
+                valid = False
+            if not valid:
+                raise ValueError(f"{task_id}.{field} must be finite positive minutes")
         if low > high:
             raise ValueError(f"{task_id}: min_minutes must be <= max_minutes")
         deps = task.get("deps", [])
@@ -100,6 +103,9 @@ def validate_plan(plan: object) -> dict:
     return {
         "valid": True,
         "task_count": len(tasks),
+        "decomposition_target_minutes": 30,
+        "needs_decomposition": [task_id for task_id, (_, high, _) in by_id.items() if high > 30],
+        "runtime_limit_minutes": None,
         "serial": serial,
         "effort_minutes": effort,
         "critical_path_minutes": critical_path,

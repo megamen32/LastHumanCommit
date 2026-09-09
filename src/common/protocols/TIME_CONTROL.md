@@ -38,9 +38,15 @@ estimate of their enclosing cycle; do not create an estimate per shell command.
 ## Start anchor
 
 Before setting an anchor, construct the estimate from the work. Twenty minutes
-is a reporting interval; each execution leaf has a maximum of 30 minutes.
-Split larger leaves into independently verifiable results before dispatch;
-external waits are named separately, never disguised as completed work. Every coherent
+is a reporting interval; decompose work into subtasks estimated at about 30
+minutes. This is planning granularity, not a maximum actual task duration.
+Split large work into independently verifiable results before dispatch;
+an estimate materially larger than 30 minutes means the next steps are not yet
+understood well enough: clarify and decompose further. First sum all subtask
+estimates as the whole work estimate; then choose parallel lanes and blocking
+dependencies and derive the separate elapsed forecast. Do not reverse this by
+inventing a total first and distributing it across tasks.
+External waits are named separately, never disguised as completed work. Every coherent
 leaf has a minimum/maximum, a basis in known work or comparable evidence, and a
 named uncertainty explaining the range. Do not mechanically double a minimum.
 
@@ -52,7 +58,8 @@ Explain why ready independent work must be serialized. A dependency-only graph
 duration is a lower bound, not a complete forecast when capacity is constrained.
 
 Validate the leaf JSON plan with `../tools/lhc_task_budget.py PLAN.json` before
-dispatch. It rejects invalid leaves and cycles and computes sums and dependency
+dispatch. It flags larger estimates for decomposition without rejecting the task;
+it rejects malformed estimates and cycles and computes sums and dependency
 bounds. Its parallel duration is explicitly a lower bound; show the actual slot
 assignment or waves before calling that number a delivery forecast. Include all
 required integration and acceptance work. Never replace the computed effort

@@ -6,6 +6,11 @@ business proof and use the least-cost sufficient method.
 
 ## Assignment
 
+Prefer a fresh zero-knowledge context for each independent subtask. I receive a
+self-contained contract and necessary inputs, not the parent conversation.
+This does not mean disabled reasoning or permission to guess missing facts;
+ask L for essential missing decisions rather than reconstructing global history.
+
 My compact assignment names:
 
 - `mode: research` or `mode: implement`;
@@ -13,14 +18,14 @@ My compact assignment names:
 - one primary acceptance check;
 - allowed and excluded scope/paths;
 - dependencies, owned resources, selected model and suitability reason;
-- evidence-based leaf `minimum / maximum active minutes`, maximum <=30
+- evidence-based leaf `minimum / maximum active minutes`, targeting about 30
   including acceptance verification; external waits listed separately;
 - a 20-minute reporting checkpoint, stop conditions, and return format.
 
-Every leaf maximum is <=30 active minutes. A 20-minute report is a control
-checkpoint, not a Worker lifetime limit. Before executing a larger assignment,
-return `NEEDS_REDECOMPOSITION` with meaningful proof boundaries; do not silently
-accept an unbounded leaf or split it into arbitrary time boxes. Ambiguous goals,
+Lead decomposes the goal into meaningful subtasks estimated at about 30 minutes.
+This is planning granularity, not a runtime limit or grounds to reject an ongoing
+task. For a large unsplit assignment, propose meaningful proof boundaries to L.
+A 20-minute report remains a control checkpoint. Ambiguous goals,
 ownership or mixed independent outcomes also require clarification/decomposition.
 If actual work crosses the assigned maximum, report immediately for L/Overseer
 route control; do not reset the estimate or kill a useful session.

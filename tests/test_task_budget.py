@@ -41,12 +41,12 @@ def test_serial_plan_accounts_for_all_work_even_without_dependency_edges():
     assert result["capacity_accounted_for"] is True
 
 
-def test_decimal_minutes_and_inclusive_thirty_minute_limit():
+def test_decimal_minutes_and_thirty_minute_planning_target():
     result = budget.validate_plan({"tasks": [task("a", 0.5, 30)]})
     assert result["effort_minutes"] == {"minimum": 0.5, "maximum": 30}
 
 
-def test_thirty_minute_cap_is_per_leaf_not_whole_plan():
+def test_total_estimate_is_sum_of_decomposed_tasks():
     result = budget.validate_plan({"tasks": [
         task("build", 20, 30), task("review", 20, 30, ["build"]),
         task("accept", 20, 30, ["review"]),
@@ -61,7 +61,7 @@ def test_serial_flag_does_not_bypass_cycle_validation():
 
 
 @pytest.mark.parametrize("low,high", [
-    (0, 1), (-1, 1), (3, 2), (1, 30.01), (31, 31),
+    (0, 1), (-1, 1), (3, 2),
     (True, 2), (1, False), ("1", 2), (None, 2),
     (float("nan"), 2), (1, float("inf")), (1, 10**400),
 ])
@@ -110,7 +110,6 @@ def test_real_cli_file(tmp_path):
 
 
 @pytest.mark.parametrize("payload", ["{", "null", '{"tasks":[]}',
-    json.dumps({"tasks": [task("too-long", 1, 31)]}),
     '{"tasks":[{"id":"a","min_minutes":NaN,"max_minutes":2}]}',
 ])
 def test_real_cli_invalid_input_is_json_and_nonzero(payload):
@@ -125,3 +124,13 @@ def test_real_cli_missing_file(tmp_path):
     completed = run_cli(None, str(tmp_path / "missing.json"))
     assert completed.returncode == 1
     assert json.loads(completed.stdout)["valid"] is False
+
+
+def test_large_estimate_requires_decomposition_not_task_rejection():
+    completed = run_cli(json.dumps({"tasks": [task("large", 30, 60), task("small", 5, 10)]}))
+    assert completed.returncode == 0
+    result = json.loads(completed.stdout)
+    assert result["valid"] is True
+    assert result["needs_decomposition"] == ["large"]
+    assert result["runtime_limit_minutes"] is None
+    assert result["effort_minutes"] == {"minimum": 35, "maximum": 70}

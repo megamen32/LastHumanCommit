@@ -1,6 +1,6 @@
 ---
 name: task-decomposition
-description: Split a large or stalled task into the smallest independent, parallel, business-verifiable slices. Use when planning work, assigning Workers, a leaf maximum exceeds 30 active minutes, routes are entangled, or progress has produced little business delta.
+description: Decompose large or stalled work into independently verifiable subtasks estimated at about 30 minutes. Use when planning, assigning Workers, routes are entangled, or progress has produced little business delta.
 ---
 
 # Task Decomposition
@@ -16,8 +16,9 @@ Decompose for faster business proof, not for more process artifacts.
    allowed paths, excluded scope, and a minimum/maximum active-time estimate.
 5. Estimate each coherent leaf from the work and its proof: minimum, maximum,
    basis in known steps or comparable evidence, and the specific uncertainty
-   that separates the bounds. Every leaf maximum must be <=30 active minutes,
-   including verification. Split larger work at meaningful proof boundaries
+   that separates the bounds. Aim for subtasks estimated at about 30 minutes,
+   including verification; this is planning granularity, not a runtime cutoff.
+   Smaller natural results need no padding. Split larger work at meaningful proof boundaries
    before execution. Twenty minutes is a reporting checkpoint, not a planning
    quantum or duration target.
 6. Parallelize leaves only when they do not require the same unresolved decision
@@ -50,8 +51,9 @@ do not hide them in a doubled global buffer. For each bound, show its formula.
 Do not quote a naked 60–120 minute range or mechanically double a minimum.
 If a wide range comes from an unresolved fact, name that fact and run the cheapest
 discriminating probe before expanding implementation. If a proof cannot yet be
-split into <=30-active-minute leaves, return that boundary to Lead for a shorter
-canary or revised route; do not exempt a long coherent leaf. Account for passive
+split into roughly 30-minute subtasks, return that boundary to Lead to refine the
+decomposition. Never abort or reject ongoing work solely for passing 30 minutes;
+compare progress with the estimate and adjust the remaining route. Account for passive
 external waits separately without dropping them from the elapsed forecast.
 
 Example (illustrative minutes): contract 2–3; backend 4–7 and frontend 3–5 in
@@ -72,7 +74,7 @@ Depends on:
 Allowed/excluded scope:
 Artifact or real proof:
 Primary acceptance check:
-Minimum / maximum active minutes (maximum <=30, including verification):
+Minimum / maximum active minutes (roughly 30-minute decomposition, including verification):
 Estimate basis / specific uncertainty:
 Execution wave / available slots / reason if serialized:
 20-minute checkpoint and question-for-L boundary:

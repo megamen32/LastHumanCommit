@@ -38,7 +38,10 @@ the accepted result still missing, shortest proof and bounded remaining time.
    L owns starting or repairing interval accounting before continuing new work.
    Keep measured active intervals, unobserved gaps, total effort and elapsed time
    separate. An invented number is a reportable failure.
-4. Require leaf estimates of at most 30 minutes and verify their arithmetic:
+4. Require decomposition into meaningful subtasks estimated at about 30 minutes
+   and verify their arithmetic. Thirty minutes is not a runtime cutoff: an actual
+   overrun requires a progress/route decision, not automatic rejection or abortion.
+   Check
    summed effort and dependency/capacity-aware delivery duration. Do not accept
    an invented overall range or a new estimate that hides an original overrun.
 
@@ -69,6 +72,10 @@ the accepted canary, and cut the drift.
 7. At a task maximum overrun, require a route decision based on evidence. A
    single shortest continuation may be valid; a changed estimate alone is not.
 8. Inspect model assignments and dependency joins: unresolved decisions must
+   stay with Lead; prefer fast cheap minimally sufficient executors with fresh
+   zero-knowledge contexts and self-contained small assignments. Check that
+   expensive models or inherited broad context have a concrete justification.
+   Unresolved decisions must
    not be hidden in weak executor tasks, independent work must not be needlessly
    serialized, and repeated cheap retries must not replace a better model,
    context or decomposition. Protect independent testing and review.

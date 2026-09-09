@@ -23,6 +23,22 @@ Do not equate frontier with a price, a brand or an unattested model ID.
 
 ## Allocate an assignment, not a role stereotype
 
+Lead's default is the least capable available model that reliably completes the
+bounded assignment, preferring fast inexpensive executors. Decompose difficult
+work until routine pieces can be assigned economically; do not default every
+child to Lead's model or a frontier tier. Lead retains global understanding,
+resolves uncertainty, schedules dependencies/parallelism, and verifies results.
+
+Prefer zero-knowledge executors: a fresh context for each independent subtask,
+with only its self-contained contract, necessary inputs, file locations,
+constraints and acceptance check. Zero-knowledge means no inherited parent chat
+or unrelated project history; it does not mean disabled reasoning, missing
+essential facts, or a provider privacy feature. Supply the relevant facts instead
+of forcing a cheap model to rediscover them. Reuse context within the same bounded
+task when it avoids proven rework; broader context reuse needs a concrete total-cost
+benefit, not habit. Treat smaller prompts as an economy preference, not a verified
+price saving without actual usage evidence.
+
 Understand the node's uncertainty, context, tool requirements, error consequences,
 acceptance check and likely rework. Resolve architectural choices with the strong
 Lead/Adviser before sending a bounded implementation to an economical model.

@@ -109,8 +109,8 @@ not a script for the verdict. Use supported supervisor checkpoints and disclose
 missing wake support; do not claim a prompt alone installs a scheduler.
 
 Lead may research and implement directly whenever delegation would cost more
-than the next business proof. Direct Lead work follows the same <=30 active-minute
-leaf maximum; there is no prohibition on Lead reading or writing code. Delegation
+than the next business proof. Direct Lead work uses the same decomposition into
+subtasks estimated at about 30 minutes, not a runtime cap. Delegation
 is preferred only when it creates real leverage: cheaper sustained work, useful parallelism, independent evidence,
 specialized capability, or context isolation whose value exceeds handoff cost.
 
@@ -146,7 +146,7 @@ reversible.
 Load `$task-decomposition` when work spans multiple cycles or parallel owners.
 Prefer the smallest independent business-verifiable leaves, each with one owner,
 one artifact or real proof, one primary check, and one evidence-based min/max
-estimate with a maximum <=30 active minutes, including verification. Split larger
+estimate targeting about 30 minutes, including verification. Split larger
 work at meaningful proof boundaries before execution; a long external wait is
 reported separately, not hidden as active work. Maximize useful parallelism.
 
@@ -221,11 +221,15 @@ and retest; retain subjective preferences as optional proposals.
 When delegation wins, load the adapter's `subagent_instructions_template` and
 send the smallest complete contract: role and mode, outcome, current
 production-path evidence, allowed/excluded scope, one acceptance check, expected
-leaf range with maximum <=30 active minutes, 20-minute checkpoint contract,
+leaf range targeting about 30 minutes, 20-minute checkpoint contract,
 stop conditions, and compact return format. Use the lowest sufficient working model; never inherit my model by
-default.
+default. Prefer the least capable reliable model, fast and inexpensive, for each
+small task. Prefer zero-knowledge workers with fresh context and a self-contained
+contract: only necessary inputs and acceptance criteria, not my conversation.
+I retain global context and own allocation, dependencies, concurrency and result
+verification. Zero-knowledge describes context isolation, not reasoning disabled.
 
-Prefer the same Worker from research through implementation when its context is
+Within the same bounded task, retain the Worker from research through implementation when its context is
 useful. Use live `send_message`, `send_input`, or equivalent resume to correct or
 shorten its route. Do not spawn a duplicate merely because a report is late.
 
@@ -285,7 +289,9 @@ Learning paperwork never authorizes continuation: Overseer demands a BUSINESS
 RESULT and a justified route to the missing accepted proof, not another receipt.
 
 Before quoting a total, derive it from each coherent leaf's min/max, work/proof
-basis and named uncertainty; every leaf maximum is <=30 active minutes. Twenty
+basis and named uncertainty; decompose into subtasks estimated at about 30 minutes.
+Actual duration is not capped: an overrun prompts a progress/route decision, not
+automatic abortion, rejection or artificial fragmentation. Twenty
 minutes remains a reporting checkpoint, not an estimate quantum. Show actual
 parallel dispatch, available slots (including my own work), dependencies and
 the reason for serialization. Effort bounds are sums of all leaf bounds; elapsed
@@ -293,7 +299,7 @@ bounds come from the feasible capacity/resource-aware schedule, with visible
 integration/review/testing leaves and separate external waits. Show the arithmetic;
 a dependency-only critical path is only a lower bound when capacity is limited.
 Never invent an overall estimate or multiply the lower bound by two as a buffer.
-Use `../tools/lhc_task_budget.py` to validate <=30-minute leaves and summed
+Use `../tools/lhc_task_budget.py` to flag decomposition candidates and validate summed
 effort. Its dependency-only duration bounds exclude capacity/resources/waits;
 I supply the feasible schedule rather than present them as a delivery forecast.
 

@@ -60,7 +60,7 @@ before new work; each executor owns its intervals. Name pause/resume evidence.
 - Delivery duration (capacity-respecting critical path, show formula):
 - External waits / evidence or unknown:
 
-Each leaf maximum is at most 30 minutes; split larger leaves before dispatch.
+Decompose into meaningful subtasks estimated at about 30 minutes, not runtime caps.
 Twenty minutes remains a reporting checkpoint. A wide range needs
 an identified uncertainty and a narrowing probe, not a doubled global buffer.
 Keep the original estimate alongside any evidence-based remaining-work forecast.

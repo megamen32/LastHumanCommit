@@ -23,8 +23,9 @@ whole architecture or choose an unmade product decision. Use
 
 Estimate each node from its actual work and verification: minimum/maximum minutes,
 known steps or comparable evidence, and the specific uncertainty widening the
-range. Every leaf maximum must be <=30 active minutes, including verification;
-split larger work at meaningful proof boundaries before dispatch, including
+range. Decompose into subtasks estimated at about 30 minutes, including verification;
+this is planning granularity, never an actual execution cutoff or rejection rule.
+Split larger work at meaningful proof boundaries before dispatch, including
 direct Lead, review and testing work. Twenty minutes remains a checkpoint, not
 a duration target. Do not manufacture arbitrary time boxes or an overall range.
 
@@ -63,8 +64,8 @@ Show the arithmetic and each uncertainty rather than doubling a global buffer.
 The checker can summarize declared per-node estimates, but its dependency-only
 critical path is a lower bound until capacity, resource conflicts and waits are
 accounted for. It does not measure active time or run a scheduler. Use
-`../../tools/lhc_task_budget.py` per TIME_CONTROL to validate the <=30-minute
-leaf limits and effort sums; its dependency-only bounds also exclude capacity
+`../../tools/lhc_task_budget.py` per TIME_CONTROL to flag decomposition candidates
+and calculate effort sums; its dependency-only bounds also exclude capacity
 and waits, so Lead still owns the feasible elapsed schedule.
 
 ## Dispatch and close
@@ -75,9 +76,12 @@ records/reports its own intervals
 and source/coverage. Unknown historical gaps stay unknown. Idlecap estimates
 are estimates, never measured active time; summed parallel effort is not elapsed.
 
-Supply compact task evidence and relevant skill references, not the full parent
-history. Use the adapter's real role/model delivery and event/receipt mechanisms.
-Reuse useful research sessions for implementation when supported. Independent
+Choose the least capable reliable model per bounded node, preferring fast cheap
+executors. Default to zero-knowledge dispatch: fresh context with a self-contained
+contract and only the required inputs, not the parent conversation or unrelated
+history. Lead keeps the global context and controls dependencies, concurrency and
+acceptance. Use the adapter's real role/model delivery and event/receipt mechanisms.
+Reuse research context within the same bounded task when it avoids rework. Independent
 Reviewer/Tester/challenger runs remain fresh; task resumption does not remove them.
 
 At joins, verify the accepted result of each predecessor and test the combined
