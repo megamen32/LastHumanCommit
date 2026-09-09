@@ -15,4 +15,6 @@ or a secret file in one step; never build secret handoff infrastructure.
 
 The plugin reads the explicit LHC marker and role source but never edits project
 instructions. Missing or unknown roles remain untouched. Hermes owns self-
-improvement natively; do not add the LHC retrospective loop here.
+improvement natively; invoke and verify that owner at the mandatory120-minute
+unfinished-work checkpoint and on correction/overrun/repeated failure. Do not
+duplicate its storage or waive the cadence because native learning exists.

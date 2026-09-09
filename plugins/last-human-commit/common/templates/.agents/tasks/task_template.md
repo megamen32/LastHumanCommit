@@ -6,6 +6,9 @@ Current project inputs / constraints / verified state:
 Applicable product learning / source / freshness:
 Applicable LHC method learning / source / freshness:
 Accepted business outcome / Definition of Done:
+Stopping condition (no next feature once satisfied):
+Original whole-objective start / whole-delivery forecast / basis:
+Remaining required blockers / revised remaining forecast against original:
 Exact business canary:
 Cheapest sufficient proof:
 Actual production consumer path:
@@ -35,6 +38,7 @@ Gate value test:
 Consequential-action / active-harness boundary:
 Cycle estimates (cycle / minimum / maximum / actual):
 Time-guard state: `.agents/shared-session/time/<cycle-id>.json`
+Persistent session learning checkpoint / last verified outcome / next due:
 Compaction count / last loaded count:
 Current handoff: `.agents/shared-session/compaction/<session-id>/current-handoff.md`
 

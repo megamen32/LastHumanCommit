@@ -45,6 +45,23 @@ reserved for explicitly selected legacy recovery, including rollback.
 
 ## Current inputs and both learning loops
 
+Keep one cumulative clock and original whole-delivery forecast for the user's
+objective. New stages, task cards and compactions never reset it. At every
+completed vertical result check the accepted stopping condition before starting
+another stage; classify discoveries as required blockers, selected remaining
+scope or Proposed. Never substitute phase estimates for the total.
+
+Self-improvement is mandatory every120 wall-clock minutes during unfinished
+work, and immediately after user correction, overrun or repeated route failure.
+Use `common/protocols/SELF_IMPROVE.md` and the persistent time-guard checkpoint.
+Notification is not completion: record observation, one verified method change
+or justified no-change, and next route before acknowledging it. Keep inspection
+within five minutes; do not manufacture work. Workers report evidence to Lead;
+Lead owns closure, and standalone agents own their own closure. Hermes uses its
+native learning owner without a cadence exemption. With no loaded hook, check
+manually at work boundaries and report the missing automation. No idle wakeups
+or new memory-write permissions are implied.
+
 Start with the latest objective/corrections, actual project state/constraints,
 and relevant verified learning from prior cycles. Retrieve applicable product
 and LHC method improvements from existing indexes, verify freshness and use them

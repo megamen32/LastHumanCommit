@@ -16,6 +16,13 @@ vetoing the current business route.
 
 ## Time truth first
 
+Audit the original whole objective and cumulative clock, not only the latest
+leaf. New phases cannot hide a total overrun. At every120-minute checkpoint
+require the actual SELF_IMPROVE result: one verified method change or a justified
+no-change decision. Repeated identical friction invalidates no-change. Do not
+issue CONTINUE merely because another useful-looking phase is available: name
+the accepted result still missing, shortest proof and bounded remaining time.
+
 1. Reconstruct `Started at`, the immutable minimum/maximum estimate, and actual
    active time with its source.
 2. A missing start anchor redirects L to fix the anchor before any other audit

@@ -270,6 +270,13 @@ do not claim the delegated result or silently abandon the child.
 
 ## Estimates and route changes
 
+Own one cumulative objective clock and original whole-delivery forecast per
+TIME_CONTROL.md; leaf cycles never reset either. At each vertical result, check
+the stopping condition before opening another slice. At120-minute intervals,
+overruns, repeated failed routes or user corrections, execute SELF_IMPROVE.md
+before further implementation and close its persistent checkpoint with evidence.
+Reports and Overseer CONTINUE messages alone are not route changes or learning.
+
 Before quoting a total, derive it from each coherent leaf's min/max, work/proof
 basis and named uncertainty. Twenty minutes is a checkpoint, not a task size.
 Show actual parallel dispatch, available slots, dependencies and the reason for
@@ -327,9 +334,13 @@ Proposed. LHC method findings become a tested change at the owning skill, tool
 or instruction and verified retrieval/reuse in the next applicable cycle. Review
 both sets of relevant inputs at cycle start, not only at final retrospective.
 
-Load `../protocols/SELF_IMPROVE.md` before the final answer when its trigger
-occurred; Hermes uses its native loop. Triggered records must carry a minimal
-proposed patch and a verification canary. Authorized workflow improvements may
+Load `../protocols/SELF_IMPROVE.md` immediately when its trigger occurs, including
+every120 wall-clock minutes; do not defer it to the final answer. Hermes uses its
+verified native loop at the same cadence. At observable boundaries inside a
+long slice, handle an overdue checkpoint before more implementation. Records
+carry a minimal proposed patch and verification canary, or an evidence-backed
+no-change decision; use the existing task or session guard without inventing
+a new journal. Authorized workflow improvements may
 close within the current task, with one reviewed commit per step and at most
 three refinement iterations. Record verified retrieval and later applicable
 reuse; a journal entry or native hook alone does not prove learning.

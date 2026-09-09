@@ -1,5 +1,34 @@
 # Business time control
 
+## One objective, one cumulative clock
+
+Before implementation, name the accepted result and stopping condition, retain
+one objective start anchor, and estimate the whole remaining delivery path,
+including integration, deployment, proof and external waits. Keep measured
+wall-clock separate from effort and from unmeasured active time. Leaf estimates
+do not replace this total. New phases, task cards, workers and compactions never
+reset the objective clock or its original forecast.
+
+At each completed vertical result, compare the accepted outcome with what is
+already proven. If complete, deliver it; do not open another feature. Otherwise
+name only the remaining required blockers and update their remaining forecast
+against the original total. Classify new discoveries as required blocker,
+authorized remaining scope, or Proposed; discovery alone does not select work.
+
+At an overrun or two equivalent failed routes, stop adding work. Choose one
+bounded continuation justified by evidence or change approach. An Overseer
+CONTINUE receipt must name the achieved user result, concrete remaining blocker,
+next proof and time bound; approving another phase without the cumulative cost
+is not control. Never weaken accepted scope silently to make a budget green.
+
+Every120 wall-clock minutes during unfinished work, run SELF_IMPROVE.md before
+further implementation at the next observable boundary, even inside one slice.
+The persistent hook checkpoint survives phase
+changes and remains due until the improvement result is recorded. Wall time is
+a trigger, not a claim about active work; after idle time check on resumption,
+without waking an idle agent. Missing hooks require an explicit manual check at
+observable work boundaries, never a silent exemption.
+
 Every declared work cycle has its own immutable `minimum / maximum active
 minutes` estimate before execution. A cycle is one coherent route to one
 business proof: direct Lead work, one Worker lane, one real canary, one review,

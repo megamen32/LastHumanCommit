@@ -20,7 +20,12 @@ skill/tool/instruction → independent verification → retrievable publication 
 actual authority → next applicable reuse. Product success does not by itself prove
 the method improved. The next cycle consumes applicable outcomes of both loops.
 
-The LHC change/record procedure is triggered only when at least one concrete event occurred:
+Run this procedure at the next observable work boundary, including between tool
+calls inside a long slice, when any trigger occurs:
+
+- 120 wall-clock minutes have elapsed during unfinished work since the previous
+  completed checkpoint (or objective/session start). New cycles and compaction
+  never restart this timer. An idle agent checks on resumption; do not wake it.
 
 - the user corrected LHC's behavior or instruction interpretation;
 - the route materially failed, exceeded its maximum, or required RETHINK;
@@ -28,7 +33,7 @@ The LHC change/record procedure is triggered only when at least one concrete eve
 - the user explicitly requested a retrospective;
 - a method produced a reusable, unexpectedly effective result.
 
-Ordinary successful tasks add nothing. This is a compact evidence record plus a
+Short ordinary successful tasks add nothing. This is a compact evidence record plus a
 bounded patch loop, not a second planning cycle and not permission to expand the
 user's task.
 
@@ -37,22 +42,49 @@ substantive signal. For one, use `../skills/improve-workflow/SKILL.md`. No signa
 means no ritual entry. The outcome is a retrievable change with evidence and
 later applicable reuse, not merely a growing journal.
 
-Hermes is excluded: its native post-response memory/skill review and `/learn`
-flow own this concern. Do not run a duplicate LHC loop through Hermes.
-Verify the native owner actually saved and retrieved the improvement; a native
+Hermes uses its native post-response memory/skill review and `/learn` as the
+storage/execution owner, but is not exempt from the mandatory cadence. Invoke
+and verify that owner when due; do not add a duplicate memory system.
+For a changed method, verify the native owner actually saved and retrieved the improvement; a native
 hook alone does not prove learning occurred.
+
+## Mandatory checkpoint, bounded to useful work
+
+First compare the original accepted outcome, cumulative elapsed time and total
+forecast with demonstrated user results. Name repeated operations, self-caused
+rework and remaining blockers. Select at most one useful method correction;
+prefer removing a redundant step or changing the next action over adding rules.
+Budget this inspection to five minutes. Safe shutdown, rollback and delivery of
+already accepted work may complete before the checkpoint; do not interrupt them
+or start another feature to evade the checkpoint.
+
+If a concrete signal exists, apply one authorized owning-method change, verify
+it with the original failure or closest reproducible check, and record its path
+and evidence in the existing task or session guard (a task card is optional).
+Delegate a larger unrelated repair as Proposed
+with an owner and next check; it must not consume the product task indefinitely.
+If there is no useful correction, record a short evidence-backed no-change
+decision. A timer mandates inspection, not fabricated learning or unnecessary
+edits. Repeated no-change despite the same failure is a failed checkpoint.
+
+The guard's explicit acknowledgement records observation, method change or
+justified no-change, verification and next route. Emitting a notification,
+writing a retrospective, restarting a cycle, or promising future improvement
+does not close it. A due checkpoint stays due until acknowledged; never report
+verification or later reuse that did not happen. This checkpoint does not grant
+new memory-write, publication, destructive-action or deployment authority.
 
 ## Record
 
-Before the final answer on a triggered non-Hermes task, append one entry under
-12 lines to `.agents/last-human-commit/self-improve.md`; if project writing is
-unsafe, put the same compact entry in the root task record.
+At a triggered checkpoint, use the existing task record or session guard for a
+compact entry. No task card or separate learning journal is required. Existing
+native learning stores remain their own owners; preserve memory permissions.
 
 Record only:
 
 1. observable friction;
 2. the owning instruction and the minimal proposed patch: the exact file and
-   replacement text or diff. An entry without a patch is state `not actionable`;
+   replacement text or diff, or the evidence-backed reason no change is useful;
 3. missing skill/MCP/tool, if any;
 4. repeated operation/error count and evidence;
 5. verification canary: the smallest real check that proves the patch helps

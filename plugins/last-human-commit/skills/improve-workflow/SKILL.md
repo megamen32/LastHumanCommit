@@ -5,9 +5,23 @@ description: Convert observed failures and successful methods into tested, retri
 
 # Improve the factory, not just the journal
 
-Use after a meaningful reusable signal, or for a selected factory-improvement task.
+Mandatory at least every120 wall-clock minutes during unfinished work, and on
+user correction, maximum overrun or repeated route failure. The objective clock
+survives phase changes and compaction. Use the persistent lhc_time_guard checkpoint;
+notification is not completion. With no native hook, check manually at work
+boundaries; after idle periods check on resumption without background wakeups.
+Use also after a meaningful reusable signal, or for a selected factory-improvement task.
 A brief consideration is enough when there is no useful observation. Do not append
 four empty answers after every task.
+
+Keep inspection within five minutes and choose at most one actionable correction.
+Compare cumulative cost and accepted user results before selecting it. Record
+observation, changed method, verification and next route in the existing task,
+then explicitly acknowledge the checkpoint. Evidence-backed no-change is valid
+when no improvement is indicated; repeated failure makes that excuse invalid.
+Do not reset the clock, start a new feature, fabricate evidence or create a new
+memory system to satisfy this rule. See common/protocols/SELF_IMPROVE.md for the
+bounded loop; Hermes uses its verified native learning owner at the same cadence.
 
 ## Capture and place
 

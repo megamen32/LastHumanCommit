@@ -2,6 +2,12 @@
 
 Priority order: top first.
 
+## Mandatory learning and whole-objective control — selected2026-09-09
+
+- [ ] Persistent120-minute unfinished-work checkpoint, independent of leaf task parsing; evidence-backed acknowledgement and regression checks.
+- [ ] One cumulative objective forecast and stopping condition; bounded learning on overruns/corrections, no automatic scope expansion.
+- [ ] Version1.2.0 native plugin publication and installed loader proof; report actual automation support per harness.
+
 ## M1 — Clear reusable LHC
 
 Status: done

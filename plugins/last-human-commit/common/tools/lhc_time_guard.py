@@ -12,7 +12,7 @@ import re
 import subprocess
 import sys
 import tempfile
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -570,14 +570,148 @@ def compaction_hook(
     }
 
 
+def learning_path(cwd: Path, runtime: str, session_id: str) -> Path:
+    """Keep the parent clock independent of cards, cycle ids and handoffs."""
+
+    digest = hashlib.sha256(f"{runtime}\0{session_id}".encode()).hexdigest()
+    suffix = Path("shared-session") / "learning" / f"{digest}.json"
+    # Reuse a pre-existing ancestor clock before choosing a new storage owner.
+    for root in (cwd, *cwd.parents):
+        existing = root / ".agents" / suffix
+        if existing.is_file():
+            return existing
+        if (root / ".git").exists():
+            break
+    agents = find_agents_root(cwd) or cwd / ".agents"
+    git_root = next((root for root in (cwd, *cwd.parents) if (root / ".git").exists()), None)
+    if git_root is not None:
+        common = subprocess.run(
+            ["git", "-C", str(cwd), "rev-parse", "--path-format=absolute", "--git-common-dir"],
+            capture_output=True, text=True, check=True, timeout=2,
+        ).stdout.strip()
+        # Git's first worktree is the primary checkout, including separate git dirs.
+        worktrees = subprocess.run(
+            ["git", "--git-dir", common, "worktree", "list", "--porcelain"],
+            capture_output=True, text=True, check=True, timeout=2,
+        ).stdout.splitlines()
+        primary = next(line.removeprefix("worktree ") for line in worktrees
+                       if line.startswith("worktree "))
+        agents = Path(primary) / ".agents"
+    return agents / suffix
+
+
+def learning_checkpoint(args: argparse.Namespace, cwd: Path, session_id: str,
+                        *, acknowledge: bool = False) -> dict[str, Any]:
+    """Observe a persistent wall deadline; only an evidenced ack advances it."""
+
+    path = learning_path(cwd, args.runtime, session_id)
+    now = args.now or datetime.now().astimezone()
+    lock = path.with_suffix(".lock")
+    lock.parent.mkdir(parents=True, exist_ok=True)
+    with lock.open("a", encoding="utf-8") as handle:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        state = load_state(path)
+        if state is None:
+            if acknowledge:
+                raise ValueError("no observed session checkpoint exists")
+            state = {
+                "schema_version": 1,
+                "started_at": now.isoformat(),
+                "clock_source": "first native hook observation; wall time only",
+                "due_at": (now + timedelta(minutes=120)).isoformat(),
+                "last_observed_at": now.isoformat(),
+                "last_checkpoint": None,
+            }
+        # A backwards clock must not erase an already observed deadline.
+        observed = max(now, parse_time(state["last_observed_at"]))
+        due = observed >= parse_time(state["due_at"])
+        if acknowledge:
+            if not due or args.due_at != parse_time(state["due_at"]):
+                raise ValueError("checkpoint is not due or due-at does not match")
+            if now < parse_time(state["last_observed_at"]):
+                raise ValueError("acknowledgement clock precedes last observation")
+            evidence = {}
+            for field in ("observation", "verification", "accepted_result",
+                          "remaining_critical_path", "scope_review", "rework_review"):
+                value = getattr(args, field)
+                if not value.strip() or len(value) > 2048:
+                    raise ValueError(f"{field} must contain 1..2048 nonblank characters")
+                evidence[field] = value.strip()
+            outcome = "method_change" if args.method_change is not None else "no_change_reason"
+            value = getattr(args, outcome)
+            if not value.strip() or len(value) > 2048:
+                raise ValueError(f"{outcome} must contain 1..2048 nonblank characters")
+            evidence[outcome] = value.strip()
+            state["last_checkpoint"] = {
+                "due_at": state["due_at"], "acknowledged_at": now.isoformat(), **evidence,
+            }
+            state["due_at"] = (now + timedelta(minutes=120)).isoformat()
+            due = False
+        state["last_observed_at"] = observed.isoformat()
+        write_state(path, state)
+    prompt = ""
+    if due:
+        prompt = (
+            "MANDATORY LHC session/user-goal checkpoint: invoke improve-workflow now. "
+            "Review the overall accepted result, remaining critical path, scope expansion "
+            "and rework across ALL cycles; stop serial scope expansion. Record observation → "
+            "changed method → verification evidence, or an evidence-backed bounded no-change "
+            "reason. Notification, compaction, a fresh cycle or a new task card does NOT "
+            "acknowledge this checkpoint. Use lhc_time_guard.py checkpoint with --cwd, "
+            "--runtime, --session-id, --due-at and the required review/evidence fields. "
+            f"Session={session_id}; runtime={args.runtime}; due-at={state['due_at']}; "
+            f"first observed={state['started_at']}; state={path}. "
+            "This is wall-clock scheduling; active time: не контролировал."
+        )
+        if session_id == "unknown-session":
+            prompt += (
+                " Native session identity unavailable: this project/runtime fallback is shared; "
+                "per-session/user-goal isolation is NOT established."
+            )
+    return {"due": due, "due_at": state["due_at"], "state": str(path), "prompt": prompt}
+
+
 def hook(args: argparse.Namespace) -> dict[str, Any] | None:
-    """Adapt one native runtime hook to the existing persistent guard."""
+    """Emit parent checkpoints even when task discovery or compaction returns early."""
 
     raw = sys.stdin.read().strip()
     payload = json.loads(raw) if raw else {}
     if not isinstance(payload, dict):
         return None
     cwd = Path(str(payload.get("cwd") or os.getcwd())).expanduser().resolve()
+    session_id = str(payload.get("session_id") or payload.get("sessionID") or "unknown-session")
+    learning = learning_checkpoint(args, cwd, session_id)
+    try:
+        result = cycle_hook(args, payload, cwd)
+    except (OSError, ValueError, argparse.ArgumentTypeError) as exc:
+        # A malformed or future-dated card must not hide the parent obligation.
+        if not learning["due"]:
+            raise
+        result = {"cycle_error": type(exc).__name__}
+    if not learning["due"]:
+        return result
+    result = result or {}
+    if args.runtime == "codex":
+        if args.event.casefold() in {"precompact", "postcompact"}:
+            result["systemMessage"] = "\n\n".join(
+                str(value) for value in (result.get("systemMessage"), learning["prompt"]) if value)
+        else:
+            specific = result.setdefault("hookSpecificOutput", {"hookEventName": args.event})
+            specific["additionalContext"] = "\n\n".join(
+                str(value) for value in (specific.get("additionalContext"), learning["prompt"]) if value)
+    else:
+        result["prompt"] = "\n\n".join(
+            str(value) for value in (result.get("prompt"), learning["prompt"]) if value)
+        if "handoff" in result:
+            # OpenCode's compacting consumer reads handoff, not prompt.
+            result["handoff"] = f"{result['handoff']}\n\n{learning['prompt']}"
+    return result
+
+
+def cycle_hook(args: argparse.Namespace, payload: dict[str, Any],
+               cwd: Path) -> dict[str, Any] | None:
+    """Adapt task-local timing and compaction without owning the parent clock."""
+
     if args.event.casefold() in {"userpromptsubmit", "chat.message"}:
         agents_root = find_agents_root(cwd)
         prompt = payload.get("prompt")
@@ -711,6 +845,18 @@ def parser() -> argparse.ArgumentParser:
     native.add_argument("--event", required=True)
     native.add_argument("--now", type=parse_time)
     native.add_argument("--idle-cap-seconds", type=positive, default=300)
+    checkpoint = subcommands.add_parser("checkpoint", help="acknowledge a due session learning review")
+    checkpoint.add_argument("--cwd", type=Path, required=True)
+    checkpoint.add_argument("--runtime", choices=("codex", "opencode", "hermes"), required=True)
+    checkpoint.add_argument("--session-id", required=True)
+    checkpoint.add_argument("--due-at", type=parse_time, required=True)
+    checkpoint.add_argument("--now", type=parse_time)
+    for field in ("observation", "verification", "accepted-result", "remaining-critical-path",
+                  "scope-review", "rework-review"):
+        checkpoint.add_argument(f"--{field}", required=True)
+    outcome = checkpoint.add_mutually_exclusive_group(required=True)
+    outcome.add_argument("--method-change")
+    outcome.add_argument("--no-change-reason")
     return root
 
 
@@ -719,7 +865,11 @@ def main() -> int:
 
     args = parser().parse_args()
     try:
-        result = check(args) if args.command == "check" else hook(args)
+        if args.command == "checkpoint":
+            result = learning_checkpoint(args, args.cwd.expanduser().resolve(),
+                                         args.session_id, acknowledge=True)
+        else:
+            result = check(args) if args.command == "check" else hook(args)
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         raise SystemExit(f"time guard error: {exc}") from exc
     if result is not None:

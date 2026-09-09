@@ -11,6 +11,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 
 ROOT = Path(__file__).resolve().parents[1]
 TOOL = ROOT / "src/common/tools/lhc_time_guard.py"
@@ -18,6 +20,11 @@ SPEC = importlib.util.spec_from_file_location("lhc_time_guard_test", TOOL)
 assert SPEC is not None and SPEC.loader is not None
 TIME_GUARD = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(TIME_GUARD)
+
+
+@pytest.fixture(autouse=True)
+def isolated_git_project(tmp_path):
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
 
 
 def run_guard(state: Path, now: str, active_minutes: int, *extra: str) -> dict[str, object]:

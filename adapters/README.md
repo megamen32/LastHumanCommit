@@ -32,9 +32,12 @@ plugins, or opaque-handle protocols exist in this canon.
 
 ## Self-improve
 
-Codex, OpenCode, Claude Code, and ZCode load `SELF_IMPROVE.md` only on its
-concrete trigger. Hermes uses its native memory/skill loop. Ordinary success
-adds no retrospective record.
+All adapters apply the120-minute unfinished-work checkpoint and immediate
+correction/overrun/repeated-failure triggers in `SELF_IMPROVE.md`. Hermes invokes
+its verified native memory/skill owner at the same cadence. Ordinary short
+success adds no retrospective record; a timed checkpoint may close with an
+evidence-backed no-change decision. Hook availability must be proven per loader;
+unsupported loaders require explicit manual checks, not a silent exemption.
 
 `scripts/lhc-block` remains a narrow marker utility, not an installer, daemon,
 scheduler, or adapter manager.
