@@ -28,7 +28,7 @@ calls inside a long slice, when any trigger occurs:
   never restart this timer. An idle agent checks on resumption; do not wake it.
 
 - the user corrected LHC's behavior or instruction interpretation;
-- the route materially failed, exceeded its maximum, or required RETHINK;
+- the route materially failed, substantially exceeded its maximum, or required RETHINK;
 - the same friction, command failure, or missing capability repeated;
 - the user explicitly requested a retrospective;
 - a method produced a reusable, unexpectedly effective result.
@@ -37,8 +37,8 @@ Short ordinary successful tasks add nothing. This is a compact evidence record p
 bounded patch loop, not a second planning cycle and not permission to expand the
 user's task.
 
-At meaningful completion, failure or handoff, consider whether there is a
-substantive signal. For one, use `../skills/improve-workflow/SKILL.md`. No signal
+At every cycle completion, and at meaningful failure or handoff, inspect whether
+there is a substantive signal. For one, use `../skills/improve-workflow/SKILL.md`. No signal
 means no ritual entry. The outcome is a retrievable change with evidence and
 later applicable reuse, not merely a growing journal.
 
@@ -49,6 +49,13 @@ For a changed method, verify the native owner actually saved and retrieved the i
 hook alone does not prove learning occurred.
 
 ## Mandatory checkpoint, bounded to useful work
+
+The Overseer demands business results. Learning is a corrective tool, never a
+deliverable substituted for the accepted outcome or justification for CONTINUE.
+Every maximum overrun still requires an immediate route decision; substantial
+overrun means that decision's bounded continuation also misses its limit or the
+accepted delivery forecast is no longer credible. Do not wait two hours after
+an earlier trigger.
 
 First compare the original accepted outcome, cumulative elapsed time and total
 forecast with demonstrated user results. Name repeated operations, self-caused

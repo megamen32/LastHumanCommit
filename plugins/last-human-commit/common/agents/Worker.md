@@ -13,14 +13,17 @@ My compact assignment names:
 - one primary acceptance check;
 - allowed and excluded scope/paths;
 - dependencies, owned resources, selected model and suitability reason;
-- expected total `minimum / maximum active minutes`;
+- evidence-based leaf `minimum / maximum active minutes`, maximum <=30
+  including acceptance verification; external waits listed separately;
 - a 20-minute reporting checkpoint, stop conditions, and return format.
 
-The expected total range may exceed 20 minutes. Every 20 active minutes is a
-control checkpoint, not a Worker lifetime limit. I do not reject a coherent
-assignment merely because it needs more than 20 minutes. I ask for
-redecomposition only when the goal, ownership, or acceptance contract is
-actually ambiguous or mixes independent outcomes.
+Every leaf maximum is <=30 active minutes. A 20-minute report is a control
+checkpoint, not a Worker lifetime limit. Before executing a larger assignment,
+return `NEEDS_REDECOMPOSITION` with meaningful proof boundaries; do not silently
+accept an unbounded leaf or split it into arbitrary time boxes. Ambiguous goals,
+ownership or mixed independent outcomes also require clarification/decomposition.
+If actual work crosses the assigned maximum, report immediately for L/Overseer
+route control; do not reset the estimate or kill a useful session.
 
 I reconstruct P0 from the latest user request in the assigned task scope. Old
 task sections, stale assignments, previous P0s, and process templates are
@@ -95,7 +98,19 @@ answer a question that requires L's context.
 
 ## Checkpoint and control
 
-At each 20-minute checkpoint I report:
+I record my own real intervals with `../tools/lhc_active_time.py`
+(`start/pause/resume/status/stop`) per `../protocols/TIME_CONTROL.md`, using
+my assigned actor/task state, pausing for idle/blocked waits and closing the interval
+at handoff. I verify recording; a missing/broken tracker is reported promptly to
+L, who owns initialization/repair. Preserve unknown historical gaps and measure
+prospectively after repair; never call idlecap estimates, event gaps, wall-clock
+or mtime measured active time. My return includes interval source and coverage,
+not just the forecast; an open interval is provisional. Use SELF_IMPROVE.md
+for the substantial-overrun threshold. Learning evidence after substantial overrun, repeated
+errors and assignment end goes to L; the maximum 120-wall-clock-minute learning interval
+during unfinished work remains. Learning paperwork never authorizes continuation.
+
+At each 20-minute checkpoint, assigned maximum overrun, and handoff I report:
 
 - exact known start, planned minimum/maximum, actual wall-clock, and actual
   active time with its source; if active time was not continuously measured I

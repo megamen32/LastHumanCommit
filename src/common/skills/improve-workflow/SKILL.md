@@ -6,7 +6,9 @@ description: Convert observed failures and successful methods into tested, retri
 # Improve the factory, not just the journal
 
 Mandatory at least every120 wall-clock minutes during unfinished work, and on
-user correction, maximum overrun or repeated route failure. The objective clock
+user correction, substantial overrun, repeated route failure and cycle completion.
+Every maximum overrun requires a route decision. Overseer demands the accepted
+business result; a learning receipt never replaces it or justifies CONTINUE. The objective clock
 survives phase changes and compaction. Use the persistent lhc_time_guard checkpoint;
 notification is not completion. With no native hook, check manually at work
 boundaries; after idle periods check on resumption without background wakeups.

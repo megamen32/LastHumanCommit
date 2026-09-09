@@ -143,6 +143,7 @@ def render_prompt(
         "reported": "явно передано вызывающей стороной",
         "task-card": "явно записано в task-card",
         "hook-observed": "наблюдалось хуком; точное active-time не контролировалось",
+        "interval-ledger": "явные monotonic интервалы; открытый интервал предварительный",
     }[active_source]
     lines = [
         BUSINESS_FIRST_HEADER,
@@ -741,6 +742,36 @@ def cycle_hook(args: argparse.Namespace, payload: dict[str, Any],
     state = card.parents[1] / "shared-session" / "time" / f"{card.stem}-{digest}.json"
     lock = state.with_suffix(".lock")
     lock.parent.mkdir(parents=True, exist_ok=True)
+    actor = str(payload.get("session_id") or payload.get("sessionID") or "unknown-session")
+    actor_digest = hashlib.sha256(actor.encode()).hexdigest()[:12]
+    interval_state = state.parent / f"{card.stem}-{actor_digest}.active.json"
+    interval_report = None
+    measurement_note = ""
+    if interval_state.exists():
+        measured = subprocess.run(
+            [sys.executable, str(Path(__file__).with_name("lhc_active_time.py")),
+             "status", "--state", str(interval_state)],
+            capture_output=True, text=True, timeout=3, check=False,
+        )
+        try:
+            candidate = json.loads(measured.stdout)
+            if (measured.returncode == 0 and isinstance(candidate, dict)
+                    and actor != "unknown-session"
+                    and candidate.get("actor") == actor
+                    and candidate.get("task") == card.stem
+                    and candidate.get("status") in {"running", "paused"}):
+                interval_report = candidate
+        except ValueError:
+            pass
+    if interval_report is None:
+        measurement_note = (
+            "Active interval accounting is missing or unavailable. Lead must start or repair "
+            f"lhc_active_time.py with --state {interval_state}, --actor {actor}, "
+            f"--task {card.stem} on start before new work; "
+            "resume an existing stopped/paused ledger explicitly without resetting its total; "
+            "pause for idle/user waits and resume for execution. Historical unknown time stays "
+            "unknown. Overseer must require repair, not accept a recurring disclaimer."
+        )
     with lock.open("a", encoding="utf-8") as handle:
         fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
         previous = load_state(state)
@@ -750,9 +781,10 @@ def cycle_hook(args: argparse.Namespace, payload: dict[str, Any],
             elapsed = max(0, int((now - parse_time(last_tick_raw)).total_seconds()))
             tracked_seconds += min(elapsed, args.idle_cap_seconds)
         active_minutes = tracked_seconds // 60
+        active_source = "hook-observed"
         if explicit_active is not None:
-            active_minutes = max(active_minutes, explicit_active)
-            tracked_seconds = max(tracked_seconds, explicit_active * 60)
+            active_minutes = explicit_active
+            active_source = "task-card"
         check_args = argparse.Namespace(
             state=state,
             cycle_id=card.stem,
@@ -766,9 +798,9 @@ def cycle_hook(args: argparse.Namespace, payload: dict[str, Any],
             completed_file=[],
             gate=[],
             instruction=[],
-            controlled="yes" if explicit_active is not None else "no",
+            controlled="unknown",
             route_changed="unknown",
-            active_source="task-card" if explicit_active is not None else "hook-observed",
+            active_source=active_source,
         )
         result = check(check_args)
         persisted = load_state(state) or {}
@@ -778,20 +810,32 @@ def cycle_hook(args: argparse.Namespace, payload: dict[str, Any],
         write_state(state, persisted)
 
     prompt = str(result.get("prompt") or "")
+    if prompt or args.event.casefold() in {"sessionstart", "userpromptsubmit", "chat.message"}:
+        prompt = "\n\n".join(value for value in (prompt, measurement_note) if value)
     if args.event.casefold() in {"userpromptsubmit", "chat.message"}:
         wall_minutes = int((now - started_at).total_seconds() // 60)
-        active_source = "task-card" if explicit_active is not None else "hook-observed"
         source_note = (
             "task-card explicitly reports active time"
             if explicit_active is not None
             else "hook-observed estimate only; exact active time was not continuously controlled"
         )
+        interval_note = ""
+        if interval_report is not None:
+            interval_note = (
+                f" Separate measurement source=interval-ledger: {interval_report['measured_active_seconds']} "
+                f"seconds at {interval_state}; coverage begins {interval_report['wall_anchor_utc']}; "
+                f"open interval provisional={interval_report['measurement_still_open']}. "
+                "Operator-declared intervals, not CPU time. Does not replace the objective's "
+                "reported history; do not sum overlapping or unknown intervals."
+            )
         status = (
             "LHC timing truth for any status/AskHuman answer: "
             f"started {started_at.isoformat()}; planned {minimum}–{maximum} active minutes; "
-            f"actual {active_minutes} active minutes ({source_note}); "
+            f"{'estimated' if active_source == 'hook-observed' else 'reported'} "
+            f"{active_minutes} active minutes ({source_note}); "
             f"{wall_minutes} wall-clock minutes; active source={active_source}. "
             "Never infer an unknown start or active duration from file mtime or wall-clock."
+            + interval_note
         )
         prompt = "\n\n".join(value for value in (prompt, status) if value)
     restored_text = ""

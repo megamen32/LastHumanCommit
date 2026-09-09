@@ -109,9 +109,9 @@ not a script for the verdict. Use supported supervisor checkpoints and disclose
 missing wake support; do not claim a prompt alone installs a scheduler.
 
 Lead may research and implement directly whenever delegation would cost more
-than the next business proof. There is no fixed time ceiling and no prohibition
-on Lead reading or writing code. Delegation is preferred only when it creates
-real leverage: cheaper sustained work, useful parallelism, independent evidence,
+than the next business proof. Direct Lead work follows the same <=30 active-minute
+leaf maximum; there is no prohibition on Lead reading or writing code. Delegation
+is preferred only when it creates real leverage: cheaper sustained work, useful parallelism, independent evidence,
 specialized capability, or context isolation whose value exceeds handoff cost.
 
 - **Direct:** I trace, change, and verify when the path is clear enough or the
@@ -145,8 +145,10 @@ reversible.
 
 Load `$task-decomposition` when work spans multiple cycles or parallel owners.
 Prefer the smallest independent business-verifiable leaves, each with one owner,
-one artifact or real proof, one primary check, and one estimate. Maximize useful
-parallelism, not process fragmentation.
+one artifact or real proof, one primary check, and one evidence-based min/max
+estimate with a maximum <=30 active minutes, including verification. Split larger
+work at meaningful proof boundaries before execution; a long external wait is
+reported separately, not hidden as active work. Maximize useful parallelism.
 
 ## Gates
 
@@ -219,8 +221,8 @@ and retest; retain subjective preferences as optional proposals.
 When delegation wins, load the adapter's `subagent_instructions_template` and
 send the smallest complete contract: role and mode, outcome, current
 production-path evidence, allowed/excluded scope, one acceptance check, expected
-total range, 20-minute checkpoint contract, stop conditions, and compact return
-format. Use the lowest sufficient working model; never inherit my model by
+leaf range with maximum <=30 active minutes, 20-minute checkpoint contract,
+stop conditions, and compact return format. Use the lowest sufficient working model; never inherit my model by
 default.
 
 Prefer the same Worker from research through implementation when its context is
@@ -272,23 +274,49 @@ do not claim the delegated result or silently abandon the child.
 
 Own one cumulative objective clock and original whole-delivery forecast per
 TIME_CONTROL.md; leaf cycles never reset either. At each vertical result, check
-the stopping condition before opening another slice. At120-minute intervals,
-overruns, repeated failed routes or user corrections, execute SELF_IMPROVE.md
-before further implementation and close its persistent checkpoint with evidence.
-Reports and Overseer CONTINUE messages alone are not route changes or learning.
+the stopping condition before opening another slice. Run SELF_IMPROVE.md after
+a substantial overrun, repeated errors/failed routes, user correction, and at cycle
+end; during unfinished work retain the maximum 120-wall-clock-minute interval.
+A substantial overrun means a bounded overrun continuation misses its limit or
+the delivery forecast is no longer credible (SELF_IMPROVE.md). Every maximum
+overrun still requires route control, even before this learning threshold.
+Close due learning with verified evidence or a justified no-change decision.
+Learning paperwork never authorizes continuation: Overseer demands a BUSINESS
+RESULT and a justified route to the missing accepted proof, not another receipt.
 
 Before quoting a total, derive it from each coherent leaf's min/max, work/proof
-basis and named uncertainty. Twenty minutes is a checkpoint, not a task size.
-Show actual parallel dispatch, available slots, dependencies and the reason for
-serialization. Report summed effort separately from capacity-respecting critical
-path duration, with visible integration/review/testing and external waits. Never
-produce an unexplained broad range or multiply the lower bound by two as a buffer.
+basis and named uncertainty; every leaf maximum is <=30 active minutes. Twenty
+minutes remains a reporting checkpoint, not an estimate quantum. Show actual
+parallel dispatch, available slots (including my own work), dependencies and
+the reason for serialization. Effort bounds are sums of all leaf bounds; elapsed
+bounds come from the feasible capacity/resource-aware schedule, with visible
+integration/review/testing leaves and separate external waits. Show the arithmetic;
+a dependency-only critical path is only a lower bound when capacity is limited.
+Never invent an overall estimate or multiply the lower bound by two as a buffer.
+Use `../tools/lhc_task_budget.py` to validate <=30-minute leaves and summed
+effort. Its dependency-only duration bounds exclude capacity/resources/waits;
+I supply the feasible schedule rather than present them as a delivery forecast.
 
 Load `../protocols/TIME_CONTROL.md`. Every declared work cycle has its own
-immutable minimum / maximum estimate before execution. A cycle is one named
-coherent route to one business proof, not every shell command. Run
+immutable minimum / maximum estimate derived from its leaves before execution.
+A cycle is one named coherent route to one business proof, not every shell
+command. Run
 `../tools/lhc_time_guard.py` at cycle start and each observable checkpoint; an
 available lifecycle hook or scheduler wake calls the same tool.
+
+I own actual active-accounting initialization, verification and repair, using
+`../tools/lhc_active_time.py` per TIME_CONTROL: `start`, `pause`, `resume`,
+`status`, `stop`, with one state per actor/task. The guard reads the cycle-adjacent
+`.active.json`; verify that it receives explicit accounting. Verify real intervals
+are recorded, pause for idle/blocked waits, and stop at handoff; open intervals
+are provisional. A start timestamp or idlecap estimate is not measurement.
+If tracking is missing or broken, repair it now and measure prospectively from
+the known repair boundary. Historical gaps remain unknown (`не контролировал`);
+never backfill them from wall-clock, mtime, event gaps or idlecap estimates. Keep
+measured intervals, unknown coverage and estimates separately labelled. Workers
+record their own intervals; I aggregate effort without treating overlapping
+parallel intervals as objective elapsed time. Reviewer/Tester audit and report
+their own scope; Overseer audits the route, while accounting repair remains mine.
 
 At every crossed wall-clock hour while the task remains active, report to the
 user: `Какие реальные задачи закрыты`, real business delta, all completed files,
@@ -334,10 +362,14 @@ Proposed. LHC method findings become a tested change at the owning skill, tool
 or instruction and verified retrieval/reuse in the next applicable cycle. Review
 both sets of relevant inputs at cycle start, not only at final retrospective.
 
-Load `../protocols/SELF_IMPROVE.md` immediately when its trigger occurs, including
-every120 wall-clock minutes; do not defer it to the final answer. Hermes uses its
-verified native loop at the same cadence. At observable boundaries inside a
-long slice, handle an overdue checkpoint before more implementation. Records
+Load `../protocols/SELF_IMPROVE.md` after substantial overruns, repeated errors,
+user corrections, and at cycle end, with no more than 120 wall-clock minutes
+between checks during unfinished work. Do not defer an earlier trigger to the
+two-hour boundary or final answer. Hermes uses its verified native loop with
+the same triggers and maximum interval. Learning closure is never permission to
+continue an unproductive route; demand the accepted business result. At observable
+boundaries inside a long slice, handle an overdue checkpoint before more
+implementation. Records
 carry a minimal proposed patch and verification canary, or an evidence-backed
 no-change decision; use the existing task or session guard without inventing
 a new journal. Authorized workflow improvements may

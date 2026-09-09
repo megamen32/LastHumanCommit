@@ -38,7 +38,9 @@ estimate of their enclosing cycle; do not create an estimate per shell command.
 ## Start anchor
 
 Before setting an anchor, construct the estimate from the work. Twenty minutes
-is a reporting interval, not a task size or estimate quantum. Every coherent
+is a reporting interval; each execution leaf has a maximum of 30 minutes.
+Split larger leaves into independently verifiable results before dispatch;
+external waits are named separately, never disguised as completed work. Every coherent
 leaf has a minimum/maximum, a basis in known work or comparable evidence, and a
 named uncertainty explaining the range. Do not mechanically double a minimum.
 
@@ -48,6 +50,13 @@ path or planned waves, using the maximum of concurrent lanes. Show integration,
 review and real-use testing where required, plus external waits separately.
 Explain why ready independent work must be serialized. A dependency-only graph
 duration is a lower bound, not a complete forecast when capacity is constrained.
+
+Validate the leaf JSON plan with `../tools/lhc_task_budget.py PLAN.json` before
+dispatch. It rejects invalid leaves and cycles and computes sums and dependency
+bounds. Its parallel duration is explicitly a lower bound; show the actual slot
+assignment or waves before calling that number a delivery forecast. Include all
+required integration and acceptance work. Never replace the computed effort
+with an unrelated top-level estimate.
 
 Preserve the original estimate for control. A revised remaining-work forecast
 must explain the new evidence and show the old estimate; it cannot reset the
@@ -63,9 +72,27 @@ A cycle does not start before its task record carries
 - No hook available: capture `date --iso-8601=seconds` at cycle start and name
   the source `manual clock`.
 
-Wall-clock and active minutes are computed from this anchor, never from file
-mtimes or guesses. If active time was not continuously measured, report
-`не контролировал`. Overseer treats a missing anchor as a redirect-level finding.
+Wall-clock comes from this anchor. Active time requires explicit measured work
+intervals, never file mtimes, the objective's wall-clock or capped hook gaps.
+L owns starting, pausing, resuming and closing interval accounting; each executor
+owns its own intervals and reports them without double-counting concurrent work
+as delivery time. Use `../tools/lhc_active_time.py` with state under the existing
+`.agents/shared-session/time/` directory. Pause when yielding to the user or
+waiting without doing work; resume before execution. Record missing lifecycle
+coverage or interrupted intervals as gaps, not measured work.
+Historical `не контролировал` stays honest, but L must repair missing accounting
+before new execution. Overseer enforces that repair and checks the resulting
+measurement evidence; a disclaimer alone never closes the finding.
+
+For a native guard's discovered work card, use the exact state path and actor/task
+identity printed by its repair prompt: `<card-stem>-<session-sha256-prefix>.active.json`.
+The guard verifies both identities. Measurements cover only their recorded
+intervals, remain separate from the card's historical total, and never erase or
+silently add to it. Explicitly resume a stopped ledger to retain its prior total
+while excluding the stopped gap. Missing native session identity cannot prove
+isolated ownership; use an explicitly owned standalone ledger and disclose that
+the native guard cannot bind it. The tool measures declared work intervals,
+not CPU usage; pause/resume discipline is owned by the executor, not inferred.
 
 Use `../tools/lhc_time_guard.py` at cycle start and every observable checkpoint.
 When the harness exposes lifecycle hooks or scheduler wakeups, connect the same

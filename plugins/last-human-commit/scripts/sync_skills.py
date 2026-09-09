@@ -191,11 +191,13 @@ def main() -> int:
                 for error in projection_errors:
                     print(f"projection error: {error}", file=sys.stderr)
                 return 1
-        tool_errors = sync_tool(
-            plugin_root().parent.parent / "src" / "common" / "tools" / "lhc_time_guard.py",
-            plugin_root() / "tools" / "lhc_time_guard.py",
-            args.check,
-        )
+        tool_errors = []
+        for tool_name in ("lhc_time_guard.py", "lhc_active_time.py", "lhc_task_budget.py"):
+            tool_errors += sync_tool(
+                plugin_root().parent.parent / "src" / "common" / "tools" / tool_name,
+                plugin_root() / "tools" / tool_name,
+                args.check,
+            )
         if tool_errors:
             for error in tool_errors:
                 print(f"parity error: {error}", file=sys.stderr)

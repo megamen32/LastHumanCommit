@@ -46,7 +46,9 @@ Every declared work cycle has its own immutable minimum / maximum estimate
 before execution. Tiny commands share their enclosing coherent cycle.
 
 Actual active time always names its source. If it was not continuously measured,
-write `не контролировал`; never infer it from wall-clock or file mtime.
+write `не контролировал` for that historical gap; never infer it from wall-clock
+or file mtime. L owns starting/repairing `lhc_active_time.py` interval accounting
+before new work; each executor owns its intervals. Name pause/resume evidence.
 
 ## Decomposition — only when multiple leaves remain
 
@@ -58,7 +60,8 @@ write `не контролировал`; never infer it from wall-clock or file 
 - Delivery duration (capacity-respecting critical path, show formula):
 - External waits / evidence or unknown:
 
-Twenty minutes is a reporting checkpoint, not a task size. A wide range needs
+Each leaf maximum is at most 30 minutes; split larger leaves before dispatch.
+Twenty minutes remains a reporting checkpoint. A wide range needs
 an identified uncertainty and a narrowing probe, not a doubled global buffer.
 Keep the original estimate alongside any evidence-based remaining-work forecast.
 

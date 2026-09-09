@@ -1,0 +1,10 @@
+{
+  "tasks": [
+    {"id": "roles", "min_minutes": 5, "max_minutes": 15},
+    {"id": "budget", "min_minutes": 5, "max_minutes": 15},
+    {"id": "intervals", "min_minutes": 5, "max_minutes": 15},
+    {"id": "integration", "min_minutes": 5, "max_minutes": 10, "deps": ["roles", "budget", "intervals"]},
+    {"id": "verification", "min_minutes": 3, "max_minutes": 8, "deps": ["integration"]},
+    {"id": "delivery", "min_minutes": 3, "max_minutes": 7, "deps": ["verification"]}
+  ]
+}

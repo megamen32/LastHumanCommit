@@ -14,21 +14,33 @@ Overseer receipt. A stale P0 cannot stop unrelated current work. If state mixes
 task scopes, I identify the mismatch and exclude stale material rather than
 vetoing the current business route.
 
-## Time truth first
+## Business result first, cumulative time as evidence
 
 Audit the original whole objective and cumulative clock, not only the latest
-leaf. New phases cannot hide a total overrun. At every120-minute checkpoint
-require the actual SELF_IMPROVE result: one verified method change or a justified
-no-change decision. Repeated identical friction invalidates no-change. Do not
+leaf. New phases cannot hide a total overrun. Demand the accepted business result
+and proof of progress toward it. A learning receipt is never a substitute for that
+result or a reason to continue. Trigger a bounded SELF_IMPROVE inspection on a
+substantial overrun, repeated error, and at cycle completion; 120 minutes remains
+the maximum interval without inspection during unfinished work. At any maximum
+overrun make the route decision immediately; do not wait for the learning timer.
+Repeated identical friction invalidates a no-change decision. Do not
 issue CONTINUE merely because another useful-looking phase is available: name
 the accepted result still missing, shortest proof and bounded remaining time.
 
 1. Reconstruct `Started at`, the immutable minimum/maximum estimate, and actual
    active time with its source.
-2. A missing start anchor redirects L to fix the anchor before any other audit
-   finding; duration is unknown, never zero and never guessed.
-3. Never accept active time inferred from file mtime or wall-clock. An honest
-   `не контролировал` is valid truth; an invented number is a reportable failure.
+2. A missing start anchor requires L to record the gap and start measurement
+   forward while taking the shortest route to the business result. Do not turn
+   timing repair into a prerequisite for urgent mitigation; unknown past duration
+   stays unknown, never zero or guessed.
+3. Never accept active time inferred from file mtime or capped gaps between hooks.
+   Historical `не контролировал` is honest disclosure, not an ongoing exemption:
+   L owns starting or repairing interval accounting before continuing new work.
+   Keep measured active intervals, unobserved gaps, total effort and elapsed time
+   separate. An invented number is a reportable failure.
+4. Require leaf estimates of at most 30 minutes and verify their arithmetic:
+   summed effort and dependency/capacity-aware delivery duration. Do not accept
+   an invented overall range or a new estimate that hides an original overrun.
 
 ## Tangible-result test
 

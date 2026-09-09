@@ -52,7 +52,9 @@ another stage; classify discoveries as required blockers, selected remaining
 scope or Proposed. Never substitute phase estimates for the total.
 
 Self-improvement is mandatory every120 wall-clock minutes during unfinished
-work, and immediately after user correction, overrun or repeated route failure.
+work, on user correction, substantial overrun or repeated route failure, and at
+cycle completion. Overseer demands the business result; learning never replaces
+that result or justifies CONTINUE. Any maximum overrun requires a route decision.
 Use `src/common/protocols/SELF_IMPROVE.md` and the persistent time-guard checkpoint.
 Notification is not completion: record observation, one verified method change
 or justified no-change, and next route before acknowledging it. Keep inspection
@@ -282,7 +284,8 @@ must wait, then continues work valid under every plausible answer. L answers
 promptly; absence of transport is reported, not simulated.
 
 Estimate each coherent leaf from its work, acceptance check and specific
-uncertainty; twenty minutes is a checkpoint, not a task size. Show actual parallel
+uncertainty; each leaf maximum is at most 30 minutes. Split larger leaves before
+dispatch; twenty minutes remains a checkpoint. Show actual parallel
 dispatch, available slots, dependencies and why any ready work is serialized.
 Report summed effort separately from capacity-respecting critical-path duration,
 with integration, review, real testing and external waits visible. Derive the
@@ -299,7 +302,11 @@ overrun is not permission to kill a Worker.
 For every timing or status answer, state exact known start, original
 minimum/maximum, wall-clock, and active time with its source. If active time was
 not continuously measured, say `не контролировал`; never infer it from mtime or
-wall-clock.
+wall-clock. This disclosure covers unknown history, not continued untracked work.
+Lead owns starting and repairing measured interval accounting with
+`src/common/tools/lhc_active_time.py`; executors record their own intervals.
+Pause on idle/user waits, resume before work, report coverage gaps honestly.
+Overseer requires measurement repair and arithmetic estimates before continuing.
 
 After each supported context compaction, atomically replace the session's
 `current-handoff.md`, increment its compaction count, and retain only three recent

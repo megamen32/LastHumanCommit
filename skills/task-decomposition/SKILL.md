@@ -1,6 +1,6 @@
 ---
 name: task-decomposition
-description: Split a large or stalled task into the smallest independent, parallel, business-verifiable slices. Use when planning work, assigning Workers, an estimate exceeds 20 active minutes, routes are entangled, or progress has produced little business delta.
+description: Split a large or stalled task into the smallest independent, parallel, business-verifiable slices. Use when planning work, assigning Workers, a leaf maximum exceeds 30 active minutes, routes are entangled, or progress has produced little business delta.
 ---
 
 # Task Decomposition
@@ -16,8 +16,10 @@ Decompose for faster business proof, not for more process artifacts.
    allowed paths, excluded scope, and a minimum/maximum active-time estimate.
 5. Estimate each coherent leaf from the work and its proof: minimum, maximum,
    basis in known steps or comparable evidence, and the specific uncertainty
-   that separates the bounds. Do not size tasks to 20 minutes. Twenty minutes
-   is a reporting checkpoint, not a planning quantum or duration target.
+   that separates the bounds. Every leaf maximum must be <=30 active minutes,
+   including verification. Split larger work at meaningful proof boundaries
+   before execution. Twenty minutes is a reporting checkpoint, not a planning
+   quantum or duration target.
 6. Parallelize leaves only when they do not require the same unresolved decision
    or conflicting writes. Put the critical canary path first.
 7. Remove coordination-only leaves whose output cannot change implementation,
@@ -39,12 +41,18 @@ Separate three quantities:
 - External waits: queue, approval, build service or unavailable environment,
   listed separately with their evidence or marked unknown.
 
+Use the TIME_CONTROL protocol's `lhc_task_budget.py` to validate leaf bounds and
+sum effort. Its dependency-only duration bounds exclude capacity/resources/waits;
+Lead must supply the actual feasible schedule before quoting elapsed delivery.
+
 Make integration, review and real-use verification visible where they are needed;
 do not hide them in a doubled global buffer. For each bound, show its formula.
 Do not quote a naked 60–120 minute range or mechanically double a minimum.
 If a wide range comes from an unresolved fact, name that fact and run the cheapest
-discriminating probe before expanding implementation. Keep a long coherent leaf
-when its proof cannot sensibly be split; explain it rather than inventing jobs.
+discriminating probe before expanding implementation. If a proof cannot yet be
+split into <=30-active-minute leaves, return that boundary to Lead for a shorter
+canary or revised route; do not exempt a long coherent leaf. Account for passive
+external waits separately without dropping them from the elapsed forecast.
 
 Example (illustrative minutes): contract 2–3; backend 4–7 and frontend 3–5 in
 parallel; join 1–2; review 2–3; real use 2–4. With two executor slots available,
@@ -64,11 +72,16 @@ Depends on:
 Allowed/excluded scope:
 Artifact or real proof:
 Primary acceptance check:
-Minimum / maximum active minutes:
+Minimum / maximum active minutes (maximum <=30, including verification):
 Estimate basis / specific uncertainty:
 Execution wave / available slots / reason if serialized:
 20-minute checkpoint and question-for-L boundary:
 ```
+
+Lead initializes/verifies/repairs actual active accounting; each executor records
+its own intervals and source/coverage using TIME_CONTROL's `lhc_active_time.py`.
+Keep measured time, unknown historical gaps
+and estimates distinct; idlecap estimates never become measured active time.
 
 Workers ask L at decision boundaries with evidence, recommendation, proposed
 default, safe parallel work, and the exact action that waits. They continue work
