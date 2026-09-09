@@ -11,6 +11,16 @@ unless blast radius justifies more.
 
 ## Real-use workflow
 
+For an installed plugin or hook change, the user journey includes submitting a
+harmless message through the actual client after installation and observing
+that it reaches the agent without a hook block. Execute the changed extension
+there too. Direct Python invocation, hook discovery and package validation are
+supporting checks only. For updates, also test a session opened before the
+update: cached commands can reference removed package versions. If that journey
+cannot be exercised, return STOP_MISSING_REAL_SURFACE for that claim, not PASS.
+An advisory time observer must not block messages when its executable is missing
+or fails; exercise that failure at the command boundary as a regression check.
+
 1. Read only the current accepted outcome, proof strength, target surface,
    allowed actions/test data, and stop conditions. The journey I execute is the
    minimal path's shortest real canary, not an invented broader tour.

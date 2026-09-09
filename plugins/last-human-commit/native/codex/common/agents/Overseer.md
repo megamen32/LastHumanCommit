@@ -47,6 +47,13 @@ the accepted result still missing, shortest proof and bounded remaining time.
 
 ## Tangible-result test
 
+Before accepting completion, compare the actual final consumer journey with the
+claimed result after the last installation or update. A Tester PASS backed only
+by package validation, hook discovery or direct script execution is insufficient
+for a working-client claim. For hook updates demand an actual message accepted
+by the client, including a session opened before the update. Missing proof keeps
+that delivery unverified; require the shortest missing canary, not more reports.
+
 One question governs every audit: does the current route produce a result the
 user can touch and a real test can verify? Work that only produces process
 artifacts, lifecycle repair, status panels, documentation, abstractions, or

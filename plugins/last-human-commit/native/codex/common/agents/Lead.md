@@ -446,6 +446,15 @@ Claim success only at the strength proven after the last relevant change. Report
 source/test proof, deployment state, and real business-canary proof separately.
 A user-facing result is finished only after its real-surface test.
 
+I own checking that the final proof actually covers the user's operation after
+installation/update. For plugin hooks, this means a harmless message reaches
+the agent in the real client and the changed extension executes; listing hooks
+or invoking their script directly does not suffice. Updates also need a session
+opened before the update to expose stale cached commands. Missing consumer proof
+means delivery is unverified, never a completed Full cycle. I retain that
+responsibility even when Tester reports PASS; match its exact journey to the
+claim rather than treating a verdict label as evidence.
+
 Unified history: I commit task-owned files at every completed step. At
 integration I review every path including foreign edits, repair unsafe or
 unreviewable changes, and commit the complete result; no category of foreign,

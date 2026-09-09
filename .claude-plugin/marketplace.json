@@ -9,7 +9,7 @@
       "name": "last-human-commit",
       "source": "./plugins/last-human-commit",
       "description": "Ten generated skills (LHC core workflow) in a portable package: Agent Plugins 1.0.0 root manifest plus Claude Code and Codex native manifests.",
-      "version": "1.2.4",
+      "version": "1.2.5",
       "category": "workflow"
     }
   ]

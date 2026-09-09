@@ -448,6 +448,7 @@ run_quiet([sys.executable, "-m", "pytest", "-q", "tests/test_autonomous_factory.
 run_quiet([sys.executable, "-m", "pytest", "-q", "tests/test_factory_distribution.py"])
 run_quiet([sys.executable, "-m", "pytest", "-q", "tests/test_worktree.py"])
 run_quiet([sys.executable, "-m", "pytest", "-q", "tests/test_time_guard.py"])
+run_quiet([sys.executable, "-m", "pytest", "-q", "tests/test_hook_command_failure.py"])
 run_quiet([sys.executable, "-m", "pytest", "-q", "tests/test_active_time.py", "tests/test_task_budget.py", "tests/test_time_guard_active_integration.py"])
 run_quiet([sys.executable, "-m", "py_compile", str(time_guard)])
 run_quiet(["sh", str(ROOT / "tests/test_block_adapter.sh")])

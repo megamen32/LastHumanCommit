@@ -73,6 +73,15 @@ Report source tests, package publication, installed version and real loader
 canary separately per target. Automatic refresh/restart and extension support
 are client-specific; do not claim universal auto-updates.
 
+For hook changes, submit a harmless message through the actual client after
+installation and verify agent receipt plus execution of the changed extension.
+For updates repeat with a session opened before the update; loaders may retain
+commands pointing at a removed cache version. Verify advisory observer failure
+does not block messages, including a missing executable. Discovery and direct
+script tests cannot replace these client journeys. If a restart is required,
+state and test that recovery explicitly; untested sessions remain unverified.
+Do not call the Full cycle complete when any claimed target lacks this proof.
+
 If the target has no compatible native loader, report that observed limitation
 and ask for an explicitly selected compatibility route. `lhc-rollout` is
 available only for explicitly selected legacy recovery/rollback, never as an
