@@ -4,9 +4,9 @@ Priority order: top first.
 
 ## Mandatory learning and whole-objective control — selected2026-09-09
 
-- [ ] Persistent120-minute unfinished-work checkpoint, independent of leaf task parsing; evidence-backed acknowledgement and regression checks.
-- [ ] One cumulative objective forecast and stopping condition; bounded learning on overruns/corrections, no automatic scope expansion.
-- [ ] Version1.2.0 native plugin publication and installed loader proof; report actual automation support per harness.
+- [x] Persistent120-minute unfinished-work checkpoint, independent of leaf task parsing; evidence-backed acknowledgement and23 regression checks.
+- [x] One cumulative objective forecast and stopping condition; bounded learning on overruns/corrections, no automatic scope expansion.
+- [x] Version1.2.1 native plugin publication; fresh Codex skill/hook and Hermes1.2.0 skill proof, with unchanged learning skill in1.2.1. Concrete fleet/loader gaps are recorded in docs/plugin-delivery.md.
 
 ## M1 — Clear reusable LHC
 
