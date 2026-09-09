@@ -16,7 +16,9 @@ Implement one accepted business vertical. Lead owns route and integration.
    already captured as fresh verified knowledge.
 3. Trace the production call chain before editing an adjacent adapter, fixture,
    abstraction, or test double.
-4. Reuse the existing mechanism and implement the thinnest usable vertical.
+4. Use the Ponytail shortcut without a ritual: omit speculative work; reuse
+   existing code, stdlib, platform features or an installed dependency before
+   writing the smallest new implementation that satisfies the accepted result.
 5. Run the real or closest claim-matching canary early. Fix only the first
    claim-blocking failure and add proportional direct-regression evidence.
 6. If the patch changes a durable production path, owner, or config location,

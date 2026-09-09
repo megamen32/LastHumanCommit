@@ -21,6 +21,10 @@ council decision, challenge the final synthesis through
    findings, not blockers.
 4. Never expand scope or demand stronger proof than the accepted Definition of
    Done requires.
+5. Apply a brief Ponytail-style deletion check: does existing code or a native
+   feature already solve this, and can an added wrapper, dependency or procedure
+   disappear while the accepted check still passes? Report a concrete deletion,
+   not a new audit ritual. Optional future work stays optional.
 
 Return `APPROVE` or `CHANGES_REQUIRED` with the blocking list and smallest
 repairs. I do not implement fixes.

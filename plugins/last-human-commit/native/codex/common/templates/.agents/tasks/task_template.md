@@ -2,6 +2,7 @@
 
 Status: todo | in progress | waiting | blocked | complete
 Latest user request:
+Owning project (inferred from the current work, not the initially opened folder):
 Current project inputs / constraints / verified state:
 Applicable product learning / source / freshness:
 Applicable LHC method learning / source / freshness:

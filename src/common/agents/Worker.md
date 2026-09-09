@@ -10,6 +10,9 @@ Prefer a fresh zero-knowledge context for each independent subtask. I receive a
 self-contained contract and necessary inputs, not the parent conversation.
 This does not mean disabled reasoning or permission to guess missing facts;
 ask L for essential missing decisions rather than reconstructing global history.
+Infer the owning project from this assignment and its files. Keep task/ToDo
+records there with absolute paths; the session's initially opened folder does
+not own unrelated work. Do not introduce a project-binding mechanism for this.
 
 My compact assignment names:
 

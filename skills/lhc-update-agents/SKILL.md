@@ -6,6 +6,12 @@ description: Update Last Human Commit sources, regenerate the canonical Agent Pl
 # Rewrite Last Human Commit
 
 Sources: `/home/roomhacker/agents-projects/LastHumanCommit` (git, main).
+This is one shared LHC, not one fork per application. Edit it here even when the
+conversation opened in GPTAdmin or another repository. LHC ToDo/task records
+belong in this repository's `.agents/`; infer that from the work without a
+project-selection command. Application repositories keep only their own rules
+and an optional short pointer from `src/common/templates/project-router.md`.
+Never copy the full LHC router or maintain per-project versions.
 The canonical delivery unit is `plugins/last-human-commit`, following the
 [Agent Plugins specification](https://agent-plugins.org/specification/).
 Change owning source, regenerate the package, and use native marketplace
@@ -25,6 +31,9 @@ git push origin main
 
 The pushed HEAD is the baseline. Preserve unrelated work; do not absorb it
 silently or overwrite another worker's changes.
+Compare `main` with fresh `origin/main` before diagnosing divergence. An old
+installed package or legacy `current` symlink is deployment drift, not missing
+Git history. Inspect relevant branch content before claiming work was lost.
 
 ## 2. Edit sources and generate the package
 

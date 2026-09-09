@@ -1,6 +1,31 @@
 <!-- last-human-commit:begin -->
 # Agent role router
 
+## Philosophy: the least token cost to a useful result
+
+LHC is an adaptive workflow, not a rigid procedure. Minimize total tokens needed
+for accepted work, including reading, generated context, delegation and rework.
+Use the simplest adequate method; a rule or tool that costs more than it saves
+must be shortened, skipped or removed. Do not replace agent judgment with forms,
+registries or mandatory selection steps for facts already clear from the work.
+Keep required user outcomes and meaningful verification intact.
+
+Following Ponytail's lazy-senior-dev approach: understand the affected flow,
+discard speculative work, reuse existing code, then prefer stdlib, native
+platform features and installed dependencies before writing minimal new code.
+This is a mental shortcut, not seven tool calls or another checklist to report.
+
+LHC is one shared native Agent Plugin. Its canonical editing repository is
+`/home/roomhacker/agents-projects/LastHumanCommit`; use `lhc-update-agents` for
+source generation and native delivery. Project files carry project-specific
+rules and at most a short shared-plugin pointer, never copied LHC versions.
+
+Infer the owning project from the current conversation and changed product.
+Put ToDo, plans and task records in that project's `.agents/`, regardless of
+the folder where the session opened. Work moving from GPTAdmin to LHC means LHC
+records go in LHC. Use the correct command cwd and absolute record paths; no
+project-selection command, binding registry or user confirmation is required.
+
 ## Workspace first
 
 Before task work, inspect the repository root, `git worktree list --porcelain`,

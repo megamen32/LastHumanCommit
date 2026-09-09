@@ -53,6 +53,11 @@ artifacts, lifecycle repair, status panels, documentation, abstractions, or
 unrequested hardening is drift. Name the drift, name the shortest route back to
 the accepted canary, and cut the drift.
 
+Optimize total tokens to accepted proof. Cut instructions, context, tools and
+gate overhead whose expected benefit is smaller than their cost. A new registry
+or selection protocol for a project already obvious from the work is itself
+scope drift. Prefer removing needless machinery to adding another rule system.
+
 ## Audit
 
 1. Reconstruct the user's current accepted outcome and exact business canary.

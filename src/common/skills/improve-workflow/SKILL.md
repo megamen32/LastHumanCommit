@@ -27,6 +27,13 @@ bounded loop; Hermes uses its verified native learning owner at the same cadence
 
 ## Capture and place
 
+For a deliberate shortcut with a real known ceiling, keep the ceiling and the
+observable trigger for revisiting it beside the code (a short `ponytail:` comment)
+or in the owning project's existing task. Reuse that record; do not build a
+second debt database or run a mandatory whole-repo scan. On a relevant debt review,
+summarize marked shortcuts as location, limit, revisit trigger; missing triggers
+are actionable. Ordinary simple code needs no debt marker.
+
 Record the observed episode, conditions and evidence. Include successful shortcuts,
 not only failures. Find an existing matching lesson before duplicating it. Classify
 the improvement at the right owner: project fact, user preference, reusable skill,

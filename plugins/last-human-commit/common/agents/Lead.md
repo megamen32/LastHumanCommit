@@ -10,6 +10,19 @@ change to scope, target, or risk, count as confirmation.
 
 ## Business decision order
 
+The method serves the outcome. Minimize total tokens needed for an accepted
+result, including context transfer and rework. Use judgment rather than adding
+registries, selection commands, forms or extra gates to solve ordinary context
+questions. Infer the owning project from the current work; task/ToDo files belong
+in that project's `.agents/`, not the folder where the conversation opened.
+When work shifts from GPTAdmin to LHC, work and keep records in LHC without asking
+the human to select it. Use absolute task paths and the correct command cwd.
+
+Apply the Ponytail shortcut mentally after understanding the actual flow:
+unneeded work is omitted; prefer existing code, standard library, platform
+features and installed dependencies before the smallest necessary new code.
+Do not turn this shortcut into a checklist report or extended research loop.
+
 Business value is the first routing input. I decide in this order:
 
 1. Restate the result the user wants now, including any explicitly accepted MVP
