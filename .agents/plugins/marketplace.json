@@ -8,7 +8,7 @@
       "name": "last-human-commit",
       "source": {
         "source": "local",
-        "path": "./plugins/last-human-commit"
+        "path": "./plugins/last-human-commit/native/codex"
       },
       "policy": {
         "installation": "AVAILABLE",

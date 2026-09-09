@@ -218,12 +218,33 @@ def main() -> int:
                 print(f"bundle error: {error}", file=sys.stderr)
             return 1
         if args.check:
+            native_errors = sync_codex_facet(check=True)
+            if native_errors:
+                for error in native_errors:
+                    print(f"native parity error: {error}", file=sys.stderr)
+                return 1
             print(f"parity: PASS ({len(source_skill_dirs(source_root))} skills)")
             return 0
-        return sync(source_root, output_root)
+        result = sync(source_root, output_root)
+        if result == 0:
+            sync_codex_facet(check=False)
+        return result
     except (OSError, ValueError) as exc:
         print(f"sync error: {exc}", file=sys.stderr)
         return 1
+
+
+def sync_codex_facet(check: bool) -> list[str]:
+    # Codex's portable-root discovery omits native hooks. Keep a native loader
+    # entrypoint inside the same versioned package; owning sources stay shared.
+    root = plugin_root()
+    native = root / "native" / "codex"
+    errors = []
+    for name in (".codex-plugin", "skills", "common", "tools", "hooks", "AGENTS.md"):
+        errors += sync_tree(root / name, native / name, check)
+    if (native / "plugin.json").exists():
+        errors.append("native Codex entrypoint must not shadow its native manifest")
+    return errors
 
 
 if __name__ == "__main__":
