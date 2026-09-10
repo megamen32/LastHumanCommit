@@ -13,16 +13,19 @@ skills are unavailable.
    path.
 2. Reuse fresh verified code-map findings, but confirm decisive locations with
    targeted `rg`; current source wins over graph/index/map history.
-3. Reproduce or observe the shortest failing condition when doing so is cheap
-   and discriminating.
-4. Make the smallest coherent vertical change on the real path.
+3. For every bugfix, use mandatory TDD: before changing production source,
+   write and run a focused regression that fails for the reported behavior.
+   Record the exact failing command and its Red result, then rerun it Green
+   after the smallest coherent vertical change on the real path.
+4. Reproduce or observe the shortest safe consumer canary when it adds claim-
+   relevant evidence.
 5. Re-run the same proof and the narrowest direct-regression checks.
 6. Update a reusable code-map key only when the change affects a durable path,
    owner, config, or recurring failure shield.
 7. Stop as soon as the assigned claim is proven.
 
-For a bugfix, a focused failing regression or black-box canary is preferred but
-not ceremonial. For a feature, implement a usable vertical slice before
+For a bugfix, the focused failing regression is mandatory; a black-box canary
+adds consumer evidence and never replaces Red → Green. For a feature, implement a usable vertical slice before
 horizontal completeness. Do not add unrelated abstractions, hardening, logging,
 cleanup, docs, compatibility, or edge-case completeness.
 

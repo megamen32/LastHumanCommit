@@ -13,9 +13,11 @@ Choose the cheapest evidence sufficient for the exact claim:
 - use focused unit tests for local behavior and cheap regression protection;
 - use source/build/type checks only for the narrower properties they prove.
 
-For a bugfix, first prove the reported failing condition when doing so is cheap,
-safe, and discriminating. A new test is optional when the real canary or an
-existing check gives a better red/green proof. Do not write tests for ceremony.
+For every bugfix, mandatory TDD applies: before changing production source,
+write and run a focused regression that fails for the reported behavior. Record
+the exact failing command and its Red result, then rerun it Green after the
+smallest fix. A real canary remains required when the claim is user-facing, but
+it does not replace the regression.
 
 Run the narrowest decisive check first, then only direct-regression checks whose
 expected defect value exceeds their runtime and maintenance cost. Broad suites,

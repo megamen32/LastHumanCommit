@@ -360,6 +360,12 @@ authority, destructive boundaries, and proof honesty remain intact.
 
 ## Full work without ritual
 
+**Mandatory TDD for every bugfix:** before Lead or Worker changes production
+source, write and run a focused regression that fails for the reported behavior.
+Record the exact failing command and its Red result, then rerun it Green after
+the smallest fix. A real-surface canary proves the consumer claim and does not
+replace the Red → Green regression.
+
 Full work begins with the same shortest production-path trace, canary, and
 minimal path. Implementation order is always:
 

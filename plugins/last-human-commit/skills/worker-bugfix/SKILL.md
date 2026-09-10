@@ -9,16 +9,15 @@ Fix one proven failure without turning it into a hardening project.
 
 ## Procedure
 
-1. Search the reusable code map for the symptom, consumer, and prior
+1. **Mandatory TDD for every bugfix.** Before changing production source, write and run a focused regression that fails for the reported behavior. Record the exact failing command and its Red result, then rerun it Green after the smallest fix. A live/black-box failure is additional consumer evidence, never a substitute for this regression.
+2. Search the reusable code map for the symptom, consumer, and prior
    `failure-shield` entries. Check freshness and verify decisive locations with
    targeted `rg`.
-2. Reproduce the real failure with the cheapest discriminating proof: an
-   existing check, focused regression, protocol probe, or black-box canary.
-   Write a new unit test only when it is the cheapest strong red proof.
-3. Trace the failing consumer path and reject nearby but unused adapters or
+3. Reproduce the real failure with the focused Red regression and, when the
+   claim is user-facing, the cheapest safe consumer canary.
+4. Trace the failing consumer path and reject nearby but unused adapters or
    fixtures.
-4. Change the smallest coherent source slice that makes the same proof green.
-5. Re-run that proof and only proportional direct-regression checks.
+5. Change the smallest coherent source slice that makes the same proof green.
 6. If the root cause or false route is likely to recur, resolve
    `../worker-research/scripts/code_map.py` from this skill and upsert a compact
    `failure-shield` entry with verified locations and the discriminating probe.

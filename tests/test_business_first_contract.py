@@ -384,6 +384,22 @@ def test_worker_research_preserves_bugfix_chain_and_outcome_metrics() -> None:
         assert phrase in research, phrase
 
 
+def test_every_bugfix_requires_a_recorded_red_green_tdd_cycle() -> None:
+    sources = "\n".join(
+        read(path)
+        for path in (
+            "src/common/agents/Lead.md",
+            "src/common/profiles/Test.md",
+            "src/common/protocols/WORKER_IMPLEMENT.md",
+            "skills/worker-bugfix/SKILL.md",
+        )
+    )
+
+    assert "Mandatory TDD for every bugfix" in sources
+    assert "Before changing production source, write and run a focused regression that fails" in sources
+    assert "Record the exact failing command and its Red result, then rerun it Green" in sources
+
+
 def test_unified_history_is_mandatory() -> None:
     router = compact(read("AGENTS.md"))
     lead = compact(read("src/common/agents/Lead.md"))
