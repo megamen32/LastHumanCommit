@@ -158,6 +158,12 @@ layer, abstraction, or hardening. Adviser is optional independent reasoning;
 Critic is a compatibility alias for decision challenge, not another gate.
 Full includes coherent technical review; otherwise Reviewer is risk-triggered.
 
+**Mandatory TDD for every bugfix:** before changing production source, write
+and run a focused regression that fails for the reported behavior. Record the
+exact failing command and its Red result, then rerun it Green after the smallest
+fix. A live or black-box canary proves the consumer path; it does not replace
+the Red → Green regression.
+
 ## Autonomous decisions and model allocation
 
 Lead owns ordinary engineering decisions and normally uses the strongest
