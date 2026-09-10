@@ -164,6 +164,17 @@ exact failing command and its Red result, then rerun it Green after the smallest
 fix. A live or black-box canary proves the consumer path; it does not replace
 the Red → Green regression.
 
+## Dead remnants finish in-cycle
+
+Anything the current change makes dead — units, timers, env files holding
+now-useless credentials, hooks, scripts, provider-map entries, stale doc
+warnings — is removed or re-pointed in the same cycle, after the replacement's
+canary is green. "Left for later / when convenient" is not a completion state.
+Sweep the touched host or repo for references before declaring the remnant
+gone. If a remnant truly cannot be finished (missing authority, external
+dependency), record the exact blocker in the task file and name it in the final
+answer: a named blocker is work, an unnamed leftover is debt.
+
 ## Autonomous decisions and model allocation
 
 Lead owns ordinary engineering decisions and normally uses the strongest

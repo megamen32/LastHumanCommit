@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.3.0 - 2026-09-10
+
+- Added the standing "Dead remnants finish in-cycle" router rule: units,
+  timers, credentials, hooks, scripts, and stale doc warnings made dead by a
+  change are removed or re-pointed in the same cycle once the replacement's
+  canary is green; blockers must be named, not left silently.
+
 ## 0.3.0 - 2026-08-12
 
 - Added dedicated Worker research, code, and bugfix skills.
