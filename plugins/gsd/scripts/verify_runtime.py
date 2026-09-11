@@ -7,6 +7,7 @@ import argparse
 import json
 import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 
 
@@ -40,9 +41,19 @@ def main() -> int:
         cfg = json.loads(cfg_text)
         paths = cfg.get("skills", {}).get("paths", [])
         config_ok = str(root / "skills") in paths and "last-human-commit" not in cfg_text
-        skill_result = run("opencode", "debug", "skill")
         try:
-            skill_data = json.loads(skill_result.stdout)
+            with tempfile.TemporaryFile(mode="w+") as output:
+                skill_result = subprocess.run(
+                    ["opencode", "debug", "skill"],
+                    stdout=output,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    timeout=45,
+                )
+                output.seek(0)
+                skill_data = json.load(output)
+            if skill_result.returncode:
+                raise RuntimeError(skill_result.stderr)
             gsd_count = sum(str(item.get("name", "")).startswith("gsd-") for item in skill_data)
         except Exception:
             gsd_count = -1
