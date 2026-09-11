@@ -50,6 +50,11 @@ def main() -> int:
     for name in ("skills", "get-shit-done", "agents"):
         replace_tree(args.projection / name, args.output / name)
     replace_tree(args.package / "sdk" / "dist", args.output / "sdk" / "dist")
+    replace_tree(args.package / "sdk" / "shared", args.output / "sdk" / "shared")
+    replace_tree(args.package / "sdk" / "prompts", args.output / "sdk" / "prompts")
+    replace_tree(args.package / "node_modules", args.output / "node_modules")
+    shutil.copy2(args.package / "sdk" / "package.json", args.output / "sdk" / "package.json")
+    shutil.copy2(args.package / "package-lock.json", args.output / "package-lock.upstream.json")
     (args.output / "bin").mkdir(parents=True, exist_ok=True)
     shutil.copy2(args.package / "bin" / "gsd-sdk.js", args.output / "bin" / "gsd-sdk.js")
     shutil.copy2(args.package / "LICENSE", args.output / "LICENSE.upstream")

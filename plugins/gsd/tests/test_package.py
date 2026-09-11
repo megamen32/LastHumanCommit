@@ -1,5 +1,6 @@
 import json
 import re
+import subprocess
 from pathlib import Path
 
 
@@ -33,5 +34,17 @@ def test_full_skill_surface_is_portable_and_complete():
 def test_bundled_sdk_and_workflows_exist():
     assert (ROOT / "bin/gsd-sdk.js").is_file()
     assert (ROOT / "sdk/dist/cli.js").is_file()
+    assert (ROOT / "sdk/shared/model-catalog.json").is_file()
+    assert (ROOT / "node_modules/ws/package.json").is_file()
+    assert (ROOT / "sdk/package.json").is_file()
+    assert (ROOT / "node_modules/ws/package.json").is_file()
+    assert (ROOT / "node_modules/@anthropic-ai/claude-agent-sdk/package.json").is_file()
     assert (ROOT / "get-shit-done/workflows/help.md").is_file()
     assert (ROOT / "agents/gsd-executor.md").is_file()
+    result = subprocess.run(
+        ["node", str(ROOT / "bin/gsd-sdk.js"), "--help"],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert "Usage: gsd-sdk" in result.stdout
