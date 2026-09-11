@@ -56,7 +56,16 @@ def main() -> int:
     zcode = Path.home() / ".zcode/cli/config.json"
     zcode_installed = Path.home() / ".zcode/cli/plugins/installed_plugins.json"
     launcher = Path.home() / ".local/bin/gsd-sdk"
-    candidates = agent_files + [opencode, zcode, zcode_installed, launcher]
+    codex_config = Path.home() / ".codex/config.toml"
+    codex_lhc_cache = Path.home() / ".codex/plugins/cache/megamen32-plugins/last-human-commit"
+    candidates = agent_files + [
+        codex_config,
+        codex_lhc_cache,
+        opencode,
+        zcode,
+        zcode_installed,
+        launcher,
+    ]
     for path in candidates:
         backup(path, backup_root)
 
