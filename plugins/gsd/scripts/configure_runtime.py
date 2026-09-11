@@ -75,7 +75,17 @@ def main() -> int:
 
     if opencode.exists():
         data = json.loads(opencode.read_text())
-        data["plugin"] = [x for x in data.get("plugin", []) if "last-human-commit" not in str(x)]
+        opencode_shim = str(plugin_root / "opencode-plugin/index.js")
+        plugins = [
+            x
+            for x in data.get("plugin", [])
+            if "last-human-commit" not in str(x)
+            and "@megamen32/gsd-opencode-plugin" not in str(x)
+            and not ("/gsd/" in str(x) and "opencode-plugin" in str(x))
+        ]
+        if opencode_shim not in plugins:
+            plugins.append(opencode_shim)
+        data["plugin"] = plugins
         skills = data.setdefault("skills", {})
         paths = [x for x in skills.get("paths", []) if "last-human-commit" not in str(x)]
         gsd_skills = str(plugin_root / "skills")

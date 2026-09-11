@@ -1,0 +1,11 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugin": [
+    "@megamen32/gsd-opencode-plugin"
+  ],
+  "skills": {
+    "paths": [
+      "node_modules/@megamen32/gsd-opencode-plugin/skills"
+    ]
+  }
+}

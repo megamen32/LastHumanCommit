@@ -48,3 +48,16 @@ def test_bundled_sdk_and_workflows_exist():
         text=True,
     )
     assert "Usage: gsd-sdk" in result.stdout
+
+
+def test_generated_opencode_projection_is_present():
+    package = json.loads((ROOT / "package.json").read_text())
+    assert package["name"] == "@megamen32/gsd-opencode-plugin"
+    assert package["version"] == "1.42.3"
+    assert package["main"] == "opencode-plugin/index.js"
+    assert (ROOT / "opencode-plugin/index.js").is_file()
+    fragment = json.loads((ROOT / "opencode-plugin/opencode.json").read_text())
+    assert fragment["plugin"] == ["@megamen32/gsd-opencode-plugin"]
+    assert fragment["skills"]["paths"] == [
+        "node_modules/@megamen32/gsd-opencode-plugin/skills"
+    ]

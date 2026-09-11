@@ -8,6 +8,8 @@ import json
 import shutil
 from pathlib import Path
 
+from emit_opencode import emit
+
 
 ADAPTER = """<gsd_agent_plugin_adapter>
 This GSD distribution is loaded from an Agent Plugin rather than a fixed runtime home.
@@ -70,6 +72,21 @@ def main() -> int:
         skill_file.write_text(text)
 
     (args.output / "VERSION").write_text(version + "\n")
+    emit(
+        args.output,
+        package_name="@megamen32/gsd-opencode-plugin",
+        includes=[
+            "agents",
+            "bin",
+            "get-shit-done",
+            "sdk",
+            "README.md",
+            "UPSTREAM.json",
+            "VERSION",
+            "LICENSE.upstream",
+        ],
+        dependencies_from=args.package / "sdk/package.json",
+    )
     return 0
 
 

@@ -40,7 +40,12 @@ def main() -> int:
         cfg_text = opencode_cfg.read_text()
         cfg = json.loads(cfg_text)
         paths = cfg.get("skills", {}).get("paths", [])
-        config_ok = str(root / "skills") in paths and "last-human-commit" not in cfg_text
+        plugins = cfg.get("plugin", [])
+        config_ok = (
+            str(root / "skills") in paths
+            and str(root / "opencode-plugin/index.js") in plugins
+            and "last-human-commit" not in cfg_text
+        )
         try:
             with tempfile.TemporaryFile(mode="w+") as output:
                 skill_result = subprocess.run(
