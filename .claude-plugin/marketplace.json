@@ -11,6 +11,13 @@
       "description": "Ten generated skills (LHC core workflow) in a portable package: Agent Plugins 1.0.0 root manifest plus Claude Code and Codex native manifests.",
       "version": "1.3.0",
       "category": "workflow"
+    },
+    {
+      "name": "gsd",
+      "source": "./plugins/gsd",
+      "description": "Portable full-profile Get Shit Done 1.42.3 Agent Plugin with 67 skills, workflows, agent prompts, and bundled SDK.",
+      "version": "1.42.3",
+      "category": "workflow"
     }
   ]
 }

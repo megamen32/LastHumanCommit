@@ -1,0 +1,10 @@
+{
+  "name": "gsd",
+  "version": "1.42.3",
+  "description": "Portable full-profile Get Shit Done 1.42.3 Agent Plugin.",
+  "author": {
+    "name": "TACHES, packaged by megamen32",
+    "url": "https://github.com/gsd-build/get-shit-done"
+  },
+  "skills": "./skills/"
+}

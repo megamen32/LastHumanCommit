@@ -1,0 +1,9 @@
+{
+  "package": "get-shit-done-cc",
+  "version": "1.42.3",
+  "repository": "https://github.com/gsd-build/get-shit-done.git",
+  "tag": "v1.42.3",
+  "commit": "7dfeb7ad8acbd6febd2c8c6cf7d3dcb7d1aeb7b9",
+  "npmShasum": "65437b39deb8fb842475e61a72f998503e8daf5a",
+  "profile": "full"
+}
