@@ -55,6 +55,8 @@ def test_generated_opencode_projection_is_present():
     assert package["name"] == "@megamen32/gsd-opencode-plugin"
     assert package["version"] == "1.42.3"
     assert package["main"] == "opencode-plugin/index.js"
+    assert "scripts/" in package["files"]
+    assert package["repository"] == "https://github.com/megamen32/gsd-agent-plugin"
     assert (ROOT / "opencode-plugin/index.js").is_file()
     fragment = json.loads((ROOT / "opencode-plugin/opencode.json").read_text())
     assert fragment["plugin"] == ["@megamen32/gsd-opencode-plugin"]

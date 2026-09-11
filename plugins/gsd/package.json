@@ -14,6 +14,7 @@
     "bin/",
     "get-shit-done/",
     "sdk/",
+    "scripts/",
     "README.md",
     "UPSTREAM.json",
     "VERSION",
@@ -39,7 +40,7 @@
     "url": "https://github.com/gsd-build/get-shit-done"
   },
   "homepage": "https://github.com/gsd-build/get-shit-done",
-  "repository": "https://github.com/megamen32/LastHumanCommit",
+  "repository": "https://github.com/megamen32/gsd-agent-plugin",
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.2.84",
     "ws": "^8.20.0"

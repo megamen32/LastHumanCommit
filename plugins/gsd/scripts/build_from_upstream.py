@@ -80,6 +80,7 @@ def main() -> int:
             "bin",
             "get-shit-done",
             "sdk",
+            "scripts",
             "README.md",
             "UPSTREAM.json",
             "VERSION",
