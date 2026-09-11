@@ -68,6 +68,8 @@ def check_version_parity(root: Path) -> None:
         path = root / rel
         if path.is_file():
             versions[rel] = str(load_json(path).get("version"))
+    for path in sorted(root.glob("native/*/.codex-plugin/plugin.json")):
+        versions[str(path.relative_to(root))] = str(load_json(path).get("version"))
     unique = set(versions.values())
     if len(unique) > 1:
         raise ValidationError(f"manifest versions drifted: {versions}")
