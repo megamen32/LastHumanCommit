@@ -77,6 +77,20 @@ def check_version_parity(root: Path) -> None:
         raise ValidationError("expected at least root and one projection manifest")
 
 
+def check_root_catalog_parity(root: Path) -> None:
+    """The repo-as-marketplace Claude catalog must not advertise a stale version."""
+    plugin_version = str(load_json(root / "plugin.json").get("version"))
+    catalog = root.parent.parent / ".claude-plugin" / "marketplace.json"
+    if not catalog.is_file():
+        return
+    for entry in load_json(catalog).get("plugins", []):
+        if entry.get("name") == "last-human-commit" and entry.get("version") != plugin_version:
+            raise ValidationError(
+                f"root catalog {catalog} advertises last-human-commit "
+                f"{entry.get('version')}, plugin is {plugin_version}"
+            )
+
+
 def check_root_manifest(root: Path) -> None:
     path = root / "plugin.json"
     manifest = load_json(path)
@@ -226,6 +240,7 @@ def main() -> int:
     try:
         check_no_symlinks(root)
         check_version_parity(root)
+        check_root_catalog_parity(root)
         check_root_manifest(root)
         codex_skills = check_native_manifest(root, ".codex-plugin/plugin.json", "Codex")
         claude_skills = check_native_manifest(root, ".claude-plugin/plugin.json", "Claude Code")
