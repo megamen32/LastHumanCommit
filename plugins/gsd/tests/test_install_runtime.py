@@ -85,3 +85,38 @@ def test_runtime_updates_preserve_unrelated_configuration(tmp_path: Path) -> Non
     assert zcode["plugins"]["dirs"] == ["/other", str(ROOT)]
     assert zcode["plugins"]["enabledPlugins"]["other@inline"] is True
 
+
+def test_runtime_updates_replace_legacy_gsd_paths(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    old_root = "/home/roomhacker/.codex/plugins/cache/megamen32-plugins/gsd/1.42.3"
+    opencode_path = home / ".config" / "opencode" / "opencode.json"
+    opencode_path.parent.mkdir(parents=True)
+    opencode_path.write_text(
+        json.dumps(
+            {
+                "plugin": ["other", f"{old_root}/opencode-plugin/index.js"],
+                "skills": {"paths": ["/other-skills", f"{old_root}/skills"]},
+            }
+        )
+    )
+    zcode_path = home / ".zcode" / "cli" / "config.json"
+    zcode_path.parent.mkdir(parents=True)
+    zcode_path.write_text(
+        json.dumps({"plugins": {"dirs": ["/other", old_root], "enabledPlugins": {}}})
+    )
+    env = os.environ.copy()
+    env["HOME"] = str(home)
+
+    subprocess.run(
+        [sys.executable, str(INSTALLER), "--plugin-root", str(ROOT), "--runtime", "all"],
+        check=True,
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+
+    opencode = json.loads(opencode_path.read_text())
+    zcode = json.loads(zcode_path.read_text())
+    assert opencode["plugin"] == ["other", str(ROOT / "opencode-plugin" / "index.js")]
+    assert opencode["skills"]["paths"] == ["/other-skills", str(ROOT / "skills")]
+    assert zcode["plugins"]["dirs"] == ["/other", str(ROOT)]

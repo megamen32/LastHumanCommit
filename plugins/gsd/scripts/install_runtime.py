@@ -43,7 +43,15 @@ def configure_opencode(plugin_root: Path, home: Path) -> Path:
     path = home / ".config" / "opencode" / "opencode.json"
     data = load_json(path)
     shim = str(plugin_root / "opencode-plugin" / "index.js")
-    plugins = list(data.get("plugin", []))
+    plugins = [
+        value
+        for value in data.get("plugin", [])
+        if value == shim
+        or not (
+            "/gsd/" in str(value)
+            or "@megamen32/gsd-opencode-plugin" in str(value)
+        )
+    ]
     if shim not in plugins:
         plugins.append(shim)
     data["plugin"] = plugins
@@ -52,7 +60,7 @@ def configure_opencode(plugin_root: Path, home: Path) -> Path:
     if not isinstance(skills, dict):
         raise SystemExit(f"expected skills to be a JSON object: {path}")
     skill_path = str(plugin_root / "skills")
-    paths = list(skills.get("paths", []))
+    paths = [value for value in skills.get("paths", []) if "/gsd/" not in str(value)]
     if skill_path not in paths:
         paths.append(skill_path)
     skills["paths"] = paths
@@ -69,7 +77,7 @@ def configure_zcode(plugin_root: Path, home: Path) -> Path:
         raise SystemExit(f"expected plugins to be a JSON object: {path}")
 
     root = str(plugin_root)
-    dirs = list(plugins.get("dirs", []))
+    dirs = [value for value in plugins.get("dirs", []) if "/gsd/" not in str(value)]
     if root not in dirs:
         dirs.append(root)
     plugins["dirs"] = dirs
