@@ -4,7 +4,12 @@ This is a portable Agent Plugin wrapper for the upstream
 [`get-shit-done-cc`](https://github.com/gsd-build/get-shit-done) 1.42.3 release.
 It keeps the full 67-skill profile, bundled workflows, agent prompts, and SDK in
 one versioned package. The wrapper only adapts install-root resolution and
-named-agent fallback; upstream workflow content is copied from the release.
+named-agent fallback and task continuity; upstream workflow content is copied from the release.
+The shared `get-shit-done/references/task-continuity.md` preserves the original
+assignment and current plan across entry, resume, compaction and direction changes.
+The existing native SessionStart integration is owned by the live GSD overlay
+repository; the OGSD entry detector/installer is owned by ServersAdministartion
+`templates/fleet-codex-instructions`. Do not patch installed caches.
 
 ## Install
 

@@ -19,6 +19,9 @@ This GSD distribution is loaded from an Agent Plugin rather than a fixed runtime
 - Before running a workflow shell command, replace `gsd-sdk` with
   `node \"$GSD_PLUGIN_ROOT/bin/gsd-sdk.js\"` and turn any `../../get-shit-done/...`
   command path into an absolute path below `$GSD_PLUGIN_ROOT`.
+- Before engineering entry/reentry, resume/compaction or any direction change,
+  reconcile the saved session assignment with current GSD state and the active SPEC/PLAN:
+  @../../get-shit-done/references/task-continuity.md
 - Named GSD agent prompts live in `$GSD_PLUGIN_ROOT/agents/`. If the runtime has no
   matching registered agent type, spawn an available generic worker/default agent and
   include the corresponding `agents/<name>.md` prompt in its task message.
@@ -51,6 +54,8 @@ def main() -> int:
 
     for name in ("skills", "get-shit-done", "agents"):
         replace_tree(args.projection / name, args.output / name)
+    shutil.copy2(Path(__file__).with_name("task-continuity.md"),
+                 args.output / "get-shit-done/references/task-continuity.md")
     replace_tree(args.package / "sdk" / "dist", args.output / "sdk" / "dist")
     replace_tree(args.package / "sdk" / "shared", args.output / "sdk" / "shared")
     replace_tree(args.package / "sdk" / "prompts", args.output / "sdk" / "prompts")

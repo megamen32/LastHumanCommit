@@ -13,6 +13,9 @@ This GSD distribution is loaded from an Agent Plugin rather than a fixed runtime
 - Before running a workflow shell command, replace `gsd-sdk` with
   `node "$GSD_PLUGIN_ROOT/bin/gsd-sdk.js"` and turn any `../../get-shit-done/...`
   command path into an absolute path below `$GSD_PLUGIN_ROOT`.
+- Before engineering entry/reentry, resume/compaction or any direction change,
+  reconcile the saved session assignment with current GSD state and the active SPEC/PLAN:
+  @../../get-shit-done/references/task-continuity.md
 - Named GSD agent prompts live in `$GSD_PLUGIN_ROOT/agents/`. If the runtime has no
   matching registered agent type, spawn an available generic worker/default agent and
   include the corresponding `agents/<name>.md` prompt in its task message.
