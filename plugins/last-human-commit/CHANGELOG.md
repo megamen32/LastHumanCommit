@@ -1,3 +1,12 @@
+## 1.4.8 — existing Herder model selection in OpenCode
+
+The standard native LHC entry now routes multi-model delegation to the already
+connected Agent Herder MCP with an explicit model and independent role/context.
+Updated model-routing skill documents the five existing user routes, retry/Stop
+semantics and fresh blind milestone testing. No tool, wrapper, supervisor or
+role-by-model profile matrix added. OpenChamber Auto remains a per-message
+classifier and is not assumed to route child jobs or enforce LHC acceptance.
+
 ## 1.4.7 — native OpenCode business contract and review-to-delivery
 
 - OpenCode V2 calls the canonical Python native LHC entry for the real prompt, model context and tool/idle lifecycle, matching Codex 1.4.6. No extra reviewer, daemon, or copied stale TS policy.
