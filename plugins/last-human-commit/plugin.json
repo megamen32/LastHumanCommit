@@ -1,8 +1,8 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "last-human-commit",
-  "version": "1.3.0",
-  "description": "Self-contained engineering workflow, architecture, learning loops, and native Agent Plugin updates.",
+  "version": "1.4.0",
+  "description": "Automatic engineering workflow with isolated parallel work, shared file messages, and verified PR integration.",
   "license": "MIT",
   "keywords": [
     "workflow",

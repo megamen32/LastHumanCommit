@@ -1,52 +1,45 @@
-# Last Human Commit plugin
+# Last Human Commit 1.4
 
-This directory is a self-contained Agent Plugin package for Codex, OpenCode,
-Claude Code, and Hermes. Skills, shared role/protocol sources, the Hermes
-adapter, and executable tools are generated from this repository; generated
-files must not be edited by hand.
+An automatic engineering workflow for ordinary requests, including rough voice transcripts.
+Understand the intended result, do the useful work, test it and integrate the shared result.
 
-The package contains no MCP server, credentials, or runtime configuration
-changes. Native hooks and the Hermes adapter are included for clients that
-support them. Nothing is installed or enabled by validation commands.
+## What changed
 
-## Build and validate
+Parallel writers use Git worktrees. Each working branch is pushed and gets a PR;
+merge it when review and checks permit. Before finishing, fetch, merge newer work,
+retest and push. A Full cycle converges the participants' changes, including nested
+repositories, into one reachable green history. Foreign active work is preserved.
 
-From the `LastHumanCommit` repository:
+A blocker delays only the operation that needs it. Finish independent work first.
+Agent Herder's `resume_after` can wake the original session after selected sessions
+finish their native execution. A finished session is not automatically a correct result.
 
-```bash
-python3 plugins/last-human-commit/scripts/sync_skills.py
-python3 plugins/last-human-commit/scripts/sync_skills.py --check
-python3 plugins/last-human-commit/scripts/validate.py
+Shared coordination uses one atomic JSON file per message. Project worktrees share
+`<primary-checkout>/.agents/shared-session/chat/`; host-wide communication uses
+`~/.agents/shared-session/chat/`. Cross-host communication uses an explicit shared
+address, not coincidentally identical local paths.
+
+No mandatory setup interview, initial Overseer, three-line form or hourly ritual.
+Architecture, decomposition, independent review/testing and learning tools remain
+available when they improve the outcome. The complete default workflow is in
+[AGENTS.md](AGENTS.md). Details: the repository's docs/V1.4.md.
+
+## Package and installation
+
+The native Agent Plugin is `plugins/last-human-commit`, version 1.4.0, with 22 optional
+skills and small automatic-entry hooks. Use the harness's native plugin manager.
+For clients whose plugin hooks are unavailable or still await trust, the package
+provides a supported user-instruction bootstrap:
+
+```sh
+python3 <installed-package>/scripts/install_runtime.py \
+  --runtime codex --plugin-root <installed-package> --replace-gsd-entry
 ```
 
-The validator checks the portable manifest, the two native manifests, skill
-frontmatter, package-contained paths, symlink absence, and byte-for-byte parity
-with `LastHumanCommit/skills/`.
+`--runtime` also accepts `claude` and `opencode`. Only managed LHC/GSD entry blocks
+are replaced; unrelated instructions are preserved and backed up. Existing GSD
+skills are not deleted. Reload/start a new session to load changed instructions.
 
-## Runtime entrypoints
-
-- Codex reads `.codex-plugin/plugin.json` and its `./skills/` entry.
-- Claude Code reads `.claude-plugin/plugin.json` and its root `./skills/` entry.
-- OpenCode can consume the same skill tree through its native `skills.paths`
-  config object. Print a non-mutating fragment with:
-
-  ```bash
-  python3 plugins/last-human-commit/scripts/opencode-config.py
-  ```
-
-  The default `native` format matches the installed OpenCode 1.18.x surface.
-  For the newer documented v2 array shape, use
-  `--format v2`. The helper writes a file only when an explicit `--output PATH`
-  is supplied; merge its `skills` value into the intended project configuration
-  yourself.
-
-Run focused read-only loader checks with:
-
-```bash
-python3 plugins/last-human-commit/scripts/loader_canary.py codex
-python3 plugins/last-human-commit/scripts/loader_canary.py claude
-python3 plugins/last-human-commit/scripts/loader_canary.py opencode
-```
-
-These checks validate the package loader shapes. They do not install the
-package, alter user configuration, or claim a live interactive runtime session.
+Source updates: edit the source, run `sync_skills.py`, then `python3 tests/validate.py`.
+The validator runs package/source parity and all executable regressions. Runtime
+installation and actual use must be verified separately from source tests.

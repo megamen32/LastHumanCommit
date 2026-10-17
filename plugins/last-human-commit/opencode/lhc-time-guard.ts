@@ -35,11 +35,22 @@ async function check(
   }
 }
 
+// Keep the installed filename/export compatible, but default to a small entry.
+// Time/learning observation is available only when explicitly enabled.
+const entered = new Set<string>()
+const entry = `LHC: read ${import.meta.dir}/../AGENTS.md for ordinary engineering requests. No slash command or setup interview is required. Keep independent work moving, isolate concurrent writers and integrate verified PRs.`
 export const LastHumanCommitTimeGuard = async ({ directory }: { directory: string }) => ({
   "chat.message": async (
     input: { sessionID?: string },
     output: { parts: Array<Record<string, unknown>> },
   ) => {
+    const identity = input.sessionID ?? directory
+    if (!entered.has(identity)) {
+      if (entered.size >= 256) entered.delete(entered.values().next().value!)
+      entered.add(identity)
+      output.parts.push({ type: "text", text: entry, synthetic: true })
+    }
+    if (process.env.LHC_TIME_GUARD_ENABLED !== "1") return
     const { prompt } = await check(directory, "chat.message", input.sessionID)
     if (prompt) output.parts.push({ type: "text", text: prompt, synthetic: true })
   },
@@ -47,6 +58,7 @@ export const LastHumanCommitTimeGuard = async ({ directory }: { directory: strin
     input: { sessionID?: string },
     output: { output: string },
   ) => {
+    if (process.env.LHC_TIME_GUARD_ENABLED !== "1") return
     const { prompt } = await check(directory, "tool.execute.after", input.sessionID)
     if (prompt) output.output = `${output.output}\n\n${prompt}`
   },
@@ -54,6 +66,8 @@ export const LastHumanCommitTimeGuard = async ({ directory }: { directory: strin
     input: { sessionID: string },
     output: { context: string[] },
   ) => {
+    output.context.push(entry)
+    if (process.env.LHC_TIME_GUARD_ENABLED !== "1") return
     const { handoff } = await check(directory, "PreCompact", input.sessionID)
     if (handoff) output.context.push(handoff)
   },
@@ -61,6 +75,7 @@ export const LastHumanCommitTimeGuard = async ({ directory }: { directory: strin
     input: { sessionID: string },
     _output: { enabled: boolean },
   ) => {
-    await check(directory, "PostCompact", input.sessionID)
+    entered.delete(input.sessionID)
+    if (process.env.LHC_TIME_GUARD_ENABLED === "1") await check(directory, "PostCompact", input.sessionID)
   },
 })

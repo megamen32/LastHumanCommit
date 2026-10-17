@@ -38,9 +38,7 @@ last_human_reply_at_or_id:
 started_at (UTC+3):
 result:
 
-Apply the active harness approval-policy state machine. Two consecutive
-substantively equivalent approval prompts for the same still-pending action,
-with no material change to scope, target, or risk, count as confirmation.
+Apply the active harness approval-policy state machine. The active harness owns approval policy. Repeated prompts do not manufacture user consent.
 
 Immediately before action, revalidate the target, artifact, accepted claim,
 workspace, and active-harness state. After action, run the exact business canary

@@ -1,3 +1,11 @@
+## 1.4.0 — 2026-10-17
+
+Automatic ordinary-language entry; isolated parallel work; PR/merge and final shared
+green history; independent work before waits. Atomic file-per-message project/system
+chat. Agent Herder `resume_after` protocol. Timer/learning observers opt-in rather
+than default. Native-instruction bootstrap preserves unrelated rules. Intentional
+policy checks migrated; existing behavioral/tool regressions retained.
+
 # Changelog
 
 ## 1.3.0 - 2026-09-10

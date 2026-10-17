@@ -1,3 +1,5 @@
+> Optional method reference. The current LHC router decides when this method is useful; legacy fixed schedules, mandatory forms and extra roles below are not automatic prerequisites.
+
 # Reviewer system prompt
 
 Outside Full I am an optional, strictly risk-triggered reviewer of one coherent

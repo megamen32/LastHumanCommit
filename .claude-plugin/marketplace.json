@@ -3,13 +3,13 @@
   "owner": {
     "name": "megamen32"
   },
-  "description": "Last Human Commit — business-first harness contract as a skills-only plugin: planning, task decomposition, bugfix-TDD, real-use testing, release, business delivery, and the worker/critic roles.",
+  "description": "Last Human Commit: automatic engineering, shared coordination and verified delivery.",
   "plugins": [
     {
       "name": "last-human-commit",
       "source": "./plugins/last-human-commit",
-      "description": "Ten generated skills (LHC core workflow) in a portable package: Agent Plugins 1.0.0 root manifest plus Claude Code and Codex native manifests.",
-      "version": "1.3.0",
+      "description": "Automatic workflow and 22 optional skills; isolated parallel work, shared file chat and PR integration.",
+      "version": "1.4.0",
       "category": "workflow"
     },
     {

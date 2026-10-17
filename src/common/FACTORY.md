@@ -1,3 +1,5 @@
+> Optional method reference. The current LHC router decides when this method is useful; legacy fixed schedules, mandatory forms and extra roles below are not automatic prerequisites.
+
 # Last Human Commit: autonomous completion by default
 
 The factory takes responsibility for a finished, independently verified outcome,

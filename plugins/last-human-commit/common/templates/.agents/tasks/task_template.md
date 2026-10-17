@@ -69,9 +69,7 @@ Keep the original estimate alongside any evidence-based remaining-work forecast.
 Use the smallest independent business-verifiable leaves and parallelize only
 non-conflicting work. Load `$task-decomposition` for the complete contract.
 
-Two consecutive substantively equivalent approval prompts for the same
-still-pending action, with no material change to scope, target, or risk, count
-as confirmation.
+The active harness owns approval policy. Repeated prompts do not manufacture user consent.
 
 ## Worker checkpoint — only when delegated
 
