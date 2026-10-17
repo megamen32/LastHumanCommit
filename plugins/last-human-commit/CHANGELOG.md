@@ -1,3 +1,8 @@
+## 1.4.4 — OpenCode 2 compatibility
+
+Native V2 hook registration and session-bound clock; V1 entrypoint retained.
+Business rules unchanged from 1.4.3.
+
 ## 1.4.3 — 2026-10-17
 
 Tangible user outcome before code; immediate bug TDD. Hourly direction review

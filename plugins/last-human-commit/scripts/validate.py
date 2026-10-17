@@ -226,7 +226,9 @@ def check_opencode_helper(root: Path) -> None:
             raise ValidationError(f"OpenCode helper returned invalid JSON in {output_format} format") from exc
         if payload.get("skills") != expected:
             raise ValidationError(f"OpenCode helper returned the wrong skills shape in {output_format} format")
-        if payload.get("plugin") != [str(root / "opencode" / "lhc-time-guard.ts")]:
+        field = "plugins" if output_format == "v2" else "plugin"
+        adapter = "lhc-v2.ts" if output_format == "v2" else "lhc-time-guard.ts"
+        if payload.get(field) != [str(root / "opencode" / adapter)]:
             raise ValidationError("OpenCode helper does not point to the LHC time-guard adapter")
 
 

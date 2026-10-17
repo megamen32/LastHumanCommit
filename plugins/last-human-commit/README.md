@@ -32,7 +32,7 @@ available; scheduled inspection is required even when the current plan looks cor
 
 ## Package and installation
 
-The native Agent Plugin is `plugins/last-human-commit`, version 1.4.3, with 22 optional
+The native Agent Plugin is `plugins/last-human-commit`, version 1.4.4, with 22 optional
 skills and small automatic-entry hooks. Use the harness's native plugin manager.
 For clients whose plugin hooks are unavailable or still await trust, the package
 provides a supported user-instruction bootstrap:
@@ -58,3 +58,6 @@ Zero Knowledge groups accept major outcome milestones (roughly 3 hours), not
 every hour or edit. Varied realistic personas leave detailed positive/negative
 feedback. Preserve raw feedback, fix actual obstacles and keep preferences
 without automatically expanding scope. See docs/V1.4.3.md in the source repository.
+
+OpenCode 2 uses the native `opencode/lhc-v2.ts` entrypoint; V1 retains
+`opencode/lhc-time-guard.ts`. OpenChamber shares the connected server installation.

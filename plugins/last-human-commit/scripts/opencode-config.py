@@ -29,10 +29,15 @@ def build_config(root: Path, output_format: str) -> dict[str, object]:
         skills_value = [os.fspath(skills)]
     else:
         raise ValueError(f"unsupported output format: {output_format}")
+    adapter = root / "opencode" / "lhc-time-guard.ts"
+    if output_format == "v2":
+        adapter = root / "opencode" / "lhc-v2.ts"
     return {
         "$schema": "https://opencode.ai/config.json",
         "skills": skills_value,
-        "plugin": [os.fspath(root / "opencode" / "lhc-time-guard.ts")],
+        ("plugins" if output_format == "v2" else "plugin"): [
+            os.fspath(adapter)
+        ],
     }
 
 
