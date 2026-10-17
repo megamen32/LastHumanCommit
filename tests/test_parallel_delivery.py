@@ -79,5 +79,6 @@ def test_native_instruction_bootstrap_is_idempotent_and_preserves_other_rules(tm
     assert first["changed"] and Path(first["backup"]).is_file()
     assert "Keep my project limits." in target.read_text()
     assert "old GSD" not in target.read_text()
-    assert str(root/"AGENTS.md") in target.read_text()
+    assert "native LHC hook" in target.read_text()
+    assert str(root) not in target.read_text(), "Codex must not pin a second cache version"
     assert install.configure(tmp_path,root,"codex",True)["changed"] is False
