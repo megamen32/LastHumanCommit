@@ -23,14 +23,15 @@ Design uses three passes: working solution, ideal version, then the smallest
 complete implementation preserving roughly 80% of useful value. These are not
 three builds or approval rounds; the method is separate from a three-line form.
 
-No mandatory setup interview, initial Overseer, three-line form or hourly ritual.
+No mandatory setup interview or initial Overseer. Hourly original-goal review
+with a fresh Zero Knowledge check and 120-minute workflow improvement are mandatory.
 Architecture, decomposition, independent review/testing and learning tools remain
-available when they improve the outcome. The complete default workflow is in
+available; scheduled inspection is required even when the current plan looks correct. The complete default workflow is in
 [AGENTS.md](AGENTS.md). Details: the repository's docs/V1.4.md.
 
 ## Package and installation
 
-The native Agent Plugin is `plugins/last-human-commit`, version 1.4.1, with 22 optional
+The native Agent Plugin is `plugins/last-human-commit`, version 1.4.2, with 22 optional
 skills and small automatic-entry hooks. Use the harness's native plugin manager.
 For clients whose plugin hooks are unavailable or still await trust, the package
 provides a supported user-instruction bootstrap:

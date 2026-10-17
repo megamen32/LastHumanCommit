@@ -15,21 +15,33 @@ def context_for(event, root):
     return context
 
 def main():
+    import io
+    import os
+    import lhc_time_guard as guard
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--event',default='SessionStart')
     parser.add_argument('--root',type=Path)
+    parser.add_argument('--runtime',choices=('codex','claude'),default='claude' if os.environ.get('CLAUDE_PROJECT_DIR') else 'codex')
     args=parser.parse_args()
     try:
         event=json.loads(sys.stdin.read(65536) or '{}')
     except ValueError:
         event={}
+    if not isinstance(event,dict):event={}
+    if event.get("agent_id"):
+        event["session_id"] = str(event.get("session_id") or "unknown") + ":subagent:" + str(event["agent_id"])
     root=args.root or Path(__file__).resolve().parents[1]
-    if args.event == 'UserPromptSubmit':
-        # Universal Claude-compatible stdout context, accepted by clients that
-        # do not expose a structured UserPromptSubmit hook result.
-        print(context_for(event,root))
-    else:
-        print(json.dumps({'hookSpecificOutput':{'hookEventName':args.event,
-              'additionalContext':context_for(event,root)}}))
+    contexts=[]
+    if args.event in ('SessionStart','UserPromptSubmit','PostCompact'):
+        contexts.append(context_for(event,root))
+    try:
+        sys.stdin=io.StringIO(json.dumps(event))
+        result=guard.hook(argparse.Namespace(runtime=args.runtime,event=args.event,now=None,idle_cap_seconds=300,session_only=True)) or {}
+        context=result.get('hookSpecificOutput',{}).get('additionalContext') or result.get('prompt') or result.get('systemMessage')
+        if context:contexts.append(context)
+    except (OSError,ValueError,KeyError,TypeError) as error:
+        print('LHC checkpoint unavailable: '+type(error).__name__+'; perform the due review manually.',file=sys.stderr)
+    if contexts:
+        print(json.dumps({'hookSpecificOutput':{'hookEventName':args.event,'additionalContext':'\n\n'.join(contexts)}}))
 
 if __name__=='__main__': main()

@@ -1,5 +1,3 @@
-> Optional method reference. The current LHC router decides when this method is useful; legacy fixed schedules, mandatory forms and extra roles below are not automatic prerequisites.
-
 # Self-improve evolution loop
 
 ## Start with applicable learning
@@ -59,7 +57,8 @@ overrun means that decision's bounded continuation also misses its limit or the
 accepted delivery forecast is no longer credible. Do not wait two hours after
 an earlier trigger.
 
-First compare the original accepted outcome, cumulative elapsed time and total
+First reread the original user request/documents and latest direct corrections,
+not just the agent-authored plan or summary. Compare the original accepted outcome, cumulative elapsed time and total
 forecast with demonstrated user results. Name repeated operations, self-caused
 rework and remaining blockers. Select at most one useful method correction;
 prefer removing a redundant step or changing the next action over adding rules.

@@ -1,5 +1,3 @@
-> Optional method reference. The current LHC router decides when this method is useful; legacy fixed schedules, mandatory forms and extra roles below are not automatic prerequisites.
-
 # Business time control
 
 ## One objective, one cumulative clock
@@ -109,25 +107,19 @@ tool there. Its JSON state belongs under
 `.agents/shared-session/time/<cycle-id>.json` or the harness's equivalent durable
 task state.
 
-## Hourly Lead report
+## Mandatory hourly business checkpoint
 
-At every crossed wall-clock hour while the task remains active, L reports to the
-user, without stopping safe work:
+Follow BUSINESS_CHECKPOINT.md every 60 measured native active minutes: reread the
+original user source and latest corrections, compare the usable result, decide the
+next route and obtain a fresh independent Zero Knowledge observation. Generated
+plans and green technical checks cannot replace the original acceptance.
+The default native hook does not require a formatted task-card. It reuses the
+persistent session state and the existing monotonic interval tool. Idle/permission
+waits are paused; incomplete lifecycle coverage uses an explicit wall fallback,
+never invented active-time claims. No background wake is created.
 
-```text
-Какие реальные задачи закрыты:
-Реальная бизнес-дельта:
-Завершённые файлы:
-План minimum/maximum активных минут:
-Факт active / wall-clock:
-Что мешает:
-Какие гейты или инструкции задерживают бизнес-результат:
-Контроль времени и следующий самый короткий маршрут:
-```
-
-If nothing real closed, say `ничего` and explain the blocker. Do not substitute
-workers started, tests run, reviews completed, task-card edits, or process
-receipts for closed business tasks.
+The review is mandatory; an hourly user-facing status message is not. Report only
+meaningful results, blockers or decisions. Notification never acknowledges review.
 
 ## Estimate overrun
 

@@ -158,7 +158,8 @@ def _run_guard(event: str, payload: dict[str, Any]) -> dict[str, Any] | None:
     if not tool.is_file():
         return None
     completed = subprocess.run(
-        [sys.executable, os.fspath(tool), "hook", "--runtime", "hermes", "--event", event],
+        [sys.executable, os.fspath(tool), "hook", "--runtime", "hermes", "--event", event,
+         *([] if event in ("PreCompact", "PostCompact") else ["--session-only"])],
         input=json.dumps(payload, ensure_ascii=False),
         check=False,
         capture_output=True,
@@ -209,7 +210,7 @@ def observe_pre_llm(
     cwd = Path.cwd().resolve()
     agents_root = _agents_root(cwd)
     if agents_root is None:
-        return None
+        agents_root = cwd / ".agents"
     logical = _logical_session_id(agents_root, session_id, parent_session_id)
     payload: dict[str, Any] = {
         "cwd": os.fspath(cwd),
@@ -218,6 +219,9 @@ def observe_pre_llm(
         "prompt": user_message,
     }
     contexts: list[str] = []
+    entry = ordinary_entry()
+    if entry:
+        contexts.append(entry["context"])
     control = _run_guard("chat.message", payload)
     if control and isinstance(control.get("prompt"), str) and control["prompt"].strip():
         contexts.append(control["prompt"].strip())
@@ -336,4 +340,4 @@ def ordinary_entry(**_: Any) -> dict[str, str] | None:
 
 def register(ctx: Any) -> None:
     ctx.register_middleware("tool_request", rewrite_delegate_task)
-    ctx.register_hook("pre_llm_call", observe_pre_llm if os.environ.get("LHC_TIME_GUARD_ENABLED") == "1" else ordinary_entry)
+    ctx.register_hook("pre_llm_call", ordinary_entry if os.environ.get("LHC_TIME_GUARD_ENABLED") == "0" else observe_pre_llm)
