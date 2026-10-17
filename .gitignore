@@ -13,3 +13,8 @@ graphify-out/
 .agents/shared-session/knowledge/*.lock
 .serena/
 .codex-marketplace-install.json
+
+# Shared runtime coordination, not source changes
+.agents/shared-session/chat/
+.agents/shared-session/readers/
+.agents/shared-session/sessions/

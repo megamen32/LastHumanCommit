@@ -1,23 +1,12 @@
 {
-  "description": "Fail-open LHC business and estimate time guard",
+  "description": "Small automatic LHC entry; no scheduled role or learning ceremony",
   "hooks": {
     "SessionStart": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${PLUGIN_ROOT:-${ZCODE_PLUGIN_ROOT:-$HOME/.codex/.tmp/marketplaces/megamen32-plugins/plugins/last-human-commit}}}}/tools/lhc_time_guard.py\" hook --runtime codex --event SessionStart || { printf '%s\\n' 'LHC time observer unavailable; message processing continues.' >&2; :; }",
-            "timeout": 3
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${PLUGIN_ROOT:-${ZCODE_PLUGIN_ROOT:-$HOME/.codex/.tmp/marketplaces/megamen32-plugins/plugins/last-human-commit}}}}/tools/lhc_time_guard.py\" hook --runtime codex --event PostToolUse || { printf '%s\\n' 'LHC time observer unavailable; message processing continues.' >&2; :; }",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${PLUGIN_ROOT:-${ZCODE_PLUGIN_ROOT:-$HOME/.codex/.tmp/marketplaces/megamen32-plugins/plugins/last-human-commit}}}}/tools/lhc_entry.py\" --event SessionStart || { printf '%s\\n' 'LHC entry unavailable; message processing continues.' >&2; :; }",
             "timeout": 3
           }
         ]
@@ -28,19 +17,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${PLUGIN_ROOT:-${ZCODE_PLUGIN_ROOT:-$HOME/.codex/.tmp/marketplaces/megamen32-plugins/plugins/last-human-commit}}}}/tools/lhc_time_guard.py\" hook --runtime codex --event UserPromptSubmit || { printf '%s\\n' 'LHC time observer unavailable; message processing continues.' >&2; :; }",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${PLUGIN_ROOT:-${ZCODE_PLUGIN_ROOT:-$HOME/.codex/.tmp/marketplaces/megamen32-plugins/plugins/last-human-commit}}}}/tools/lhc_entry.py\" --event UserPromptSubmit || { printf '%s\\n' 'LHC entry unavailable; message processing continues.' >&2; :; }",
             "timeout": 3
-          }
-        ]
-      }
-    ],
-    "PreCompact": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${PLUGIN_ROOT:-${ZCODE_PLUGIN_ROOT:-$HOME/.codex/.tmp/marketplaces/megamen32-plugins/plugins/last-human-commit}}}}/tools/lhc_time_guard.py\" hook --runtime codex --event PreCompact || { printf '%s\\n' 'LHC time observer unavailable; message processing continues.' >&2; :; }",
-            "timeout": 5
           }
         ]
       }
@@ -50,8 +28,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${PLUGIN_ROOT:-${ZCODE_PLUGIN_ROOT:-$HOME/.codex/.tmp/marketplaces/megamen32-plugins/plugins/last-human-commit}}}}/tools/lhc_time_guard.py\" hook --runtime codex --event PostCompact || { printf '%s\\n' 'LHC time observer unavailable; message processing continues.' >&2; :; }",
-            "timeout": 5
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${PLUGIN_ROOT:-${ZCODE_PLUGIN_ROOT:-$HOME/.codex/.tmp/marketplaces/megamen32-plugins/plugins/last-human-commit}}}}/tools/lhc_entry.py\" --event PostCompact || { printf '%s\\n' 'LHC entry unavailable; message processing continues.' >&2; :; }",
+            "timeout": 3
           }
         ]
       }

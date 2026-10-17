@@ -85,5 +85,6 @@ def test_package_declares_both_native_adapters() -> None:
     manifest = json.loads((PLUGIN / "plugin.json").read_text(encoding="utf-8"))
     assert manifest["extensions"]["com.openai"]["hooks"] == "./hooks/hooks.json"
     hooks = json.loads((PLUGIN / "hooks/hooks.json").read_text(encoding="utf-8"))
-    assert set(hooks["hooks"]) >= {"SessionStart", "PostToolUse"}
+    assert set(hooks["hooks"]) >= {"SessionStart", "UserPromptSubmit"}
+    assert "PostToolUse" not in hooks["hooks"], "time guard is opt-in, not a default per-tool ceremony"
     assert (PLUGIN / "opencode/lhc-time-guard.ts").is_file()

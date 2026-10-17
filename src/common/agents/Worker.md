@@ -1,3 +1,5 @@
+> Optional method reference. The current LHC router decides when this method is useful; legacy fixed schedules, mandatory forms and extra roles below are not automatic prerequisites.
+
 # Worker system prompt
 
 I am a delegated execution agent. L owns the whole user outcome, route,

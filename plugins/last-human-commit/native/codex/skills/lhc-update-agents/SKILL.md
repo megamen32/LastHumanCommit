@@ -1,88 +1,21 @@
 ---
 name: lhc-update-agents
-description: Update Last Human Commit sources, regenerate the canonical Agent Plugins package, validate, commit and push, then install or update through each selected harness's native plugin marketplace or manager and prove its installed loader. Use for LHC prompts, roles, protocols, commands, skills, or plugin delivery changes.
+description: Update the shared LHC sources, generate and validate the native plugin, then publish and verify the selected installed loaders.
 ---
 
-# Rewrite Last Human Commit
+# Update LHC
 
-Sources: `/home/roomhacker/agents-projects/LastHumanCommit` (git, main).
-This is one shared LHC, not one fork per application. Edit it here even when the
-conversation opened in GPTAdmin or another repository. LHC ToDo/task records
-belong in this repository's `.agents/`; infer that from the work without a
-project-selection command. Application repositories keep only their own rules
-and an optional short pointer from `src/common/templates/project-router.md`.
-Never copy the full LHC router or maintain per-project versions.
-The canonical delivery unit is `plugins/last-human-commit`, following the
-[Agent Plugins specification](https://agent-plugins.org/specification/).
-Change owning source, regenerate the package, and use native marketplace
-install/update. Never hand-edit installed packages or synchronize individual
-skills into harness directories.
+Own the change in `LastHumanCommit`, not in an installed cache or a copy in
+another project. Preserve foreign work; use a worktree when another writer is
+present. The source is `src/common/`, `adapters/` and `skills/`; the delivery
+package is `plugins/last-human-commit`.
 
-## 1. Baseline push — mandatory before edits
+Generate with `python3 plugins/last-human-commit/scripts/sync_skills.py`, check
+with `--check` and run the relevant behavioral tests plus both validators.
+Keep manifests at the same version. Review, push, create a PR and merge when
+checks and authority allow; then verify the merged source.
 
-Make this bot's future changes identifiable as one commit range:
-
-```bash
-cd ~/agents-projects/LastHumanCommit
-git status --porcelain   # review dirty paths and resolve ownership before committing
-git log @{u}..HEAD       # push reviewed unpushed commits
-git push origin main
-```
-
-The pushed HEAD is the baseline. Preserve unrelated work; do not absorb it
-silently or overwrite another worker's changes.
-Compare `main` with fresh `origin/main` before diagnosing divergence. An old
-installed package or legacy `current` symlink is deployment drift, not missing
-Git history. Inspect relevant branch content before claiming work was lost.
-
-## 2. Edit sources and generate the package
-
-- Roles, protocols, templates, commands: `src/common/`; native adapter source:
-  `adapters/`; operator skills: `skills/`.
-- Generate and check the package with:
-
-  ```bash
-  python3 plugins/last-human-commit/scripts/sync_skills.py
-  python3 plugins/last-human-commit/scripts/sync_skills.py --check
-  python3 plugins/last-human-commit/scripts/validate.py
-  ```
-
-  Generated package content is not an independent source of truth.
-- Run `python3 tests/validate.py` and fix until green; never delete checks.
-- Keep the portable root `plugin.json`, `skills/`, and optional `mcp.json`
-  conformant. Native hooks, manifests and extension behavior must match each
-  actual client; portability does not promise identical capabilities.
-
-## 3. Commit and push
-
-Review the diff and commit task-owned files at completed steps. Push the verified
-package and source through the repository's main delivery history.
-
-## 4. Install or update through native loaders
-
-For each selected installed harness, identify its actual plugin marketplace or
-manager and supported package entrypoint. Publish/register the versioned package
-through that mechanism and request its native install/update. For a missing
-installation, use the same native plugin route. Do not use Fleet copy rollout,
-per-harness skill synchronization, or direct edits of installed runtime files.
-
-Check the installed package version and run a fresh harness session that
-actually discovers and invokes an LHC skill or supported extension from that
-package. Static manifest checks and reading a file alone do not prove loading.
-Report source tests, package publication, installed version and real loader
-canary separately per target. Automatic refresh/restart and extension support
-are client-specific; do not claim universal auto-updates.
-
-For hook changes, submit a harmless message through the actual client after
-installation and verify agent receipt plus execution of the changed extension.
-For updates repeat with a session opened before the update; loaders may retain
-commands pointing at a removed cache version. Verify advisory observer failure
-does not block messages, including a missing executable. Discovery and direct
-script tests cannot replace these client journeys. If a restart is required,
-state and test that recovery explicitly; untested sessions remain unverified.
-Do not call the Full cycle complete when any claimed target lacks this proof.
-
-If the target has no compatible native loader, report that observed limitation
-and ask for an explicitly selected compatibility route. `lhc-rollout` is
-available only for explicitly selected legacy recovery/rollback, never as an
-automatic fallback or normal release step.
+Use each selected harness's native plugin manager. Test the installed loader
+with an ordinary engineering request, not only an explicit skill invocation.
+Report source validation, package publication and actual runtime loading
+separately. A source test does not prove every running session has reloaded.

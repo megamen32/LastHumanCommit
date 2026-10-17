@@ -1,16 +1,12 @@
 ---
 name: last-human-commit
-description: Use for engineering tasks that need the Last Human Commit workflow, bounded roles, and a real product canary.
+description: Automatically handle normal engineering requests, including rough voice transcripts, from intent to tested delivery. Use for code, architecture, bugfixes and parallel project work; the user does not need to invoke a command.
 ---
 
 # Last Human Commit
 
-Use this skill when an engineering task needs the LHC workflow. Start each
-cycle from the current objective, current repository state, and current
-product and LHC feedback. Read `../../AGENTS.md` from this installed package,
-then follow the assigned role package under `common/agents/` and its referenced
-`common/protocols/` and `common/skills/` files. Use the package's bundled tools,
-including `common/tools/lhc_worktree.py`, when the role requires them.
-
-Do not read or depend on a legacy external store. Keep the user outcome and
-shortest real canary explicit, preserve unrelated work, and report evidence.
+Read `../../AGENTS.md` once and follow the current user's task. The package's
+router is the workflow; load other skills only when the task needs that method.
+Use native tools directly for simple work. Preserve the task through compaction,
+isolate concurrent writers, publish PRs and integrate the verified shared result.
+There is no mandatory setup interview or second GSD workflow.

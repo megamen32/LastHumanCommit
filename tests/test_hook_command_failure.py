@@ -24,7 +24,7 @@ def test_missing_package_does_not_block_message():
     for groups in config['hooks'].values():
         result = run_hook(groups[0]['hooks'][0]['command'], missing)
         assert result.returncode == 0, result.stderr
-        assert 'observer unavailable' in result.stderr
+        assert 'entry unavailable' in result.stderr
 
 
 def test_existing_observer_executes_without_fallback():
@@ -32,4 +32,4 @@ def test_existing_observer_executes_without_fallback():
     command = config['hooks']['UserPromptSubmit'][0]['hooks'][0]['command']
     result = run_hook(command, PACKAGE)
     assert result.returncode == 0, result.stderr
-    assert 'observer unavailable' not in result.stderr
+    assert 'entry unavailable' not in result.stderr

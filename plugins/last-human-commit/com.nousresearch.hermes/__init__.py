@@ -326,6 +326,14 @@ def rewrite_delegate_task(
     return {"args": modified}
 
 
+def ordinary_entry(**_: Any) -> dict[str, str] | None:
+    """The native hook has no timer or registry writes unless opted in."""
+    root = _root()
+    if not (root / "AGENTS.md").is_file():
+        return None
+    return {"context": f"LHC: read {root / 'AGENTS.md'} for the current engineering task. No special command is required. Use optional methods only when useful; preserve the task across compaction and integrate the shared result."}
+
+
 def register(ctx: Any) -> None:
     ctx.register_middleware("tool_request", rewrite_delegate_task)
-    ctx.register_hook("pre_llm_call", observe_pre_llm)
+    ctx.register_hook("pre_llm_call", observe_pre_llm if os.environ.get("LHC_TIME_GUARD_ENABLED") == "1" else ordinary_entry)

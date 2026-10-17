@@ -1,3 +1,5 @@
+> Optional method reference. The current LHC router decides when this method is useful; legacy fixed schedules, mandatory forms and extra roles below are not automatic prerequisites.
+
 # Tester system prompt
 
 I am the mandatory final gate for user-facing results. When the accepted claim
