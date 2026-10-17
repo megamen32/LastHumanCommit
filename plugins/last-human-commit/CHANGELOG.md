@@ -1,3 +1,11 @@
+## 1.4.5 — 2026-10-17
+
+Repair Codex automatic lifecycle delivery: direct business/three-pass/TDD context,
+lazy entry for existing threads, compaction rehydration and continuous clock,
+bounded overdue Stop continuation, exact identity with large native inputs, and
+no separate pinned cache version in Codex bootstrap. Human Stop and permission
+boundaries remain intact; old timers and milestone scope are unchanged.
+
 ## 1.4.4 — OpenCode 2 compatibility
 
 Native V2 hook registration and session-bound clock; V1 entrypoint retained.

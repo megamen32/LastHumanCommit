@@ -745,7 +745,7 @@ def business_checkpoint(args, cwd: Path, session_id: str, payload: dict,
                         business["coverage_gap"] = "Open gap discarded at native reconnect or changed clock; earlier intervals retained"
                     if interval["status"] == "running" and not acknowledge:
                         interval = module.transition(interval, "pause", sample)
-                    if event in starts or (event in {"precompact", "postcompact"} and was_running and not discontinuity):
+                    if event in starts or ((event in {"precompact", "postcompact"} or (event == "sessionstart" and payload.get("source") == "compact")) and was_running and not discontinuity):
                         interval = module.transition(interval, "resume", sample)
                 elif event in starts:
                     interval = module.transition(None, "start", sample, actor=session_id, task="original-user-goal")
@@ -798,7 +798,7 @@ def business_checkpoint(args, cwd: Path, session_id: str, payload: dict,
         reminder = ""
         previous = business.get("last_injected_at")
         refresh = event in {"userpromptsubmit","sessionstart","postcompact","chat.message"}
-        if due and not acknowledge and event not in pauses and not (args.runtime == "opencode" and event in {"tool.execute.before", "permission.replied"}) and (not previous or refresh or
+        if due and not acknowledge and event not in pauses and not (args.runtime == "codex" and event in {"precompact", "postcompact"}) and not (args.runtime == "opencode" and event in {"tool.execute.before", "permission.replied"}) and (not previous or refresh or
                 (now-parse_time(previous)).total_seconds() >= 300):
             reminder = (
                 "Обязательная часовая сверка LHC: сначала перечитай исходное поручение и последние поправки пользователя, "

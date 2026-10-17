@@ -27,6 +27,15 @@ def configure(home:Path,root:Path,runtime:str,replace_gsd:bool=False)->dict:
         pattern=re.compile(r"<!-- "+re.escape(start)+r":begin -->.*?<!-- "+re.escape(end)+r":end -->\s*",re.S)
         text=pattern.sub("",text)
     pointer=f"{BEGIN}\nFor an engineering request, automatically read `{root/'AGENTS.md'}` once and follow the user's normal language. No LHC command is required. Resume the same task after compaction. This LHC router is the default; other workflow skills are optional methods.\n{END}\n"
+    if runtime == "codex":
+        pointer = (f"{BEGIN}\nLHC is the default for engineering requests; no explicit plugin mention is needed. "
+            "The native LHC hook supplies the current absolute AGENTS.md and tool paths; use that root, "
+            "not a cached version from an earlier thread. Before coding, state the tangible before/after "
+            "result; choose working solution → ideal → useful 80%; for bugs use RED → fix → GREEN. "
+            "Keep mandatory hourly direction and 120-minute learning reviews; fresh Zero Knowledge "
+            "feedback belongs to major milestones, not every edit. If native LHC context is absent, "
+            "report the missing runtime rather than treating an AGENTS read as activation.\n"
+            f"{END}\n")
     after=text.rstrip()+"\n\n"+pointer
     if before==after:return {"path":str(file),"changed":False,"root":str(root)}
     backup=home/".local/state/last-human-commit/backups"/(datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ-")+uuid.uuid4().hex[:8]+"-"+runtime+".md")
