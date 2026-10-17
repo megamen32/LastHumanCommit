@@ -30,10 +30,14 @@ Redirect when:
 
 ## Material options — only when a route choice matters
 
-Record exactly two genuinely different approaches. For each, compress the
-ideal/full route to normal and then to the YAGNI/Pareto MVP. Present the two
-compressed variants; never invent a third option to fill a template. Skip this
-comparison when one route is already obvious and reversible.
+Design sequence: working solution -> ideal version -> 80%-value MVP.
+First describe a complete ordinary solution, improve it to the ideal, then choose
+the smallest complete implementation preserving about 80% of useful value.
+Record retained value, deferred scope and the real acceptance check. The three
+passes are one design exercise, not three builds or separate approvals.
+
+Record two genuinely different approaches only when a route choice matters;
+apply the sequence to each. Skip the comparison when one route is obvious.
 
 For each option:
 

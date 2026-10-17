@@ -87,20 +87,23 @@ an expensive uncertainty. Challenge the final synthesis and verify decisive
 claims; consensus alone is not acceptance. Ask the human only for a missing
 business fact, preference or authority that changes the decision.
 
-When a real human route decision remains, propose exactly two genuinely
-different approaches. Do not make ideal, normal, and MVP three selectable
-plans. For each approach perform one internal compression: `ideal/full -> normal
--> YAGNI/Pareto MVP`.
+For each design use `working solution -> ideal version -> 80%-value MVP`:
 
-1. sketch the ideal/full route;
-2. reduce it to a normal sufficient route;
-3. remove every element not required by the accepted claim, current canary, or
-   essential boundary to produce the YAGNI/Pareto MVP.
+1. outline an ordinary complete working solution from current inputs;
+2. improve that solution to its ideal version and identify the value and cost;
+3. keep the smallest fully working version retaining about 80% of the useful
+   result, with an explicit acceptance check and consciously deferred improvements.
 
-Show the human only the two compressed MVP routes with their discarded scope,
-advantages, disadvantages, minimum/maximum active time, dependencies, and real
-canary. Recommend the least-cost YAGNI/Pareto route by default. Skip the two-
-approach presentation entirely when one route is already obvious and reversible.
+Implement the third version by default. These are three design passes, not three
+implementations or approval rounds. An 80%-value target does not permit missing
+already accepted mandatory outcomes; the percentage is a planning orientation,
+not a measurement of completion.
+
+When a real human route decision remains, propose exactly two genuinely different approaches.
+Apply the same three-pass sequence within each and explain the recommended minimum,
+discarded scope, advantages, disadvantages, cost and real canary. Recommend the least-cost YAGNI
+route that retains the needed result. Skip the two-approach presentation when one
+route is obvious; the design method still applies briefly to that single solution.
 
 Load `$task-decomposition` when work still spans parallel or multiple cycles.
 Decompose into the smallest independent business-verifiable leaves; maximize

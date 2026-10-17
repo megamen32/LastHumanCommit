@@ -7,6 +7,14 @@ description: Lead-owned business-first procedure for choosing the least-cost rou
 
 Use only when planning can materially reduce wrong-path or coordination cost.
 
+## Three-pass design
+
+When choosing a design, use `working solution -> ideal version -> 80%-value MVP`
+even when there is only one practical approach. The architecture-design skill owns
+the detailed method. An obvious tiny fix needs only a short pass, not a new form.
+The 80% target concerns useful value, never incomplete implementation or silently
+missing mandatory requirements.
+
 ## Procedure
 
 Begin with current user inputs, project state and applicable verified product
@@ -35,14 +43,16 @@ assumptions and the end-to-end path before substantial implementation.
    technical review and a fresh independent Tester; extra governance needs
    concrete risk-reduction value. Routine technical choices belong to Lead.
 9. When a human route choice is useful, present exactly two genuinely different
-   approaches. For each, derive `ideal/full -> normal -> YAGNI/Pareto MVP` and
-   show only the compressed MVP, its discarded scope, advantages, disadvantages,
-   time, and real canary. Recommend the least-cost YAGNI route by default.
+   approaches. For each, use `working solution -> ideal version -> 80%-value MVP`:
+   establish how it works, improve that design, then keep the smallest complete
+   version with roughly 80% of the useful result. Implement that third version;
+   state its retained value, deferred scope, cost and real acceptance check.
+   This is one design sequence, not three builds or approval rounds. If the user
+   requests the reasoning behind the plan, show the three passes in one plan.
 
 ## Do not
 
-- Do not present three ritual plans, technical previews, or architecture essays.
-- Do not call ideal/normal/YAGNI three alternatives; they are one compression
-  pass applied inside each of two different approaches.
+- Three design passes are not three selectable alternatives or approval rounds.
+- When alternatives actually matter, apply the same sequence within each approach.
 - Do not forbid Lead implementation when it is cheaper.
 - Do not replace a route decision with a larger estimate.

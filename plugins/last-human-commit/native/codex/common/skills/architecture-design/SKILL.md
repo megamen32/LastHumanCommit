@@ -35,6 +35,27 @@ interface or prevent the user from reaching the goal? Compare practical alternat
 against those properties and the cost of changing course. Preserve a useful
 existing design when evidence supports it.
 
+## Three-pass design
+
+Use this sequence when designing a solution, before committing to its implementation:
+
+1. **Working solution.** Describe an ordinary, coherent way to solve the actual task
+   end to end with current components and constraints. First establish how it works;
+   do not start by cutting the scope of a solution that does not exist yet.
+2. **Ideal version.** Improve that same solution into the best version for the stated
+   purpose. Identify what better behavior, reliability, UX or architecture buys and
+   what it costs. This is a design reference, not permission to build every extension.
+3. **80%-value MVP.** Reduce the ideal to the smallest complete working version that
+   retains roughly 80% of the useful result, not 80% of the implementation. Keep the
+   essential path and architecture-critical boundaries. State the selected value,
+   deferred improvements and a real acceptance check.
+
+Implement the third version by default; the first two are design passes,
+not three separate builds or approval rounds. The 80% figure is an orientation, not a measured guarantee. Preserve already accepted mandatory outcomes; negotiate
+any actual scope reduction instead of silently omitting a requirement. A clear tiny
+change can collapse the passes into a short decision, without a planning document.
+When the user asks for a plan, make the three passes understandable in that one plan.
+
 ## Buy evidence before expensive implementation
 
 For each pivotal uncertainty, choose the smallest probe whose possible results

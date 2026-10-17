@@ -1,3 +1,12 @@
+## 1.4.1 — 2026-10-17
+
+Restore the useful design sequence: working solution -> ideal version -> 80%-value
+MVP. Apply it in the default router, Lead, architecture/planning skills and Full
+cycle template. This was mistakenly conflated with a mandatory three-line form.
+Keep the default lightweight: one design, not three reports, builds or approvals.
+The retained value is an orientation, not a claim of measured 80% or permission to
+omit mandatory outcomes. Existing worktree/chat/PR behavior is unchanged.
+
 ## 1.4.0 — 2026-10-17
 
 Automatic ordinary-language entry; isolated parallel work; PR/merge and final shared
