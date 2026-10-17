@@ -5,20 +5,30 @@ description: Run diverse independent goal-driven Testers on the real product, sy
 
 # Autonomous focus groups
 
-Use when multiple user goals or conditions could expose product weaknesses, or
-when requested. This skill can be invoked independently of a Full task. Full's
-single mandatory Tester remains a compact acceptance gate.
+Use fresh Zero Knowledge groups for major milestone acceptance and the final
+acceptance of that work, roughly 3 hours of coherent implementation per tangible
+outcome, not every hour or small change. Normal TDD and technical checks remain
+continuous. Three hours is a planning scale, not a forced delay or a rigid timer.
+A milestone must already name a user, a realistic goal, a before/after difference
+and a result that can actually be tried. No observable outcome means re-anchor
+the work, not spend another round on hashes and waiting for unrelated sessions.
 
 ## Form a useful group
 
-Lead selects a diverse set of plausible user goals, experience levels, devices,
-constraints and expectations. Names and fictional biographies alone do not create
-diversity. Example goals: get a first successful result with no product experience;
+Lead creates varied plausible personas with a name, age, personality, experience,
+realistic goal, device, constraints and expectations. Use random variation within
+the actual audience instead of choosing only users likely to succeed. Do not
+stereotype competence from age or any demographic trait: describe experience and
+conditions explicitly. Names and fictional biographies alone do not create diversity.
+Personality should change how they try to solve the task (for example impatient,
+methodical or exploratory), not impose a predetermined positive/negative verdict. Example goals: get a first successful result with no product experience;
 import existing work; resume a long operation after leaving; correct a mistaken
 input on a phone. Do not give the exact intended solution path.
 
-Choose a manageable group based on coverage, available models/tools and the
-value of additional evidence; no universal fixed count. Use strong-enough tool
+Choose multiple distinct users based on coverage and the value of additional
+evidence; no universal fixed count. Do not cut useful feedback merely because
+independent testing is expensive. More meaningful observations are welcome, but
+random complaint volume and longer biographies are not the goal. Use strong-enough tool
 operators even for novice personas. Model diversity and persona diversity are
 separate dimensions; do not claim one provides the other.
 
@@ -29,8 +39,13 @@ their independent first attempt. Apply `../user-testing/SKILL.md`.
 
 ## Turn observations into repairs
 
-Collect attempted actions and failure evidence, not essays imagining a UI.
-Consolidate duplicate underlying obstacles while retaining affected scenarios.
+Preserve raw feedback from each tester: positive and negative observations,
+what helped, what was liked/disliked, confusion, frustration, unmet expectations,
+attempts, recovery and whether the actual goal was achieved. Ask why and for
+concrete episodes; this is not a word quota or a demand to manufacture criticism.
+Do not reduce everything to PASS/FAIL or filter out preferences before Lead sees them.
+Consolidate duplicate underlying obstacles while retaining affected scenarios
+and the original feedback. These are simulated participants, not actual customers.
 Separate tool outages from product defects, and observed inability to meet a goal
 from aesthetic preference. Evaluate impact, reproducibility and fit to the goal,
 not the count or aggressiveness of complaints.
@@ -48,7 +63,9 @@ A bounded exploratory study is not a promise to eliminate all possible criticism
 
 ## Result
 
-Report covered goals/conditions and versions, evidence-backed findings, selected
-repairs, regression results, fresh retest outcomes and unresolved issues. Synthetic
+Report covered goals/personas/conditions and versions, links to full raw feedback,
+positive discoveries, criticism, evidence-backed findings, selected repairs,
+regression results, fresh retest outcomes and unresolved issues. Keep a concise
+synthesis for the user without truncating the testers' underlying observations. Synthetic
 participants expose scenarios; they do not estimate the percentage of real users
 with a problem. Do not present their preferences as market demand evidence.

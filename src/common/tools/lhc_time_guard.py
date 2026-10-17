@@ -693,7 +693,7 @@ def business_clock_sample():
 
 def business_checkpoint(args, cwd: Path, session_id: str, payload: dict,
                         *, acknowledge: bool = False) -> dict[str, Any]:
-    """Join original-goal review and blind acceptance in the existing session state.
+    """Record hourly original-goal direction, independently of milestone acceptance.
 
     Native work intervals are monotonic and pause at explicit idle/permission/stop
     events. Missing lifecycle coverage uses a labelled wall deadline, not fake
@@ -776,20 +776,23 @@ def business_checkpoint(args, cwd: Path, session_id: str, payload: dict,
                 raise ValueError("cite 1..8 original user source references")
             review = {"id": pending["id"], "at": now.isoformat(), "source_refs": refs,
                       **{field: text(field) for field in ("business_result", "scope_decision", "next_action")}}
+            # 1.4.3: keep old callers' optional observations without requiring a
+            # blind test every hour or interpreting them as milestone acceptance.
+            zk_fields = ("zk_session", "zk_result", "zk_evidence")
+            supplied = [getattr(args, field, None) is not None for field in zk_fields]
             if getattr(args, "zk_unavailable", None) is not None:
-                if any(getattr(args,f,None) for f in ("zk_session","zk_result","zk_evidence")):
+                if any(supplied):
                     raise ValueError("unavailable verifier cannot also be a verified result")
-                review.update(status="verification_pending", zk_unavailable=text("zk_unavailable"))
-            else:
-                review.update(status="reviewed", **{field:text(field) for field in ("zk_session","zk_result","zk_evidence")})
-                seen = business.get("recent_verifiers", [])
-                if review["zk_session"] in seen:
-                    raise ValueError("use a fresh independent verifier, not the earlier evaluator's history")
-                business["recent_verifiers"] = (seen+[review["zk_session"]])[-3:]
-                business["review_sequence"] += 1
-                business["pending"] = pending = None
-                business["next_active_seconds"] = (measured or 0)+3600
-                business["wall_due_at"] = (now+timedelta(hours=1)).isoformat()
+                review["zk_unavailable"] = text("zk_unavailable")
+            elif any(supplied):
+                if not all(supplied):
+                    raise ValueError("optional verifier evidence must include session, result and evidence")
+                review.update({field: text(field) for field in zk_fields})
+            review.update(status="direction_reviewed", milestone_acceptance="not_evaluated")
+            business["review_sequence"] += 1
+            business["pending"] = pending = None
+            business["next_active_seconds"] = (measured or 0)+3600
+            business["wall_due_at"] = (now+timedelta(hours=1)).isoformat()
             business["last_review"] = review
         due = pending is not None
         reminder = ""
@@ -802,13 +805,13 @@ def business_checkpoint(args, cwd: Path, session_id: str, payload: dict,
                 "а не только собственный план. Какой результат получил пользователь за этот час? "
                 "SHA, число тестов и обновление реестра сами по себе не отвечают на этот вопрос. "
                 "Выбери решение: продолжить необходимый путь, сократить придуманное расширение, сменить подход "
-                "или выполнить доступную независимую задачу. Затем свежий Zero Knowledge проверяющий без истории "
-                "исполнителя получает только бизнес-цель, точку входа и разрешённый доступ; проверь реальный результат. "
-                "Не подсказывай ему исходники, ожидаемые шаги или прошлые ошибки. "
+                "или выполнить доступную независимую задачу. Это контроль направления, не приёмка milestone. "
+                "Zero Knowledge с разными персонами и подробной обратной связью нужен на готовом крупном "
+                "milestone (~3 часа работы), не каждый час и не после каждого изменения. "
                 "Прочитай common/protocols/BUSINESS_CHECKPOINT.md. Зафиксируй источник, результат, решение, следующий шаг "
-                "и фактический вердикт через lhc_time_guard.py business-review. "
+                "через lhc_time_guard.py business-review; не выдавай эту запись за приёмку продукта. "
                 f"review-id={pending['id']}; runtime={args.runtime}; session={session_id}; state={path}. "
-                f"Clock: {clock_source}. Напоминание не закрывает проверку; отсутствие проверяющего не равно PASS. "
+                f"Clock: {clock_source}. Напоминание не закрывает проверку; milestone-приёмка хранится отдельно. "
                 "При отсутствии новой информации не отправляй пользователю очередной статус."
             )
             if business["original_prompt"]:
@@ -1054,7 +1057,7 @@ def parser() -> argparse.ArgumentParser:
     outcome = checkpoint.add_mutually_exclusive_group(required=True)
     outcome.add_argument("--method-change")
     outcome.add_argument("--no-change-reason")
-    review = subcommands.add_parser("business-review", help="record original-source review and independent user-result evidence")
+    review = subcommands.add_parser("business-review", help="record hourly original-source direction; this does not accept a product milestone")
     review.add_argument("--cwd", type=Path, required=True)
     review.add_argument("--runtime", choices=("codex", "claude", "opencode", "hermes"), required=True)
     review.add_argument("--session-id", required=True)
@@ -1064,7 +1067,7 @@ def parser() -> argparse.ArgumentParser:
     for field in ("business-result", "scope-decision", "next-action"):
         review.add_argument(f"--{field}", required=True)
     for field in ("zk-session", "zk-result", "zk-evidence", "zk-unavailable"):
-        review.add_argument(f"--{field}")
+        review.add_argument(f"--{field}", help="optional legacy observation; not milestone acceptance")
     return root
 
 

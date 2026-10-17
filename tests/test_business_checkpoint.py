@@ -77,16 +77,17 @@ def test_compaction_and_new_cards_keep_original_goal_and_clock(tmp_path,clock):
     assert state["latest_prompt"]=="Latest correction: use the existing report"
     assert due["due"]
 
-def test_ack_requires_evidence_and_cannot_treat_missing_zk_as_pass(tmp_path,clock):
+def test_ack_requires_source_and_cannot_claim_milestone_acceptance(tmp_path,clock):
     tick(tmp_path,clock,0,"UserPromptSubmit")
     due=tick(tmp_path,clock,3600)
     with pytest.raises(ValueError):ack(tmp_path,3601,due["review_id"],source_ref=[])
     with pytest.raises(ValueError):ack(tmp_path,3601,due["review_id"],zk_evidence=" ")
     with pytest.raises(ValueError):ack(tmp_path,3601,"wrong-review")
     partial=ack(tmp_path,3601,due["review_id"],zk_session=None,zk_result=None,zk_evidence=None,zk_unavailable="Native subagents unavailable")
-    assert partial["due"]
+    assert not partial["due"]
     state=json.loads(Path(due["state"]).read_text())["business"]
-    assert state["last_review"]["status"]=="verification_pending"
+    assert state["last_review"]["status"]=="direction_reviewed"
+    assert state["last_review"]["milestone_acceptance"]=="not_evaluated"
 
 def test_runtime_without_full_lifecycle_uses_honest_wall_fallback(tmp_path,clock):
     tick(tmp_path,clock,0,"chat.message",runtime="hermes")
@@ -109,7 +110,7 @@ def test_default_manifest_reaches_entry_and_periodic_guard():
 
 def test_blind_review_is_not_fed_the_implementers_answer():
     method=(ROOT/"src/common/protocols/BUSINESS_CHECKPOINT.md").read_text()
-    for term in ("исход", "Zero Knowledge", "без истории", "решение", "10–15"):
+    for term in ("исход", "Zero Knowledge", "~3 часа", "решение", "не приёмка milestone"):
         assert term in method
     assert "SHA" in method and "не" in method
 
@@ -174,3 +175,66 @@ def test_opencode_compaction_delivers_business_reminder_in_consumed_handoff(tmp_
     result=guard.hook(args)
     assert "Zero Knowledge" in result["handoff"]
     assert "Show original customer report" in result["handoff"]
+
+
+def test_hourly_direction_review_does_not_require_a_blind_tester(tmp_path,clock):
+    tick(tmp_path,clock,0,"UserPromptSubmit",prompt="Make report usable for a manager")
+    due=tick(tmp_path,clock,3600)
+    result=ack(tmp_path,3601,due["review_id"],zk_session=None,zk_result=None,zk_evidence=None)
+    assert not result["due"]
+    review=json.loads(Path(result["state"]).read_text())["business"]["last_review"]
+    assert review["status"]=="direction_reviewed"
+    assert review["milestone_acceptance"]=="not_evaluated"
+    assert not tick(tmp_path,clock,3602)["due"]
+    assert tick(tmp_path,clock,7201)["due"], "The hourly direction clock must remain active"
+
+
+def test_unavailable_milestone_tester_does_not_block_hourly_direction(tmp_path,clock):
+    tick(tmp_path,clock,0,"UserPromptSubmit")
+    due=tick(tmp_path,clock,3600)
+    result=ack(tmp_path,3601,due["review_id"],zk_session=None,zk_result=None,zk_evidence=None,
+               zk_unavailable="Milestone is not ready; no blind test was run")
+    assert not result["due"]
+    review=json.loads(Path(result["state"]).read_text())["business"]["last_review"]
+    assert review["zk_unavailable"]=="Milestone is not ready; no blind test was run"
+    assert review["milestone_acceptance"]=="not_evaluated"
+
+
+def test_real_cli_records_direction_without_zk_flags(tmp_path):
+    subprocess.run(["git","init","-q",str(tmp_path)],check=True)
+    tool=ROOT/"src/common/tools/lhc_time_guard.py"
+    payload={"cwd":str(tmp_path),"session_id":"native-direction","prompt":"Open the actual report"}
+    def cli(*arguments, data=None):
+        result=subprocess.run([sys.executable,str(tool),*map(str,arguments)],
+            input=json.dumps(data) if data is not None else None,
+            capture_output=True,text=True,check=True,timeout=10)
+        return json.loads(result.stdout) if result.stdout.strip() else None
+    cli("hook","--runtime","codex","--event","UserPromptSubmit",data=payload)
+    path=next((tmp_path/".agents/shared-session/learning").glob("*.json"))
+    state=json.loads(path.read_text())
+    state["business"]["interval"]["active_ns"]=3600*10**9  # controlled test clock, not a live-time claim
+    path.write_text(json.dumps(state))
+    cli("hook","--runtime","codex","--event","PostToolUse",data=payload)
+    identity=json.loads(path.read_text())["business"]["pending"]["id"]
+    result=cli("business-review","--runtime","codex","--cwd",tmp_path,
+        "--session-id","native-direction","--review-id",identity,
+        "--source-ref","original request","--business-result","Report opens but filtering remains",
+        "--scope-decision","Keep the existing report","--next-action","Implement its filter")
+    assert result["due"] is False
+    review=json.loads(path.read_text())["business"]["last_review"]
+    assert review["status"]=="direction_reviewed"
+    assert review["milestone_acceptance"]=="not_evaluated"
+    assert "zk_session" not in review
+
+
+def test_optional_old_verifier_fields_require_a_complete_honest_observation(tmp_path,clock):
+    tick(tmp_path,clock,0,"UserPromptSubmit")
+    due=tick(tmp_path,clock,3600)
+    with pytest.raises(ValueError):
+        ack(tmp_path,3601,due["review_id"],zk_result=None)
+    with pytest.raises(ValueError):
+        ack(tmp_path,3601,due["review_id"],zk_unavailable="Unavailable")
+    result=ack(tmp_path,3601,due["review_id"])
+    review=json.loads(Path(result["state"]).read_text())["business"]["last_review"]
+    assert review["zk_evidence"]=="readonly-check/run1.json"
+    assert review["milestone_acceptance"]=="not_evaluated"
