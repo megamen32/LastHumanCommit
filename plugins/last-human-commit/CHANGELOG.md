@@ -1,3 +1,12 @@
+## 1.4.6 — 2026-10-17
+
+Route completed review to authorized delivery, not receipt-review loops. Native
+entry, Lead, Reviewer and hourly review distinguish material changes, metadata-only
+corrections and unknown coverage. Reuse native review/CI results; machine-fill
+existing metadata instead of writing duplicate JSON with LLMs. Preserve real tests,
+release/resource/approval gates, timed checks and milestone Zero Knowledge feedback.
+No new service, model timer, receipt format or production changes.
+
 ## 1.4.5 — 2026-10-17
 
 Repair Codex automatic lifecycle delivery: direct business/three-pass/TDD context,
