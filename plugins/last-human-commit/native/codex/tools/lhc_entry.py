@@ -33,6 +33,7 @@ def context_for(event, root):
         "При изменении кода, зависимостей или среды проверь значимую дельту; неизвестный охват не считай PASS. "
         "После достаточных проверок делай ближайший рабочий результат: разрешённый deployment и сценарий пользователя, "
         "не ревью справки. Действующие release gates сохраняются. "
+        f"Контракт review→delivery: {method_root(root)/'protocols/REVIEW_TO_DELIVERY.md'}. "
         "Часовая сверка направления и самоулучшение через 120 минут обязательны; native hook "
         "напомнит, запись напоминания не закрывает проверку. На готовом крупном milestone "
         "(~3 часа цельной работы, не на каждый чих) нужны свежие Zero Knowledge тестировщики "
@@ -134,6 +135,15 @@ def handle(event, name, runtime, root):
                 contexts.append(rooted(learning["prompt"], root))
                 delivery.update(learning_injected_at=now.isoformat(), learning_due=learning["due_at"])
         output = {}
+        if runtime == "opencode" and name == "PreCompact":
+            # V2 compaction consumes the native system slot. Restore the actual
+            # original/latest human goal, not a stale nearby task card.
+            parts = [context_for(event, root), rehydrate(state, path)]
+            if business["prompt"]:
+                parts.append(rooted(business["prompt"], root))
+            if learning["prompt"]:
+                parts.append(rooted(learning["prompt"], root))
+            output = {"handoff": "\n\n".join(parts)}
         if runtime == "codex" and name == "Stop" and (business["due"] or learning["due"]):
             identity = [event.get("turn_id"), business.get("review_id"), learning["due_at"] if learning["due"] else None]
             if not event.get("stop_hook_active") and delivery.get("stop_continuation") != identity:
@@ -168,7 +178,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--event", default="SessionStart")
     parser.add_argument("--root", type=Path)
-    parser.add_argument("--runtime", choices=("codex", "claude"), default="claude" if os.environ.get("CLAUDE_PROJECT_DIR") else "codex")
+    parser.add_argument("--runtime", choices=("codex", "claude", "opencode"), default="claude" if os.environ.get("CLAUDE_PROJECT_DIR") else "codex")
     args = parser.parse_args()
     try:
         # Native tool responses routinely exceed 64 KiB. Truncating JSON used to

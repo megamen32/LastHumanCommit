@@ -162,3 +162,17 @@ def test_concurrent_acknowledgement_prevents_a_stale_stop_decision(tmp_path,monk
     e=importlib.util.module_from_spec(spec);spec.loader.exec_module(e)
     output=e.handle({"cwd":str(tmp_path),"session_id":"existing-thread","turn_id":"turn-one"},"Stop","codex",ROOT)
     assert output.get("decision")!="block"
+
+
+def test_opencode_native_global_entry_has_no_second_pinned_version(tmp_path):
+    spec=importlib.util.spec_from_file_location("lhc_opencode_install",ROOT/"plugins/last-human-commit/scripts/install_runtime.py")
+    installer=importlib.util.module_from_spec(spec);spec.loader.exec_module(installer)
+    p=tmp_path/".config/opencode/AGENTS.md";p.parent.mkdir(parents=True)
+    p.write_text("My personal preferences\n<!-- lhc-autoentry:begin -->old releases/1.4.4/AGENTS.md<!-- lhc-autoentry:end -->\n")
+    installer.configure(tmp_path,ROOT/"plugins/last-human-commit","opencode",False)
+    final=p.read_text()
+    assert "My personal preferences" in final
+    assert "releases/1.4.4" not in final
+    assert "plugins/last-human-commit/AGENTS.md" not in final
+    assert "native OpenCode" in final
+    assert "review" in final.lower() and "Zero Knowledge" in final
