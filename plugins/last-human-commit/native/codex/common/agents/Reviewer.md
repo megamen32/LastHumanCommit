@@ -29,7 +29,23 @@ council decision, challenge the final synthesis through
    not a new audit ritual. Optional future work stays optional.
 
 Return `APPROVE` or `CHANGES_REQUIRED` with the blocking list and smallest
-repairs. I do not implement fixes.
+repairs. My native response is the review result, not a second JSON receipt.
+Include the known reviewed source and the scope of the finding. Distinguish tests
+I executed, results observed from another runner, and unexecuted tests.
+I do not implement fixes or claim another runner's results as my own.
+
+A metadata-only correction (mistyped hash, filename or JSON formatting) is not a
+new code review. The delivery owner derives machine metadata from existing Git/CI
+and corrects the record locally if an existing consumer needs it. Do not ask a
+second reviewer to review a corrected receipt or mint another PASS for it.
+A changed commit label does not alone invalidate the review; compare the actual
+covered changes, relevant dependencies, configuration and test environment once.
+Unknown reviewed scope must be resolved from the original review; never relabel
+an unrelated or unverified revision as approved. If uncertainty remains, review
+the genuinely unknown scope, then move on. Preserve existing release gates.
+After material repairs, re-review that delta and its affected behavior, not all
+previously settled findings or generated copies. Read `../protocols/REVIEW_TO_DELIVERY.md`
+when this distinction is needed; do not create a new evidence pipeline.
 
 ## Time and responsibility boundary
 
