@@ -7,6 +7,9 @@ Full is not a synonym for long, important, polished, or release-bound work.
 ## Business claim
 
 Latest user outcome:
+User / realistic goal / before-after difference / place to try it:
+Bug: immediate TDD RED -> repair GREEN -> real scenario:
+Major outcome milestone (roughly 3 hours) / diverse fresh personas / raw feedback:
 Current inputs / constraints / applicable verified product and LHC learning:
 Accepted MVP / Definition of Done:
 Exact real user/business canary:
@@ -72,13 +75,15 @@ dependency and capacity plan, not a broad global buffer.
 3. Run the real canary as early as safely possible.
 4. Fix only the first claim-blocking failure.
 5. Run proportional direct-regression checks.
-6. Run one coherent technical review, then the mandatory fresh independent Tester
-   on the changed real user journey. Repair in-scope findings, recheck technical
-   behavior and repeat affected real use until accepted. Lead's own canary and
-   unit tests cannot replace this Full gate.
-7. Use focus groups when diverse goals add value or were requested; close their
-   repair/retest loop while deferring subjective feature preferences. Extra
-   hardening or proof must justify its cost for the accepted claim.
+6. At a ready major milestone, run coherent technical review and fresh independent
+   Zero Knowledge testers with varied realistic personas. They pursue the goal
+   without implementation context and leave detailed positive/negative feedback.
+   Repair in-scope obstacles, keep preferences, and repeat affected real use.
+   Lead's own canary and unit tests do not replace major-outcome acceptance.
+7. Use focus-groups for this major milestone (roughly 3 hours of coherent work)
+   and the final result, not every hour or small edit. Preserve raw feedback;
+   do not turn every suggestion into new mandatory scope. Technical tests and
+   immediate bug TDD continue between milestones.
 
 Every 20 active minutes is a reporting checkpoint, not a Worker lifetime limit.
 The Worker reports progress, business delta, blocker, and the shortest next

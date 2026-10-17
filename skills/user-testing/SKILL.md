@@ -5,11 +5,23 @@ description: Independently attempt a user goal through a real browser, device, a
 
 # Real-use testing
 
-Used by the mandatory single Full Tester and as a standalone capability. It is
-not source review. Receive a goal, relevant persona/conditions, intended result,
-product revision, real surface and suitable test account/data. A recipe of exact
-clicks is appropriate for a regression replay, not for discovering whether a user
-can find their own way.
+Run at a major milestone and its final acceptance, roughly 3 hours of coherent
+work, not every hour, tool call or small edit. The boundary is a usable outcome,
+not an arbitrary elapsed deadline; do not wait three hours for a ready milestone
+or split a substantial outcome into fragments to evade independent testing.
+Technical tests continue throughout development.
+
+Before code, define a tangible outcome: who is solving which real task, the
+before/after difference and a real entry point. For a bug start TDD immediately:
+reproduce the failing behavior RED, repair it GREEN, then check the original
+scenario. An internal refactor, dependency or SHA is a means toward an observable
+user/consumer outcome, not a substitute for it. API and CLI consumers count too.
+
+This is user testing, not source review. Receive a plausible persona, a realistic
+goal and relevant conditions, the real surface and allowed test data. Receive
+no implementation history and not the expected verdict, changed control names,
+a success click recipe or other testers' findings. Source-informed regression
+replay is a different, explicitly labelled check.
 
 Start fresh, without source code, implementation chats or internal explanations.
 In normal use, public help available to a real user is allowed. In a separately
@@ -32,9 +44,20 @@ screenshot in the owning session before retry, navigation or cleanup. If capture
 is unavailable, record the missing evidence and tool limitation.
 
 Capture goal, actions tried, expected versus observed result, failure point,
-recovery attempt and useful evidence. Classify a proven defect, usability obstacle,
-personal preference or unverified concern; blunt criticism is welcome but needs
-an observed episode. Do not convert every preference into a feature requirement.
+recovery attempt and useful evidence. Explain what helped, what confused you,
+what you liked/disliked, where you hesitated and whether the result solves your
+actual task. Preserve detailed candid feedback rather than compressing it into
+PASS/FAIL or only critical bugs. An honest "nothing notable" is better than
+invented praise or criticism; useful detail has no arbitrary short word quota.
+Classify a proven defect, usability obstacle, preference or unverified concern;
+blunt criticism needs an observed episode. Do not turn every preference into a
+mandatory feature, and do not throw preferences away before Lead has read them.
+
+When both before/after versions are safe and available, a neutral comparison can
+show whether the tester independently notices the practical difference. Do not
+reveal which version is expected to win or replay harmful production defects.
+Otherwise prove the new behavior and retain the failing baseline/TDD separately;
+a tester who never saw the old version must not claim an observed comparison.
 
 Return PASS, CHANGES_REQUIRED or BLOCKED_REAL_SURFACE. For repairs, replay the
 original failure and make a fresh uninstructed attempt when discoverability matters.

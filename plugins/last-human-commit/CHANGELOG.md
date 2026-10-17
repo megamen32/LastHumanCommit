@@ -1,3 +1,12 @@
+## 1.4.3 — 2026-10-17
+
+Tangible user outcome before code; immediate bug TDD. Hourly direction review
+remains mandatory but no longer requires blind testing. Fresh varied Zero Knowledge
+personas with detailed positive/negative feedback accept major outcome milestones
+(roughly 3 hours), not each hour or edit. Legacy optional reviewer evidence is kept
+without treating it as milestone acceptance. Three-pass planning and 120-minute
+workflow improvement remain unchanged.
+
 ## 1.4.2 — 2026-10-17
 
 Restore compulsory hourly original-goal/Zero Knowledge review and 120-minute

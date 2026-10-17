@@ -23,15 +23,16 @@ Design uses three passes: working solution, ideal version, then the smallest
 complete implementation preserving roughly 80% of useful value. These are not
 three builds or approval rounds; the method is separate from a three-line form.
 
-No mandatory setup interview or initial Overseer. Hourly original-goal review
-with a fresh Zero Knowledge check and 120-minute workflow improvement are mandatory.
+No mandatory setup interview or initial Overseer. Hourly original-goal direction
+review and 120-minute workflow improvement are mandatory. Fresh Zero Knowledge
+groups accept ready major milestones, not every hour.
 Architecture, decomposition, independent review/testing and learning tools remain
 available; scheduled inspection is required even when the current plan looks correct. The complete default workflow is in
 [AGENTS.md](AGENTS.md). Details: the repository's docs/V1.4.md.
 
 ## Package and installation
 
-The native Agent Plugin is `plugins/last-human-commit`, version 1.4.2, with 22 optional
+The native Agent Plugin is `plugins/last-human-commit`, version 1.4.3, with 22 optional
 skills and small automatic-entry hooks. Use the harness's native plugin manager.
 For clients whose plugin hooks are unavailable or still await trust, the package
 provides a supported user-instruction bootstrap:
@@ -48,3 +49,12 @@ skills are not deleted. Reload/start a new session to load changed instructions.
 Source updates: edit the source, run `sync_skills.py`, then `python3 tests/validate.py`.
 The validator runs package/source parity and all executable regressions. Runtime
 installation and actual use must be verified separately from source tests.
+
+## 1.4.3 clarification
+
+Define a tangible user/consumer result before code: who needs what, before/after
+and where to try it. Start bug TDD immediately. Hourly direction reviews remain;
+Zero Knowledge groups accept major outcome milestones (roughly 3 hours), not
+every hour or edit. Varied realistic personas leave detailed positive/negative
+feedback. Preserve raw feedback, fix actual obstacles and keep preferences
+without automatically expanding scope. See docs/V1.4.3.md in the source repository.

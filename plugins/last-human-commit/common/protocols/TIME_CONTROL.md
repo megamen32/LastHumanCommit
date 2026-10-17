@@ -111,8 +111,11 @@ task state.
 
 Follow BUSINESS_CHECKPOINT.md every 60 measured native active minutes: reread the
 original user source and latest corrections, compare the usable result, decide the
-next route and obtain a fresh independent Zero Knowledge observation. Generated
-plans and green technical checks cannot replace the original acceptance.
+next route. This hourly direction review is not milestone acceptance: do not launch
+Zero Knowledge on every hour. Fresh goal-driven testers with varied personas and
+full feedback accept major milestones (roughly 3 hours of coherent work), when a
+usable result is ready. Generated plans and green technical checks cannot replace
+the original acceptance.
 The default native hook does not require a formatted task-card. It reuses the
 persistent session state and the existing monotonic interval tool. Idle/permission
 waits are paused; incomplete lifecycle coverage uses an explicit wall fallback,

@@ -7,6 +7,9 @@ Current project inputs / constraints / verified state:
 Applicable product learning / source / freshness:
 Applicable LHC method learning / source / freshness:
 Accepted business outcome / Definition of Done:
+Who / realistic user goal / before-versus-after / where to try the result:
+Bug: failing RED reproduction before repair / GREEN / original scenario:
+Major outcome milestones (roughly 3 hours) / fresh personas / raw feedback:
 Stopping condition (no next feature once satisfied):
 Original whole-objective start / whole-delivery forecast / basis:
 Remaining required blockers / revised remaining forecast against original:
@@ -97,7 +100,12 @@ timeout is observational. Prefer the same Worker; cancellation is exceptional.
   Parent transport / delivery state:
   L decision:
 
-## Hourly business report — while active beyond one hour
+## Hourly direction review — while active beyond one hour
+
+This is not milestone acceptance. Keep the original user source and latest
+corrections authoritative. Zero Knowledge groups run on ready major milestones,
+not every hour; preserve tangible result and next useful action in the review.
+
 
 At every crossed wall-clock hour while the task remains active, run
 `lhc_time_guard.py` and report:
