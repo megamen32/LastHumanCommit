@@ -19,6 +19,10 @@ Shared coordination uses one atomic JSON file per message. Project worktrees sha
 `~/.agents/shared-session/chat/`. Cross-host communication uses an explicit shared
 address, not coincidentally identical local paths.
 
+Design uses three passes: working solution, ideal version, then the smallest
+complete implementation preserving roughly 80% of useful value. These are not
+three builds or approval rounds; the method is separate from a three-line form.
+
 No mandatory setup interview, initial Overseer, three-line form or hourly ritual.
 Architecture, decomposition, independent review/testing and learning tools remain
 available when they improve the outcome. The complete default workflow is in
@@ -26,7 +30,7 @@ available when they improve the outcome. The complete default workflow is in
 
 ## Package and installation
 
-The native Agent Plugin is `plugins/last-human-commit`, version 1.4.0, with 22 optional
+The native Agent Plugin is `plugins/last-human-commit`, version 1.4.1, with 22 optional
 skills and small automatic-entry hooks. Use the harness's native plugin manager.
 For clients whose plugin hooks are unavailable or still await trust, the package
 provides a supported user-instruction bootstrap:

@@ -142,28 +142,17 @@ def test_minimal_path_is_mandatory() -> None:
 
 
 
-def test_governance_is_supreme_overseer_plus_real_tester() -> None:
-    sources = {
-        path: compact(read(path))
-        for path in (
-            "AGENTS.md",
-            "src/common/agents/Lead.md",
-            "README.md",
-            "docs/agent-authoring.md",
-            "templates/FULL_CYCLE.md",
-        )
-    }
-    required = (
-        "Use no role or gate whose expected decision or risk-reduction value is lower than its cost.",
-        "Overseer is the supreme route controller",
-        "Overseer, Tester, and Reviewer are the only gates",
-    )
-    for phrase in required:
-        assert any(phrase in value for value in sources.values()), phrase
-
-    assert "Security theater is the canonical drift" in compact(
-        read("src/common/agents/Overseer.md")
-    )
+def test_optional_governance_keeps_independent_real_testing() -> None:
+    # 1.4 retired the unconditional role queue. The published README changed
+    # after its last validation; this old exact-wording test was already red.
+    # Check the actual current policy rather than restoring mandatory rituals.
+    router = compact(read("AGENTS.md"))
+    assert "Роли — доступные инструменты, а не очередь обязательных церемоний" in router
+    assert "независимые тестирование и review" in router
+    assert "для пользовательского результата реальный путь" in router
+    for role in ("Overseer", "Tester", "Reviewer"):
+        assert read(f"src/common/agents/{role}.md").strip()
+    assert "Use the real surface" in read("src/common/agents/Tester.md")
 
 
 def test_secret_paranoia_is_forbidden() -> None:
@@ -267,7 +256,7 @@ def test_planning_has_two_compressed_approaches_and_decomposition_skill() -> Non
 
     for phrase in (
         "exactly two genuinely different approaches",
-        "ideal/full -> normal -> YAGNI/Pareto MVP",
+        "working solution -> ideal version -> 80%-value MVP",
         "Recommend the least-cost YAGNI",
     ):
         assert phrase in planning + " " + lead, phrase

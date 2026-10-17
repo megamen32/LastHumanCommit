@@ -1,0 +1,36 @@
+"""User correction: design a solution, idealize it, then retain ~80% of value."""
+from pathlib import Path
+import pytest
+
+ROOT = Path(__file__).resolve().parents[1]
+
+@pytest.mark.parametrize("path,stages", [
+    ("AGENTS.md", ("Рабочее решение", "Идеальная версия", "Минимально работающая версия")),
+    ("src/common/agents/Lead.md", ("Рабочее решение", "Идеальная версия", "Минимально работающая версия")),
+    ("src/common/skills/architecture-design/SKILL.md", ("Working solution", "Ideal version", "80%-value MVP")),
+    ("skills/planning/SKILL.md", ("working solution", "ideal version", "80%-value MVP")),
+    ("src/common/profiles/Planning.md", ("working solution", "ideal version", "80%-value MVP")),
+    ("templates/FULL_CYCLE.md", ("working solution", "ideal version", "80%-value MVP")),
+])
+def test_order_is_solution_then_ideal_then_value_cut(path, stages):
+    text = " ".join((ROOT/path).read_text().split())
+    positions = [text.index(stage) for stage in stages]
+    assert positions == sorted(positions)
+    assert "ideal/full -> normal -> YAGNI/Pareto MVP" not in text
+
+
+def test_mvp_is_complete_value_not_partial_implementation():
+    method = " ".join((ROOT/"src/common/skills/architecture-design/SKILL.md").read_text().split())
+    assert "80% of the useful result, not 80% of the implementation" in method
+    assert "orientation, not a measured guarantee" in method
+    assert "Implement the third version" in method
+    assert "not three separate builds or approval rounds" in method
+    assert "already accepted mandatory outcomes" in method
+
+
+def test_useful_method_does_not_restore_report_ritual():
+    router = (ROOT/"AGENTS.md").read_text()
+    assert "три шага проектирования" in router
+    assert "не три отдельных отчёта" in router
+    assert "three-line minimal path" not in router
+    assert "Маленькую задачу делай напрямую" in router
