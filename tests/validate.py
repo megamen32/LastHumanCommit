@@ -36,7 +36,7 @@ for tool in ("lhc_chat.py","lhc_entry.py","lhc_worktree.py","lhc_time_guard.py",
     require(path.read_bytes()==(PACKAGE/"tools"/tool).read_bytes(),f"tool projection differs: {tool}")
 hooks=json.loads((PACKAGE/"hooks/hooks.json").read_text())["hooks"]
 require("SessionStart" in hooks and "UserPromptSubmit" in hooks,"automatic entry hooks missing")
-require("PostToolUse" not in hooks,"ordinary work must not start scheduled role rituals")
+require("PostToolUse" in hooks and "Stop" in hooks,"mandatory business checkpoints must have active and idle lifecycle hooks")
 for groups in hooks.values():
     for group in groups:
         for hook in group["hooks"]:

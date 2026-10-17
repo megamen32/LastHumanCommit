@@ -1,0 +1,176 @@
+"""Behavioral regressions for compulsory original-goal reviews, not file-count checks."""
+import argparse
+import importlib.util
+import json
+from datetime import datetime, timezone, timedelta
+from pathlib import Path
+import subprocess
+import sys
+
+import pytest
+
+ROOT = Path(__file__).resolve().parents[1]
+SPEC = importlib.util.spec_from_file_location("business_guard_test", ROOT/"src/common/tools/lhc_time_guard.py")
+guard = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(guard)
+START = datetime(2026,10,17,tzinfo=timezone.utc)
+
+@pytest.fixture
+def clock(tmp_path, monkeypatch):
+    subprocess.run(["git","init","-q",str(tmp_path)],check=True)
+    moment = [0]
+    monkeypatch.setattr(guard,"business_clock_sample",lambda: {
+        "monotonic_ns":(100000+moment[0])*10**9,
+        "wall_ns":int((START+timedelta(seconds=moment[0])).timestamp())*10**9,
+        "boot":{"id":"fixture-boot","source":"test","limitations":[]},
+    })
+    return moment
+
+def tick(root, clock, seconds, event="PostToolUse", runtime="codex", session="lead", prompt=None):
+    clock[0]=seconds
+    args=argparse.Namespace(runtime=runtime,event=event,now=START+timedelta(seconds=seconds))
+    guard.learning_checkpoint(args,root,session)
+    payload={"session_id":session,"cwd":str(root)}
+    if prompt is not None:payload["prompt"]=prompt
+    return guard.business_checkpoint(args,root,session,payload)
+
+def ack(root, seconds, review_id, **overrides):
+    args=argparse.Namespace(runtime="codex",session_id="lead",cwd=root,now=START+timedelta(seconds=seconds),
+        review_id=review_id,source_ref=["original request DEV-07; latest user correction"],
+        business_result="Manager can inspect objections in existing conversations",
+        scope_decision="Drop invented analytics expansion; deliver DEV-07",
+        next_action="Verify the exact conversation link",
+        zk_session="codex:independent-reader",zk_result="Conversation link opens another customer",
+        zk_evidence="readonly-check/run1.json",zk_unavailable=None)
+    vars(args).update(overrides)
+    return guard.business_checkpoint(args,root,"lead",{},acknowledge=True)
+
+def test_no_card_hourly_is_due_and_notification_is_not_completion(tmp_path,clock):
+    tick(tmp_path,clock,0,"UserPromptSubmit",prompt="Show scenarios and objections")
+    assert not tick(tmp_path,clock,3599)["due"]
+    due=tick(tmp_path,clock,3600)
+    assert due["due"] and "Zero Knowledge" in due["prompt"]
+    assert "исход" in due["prompt"].lower()
+    again=tick(tmp_path,clock,3601)
+    assert again["due"] and again["review_id"]==due["review_id"]
+    assert not again["prompt"], "Pending obligation stays due without per-tool spam"
+    ack(tmp_path,3601,due["review_id"])
+    assert not tick(tmp_path,clock,3602)["due"]
+    assert tick(tmp_path,clock,7201)["due"]
+
+def test_pause_does_not_count_idle_or_wake_a_session(tmp_path,clock):
+    tick(tmp_path,clock,0,"UserPromptSubmit")
+    tick(tmp_path,clock,1800,"Stop")
+    assert not tick(tmp_path,clock,10000,"UserPromptSubmit")["due"]
+    due=tick(tmp_path,clock,11800)
+    assert due["due"] and due["active_seconds"]==3600
+
+def test_compaction_and_new_cards_keep_original_goal_and_clock(tmp_path,clock):
+    tick(tmp_path,clock,0,"UserPromptSubmit",prompt="Original customer goal")
+    tick(tmp_path,clock,1000,"PostCompact")
+    (tmp_path/".agents/tasks").mkdir(parents=True,exist_ok=True)
+    (tmp_path/".agents/tasks/work-new.md").write_text("Invented expansion")
+    tick(tmp_path,clock,2000,"UserPromptSubmit",prompt="Latest correction: use the existing report")
+    due=tick(tmp_path,clock,3600)
+    state=json.loads(Path(due["state"]).read_text())["business"]
+    assert state["original_prompt"]=="Original customer goal"
+    assert state["latest_prompt"]=="Latest correction: use the existing report"
+    assert due["due"]
+
+def test_ack_requires_evidence_and_cannot_treat_missing_zk_as_pass(tmp_path,clock):
+    tick(tmp_path,clock,0,"UserPromptSubmit")
+    due=tick(tmp_path,clock,3600)
+    with pytest.raises(ValueError):ack(tmp_path,3601,due["review_id"],source_ref=[])
+    with pytest.raises(ValueError):ack(tmp_path,3601,due["review_id"],zk_evidence=" ")
+    with pytest.raises(ValueError):ack(tmp_path,3601,"wrong-review")
+    partial=ack(tmp_path,3601,due["review_id"],zk_session=None,zk_result=None,zk_evidence=None,zk_unavailable="Native subagents unavailable")
+    assert partial["due"]
+    state=json.loads(Path(due["state"]).read_text())["business"]
+    assert state["last_review"]["status"]=="verification_pending"
+
+def test_runtime_without_full_lifecycle_uses_honest_wall_fallback(tmp_path,clock):
+    tick(tmp_path,clock,0,"chat.message",runtime="hermes")
+    due=tick(tmp_path,clock,3600,"chat.message",runtime="hermes")
+    assert due["due"] and due["active_seconds"] is None
+    assert "wall" in due["clock_source"]
+
+def test_unchanged_review_cannot_silently_accept_scope_expansion(tmp_path,clock):
+    tick(tmp_path,clock,0,"UserPromptSubmit")
+    due=tick(tmp_path,clock,3600)
+    text=due["prompt"]
+    assert "SHA" in text and "пользоват" in text.lower()
+    assert "продолж" in text.lower() and "сократ" in text.lower()
+
+def test_default_manifest_reaches_entry_and_periodic_guard():
+    hooks=json.loads((ROOT/"plugins/last-human-commit/hooks/hooks.json").read_text())["hooks"]
+    assert {"SessionStart","UserPromptSubmit","PostToolUse","Stop"} <= set(hooks)
+    for event in ("UserPromptSubmit","PostToolUse","Stop"):
+        assert any("lhc_entry.py" in h["command"] for group in hooks[event] for h in group["hooks"])
+
+def test_blind_review_is_not_fed_the_implementers_answer():
+    method=(ROOT/"src/common/protocols/BUSINESS_CHECKPOINT.md").read_text()
+    for term in ("исход", "Zero Knowledge", "без истории", "решение", "10–15"):
+        assert term in method
+    assert "SHA" in method and "не" in method
+
+
+def test_native_hook_executes_hourly_and_learning_without_task_card(tmp_path):
+    subprocess.run(["git","init","-q",str(tmp_path)],check=True)
+    package=ROOT/"plugins/last-human-commit"
+    entry=package/"tools/lhc_entry.py"
+    payload={"cwd":str(tmp_path),"session_id":"native-cli","prompt":"Use existing report"}
+    def run(event):
+        result=subprocess.run([sys.executable,str(entry),"--event",event,"--runtime","codex"],
+            input=json.dumps(payload),capture_output=True,text=True,check=True)
+        return result.stdout
+    run("UserPromptSubmit")
+    state_path=next((tmp_path/".agents/shared-session/learning").glob("*.json"))
+    state=json.loads(state_path.read_text())
+    state["business"]["interval"]["active_ns"]=3600*10**9
+    state["due_at"]="2020-01-01T00:00:00+00:00"
+    state_path.write_text(json.dumps(state))
+    out=run("PostToolUse")
+    context=json.loads(out)["hookSpecificOutput"]["additionalContext"]
+    assert "Zero Knowledge" in context and "improve-workflow" in context
+    assert not (tmp_path/".agents/tasks").exists()
+    assert "business-1" in context
+    state=json.loads(state_path.read_text())
+    assert state["business"]["last_review"] is None
+    assert state["last_checkpoint"] is None
+
+
+def test_native_reconnect_retains_completed_work_and_discards_unknown_gap(tmp_path,clock):
+    tick(tmp_path,clock,0,"UserPromptSubmit")
+    tick(tmp_path,clock,1800)
+    reconnect=tick(tmp_path,clock,10000,"SessionStart")
+    assert reconnect["active_seconds"]==1800 and not reconnect["due"]
+    tick(tmp_path,clock,10001,"UserPromptSubmit")
+    assert tick(tmp_path,clock,11801)["due"]
+
+
+def test_opencode_permission_reply_resumes_long_tool_time(tmp_path,clock):
+    tick(tmp_path,clock,0,"chat.message",runtime="opencode")
+    tick(tmp_path,clock,10,"permission.asked",runtime="opencode")
+    tick(tmp_path,clock,20,"permission.replied",runtime="opencode")
+    due=tick(tmp_path,clock,3620,"tool.execute.after",runtime="opencode")
+    assert due["active_seconds"]==3610 and due["due"]
+    assert "Zero Knowledge" in due["prompt"]
+
+
+def test_opencode_before_tool_does_not_consume_an_undelivered_prompt(tmp_path,clock):
+    tick(tmp_path,clock,0,"chat.message",runtime="opencode")
+    before=tick(tmp_path,clock,3600,"tool.execute.before",runtime="opencode")
+    assert before["due"] and not before["prompt"]
+    after=tick(tmp_path,clock,3601,"tool.execute.after",runtime="opencode")
+    assert "Zero Knowledge" in after["prompt"]
+
+
+def test_opencode_compaction_delivers_business_reminder_in_consumed_handoff(tmp_path,clock,monkeypatch):
+    import io
+    tick(tmp_path,clock,0,"chat.message",runtime="opencode",prompt="Show original customer report")
+    clock[0]=3600
+    monkeypatch.setattr(sys,"stdin",io.StringIO(json.dumps({"cwd":str(tmp_path),"sessionID":"lead"})))
+    args=argparse.Namespace(runtime="opencode",event="PreCompact",now=START+timedelta(seconds=3600),idle_cap_seconds=300)
+    result=guard.hook(args)
+    assert "Zero Knowledge" in result["handoff"]
+    assert "Show original customer report" in result["handoff"]

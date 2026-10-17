@@ -84,7 +84,7 @@ def test_cycle_inputs_retrieve_both_improvement_loops() -> None:
     router = compact(read("AGENTS.md"))
     assert "Сохрани исходную цель и последние поправки" in router
     assert "сверяй эту запись с текущим кодом" in router
-    assert "старые расписания и формы не включаются сами" in router
+    assert "часовой контроль и самоулучшение обязательны" in router
     assert "verification canary" in read("src/common/protocols/SELF_IMPROVE.md")
 
 
@@ -230,7 +230,7 @@ def test_self_improve_is_an_evolution_loop() -> None:
     method = compact(read("src/common/protocols/SELF_IMPROVE.md"))
     assert "minimal proposed patch" in method and "verification canary" in method
     assert "every120" not in read("AGENTS.md")
-    assert "самоулучшение окупаются конкретным изменением решения" in compact(read("src/common/agents/Lead.md"))
+    assert "Контроль должен менять решение" in compact(read("src/common/agents/Lead.md"))
 
 
 

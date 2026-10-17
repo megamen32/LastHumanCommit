@@ -672,6 +672,154 @@ def learning_checkpoint(args: argparse.Namespace, cwd: Path, session_id: str,
     return {"due": due, "due_at": state["due_at"], "state": str(path), "prompt": prompt}
 
 
+
+_ACTIVE_TOOL = None
+
+
+def active_tool():
+    """Reuse the existing monotonic interval implementation without a second ledger."""
+    global _ACTIVE_TOOL
+    if _ACTIVE_TOOL is None:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("lhc_business_intervals", Path(__file__).with_name("lhc_active_time.py"))
+        _ACTIVE_TOOL = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(_ACTIVE_TOOL)
+    return _ACTIVE_TOOL
+
+
+def business_clock_sample():
+    return active_tool().clock_sample()
+
+
+def business_checkpoint(args, cwd: Path, session_id: str, payload: dict,
+                        *, acknowledge: bool = False) -> dict[str, Any]:
+    """Join original-goal review and blind acceptance in the existing session state.
+
+    Native work intervals are monotonic and pause at explicit idle/permission/stop
+    events. Missing lifecycle coverage uses a labelled wall deadline, not fake
+    active minutes. Merely emitting context never acknowledges a review.
+    """
+    path = learning_path(cwd, args.runtime, session_id)
+    now = args.now or datetime.now().astimezone()
+    event = str(getattr(args, "event", "")).casefold()
+    pauses = {"stop", "interrupt", "sessionend", "permissionrequest", "session.idle", "session.error", "permission.asked"}
+    starts = {"userpromptsubmit", "pretooluse", "posttooluse", "tool.execute.before", "tool.execute.after", "chat.message", "permission.replied"}
+    lifecycle = args.runtime in {"codex", "claude", "opencode"} and session_id != "unknown-session"
+    lock = path.with_suffix(".lock")
+    lock.parent.mkdir(parents=True, exist_ok=True)
+    with lock.open("a", encoding="utf-8") as handle:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        state = load_state(path)
+        if state is None:
+            raise ValueError("observe the session hook before recording a business review")
+        business = state.setdefault("business", {
+            "started_at": now.isoformat(), "wall_due_at": (now+timedelta(hours=1)).isoformat(),
+            "next_active_seconds": 3600, "original_prompt": "", "latest_prompt": "",
+            "review_sequence": 0, "pending": None, "last_review": None,
+        })
+        # Only native prompt events set user intent. A generated task-card never
+        # becomes the source of the accepted business objective.
+        prompt = payload.get("prompt") or payload.get("text")
+        if event in {"userpromptsubmit", "chat.message"} and isinstance(prompt, str) and prompt.strip():
+            business["original_prompt"] = business["original_prompt"] or prompt.strip()[:4096]
+            business["latest_prompt"] = prompt.strip()[:4096]
+            if payload.get("transcript_path"):
+                business["transcript_path"] = str(payload["transcript_path"])[:1024]
+        measured = None
+        clock_source = "wall-clock fallback: complete native active/idle lifecycle unavailable"
+        interval = business.get("interval")
+        if lifecycle:
+            try:
+                sample = business_clock_sample()
+                module = active_tool()
+                if interval is not None:
+                    was_running = interval["status"] == "running"
+                    discontinuity = (not module.same_boot(interval["last_sample"], sample)
+                        or sample["monotonic_ns"] < interval["last_sample"]["monotonic_ns"]
+                        or (event == "sessionstart" and payload.get("source") != "compact"))
+                    if discontinuity:
+                        # Keep measured previous intervals; discard an unknown
+                        # open gap after reconnect/reboot instead of backfilling.
+                        interval = dict(interval, status="paused", open_monotonic_ns=None,
+                                        last_sample=sample, stopped=None)
+                        business["coverage_gap"] = "Open gap discarded at native reconnect or changed clock; earlier intervals retained"
+                    if interval["status"] == "running" and not acknowledge:
+                        interval = module.transition(interval, "pause", sample)
+                    if event in starts or (event in {"precompact", "postcompact"} and was_running and not discontinuity):
+                        interval = module.transition(interval, "resume", sample)
+                elif event in starts:
+                    interval = module.transition(None, "start", sample, actor=session_id, task="original-user-goal")
+                if interval is not None:
+                    business["interval"] = interval
+                    measured = module.report(interval, sample)["measured_active_seconds"]
+                    clock_source = "monotonic native work intervals; coverage begins at observed work, not CPU time"
+            except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError) as exc:
+                business["clock_error"] = type(exc).__name__
+        pending = business.get("pending")
+        if pending is None and (measured >= business["next_active_seconds"] if measured is not None
+                                else now >= parse_time(business["wall_due_at"])):
+            sequence = business["review_sequence"] + 1
+            pending = {"id": f"business-{sequence}", "due_at": now.isoformat()}
+            business["pending"] = pending
+        if acknowledge:
+            if not pending or args.review_id != pending["id"]:
+                raise ValueError("business review is not due or review-id does not match")
+            if now < parse_time(pending["due_at"]):
+                raise ValueError("review clock precedes its due observation")
+            def text(name):
+                value = getattr(args, name, None)
+                if not isinstance(value, str) or not value.strip() or len(value) > 4096:
+                    raise ValueError(f"{name} requires 1..4096 nonblank characters")
+                return value.strip()
+            refs = getattr(args, "source_ref", [])
+            if not refs or len(refs) > 8 or any(not isinstance(v,str) or not v.strip() or len(v)>1024 for v in refs):
+                raise ValueError("cite 1..8 original user source references")
+            review = {"id": pending["id"], "at": now.isoformat(), "source_refs": refs,
+                      **{field: text(field) for field in ("business_result", "scope_decision", "next_action")}}
+            if getattr(args, "zk_unavailable", None) is not None:
+                if any(getattr(args,f,None) for f in ("zk_session","zk_result","zk_evidence")):
+                    raise ValueError("unavailable verifier cannot also be a verified result")
+                review.update(status="verification_pending", zk_unavailable=text("zk_unavailable"))
+            else:
+                review.update(status="reviewed", **{field:text(field) for field in ("zk_session","zk_result","zk_evidence")})
+                seen = business.get("recent_verifiers", [])
+                if review["zk_session"] in seen:
+                    raise ValueError("use a fresh independent verifier, not the earlier evaluator's history")
+                business["recent_verifiers"] = (seen+[review["zk_session"]])[-3:]
+                business["review_sequence"] += 1
+                business["pending"] = pending = None
+                business["next_active_seconds"] = (measured or 0)+3600
+                business["wall_due_at"] = (now+timedelta(hours=1)).isoformat()
+            business["last_review"] = review
+        due = pending is not None
+        reminder = ""
+        previous = business.get("last_injected_at")
+        refresh = event in {"userpromptsubmit","sessionstart","postcompact","chat.message"}
+        if due and not acknowledge and event not in pauses and not (args.runtime == "opencode" and event in {"tool.execute.before", "permission.replied"}) and (not previous or refresh or
+                (now-parse_time(previous)).total_seconds() >= 300):
+            reminder = (
+                "Обязательная часовая сверка LHC: сначала перечитай исходное поручение и последние поправки пользователя, "
+                "а не только собственный план. Какой результат получил пользователь за этот час? "
+                "SHA, число тестов и обновление реестра сами по себе не отвечают на этот вопрос. "
+                "Выбери решение: продолжить необходимый путь, сократить придуманное расширение, сменить подход "
+                "или выполнить доступную независимую задачу. Затем свежий Zero Knowledge проверяющий без истории "
+                "исполнителя получает только бизнес-цель, точку входа и разрешённый доступ; проверь реальный результат. "
+                "Не подсказывай ему исходники, ожидаемые шаги или прошлые ошибки. "
+                "Прочитай common/protocols/BUSINESS_CHECKPOINT.md. Зафиксируй источник, результат, решение, следующий шаг "
+                "и фактический вердикт через lhc_time_guard.py business-review. "
+                f"review-id={pending['id']}; runtime={args.runtime}; session={session_id}; state={path}. "
+                f"Clock: {clock_source}. Напоминание не закрывает проверку; отсутствие проверяющего не равно PASS. "
+                "При отсутствии новой информации не отправляй пользователю очередной статус."
+            )
+            if business["original_prompt"]:
+                reminder += "\nИсходный ввод (фрагмент; сверить полный источник): " + business["original_prompt"][:1000]
+            if business["latest_prompt"] != business["original_prompt"]:
+                reminder += "\nПоследняя поправка (фрагмент): " + business["latest_prompt"][:1000]
+            business["last_injected_at"] = now.isoformat()
+        write_state(path, state)
+    return {"due": due, "review_id": pending["id"] if pending else None, "state": str(path),
+            "active_seconds": measured, "clock_source": clock_source, "prompt": reminder}
+
 def hook(args: argparse.Namespace) -> dict[str, Any] | None:
     """Emit parent checkpoints even when task discovery or compaction returns early."""
 
@@ -682,30 +830,34 @@ def hook(args: argparse.Namespace) -> dict[str, Any] | None:
     cwd = Path(str(payload.get("cwd") or os.getcwd())).expanduser().resolve()
     session_id = str(payload.get("session_id") or payload.get("sessionID") or "unknown-session")
     learning = learning_checkpoint(args, cwd, session_id)
+    business = business_checkpoint(args, cwd, session_id, payload)
+    combined_prompt = "\n\n".join(v for v in (business["prompt"], learning["prompt"]) if v)
     try:
-        result = cycle_hook(args, payload, cwd)
+        result = None if getattr(args, "session_only", False) else cycle_hook(args, payload, cwd)
     except (OSError, ValueError, argparse.ArgumentTypeError) as exc:
         # A malformed or future-dated card must not hide the parent obligation.
-        if not learning["due"]:
+        if not learning["due"] and not business["due"]:
             raise
         result = {"cycle_error": type(exc).__name__}
-    if not learning["due"]:
+    if not combined_prompt:
+        return result
+    if args.event.casefold() in {"stop", "interrupt", "sessionend", "permissionrequest"}:
         return result
     result = result or {}
     if args.runtime == "codex":
         if args.event.casefold() in {"precompact", "postcompact"}:
             result["systemMessage"] = "\n\n".join(
-                str(value) for value in (result.get("systemMessage"), learning["prompt"]) if value)
+                str(value) for value in (result.get("systemMessage"), combined_prompt) if value)
         else:
             specific = result.setdefault("hookSpecificOutput", {"hookEventName": args.event})
             specific["additionalContext"] = "\n\n".join(
-                str(value) for value in (specific.get("additionalContext"), learning["prompt"]) if value)
+                str(value) for value in (specific.get("additionalContext"), combined_prompt) if value)
     else:
         result["prompt"] = "\n\n".join(
-            str(value) for value in (result.get("prompt"), learning["prompt"]) if value)
+            str(value) for value in (result.get("prompt"), combined_prompt) if value)
         if "handoff" in result:
             # OpenCode's compacting consumer reads handoff, not prompt.
-            result["handoff"] = f"{result['handoff']}\n\n{learning['prompt']}"
+            result["handoff"] = f"{result['handoff']}\n\n{combined_prompt}"
     return result
 
 
@@ -884,14 +1036,15 @@ def parser() -> argparse.ArgumentParser:
     )
     native = subcommands.add_parser("hook", help="adapt one native Codex or OpenCode hook")
     native.add_argument(
-        "--runtime", choices=("codex", "opencode", "hermes"), required=True
+        "--runtime", choices=("codex", "claude", "opencode", "hermes"), required=True
     )
     native.add_argument("--event", required=True)
+    native.add_argument("--session-only", action="store_true", help="use the source-bound session checks without unrelated legacy task-card discovery")
     native.add_argument("--now", type=parse_time)
     native.add_argument("--idle-cap-seconds", type=positive, default=300)
     checkpoint = subcommands.add_parser("checkpoint", help="acknowledge a due session learning review")
     checkpoint.add_argument("--cwd", type=Path, required=True)
-    checkpoint.add_argument("--runtime", choices=("codex", "opencode", "hermes"), required=True)
+    checkpoint.add_argument("--runtime", choices=("codex", "claude", "opencode", "hermes"), required=True)
     checkpoint.add_argument("--session-id", required=True)
     checkpoint.add_argument("--due-at", type=parse_time, required=True)
     checkpoint.add_argument("--now", type=parse_time)
@@ -901,6 +1054,17 @@ def parser() -> argparse.ArgumentParser:
     outcome = checkpoint.add_mutually_exclusive_group(required=True)
     outcome.add_argument("--method-change")
     outcome.add_argument("--no-change-reason")
+    review = subcommands.add_parser("business-review", help="record original-source review and independent user-result evidence")
+    review.add_argument("--cwd", type=Path, required=True)
+    review.add_argument("--runtime", choices=("codex", "claude", "opencode", "hermes"), required=True)
+    review.add_argument("--session-id", required=True)
+    review.add_argument("--review-id", required=True)
+    review.add_argument("--now", type=parse_time)
+    review.add_argument("--source-ref", action="append", required=True)
+    for field in ("business-result", "scope-decision", "next-action"):
+        review.add_argument(f"--{field}", required=True)
+    for field in ("zk-session", "zk-result", "zk-evidence", "zk-unavailable"):
+        review.add_argument(f"--{field}")
     return root
 
 
@@ -909,7 +1073,9 @@ def main() -> int:
 
     args = parser().parse_args()
     try:
-        if args.command == "checkpoint":
+        if args.command == "business-review":
+            result = business_checkpoint(args, args.cwd.expanduser().resolve(), args.session_id, {}, acknowledge=True)
+        elif args.command == "checkpoint":
             result = learning_checkpoint(args, args.cwd.expanduser().resolve(),
                                          args.session_id, acknowledge=True)
         else:

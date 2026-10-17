@@ -1,3 +1,11 @@
+## 1.4.2 — 2026-10-17
+
+Restore compulsory hourly original-goal/Zero Knowledge review and 120-minute
+workflow improvement. Reconnect native hooks by default, retain source intent
+across compaction, pause observed idle intervals, and require actual review
+records rather than treating reminders as completion. Keep the restored 1.4.1
+solution → ideal → 80%-value planning and 1.4.0 worktree/chat/PR features.
+
 ## 1.4.1 — 2026-10-17
 
 Restore the useful design sequence: working solution -> ideal version -> 80%-value
