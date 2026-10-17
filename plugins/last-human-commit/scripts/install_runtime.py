@@ -36,6 +36,18 @@ def configure(home:Path,root:Path,runtime:str,replace_gsd:bool=False)->dict:
             "feedback belongs to major milestones, not every edit. If native LHC context is absent, "
             "report the missing runtime rather than treating an AGENTS read as activation.\n"
             f"{END}\n")
+    elif runtime == "opencode":
+        # OpenCode 2 V2 hooks provide the current installed root at dispatch;
+        # a global pointer to a versioned cache makes old threads drift.
+        pointer = (f"{BEGIN}\n"
+            "LHC is automatically active in native OpenCode 2 engineering sessions. "
+            "The native V2 adapter injects the current installed AGENTS.md, original human goal, "
+            "TDD RED/GREEN, working→ideal→useful-80% and review→delivery: fix known receipt "
+            "metadata from Git/CI instead of hiring a new reviewer. Keep hourly direction and "
+            "120-minute learning checks; independent Zero Knowledge only at major milestones. "
+            "The adapter, not a stale versioned file path, owns bootstrapping and compaction. "
+            "If its native context is missing, say activation is unverified.\n"
+            f"{END}\n")
     after=text.rstrip()+"\n\n"+pointer
     if before==after:return {"path":str(file),"changed":False,"root":str(root)}
     backup=home/".local/state/last-human-commit/backups"/(datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ-")+uuid.uuid4().hex[:8]+"-"+runtime+".md")

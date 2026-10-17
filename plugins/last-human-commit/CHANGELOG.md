@@ -1,3 +1,10 @@
+## 1.4.7 — native OpenCode business contract and review-to-delivery
+
+- OpenCode V2 calls the canonical Python native LHC entry for the real prompt, model context and tool/idle lifecycle, matching Codex 1.4.6. No extra reviewer, daemon, or copied stale TS policy.
+- Native compaction and the first subsequent context restore original goal, latest direct correction and current control from persisted session state; unrelated task cards cannot replace them.
+- OpenCode global installation has no stale pinned cache version; all hourly/120-minute/major-milestone rules and honest no-PASS acceptance remain.
+- Runtime validation includes a fresh OpenCode 2 session and real review-to-delivery behavior; the OpenChamber integration uses the same backend.
+
 ## 1.4.6 — 2026-10-17
 
 Route completed review to authorized delivery, not receipt-review loops. Native
