@@ -15,8 +15,13 @@ import shlex
 import subprocess
 import sys
 
-CONTEXT_EVENTS = {"SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse"}
-QUIET_EVENTS = {"Interrupt", "SessionEnd", "PermissionRequest"}
+# Sibling canonical tools also work when this entry is imported by a native
+# adapter/test instead of launched as a script.
+if str(Path(__file__).resolve().parent) not in sys.path:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+CONTEXT_EVENTS = {"SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "PreModel"}
+QUIET_EVENTS = {"Interrupt", "SessionEnd", "PermissionRequest", "ToolFailure", "session.error"}
 
 def context_for(event, root):
     root = Path(root).resolve()
@@ -75,6 +80,10 @@ def rehydrate(state, state_path=None):
         restored["full_native_transcript"] = business["transcript_path"]
     if state_path is not None:
         restored["full_saved_state"] = str(state_path)
+    milestone = state.get("milestone") or {}
+    if milestone.get("status") in {"pending", "changes-required", "blocked"}:
+        restored["milestone_acceptance"] = {key: milestone.get(key) for key in
+            ("task", "goal", "urls", "surface_key", "surface", "status", "blocker", "continuation_requested")}
     review = business.get("last_review") or {}
     if review:
         restored["last_direction"] = {key: review[key][:450] for key in ("business_result", "scope_decision", "next_action") if review.get(key)}
@@ -87,6 +96,7 @@ def rehydrate(state, state_path=None):
 
 def handle(event, name, runtime, root):
     import lhc_time_guard as guard
+    import lhc_milestone as milestones
     cwd = Path(str(event.get("cwd") or os.getcwd())).expanduser().resolve()
     session = str(event.get("session_id") or event.get("sessionID") or "unknown-session")
     if event.get("agent_id"):
@@ -94,11 +104,20 @@ def handle(event, name, runtime, root):
     now = datetime.now().astimezone()
     args = argparse.Namespace(runtime=runtime, event=name, now=now, idle_cap_seconds=300, session_only=True)
     learning = guard.learning_checkpoint(args, cwd, session)
-    business = guard.business_checkpoint(args, cwd, session, event)
     path = Path(learning["state"])
+    prior = guard.load_state(path) or {}
+    stop_prompt = prior.get("native_entry", {}).get("stop_prompt") or {}
+    control_prompt = name == "UserPromptSubmit" and bool(stop_prompt.get("text")) and (
+        event.get("prompt") or event.get("text")) == stop_prompt["text"]
+    if control_prompt:
+        # Codex re-submits the exact block reason as a user prompt. It is native
+        # control, not a new mandate; do not poison the business anchor either.
+        event = dict(event, prompt="", text="", _lhc_control_prompt=True)
+    business = guard.business_checkpoint(args, cwd, session, event)
     with path.with_suffix(".lock").open("a", encoding="utf-8") as lock:
         fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
         state = guard.load_state(path)
+        milestone = milestones.observe(state, event, name, cwd, session, now)
         # A concurrent native hook or an explicit review command may have cleared
         # a debt after our first observation. Decisions use the locked readback.
         current_pending = state.get("business", {}).get("pending")
@@ -112,6 +131,14 @@ def handle(event, name, runtime, root):
         learning.update(due=still_due, due_at=current_due)
         delivery = state.setdefault("native_entry", {})
         delivery["last_observed_event"] = name
+        if name in QUIET_EVENTS:
+            delivery["finish_hold"] = name
+        elif (name == "UserPromptSubmit" and not control_prompt) or name == "permission.replied":
+            delivery.pop("finish_hold", None)
+        elif name == "PostToolUse" and milestones.tool_failed(event):
+            delivery["finish_hold"] = "ToolFailure"
+        elif name == "PostToolUse" and delivery.get("finish_hold") in {"ToolFailure", "PermissionRequest"}:
+            delivery.pop("finish_hold", None)
         version = package_version(root)
         signature = json.dumps([str(root), version])
         supported = name in CONTEXT_EVENTS or runtime != "codex"
@@ -124,6 +151,13 @@ def handle(event, name, runtime, root):
         if bootstrap:
             contexts.extend((context_for(event, root), rehydrate(state, path)))
             delivery.update(loaded=signature, version=version, root=str(root), rehydrate_needed=False)
+        acceptance_pending = milestones.pending(milestone)
+        acceptance_notice = milestones.reminder(milestone) if acceptance_pending else ""
+        acceptance_id = [milestone.get("surface_key"), milestone["status"]] if acceptance_pending else None
+        if acceptance_notice and supported and name not in QUIET_EVENTS | {"Stop"} and not milestone.get("hold"):
+            if bootstrap or event.get("model_boundary") or delivery.get("milestone_injected") != acceptance_id:
+                contexts.append(acceptance_notice)
+                delivery["milestone_injected"] = acceptance_id
         if supported and name not in QUIET_EVENTS | {"Stop"}:
             if business["prompt"]:
                 contexts.append(rooted(business["prompt"], root))
@@ -142,11 +176,19 @@ def handle(event, name, runtime, root):
                 parts.append(rooted(business["prompt"], root))
             if learning["prompt"]:
                 parts.append(rooted(learning["prompt"], root))
+            if acceptance_notice:
+                parts.append(acceptance_notice)
             output = {"handoff": "\n\n".join(parts)}
-        if runtime == "codex" and name == "Stop" and (business["due"] or learning["due"]):
+        held = bool(delivery.get("finish_hold") or (milestone and (milestone.get("hold") or milestone.get("read_only"))))
+        acceptance_due = acceptance_pending and milestone["status"] != "blocked"
+        if runtime == "codex" and name == "Stop" and not held and (business["due"] or learning["due"] or acceptance_due):
             identity = [event.get("turn_id"), business.get("review_id"), learning["due_at"] if learning["due"] else None]
-            if not event.get("stop_hook_active") and delivery.get("stop_continuation") != identity:
+            fresh_acceptance = acceptance_due and not milestone.get("continuation_requested")
+            deadline_due = (business["due"] or learning["due"]) and delivery.get("stop_continuation") != identity
+            if not event.get("stop_hook_active") and (fresh_acceptance or deadline_due):
                 delivery["stop_continuation"] = identity
+                if acceptance_due:
+                    milestone["continuation_requested"] = True
                 tool = method_root(root)/"tools/lhc_time_guard.py"
                 base = f"python3 {shlex.quote(str(tool))}"
                 flags = f"--cwd {shlex.quote(str(cwd))} --runtime {runtime} --session-id {shlex.quote(session)}"
@@ -161,6 +203,11 @@ def handle(event, name, runtime, root):
                           "--no-change-reason вместо --method-change. Инструкции: "
                           f"{method_root(root)/'protocols/BUSINESS_CHECKPOINT.md'} и {method_root(root)/'protocols/SELF_IMPROVE.md'}.\n"
                           + "\n".join(obligations) + "\n" + rehydrate(state, path))
+                if not obligations:
+                    reason = ""
+                if acceptance_notice:
+                    reason += ("\n" if reason else "") + acceptance_notice
+                delivery["stop_prompt"] = {"identity": identity, "text": reason}
                 output = {"decision": "block", "reason": reason}
             else:
                 # Native continuation is bounded. Unavailable work remains pending;
