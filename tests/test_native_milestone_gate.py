@@ -336,3 +336,81 @@ def test_confirmed_acceptance_survives_archive_unavailability_for_same_surface(t
     invoke(tmp_path, "SessionStart")
     assert invoke(tmp_path, "Stop").get("decision") != "block"
     assert state(tmp_path)["milestone"]["status"] == "accepted"
+
+
+def test_assigned_browser_tunnel_and_batched_native_commands_are_real_attempts(tmp_path):
+    setup(tmp_path)
+    for sid, persona in [('tester-one','Maya, 29, customer on mobile'),('tester-two','Ivan, 61, desktop manager')]:
+        manifest=export_tester(tmp_path,sid,persona)
+        data=json.loads(manifest.read_text());target=data['target']
+        rows=[json.loads(line) for line in Path(target['path']).read_text().splitlines()]
+        prompt=rows[1]['payload']['content'][0]['text']
+        rows[1]['payload']['content'][0]['text']=prompt+'\nAuthorized browser tunnel for the same product: http://127.0.0.1:29957/dashboard'
+        for row in rows:
+            p=row.get('payload',{})
+            if p.get('type')=='function_call':
+                args=json.loads(p['arguments']);command=args['cmd'];call=p['call_id']
+                if call=='1':
+                    # Navigation previously completed in the managed browser scope;
+                    # read back actual URL and the before-state in one native command.
+                    command=f'agent-browser --session {sid} get url; agent-browser --session {sid} snapshot'
+                args['cmd']="ssh -o BatchMode=yes tester@browser 'mkdir -p .tmp && "+command+"'"
+                p['arguments']=json.dumps(args)
+            if p.get('type')=='function_call_output' and p.get('call_id')=='1':
+                p['output']='http://127.0.0.1:29957/dashboard\n- heading "Customers"\n- textbox "Search"\n- button "Import"'
+        raw='\n'.join(json.dumps(row) for row in rows)+'\n'
+        Path(target['path']).write_text(raw);Path(target['source']['location']).write_text(raw)
+    invoke(tmp_path,'Stop')
+    assert state(tmp_path)['milestone']['status']=='accepted'
+
+
+def test_quoted_browser_command_is_not_an_executed_user_attempt(tmp_path):
+    setup(tmp_path)
+    for sid,persona in [('tester-one','Maya, 29, mobile'),('tester-two','Ivan, 61, desktop')]:
+        manifest=export_tester(tmp_path,sid,persona)
+        data=json.loads(manifest.read_text());target=data['target']
+        rows=[json.loads(line) for line in Path(target['path']).read_text().splitlines()]
+        for row in rows:
+            p=row.get('payload',{})
+            if p.get('type')=='function_call':
+                command=json.loads(p['arguments'])['cmd']
+                p['arguments']=json.dumps({'cmd':"printf '%s' "+__import__('shlex').quote(command)})
+        raw='\n'.join(json.dumps(row) for row in rows)+'\n'
+        Path(target['path']).write_text(raw);Path(target['source']['location']).write_text(raw)
+    invoke(tmp_path,'Stop')
+    assert state(tmp_path)['milestone']['status']=='pending'
+
+
+def test_candid_no_defects_and_scope_limitations_count_as_critical_feedback(tmp_path):
+    setup(tmp_path)
+    for sid,persona in [('tester-one','Maya, 29, mobile'),('tester-two','Ivan, 61, desktop')]:
+        manifest=export_tester(tmp_path,sid,persona)
+        data=json.loads(manifest.read_text());target=data['target']
+        raw=Path(target['path']).read_text().replace('Negative: the search label confused me at first.',
+            'Limitations: no product defects observed in my assigned desktop scenario; other devices are outside this persona.')
+        Path(target['path']).write_text(raw);Path(target['source']['location']).write_text(raw)
+    invoke(tmp_path,'Stop')
+    assert state(tmp_path)['milestone']['status']=='accepted'
+
+
+def test_explicit_personas_win_over_russian_word_endings_in_shared_assignment(tmp_path):
+    setup(tmp_path)
+    for sid,persona in [('tester-one','Maya, 29, mobile'),('tester-two','Ivan, 61, desktop')]:
+        manifest=export_tester(tmp_path,sid,persona)
+        data=json.loads(manifest.read_text());target=data['target']
+        rows=[json.loads(line) for line in Path(target['path']).read_text().splitlines()]
+        rows[1]['payload']['content'][0]['text']='Все аккаунты вымышленные. Не меняй данные пользователей.\n'+rows[1]['payload']['content'][0]['text']
+        raw='\n'.join(json.dumps(row) for row in rows)+'\n'
+        Path(target['path']).write_text(raw);Path(target['source']['location']).write_text(raw)
+    invoke(tmp_path,'Stop')
+    m=state(tmp_path)['milestone']
+    assert m['status']=='accepted'
+    assert len({v['persona'] for v in m['feedback']})==2
+
+
+def test_reentry_reads_existing_genuine_feedback_before_requesting_duplicate_testers(tmp_path):
+    setup(tmp_path)
+    export_tester(tmp_path)
+    export_tester(tmp_path,'tester-two','Ivan, 61, desktop manager')
+    invoke(tmp_path,'SessionStart')
+    assert state(tmp_path)['milestone']['status']=='accepted'

@@ -25,7 +25,7 @@ READ_ONLY = re.compile(r"\b(?:read.only|review only|you are .{0,30}(?:tester|rev
 ACCEPT = re.compile(r"(?:final|milestone|explicit|user) acceptance|(?:итогов|финальн|пользовательск).{0,20}при[её]мк|focus.groups|фокус.групп", re.I)
 URL = re.compile(r"https?://[^\s<>\]\)\"']+", re.I)
 POSITIVE = re.compile(r"\bpositive\b|\bliked\b|what helped|(?<!не )понрав|(?<!не )\bпомог|\bудобно\b", re.I)
-NEGATIVE = re.compile(r"negative|disliked|confus|frustrat|не понрав|мешал|неудоб|затруд|недостат|критик", re.I)
+NEGATIVE = re.compile(r"negative|disliked|confus|frustrat|не понрав|мешал|неудоб|затруд|недостат|критик|limitations|obstacles|defects|ошиб|ограничен|помех", re.I)
 ACHIEVED = re.compile(r"(?:goal|task) (?:was )?(?:achieved|completed)|цель достигнута|задача выполнена|\bPASS\b", re.I)
 BLOCKED = re.compile(r"blocked|not.tested|блокир|заблокир|не протестирован|STOP_MISSING_REAL_SURFACE", re.I)
 ACCESS = re.compile(r"login|log.in|sign.in|authenticat|credentials|permission|авторизац|вход|уч[её]тн|доступ|разрешен", re.I)
@@ -212,7 +212,7 @@ def observe(state, event, name, cwd, session, now):
     if milestone.get("surface_key") != key:
         milestone.update(surface=surface, surface_key=key, changed_at=now.isoformat(), status="pending", feedback=[])
         milestone.pop("blocker", None)
-    if pending(milestone) and not milestone.get("hold") and (name in {"Stop", "PreCompact"} or event.get("model_boundary")):
+    if pending(milestone) and not milestone.get("hold") and (name in {"Stop", "PreCompact", "SessionStart", "UserPromptSubmit"} or event.get("model_boundary")):
         reconcile_feedback(milestone, cwd, session)
     final = str(event.get("last_assistant_message") or "")
     if name == "Stop" and BLOCKED.search(final) and (ACCESS.search(final) or "STOP_MISSING_REAL_SURFACE" in final):
@@ -247,37 +247,72 @@ def timestamp(value):
         raise ValueError("missing native timezone")
     return parsed
 
+def browser_commands(command, depth=0):
+    """Read native executed argv; unwrap bounded shells/SSH, never evaluate it."""
+    if depth > 4 or not isinstance(command, str):
+        return []
+    try:
+        lexer = shlex.shlex(command, posix=True, punctuation_chars=";&|")
+        lexer.whitespace_split = True
+        tokens = list(lexer)
+    except ValueError:
+        return []
+    segments, current = [], []
+    for token in tokens:
+        if token in {";", "&&", "||", "|", "&"}:
+            if current:
+                segments.append(current)
+            current = []
+        else:
+            current.append(token)
+    if current:
+        segments.append(current)
+    result = []
+    for argv in segments:
+        executable = Path(argv[0]).name
+        if executable in {"agent-browser", "agent-device"}:
+            result.append(argv)
+        elif executable == "ssh":
+            # The remote command is a shell string after SSH's host argument.
+            # Only interpret its argv, not text printed by echo/printf/cat.
+            i = 1
+            while i < len(argv) and argv[i].startswith('-'):
+                option = argv[i]
+                i += 2 if option in {'-o', '-p', '-i', '-l', '-F', '-J', '-S'} else 1
+            if i + 1 < len(argv):
+                remote = argv[i+1] if len(argv[i+1:]) == 1 else shlex.join(argv[i+1:])
+                result.extend(browser_commands(remote, depth+1))
+        elif executable in {"bash", "sh", "zsh"}:
+            index = next((i for i, x in enumerate(argv) if x in {'-c', '-lc'}), None)
+            if index is not None and index+1 < len(argv):
+                result.extend(browser_commands(argv[index+1], depth+1))
+    return result
+
+
 def browser_attempt(observations, urls):
     navigated, interacted, saw_result = False, False, False
     before = ""
     for call, output in observations:
         name = call.get("name", "").lower().split(".")[-1].rsplit("__", 1)[-1]
         args = str(call.get("arguments") or call.get("input") or "")
-        # Real browser tool output or an actual browser CLI operation; a test
-        # runner/echo/leader claim is insufficient. Never run these commands here.
-        browser = "browser" in name or "agent-device" in name
-        action = name
+        actions = [name] if "browser" in name or "agent-device" in name else []
         if name in {"exec_command", "shell_command", "exec", "bash"}:
             try:
                 payload = json.loads(args)
                 command = payload.get("cmd") or payload.get("command") or ""
-                tokens = shlex.split(command)
-                if tokens and Path(tokens[0]).name == "ssh":
-                    # A managed remote browser operation is still a native
-                    # executed command; support ssh's quoted remote argv.
-                    remote = next((i for i, token in enumerate(tokens[1:], 1) if "agent-browser" in token), None)
-                    tokens = shlex.split(tokens[remote]) + tokens[remote+1:] if remote is not None else []
             except (ValueError, TypeError):
-                tokens = []
-            # Options such as --session NAME precede the action. Reject echo,
-            # test runners and shell scripts containing a quoted browser command.
-            browser = bool(tokens and Path(tokens[0]).name in {"agent-browser", "agent-device"})
-            action = next((x for x in tokens[1:] if x in {"open", "snapshot", "click", "fill", "type", "press", "select", "screenshot"}), "")
-        if not browser or not output or re.search(r"(?:isError|exit_code)\W*[:=]\W*(?:true|[1-9])", output, re.I):
+                command = ""
+            actions = []
+            for argv in browser_commands(command):
+                action = next((x for x in argv[1:] if x in {"open", "snapshot", "click", "fill", "type", "press", "select", "screenshot", "get"}), "")
+                if action == 'get':
+                    action = 'get-url' if 'url' in argv[argv.index('get')+1:] else 'get'
+                actions.append(action)
+        if not actions or not output or re.search(r"(?:isError|exit_code)\W*[:=]\W*(?:true|[1-9])", output, re.I):
             continue
-        if any(url.rstrip("/") in args or url.rstrip("/") in output for url in urls) and re.search(r"open|navigate", action):
+        if any(url.rstrip("/") in args or url.rstrip("/") in output for url in urls) and any(re.search(r"open|navigate|get-url", action) for action in actions):
             navigated = True
-        if navigated and re.search(r"click|fill|type|press|select", action):
+        if navigated and any(re.search(r"click|fill|type|press|select", action) for action in actions):
             interacted = True
         if navigated and re.search(r"button|textbox|heading|link|кнопк|поле", output, re.I):
             if re.search(r"(?:heading|title).*?(?:log.in|sign.in|вход|авторизац)", output, re.I):
@@ -287,6 +322,7 @@ def browser_attempt(observations, urls):
             elif not interacted:
                 before = output.strip()
     return navigated and interacted and saw_result
+
 
 def goal_report(final, goal):
     # A mechanical floor, not an LLM semantic grader. Require the actual goal,
@@ -335,14 +371,20 @@ def feedback_from(path, milestone, session):
     # internal references. No leader-written acceptance certificate is needed.
     if not correlated and milestone["goal"] not in prompt:
         return None
-    persona = re.search(r"(?:persona|персона)\s*:\s*([^\n]+)|(?:you are|ты)\s+([^\n]+)", prompt, re.I)
+    # Prefer the explicit persona, not a substring such as the ending of
+    # Russian "аккаунты" in a common coordination/infrastructure preamble.
+    persona = re.search(r"^\s*(?:persona|персона)\s*:\s*([^\n]+)", prompt, re.I | re.M)
+    if persona is None:
+        persona = re.search(r"(?:\byou are\b|(?<!\w)ты)\s+([^\n]+)", prompt, re.I)
     persona_text = next((p.strip() for p in persona.groups() if p), "") if persona else ""
     if len(persona_text) < 15:
         return None
     final = next((text for role, text, phase in reversed(messages) if role == "assistant" and phase != "commentary"), "")
     if len(final) < 100 or not POSITIVE.search(final) or not NEGATIVE.search(final):
         return None
-    urls = milestone.get("urls") or URL.findall(prompt)
+    # The fresh native assignment may explicitly name a managed tunnel/staging
+    # address for the same correlated task. It need not equal the public URL.
+    urls = list(dict.fromkeys([*(milestone.get("urls") or []), *URL.findall(prompt)]))
     if not urls:
         return None
     status = "pending"
