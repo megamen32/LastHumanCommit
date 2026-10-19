@@ -105,7 +105,7 @@ def remote_binding(cwd, remote):
     return match.group(1) if match else None
 
 
-def main_permission(source, quote, repository):
+def main_permission(source, quote, repository, branch):
     if not source or not quote or quote not in source['prompt'] or not repository:
         return False
     owner, repo = repository.split('/')
@@ -119,6 +119,7 @@ def main_permission(source, quote, repository):
                      or (len(acronym) > 1 and re.search(r'(?<![A-Z0-9])' + re.escape(acronym) + r'(?![A-Z0-9])', quote)))
                 and re.search(r'allow|permit|разреш|можно', quote, re.I)
                 and re.search(r'merge|интегр|слия|сливай', quote, re.I)
+                and re.search(r'(?:\binto\s+|\bto\s+|\bв\s+|\bна\s+)(?:branch\s+)?[`\'"]?' + re.escape(branch) + r'\b', quote, re.I)
                 and clause and not re.search(r"do not|don't|never|forbidden|not allowed|not permitted|\bno\b|\bне\b|нельзя|запрещ", clause, re.I))
 
 
@@ -477,7 +478,7 @@ def main():
                           'release_owner': args.release_owner,
                           'repository': remote_binding(cwd, args.integration_remote),
                           'permission_quote': args.integration_permission_quote}
-                policy['main_permission_confirmed'] = main_permission(source, args.integration_permission_quote, policy['repository'])
+                policy['main_permission_confirmed'] = main_permission(source, args.integration_permission_quote, policy['repository'], policy['branch'])
                 policy['target_scope_confirmed'] = args.integration_branch in source['prompt'] or policy['main_permission_confirmed']
             if args.task_class and args.task_class != outcome['task_class']:
                 if not source:

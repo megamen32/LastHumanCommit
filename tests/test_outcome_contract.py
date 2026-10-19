@@ -838,3 +838,12 @@ def test_similar_repository_name_is_not_main_merge_consent(tmp_path):
     outcome = anchored(tmp_path, 'Implement the complete total CLI. ' + quote)
     outcome = integration_contract(tmp_path, outcome, permission_quote=quote)
     assert outcome['integration_policy']['main_permission_confirmed'] is False
+
+
+def test_dev_merge_permission_cannot_be_promoted_to_main(tmp_path):
+    quote = 'Allow merge megamen32/totalrepo into megamen32-dev.'
+    outcome = anchored(tmp_path, 'Implement the complete total CLI. ' + quote)
+    outcome = integration_contract(tmp_path, outcome, branch='main', ownership='owned', permission_quote=quote)
+    assert outcome['integration_policy']['main_permission_confirmed'] is False
+    manifest = review_export(tmp_path, outcome, stage_names=('technical','deploy','consumer','publication','integration'))
+    cli(tmp_path, 'review', '--manifest', str(manifest), ok=False)
