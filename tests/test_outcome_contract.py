@@ -122,7 +122,7 @@ def review_export(root, outcome, *, product='pass', stage_names=('technical', 'c
             # a generic nonempty string, the readback binds target and version.
             output = json.dumps({'version': 'v2'} if stage == 'deploy' else
                                 {'url': 'https://github.com/owned/project/pull/1', 'state': 'OPEN', 'headRefOid': 'a' * 40} if stage == 'publication' else
-                                {'url': 'https://github.com/owned/project/pull/1', 'state': 'MERGED', 'mergedAt': now, 'mergeCommit': {'oid': 'b' * 40}})
+                                {'url': 'https://github.com/owned/project/pull/1', 'state': 'MERGED', 'mergedAt': now, 'mergeCommit': {'oid': 'b' * 40}, 'baseRefName': 'main'})
             if stage == 'deploy' and bad_deploy:
                 cmd = 'git rev-parse HEAD'
                 proc = subprocess.run(cmd.split(), cwd=root, capture_output=True, text=True)
@@ -460,6 +460,7 @@ def test_honest_feedback_without_praise_or_criticism_keywords_is_accepted(tmp_pa
 
 def test_fullcycle_order_has_an_achievable_positive_close(tmp_path):
     outcome = anchored(tmp_path, 'Implement the complete total CLI and deliver the full cycle.')
+    outcome = integration_contract(tmp_path, outcome)
     manifest = review_export(tmp_path, outcome, stage_names=('technical', 'deploy', 'consumer', 'publication', 'integration'))
     result = cli(tmp_path, 'review', '--manifest', str(manifest))
     assert result['finish_verdict'] == 'complete'
@@ -712,3 +713,72 @@ def test_explicit_independent_acceptance_is_not_removed_by_no_delegation(tmp_pat
     manifest = review_export(tmp_path, outcome, sid='leader')
     cli(tmp_path, 'review', '--manifest', str(manifest), ok=False)
     assert cli(tmp_path, 'status')['finish_verdict'] == 'pending'
+
+
+def test_unknown_integration_target_cannot_close(tmp_path):
+    outcome = anchored(tmp_path, 'Implement the complete total CLI and deliver the full cycle.')
+    manifest = review_export(tmp_path, outcome, stage_names=('technical','deploy','consumer','publication','integration'))
+    cli(tmp_path, 'review', '--manifest', str(manifest), ok=False)
+    assert cli(tmp_path, 'status')['finish_verdict'] == 'pending'
+
+
+def test_shared_upstream_main_cannot_be_selected(tmp_path):
+    outcome = anchored(tmp_path)
+    source = outcome['scope_sources'][0]['source']
+    cli(tmp_path, 'contract', '--scenario','Empty basket total','--target','python3 total.py','--expected','0',
+        '--owned-path','total.py','--scope-source',source,'--integration-branch','main',
+        '--integration-remote','origin','--integration-ownership','shared',ok=False)
+
+
+def integration_contract(root, outcome, branch='main', ownership='owned', owner=None):
+    args = ['contract', '--scenario', outcome['canary']['scenario'], '--target', outcome['canary']['target'],
+        '--expected', outcome['canary']['expected'], '--owned-path', 'total.py',
+        '--scope-source', outcome['scope_sources'][0]['source'], '--integration-branch', branch,
+        '--integration-remote', 'origin', '--integration-ownership', ownership]
+    if owner:
+        args += ['--release-owner', owner, '--stage-target', 'integration=git ls-remote origin refs/heads/' + branch,
+            '--stage-expected', 'integration=' + 'b' * 40, '--stage-target', 'publication=git ls-remote origin refs/heads/' + branch,
+            '--stage-expected', 'publication=' + 'b' * 40, '--stage-target', 'deploy=https://demo.test/version', '--stage-expected', 'deploy=v2']
+    return cli(root, *args)
+
+
+@pytest.mark.parametrize('smoke,branch', [(True, 'megamen32-dev'), (False, 'megamen32-dev'), (True, 'main')])
+def test_dev_history_without_worker_pr_closes_only_after_target_and_integrated_smoke(tmp_path, smoke, branch):
+    outcome = anchored(tmp_path, 'Implement the complete total CLI, integrate into Airlock megamen32-dev. Oleg handles upstream main.')
+    outcome = integration_contract(tmp_path, outcome, 'megamen32-dev', 'shared', 'Oleg')
+    manifest = review_export(tmp_path, outcome, stage_names=('technical','deploy','consumer','publication','integration'))
+    data = json.loads(manifest.read_text()); source = Path(data['target']['source']['location'])
+    rows = [json.loads(line) for line in source.read_text().splitlines()]
+    report = json.loads(rows[-1]['payload']['content'][0]['text'].split('LHC_OUTCOME_REVIEW ')[1])
+    for row in rows:
+        p = row.get('payload', {})
+        if p.get('call_id') in {'call-3', 'call-4'}:
+            if p['type'] == 'function_call':
+                p['arguments'] = json.dumps({'cmd':'git ls-remote origin refs/heads/' + branch})
+            else:
+                p['output'] = 'b' * 40 + '\trefs/heads/' + branch + '\n'
+    if smoke:
+        stamp = rows[-1]['timestamp']
+        rows[-1:-1] = [
+            {'timestamp':stamp,'type':'response_item','payload':{'type':'function_call','name':'exec_command','call_id':'smoke','arguments':json.dumps({'cmd':'python3 total.py'})}},
+            {'timestamp':stamp,'type':'response_item','payload':{'type':'function_call_output','call_id':'smoke','output':subprocess.check_output([sys.executable,'total.py'],cwd=tmp_path,text=True)}}]
+        report['stages']['integration']['evidence_calls'].append('smoke')
+    rows[-1]['payload']['content'][0]['text'] = 'Observed branch history and integrated smoke.\nLHC_OUTCOME_REVIEW ' + json.dumps(report)
+    raw = '\n'.join(json.dumps(row) for row in rows) + '\n'; source.write_text(raw); Path(data['target']['path']).write_text(raw)
+    result = cli(tmp_path, 'review', '--manifest', str(manifest), ok=smoke and branch=='megamen32-dev')
+    if smoke and branch=='megamen32-dev':
+        assert result['finish_verdict'] == 'complete'
+        assert result['release_handoff']['status'] == 'awaiting-owner'
+        assert result['release_handoff']['owner'] == 'Oleg'
+
+
+def test_direct_branch_correction_invalidates_target_without_resetting_lineage(tmp_path):
+    outcome = anchored(tmp_path, 'Implement the complete total CLI and deliver the full cycle.')
+    outcome = integration_contract(tmp_path, outcome)
+    invoke(tmp_path, 'UserPromptSubmit', prompt='Fix the remaining bug and integrate into megamen32-dev; Oleg owns upstream main.')
+    updated = cli(tmp_path, 'status')
+    assert not updated.get('integration_policy')
+    assert updated['id'] == outcome['id']
+    assert updated['started_at'] == outcome['started_at']
+    assert updated['task_class'] == 'fullcycle'
+    assert updated['stages']['technical']['status'] == 'pending'

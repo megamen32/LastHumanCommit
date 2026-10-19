@@ -59,7 +59,7 @@ the shortest blocker by the real canary.
 Follow `../protocols/SHARED_WORKTREE.md`. Use the Lead-assigned canonical branch,
 worktree and base commit when one is provided. Never allocate another checkout
 through the harness or independently merge/delete a branch. Commit assigned work
-on its assigned branch; Lead owns main integration. Never stash, reset, clean, restore, rollback, stage, or
+on its assigned branch; Lead owns integration into the explicitly permitted dev target; no PR per worker is required. Never stash, reset, clean, restore, rollback, stage, or
 remove foreign work. Report collisions to L.
 
 Use the assigned task file as a compact handoff when one was provided. Append

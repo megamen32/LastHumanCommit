@@ -114,6 +114,8 @@ def verdict(outcome, state):
         return 'pending'
     if any(s['status'] not in {'complete', 'not-applicable'} for s in outcome['stages'].values()):
         return 'pending'
+    if outcome['stages']['integration']['status'] == 'complete' and not outcome.get('integration_policy'):
+        return 'pending'  # Unknown target/ownership never defaults to main.
     milestone = state.get('milestone') or {}
     if native.pending(milestone):
         return 'pending'
@@ -155,6 +157,9 @@ def observe(state, event, name, cwd, session, now):
         outcome['latest_correction'] = prompt
         # Read-only/status/peer updates cannot erase a previously accepted repair.
         kind = classify(prompt)
+        if kind != 'status' and re.search(r'\b(?:branch|upstream|integration|main|megamen32-dev)\b|ветк|интеграц', prompt, re.I):
+            outcome.pop('integration_policy', None)
+            outcome.pop('release_handoff', None)
         if kind in ENGINEERING | {'testing', 'research'} or ACTIONABLE_UNKNOWN.search(prompt):
             outcome['actionable'] = True
         if kind == 'unknown' and ACTIONABLE_UNKNOWN.search(prompt) and outcome['task_class'] == 'status':
@@ -249,6 +254,9 @@ def reminder(outcome, tool):
         review_route += ('Прямой запрет делегирования: не создавай, не запускай и не возобновляй reviewer/tester sessions. '
                          'Если независимая приёмка всё ещё нужна, передай готовый результат назначенному координатору; '
                          'не нанимай проверяющего ради закрытия state. ')
+    review_route += ('Интеграция только в явно выбранный permitted target (contract --integration-branch/remote/ownership); '
+                     'Airlock: megamen32-dev, external/shared upstream main не auto-merge. Dev delivery complete '
+                     'не требует финального main merge Олега: release_handoff awaiting-owner отдельно. ')
     return ('LHC outcome: ' + outcome['task_class'] + '; ' + outcome['finish_verdict'] +
             '. Canary: ' + json.dumps(outcome['canary'], ensure_ascii=False) +
             '. Следующий этап: ' + str(next_stage(outcome)) +
@@ -402,6 +410,10 @@ def main():
     contract.add_argument('--not-applicable', action='append', choices=STAGES, default=[])
     contract.add_argument('--owned-path', action='append', default=[])
     contract.add_argument('--coverage', action='append', default=[])
+    contract.add_argument('--integration-branch')
+    contract.add_argument('--integration-remote')
+    contract.add_argument('--integration-ownership', choices=('owned', 'shared', 'external'))
+    contract.add_argument('--release-owner', help='human owner of later upstream integration, not this dev delivery')
     contract.add_argument('--stage-target', action='append', default=[], metavar='STAGE=TARGET')
     contract.add_argument('--stage-expected', action='append', default=[], metavar='STAGE=EXPECTED')
     review = sub.add_parser('review')
@@ -418,6 +430,19 @@ def main():
         outcome = state['business']['outcome']
         if args.command == 'contract':
             source = next((r for r in outcome.get('scope_sources', []) if r.get('source') == args.scope_source), None)
+            policy = outcome.get('integration_policy')
+            if any((args.integration_branch, args.integration_remote, args.integration_ownership, args.release_owner)):
+                if not source or not all((args.integration_branch, args.integration_remote, args.integration_ownership)):
+                    raise ValueError('integration needs explicit branch/remote/ownership and native scope source; unknown is not main')
+                if not re.fullmatch(r'[\w][\w./-]*', args.integration_branch) or '..' in args.integration_branch:
+                    raise ValueError('invalid integration branch')
+                if args.integration_branch in {'main', 'master'} and args.integration_ownership != 'owned':
+                    raise ValueError('external/shared upstream main is owner-only, never automated integration')
+                if args.release_owner and args.integration_branch in {'main', 'master'}:
+                    raise ValueError('release handoff needs a separate permitted dev target')
+                policy = {'branch': args.integration_branch, 'remote': args.integration_remote,
+                          'ownership': args.integration_ownership, 'source': args.scope_source,
+                          'release_owner': args.release_owner}
             if args.task_class and args.task_class != outcome['task_class']:
                 if not source:
                     raise ValueError('class correction requires an exact original/latest native user source')
@@ -449,8 +474,12 @@ def main():
                     claims.setdefault(stage, {})[field] = value
             if any(set(row) != {'target', 'expected'} for row in claims.values()):
                 raise ValueError('stage readback needs both target and expected')
-            changed = canary != outcome['canary'] or args.owned_path != outcome['owned_paths'] or args.coverage != outcome.get('coverage', []) or claims != outcome.get('stage_claims', {})
+            changed = canary != outcome['canary'] or args.owned_path != outcome['owned_paths'] or args.coverage != outcome.get('coverage', []) or claims != outcome.get('stage_claims', {}) or policy != outcome.get('integration_policy')
             outcome.update(canary=canary, owned_paths=args.owned_path, coverage=args.coverage, contract_confirmed=True, stage_claims=claims)
+            if policy:
+                outcome['integration_policy'] = policy
+                if policy.get('release_owner'):
+                    outcome['release_handoff'] = {'status': 'pending-dev-delivery', 'owner': policy['release_owner'], 'target': 'upstream main'}
             if changed:
                 outcome['evidence_after'] = datetime.now().astimezone().isoformat()
                 for stage in outcome['stages'].values():

@@ -38,7 +38,7 @@ def assert_order(value: str, first: str, second: str, source: str) -> None:
 def test_lead_routes_business_value_before_process() -> None:
     lead = compact(read("src/common/agents/Lead.md"))
     assert_order(lead, "Начни с исходного запроса", "Перед записью проверь сессии", "Lead.md")
-    for phrase in ("Понятное сделай сам", "фактического пути в продукте", "Проверка соответствует обещанию", "не требуй идеального ТЗ"):
+    for phrase in ("Lead делегирует все implementation задачи", "фактического пути в продукте", "Проверка соответствует обещанию", "не требуй идеального ТЗ"):
         assert phrase in lead
 
 
@@ -137,7 +137,8 @@ def test_minimal_path_is_mandatory() -> None:
     # The shortest path remains; the mandatory three-line form is retired.
     router = compact(read("AGENTS.md"))
     assert "кратчайший рабочий путь" in router
-    assert "Маленькую задачу делай напрямую" in router
+    assert "маленькая — один bounded Worker и Lead review" in router
+    assert "Назначенный leaf без делегирования" in router
     assert "three-line minimal path" not in router
 
 
@@ -356,7 +357,7 @@ def test_every_bugfix_requires_a_recorded_red_green_tdd_cycle() -> None:
 def test_unified_history_is_mandatory() -> None:
     router = compact(read("AGENTS.md"))
     workspace = compact(read("src/common/protocols/SHARED_WORKTREE.md"))
-    for phrase in ("push и PR", "сделай fetch", "повтори затронутые тесты", "вложенные репозитории", "рабочие деревья участников чистые"):
+    for phrase in ("единая опубликованная dev history", "PR per worker не обязателен", "Airlock megamen32-dev", "GitHub-hosted, не ARC", "сделай fetch", "повтори затронутые тесты", "вложенные репозитории", "рабочие деревья участников чистые"):
         assert phrase in router
     assert "последняя активная сессия" in workspace
     assert "публикуются **до** ожидания" in workspace

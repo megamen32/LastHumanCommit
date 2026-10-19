@@ -100,3 +100,20 @@ this failure. No user-wide candidate install/publish/merge performed.
 Latest user permits reversible LHC-specific ordinary native manager installation
 for NEW sessions; unsupported Codex --profile plugin install is not required.
 Other plugins/models/MCP/auth/config and old immutable paths remain protected.
+
+21:45UTC latest Oleg correction read from canonical lhc-oleg-correction-20261020.md.
+Guard e667f25 independently NO BLOCKING; own outcome59PASS46.21s. Native Codex
+manager installed exact immutable1.5.0 e667 facet96files match; foreign config
+semantic hash unchanged2010e942...837cb. Candidate hooks untrusted, so no canary yet.
+Latest branch delta arrived before trust/activation: restored only LHC old=true,
+e667=false through native config/batchWrite reloadUserConfig=false. No sessions
+reloaded/aborted, no user auth/models/MCP changed. Old immutable1.4.13 untouched.
+Branch-policy delta now records explicit remote/branch/ownership with native source;
+unknown target cannot complete integration; shared/external main rejected. Exact
+configured branch/head readback + integrated consumer smoke closes dev integration,
+release_handoff awaiting-owner separately. No PR per worker; Airlock megamen32-dev,
+GitHub-hosted main CI, no ARC/privileges/protection changes. Lead delegates all
+implementation; bounded assigned leaf self-check remains. Stale text-only tests
+updated to the direct new instruction; behavioral tests retained and expanded.
+RED unknown integration closure in dev-policy-red.log; six target/readback/smoke
+controls GREEN4.66s. Full final checks/review/native rerun next; no final release claim.

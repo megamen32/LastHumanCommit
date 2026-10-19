@@ -6,7 +6,8 @@ description: Let the strongest suitable Lead turn a goal into coherent model-ass
 # Decompose, allocate, execute, learn
 
 Use before substantial dispatch and whenever execution reveals a bad boundary.
-For a trivial task, keep the graph implicit and compact; do not manufacture jobs.
+Lead delegates implementation even for a small task: one bounded Worker plus Lead review.
+Keep its graph compact. An already delegated leaf with no-delegation does not hire recursively.
 
 ## Resolve uncertainty before distributing it
 
@@ -51,7 +52,9 @@ For independent parallel writes, Lead may allocate canonical branches and
 worktrees through the active SHARED_WORKTREE protocol and its common tool.
 Record primary root, `lhc/<task-slug>`, `.worktrees/<task-slug>`, immutable base
 commit and owner. Give the harness that existing path; never let it create a
-second private checkout. Main integration and task-owned cleanup remain Lead-owned.
+second private checkout. The resolved permitted dev integration target and task-owned cleanup remain Lead-owned.
+No PR per worker is required; one published dev history and integrated smoke are required.
+Airlock converges on megamen32-dev; Oleg owns upstream main, with GitHub-hosted main CI, never ARC.
 
 Show which ready lanes will actually dispatch together and the available slots.
 Explain each serialization by a dependency, shared mutable resource or capacity

@@ -150,10 +150,10 @@ def real_observation(call, output, target, stage, task_class=None, cwd=None, exp
     # path plus a supported readback, not a guessed deployment certificate.
     if not expected or not text or not words:
         return False
-    if stage == 'publication' and words[:2] == ['git', 'ls-remote']:
+    if stage in {'publication', 'integration'} and words[:2] == ['git', 'ls-remote']:
         return words[:len(shlex.split(target))] == shlex.split(target) and any(
             line.split()[:1] == [expected] and len(line.split()) > 1 and line.split()[1].startswith('refs/heads/')
-            for line in output.splitlines()) and bool(re.fullmatch('[0-9a-f]{40,64}', expected))
+            and line.split()[1] == words[-1] for line in output.splitlines()) and bool(re.fullmatch('[0-9a-f]{40,64}', expected))
     try:
         result = json.loads(output)
     except (ValueError, TypeError):
@@ -243,6 +243,10 @@ def raw_review(outcome, final, observations, cwd):
                 refs = []
             if refs:
                 refs += [ref for ref, (call, _) in by_call.items() if 'browser' in str(call.get('name', '')).casefold()]
+        if stage == 'integration' and refs and outcome.get('integration_policy', {}).get('release_owner'):
+            read_at = max(list(by_call).index(ref) for ref in refs)
+            refs += [ref for i, (ref, (call, output)) in enumerate(by_call.items()) if i > read_at
+                     and real_observation(call, output, canary['target'], 'consumer', outcome['task_class'], cwd)]
         if not refs:
             break
         stages[stage] = {'target': target, 'expected': expected, 'observed': final,
@@ -365,6 +369,30 @@ def accept_review(outcome, state, path, cwd, owner):
             raise ValueError('remote stage requires its exact contract target/expected readback')
         if stage == 'consumer' and not browser_journey(refs, by_call, canary['target']):
             raise ValueError('browser open/login alone is not the assigned action and result')
+        if stage == 'integration':
+            policy = outcome.get('integration_policy')
+            if not policy:
+                raise ValueError('integration target/ownership unresolved; never default to main')
+            branch = policy['branch']
+            if branch in {'main', 'master'} and policy['ownership'] != 'owned':
+                raise ValueError('shared/external upstream main is owner-only')
+            def target_readback(ref):
+                call, output = by_call[ref]
+                _, words = command(call)
+                if words[:2] == ['git', 'ls-remote']:
+                    return words == ['git', 'ls-remote', policy['remote'], 'refs/heads/' + branch]
+                try:
+                    return json.loads(output).get('baseRefName') == branch
+                except (ValueError, AttributeError):
+                    return False
+            reads = [ref for ref in refs if target_readback(ref) and real_observation(*by_call[ref], claim['target'], stage, outcome['task_class'], cwd, claim['expected'])]
+            if not reads:
+                raise ValueError('integration readback must prove the configured branch/head')
+            if policy.get('release_owner'):
+                smoke = [ref for ref in refs if real_observation(*by_call[ref], canary['target'], 'consumer', outcome['task_class'], cwd)
+                         and call_order[ref] > max(call_order[r] for r in reads)]
+                if not smoke or not browser_journey(smoke, by_call, canary['target']):
+                    raise ValueError('dev integration needs actual integrated smoke after branch readback')
         if not any(real_observation(*by_call[ref], claim['target'], stage, outcome['task_class'], cwd, claim['expected']) for ref in refs):
             raise ValueError('echo/health/test-only/wrong-target receipt is not the assigned consumer operation')
         completed.add(stage)
@@ -378,5 +406,7 @@ def accept_review(outcome, state, path, cwd, owner):
         outcome['staging_push'] = {**staging, 'manifest': str(path.resolve()), 'reviewer': sid}
     outcome.update(product_verdict=product, revision=revision, coverage_evidence=report.get('coverage', {}))
     outcome['verification_level'] = 'self-check' if own_attempt else 'independent-review'
+    if outcome.get('release_handoff') and outcome['stages']['integration']['status'] == 'complete':
+        outcome['release_handoff']['status'] = 'awaiting-owner'
     outcome['canary']['status'] = 'complete' if 'consumer' in completed else 'pending'
     outcome['sources'] = list(dict.fromkeys([*outcome.get('sources', []), str(path.resolve())]))

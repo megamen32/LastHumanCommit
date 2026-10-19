@@ -29,11 +29,13 @@ and clocks; a status/read-only question cannot erase confirmed repair.
 
 For testing add repeated `--coverage '<assigned scenario>'` and omit owned paths.
 For fullcycle, the applicable sequence is implementation/tests → authorized deploy
-→ hands-on/applicable independent acceptance → final push/PR → permitted owned
-merge. Explicit original no-deploy/no-push/external PR-only boundaries make only
+→ hands-on/applicable independent acceptance → publication/integration into the
+configured permitted dev branch → integrated smoke. PR per worker is optional;
+one published dev history is mandatory. Explicit original no-deploy/no-push/external PR-only boundaries make only
 those operations N/A, with their scope source retained. Missing required access
-is blocked, not N/A. State does not grant permission. Never merge Airlock main
-under an LHC task. Local checkpoint commits may precede deployment. A genuine CI
+is blocked, not N/A. State does not grant permission. Airlock converges on `megamen32-dev`; Oleg owns final upstream main integration.
+External/shared upstream main is never auto-merged. Main CI stays GitHub-hosted,
+not ARC/K3s; do not change GitHub App privileges, checks or branch protection. Local checkpoint commits may precede deployment. A genuine CI
 branch-push dependency may precede deployment only as a recorded staging-push
 exception (branch, reason, dependent stage, native refs); it is not final acceptance.
 
@@ -143,3 +145,33 @@ captured before the attempt. Echo/printf, shell wrappers/compound commands,
 write-out JSON, redirects and foreign endpoints are not Notify provenance.
 Unknown HTTP clients/configuration use the existing native MCP path; schema text
 alone cannot establish delivery or a human answer. No live roundtrip is implied.
+
+
+## Explicit dev target and separate release handoff
+
+Lead resolves the permitted integration branch, remote and ownership against the
+native user scope/project rules before Git mutations. Unknown target/ownership
+never means main. Record this mapping with the existing contract, not a second
+Git controller; the record itself grants no permission:
+
+`contract ... --scope-source <native-user-source> --integration-branch megamen32-dev --integration-remote origin --integration-ownership shared --release-owner Oleg`
+
+For an owned LHC repository, explicitly permitted main can be selected with
+`--integration-ownership owned`; shared/external main is rejected. Airlock worktrees
+branch from and converge on megamen32-dev. Final upstream main PR is only the
+agreed handoff, not a mandatory worker PR. Lead delegates all implementation;
+a small task uses one bounded Worker plus Lead review. Already assigned leaf
+no-delegation self-check remains separate from parent acceptance.
+
+Integration readback must bind the configured branch/head: `git ls-remote origin
+refs/heads/megamen32-dev`, with the expected SHA, or a merged PR readback including
+`baseRefName`. Publication can use branch history without a per-worker PR. A dev
+handoff also requires actual integrated consumer smoke after that readback,
+covered in the same original review's integration evidence calls. Canary and
+permitted dev delivery can then be complete while `release_handoff.status` is
+`awaiting-owner`; Oleg's future upstream main action is not an unmet dev task.
+Missing dev publication/smoke stays pending. Neither refs nor handoff bypass
+independent milestone, human-stop, external-action or authorization gates.
+Use the existing HQ workspace validation (`go run ./automation/cmd/hq validate
+workspace --root "$PWD"`) only in its actual owning checkout after inspecting
+scripts/ownership; local green never guarantees GitHub approval.

@@ -14,3 +14,5 @@ do not hire reviewers to close state. Fullcycle/milestone independent acceptance
 Status/read-only updates preserve earlier repair scope. Follow the same package's
 `common/protocols/OUTCOME_CONTRACT.md`; state/receipt never grants permission.
 <!-- last-human-commit:end -->
+
+Lead delegates implementation (small: one bounded Worker + Lead review). Resolve permitted integration target before Git changes; Airlock megamen32-dev, upstream main owner-only, GitHub-hosted main CI. No PR per worker; published dev history + integrated smoke, release handoff awaiting-owner separately.

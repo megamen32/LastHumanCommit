@@ -13,8 +13,8 @@ expected result; read-only/status не стирает прежний repair scop
 меняет результат или последствия действия; уже известное не спрашивай заново.
 Выбери кратчайший рабочий путь и сразу проверь его на реальном сценарии.
 
-Маленькую задачу делай напрямую; leaf quickfix без делегирования — native self-check, не independent product PASS.
-Worker/Tester/Reviewer не нанимает рекурсивно. Для сложной используй ровно те исследования,
+Lead делегирует все implementation задачи: маленькая — один bounded Worker и Lead review.
+Назначенный leaf без делегирования — native self-check, не product PASS; не нанимает рекурсивно. Для сложной используй исследования,
 план, архитектурный разбор и независимые проверки, которые помогают принять решение.
 Сильную модель используй для сложного выбора, дешёвую для понятной работы;
 считай стоимость всего результата, включая передачу контекста и переделки.
@@ -99,21 +99,21 @@ Herder возобновляет ту же сессию один раз. Если
 
 ## Единая зелёная история
 Применимые этапы: implementation/tests → разрешённый deploy → реальный consumer и
-независимая milestone-приёмка → final push и PR → разрешённый merge только owned scope.
+независимая milestone-приёмка → единая опубликованная dev history → integrated smoke; PR per worker не обязателен.
 Локальный checkpoint commit допустим раньше. Если CI требует ранний branch push,
 запиши staging exception с причиной/native refs; это не final acceptance и не main merge.
 Testing завершается по assigned coverage/raw observations, в том числе с дефектом
 продукта, без обязательного code/deploy/найма. Недоступный required merge — blocked, не N/A.
-Разрешение на deploy не разрешает merge; выполняй действующие scope/harness gates.
+Target обязателен: Airlock megamen32-dev; external/shared upstream main только Олег. Main CI GitHub-hosted, не ARC.
 Подробнее: `common/protocols/REVIEW_TO_DELIVERY.md`.
 
 Перед публикацией и после завершения других сессий сделай fetch. Если отстал,
-влей свежую основную ветку, разреши конфликты по смыслу, повтори затронутые тесты
+влей свежий разрешённый integration target, разреши конфликты по смыслу, повтори затронутые тесты
 и push. Изменения PR проходят review; слияние учитывает актуальную голову и CI.
 После merge проверь уже объединённый результат, а не только отдельную ветку.
 
 Full-цикл завершён, когда собственная принятая цель и применимая доставка доказаны;
-чужие WIP и независимые проекты не включай и не жди целиком.
+dev delivery complete отдельно от release handoff awaiting-owner; чужие WIP и проекты не включай и не жди.
 В owned scope, включая вложенные репозитории, рабочие деревья участников чистые; чужой WIP сохраняй. Готовый scoped handoff
 не заменяет consumer proof. Неизменный Stop оставляет pending; meaningful owned
 progress разрешает одно новое продолжение, без HumanStop/permission bypass.

@@ -92,3 +92,19 @@ Private access blocker ограничивает только соответст�
 exception и pending/complete определяет `OUTCOME_CONTRACT.md`. Это existing state,
 не новый release service. Merge включает только owned scope; внешние репозитории
 не получают main merge от факта готового review или разрешённого deploy.
+
+
+## Разрешённая dev integration и upstream handoff
+
+Lead делегирует implementation, даже маленькое: один bounded Worker + Lead review.
+Назначенный leaf с no-delegation не нанимает reviewer рекурсивно. До Git действий
+определи ownership, remote и разрешённую integration branch; unknown не main.
+Airlock: feature worktrees от megamen32-dev, готовые коммиты сводятся туда одним
+интегратором. PR per worker не обязателен, единая опубликованная dev history и
+integrated smoke обязательны. External/shared upstream main не auto-merge/push;
+финальную интеграцию main делает Олег, PR к main только согласованный handoff.
+Main CI остаётся GitHub-hosted, не ARC/K3s; не расширяй App privileges и не ослабляй
+checks/protection. В собственном LHC разрешённый main merge сохраняется после gates.
+Canary + permitted dev delivery complete отдельно от release_handoff awaiting-owner;
+ожидание финального решения владельца main не делает доказанный dev результат
+незавершённым. До публикации/smoke нельзя объявлять dev complete.
