@@ -14,7 +14,7 @@ def test_native_entry_points_to_existing_herder_before_subagent_selection():
 
 def test_model_routing_separates_role_route_and_real_model():
     text=(ROOT/'src/common/skills/model-routing/SKILL.md').read_text()
-    for value in ('new_or_resume','create_session','gpt-6.1-sol','gpt-6-luna','MiniMax-M3.1-Flash-Preview','glm-5.3-flash','glm-5.3','sourceSessionId','inputId'):
+    for value in ('new_or_resume','create_session','gpt-6.1-sol','gpt-6-luna','MiniMax-M3.1-Flash','glm-5.3-flash','glm-5.3','sourceSessionId','inputId'):
         assert value in text
     assert 'no new tool' in text
     assert 'Zero Knowledge' in text and 'fresh' in text

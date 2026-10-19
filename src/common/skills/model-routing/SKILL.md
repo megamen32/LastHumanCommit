@@ -42,7 +42,7 @@ For this user's server-100 installation the desired model routes are:
 | --- | --- | --- |
 | GPT-6.1 Sol | codex | `gpt-6.1-sol` (existing native ChatGPT login) |
 | GPT-6 Luna | opencode | `omniroute/cx/gpt-6-luna` |
-| MiniMax 3.1 Preview | opencode | `omniroute/minimax/MiniMax-M3.1-Flash-Preview` |
+| MiniMax 3.1 Flash | opencode | `omniroute/minimax/MiniMax-M3.1-Flash` |
 | GLM 5.3 Flash | opencode | `omniroute/zc/glm-5.3-flash` |
 | GLM 5.3 | opencode | `omniroute/zc/glm-5.3` |
 
