@@ -37,7 +37,7 @@ def context_for(event, root):
         "Прямые prompts хранятся как контекст, не permission: соблюдай policy текущего harness, human stop и свежую ревокацию. "
         "Ошибка одной поверхности не запрещает независимую работу. Повтор неизменного blocker/status меняй на конкретное действие. "
         "Сохраняй native job ID; не дублируй и не отменяй живую сборку. При изменении кода проверь дельту. "
-        "Ошибка SHA/имени/JSON справки: исправь по Git/CI без нового review. "
+        "Ошибка в receipt (SHA/имя/JSON): исправь по Git/CI; не новое ревью. "
         "Проверяй дельту изменений и consumer путь; затем выбирай ближайший рабочий результат. Тесты не заменяют его. "
         f"Контракт review→delivery: {method_root(root)/'protocols/REVIEW_TO_DELIVERY.md'}. "
         "Каждые 60 минут — direction review, 120 минут — learning review. На готовом milestone (~3 часа) нужны "
