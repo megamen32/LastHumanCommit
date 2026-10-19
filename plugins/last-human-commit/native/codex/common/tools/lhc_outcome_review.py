@@ -13,7 +13,7 @@ import shlex
 from datetime import datetime, timezone
 
 import lhc_milestone as native
-from lhc_outcome import ENGINEERING, STAGES, scope_revision
+from lhc_outcome import ENGINEERING, STAGES, scope_revision, remote_binding
 
 MARKER = 'LHC_OUTCOME_REVIEW '
 
@@ -243,7 +243,7 @@ def raw_review(outcome, final, observations, cwd):
                 refs = []
             if refs:
                 refs += [ref for ref, (call, _) in by_call.items() if 'browser' in str(call.get('name', '')).casefold()]
-        if stage == 'integration' and refs and outcome.get('integration_policy', {}).get('release_owner'):
+        if stage == 'integration' and refs and outcome.get('integration_policy', {}).get('branch') not in {None, 'main', 'master'}:
             read_at = max(list(by_call).index(ref) for ref in refs)
             refs += [ref for i, (ref, (call, output)) in enumerate(by_call.items()) if i > read_at
                      and real_observation(call, output, canary['target'], 'consumer', outcome['task_class'], cwd)]
@@ -374,8 +374,12 @@ def accept_review(outcome, state, path, cwd, owner):
             if not policy:
                 raise ValueError('integration target/ownership unresolved; never default to main')
             branch = policy['branch']
+            if not policy.get('target_scope_confirmed') or not policy.get('repository') or remote_binding(cwd, policy['remote']) != policy['repository']:
+                raise ValueError('integration remote is unresolved or changed; preserve pending')
             if branch in {'main', 'master'} and policy['ownership'] != 'owned':
                 raise ValueError('shared/external upstream main is owner-only')
+            if branch in {'main', 'master'} and not policy.get('main_permission_confirmed'):
+                raise ValueError('owned/write access is not human merge consent for this actual repository')
             def target_readback(ref):
                 call, output = by_call[ref]
                 _, words = command(call)
@@ -388,7 +392,7 @@ def accept_review(outcome, state, path, cwd, owner):
             reads = [ref for ref in refs if target_readback(ref) and real_observation(*by_call[ref], claim['target'], stage, outcome['task_class'], cwd, claim['expected'])]
             if not reads:
                 raise ValueError('integration readback must prove the configured branch/head')
-            if stage == 'integration' and policy.get('release_owner'):
+            if stage == 'integration' and branch not in {'main', 'master'}:
                 smoke = [ref for ref in refs if real_observation(*by_call[ref], canary['target'], 'consumer', outcome['task_class'], cwd)
                          and call_order[ref] > max(call_order[r] for r in reads)]
                 if not smoke or not browser_journey(smoke, by_call, canary['target']):

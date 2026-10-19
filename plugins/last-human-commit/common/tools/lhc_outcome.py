@@ -97,6 +97,31 @@ def scope_revision(outcome, cwd):
     return digest([(p, native.file_hash(cwd, p)) for p in paths])
 
 
+def remote_binding(cwd, remote):
+    value = native.git(cwd, 'remote', 'get-url', remote).decode().strip()
+    # Keep credentials out of state/logs. Only resolved GitHub repository IDs
+    # are supported for automatic upstream-main close, not arbitrary remotes.
+    match = re.fullmatch(r'(?:https://github.com/|git@github.com:)([\w.-]+/[\w.-]+?)(?:\.git)?', value)
+    return match.group(1) if match else None
+
+
+def main_permission(source, quote, repository):
+    if not source or not quote or quote not in source['prompt'] or not repository:
+        return False
+    owner, repo = repository.split('/')
+    acronym = ''.join(c for c in repo if c.isupper())
+    # A caller cannot strip "Do not" from a native sentence and submit its
+    # affirmative tail as consent. Ambiguous clauses stay owner-handoff.
+    clauses = re.split(r'[.!?;\n]', source['prompt'])
+    clause = next((text for text in clauses if quote.rstrip('.!?;') in text), '')
+    return bool(re.search(r'(?<![\w.-])' + re.escape(owner) + r'(?![\w.])', quote, re.I)
+                and (re.search(r'(?<![\w.-])' + re.escape(repo) + r'(?![\w.-])', quote, re.I)
+                     or (len(acronym) > 1 and re.search(r'(?<![A-Z0-9])' + re.escape(acronym) + r'(?![A-Z0-9])', quote)))
+                and re.search(r'allow|permit|разреш|можно', quote, re.I)
+                and re.search(r'merge|интегр|слия|сливай', quote, re.I)
+                and clause and not re.search(r"do not|don't|never|forbidden|not allowed|not permitted|\bno\b|\bне\b|нельзя|запрещ", clause, re.I))
+
+
 def verdict(outcome, state):
     if outcome['task_class'] == 'status':
         return 'complete'
@@ -116,6 +141,12 @@ def verdict(outcome, state):
         return 'pending'
     if outcome['stages']['integration']['status'] == 'complete' and not outcome.get('integration_policy'):
         return 'pending'  # Unknown target/ownership never defaults to main.
+    policy = outcome.get('integration_policy')
+    if policy and outcome['stages']['integration']['status'] != 'not-applicable':
+        if not policy.get('target_scope_confirmed') or not policy.get('repository') or remote_binding(Path(outcome['cwd']), policy['remote']) != policy['repository']:
+            return 'pending'
+        if policy['branch'] in {'main', 'master'} and not policy.get('main_permission_confirmed'):
+            return 'pending'
     milestone = state.get('milestone') or {}
     if native.pending(milestone):
         return 'pending'
@@ -413,6 +444,7 @@ def main():
     contract.add_argument('--integration-branch')
     contract.add_argument('--integration-remote')
     contract.add_argument('--integration-ownership', choices=('owned', 'shared', 'external'))
+    contract.add_argument('--integration-permission-quote', help='unchanged affirmative native user scope for this repository merge; not write access/ownership')
     contract.add_argument('--release-owner', help='human owner of later upstream integration, not this dev delivery')
     contract.add_argument('--stage-target', action='append', default=[], metavar='STAGE=TARGET')
     contract.add_argument('--stage-expected', action='append', default=[], metavar='STAGE=EXPECTED')
@@ -431,7 +463,7 @@ def main():
         if args.command == 'contract':
             source = next((r for r in outcome.get('scope_sources', []) if r.get('source') == args.scope_source), None)
             policy = outcome.get('integration_policy')
-            if any((args.integration_branch, args.integration_remote, args.integration_ownership, args.release_owner)):
+            if any((args.integration_branch, args.integration_remote, args.integration_ownership, args.release_owner, args.integration_permission_quote)):
                 if not source or not all((args.integration_branch, args.integration_remote, args.integration_ownership)):
                     raise ValueError('integration needs explicit branch/remote/ownership and native scope source; unknown is not main')
                 if not re.fullmatch(r'[\w][\w./-]*', args.integration_branch) or '..' in args.integration_branch:
@@ -442,7 +474,11 @@ def main():
                     raise ValueError('release handoff needs a separate permitted dev target')
                 policy = {'branch': args.integration_branch, 'remote': args.integration_remote,
                           'ownership': args.integration_ownership, 'source': args.scope_source,
-                          'release_owner': args.release_owner}
+                          'release_owner': args.release_owner,
+                          'repository': remote_binding(cwd, args.integration_remote),
+                          'permission_quote': args.integration_permission_quote}
+                policy['main_permission_confirmed'] = main_permission(source, args.integration_permission_quote, policy['repository'])
+                policy['target_scope_confirmed'] = args.integration_branch in source['prompt'] or policy['main_permission_confirmed']
             if args.task_class and args.task_class != outcome['task_class']:
                 if not source:
                     raise ValueError('class correction requires an exact original/latest native user source')
@@ -478,8 +514,8 @@ def main():
             outcome.update(canary=canary, owned_paths=args.owned_path, coverage=args.coverage, contract_confirmed=True, stage_claims=claims)
             if policy:
                 outcome['integration_policy'] = policy
-                if policy.get('release_owner'):
-                    outcome['release_handoff'] = {'status': 'pending-dev-delivery', 'owner': policy['release_owner'], 'target': 'upstream main'}
+                if policy['branch'] not in {'main', 'master'}:
+                    outcome['release_handoff'] = {'status': 'pending-dev-delivery', 'owner': policy.get('release_owner') or 'upstream owner', 'target': 'upstream main'}
             if changed:
                 outcome['evidence_after'] = datetime.now().astimezone().isoformat()
                 for stage in outcome['stages'].values():

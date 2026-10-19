@@ -459,7 +459,7 @@ def test_honest_feedback_without_praise_or_criticism_keywords_is_accepted(tmp_pa
 
 
 def test_fullcycle_order_has_an_achievable_positive_close(tmp_path):
-    outcome = anchored(tmp_path, 'Implement the complete total CLI and deliver the full cycle.')
+    outcome = anchored(tmp_path, 'Implement the complete total CLI and deliver the full cycle. Allow merge megamen32/totalrepo into main.')
     outcome = integration_contract(tmp_path, outcome)
     manifest = review_export(tmp_path, outcome, stage_names=('technical', 'deploy', 'consumer', 'publication', 'integration'))
     result = cli(tmp_path, 'review', '--manifest', str(manifest))
@@ -730,11 +730,16 @@ def test_shared_upstream_main_cannot_be_selected(tmp_path):
         '--integration-remote','origin','--integration-ownership','shared',ok=False)
 
 
-def integration_contract(root, outcome, branch='main', ownership='owned', owner=None, publication_branch=None):
+def integration_contract(root, outcome, branch='main', ownership='owned', owner=None, publication_branch=None, permission_quote=None):
+    if not subprocess.check_output(['git','remote'],cwd=root,text=True).strip():
+        subprocess.run(['git','remote','add','origin','https://github.com/megamen32/totalrepo.git'],cwd=root,check=True)
     args = ['contract', '--scenario', outcome['canary']['scenario'], '--target', outcome['canary']['target'],
         '--expected', outcome['canary']['expected'], '--owned-path', 'total.py',
         '--scope-source', outcome['scope_sources'][0]['source'], '--integration-branch', branch,
         '--integration-remote', 'origin', '--integration-ownership', ownership]
+    quote = permission_quote or 'Allow merge megamen32/totalrepo into main.'
+    if quote in outcome['original_goal']:
+        args += ['--integration-permission-quote', quote]
     if owner:
         args += ['--release-owner', owner, '--stage-target', 'integration=git ls-remote origin refs/heads/' + branch,
             '--stage-expected', 'integration=' + 'b' * 40, '--stage-target', 'publication=git ls-remote origin refs/heads/' + (publication_branch or branch),
@@ -742,10 +747,13 @@ def integration_contract(root, outcome, branch='main', ownership='owned', owner=
     return cli(root, *args)
 
 
-@pytest.mark.parametrize('smoke,branch,publication_branch', [(True, 'megamen32-dev', 'megamen32-dev'), (False, 'megamen32-dev', 'megamen32-dev'), (True, 'main', 'main'), (True, 'megamen32-dev', 'foreign')])
-def test_dev_history_without_worker_pr_closes_only_after_target_and_integrated_smoke(tmp_path, smoke, branch, publication_branch):
+@pytest.mark.parametrize('smoke,branch,publication_branch,release_owner', [(True, 'megamen32-dev', 'megamen32-dev', True), (False, 'megamen32-dev', 'megamen32-dev', True), (True, 'main', 'main', True), (True, 'megamen32-dev', 'foreign', True), (False, 'megamen32-dev', 'megamen32-dev', False), (True, 'megamen32-dev', 'megamen32-dev', False)])
+def test_dev_history_without_worker_pr_closes_only_after_target_and_integrated_smoke(tmp_path, smoke, branch, publication_branch, release_owner):
     outcome = anchored(tmp_path, 'Implement the complete total CLI, integrate into Airlock megamen32-dev. Oleg handles upstream main.')
     outcome = integration_contract(tmp_path, outcome, 'megamen32-dev', 'shared', 'Oleg', publication_branch)
+    if not release_owner:
+        args = ['contract','--scenario',outcome['canary']['scenario'],'--target',outcome['canary']['target'],'--expected',outcome['canary']['expected'],'--owned-path','total.py','--scope-source',outcome['scope_sources'][0]['source'],'--integration-branch','megamen32-dev','--integration-remote','origin','--integration-ownership','shared']
+        outcome = cli(tmp_path, *args)
     manifest = review_export(tmp_path, outcome, stage_names=('technical','deploy','consumer','publication','integration'))
     data = json.loads(manifest.read_text()); source = Path(data['target']['source']['location'])
     rows = [json.loads(line) for line in source.read_text().splitlines()]
@@ -769,7 +777,7 @@ def test_dev_history_without_worker_pr_closes_only_after_target_and_integrated_s
     if smoke and branch==publication_branch=='megamen32-dev':
         assert result['finish_verdict'] == 'complete'
         assert result['release_handoff']['status'] == 'awaiting-owner'
-        assert result['release_handoff']['owner'] == 'Oleg'
+        assert result['release_handoff']['owner'] == ('Oleg' if release_owner else 'upstream owner')
 
 
 def test_direct_branch_correction_invalidates_target_without_resetting_lineage(tmp_path):
@@ -782,3 +790,51 @@ def test_direct_branch_correction_invalidates_target_without_resetting_lineage(t
     assert updated['started_at'] == outcome['started_at']
     assert updated['task_class'] == 'fullcycle'
     assert updated['stages']['technical']['status'] == 'pending'
+
+
+def test_owned_label_without_remote_bound_human_merge_permission_stays_pending(tmp_path):
+    outcome = anchored(tmp_path, 'Implement the complete total CLI and deliver the full cycle.')
+    outcome = integration_contract(tmp_path, outcome)
+    manifest = review_export(tmp_path, outcome, stage_names=('technical','deploy','consumer','publication','integration'))
+    cli(tmp_path, 'review', '--manifest', str(manifest), ok=False)
+    assert cli(tmp_path, 'status')['finish_verdict'] == 'pending'
+
+
+def test_remote_change_invalidates_the_bound_main_consent(tmp_path):
+    outcome = anchored(tmp_path, 'Implement the complete total CLI. Allow merge megamen32/totalrepo into main.')
+    outcome = integration_contract(tmp_path, outcome)
+    assert outcome['integration_policy']['main_permission_confirmed'] is True
+    subprocess.run(['git','remote','set-url','origin','https://github.com/another/shared.git'],cwd=tmp_path,check=True)
+    manifest = review_export(tmp_path, outcome, stage_names=('technical','deploy','consumer','publication','integration'))
+    cli(tmp_path, 'review', '--manifest', str(manifest), ok=False)
+    assert cli(tmp_path, 'status')['finish_verdict'] == 'pending'
+
+
+def test_foreign_remote_cannot_reuse_a_different_repository_permission(tmp_path):
+    outcome = anchored(tmp_path, 'Implement the complete total CLI. Allow merge megamen32/totalrepo into main.')
+    subprocess.run(['git','remote','add','origin','https://github.com/another/shared.git'],cwd=tmp_path,check=True)
+    outcome = integration_contract(tmp_path, outcome)
+    assert outcome['integration_policy']['main_permission_confirmed'] is False
+    assert outcome['finish_verdict'] == 'pending'
+
+
+def test_permission_quote_cannot_strip_native_prohibition_prefix(tmp_path):
+    outcome = anchored(tmp_path, 'Implement the complete total CLI. Do not Allow merge megamen32/totalrepo into main.')
+    outcome = integration_contract(tmp_path, outcome)
+    assert outcome['integration_policy']['main_permission_confirmed'] is False
+
+
+def test_explicit_external_airlock_scope_cannot_be_relabelled_owned_main(tmp_path):
+    outcome = anchored(tmp_path, 'Implement the entire Airlock fix in shared external repository. Only origin megamen32-dev is permitted; Oleg owns main.')
+    subprocess.run(['git','remote','add','origin','https://github.com/shared/Airlock.git'],cwd=tmp_path,check=True)
+    outcome = integration_contract(tmp_path, outcome, 'main', 'owned')
+    manifest = review_export(tmp_path, outcome, stage_names=('technical','deploy','consumer','publication','integration'))
+    cli(tmp_path, 'review', '--manifest', str(manifest), ok=False)
+    assert outcome['integration_policy']['main_permission_confirmed'] is False
+
+
+def test_similar_repository_name_is_not_main_merge_consent(tmp_path):
+    quote = 'Allow merge megamen32/totalrepo-other into main.'
+    outcome = anchored(tmp_path, 'Implement the complete total CLI. ' + quote)
+    outcome = integration_contract(tmp_path, outcome, permission_quote=quote)
+    assert outcome['integration_policy']['main_permission_confirmed'] is False

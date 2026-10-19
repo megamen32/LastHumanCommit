@@ -117,3 +117,17 @@ implementation; bounded assigned leaf self-check remains. Stale text-only tests
 updated to the direct new instruction; behavioral tests retained and expanded.
 RED unknown integration closure in dev-policy-red.log; six target/readback/smoke
 controls GREEN4.66s. Full final checks/review/native rerun next; no final release claim.
+
+21:56UTC checkpoint actually acknowledged via installed native time guard due-at
+00:52:34+03. Accepted result remains native CLI PASS/workflow RED, not release.
+Method change: finish only known B4/B5 and freeze before final validator/native run;
+stop serial policy expansion. B4 now binds resolved actual GitHub remote + native
+scope and affirmative unchanged merge clause for that owner/repository; ownership/
+write access alone cannot approve main, changed/foreign/similar remotes and stripped
+negative clauses stay pending. This is a bounded source floor, independent semantic
+review/harness permissions remain mandatory; unsupported formats are owner handoff.
+B5 smoke depends on non-main integration, not optional release-owner. Default
+upstream owner label is explicit when name unknown. Exact REDs main-permission,
+main-identity and smoke-without-owner frozen2cac retained; current targeted B4/B5
+positives/negatives preserved, final full outcome suite in outcome-b45-final.log.
+No new model council, service, agents, branch target or runtime mutation in this fix.

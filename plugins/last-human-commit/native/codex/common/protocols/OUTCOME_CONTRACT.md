@@ -156,8 +156,15 @@ Git controller; the record itself grants no permission:
 
 `contract ... --scope-source <native-user-source> --integration-branch megamen32-dev --integration-remote origin --integration-ownership shared --release-owner Oleg`
 
-For an owned LHC repository, explicitly permitted main can be selected with
-`--integration-ownership owned`; shared/external main is rejected. Airlock worktrees
+For an owned LHC repository, main also needs `--integration-permission-quote`
+with the unchanged affirmative native user clause naming its actual GitHub owner
+and repository (or camel-case acronym). `owned` or GH write access alone is not
+consent. The helper resolves the actual remote repository, binds it to this scope
+and rejects changed remotes. Missing/ambiguous consent stays pending/owner handoff;
+this is a bounded source floor plus independent semantic review, not a universal
+intent/permission parser. Only GitHub remotes are currently supported for this
+automatic integration close. Dev branch names must be confirmed by native scope;
+unknown targets never inherit main. Shared/external main is rejected. Airlock worktrees
 branch from and converge on megamen32-dev. Final upstream main PR is only the
 agreed handoff, not a mandatory worker PR. Lead delegates all implementation;
 a small task uses one bounded Worker plus Lead review. Already assigned leaf
@@ -165,8 +172,9 @@ no-delegation self-check remains separate from parent acceptance.
 
 Integration readback must bind the configured branch/head: `git ls-remote origin
 refs/heads/megamen32-dev`, with the expected SHA, or a merged PR readback including
-`baseRefName`. Publication can use branch history without a per-worker PR. A dev
-handoff also requires actual integrated consumer smoke after that readback,
+`baseRefName`. Publication can use branch history without a per-worker PR. Every non-main dev
+integration requires actual integrated consumer smoke after that readback,
+whether or not the optional release-owner name was supplied,
 covered in the same original review's integration evidence calls. Canary and
 permitted dev delivery can then be complete while `release_handoff.status` is
 `awaiting-owner`; Oleg's future upstream main action is not an unmet dev task.
