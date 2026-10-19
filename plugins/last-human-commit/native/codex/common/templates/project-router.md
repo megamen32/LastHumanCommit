@@ -7,4 +7,8 @@ For LHC changes use its `lhc-update-agents` skill and canonical LHC repository.
 Infer the current work's owning project from the conversation and files being
 changed. Keep its ToDo/tasks under that project's `.agents/`, even when this
 session was opened elsewhere. Do not require a project-selection ritual.
+Automatically retain task class and explicit scenario/target/expected canary in
+existing outcome state; testing coverage can complete with product defects.
+Status/read-only updates preserve earlier repair scope. Follow the same package's
+`common/protocols/OUTCOME_CONTRACT.md`; state/receipt never grants permission.
 <!-- last-human-commit:end -->

@@ -108,7 +108,7 @@ def native_transcript(data):
             if item.get("type") == "CommandExecution" and item.get("exit_code") == 0:
                 command = item.get("command", [])
                 if isinstance(command, list) and len(command) >= 3:
-                    observations.append(({"name": "exec_command", "arguments": json.dumps({"cmd": command[-1]})},
+                    observations.append(({"name": "exec_command", "call_id": item.get("id"), "arguments": json.dumps({"cmd": command[-1], "workdir": item.get("cwd")})},
                                          str(item.get("aggregated_output") or "")))
         if row.get("type") != "response_item":
             continue
@@ -200,7 +200,9 @@ def observe(state, event, name, cwd, session, now):
     milestone["urls"] = urls
     # Reconcile observable repository changes, never keywords in tool stdout.
     surface = {}
-    for p in sorted(set(candidates(cwd, milestone["head"])) | set(milestone["surface"])):
+    owned = set(state.get("business", {}).get("outcome", {}).get("owned_paths", []))
+    changed = set(candidates(cwd, milestone["head"])) | set(milestone["surface"])
+    for p in sorted(changed & owned if owned else changed):
         value = file_hash(cwd, p)
         original = milestone["baseline"].get(p)
         if original is None:
@@ -443,7 +445,9 @@ def feedback_from(path, milestone, session):
     if len(persona_text) < 15:
         return None
     final = next((text for role, text, phase in reversed(messages) if role == "assistant" and phase != "commentary"), "")
-    if len(final) < 100 or not POSITIVE.search(final) or not NEGATIVE.search(final):
+    # Candid task-relevant observations need no praise/complaint keywords or
+    # word quota. Actual actions, goal/result and native provenance remain below.
+    if not final.strip():
         return None
     # The fresh native assignment may explicitly name a managed tunnel/staging
     # address for the same correlated task. It need not equal the public URL.
@@ -557,7 +561,7 @@ def opencode_transcript(target, raw):
             for part in parts:
                 state = part.get("state") or {}
                 if part.get("type") == "tool" and state.get("status") == "completed":
-                    observations.append(({"name": part.get("tool") or part.get("name") or "", "arguments": json.dumps(state.get("input", {}))}, content(state.get("output"))))
+                    observations.append(({"name": part.get("tool") or part.get("name") or "", "call_id": part.get("callID") or part.get("id"), "arguments": json.dumps(state.get("input", {}))}, content(state.get("output"))))
     return meta, messages, observations
 
 def pending(milestone):

@@ -70,3 +70,25 @@ test("resumed OpenCode thread without a fresh prompt still bootstraps the instal
   expect(v).toContain("REVIEW_TO_DELIVERY.md")
  })
 })
+
+test("non-UI testing keeps its outcome and coverage debt in observer context and compaction",async()=>{
+ await scenario(async(hooks,root)=>{
+  const sessionID="ses_open_outcome"
+  const goal="Only test the export CLI. Do not create code or deploy anything. Record the two assigned CSV cases."
+  await hooks.get("session:prompt")!({sessionID,prompt:{text:goal}})
+  const event={sessionID,system:[],messages:[]}
+  await hooks.get("session:context")!(event)
+  expect(system(event)).toContain("LHC outcome: testing")
+  const compact={sessionID,system:[]}
+  await hooks.get("session:compaction")!(compact)
+  expect(system(compact)).toContain("outcome_contract")
+  expect(system(compact)).toContain(goal)
+  const dir=join(root,".agents/shared-session/learning")
+  const state=JSON.parse(await readFile(join(dir,(await readdir(dir)).find(x=>x.endsWith(".json"))!),"utf8"))
+  expect(state.business.outcome.task_class).toBe("testing")
+  expect(state.business.outcome.finish_verdict).toBe("pending")
+  expect(state.business.outcome.stages.deploy.status).toBe("not-applicable")
+  expect(state.milestone.status).toBe("not-required")
+  expect(state.milestone.continuation_requested).toBeUndefined()
+ })
+})

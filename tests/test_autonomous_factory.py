@@ -174,7 +174,7 @@ class ArtifactStructureTests(unittest.TestCase):
     def test_skill_metadata(self):
         dirs = sorted((ROOT/'src/common/skills').glob('*/SKILL.md'))
         expected = {'architecture-design', 'model-routing', 'decompose-and-dispatch', 'user-testing',
-                    'focus-groups', 'council', 'challenge-decision', 'improve-workflow'}
+                    'focus-groups', 'council', 'challenge-decision', 'improve-workflow', 'model-availability'}
         self.assertTrue(expected <= {f.parent.name for f in dirs})
         for f in dirs:
             raw = f.read_text()

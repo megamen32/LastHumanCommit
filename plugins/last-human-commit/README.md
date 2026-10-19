@@ -1,9 +1,14 @@
-# Last Human Commit 1.4
+# Last Human Commit 1.5
 
 An automatic engineering workflow for ordinary requests, including rough voice transcripts.
 Understand the intended result, do the useful work, test it and integrate the shared result.
 
 ## What changed
+
+Ordinary tasks retain their class, explicit business canary and applicable delivery
+stages in existing session state. Independent native source-backed review can close
+the outcome; testing can complete with a product defect. See
+[the outcome contract](common/protocols/OUTCOME_CONTRACT.md).
 
 Parallel writers use Git worktrees. Each working branch is pushed and gets a PR;
 merge it when review and checks permit. Before finishing, fetch, merge newer work,
@@ -28,11 +33,11 @@ review and 120-minute workflow improvement are mandatory. Fresh Zero Knowledge
 groups accept ready major milestones, not every hour.
 Architecture, decomposition, independent review/testing and learning tools remain
 available; scheduled inspection is required even when the current plan looks correct. The complete default workflow is in
-[AGENTS.md](AGENTS.md). Details: the repository's docs/V1.4.md.
+[AGENTS.md](AGENTS.md). Details: [1.4 changes](docs/V1.4.md).
 
 ## Package and installation
 
-The native Agent Plugin is `plugins/last-human-commit`, version 1.4.4, with 22 optional
+The native Agent Plugin is `plugins/last-human-commit`, version 1.5.0, with 23 optional
 skills and small automatic-entry hooks. Use the harness's native plugin manager.
 For clients whose plugin hooks are unavailable or still await trust, the package
 provides a supported user-instruction bootstrap:

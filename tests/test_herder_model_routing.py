@@ -14,8 +14,14 @@ def test_native_entry_points_to_existing_herder_before_subagent_selection():
 
 def test_model_routing_separates_role_route_and_real_model():
     text=(ROOT/'src/common/skills/model-routing/SKILL.md').read_text()
-    for value in ('new_or_resume','create_session','gpt-6.1-sol','gpt-6-luna','MiniMax-M3.1-Flash','glm-5.3-flash','glm-5.3','sourceSessionId','inputId'):
+    for value in ('new_or_resume','create_session','sourceSessionId','inputId'):
         assert value in text
+    availability=(ROOT/'src/common/skills/model-availability/SKILL.md').read_text()
+    assert '../model-availability/SKILL.md' in text
+    for value in ('model_quotas','list_models','gpt-6.1-sol',
+                  'minimax-coding-plan/MiniMax-M3.1-Flash','zai-coding-plan/glm-5.3'):
+        assert value in availability
+    assert 'not eligible' in availability and 'actual native execution model' in availability
     assert 'no new tool' in text
     assert 'Zero Knowledge' in text and 'fresh' in text
     assert 'OpenChamber Auto' in text

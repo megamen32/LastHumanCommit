@@ -13,6 +13,13 @@ A milestone must already name a user, a realistic goal, a before/after differenc
 and a result that can actually be tried. No observable outcome means re-anchor
 the work, not spend another round on hashes and waiting for unrelated sessions.
 
+Apply `../model-availability/SKILL.md` before model allocation. Catalog/quotas
+and real computer-use capabilities are independent. Prefer multiple eligible
+frontier models for meaningful diversity; do not claim multimodel evidence from
+one model or a model name in a prompt. Already assigned testers do not hire.
+For an applicable major milestone use at least two audience-relevant profiles;
+small fixes retain their narrow real canary without a mandatory focus group.
+
 ## Form a useful group
 
 Lead creates varied plausible personas with a name, age, personality, experience,
@@ -69,3 +76,8 @@ regression results, fresh retest outcomes and unresolved issues. Keep a concise
 synthesis for the user without truncating the testers' underlying observations. Synthetic
 participants expose scenarios; they do not estimate the percentage of real users
 with a problem. Do not present their preferences as market demand evidence.
+
+Preserve actual device/tool/model/build/native session references alongside raw
+feedback. Honest no-defects/limitations with real coverage is valid; no mandatory
+POSITIVE/NEGATIVE keywords, length quota or fabricated criticism. Login-only,
+child launch and source tests are not the assigned hands-on goal.

@@ -81,6 +81,11 @@ def rehydrate(state, state_path=None):
         restored["recent_tool_observations"] = business["tool_observations"][-8:]
     if business.get("action_evidence"):
         restored["action_evidence"] = business["action_evidence"][-8:]
+    if business.get('outcome'):
+        restored['outcome_contract'] = {key: business['outcome'].get(key) for key in
+            ('id', 'owner', 'task_class', 'actionable', 'canary', 'stages', 'stage_claims', 'revision', 'coverage', 'finish_verdict', 'question')}
+        # Original/latest native sources already appear above; do not inject
+        # duplicate scope histories and full native review text on every resume.
     native_entry = state.get("native_entry") or {}
     if native_entry.get("scoped_failures"):
         restored["scoped_tool_failures"] = native_entry["scoped_failures"][-8:]
@@ -108,6 +113,7 @@ def rehydrate(state, state_path=None):
 def handle(event, name, runtime, root):
     import lhc_time_guard as guard
     import lhc_milestone as milestones
+    import lhc_outcome as outcomes
     cwd = Path(str(event.get("cwd") or os.getcwd())).expanduser().resolve()
     session = str(event.get("session_id") or event.get("sessionID") or "unknown-session")
     if event.get("agent_id"):
@@ -129,6 +135,7 @@ def handle(event, name, runtime, root):
         fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
         state = guard.load_state(path)
         milestone = milestones.observe(state, event, name, cwd, session, now)
+        outcome = outcomes.observe(state, event, name, cwd, session, now)
         # A concurrent native hook or an explicit review command may have cleared
         # a debt after our first observation. Decisions use the locked readback.
         current_pending = state.get("business", {}).get("pending")
@@ -159,6 +166,8 @@ def handle(event, name, runtime, root):
                 delivery["finish_hold"] = "ToolFailure"
         elif name == "PostToolUse" and delivery.get("finish_hold") in {"ToolFailure", "PermissionRequest"}:
             delivery.pop("finish_hold", None)
+        if outcome:
+            outcome['finish_verdict'] = outcomes.verdict(outcome, state)
         version = package_version(root)
         signature = json.dumps([str(root), version])
         supported = name in CONTEXT_EVENTS or runtime != "codex"
@@ -171,6 +180,9 @@ def handle(event, name, runtime, root):
         if bootstrap:
             contexts.extend((context_for(event, root), rehydrate(state, path)))
             delivery.update(loaded=signature, version=version, root=str(root), rehydrate_needed=False)
+        outcome_notice = outcomes.reminder(outcome, method_root(root)/'tools/lhc_outcome.py') if outcome and outcome['finish_verdict'] != 'complete' else ''
+        if outcome_notice and (bootstrap or event.get('model_boundary')):
+            contexts.append(outcome_notice)
         acceptance_pending = milestones.pending(milestone)
         acceptance_notice = milestones.reminder(milestone) if acceptance_pending else ""
         acceptance_id = [milestone.get("surface_key"), milestone["status"]] if acceptance_pending else None
@@ -198,15 +210,23 @@ def handle(event, name, runtime, root):
                 parts.append(rooted(learning["prompt"], root))
             if acceptance_notice:
                 parts.append(acceptance_notice)
+            if outcome_notice:
+                parts.append(outcome_notice)
             output = {"handoff": "\n\n".join(parts)}
-        held = bool(delivery.get("finish_hold") or (milestone and (milestone.get("hold") or milestone.get("read_only"))))
+        held = bool(delivery.get("finish_hold") or (milestone and milestone.get("hold")))
         acceptance_due = acceptance_pending and milestone["status"] != "accepted"
-        if runtime in {"codex", "zcode"} and name == "Stop" and not held and (business["due"] or learning["due"] or acceptance_due):
+        outcome_due = bool(outcome and (outcome['task_class'] in outcomes.ENGINEERING | {'testing', 'research'} or
+                           (outcome['task_class'] == 'unknown' and outcome.get('actionable'))) and outcome['finish_verdict'] != 'complete')
+        if runtime in {"codex", "zcode"} and name == "Stop" and not held and (business["due"] or learning["due"] or acceptance_due or outcome_due):
             identity = [event.get("turn_id") or event.get("turnId"), business.get("review_id"), learning["due_at"] if learning["due"] else None]
-            fresh_acceptance = acceptance_due and not milestone.get("continuation_requested")
+            progress = outcomes.fingerprint(outcome, milestone) if outcome else milestone.get('surface_key')
+            used = delivery.setdefault('used_progress_continuations', [])
+            fresh_acceptance = (acceptance_due or outcome_due) and progress not in used
             deadline_due = (business["due"] or learning["due"]) and delivery.get("stop_continuation") != identity
             if not event.get("stop_hook_active") and (fresh_acceptance or deadline_due):
                 delivery["stop_continuation"] = identity
+                if fresh_acceptance:
+                    used.append(progress)
                 if acceptance_due:
                     milestone["continuation_requested"] = True
                 tool = method_root(root)/"tools/lhc_time_guard.py"
@@ -225,6 +245,8 @@ def handle(event, name, runtime, root):
                           + "\n".join(obligations) + "\n" + rehydrate(state, path))
                 if not obligations:
                     reason = ""
+                if outcome_due:
+                    reason += ("\n" if reason else "") + outcome_notice
                 if acceptance_notice:
                     reason += ("\n" if reason else "") + acceptance_notice
                     running_jobs = state.get("business", {}).get("running_jobs", {})

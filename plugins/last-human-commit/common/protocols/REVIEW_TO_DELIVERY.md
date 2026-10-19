@@ -87,3 +87,8 @@ Private access blocker ограничивает только соответст�
 выполненного действия не должна повторяться: выбери конкретный доступный шаг либо
 сохрани точный внешний блокер. Продолжающаяся native-сборка считается живой
 работой; сохрани её job ID и ожидай результат, не дублируя и не отменяя запуск.
+
+Применимость стадий, source-backed close, testing coverage, recorded CI staging-push
+exception и pending/complete определяет `OUTCOME_CONTRACT.md`. Это existing state,
+не новый release service. Merge включает только owned scope; внешние репозитории
+не получают main merge от факта готового review или разрешённого deploy.
