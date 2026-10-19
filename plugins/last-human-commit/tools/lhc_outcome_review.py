@@ -450,6 +450,12 @@ def raw_review(outcome, final, observations, cwd):
     stages = {}
     by_call = {call.get('call_id'): (call, output) for call, output in observations if call.get('call_id')}
     resolved = consumer_target(outcome, observations, cwd)
+    identity = target_identity(resolved, cwd)
+    ordered_cli = (outcome['task_class'] == 'quickfix' and identity and identity[0] == 'python'
+                   and all(outcome['stages'][s]['status'] == 'pending' for s in ('technical', 'consumer'))
+                   and all(outcome['stages'][s]['status'] == 'not-applicable' for s in ('deploy', 'publication', 'integration')))
+    positions = {ref: i for i, ref in enumerate(by_call)}
+    technical_at = -1
     for stage in STAGES:
         if outcome['stages'][stage]['status'] != 'pending':
             continue
@@ -460,6 +466,14 @@ def raw_review(outcome, final, observations, cwd):
                 if real_observation(call, output, observed_target, stage, outcome['task_class'], cwd, expected)]
         if stage == 'technical' and not re.search(r'test|regression|тест|провер', final, re.I):
             refs = []
+        if ordered_cli and stage == 'technical' and refs:
+            # Select a current acceptance witness, not every diagnostic run.
+            refs = refs[:1]
+            technical_at = positions[refs[0]]
+        if ordered_cli and stage == 'consumer':
+            refs = [ref for ref in refs if positions[ref] > technical_at]
+            if not refs:
+                raise ValueError('current technical test needs a subsequent real CLI readback; earlier diagnostics are not acceptance witnesses')
         if stage in {'deploy', 'publication', 'integration'} and (expected.casefold() not in final.casefold() or target.casefold() not in final.casefold()):
             refs = []
         if stage == 'consumer':

@@ -235,3 +235,17 @@ or old-canary resumption. Prior full553442PASS170.28s/Bun13 remain scoped correc
 this real report-selector delta gets its own full affected outcome suite/parity,
 not another unchanged whole-system validator or council. Same existing reviewer
 checks only this residual; English semantic review is not restarted.
+
+23:33 UTC — current37 full445PASS155.31s; coordinator independently retained
+Codex225 and OpenCode37 testing complete/changes-required. Quickfix37 actual
+CLI/regression/English note succeeded, but native raw review aggregated an earlier
+diagnostic consumer with current technical/consumer witnesses, falsely rejecting
+stage order. Exact real-format source RED source observations violate stage order;
+negative CLI-before-test-only remained blocked. Minimal raw two-stage CLI quickfix
+map selects one current technical witness and only subsequent consumer observations.
+No deploy/publication/integration/browser/fullcycle ordering changes, JSON reviewer
+selection untouched, no freshness/permission bypass. Exact2PASS1.21s, generated.
+Controller stopped only own stuck quickfix PID592655; testing PASS not restarted.
+Source probe against stopped37 is read-only, not native acceptance. Next existing
+reviewer checks only this witness delta, then one fresh ordinary quickfix and the
+already explicitly requested1.5.0 publication/owned merge/native installation.

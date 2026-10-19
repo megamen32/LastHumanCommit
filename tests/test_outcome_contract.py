@@ -1140,3 +1140,22 @@ def test_newer_native_negative_assessment_is_not_skipped_for_an_older_pass(tmp_p
     with pytest.raises(ValueError, match='product result does not satisfy engineering canary'):
         reviews.accept_review(outcome, state(tmp_path), manifest, tmp_path, 'leader')
     assert outcome.get('product_verdict') != 'pass'
+
+
+@pytest.mark.parametrize('has_later_cli', [True, False])
+def test_raw_quickfix_selects_ordered_acceptance_not_earlier_diagnostic_cli(tmp_path, monkeypatch, has_later_cli):
+    monkeypatch.setenv('CODEX_HOME', str(tmp_path/'native-home/.codex'))
+    import lhc_outcome_review as reviews
+    import lhc_outcome as outcomes
+    outcome = anchored(tmp_path, 'Fix the small total.py CLI. Do not delegate. No deploy, no push, no merge.')
+    order = ('consumer', 'technical', 'consumer') if has_later_cli else ('consumer', 'technical')
+    manifest = review_export(tmp_path, outcome, sid='leader', stage_names=order,
+        raw_final='PASS. Regression tests passed. python3 total.py: expected 0, observed output 0 matched. Self-check only.')
+    if has_later_cli:
+        reviews.accept_review(outcome, state(tmp_path), manifest, tmp_path, 'leader')
+        assert outcomes.verdict(outcome, state(tmp_path)) == 'complete'
+        assert outcome['stages']['consumer']['evidence'][0]['calls'] == ['call-2']
+    else:
+        with pytest.raises(ValueError):
+            reviews.accept_review(outcome, state(tmp_path), manifest, tmp_path, 'leader')
+        assert outcomes.verdict(outcome, state(tmp_path)) != 'complete'
