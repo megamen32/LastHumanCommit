@@ -23,17 +23,17 @@ def prepare(root):
 def test_native_entry_distinguishes_receipt_error_from_material_change(tmp_path):
     prepare(tmp_path)
     result,text=invoke(tmp_path,"UserPromptSubmit",prompt="Tests passed; the reviewer typed a wrong SHA in its receipt. Deliver the fix.")
-    assert "Ошибка в receipt" in text
-    assert "не новое ревью" in text
-    assert "изменении кода" in text
-    assert "ближайший рабочий результат" in text
+    assert "receipt SHA/name/JSON correction" in text
+    assert "no new review" in text
+    assert "code/environment delta" in text
+    assert "Tests≠consumer result" in text
     assert "decision" not in result
     assert "RED" in text and "Zero Knowledge" in text
 
 def test_old_session_first_tool_gets_delivery_rule_without_new_gate(tmp_path):
     prepare(tmp_path)
     first,text=invoke(tmp_path,"PreToolUse",tool_name="exec_command",tool_input={"cmd":"git status --short"})
-    assert "Ошибка в receipt" in text
+    assert "receipt SHA/name/JSON correction" in text
     assert first.get("decision")!="block"
     second,text=invoke(tmp_path,"PostToolUse")
     assert not text, "Do not start a per-tool ritual or rereview every tool result"
@@ -46,7 +46,7 @@ def test_hourly_checkpoint_challenges_proof_rework_not_only_sha_count(tmp_path):
     state=json.loads(path.read_text());state["business"]["interval"]["active_ns"]=3600*10**9
     path.write_text(json.dumps(state))
     _,text=invoke(tmp_path,"PostToolUse")
-    assert "ревью справки" in text and "доступное пользователю" in text
+    assert "reviewed a receipt" in text and "user-available" in text
     assert "business-1" in text
     state=json.loads(path.read_text())
     assert state["business"]["pending"] is not None
@@ -60,11 +60,11 @@ def test_reviewer_has_no_second_receipt_or_hidden_test_pass():
 
 def test_policy_preserves_business_testing_and_uncertainty():
     text=(ROOT/"src/common/protocols/REVIEW_TO_DELIVERY.md").read_text()
-    for term in ("неизвестно", "PostgreSQL", "Zero Knowledge", "deployment", "не обходить", "Машин", "новый сервис"):
+    for term in ("unknown", "PostgreSQL", "Zero Knowledge", "deployment", "Never bypass", "machine fields", "build a service"):
         assert term in text
     assert "git diff" in text
 
 def test_source_only_requests_do_not_acquire_a_deployment_requirement():
     text=(ROOT/"src/common/protocols/REVIEW_TO_DELIVERY.md").read_text()
-    assert "Если исходное поручение включает установку" in text
-    assert "иначе заверши результат в согласованных границах" in text
+    assert "If installation was requested" in text
+    assert "otherwise close within agreed boundaries" in text

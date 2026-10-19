@@ -191,3 +191,35 @@ cases pass6.64s. Prior full runs each retained their actual1failure (ambiguity,
 then numeric terminal punctuation); no whole-suite GREEN claimed for those SHAs.
 Next immutable final delta gets one actual full validator + same reviewer, then
 fresh ordinary native positive-close; global defaults remain old, no native restarts.
+
+23:15 UTC — native 225acc8 reconciled before English operating-language delta.
+Codex quickfix01a15661-f7b7-7fb0-870f-561f40009dc8 complete/self-check/pass;
+Codex testing01a15661-f793-7261-9df8-3ca50e72df62 complete/self-check/changes-required.
+Both actual permitted demo runs reached v2/Hello,Oleg with private/prod unchanged;
+parent independent acceptance remains pending, not a failed demo/self product PASS.
+OpenCode quickfix CLI exact UTF8 passed but workflow close failed; testing covered
+both actual cases but stayed pending. Controller SIGINT stopped only own PIDs219840/
+219897 after verified source-format failure, not HumanStop; old sessions not resumed.
+All six actual1.5 activations/raw feedback/state snapshots/FINAL_RECEIPT preserved
+in .tmp/outcome-acceptance-20261019/*225acc8. Global Codex/OpenCode selection1.4.13.
+
+Exact RED opencode-spacing-red.log plus opencode-report-selection-red.log shows
+whitespace/tool-only and later metadata progress displace useful original native
+feedback. Fix selects the latest actual result report, retaining its original
+index/time and assignment/revision barrier. Exact project-label RED repaired only
+this native cwd plus parenthesized display annotation; annotation grants no scope,
+script selection still original goal/owned paths, foreign/UI negatives retained.
+Focused21PASS11.56s; additional target/report controls17PASS9.16s.
+
+Direct English-only operating-language requirement applied to router139lines, Lead,
+managed protocols/role/template pointers, runtime strings and generated projections.
+Russian user requests, detection regexes, CSV fixtures and historical/raw feedback
+remain untouched. No audit of hidden reasoning claimed. Tests preserve state/behavior
+assertions; only old literal instruction-output expectations translated. Language
+routing tests also assert exact Russian request/UTF8 retention and source/package
+projection parity. Existing Bun13PASS76expects7.20s. First full validator saw old
+wording expectations during preparation (15failed426passed164.79s); not GREEN and
+not a frozen final-tree receipt. Final unchanged-source validator now running.
+Next: one bounded existing reviewer checks this actual language/native-close delta;
+then fresh ordinary Russian OpenCode followup proves English coordination/task note
+and Russian final, preserving completed Codex/demo receipts. No new research/council.

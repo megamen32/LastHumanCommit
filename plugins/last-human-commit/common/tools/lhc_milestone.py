@@ -575,17 +575,15 @@ def pending(milestone):
     return bool(milestone and milestone["status"] in {"pending", "changes-required", "blocked"})
 
 def reminder(milestone):
-    return ("LHC: пользовательская приёмка milestone ещё не завершена (" + milestone["status"] + "). "
-        "Не объявляй UI готовым по своим тестам, запуску дочерней сессии или странице входа. "
-        "Подготовь разрешённый sandbox/test identity до попыток; не извлекай секреты, не обходи permissions. "
-        "Через существующий Herder нужны минимум две свежие независимые Zero Knowledge попытки с разными "
-        "реалистичными персонами и полным raw feedback: что понравилось/помогло и что мешало/не понравилось, "
-        "наблюдаемые действия и достигнута ли цель. Используй существующий model-routing. "
-        "В обычное задание тестировщику включи Persona: <возраст, опыт, цель, условия>, исходную цель/URL "
-        "и ссылки текущей задачи/поверхности: " + milestone["task"] + " / " + milestone["surface_key"] + ". "
-        "Прочитай исходные ответы штатным Herder export_transcript; hook сохранит возвращённый Lineage manifest "
-        "по его фактическому пути без ручного переноса файлов. "
-        "Не сочиняй PASS и не создавай новую форму отчёта. Замечания требуют исправления и свежей попытки; "
-        "login-only означает blocked/not-tested. Если доступ реально заблокирован, заверши с точной причиной "
-        "и неполной приёмкой; повторных автозапусков не будет. Независимую разрешённую работу продолжай. "
-        "Изменённая поверхность: " + ", ".join(milestone["surface"]) + ".")
+    return ("LHC: milestone user acceptance remains incomplete (" + milestone["status"] +
+        "). Do not declare UI ready from own tests, child-session launch or a login page. Prepare permitted "
+        "sandbox/test identity before attempts; never extract secrets or bypass permissions. Existing Herder "
+        "must provide at least two fresh independent Zero Knowledge attempts with varied realistic personas "
+        "and full raw feedback: what helped/was liked, obstacles/dislikes, observed actions and goal achieved. "
+        "Use existing model-routing. Include Persona: <age, experience, goal, conditions>, original goal/URL "
+        "and current task/surface refs in the ordinary tester assignment: " + milestone["task"] + " / " + milestone["surface_key"] + ". "
+        "Read original answers through native Herder export_transcript; the hook retains the returned Lineage "
+        "manifest at its actual path without manual file copying. Never invent PASS or create a new report form. "
+        "Findings require repairs and fresh attempts; login-only means blocked/not-tested. If access is truly "
+        "blocked, finish with its exact reason and incomplete acceptance; no repeated automatic launches. "
+        "Continue independent permitted work. Changed surface: " + ", ".join(milestone["surface"]) + ".")

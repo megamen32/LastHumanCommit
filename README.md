@@ -5,13 +5,17 @@ Understand the intended result, do the useful work, test it and integrate the sh
 
 ## What changed
 
+Operating instructions, internal planning, new task records and agent/tool messages
+use English. User answers use the user’s language; original messages, localized
+fixtures and raw feedback retain their language.
+
 Ordinary tasks retain their class, explicit business canary and applicable delivery
 stages in existing session state. Independent native source-backed review can close
 the outcome; testing can complete with a product defect. See
 [the outcome contract](src/common/protocols/OUTCOME_CONTRACT.md).
 
-Parallel writers use Git worktrees. Each working branch is pushed and gets a PR;
-merge it when review and checks permit. Before finishing, fetch, merge newer work,
+Parallel writers use Git worktrees. Ready work converges into the explicitly permitted published dev history; PR per
+worker is optional. Merge only with authorization, review and green checks. Before finishing, fetch, merge newer work,
 retest and push. A Full cycle converges the participants' changes, including nested
 repositories, into one reachable green history. Foreign active work is preserved.
 

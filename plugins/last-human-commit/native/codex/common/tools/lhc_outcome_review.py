@@ -160,7 +160,7 @@ def load_review(path):
         result[0]['own_reports'] = [{'index': i, 'at': iso((m.get('info') or m).get('time', {}).get('completed') or (m.get('info') or m).get('time', {}).get('created')),
                                     'text': native.content(m.get('parts') or m.get('content')) or m.get('text', '')}
                                    for i, m in enumerate(json.loads(raw)) if (m.get('info') or m).get('role') == 'assistant'
-                                   and (native.content(m.get('parts') or m.get('content')) or m.get('text'))]
+                                   and (native.content(m.get('parts') or m.get('content')) or m.get('text', '')).strip()]
         result[0]['review_end_index'] = max((i for i, message in enumerate(json.loads(raw))
                                             if (message.get('info') or message).get('role') == 'assistant'), default=-1)
         for call, _ in result[2]:
@@ -256,13 +256,23 @@ def scope_names_script(scope, script, cwd):
     return bool(re.search(r'(?<![\w./-])(?:' + '|'.join(re.escape(n) for n in names) + r')(?![\w-]|\.[\w/-])', scope, re.I))
 
 
+def project_matches(target, cwd):
+    # An optional display annotation does not select a script or grant scope.
+    # Only this exact native cwd is accepted; foreign paths remain foreign.
+    exact = 'project:' + str(cwd)
+    return (target.startswith('project:') and Path(target[8:]).resolve() == cwd) or (
+        target.startswith(exact + ' (') and target.endswith(')') and '\n' not in target)
+
+
 def equivalent_target(old, new, cwd, scope):
     if old == new:
         return True
+    if old.startswith('project:') and new.startswith('project:'):
+        return project_matches(old, cwd) and project_matches(new, cwd)
     if old.startswith('project:') or new.startswith('project:'):
         project, target = (old, new) if old.startswith('project:') else (new, old)
         identity = target_identity(target, cwd)
-        if Path(project[8:]).resolve() != cwd or len(identity) != 2 or identity[0] != 'python':
+        if not project_matches(project, cwd) or len(identity) != 2 or identity[0] != 'python':
             return False
         script = Path(identity[1])
         return script.is_relative_to(cwd) and scope_names_script(scope, script, cwd)
@@ -273,7 +283,7 @@ def consumer_target(outcome, observations, cwd):
     target = outcome['canary']['target']
     if not target.startswith('project:'):
         return target
-    if Path(target[8:]).resolve() != cwd:
+    if not project_matches(target, cwd):
         raise ValueError('project canary belongs to another native cwd')
     scope = '\n'.join([outcome['original_goal'], *outcome.get('corrections', [])])
     scripts = set()
@@ -420,6 +430,12 @@ def expected_compared(expected, final, observations, defect):
     return defect or all(number_in(value, outputs) for value in re.findall(number_pattern, data))
 
 
+def report_result(text):
+    defect = bool(re.search(r'changes.required|\bfailed\b|\bfailure\b|defect found|ошибк|не соответствует', text, re.I))
+    positive = bool(re.search(r'\bPASS(?:ED)?\b|no defects|match(?:ed|es)|соответствует|работает|прош[её]л|прошл[аои]', text, re.I))
+    return defect, positive
+
+
 def raw_review(outcome, final, observations, cwd):
     """Small ordinary-report route; keep original prose as semantic assessment.
 
@@ -428,8 +444,7 @@ def raw_review(outcome, final, observations, cwd):
     line, rather than recursively hiring somebody to manufacture a certificate.
     """
     canary = outcome['canary']
-    defect = bool(re.search(r'changes.required|\bfailed\b|\bfailure\b|defect found|ошибк|не соответствует', final, re.I))
-    positive = bool(re.search(r'\bPASS(?:ED)?\b|no defects|match(?:ed|es)|соответствует|работает|прош[её]л|прошл[аои]', final, re.I))
+    defect, positive = report_result(final)
     if not final.strip() or not (positive or defect or outcome['task_class'] == 'research'):
         raise ValueError('raw review must state its actual result; retain the original report')
     stages = {}
@@ -481,7 +496,11 @@ def accept_review(outcome, state, path, cwd, owner):
     own_attempt = sid == owner and (outcome['task_class'] in {'testing', 'research'} or bounded_self_check(outcome))
     if (sid == owner and not own_attempt) or Path(meta.get('cwd', '/unknown')).resolve() != cwd:
         raise ValueError('review must be independent and for this exact project')
-    own_report = next(iter(reversed(meta.get('own_reports', []))), None) if own_attempt else None
+    # A later progress remark/tool message is not a replacement assessment.
+    # Keep the actual report's own source index/time: no freshness extension.
+    own_report = next((report for report in reversed(meta.get('own_reports', []))
+                       if MARKER in report['text'] or any(report_result(report['text']))
+                       or outcome['task_class'] == 'research'), None) if own_attempt else None
     if own_report:
         # Own commentary is available before the final response; source call
         # order still ends at that actual report, never at a later export call.

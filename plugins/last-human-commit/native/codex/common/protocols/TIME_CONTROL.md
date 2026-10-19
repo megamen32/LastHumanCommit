@@ -87,7 +87,7 @@ as delivery time. Use `../tools/lhc_active_time.py` with state under the existin
 `.agents/shared-session/time/` directory. Pause when yielding to the user or
 waiting without doing work; resume before execution. Record missing lifecycle
 coverage or interrupted intervals as gaps, not measured work.
-Historical `не контролировал` stays honest, but L must repair missing accounting
+Historical `not measured` stays honest, but L must repair missing accounting
 before new execution. Overseer enforces that repair and checks the resulting
 measurement evidence; a disclaimer alone never closes the finding.
 

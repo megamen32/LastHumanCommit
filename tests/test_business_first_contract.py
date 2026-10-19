@@ -37,15 +37,15 @@ def assert_order(value: str, first: str, second: str, source: str) -> None:
 
 def test_lead_routes_business_value_before_process() -> None:
     lead = compact(read("src/common/agents/Lead.md"))
-    assert_order(lead, "Начни с исходного запроса", "Перед записью проверь сессии", "Lead.md")
-    for phrase in ("Lead делегирует все implementation задачи", "фактического пути в продукте", "Проверка соответствует обещанию", "не требуй идеального ТЗ"):
+    assert_order(lead, "Start from the original request", "Before writing inspect project sessions", "Lead.md")
+    for phrase in ("Lead delegates all implementation", "actual product path", "Match verification to the claim", "instead of demanding a perfect specification"):
         assert phrase in lead
 
 
 
 def test_factory_routes_decisions_and_preserves_independent_full_acceptance() -> None:
     router = compact(read("AGENTS.md"))
-    for phrase in ("Сильную модель", "дешёвую для понятной работы", "независимые тестирование и review", "не очередь обязательных церемоний"):
+    for phrase in ("Strong models", "cheaper models handle clear work", "independent testing and review", "not a mandatory ceremony queue"):
         assert phrase in router
     assert "Full requires a fresh independent Tester" in compact(read("src/common/agents/Tester.md"))
     assert "REDECOMPOSE" in read("src/common/protocols/STOP_RETHINK.md")
@@ -61,8 +61,8 @@ def test_factory_learning_reaches_verified_reuse() -> None:
 
 def test_advice_is_an_optional_capability_not_an_extra_gate() -> None:
     router = compact(read("AGENTS.md"))
-    assert "Роли — доступные инструменты" in router
-    assert "по мере необходимости" in router
+    assert "Roles are tools" in router
+    assert "as needed" in router
     assert "compatibility alias" in read("src/common/agents/Critic.md")
 
 
@@ -71,7 +71,7 @@ def test_parallel_worktree_contract_routes_every_adapter_to_one_tool() -> None:
     protocol = compact(read("src/common/protocols/SHARED_WORKTREE.md"))
     assert "lhc/<slug>" in protocol
     assert "lhc_worktree.py" in protocol
-    assert "включения в remote main" in protocol
+    assert "inclusion in remote main" in protocol
     for adapter in ("codex", "opencode", "claude-code", "hermes", "zcode"):
         template = compact(read(f"adapters/{adapter}/templates/subagent.md"))
         assert "common/tools/lhc_worktree.py" in template, adapter
@@ -82,9 +82,9 @@ def test_parallel_worktree_contract_routes_every_adapter_to_one_tool() -> None:
 
 def test_cycle_inputs_retrieve_both_improvement_loops() -> None:
     router = compact(read("AGENTS.md"))
-    assert "Сохрани исходную цель и последние поправки" in router
-    assert "сверяй эту запись с текущим кодом" in router
-    assert "часовой контроль и самоулучшение обязательны" in router
+    assert "Preserve the original goal and latest corrections" in router
+    assert "check it against current code" in router
+    assert "Hourly direction control and workflow improvement remain mandatory" in router
     assert "verification canary" in read("src/common/protocols/SELF_IMPROVE.md")
 
 
@@ -121,24 +121,24 @@ def test_worker_twenty_minutes_is_a_management_checkpoint() -> None:
 
 def test_required_children_are_actually_joined() -> None:
     lead = compact(read("src/common/agents/Lead.md"))
-    assert "не называй общий результат завершённым" in lead.lower()
-    assert "не получен и не проверен" in lead
+    assert "do not claim the whole result complete" in lead.lower()
+    assert "received and verified" in lead
 
 
 
 def test_worker_questions_lead_without_blocking_safe_parallel_work() -> None:
     lead = compact(read("src/common/agents/Lead.md"))
-    assert "вопрос с рекомендацией" in lead
-    assert "доступные задачи выполняй без ожидания ответа" in lead
+    assert "decision question with a recommendation" in lead
+    assert "continue answer-independent work meanwhile" in lead
 
 
 
 def test_minimal_path_is_mandatory() -> None:
     # The shortest path remains; the mandatory three-line form is retired.
     router = compact(read("AGENTS.md"))
-    assert "кратчайший рабочий путь" in router
-    assert "маленькая — один bounded Worker и Lead review" in router
-    assert "Назначенный leaf без делегирования" in router
+    assert "shortest working route" in router
+    assert "small work uses one bounded Worker + Lead review" in router
+    assert "An assigned no-delegation leaf" in router
     assert "three-line minimal path" not in router
 
 
@@ -148,9 +148,9 @@ def test_optional_governance_keeps_independent_real_testing() -> None:
     # after its last validation; this old exact-wording test was already red.
     # Check the actual current policy rather than restoring mandatory rituals.
     router = compact(read("AGENTS.md"))
-    assert "Роли — доступные инструменты, а не очередь обязательных церемоний" in router
-    assert "независимые тестирование и review" in router
-    assert "для пользовательского результата реальный путь" in router
+    assert "Roles are tools, not a mandatory ceremony queue" in router
+    assert "independent testing and review" in router
+    assert "actual consumer path for a user result" in router
     for role in ("Overseer", "Tester", "Reviewer"):
         assert read(f"src/common/agents/{role}.md").strip()
     assert "Use the real surface" in read("src/common/agents/Tester.md")
@@ -160,7 +160,7 @@ def test_secret_paranoia_is_forbidden() -> None:
     lead = compact(read("src/common/agents/Lead.md"))
     router = compact(read("AGENTS.md"))
 
-    for phrase in ("защищённое окружение", "не строй для задачи новое хранилище"):
+    for phrase in ("protected environments", "never print secrets or create a new store for this task"):
         assert phrase in lead + " " + router, phrase
 
     for relative in ("AGENTS.md", "CLAUDE.md", "src/common/agents/Lead.md", "README.md"):
@@ -194,25 +194,25 @@ def test_interaction_tool_ladder() -> None:
 
 def test_askhuman_is_the_important_info_channel() -> None:
     router = compact(read("AGENTS.md"))
-    assert "Важный вопрос человеку" in router and "AskHuman" in router
-    assert "автоматический инцидент" in router and "NoticePlace" in router
-    assert "полученное разрешение на ту же задачу не выпрашивай снова" in router
+    assert "Important human questions" in router and "AskHuman" in router
+    assert "automated incidents" in router and "NoticePlace" in router
+    assert "do not request an already valid authorization again" in router
 
 
 
 def test_secret_command_is_the_only_phone_handoff() -> None:
     router = compact(read("AGENTS.md"))
     assert "`/secret`" in router
-    assert "не выводи их в сообщения" in router
-    assert "не строй для задачи новое хранилище" in router
+    assert "never print secrets" in router
+    assert "never print secrets or create a new store for this task" in router
 
 
 
 def test_real_surface_testing_is_the_final_gate() -> None:
     router = compact(read("AGENTS.md"))
-    assert "для пользовательского результата реальный путь" in router
-    assert "повторной проверки" in router
-    assert "успешный повтор нестабильного теста не устраняет причину" in router
+    assert "actual consumer path for a user result" in router
+    assert "recheck" in router
+    assert "successful rerun does not resolve flaky behavior" in router
     assert "Use the real surface" in read("src/common/agents/Tester.md")
 
 
@@ -223,7 +223,7 @@ def test_overseer_time_truth_requires_start_anchor() -> None:
 
     for phrase in ("supreme route controller", "Started at"):
         assert phrase in overseer, phrase
-    for phrase in ("Start anchor", "manual clock", "не контролировал"):
+    for phrase in ("Start anchor", "manual clock", "not measured"):
         assert phrase in time_control, phrase
 
 
@@ -231,7 +231,7 @@ def test_self_improve_is_an_evolution_loop() -> None:
     method = compact(read("src/common/protocols/SELF_IMPROVE.md"))
     assert "minimal proposed patch" in method and "verification canary" in method
     assert "every120" not in read("AGENTS.md")
-    assert "Контроль должен менять решение" in compact(read("src/common/agents/Lead.md"))
+    assert "Control must change the decision" in compact(read("src/common/agents/Lead.md"))
 
 
 
@@ -242,7 +242,7 @@ def test_hourly_business_report_and_cycle_estimates_are_required() -> None:
 
     for phrase in (
         "At every crossed wall-clock hour while the task remains active",
-        "Какие реальные задачи закрыты",
+        "Real tasks completed",
         "Every declared work cycle has its own immutable minimum / maximum estimate",
     ):
         assert phrase in lead + " " + planning + " " + task, phrase
@@ -272,7 +272,7 @@ def test_adapter_templates_preserve_checkpoint_semantics() -> None:
             "expected total range may exceed 20 minutes",
             "20-minute reporting checkpoint",
             "non-blocking parent transport",
-            "не контролировал",
+            "not measured",
         ):
             assert phrase in value, adapter
 
@@ -350,18 +350,18 @@ def test_every_bugfix_requires_a_recorded_red_green_tdd_cycle() -> None:
     assert "Mandatory TDD for every bugfix" in sources
     assert "Before changing production source, write and run a focused regression that fails" in sources
     assert "Record the exact failing command and its Red result, then rerun it Green" in sources
-    assert "для исправления регрессия" in compact(router)
+    assert "regression for a fix" in compact(router)
 
 
 
 def test_unified_history_is_mandatory() -> None:
     router = compact(read("AGENTS.md"))
     workspace = compact(read("src/common/protocols/SHARED_WORKTREE.md"))
-    for phrase in ("единая опубликованная dev history", "PR per worker не обязателен", "Airlock megamen32-dev", "GitHub-hosted, не ARC", "сделай fetch", "повтори затронутые тесты", "вложенные репозитории", "рабочие деревья участников чистые"):
+    for phrase in ("unified published dev history", "PR per worker is optional", "Airlock megamen32-dev", "GitHub-hosted runners, not ARC", "fetch", "rerun affected checks", "nested repositories", "participants' worktrees are clean"):
         assert phrase in router
-    assert "последняя активная сессия" in workspace
-    assert "публикуются **до** ожидания" in workspace
-    assert "Возраст файла и пропажа сессии" in workspace
+    assert "last active session" in workspace
+    assert "Publish ready parts before waiting" in workspace
+    assert "file age or a missing session" in workspace
 
 
 

@@ -671,7 +671,7 @@ def test_native_no_delegation_quickfix_has_achievable_self_check(tmp_path):
     outcome = anchored(tmp_path, NO_DELEGATE_PROMPT)
     assert outcome['delegation_prohibited'] is True
     context = invoke(tmp_path, 'SessionStart')
-    assert 'самопровер' in json.dumps(context, ensure_ascii=False)
+    assert 'self-check' in json.dumps(context, ensure_ascii=False)
     manifest = review_export(tmp_path, outcome, sid='leader',
         raw_final='PASS. Regression tests passed; python3 total.py output 0 matched expected 0. Self-check only.')
     result = cli(tmp_path, 'review', '--manifest', str(manifest))
@@ -927,12 +927,13 @@ def test_native_opencode_cli_self_export_checks_original_source(tmp_path, monkey
         assert outcome['verification_level']=='self-check'
     assert len(calls)==2
 
-@pytest.mark.parametrize('target_kind', ['file', 'uri', 'command', 'project'])
+@pytest.mark.parametrize('target_kind', ['file', 'uri', 'command', 'project', 'project-label'])
 def test_native_cli_target_aliases_close_the_same_actual_script(tmp_path, monkeypatch, target_kind):
     monkeypatch.setenv('CODEX_HOME',str(tmp_path/'native-home/.codex'))
     outcome=anchored(tmp_path,'Fix the small total.py CLI. Do not delegate. No deploy, no push, no merge.')
     aliases={'file':str(tmp_path/'total.py'),'uri':(tmp_path/'total.py').as_uri(),
-             'command':'python3 total.py','project':'project:'+str(tmp_path)}
+             'command':'python3 total.py','project':'project:'+str(tmp_path),
+             'project-label':'project:'+str(tmp_path)+' (python3 total.py, unittest test_total.py)'}
     outcome['canary']['target']=aliases[target_kind]
     manifest=review_export(tmp_path,outcome,sid='leader',command='python3 -B total.py',
         raw_final='Проверка прошла. python3 total.py: ожидалось 0, stdout 0, exit 0. Тесты прошли. Self-check.')
@@ -1088,3 +1089,37 @@ def test_project_ui_surface_does_not_become_a_similarly_named_cli(tmp_path):
              'canary':{'target':'project:'+str(tmp_path)}}
     call={'name':'exec_command','arguments':json.dumps({'cmd':'python3 checkout.py two','workdir':str(tmp_path)})}
     with pytest.raises(ValueError):consumer_target(outcome,[(call,'20')],tmp_path)
+
+
+@pytest.mark.parametrize('progress', ['', 'The review reads the persisted transcript; now checking its metadata.'])
+def test_native_opencode_tool_only_spacing_does_not_replace_actual_review(tmp_path, monkeypatch, progress):
+    import lhc_outcome_review as reviews
+    import lhc_outcome as outcomes
+    outcome = anchored(tmp_path, NO_DELEGATE_PROMPT)
+    outcome['owner']['harness'] = 'opencode'
+    payload = native_v2_export_fixture(tmp_path, outcome)
+    # Real V2 exports can have several tool parts with no text. content() joins
+    # their absent text fields into a newline; that is not a newer raw report.
+    tool = next(p for m in payload['messages'] for p in m.get('content', []) if p['type'] == 'tool')
+    stamp = payload['messages'][-1]['time']['completed'] + 10
+    payload['messages'].append({'id': 'tool-only-after-review', 'type': 'assistant',
+        'time': {'created': stamp, 'completed': stamp + 1}, 'content': [{'type': 'text', 'text': progress}, {**tool, 'id': 'later-tool-a'}, {**tool, 'id': 'later-tool-b'}]})
+    monkeypatch.setattr(reviews.subprocess, 'run', lambda *a, **k:
+        subprocess.CompletedProcess(a[0], 0, json.dumps(payload).encode(), b''))
+    manifest = reviews.native_self_manifest(outcome, tmp_path, 'opencode', 'leader')
+    reviews.accept_review(outcome, state(tmp_path), manifest, tmp_path, 'leader')
+    assert outcomes.verdict(outcome, state(tmp_path)) == 'complete'
+    assert outcome['verification_level'] == 'self-check'
+
+
+def test_project_display_annotation_cannot_select_a_foreign_script_or_cwd(tmp_path):
+    from lhc_outcome_review import project_matches, equivalent_target
+    local = 'project:' + str(tmp_path)
+    assert project_matches(local + '/.', tmp_path)
+    assert project_matches(local + ' (checkout CLI = checkout.py)', tmp_path)
+    assert equivalent_target(local, local + ' (total CLI)', tmp_path, 'Fix total.py CLI.')
+    assert not equivalent_target(local, local + '/foreign (total CLI)', tmp_path, 'Fix total.py CLI.')
+    assert not project_matches(local + '/foreign (total.py)', tmp_path)
+    assert not equivalent_target(local + ' (foreign/total.py)', 'python3 foreign/total.py', tmp_path, 'Fix the root total.py CLI.')
+    assert not equivalent_target(local + ' (checkout CLI)', 'python3 checkout.py', tmp_path, 'Only test the checkout UI.')
+    assert equivalent_target(local + ' (total CLI)', 'python3 total.py', tmp_path, 'Fix total.py CLI.')

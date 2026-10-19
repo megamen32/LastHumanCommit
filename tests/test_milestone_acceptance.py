@@ -7,8 +7,8 @@ def read(name):return " ".join((ROOT/name).read_text().split())
 
 def test_tangible_outcome_precedes_design_and_code():
     router=read("AGENTS.md")
-    assert router.index("Осязаемый результат до кода") < router.index("Трёхступенчатое проектирование")
-    for phrase in ("кто", "раньше", "после", "TDD", "RED", "GREEN"):
+    assert router.index("Tangible result before code") < router.index("Three design passes")
+    for phrase in ("who", "before", "after", "TDD", "RED", "GREEN"):
         assert phrase in router
     assert "SHA" in router
 
@@ -29,10 +29,10 @@ def test_personas_and_full_feedback_are_preserved_without_fake_customers():
 
 def test_hourly_protocol_cannot_claim_milestone_acceptance():
     text=read("src/common/protocols/BUSINESS_CHECKPOINT.md")
-    assert "не приёмка milestone" in text
+    assert "Direction check is not acceptance" in text
     assert "--zk-session" not in text
     assert "--business-result" in text and "--source-ref" in text
-    assert "~3 часа" in text
+    assert "~3 hours" in text
 
 
 def test_tester_sees_goal_not_desired_verdict_or_solution_recipe():

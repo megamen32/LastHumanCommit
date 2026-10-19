@@ -176,7 +176,7 @@ def test_hourly_report_is_stateful_and_idempotent(tmp_path: Path) -> None:
     assert first["crossed_hours"] == [1]
     assert first["planned_minutes"] == {"minimum": 30, "maximum": 120}
     assert first["active_minutes"] == 55
-    assert "Какие реальные задачи закрыты" in first["prompt"]
+    assert "Which real tasks were completed" in first["prompt"]
     assert "installed baseline" in first["prompt"]
     assert "src/common/agents/Lead.md" in first["prompt"]
 
@@ -207,15 +207,15 @@ def test_overrun_emits_full_business_first_diagnostic_once(tmp_path: Path) -> No
     assert overrun["overrun_minutes"] == 5
     prompt = overrun["prompt"]
     for phrase in (
-        "Меньше безопасности, больше бизнес-результата.",
-        "Что мешает?",
-        "Сколько планировал потратить на задачу, а сколько потратил?",
-        "Ты это как-то контролировал?",
-        "Выведи все завершённые файлы.",
-        "Какие гейты помешали?",
-        "Какие инструкции заставляли больше идти в безопасность вместо бизнеса?",
-        "Почему по времени так превысил задачу, но не менял подход",
-        "Что меняется в маршруте сейчас?",
+        "Less process overhead, more business results.",
+        "What is blocking progress?",
+        "How much time was planned and actually spent?",
+        "Did you track it?",
+        "List all completed files.",
+        "Which gates delayed progress?",
+        "Which instructions caused safety process overhead instead of business progress?",
+        "Why did the task overrun without changing approach",
+        "What changes in the route now?",
         "premature review",
         "strict proof before canary",
     ):
@@ -258,7 +258,7 @@ def test_estimate_mutation_is_reported_and_original_maximum_is_retained(tmp_path
     assert "estimate_mutation" in result["events"]
     assert "overrun" in result["events"]
     assert result["planned_minutes"] == {"minimum": 30, "maximum": 120}
-    assert "Нельзя легализовать прежний маршрут простой заменой оценки" in result["prompt"]
+    assert "Do not legitimize the old route by replacing the estimate" in result["prompt"]
 
 
 def test_compaction_handoff_is_replaced_counted_and_restored(tmp_path: Path) -> None:
@@ -356,4 +356,4 @@ def test_compaction_falls_back_to_captured_prompt_without_task_card(
     ).read_text(encoding="utf-8")
     assert "No active task-card was available" in handoff
     assert "Ship the real payment canary without extra hardening." in handoff
-    assert "active time: unknown / не контролировал" in handoff
+    assert "active time: unknown / not measured" in handoff

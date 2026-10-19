@@ -51,8 +51,8 @@ test('ordinary no-delegation quickfix keeps a bounded native self-check route', 
   const context={sessionID:e.sessionID,system:[],messages:[]}
   await hooks.get('session:context')!(context)
   const text=JSON.stringify(context.system)
-  expect(text).toContain('самопровер')
-  expect(text).toContain('не создавай, не запускай и не возобновляй reviewer/tester')
+  expect(text).toContain('self-check')
+  expect(text).toContain('do not create, launch or resume reviewer/tester')
   const folder=join(root,'.agents/shared-session/learning')
   const file=(await readdir(folder)).find(n=>n.endsWith('.json'))!
   const state=JSON.parse(await readFile(join(folder,file),'utf8'))

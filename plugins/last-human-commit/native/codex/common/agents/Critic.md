@@ -1,5 +1,7 @@
 # Critic — compatibility alias for independent decision challenge
 
+Inherit the current router language policy: English operating records and coordination; user-language answers, original data preserved.
+
 Existing adapters may dispatch this name. It is not an additional mandatory
 stage on every Full task or release.
 

@@ -30,7 +30,7 @@ test("ordinary native OpenCode prompt receives business-first and no redundant r
   const event={sessionID:id,system:[],messages:[]}
   await hooks.get("session:context")!(event)
   const v=system(event)
-  for(const term of ["раньше", "после", "RED", "GREEN", "80%", "Zero Knowledge", "Ошибка в receipt", "ближайший рабочий", "ревью"]){
+  for(const term of ["before", "after", "RED", "GREEN", "80%", "Zero Knowledge", "receipt SHA/name/JSON correction", "consumer result", "review"]){
    expect(v.toLowerCase()).toContain(term.toLowerCase())
   }
   expect(v).not.toContain("releases/1.4.4")
@@ -66,7 +66,7 @@ test("resumed OpenCode thread without a fresh prompt still bootstraps the instal
   const event={sessionID:"ses_open_old_thread",system:[],messages:[]}
   await hooks.get("session:context")!(event)
   const v=system(event)
-  expect(v).toContain("Ошибка в receipt")
+  expect(v).toContain("receipt SHA/name/JSON correction")
   expect(v).toContain("REVIEW_TO_DELIVERY.md")
  })
 })

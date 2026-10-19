@@ -1,4 +1,5 @@
 <!-- last-human-commit:begin -->
+Operating language: English for planning/new task notes/tools/agent messages; answer users in their language. Preserve verbatim user text and raw observations. Delegated roles inherit this policy.
 LHC is shared through the globally installed `last-human-commit` Agent Plugin.
 Read its bundled `AGENTS.md` through the active native plugin/skill location;
 resolve `common/` from that same package. Do not use the legacy

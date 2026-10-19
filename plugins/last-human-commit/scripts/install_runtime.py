@@ -26,7 +26,7 @@ def configure(home:Path,root:Path,runtime:str,replace_gsd:bool=False)->dict:
     for start,end in markers:
         pattern=re.compile(r"<!-- "+re.escape(start)+r":begin -->.*?<!-- "+re.escape(end)+r":end -->\s*",re.S)
         text=pattern.sub("",text)
-    pointer=f"{BEGIN}\nFor an engineering request, automatically read `{root/'AGENTS.md'}` once and follow the user's normal language. No LHC command is required. Resume the same task after compaction. This LHC router is the default; other workflow skills are optional methods.\n{END}\n"
+    pointer=f"{BEGIN}\nFor an engineering request, automatically read `{root/'AGENTS.md'}` once and use English for planning/new records/agent coordination and the user's language for user answers. Preserve original user data. No LHC command is required. Resume the same task after compaction. This LHC router is the default; other workflow skills are optional methods.\n{END}\n"
     if runtime == "codex":
         pointer = (f"{BEGIN}\nLHC is the default for engineering requests; no explicit plugin mention is needed. "
             "The native LHC hook supplies the current absolute AGENTS.md and tool paths; use that root, "
@@ -34,7 +34,7 @@ def configure(home:Path,root:Path,runtime:str,replace_gsd:bool=False)->dict:
             "result; choose working solution → ideal → useful 80%; for bugs use RED → fix → GREEN. "
             "Keep mandatory hourly direction and 120-minute learning reviews; fresh Zero Knowledge "
             "feedback belongs to major milestones, not every edit. If native LHC context is absent, "
-            "report the missing runtime rather than treating an AGENTS read as activation.\n"
+            "report the missing runtime rather than treating an AGENTS read as activation. Use English for new internal records/coordination; answer the user in their language, preserving original user data.\n"
             f"{END}\n")
     elif runtime == "opencode":
         # OpenCode 2 V2 hooks provide the current installed root at dispatch;
@@ -46,7 +46,7 @@ def configure(home:Path,root:Path,runtime:str,replace_gsd:bool=False)->dict:
             "metadata from Git/CI instead of hiring a new reviewer. Keep hourly direction and "
             "120-minute learning checks; independent Zero Knowledge only at major milestones. "
             "The adapter, not a stale versioned file path, owns bootstrapping and compaction. "
-            "If its native context is missing, say activation is unverified.\n"
+            "If its native context is missing, say activation is unverified. Use English for internal records/coordination and the user's language for answers; preserve original user data.\n"
             f"{END}\n")
     after=text.rstrip()+"\n\n"+pointer
     if before==after:return {"path":str(file),"changed":False,"root":str(root)}

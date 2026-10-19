@@ -5,8 +5,8 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 
 @pytest.mark.parametrize("path,stages", [
-    ("AGENTS.md", ("Рабочее решение", "Идеальная версия", "Минимально работающая версия")),
-    ("src/common/agents/Lead.md", ("Рабочее решение", "Идеальная версия", "Минимально работающая версия")),
+    ("AGENTS.md", ("Working solution", "Ideal version", "Minimum working version")),
+    ("src/common/agents/Lead.md", ("one working solution", "an ideal", "minimum working implementation")),
     ("src/common/skills/architecture-design/SKILL.md", ("Working solution", "Ideal version", "80%-value MVP")),
     ("skills/planning/SKILL.md", ("working solution", "ideal version", "80%-value MVP")),
     ("src/common/profiles/Planning.md", ("working solution", "ideal version", "80%-value MVP")),
@@ -30,11 +30,11 @@ def test_mvp_is_complete_value_not_partial_implementation():
 
 def test_useful_method_does_not_restore_report_ritual():
     router = (ROOT/"AGENTS.md").read_text()
-    assert "три шага проектирования" in router
-    assert "не три отдельных отчёта" in router
+    assert "three passes over one solution" in router
+    assert "not three reports" in router
     assert "three-line minimal path" not in router
-    assert "маленькая — один bounded Worker и Lead review" in router
-    assert "Назначенный leaf без делегирования" in router
+    assert "small work uses one bounded Worker + Lead review" in router
+    assert "An assigned no-delegation leaf" in router
 
 
 def test_large_fullcycle_routes_research_before_plan_and_final_council_before_dispatch():

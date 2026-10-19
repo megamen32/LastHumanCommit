@@ -50,7 +50,7 @@ def test_no_card_hourly_is_due_and_notification_is_not_completion(tmp_path,clock
     assert not tick(tmp_path,clock,3599)["due"]
     due=tick(tmp_path,clock,3600)
     assert due["due"] and "Zero Knowledge" in due["prompt"]
-    assert "исход" in due["prompt"].lower()
+    assert "original" in due["prompt"].lower()
     again=tick(tmp_path,clock,3601)
     assert again["due"] and again["review_id"]==due["review_id"]
     assert not again["prompt"], "Pending obligation stays due without per-tool spam"
@@ -99,8 +99,8 @@ def test_unchanged_review_cannot_silently_accept_scope_expansion(tmp_path,clock)
     tick(tmp_path,clock,0,"UserPromptSubmit")
     due=tick(tmp_path,clock,3600)
     text=due["prompt"]
-    assert "SHA" in text and "пользоват" in text.lower()
-    assert "продолж" in text.lower() and "сократ" in text.lower()
+    assert "SHA" in text and "user" in text.lower()
+    assert "continue" in text.lower() and "reduce" in text.lower()
 
 
 def test_decision_receipt_is_not_action_or_delivery_and_repeat_changes_next_step(tmp_path,clock):
@@ -233,9 +233,9 @@ def test_default_manifest_reaches_entry_and_periodic_guard():
 
 def test_blind_review_is_not_fed_the_implementers_answer():
     method=(ROOT/"src/common/protocols/BUSINESS_CHECKPOINT.md").read_text()
-    for term in ("исход", "Zero Knowledge", "~3 часа", "решение", "не приёмка milestone"):
+    for term in ("original", "Zero Knowledge", "~3 hours", "decision", "Direction check is not acceptance"):
         assert term in method
-    assert "SHA" in method and "не" in method
+    assert "SHA" in method and "not" in method
 
 
 def test_native_hook_executes_hourly_and_learning_without_task_card(tmp_path):

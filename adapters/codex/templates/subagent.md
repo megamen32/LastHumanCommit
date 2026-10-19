@@ -1,5 +1,7 @@
 # Codex subagent instructions template
 
+Inherit the current router language policy: English operating records and coordination; user-language answers, original data preserved.
+
 Use the Lead-assigned canonical checkout when one is supplied. Allocation comes
 only from `common/tools/lhc_worktree.py`: branch `lhc/<task-slug>`, path
 `<primary-project-root>/.worktrees/<task-slug>`, immutable base and one owner.
@@ -47,7 +49,7 @@ Before every `spawn_agent` or resumed Worker call:
   deliver new hourly/overrun prompts to L and never claim an unavailable wake.
 - Every status/question reports exact known start, original min/max, wall-clock,
   and active time with its measurement source. If continuous active time is
-  unavailable, say `не контролировал`; never infer it from wall-clock or mtime.
+  unavailable, say `not measured`; never infer it from wall-clock or mtime.
 - After compaction, read the bounded `current-handoff.md`, state its compaction
   count, and checkpoint to L if the count rose without business delta.
 

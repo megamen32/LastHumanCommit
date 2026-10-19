@@ -294,30 +294,30 @@ def observe_job_progress(outcome, business, event, cwd):
 
 
 def reminder(outcome, tool):
-    review_route = ('Ограниченное собственное задание: закончи по реальным tests/CLI или assigned coverage и '
-                    'самопроверку собственного native transcript (review --native-self; Herder export_transcript → review --manifest тоже доступен). '
-                    'Сначала напиши raw expected/observed отдельным сообщением commentary, сохрани FEEDBACK; уровень self-check, '
-                    'не independent acceptance родительского продукта. '
+    review_route = ('Own bounded assignment: finish actual tests/CLI or assigned coverage and native transcript self-check '
+                    '(review --native-self; Herder export_transcript → review --manifest also available). '
+                    'First write raw expected/observed as a separate commentary message and preserve FEEDBACK; '
+                    'level self-check, not independent parent product acceptance. '
                     if bounded_self_check(outcome) or outcome['task_class'] in {'testing', 'research'} else
-                    'Для engineering milestone нужен существующий независимый source-backed review через review --manifest. ')
+                    'Engineering milestones require existing independent source-backed review via review --manifest. ')
     if outcome.get('delegation_prohibited'):
-        review_route += ('Прямой запрет делегирования: не создавай, не запускай и не возобновляй reviewer/tester sessions. '
-                         'Если независимая приёмка всё ещё нужна, передай готовый результат назначенному координатору; '
-                         'не нанимай проверяющего ради закрытия state. ')
-    review_route += ('Интеграция только в явно выбранный permitted target (contract --integration-branch/remote/ownership); '
-                     'Airlock: megamen32-dev, external/shared upstream main не auto-merge. Dev delivery complete '
-                     'не требует финального main merge Олега: release_handoff awaiting-owner отдельно. ')
+        review_route += ('Explicit no-delegation: do not create, launch or resume reviewer/tester sessions. '
+                         'If independent acceptance remains required, hand ready results to the assigned coordinator; '
+                         'do not hire a reviewer to close state. ')
+    review_route += ('Integrate only into an explicitly selected permitted target (contract --integration-branch/remote/ownership); '
+                     'Airlock: megamen32-dev; external/shared upstream main is never auto-merged. Completed dev delivery '
+                     'does not require Oleg final main merge: release_handoff awaiting-owner is separate. ')
     return ('LHC outcome: ' + outcome['task_class'] + '; ' + outcome['finish_verdict'] +
             '. Canary: ' + json.dumps(outcome['canary'], ensure_ascii=False) +
-            '. Следующий этап: ' + str(next_stage(outcome)) +
-            '. Сначала конкретизируй scenario/target/expected и owned paths через python3 ' + shlex.quote(str(tool)) +
+            '. Next stage: ' + str(next_stage(outcome)) +
+            '. Specify scenario/target/expected and owned paths using python3 ' + shlex.quote(str(tool)) +
             ' --cwd ' + shlex.quote(outcome['cwd']) + ' --runtime ' + outcome['owner']['harness'] +
             ' --session-id ' + shlex.quote(outcome['owner']['session_id']) +
-            ' contract --help; затем реальные действия. ' + review_route +
-            'Refs, echo, pytest и собственный PASS не заменяют исходный canary. Testing может complete при product=changes-required; '
-            'не нанимай вложенных тестировщиков. Human stop/permission не обходить. Вопрос человеку: question --message; '
+            ' contract --help; then perform actual work. ' + review_route +
+            'Refs, echo, pytest and own PASS do not replace the original canary. Testing may complete with product=changes-required; '
+            'do not hire nested testers. Never bypass human stop/permission. Human question: question --message; '
             'existing bound request → Notify card → sent receipt → canonical answer; receipt != answer. '
-            'Незавершённое оставь pending с точным следующим действием/блокером, без бесконечных повторов.')
+            'Keep unfinished work pending with exact next action/blocker, without infinite retries.')
 
 
 def question_plan(outcome, message):
