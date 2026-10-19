@@ -1,3 +1,10 @@
+# 1.4.13 — mixed-scope read-only classification
+
+- Scoped, quoted or negated "only review/check" text no longer marks an entire
+  task read-only; direct task-wide review-only instructions remain read-only.
+- This affects milestone obligation classification only and grants no operation
+  permissions or overrides to native harness policy.
+
 # 1.4.12 — scoped delivery and native action evidence
 
 - Keep private access failures scoped to the observed target and operation;

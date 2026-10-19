@@ -21,7 +21,11 @@ GENERATED_UI = re.compile(r"\.(?:[cm]?[jt]s|py|go|rb|php)$", re.I)
 SURFACE = re.compile(r"\b(?:ui|ux|web|website|dashboard|frontend|interface|screen|page|portal|landing|app|visual|layout|responsive|form)\b|интерфейс|экран|страниц|кабинет|сайт|приложен|дашборд|лендинг|визуал|форм[ау]|дизайн", re.I)
 BUILD = re.compile(r"\b(?:build|create|implement|redesign|rebuild|develop|complete|improve)\b|создай|сделай|реализуй|разработ|переделай|переработ|улучши", re.I)
 SMALL = re.compile(r"\b(?:small|minor|tiny|typo|padding|spacing)\b|опечат|отступ|мелк|небольш", re.I)
-READ_ONLY = re.compile(r"\b(?:read.only|review only|you are .{0,30}(?:tester|reviewer)|zero knowledge tester|do not (?:edit|modify) code|no code changes)\b|только (?:прочитай|ревью|провер|тест)|ты .{0,25}тестировщик|не (?:меняй|редактируй) код", re.I)
+# This suppresses whole-task milestone obligations, not tool permissions. A
+# scoped or quoted "only check/review" clauses can restrict one surface while
+# another stays actionable, so only direct task-wide wording at a line boundary
+# belongs here. This never grants an operation or changes harness permission.
+READ_ONLY = re.compile(r"^\s*(?:\b(?:read.only|review only|you are .{0,30}(?:tester|reviewer)|zero knowledge tester|do not (?:edit|modify) code|no code changes)\b|только (?:прочитай|ревью|review)\b|ты .{0,25}тестировщик|не (?:меняй|редактируй) код)", re.I | re.M)
 ACCEPT = re.compile(r"(?:final|milestone|explicit|user) acceptance|(?:итогов|финальн|пользовательск).{0,20}при[её]мк|focus.groups|фокус.групп", re.I)
 URL = re.compile(r"https?://[^\s<>\]\)\"']+", re.I)
 POSITIVE = re.compile(r"\bpositive\b|\bliked\b|what helped|(?<!не )понрав|(?<!не )\bпомог|\bудобно\b", re.I)

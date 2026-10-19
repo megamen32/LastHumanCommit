@@ -33,6 +33,33 @@
       ],
       "summary": "Worker mode selects worker-research, worker-code, or worker-bugfix; canonical skills sync into the Agent Plugin and its validator pins discovery.",
       "verified_at": "2026-08-12T13:53:25.340715+03:00"
+    },
+    "task-wide-read-only-milestone": {
+      "confidence": "verified",
+      "evidence": [
+        "RED mixed Demo update + Private only-check stored read_only=true; after narrowing, mixed case=false, quoted/negated phrases=false and direct task-wide review/no-code-change=true; 5 focused canaries pass."
+      ],
+      "git_head": "f786dbd3ebd9e2eca67ae832018a6ece591a915e",
+      "key": "task-wide-read-only-milestone",
+      "kind": "failure-shield",
+      "locations": [
+        {
+          "exists_at_verification": true,
+          "observed_kind": "file",
+          "observed_sha256": "0758294770d9cf932af54b18c719ecd3874ca4e2739835d5a33a1b1313736114",
+          "path": "src/common/tools/lhc_milestone.py",
+          "symbol": "READ_ONLY"
+        },
+        {
+          "exists_at_verification": true,
+          "observed_kind": "file",
+          "observed_sha256": "ec719cca51cb93156edf3d343cce1f4bcac9d44bd5158053b1c2e5f65e73ddfc",
+          "path": "tests/test_native_milestone_gate.py",
+          "symbol": "test_mixed_scope_private_read_only_does_not_suppress_task_obligations"
+        }
+      ],
+      "summary": "Milestone read_only suppresses whole-task duties only for direct task-wide read/review wording at the prompt line start. Scoped, quoted or negated review/check restrictions are not global read-only and never grant operation permissions.",
+      "verified_at": "2026-10-19T14:46:35.830563+03:00"
     }
   },
   "schema_version": 1

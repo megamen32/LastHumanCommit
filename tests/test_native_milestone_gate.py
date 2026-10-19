@@ -43,6 +43,32 @@ def test_own_pass_cannot_clear_milestone(tmp_path):
     assert result.get("decision") == "block"
     assert state(tmp_path)["milestone"]["status"] != "accepted"
 
+def test_mixed_scope_private_read_only_does_not_suppress_task_obligations(tmp_path):
+    prompt = ("Обнови доступный demo стенд и проверь пользовательский сценарий. "
+              "Demo разрешаю обновлять и тестировать гостем. "
+              "Private можно только проверить; изменять его запрещаю.")
+    setup(tmp_path, prompt=prompt)
+    milestone = state(tmp_path)["milestone"]
+    assert milestone["read_only"] is False
+    assert milestone["goal"] == prompt
+    assert "allowed_actions" not in milestone
+
+@pytest.mark.parametrize("prompt", [
+    "Только review/без изменений: проверь текущее состояние проекта.",
+    "Do not edit code: review the current interface.",
+])
+def test_task_wide_review_only_remains_read_only(tmp_path, prompt):
+    setup(tmp_path, prompt=prompt)
+    assert state(tmp_path)["milestone"]["read_only"] is True
+
+@pytest.mark.parametrize("prompt", [
+    "Обнови demo и проверь сценарий. Для private в описании указано «только review»; этот scope не относится к demo.",
+    "Не только review: обнови demo и проверь сценарий.",
+])
+def test_quoted_or_negated_review_does_not_mark_task_read_only(tmp_path, prompt):
+    setup(tmp_path, prompt=prompt)
+    assert state(tmp_path)["milestone"]["read_only"] is False
+
 def export_tester(root, sid="tester-one", persona="Maya, 29, new customer on mobile", outcome="achieved", *,
                   related=True, fresh=True, login=False, claim_login=False, interact=True, native=True, same_goal=False,
                   url="https://demo.test/dashboard"):
