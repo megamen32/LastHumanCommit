@@ -106,3 +106,9 @@ policy checks migrated; existing behavioral/tool regressions retained.
 - Added native Codex and Claude Code manifests plus an OpenCode config helper.
 - Added dependency-free synchronization, parity, manifest, and loader checks.
 - Confirmed that no MCP server is bundled.
+# 1.4.11 — ZCode native lifecycle
+
+- Add native ZCode plugin discovery and its failure-tool event adapter.
+- Keep the ordinary engineering prompt, 60-minute direction review,
+  120-minute learning checkpoint, independent milestone acceptance, and bounded
+  Stop continuation on the native event path.

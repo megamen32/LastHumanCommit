@@ -76,8 +76,12 @@ def rehydrate(state, state_path=None):
     restored = {key: business[key] for key in ("original_prompt", "latest_prompt") if business.get(key)}
     if restored.get("latest_prompt") == restored.get("original_prompt"):
         restored.pop("latest_prompt", None)
-    if business.get("transcript_path"):
+    if business.get("transcript_path") and business.get("runtime") != "zcode":
         restored["full_native_transcript"] = business["transcript_path"]
+    if len(business.get("original_prompt_full", "")) > 4096:
+        restored["full_original_prompt_in_saved_state"] = "business.original_prompt_full"
+    if len(business.get("latest_prompt_full", "")) > 4096:
+        restored["full_latest_prompt_in_saved_state"] = "business.latest_prompt_full"
     if state_path is not None:
         restored["full_saved_state"] = str(state_path)
     milestone = state.get("milestone") or {}
@@ -117,7 +121,8 @@ def handle(event, name, runtime, root):
     with path.with_suffix(".lock").open("a", encoding="utf-8") as lock:
         fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
         state = guard.load_state(path)
-        milestone = milestones.observe(state, event, name, cwd, session, now)
+        milestone_event = "PostToolUse" if name == "PostToolUseFailure" else name
+        milestone = milestones.observe(state, event, milestone_event, cwd, session, now)
         # A concurrent native hook or an explicit review command may have cleared
         # a debt after our first observation. Decisions use the locked readback.
         current_pending = state.get("business", {}).get("pending")
@@ -135,9 +140,9 @@ def handle(event, name, runtime, root):
             delivery["finish_hold"] = name
         elif (name == "UserPromptSubmit" and not control_prompt) or name == "permission.replied":
             delivery.pop("finish_hold", None)
-        elif name == "PostToolUse" and milestones.tool_failed(event):
+        elif name in {"PostToolUse", "PostToolUseFailure"} and milestones.tool_failed(event):
             delivery["finish_hold"] = "ToolFailure"
-        elif name == "PostToolUse" and delivery.get("finish_hold") in {"ToolFailure", "PermissionRequest"}:
+        elif name in {"PostToolUse", "PostToolUseFailure"} and delivery.get("finish_hold") in {"ToolFailure", "PermissionRequest"}:
             delivery.pop("finish_hold", None)
         version = package_version(root)
         signature = json.dumps([str(root), version])
@@ -181,8 +186,8 @@ def handle(event, name, runtime, root):
             output = {"handoff": "\n\n".join(parts)}
         held = bool(delivery.get("finish_hold") or (milestone and (milestone.get("hold") or milestone.get("read_only"))))
         acceptance_due = acceptance_pending and milestone["status"] != "blocked"
-        if runtime == "codex" and name == "Stop" and not held and (business["due"] or learning["due"] or acceptance_due):
-            identity = [event.get("turn_id"), business.get("review_id"), learning["due_at"] if learning["due"] else None]
+        if runtime in {"codex", "zcode"} and name == "Stop" and not held and (business["due"] or learning["due"] or acceptance_due):
+            identity = [event.get("turn_id") or event.get("turnId"), business.get("review_id"), learning["due_at"] if learning["due"] else None]
             fresh_acceptance = acceptance_due and not milestone.get("continuation_requested")
             deadline_due = (business["due"] or learning["due"]) and delivery.get("stop_continuation") != identity
             if not event.get("stop_hook_active") and (fresh_acceptance or deadline_due):
@@ -224,7 +229,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--event", default="SessionStart")
     parser.add_argument("--root", type=Path)
-    parser.add_argument("--runtime", choices=("codex", "claude", "opencode"), default="claude" if os.environ.get("CLAUDE_PROJECT_DIR") else "codex")
+    default_runtime = ("zcode" if os.environ.get("ZCODE_PLUGIN_ROOT") else
+                       "claude" if os.environ.get("CLAUDE_PROJECT_DIR") else "codex")
+    parser.add_argument("--runtime", choices=("codex", "claude", "opencode", "zcode"), default=default_runtime)
     args = parser.parse_args()
     try:
         # Native tool responses routinely exceed 64 KiB. Truncating JSON used to

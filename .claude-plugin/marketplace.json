@@ -9,7 +9,7 @@
       "name": "last-human-commit",
       "source": "./plugins/last-human-commit",
       "description": "Automatic workflow and 22 optional skills; isolated parallel work, shared file chat and PR integration.",
-      "version": "1.4.10",
+      "version": "1.4.11",
       "category": "workflow"
     },
     {

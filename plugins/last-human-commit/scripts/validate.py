@@ -64,7 +64,7 @@ def check_no_symlinks(root: Path) -> None:
 
 def check_version_parity(root: Path) -> None:
     versions = {}
-    for rel in ("plugin.json", ".codex-plugin/plugin.json", ".claude-plugin/plugin.json"):
+    for rel in ("plugin.json", ".codex-plugin/plugin.json", ".claude-plugin/plugin.json", ".zcode-plugin/plugin.json"):
         path = root / rel
         if path.is_file():
             versions[rel] = str(load_json(path).get("version"))
@@ -246,8 +246,9 @@ def main() -> int:
         check_root_manifest(root)
         codex_skills = check_native_manifest(root, ".codex-plugin/plugin.json", "Codex")
         claude_skills = check_native_manifest(root, ".claude-plugin/plugin.json", "Claude Code")
+        zcode_skills = check_native_manifest(root, ".zcode-plugin/plugin.json", "ZCode")
         discovered = discover_skills(root)
-        if codex_skills != root / "skills" or claude_skills != root / "skills":
+        if codex_skills != root / "skills" or claude_skills != root / "skills" or zcode_skills != root / "skills":
             raise ValidationError("native manifests do not point to the package skills directory")
         parity = check_parity(root, source_root if source_root.is_dir() else None)
         check_opencode_helper(root)

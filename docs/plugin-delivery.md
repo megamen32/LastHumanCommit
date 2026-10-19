@@ -76,6 +76,23 @@ native `skills.paths`/`plugin` и `plugins.dirs`. Эти ссылки не за�
 версии cache. Новый runtime не устанавливается лишь потому, что его команда
 не найдена в SSH PATH: на Mac ZCode находится в `/Applications/ZCode.app`.
 
+На Linux и Mac ZCode использует собственный `.zcode-plugin/plugin.json` и
+стандартный `hooks/hooks.json`; для native-only событий manifest может добавить
+отдельный hooks-файл. Текущий API поддерживает `SessionStart`,
+`UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `PostToolUseFailure`,
+`PermissionRequest` и `Stop`, но не compaction events. LHC узнаёт runtime по
+`ZCODE_PLUGIN_ROOT`, ведёт clock на prompt/tool/Stop boundaries и сохраняет
+исходную цель для следующего prompt. Установка выполняется штатным менеджером:
+
+```sh
+zcode plugins marketplace add /path/to/LastHumanCommit
+zcode plugins install last-human-commit@last-human-commit
+```
+
+После установки проверьте `zcode plugins list`, включённое состояние и
+количество hooks, затем откройте новую ZCode-сессию: уже работающая сессия
+сохраняет снимок конфигурации hooks.
+
 Hermes использует штатную установку того же пакета:
 
 ```sh

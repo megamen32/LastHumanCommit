@@ -703,8 +703,8 @@ def business_checkpoint(args, cwd: Path, session_id: str, payload: dict,
     now = args.now or datetime.now().astimezone()
     event = str(getattr(args, "event", "")).casefold()
     pauses = {"stop", "interrupt", "sessionend", "permissionrequest", "session.idle", "session.error", "permission.asked"}
-    starts = {"userpromptsubmit", "pretooluse", "posttooluse", "tool.execute.before", "tool.execute.after", "chat.message", "permission.replied"}
-    lifecycle = args.runtime in {"codex", "claude", "opencode"} and session_id != "unknown-session"
+    starts = {"userpromptsubmit", "pretooluse", "posttooluse", "posttoolusefailure", "tool.execute.before", "tool.execute.after", "chat.message", "permission.replied"}
+    lifecycle = args.runtime in {"codex", "claude", "opencode", "zcode"} and session_id != "unknown-session"
     lock = path.with_suffix(".lock")
     lock.parent.mkdir(parents=True, exist_ok=True)
     with lock.open("a", encoding="utf-8") as handle:
@@ -717,13 +717,26 @@ def business_checkpoint(args, cwd: Path, session_id: str, payload: dict,
             "next_active_seconds": 3600, "original_prompt": "", "latest_prompt": "",
             "review_sequence": 0, "pending": None, "last_review": None,
         })
+        business["runtime"] = args.runtime
         # Only native prompt events set user intent. A generated task-card never
         # becomes the source of the accepted business objective.
         prompt = payload.get("prompt") or payload.get("text")
         if event in {"userpromptsubmit", "chat.message"} and isinstance(prompt, str) and prompt.strip():
-            business["original_prompt"] = business["original_prompt"] or prompt.strip()[:4096]
-            business["latest_prompt"] = prompt.strip()[:4096]
-            if payload.get("transcript_path"):
+            full_prompt = prompt.strip()
+            is_original_prompt = not business.get("original_prompt")
+            business["original_prompt"] = business["original_prompt"] or full_prompt[:4096]
+            business["latest_prompt"] = full_prompt[:4096]
+            if args.runtime == "zcode":
+                if is_original_prompt:
+                    business["original_prompt_full"] = full_prompt
+                original_full = business.get("original_prompt_full", "")
+                if full_prompt == original_full:
+                    business.pop("latest_prompt_full", None)
+                elif len(full_prompt) > 4096:
+                    business["latest_prompt_full"] = full_prompt
+                else:
+                    business.pop("latest_prompt_full", None)
+            if payload.get("transcript_path") and args.runtime != "zcode":
                 business["transcript_path"] = str(payload["transcript_path"])[:1024]
         measured = None
         clock_source = "wall-clock fallback: complete native active/idle lifecycle unavailable"
@@ -1043,7 +1056,7 @@ def parser() -> argparse.ArgumentParser:
     )
     native = subcommands.add_parser("hook", help="adapt one native Codex or OpenCode hook")
     native.add_argument(
-        "--runtime", choices=("codex", "claude", "opencode", "hermes"), required=True
+        "--runtime", choices=("codex", "claude", "opencode", "hermes", "zcode"), required=True
     )
     native.add_argument("--event", required=True)
     native.add_argument("--session-only", action="store_true", help="use the source-bound session checks without unrelated legacy task-card discovery")
@@ -1051,7 +1064,7 @@ def parser() -> argparse.ArgumentParser:
     native.add_argument("--idle-cap-seconds", type=positive, default=300)
     checkpoint = subcommands.add_parser("checkpoint", help="acknowledge a due session learning review")
     checkpoint.add_argument("--cwd", type=Path, required=True)
-    checkpoint.add_argument("--runtime", choices=("codex", "claude", "opencode", "hermes"), required=True)
+    checkpoint.add_argument("--runtime", choices=("codex", "claude", "opencode", "hermes", "zcode"), required=True)
     checkpoint.add_argument("--session-id", required=True)
     checkpoint.add_argument("--due-at", type=parse_time, required=True)
     checkpoint.add_argument("--now", type=parse_time)
@@ -1063,7 +1076,7 @@ def parser() -> argparse.ArgumentParser:
     outcome.add_argument("--no-change-reason")
     review = subcommands.add_parser("business-review", help="record hourly original-source direction; this does not accept a product milestone")
     review.add_argument("--cwd", type=Path, required=True)
-    review.add_argument("--runtime", choices=("codex", "claude", "opencode", "hermes"), required=True)
+    review.add_argument("--runtime", choices=("codex", "claude", "opencode", "hermes", "zcode"), required=True)
     review.add_argument("--session-id", required=True)
     review.add_argument("--review-id", required=True)
     review.add_argument("--now", type=parse_time)

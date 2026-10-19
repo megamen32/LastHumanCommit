@@ -1,0 +1,16 @@
+{
+  "description": "ZCode events not shared by the portable hook bundle",
+  "hooks": {
+    "PostToolUseFailure": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${PLUGIN_ROOT:-${ZCODE_PLUGIN_ROOT:-$HOME/.codex/.tmp/marketplaces/megamen32-plugins/plugins/last-human-commit}}}}/tools/lhc_entry.py\" --event PostToolUseFailure || { printf '%s\\n' 'LHC entry unavailable; message processing continues.' >&2; :; }",
+            "timeoutMs": 5000
+          }
+        ]
+      }
+    ]
+  }
+}
