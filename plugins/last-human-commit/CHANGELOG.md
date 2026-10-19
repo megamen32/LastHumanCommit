@@ -1,3 +1,15 @@
+# 1.4.12 — scoped delivery and native action evidence
+
+- Keep private access failures scoped to the observed target and operation;
+  preserve native PermissionRequest, transport failure and human-stop holds.
+- Preserve direct user scope through rehydrate without turning prompt text into
+  plugin-created permissions.
+- Separate direction decisions, relevant native action results, deployment and
+  consumer acceptance; unrelated tool output does not complete a chosen action.
+- Retain running process IDs and terminal results without blocking independent
+  work or duplicating a live build. Partial demo success leaves excluded work
+  pending.
+
 ## 1.4.8 — existing Herder model selection in OpenCode
 
 The standard native LHC entry now routes multi-model delegation to the already

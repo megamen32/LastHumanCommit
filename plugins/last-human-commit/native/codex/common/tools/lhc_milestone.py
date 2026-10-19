@@ -27,8 +27,6 @@ URL = re.compile(r"https?://[^\s<>\]\)\"']+", re.I)
 POSITIVE = re.compile(r"\bpositive\b|\bliked\b|what helped|(?<!не )понрав|(?<!не )\bпомог|\bудобно\b", re.I)
 NEGATIVE = re.compile(r"negative|disliked|confus|frustrat|не понрав|мешал|неудоб|затруд|недостат|критик|limitations|obstacles|defects|ошиб|ограничен|помех", re.I)
 ACHIEVED = re.compile(r"(?:goal|task) (?:was )?(?:achieved|completed)|цель достигнута|задача выполнена|\bPASS\b", re.I)
-BLOCKED = re.compile(r"blocked|not.tested|блокир|заблокир|не протестирован|STOP_MISSING_REAL_SURFACE", re.I)
-ACCESS = re.compile(r"login|log.in|sign.in|authenticat|credentials|permission|авторизац|вход|уч[её]тн|доступ|разрешен", re.I)
 CHANGES = re.compile(r"changes.required|goal (?:was )?not achieved|цель не достигнута|нужны исправления", re.I)
 PARTIAL = re.compile(r"\bpartial\b|not.tested|never (?:attempted|tested)|did not (?:test|attempt|complete|import)|(?:required|assigned).{0,60}(?:failed|untested)|частичн|не (?:проверил|протестировал|пытался|импортировал)", re.I)
 
@@ -178,10 +176,13 @@ def observe(state, event, name, cwd, session, now):
                     milestone["sources"] = (milestone["sources"] + [path])[-16:]
     if name in {"Interrupt", "SessionEnd", "PermissionRequest", "session.error", "ToolFailure"}:
         milestone["hold"] = name
-    elif (name == "UserPromptSubmit" and not event.get("_lhc_control_prompt")) or name == "permission.replied":
+    elif ((name == "UserPromptSubmit" and not event.get("_lhc_control_prompt") and milestone.get("hold") != "PermissionRequest")
+          or name == "permission.replied"):
         milestone.pop("hold", None)
-    elif name == "PostToolUse" and tool_failed(event):
-        milestone["hold"] = "ToolFailure"
+    elif name == "PostToolUseFailure" or (name == "PostToolUse" and tool_failed(event)):
+        scoped = scoped_surface_failure(event) if name == "PostToolUse" else None
+        if not scoped:
+            milestone["hold"] = "ToolFailure"
     elif name == "PostToolUse" and milestone.get("hold") in {"ToolFailure", "PermissionRequest"}:
         milestone.pop("hold", None)
     if milestone["read_only"]:
@@ -214,9 +215,9 @@ def observe(state, event, name, cwd, session, now):
         milestone.pop("blocker", None)
     if pending(milestone) and not milestone.get("hold") and (name in {"Stop", "PreCompact", "SessionStart", "UserPromptSubmit"} or event.get("model_boundary")):
         reconcile_feedback(milestone, cwd, session)
-    final = str(event.get("last_assistant_message") or "")
-    if name == "Stop" and BLOCKED.search(final) and (ACCESS.search(final) or "STOP_MISSING_REAL_SURFACE" in final):
-        milestone.update(status="blocked", blocker=final[:2000])
+    # A leader's final prose is not native evidence that a surface is blocked.
+    # Preserve any previously observed scoped evidence, but never let a claim
+    # suppress the independent acceptance obligation for the whole task.
     return milestone
 
 def tool_failed(event):
@@ -234,6 +235,30 @@ def response_texts(value):
         for key in ("content", "text", "output", "stdout", "result"):
             if key in value:
                 yield from response_texts(value[key])
+
+def scoped_surface_failure(event):
+    """Recognize only structured HTTP failures explicitly scoped to a target."""
+    response = event.get("tool_response")
+    candidates = [response] if isinstance(response, dict) else []
+    for text in response_texts(response):
+        try:
+            value = json.loads(text)
+        except (TypeError, ValueError):
+            continue
+        if isinstance(value, dict):
+            candidates.append(value)
+    for value in candidates:
+        try:
+            status = int(value.get("http_status") or value.get("status_code") or 0)
+        except (TypeError, ValueError):
+            continue
+        target = value.get("scoped_to") or value.get("target_scope")
+        operation = value.get("command") or value.get("operation")
+        if status >= 400 and isinstance(target, str) and target.strip() and isinstance(operation, str) and operation.strip():
+            return {"target": target.strip()[:120], "operation": operation.strip()[:120],
+                    "http_status": status, "source": "native-tool:" + str(
+                        event.get("tool_call_id") or event.get("call_id") or event.get("tool_name") or "unknown")[:120]}
+    return None
 
 def archive_sources(cwd, milestone):
     # Herder owns these raw exports/manifests already; no new receipt store.
@@ -323,6 +348,40 @@ def browser_attempt(observations, urls):
                 before = output.strip()
     return navigated and interacted and saw_result
 
+def native_surface_evidence(observations, urls):
+    """Extract target-specific login evidence only from native browser output."""
+    active, blocked, navigated = None, [], []
+    for call, output in observations:
+        name = call.get("name", "").lower().split(".")[-1].rsplit("__", 1)[-1]
+        args = str(call.get("arguments") or call.get("input") or "")
+        actions = [name] if "browser" in name or "agent-device" in name else []
+        if name in {"exec_command", "shell_command", "exec", "bash"}:
+            try:
+                payload = json.loads(args)
+                command = payload.get("cmd") or payload.get("command") or ""
+            except (ValueError, TypeError):
+                command = ""
+            actions = []
+            for argv in browser_commands(command):
+                actions.append(next((x for x in argv[1:] if x in {
+                    "open", "navigate", "snapshot", "click", "fill", "type", "press", "select", "get"}), ""))
+        matched = next((url for url in urls if url.rstrip("/") in args or url.rstrip("/") in str(output)), None)
+        if matched and any(re.search(r"open|navigate|get-url", action) for action in actions):
+            parsed = urlparse(matched)
+            host = parsed.hostname or "unknown"
+            if parsed.port:
+                host += f":{parsed.port}"
+            active = f"{parsed.scheme}://{host}{parsed.path}".rstrip("/")
+            if active not in navigated:
+                navigated.append(active)
+        snapshot = any(re.search(r"snapshot|browser", action) for action in actions) or "snapshot" in name
+        access_error = bool(re.search(r"(?:isError|exit_code)\W*[:=]\W*(?:true|[1-9])", str(output), re.I))
+        visible_login = snapshot and re.search(r"(?:heading|title).*?(?:log.in|sign.in|вход|авторизац)", str(output), re.I)
+        denied = access_error and re.search(r"permission.{0,20}denied|access.{0,20}denied|нет.{0,20}доступ", str(output), re.I)
+        if active and (visible_login or denied):
+            blocked.append({"target": active, "operation": "login-or-access-required"})
+    return {"blocked": blocked, "targets": navigated}
+
 
 def goal_report(final, goal):
     # A mechanical floor, not an LLM semantic grader. Require the actual goal,
@@ -387,8 +446,9 @@ def feedback_from(path, milestone, session):
     urls = list(dict.fromkeys([*(milestone.get("urls") or []), *URL.findall(prompt)]))
     if not urls:
         return None
+    surface = native_surface_evidence(observations, urls)
     status = "pending"
-    if BLOCKED.search(final) and (ACCESS.search(final) or "STOP_MISSING_REAL_SURFACE" in final):
+    if surface["blocked"]:
         status = "blocked"
     elif browser_attempt(observations, urls):
         if CHANGES.search(final):
@@ -396,7 +456,9 @@ def feedback_from(path, milestone, session):
         elif ACHIEVED.search(final) and not PARTIAL.search(final) and goal_report(final, milestone["goal"]):
             status = "accepted"
     return {"session": sid, "persona": persona_text, "status": status,
-            "source": str(path), "raw_feedback": final, "surface": milestone["surface_key"], "started_at": meta["timestamp"]}
+            "scope": surface["blocked"][0] if status == "blocked" else {"target": surface["targets"], "operation": "consumer-acceptance"},
+            "targets": surface["targets"], "source": str(path), "raw_feedback": final,
+            "surface": milestone["surface_key"], "started_at": meta["timestamp"]}
 
 def reconcile_feedback(milestone, cwd, session):
     feedback, sessions, personas = [], set(), set()
@@ -413,15 +475,29 @@ def reconcile_feedback(milestone, cwd, session):
             feedback.append(result)
             personas.add(result["persona"].casefold())
     milestone["feedback"] = feedback
+    milestone["scoped_blockers"] = [
+        {"target": row["scope"].get("target"), "operation": row["scope"].get("operation"),
+         "source": row["source"], "session": row["session"],
+         "observed_at": row["started_at"]}
+        for row in feedback if row["status"] == "blocked"
+    ]
     failures = [r for r in feedback if r["status"] != "accepted"]
     latest_failure = max((timestamp(r["started_at"]) for r in failures), default=None)
     successful = [r for r in feedback if r["status"] == "accepted" and
                   (latest_failure is None or timestamp(r["started_at"]) > latest_failure)]
-    if len(successful) >= 2 and len({r["persona"].casefold() for r in successful}) >= 2:
+    unresolved = []
+    for blocker in milestone["scoped_blockers"]:
+        target = blocker.get("target")
+        later = [r for r in successful if target and target in r.get("targets", [])
+                 and timestamp(r["started_at"]) > timestamp(blocker["observed_at"])]
+        if len({r["persona"].casefold() for r in later}) < 2:
+            unresolved.append(blocker)
+    if (len(successful) >= 2 and len({r["persona"].casefold() for r in successful}) >= 2
+            and not unresolved):
         milestone["status"] = "accepted"
+        milestone["scoped_blockers"] = []
     else:
-        milestone["status"] = ("changes-required" if any(r["status"] == "changes-required" for r in feedback)
-            else "blocked" if any(r["status"] == "blocked" for r in feedback) or milestone.get("blocker") else "pending")
+        milestone["status"] = "changes-required" if any(r["status"] == "changes-required" for r in feedback) else "pending"
 
 class NoRedirect(HTTPRedirectHandler):
     def redirect_request(self, *args, **kwargs):

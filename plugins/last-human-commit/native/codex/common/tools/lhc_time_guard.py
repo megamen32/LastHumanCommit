@@ -9,6 +9,7 @@ import hashlib
 import json
 import os
 import re
+import shlex
 import subprocess
 import sys
 import tempfile
@@ -691,6 +692,141 @@ def business_clock_sample():
     return active_tool().clock_sample()
 
 
+def update_execution_context(business, prompt, payload, session_id):
+    """Preserve native user scope as source context, never as an auth token."""
+    context = business.setdefault("execution_context", {
+        "purpose": "preserve direct user scope and exceptions; harness remains the authority",
+        "direct_user_messages": [],
+    })
+    turn_ref = payload.get("turn_id") or payload.get("turnId") or "current"
+    prompt_ref = f"{turn_ref}:{hashlib.sha256(prompt.strip().encode()).hexdigest()[:12]}"
+    source = f"native-user-prompt:{session_id}:{prompt_ref}"
+    rows = context.setdefault("direct_user_messages", [])
+    if not rows or rows[-1].get("source") != source:
+        rows.append({"source": source, "prompt": prompt.strip()[:2048],
+                     "observed_at": str(payload.get("timestamp") or "native-event")[:64]})
+    del rows[:-4]
+
+
+def native_operation(payload):
+    """Extract an operation from executable fields, excluding workdir/log prose."""
+    name = str(payload.get("tool_name") or payload.get("toolName") or payload.get("tool") or "").casefold()
+    raw = payload.get("tool_input") or payload.get("arguments") or {}
+    command = (raw.get("cmd") or raw.get("command") or raw.get("script") or "") if isinstance(raw, dict) else str(raw)
+    try:
+        words = shlex.split(str(command))
+    except ValueError:
+        words = []
+    executable = Path(words[0]).name.casefold() if words else ""
+    if executable in {"bash", "sh", "zsh"}:
+        index = next((i for i, word in enumerate(words) if word in {"-c", "-lc"}), None)
+        if index is not None and index + 1 < len(words):
+            nested = dict(payload, tool_input={"cmd": words[index + 1]})
+            return native_operation(nested)
+    if executable in {"echo", "printf", "cat", "pwd", "ls", "rg", "grep", "find"}:
+        return "unknown", "unknown"
+    if executable == "git" and len(words) > 1:
+        if words[1] in {"status", "diff", "show", "log"}:
+            return "inspection", "unknown"
+    verbs = {"deploy", "deployment", "rollout", "publish", "release", "check", "test", "verify",
+             "build", "build-status", "build-start"}
+    operation = ""
+    if executable in verbs:
+        operation = executable
+    elif executable in {"python", "python3", "node", "bash", "sh"}:
+        script_index = next((i for i, word in enumerate(words[1:], 1)
+                             if Path(word).suffix in {".py", ".js", ".mjs", ".sh"}), None)
+        if script_index is not None and script_index + 1 < len(words):
+            candidate = words[script_index + 1].casefold()
+            if candidate in verbs:
+                operation = candidate
+    elif executable in {"npm", "pnpm", "yarn"} and len(words) > 2 and words[1] in {"run", "exec"}:
+        candidate = words[2].casefold().split(":", 1)[0]
+        if candidate in verbs:
+            operation = candidate
+    if not operation:
+        specialized = re.search(r"(?:^|[._-])(deploy|publish|release|browser|playwright)(?:$|[._-])", name)
+        operation = specialized.group(1) if specialized else ""
+    target = "unknown"
+    operation_index = next((i for i, word in enumerate(words) if word.casefold() == operation), None)
+    if operation and operation_index is not None:
+        args = words[operation_index + 1:]
+        target = next((word.casefold() for word in args if word.casefold() in {"demo", "private", "production"}), "unknown")
+        if target == "unknown":
+            target = next((word.split("=", 1)[1].casefold() for word in args
+                           if word.startswith("--target=") and word.split("=", 1)[1].casefold() in {"demo", "private", "production"}), "unknown")
+    return operation or "unknown", target
+
+
+def record_native_action(business, payload, event, session_id, now):
+    """Record references to observed native tool outcomes; never infer delivery."""
+    if event in {"posttooluse", "posttoolusefailure", "tool.execute.after"}:
+        response = payload.get("tool_response") or payload.get("result") or {}
+        if not isinstance(response, dict):
+            response = {}
+        name = str(payload.get("tool_name") or payload.get("toolName") or payload.get("tool") or "native-tool")[:100]
+        call_id = str(payload.get("tool_call_id") or payload.get("call_id") or payload.get("toolUseId") or "")[:120]
+        operation, target = native_operation(payload)
+        status = str(response.get("status") or response.get("state") or "")[:40].lower()
+        output = str(response.get("output") or response.get("stdout") or response.get("content") or "")
+        job_id = str(response.get("job_id") or response.get("jobId") or response.get("session_id") or "")[:120]
+        terminal_status = status in {"completed", "complete", "succeeded", "success", "failed",
+                                     "error", "cancelled", "canceled", "terminated", "exited", "done", "finished"}
+        terminal_exit = response.get("exit_code") is not None
+        terminal = terminal_status or terminal_exit
+        running = not terminal and (status in {"running", "queued", "pending"} or (
+            response.get("exit_code") is None and bool(job_id)) or bool(
+                re.search(r"process running with session id|session id\s*[:=]?\s*\d+", output, re.I)))
+        if not job_id and running:
+            match = re.search(r"session id\s*[:=]?\s*(\d+)", output, re.I)
+            if match:
+                job_id = match.group(1)
+        jobs = business.setdefault("running_jobs", {})
+        if job_id and running:
+            jobs[job_id] = {"tool": name, "status": status or "running", "operation": operation,
+                            "target": target, "source": f"native-tool:{session_id}:{call_id or name}",
+                            "observed_at": now.isoformat()}
+        elif job_id and job_id in jobs:
+            jobs.pop(job_id, None)
+        if (response.get("exit_code", 0) not in {0, None} or response.get("isError") or
+                status in {"failed", "error", "cancelled", "canceled", "terminated"} or
+                event == "posttoolusefailure"):
+            outcome = "failed"
+        elif running:
+            outcome = "running"
+        else:
+            outcome = "returned"
+        evidence = business.setdefault("tool_observations", [])
+        review = business.get("last_review") or {}
+        proposed = str(review.get("proposed_next_action") or review.get("next_action") or "").casefold()
+        relevant = False
+        if proposed and operation != "unknown":
+            if re.search(r"deploy|deployment|выкат|развер", proposed):
+                relevant = operation in {"deploy", "deployment", "rollout"}
+            elif re.search(r"consumer|потребител", proposed):
+                relevant = operation in {"check", "browser", "playwright"}
+            elif re.search(r"test|verify|check|провер|тест", proposed):
+                relevant = operation in {"check", "test", "verify", "browser", "playwright"}
+            elif re.search(r"build|сборк", proposed):
+                relevant = operation in {"build", "build-status", "build-start"}
+        observation = {"source": f"native-tool:{session_id}:{call_id or name}", "tool": name,
+                         "operation": operation, "target": target,
+                         "outcome": outcome, "relation": "relevant" if relevant else ("unrelated" if proposed else "unclassified"),
+                         "observed_at": now.isoformat()}
+        evidence.append(observation)
+        del evidence[:-16]
+        relevant_evidence = business.setdefault("action_evidence", [])
+        if relevant:
+            relevant_evidence.append(observation)
+            del relevant_evidence[:-16]
+            if review:
+                review["action_status"] = ("action-running" if outcome == "running" else
+                                           "action-attempt-failed" if outcome == "failed" else "action-result-observed")
+            business["action_evidence_sequence"] = max(
+                business.get("action_evidence_sequence", 0), len(relevant_evidence) - 1
+            ) + 1
+
+
 def business_checkpoint(args, cwd: Path, session_id: str, payload: dict,
                         *, acknowledge: bool = False) -> dict[str, Any]:
     """Record hourly original-goal direction, independently of milestone acceptance.
@@ -723,6 +859,7 @@ def business_checkpoint(args, cwd: Path, session_id: str, payload: dict,
         prompt = payload.get("prompt") or payload.get("text")
         if event in {"userpromptsubmit", "chat.message"} and isinstance(prompt, str) and prompt.strip():
             full_prompt = prompt.strip()
+            update_execution_context(business, full_prompt, payload, session_id)
             is_original_prompt = not business.get("original_prompt")
             business["original_prompt"] = business["original_prompt"] or full_prompt[:4096]
             business["latest_prompt"] = full_prompt[:4096]
@@ -738,6 +875,7 @@ def business_checkpoint(args, cwd: Path, session_id: str, payload: dict,
                     business.pop("latest_prompt_full", None)
             if payload.get("transcript_path") and args.runtime != "zcode":
                 business["transcript_path"] = str(payload["transcript_path"])[:1024]
+        record_native_action(business, payload, event, session_id, now)
         measured = None
         clock_source = "wall-clock fallback: complete native active/idle lifecycle unavailable"
         interval = business.get("interval")
@@ -789,6 +927,18 @@ def business_checkpoint(args, cwd: Path, session_id: str, payload: dict,
                 raise ValueError("cite 1..8 original user source references")
             review = {"id": pending["id"], "at": now.isoformat(), "source_refs": refs,
                       **{field: text(field) for field in ("business_result", "scope_decision", "next_action")}}
+            action_evidence = business.get("action_evidence", [])
+            sequence = business.get("action_evidence_sequence", len(action_evidence))
+            review.update(action_status="decision-only", action_evidence_count=sequence)
+            previous = business.get("last_review") or {}
+            if (previous.get("next_action") == review["next_action"] and
+                    previous.get("action_evidence_count", 0) == sequence):
+                review["repeated_review_without_action"] = True
+                review["proposed_next_action"] = review["next_action"]
+                review["next_action"] = (
+                    "Change the next step: perform the nearest permitted action or record the exact external dependency; "
+                    "do not repeat the same access/status check."
+                )
             # 1.4.3: keep old callers' optional observations without requiring a
             # blind test every hour or interpreting them as milestone acceptance.
             zk_fields = ("zk_session", "zk_result", "zk_evidence")
