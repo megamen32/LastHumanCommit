@@ -10,6 +10,12 @@ make implementation expensive to redo. A clear bounded change can proceed throug
 the existing implementation route. Scale design effort to the uncertainty that
 could change the solution; do not fill out stages merely because this skill exists.
 
+For a large fullcycle, the mandatory route is bounded independent research Workers → working→ideal→YAGNI → quota-aware frontier council → bounded dispatch.
+Research precedes the plan; the final selected YAGNI goes through the existing council skill
+with alternatives/crosschallenge/business cost/dissent and verified live model availability.
+Quickfix/testing/assigned leaf do not start this research/council loop or hire recursively.
+Reuse the completed council; no new round without a substantive changed decision.
+
 ## Recover current inputs and applicable learning
 
 Begin with the latest objective and corrections, actual project state and
@@ -75,8 +81,8 @@ accepted product scope. Keep or discard prototype code according to its fitness.
 
 Use a fresh independent challenger through `../challenge-decision/SKILL.md` with
 the raw objective, constraints, proposed design and probe evidence. Ask for
-counterexamples and better alternatives, not endorsement. For difficult competing
-approaches where additional independent reasoning can change the choice, use
+counterexamples and better alternatives, not endorsement. For other architecture
+tasks with competing approaches where additional reasoning changes the choice, use
 `../council/SKILL.md`.
 
 Revise or synthesize the design using substantive findings. Have the independent

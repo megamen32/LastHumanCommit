@@ -32,6 +32,7 @@ def context_for(event, root):
         "Одна цель — один delivery owner: готовые gates→разрешённый test/demo deploy→consumer check→независимая milestone-приёмка. "
         "Ограниченный leaf quickfix с запретом делегирования закрывает своё задание через native self-check; не нанимай reviewer ради state. "
         "Lead делегирует implementation: маленькая задача = один bounded Worker + Lead review. "
+        "Большой fullcycle: bounded independent research Workers → working→ideal→YAGNI → quota-aware frontier council → bounded dispatch; quickfix/testing/assigned leaf не запускают этот полный цикл. "
         "Direction review и receipt не доказывают действие или доставку; partial остаётся pending. "
         "Прямые prompts хранятся как контекст, не permission: соблюдай policy текущего harness, human stop и свежую ревокацию. "
         "Ошибка одной поверхности не запрещает независимую работу. Повтор неизменного blocker/status меняй на конкретное действие. "

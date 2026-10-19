@@ -35,3 +35,13 @@ def test_useful_method_does_not_restore_report_ritual():
     assert "three-line minimal path" not in router
     assert "маленькая — один bounded Worker и Lead review" in router
     assert "Назначенный leaf без делегирования" in router
+
+
+def test_large_fullcycle_routes_research_before_plan_and_final_council_before_dispatch():
+    for path in ('AGENTS.md', 'src/common/agents/Lead.md', 'src/common/skills/architecture-design/SKILL.md'):
+        text = (ROOT/path).read_text()
+        route = ['bounded independent research Workers', 'working→ideal→YAGNI', 'quota-aware frontier council', 'bounded dispatch']
+        positions = [text.index(step) for step in route]
+        assert positions == sorted(positions), path
+        for invariant in ('alternatives', 'crosschallenge', 'business cost', 'dissent', 'Quickfix/testing/assigned leaf'):
+            assert invariant in text, (path, invariant)
