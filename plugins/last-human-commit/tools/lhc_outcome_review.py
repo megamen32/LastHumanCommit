@@ -246,7 +246,7 @@ def cli_matches(words, target, cwd):
 
 
 def scope_names_script(scope, script):
-    return bool(re.search(r'(?<![\w.-])(?:' + re.escape(script.name) + '|' + re.escape(script.stem) + r')(?![\w.-])', scope, re.I))
+    return bool(re.search(r'(?<![\w.-])(?:' + re.escape(script.name) + '|' + re.escape(script.stem) + r')(?![\w-]|\.[\w/-])', scope, re.I))
 
 
 def equivalent_target(old, new, cwd, scope):
@@ -395,16 +395,17 @@ def expected_compared(expected, final, observations, defect):
         return False
     outputs = '\n'.join(output for _, output in observations)
     csv = re.findall(r'(?<![\w,])[\w]+,[\w]+(?![\w,])', expected)
-    numbers = re.findall(r'(?<!\w)\d+(?!\w)', expected)
+    number_pattern = r'(?<![\w.+-])[-+]?\d+(?:\.\d+)?(?![\w.])'
+    numbers = re.findall(number_pattern, expected)
+    number_in = lambda value, text: re.search(r'(?<![\w.+-])' + re.escape(value) + r'(?![\w.])', text)
     if not csv and not (numbers and re.search(r'total|сумм|exit|status|статус|код', expected, re.I)):
         return False
     if csv and not all(normalize(value) in normalize(outputs) for value in csv):
         return False
-    if numbers and not all(re.search(r'(?<!\d)' + value + r'(?!\d)', final) for value in numbers):
+    if numbers and not all(number_in(value, final) for value in numbers):
         return False
     data = re.sub(r'exit\s*[:=]?\s*\d+|код(?:\s+выхода)?\s*[:=]?\s*\d+', '', expected, flags=re.I)
-    return defect or all(re.search(r'(?<!\d)' + value + r'(?!\d)', outputs)
-                         for value in re.findall(r'(?<!\w)\d+(?!\w)', data))
+    return defect or all(number_in(value, outputs) for value in re.findall(number_pattern, data))
 
 
 def raw_review(outcome, final, observations, cwd):

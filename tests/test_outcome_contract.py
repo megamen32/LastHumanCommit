@@ -1036,3 +1036,9 @@ def test_project_alias_cannot_choose_foreign_or_ambiguous_script(tmp_path,scope)
     observations=[observed('unrelated.py')]
     if 'and' in scope:observations.append(observed('total.py'))
     with pytest.raises(ValueError):consumer_target(outcome,observations,tmp_path)
+
+
+def test_raw_numeric_comparison_does_not_drop_the_sign():
+    from lhc_outcome_review import expected_compared
+    assert not expected_compared('total -1','Expected total 1; matched CLI output 1',[({},'1')],False)
+    assert expected_compared('total -1','Expected total -1; matched CLI output -1',[({},'-1')],False)
