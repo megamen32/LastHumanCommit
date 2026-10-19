@@ -116,6 +116,8 @@ or local `file://` URI) against the actual native cwd, including Codex's file-UR
 cwd metadata. A `project:<cwd>` target resolves only to one actual scope path
 (and owned product for engineering); a nested basename is not the root script.
 Foreign/unnamed/ambiguous scripts cannot close it.
+Bare product names imply a script only in explicit CLI/script scope; a checkout
+UI request cannot become a similarly named checkout.py invocation.
 An equivalent target spelling preserves the existing evidence window. Unknown
 compound shell formats need one direct supported reread with a precise reason,
 not a contract/review retry loop; echo is never consumer evidence. Failed actual

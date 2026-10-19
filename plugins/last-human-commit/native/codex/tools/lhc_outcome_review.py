@@ -251,7 +251,7 @@ def scope_names_script(scope, script, cwd):
     if script.is_relative_to(cwd):
         relative = script.relative_to(cwd).as_posix()
         names += [relative, './' + relative]
-        if script.parent == cwd:
+        if script.parent == cwd and re.search(r'\bCLI\b|command.line|командн.{0,15}строк|скрипт', scope, re.I):
             names.append(script.stem)
     return bool(re.search(r'(?<![\w./-])(?:' + '|'.join(re.escape(n) for n in names) + r')(?![\w-]|\.[\w/-])', scope, re.I))
 

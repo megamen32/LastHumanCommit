@@ -1080,3 +1080,11 @@ def test_explicit_owned_nested_cli_works_without_rebinding_the_root_name(tmp_pat
     output=subprocess.check_output(['python3','foreign/total.py'],cwd=tmp_path,text=True)
     assert consumer_target(outcome,[(call,output)],tmp_path)==str(tmp_path/'foreign/total.py')
     assert not equivalent_target('project:'+str(tmp_path),'python3 foreign/total.py',tmp_path,'Fix the root total.py CLI.')
+
+
+def test_project_ui_surface_does_not_become_a_similarly_named_cli(tmp_path):
+    from lhc_outcome_review import consumer_target
+    outcome={'original_goal':'Only test the checkout UI. Do not modify code.','task_class':'testing',
+             'canary':{'target':'project:'+str(tmp_path)}}
+    call={'name':'exec_command','arguments':json.dumps({'cmd':'python3 checkout.py two','workdir':str(tmp_path)})}
+    with pytest.raises(ValueError):consumer_target(outcome,[(call,'20')],tmp_path)
