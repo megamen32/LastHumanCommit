@@ -369,7 +369,7 @@ def accept_review(outcome, state, path, cwd, owner):
             raise ValueError('remote stage requires its exact contract target/expected readback')
         if stage == 'consumer' and not browser_journey(refs, by_call, canary['target']):
             raise ValueError('browser open/login alone is not the assigned action and result')
-        if stage == 'integration':
+        if stage == 'integration' or (stage == 'publication' and outcome.get('integration_policy')):
             policy = outcome.get('integration_policy')
             if not policy:
                 raise ValueError('integration target/ownership unresolved; never default to main')
@@ -388,7 +388,7 @@ def accept_review(outcome, state, path, cwd, owner):
             reads = [ref for ref in refs if target_readback(ref) and real_observation(*by_call[ref], claim['target'], stage, outcome['task_class'], cwd, claim['expected'])]
             if not reads:
                 raise ValueError('integration readback must prove the configured branch/head')
-            if policy.get('release_owner'):
+            if stage == 'integration' and policy.get('release_owner'):
                 smoke = [ref for ref in refs if real_observation(*by_call[ref], canary['target'], 'consumer', outcome['task_class'], cwd)
                          and call_order[ref] > max(call_order[r] for r in reads)]
                 if not smoke or not browser_journey(smoke, by_call, canary['target']):

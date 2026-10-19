@@ -121,7 +121,7 @@ def review_export(root, outcome, *, product='pass', stage_names=('technical', 'c
             # Explicit native-format fixtures, NOT live release receipts. Unlike
             # a generic nonempty string, the readback binds target and version.
             output = json.dumps({'version': 'v2'} if stage == 'deploy' else
-                                {'url': 'https://github.com/owned/project/pull/1', 'state': 'OPEN', 'headRefOid': 'a' * 40} if stage == 'publication' else
+                                {'url': 'https://github.com/owned/project/pull/1', 'state': 'OPEN', 'headRefOid': 'a' * 40, 'baseRefName': 'main'} if stage == 'publication' else
                                 {'url': 'https://github.com/owned/project/pull/1', 'state': 'MERGED', 'mergedAt': now, 'mergeCommit': {'oid': 'b' * 40}, 'baseRefName': 'main'})
             if stage == 'deploy' and bad_deploy:
                 cmd = 'git rev-parse HEAD'
@@ -730,22 +730,22 @@ def test_shared_upstream_main_cannot_be_selected(tmp_path):
         '--integration-remote','origin','--integration-ownership','shared',ok=False)
 
 
-def integration_contract(root, outcome, branch='main', ownership='owned', owner=None):
+def integration_contract(root, outcome, branch='main', ownership='owned', owner=None, publication_branch=None):
     args = ['contract', '--scenario', outcome['canary']['scenario'], '--target', outcome['canary']['target'],
         '--expected', outcome['canary']['expected'], '--owned-path', 'total.py',
         '--scope-source', outcome['scope_sources'][0]['source'], '--integration-branch', branch,
         '--integration-remote', 'origin', '--integration-ownership', ownership]
     if owner:
         args += ['--release-owner', owner, '--stage-target', 'integration=git ls-remote origin refs/heads/' + branch,
-            '--stage-expected', 'integration=' + 'b' * 40, '--stage-target', 'publication=git ls-remote origin refs/heads/' + branch,
+            '--stage-expected', 'integration=' + 'b' * 40, '--stage-target', 'publication=git ls-remote origin refs/heads/' + (publication_branch or branch),
             '--stage-expected', 'publication=' + 'b' * 40, '--stage-target', 'deploy=https://demo.test/version', '--stage-expected', 'deploy=v2']
     return cli(root, *args)
 
 
-@pytest.mark.parametrize('smoke,branch', [(True, 'megamen32-dev'), (False, 'megamen32-dev'), (True, 'main')])
-def test_dev_history_without_worker_pr_closes_only_after_target_and_integrated_smoke(tmp_path, smoke, branch):
+@pytest.mark.parametrize('smoke,branch,publication_branch', [(True, 'megamen32-dev', 'megamen32-dev'), (False, 'megamen32-dev', 'megamen32-dev'), (True, 'main', 'main'), (True, 'megamen32-dev', 'foreign')])
+def test_dev_history_without_worker_pr_closes_only_after_target_and_integrated_smoke(tmp_path, smoke, branch, publication_branch):
     outcome = anchored(tmp_path, 'Implement the complete total CLI, integrate into Airlock megamen32-dev. Oleg handles upstream main.')
-    outcome = integration_contract(tmp_path, outcome, 'megamen32-dev', 'shared', 'Oleg')
+    outcome = integration_contract(tmp_path, outcome, 'megamen32-dev', 'shared', 'Oleg', publication_branch)
     manifest = review_export(tmp_path, outcome, stage_names=('technical','deploy','consumer','publication','integration'))
     data = json.loads(manifest.read_text()); source = Path(data['target']['source']['location'])
     rows = [json.loads(line) for line in source.read_text().splitlines()]
@@ -754,9 +754,9 @@ def test_dev_history_without_worker_pr_closes_only_after_target_and_integrated_s
         p = row.get('payload', {})
         if p.get('call_id') in {'call-3', 'call-4'}:
             if p['type'] == 'function_call':
-                p['arguments'] = json.dumps({'cmd':'git ls-remote origin refs/heads/' + branch})
+                p['arguments'] = json.dumps({'cmd':'git ls-remote origin refs/heads/' + (publication_branch if p['call_id']=='call-3' else branch)})
             else:
-                p['output'] = 'b' * 40 + '\trefs/heads/' + branch + '\n'
+                p['output'] = 'b' * 40 + '\trefs/heads/' + (publication_branch if p['call_id']=='call-3' else branch) + '\n'
     if smoke:
         stamp = rows[-1]['timestamp']
         rows[-1:-1] = [
@@ -765,8 +765,8 @@ def test_dev_history_without_worker_pr_closes_only_after_target_and_integrated_s
         report['stages']['integration']['evidence_calls'].append('smoke')
     rows[-1]['payload']['content'][0]['text'] = 'Observed branch history and integrated smoke.\nLHC_OUTCOME_REVIEW ' + json.dumps(report)
     raw = '\n'.join(json.dumps(row) for row in rows) + '\n'; source.write_text(raw); Path(data['target']['path']).write_text(raw)
-    result = cli(tmp_path, 'review', '--manifest', str(manifest), ok=smoke and branch=='megamen32-dev')
-    if smoke and branch=='megamen32-dev':
+    result = cli(tmp_path, 'review', '--manifest', str(manifest), ok=smoke and branch==publication_branch=='megamen32-dev')
+    if smoke and branch==publication_branch=='megamen32-dev':
         assert result['finish_verdict'] == 'complete'
         assert result['release_handoff']['status'] == 'awaiting-owner'
         assert result['release_handoff']['owner'] == 'Oleg'

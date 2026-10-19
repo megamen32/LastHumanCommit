@@ -33,4 +33,5 @@ def test_useful_method_does_not_restore_report_ritual():
     assert "три шага проектирования" in router
     assert "не три отдельных отчёта" in router
     assert "three-line minimal path" not in router
-    assert "Маленькую задачу делай напрямую" in router
+    assert "маленькая — один bounded Worker и Lead review" in router
+    assert "Назначенный leaf без делегирования" in router
