@@ -80,3 +80,23 @@ ends at the original final; missing time/order is explicit unsupported evidence.
 HTTP positive controls use the configured actual operation; fake printf delivery
 and echo answer remain blocked even after a real-shaped MCP delivery receipt.
 Package regenerated; next frozen SHA gets a fresh full validator and delta review.
+
+21:35UTC native gate: b694de5 exact full validator375passed127.47s, Bun12pass,
+independent delta NO BLOCKING. Immutable artifact loaded by ordinary OpenCode
+MiniMax direct native ses_ea9f1fd57ffe7pM8lVh4ksNGFB: actual1.5.0 root in state;
+fixed export.py and exact UTF-8 CLI output. Coordinator independent CLI readback
+jobf9f28b9281955cb7c04f4ec5cfa89cf9 confirms CLI PASS. Workflow CHANGES_REQUIRED:
+mandatory generic review context caused create_session despite original no-delegate;
+unauthorized child ses_ea9eef8b3ffeH3fYaIOQFPrmtn. Neither counts as independent
+acceptance. Direct user requested stopping these two own test works: verified own
+CLI PID2705744 SIGINT; child already error, no stop/restart/replay. Evidence remains
+in .tmp/outcome-acceptance-20261019/opencode-quickfix, FINAL/STOP_RECEIPT.json.
+Learning correction: distinguish finished leaf assignment self-check from parent
+independent milestone acceptance; never hire reviewers to manufacture state close.
+RED no-delegation-red.log; scoped fix keeps existing native evidence floor and
+fullcycle/milestone gates, labels self-check honestly, preserves direct restriction
+through compaction. New native followup must use a fresh baseline copy, not erase
+this failure. No user-wide candidate install/publish/merge performed.
+Latest user permits reversible LHC-specific ordinary native manager installation
+for NEW sessions; unsupported Codex --profile plugin install is not required.
+Other plugins/models/MCP/auth/config and old immutable paths remain protected.

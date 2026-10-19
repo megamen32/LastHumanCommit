@@ -656,3 +656,58 @@ def test_native_command_execution_events_support_achievable_close(tmp_path, fore
         assert result['finish_verdict'] == 'complete'
     else:
         assert cli(tmp_path, 'status')['finish_verdict'] == 'pending'
+
+
+NO_DELEGATE_PROMPT = ('Экспорт CSV портит кириллицу. Исправь небольшую ошибку в export.py, '
+    'проверь регрессию и настоящий запуск CLI: должны выйти ровно две строки с именами '
+    'Ирина и Олег и городами Москва и Казань без потери символов. Работай только здесь. '
+    'Без deploy, без push, без merge и внешних действий. Не делегируй; сохрани '
+    'фактический результат и ограничения в FEEDBACK.md.')
+
+
+def test_native_no_delegation_quickfix_has_achievable_self_check(tmp_path):
+    outcome = anchored(tmp_path, NO_DELEGATE_PROMPT)
+    assert outcome['delegation_prohibited'] is True
+    context = invoke(tmp_path, 'SessionStart')
+    assert 'самопровер' in json.dumps(context, ensure_ascii=False)
+    manifest = review_export(tmp_path, outcome, sid='leader',
+        raw_final='PASS. Regression tests passed; python3 total.py output 0 matched expected 0. Self-check only.')
+    result = cli(tmp_path, 'review', '--manifest', str(manifest))
+    assert result['finish_verdict'] == 'complete'
+    assert result['verification_level'] == 'self-check'
+    assert result['stages']['consumer']['evidence'][0]['verification_level'] == 'self-check'
+    assert invoke(tmp_path, 'Stop').get('decision') != 'block'
+
+
+def test_no_delegation_does_not_allow_fullcycle_self_acceptance(tmp_path):
+    outcome = anchored(tmp_path, 'Implement the complete total CLI and deliver the full cycle. Do not delegate.')
+    manifest = review_export(tmp_path, outcome, sid='leader',
+        stage_names=('technical', 'deploy', 'consumer', 'publication', 'integration'))
+    cli(tmp_path, 'review', '--manifest', str(manifest), ok=False)
+    assert cli(tmp_path, 'status')['finish_verdict'] == 'pending'
+
+
+def test_no_delegation_quickfix_echo_cannot_self_close(tmp_path):
+    outcome = anchored(tmp_path, NO_DELEGATE_PROMPT)
+    manifest = review_export(tmp_path, outcome, sid='leader', command='echo 0')
+    cli(tmp_path, 'review', '--manifest', str(manifest), ok=False)
+    assert cli(tmp_path, 'status')['finish_verdict'] == 'pending'
+
+
+def test_no_delegation_self_check_works_before_final_via_native_commentary(tmp_path):
+    outcome = anchored(tmp_path, NO_DELEGATE_PROMPT)
+    manifest = review_export(tmp_path, outcome, sid='leader',
+        raw_final='PASS. Regression tests passed; python3 total.py output 0 matched expected 0. Self-check only.')
+    data = json.loads(manifest.read_text()); source = Path(data['target']['source']['location'])
+    rows = [json.loads(line) for line in source.read_text().splitlines()]
+    rows[-1]['payload']['phase'] = 'commentary'
+    raw = '\n'.join(json.dumps(row) for row in rows) + '\n'
+    source.write_text(raw); Path(data['target']['path']).write_text(raw)
+    assert cli(tmp_path, 'review', '--manifest', str(manifest))['finish_verdict'] == 'complete'
+
+
+def test_explicit_independent_acceptance_is_not_removed_by_no_delegation(tmp_path):
+    outcome = anchored(tmp_path, 'Fix the small total CLI. Independent review required. Do not delegate.')
+    manifest = review_export(tmp_path, outcome, sid='leader')
+    cli(tmp_path, 'review', '--manifest', str(manifest), ok=False)
+    assert cli(tmp_path, 'status')['finish_verdict'] == 'pending'

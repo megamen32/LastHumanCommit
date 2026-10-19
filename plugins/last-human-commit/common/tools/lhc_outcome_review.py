@@ -42,6 +42,9 @@ def load_review(path):
             if item.get('type') == 'CommandExecution':
                 call_meta.setdefault(item.get('id'), (index, row.get('timestamp')))
         result[0]['assignments'] = assignments
+        result[0]['own_reports'] = [{'index': i, 'at': row.get('timestamp'), 'text': native.content(row['payload'].get('content'))}
+                                    for i, row in enumerate(rows) if row.get('payload', {}).get('role') == 'assistant'
+                                    and native.content(row['payload'].get('content'))]
         result[0]['review_end_index'] = max((i for i, row in enumerate(rows) if row.get('payload', {}).get('role') == 'assistant'
                                             and row['payload'].get('phase') != 'commentary'), default=-1)
         for call, _ in result[2]:
@@ -64,6 +67,10 @@ def load_review(path):
                     stamp = (part.get('state') or {}).get('time', {}).get('start') or header.get('time', {}).get('created')
                     call_meta[part.get('callID') or part.get('id')] = (index, iso(stamp))
         result[0]['assignments'] = assignments
+        result[0]['own_reports'] = [{'index': i, 'at': iso((m.get('info') or m).get('time', {}).get('completed') or (m.get('info') or m).get('time', {}).get('created')),
+                                    'text': native.content(m.get('parts') or m.get('content')) or m.get('text', '')}
+                                   for i, m in enumerate(json.loads(raw)) if (m.get('info') or m).get('role') == 'assistant'
+                                   and (native.content(m.get('parts') or m.get('content')) or m.get('text'))]
         result[0]['review_end_index'] = max((i for i, message in enumerate(json.loads(raw))
                                             if (message.get('info') or message).get('role') == 'assistant'), default=-1)
         for call, _ in result[2]:
@@ -250,17 +257,26 @@ def raw_review(outcome, final, observations, cwd):
 
 
 def accept_review(outcome, state, path, cwd, owner):
+    from lhc_outcome import bounded_self_check
     meta, messages, observations = load_review(path)
     sid = meta.get('id') or meta.get('session_id')
-    own_attempt = sid == owner and outcome['task_class'] in {'testing', 'research'}
+    own_attempt = sid == owner and (outcome['task_class'] in {'testing', 'research'} or bounded_self_check(outcome))
     if (sid == owner and not own_attempt) or Path(meta.get('cwd', '/unknown')).resolve() != cwd:
         raise ValueError('review must be independent and for this exact project')
+    own_report = next(iter(reversed(meta.get('own_reports', []))), None) if own_attempt else None
+    if own_report:
+        # Own commentary is available before the final response; source call
+        # order still ends at that actual report, never at a later export call.
+        meta['review_end_index'] = own_report['index']
+        meta['reviewed_at'] = own_report['at']
     if native.timestamp(meta.get('reviewed_at') or meta['timestamp']) < native.timestamp(outcome['started_at']):
         raise ValueError('stale reviewer')
     if not outcome.get('contract_confirmed'):
         raise ValueError('confirm the concrete contract first')
     prompt = '\n'.join(text for role, text, _ in messages if role == 'user')
     final = next((text for role, text, phase in reversed(messages) if role == 'assistant' and (phase != 'commentary' or own_attempt)), '')
+    if own_report:
+        final = own_report['text']
     if (outcome['id'] not in prompt and not own_attempt) or outcome['original_goal'] not in prompt:
         raise ValueError('review assignment must identify the outcome')
     if any(correction not in prompt for correction in outcome.get('corrections', [])):
@@ -355,10 +371,12 @@ def accept_review(outcome, state, path, cwd, owner):
     for stage, row in updates.items():
         outcome['stages'][stage].update(status='complete', evidence=[{
             'manifest': str(path.resolve()), 'reviewer': sid, 'revision': revision,
+            'verification_level': 'self-check' if own_attempt else 'independent-review',
             'calls': row['evidence_calls'], 'expected': row['expected'], 'observed': row['observed'],
         }])
     if staging:
         outcome['staging_push'] = {**staging, 'manifest': str(path.resolve()), 'reviewer': sid}
     outcome.update(product_verdict=product, revision=revision, coverage_evidence=report.get('coverage', {}))
+    outcome['verification_level'] = 'self-check' if own_attempt else 'independent-review'
     outcome['canary']['status'] = 'complete' if 'consumer' in completed else 'pending'
     outcome['sources'] = list(dict.fromkeys([*outcome.get('sources', []), str(path.resolve())]))

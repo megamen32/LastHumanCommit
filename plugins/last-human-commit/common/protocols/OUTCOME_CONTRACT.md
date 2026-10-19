@@ -37,7 +37,19 @@ under an LHC task. Local checkpoint commits may precede deployment. A genuine CI
 branch-push dependency may precede deployment only as a recorded staging-push
 exception (branch, reason, dependent stage, native refs); it is not final acceptance.
 
-## One source-backed independent review, not a verifier per field
+## Source-backed assignment close and independent milestone acceptance
+
+A bounded quickfix with a direct no-delegation restriction and no applicable
+deploy/publication/integration stages may close its own assignment with native
+technical tests and actual CLI/consumer observations plus original expected-vs-
+observed feedback. Export its own transcript and use the same `review --manifest`
+route below; no author-supplied PASS file or weaker provenance path is added.
+The stored level is `self-check`, never independent product acceptance. Preserve
+raw FEEDBACK and limitations. Worker/testing/research assignment completion does
+not accept the broader parent outcome. Fullcycle and pending milestone acceptance
+retain their independent gates. A no-delegation restriction never authorizes a
+new reviewer session: hand off finished work to the assigned coordinator when
+independent acceptance remains required; do not create a review loop to close state.
 
 Use an existing independent reviewer for the actual accepted canary, target and
 owned revision. One review can cover several stages/scenarios. Pass original accepted scope/latest corrections, outcome id,

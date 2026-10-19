@@ -27,6 +27,17 @@ TEST = re.compile(r'\b(?:test|tester|testing|try|verify)\b|тестиров|пр
 RESEARCH = re.compile(r'\b(?:research|review|audit|inspect|explain|investigate|read.only)\b|исслед|ревью|аудит|объясни|прочитай', re.I)
 ACTIONABLE_UNKNOWN = re.compile(r'^\s*(?:please\s+)?(?:ensure|resolve|refactor|optimize|migrate|обеспечь|перенеси|проведи)\b', re.I)
 HOLD = {'Interrupt', 'SessionEnd', 'PermissionRequest', 'session.error', 'ToolFailure'}
+NO_DELEGATION = re.compile(r"не\s+делегируй|не\s+нанимай|\b(?:do not|don't|never)\s+delegate\b|\bno\s+delegation\b", re.I)
+
+
+def bounded_self_check(outcome):
+    # A leaf assignment can finish without claiming the parent's independent
+    # milestone acceptance. A scope restriction never removes remote stages.
+    scope = '\n'.join([outcome['original_goal'], *outcome.get('corrections', [])])
+    independent = re.search(r'independent\s+(?:review|acceptance)|независим.{0,25}(?:при[её]м|ревью|review)', scope, re.I)
+    return (outcome['task_class'] == 'quickfix' and outcome.get('delegation_prohibited') and not independent
+            and all(outcome['stages'][s]['status'] == 'not-applicable'
+                    for s in ('deploy', 'publication', 'integration')))
 
 
 def digest(value):
@@ -129,6 +140,7 @@ def observe(state, event, name, cwd, session, now):
             'original_goal': goal, 'latest_correction': goal, 'task_class': kind,
             'started_at': now.isoformat(), 'cwd': str(cwd), 'native_source': business.get('transcript_path'), 'contract_confirmed': kind == 'status',
             'evidence_after': now.isoformat(),
+            'delegation_prohibited': bool(NO_DELEGATION.search(goal)),
             'canary': {'scenario': goal[:512], 'target': target, 'expected': expected[:512], 'status': 'pending'},
             'owned_paths': [], 'stages': applicable(kind, goal), 'used_continuations': [],
             'class_confirmed': False, 'scope_sources': list(business.get('execution_context', {}).get('direct_user_messages', [])),
@@ -138,6 +150,8 @@ def observe(state, event, name, cwd, session, now):
     if not outcome:
         return None
     if human and prompt != outcome['original_goal']:
+        if NO_DELEGATION.search(prompt):
+            outcome['delegation_prohibited'] = True
         outcome['latest_correction'] = prompt
         # Read-only/status/peer updates cannot erase a previously accepted repair.
         kind = classify(prompt)
@@ -225,13 +239,23 @@ def observe_job_progress(outcome, business, event, cwd):
 
 
 def reminder(outcome, tool):
+    review_route = ('Ограниченный quickfix без делегирования: закончи само задание через реальные tests + CLI и '
+                    'самопроверку собственного native transcript (export_transcript → review --manifest). '
+                    'Сначала напиши raw expected/observed отдельным сообщением commentary, сохрани FEEDBACK; уровень self-check, '
+                    'не independent acceptance родительского продукта. '
+                    if bounded_self_check(outcome) else
+                    'Для engineering milestone нужен существующий независимый source-backed review через review --manifest. ')
+    if outcome.get('delegation_prohibited'):
+        review_route += ('Прямой запрет делегирования: не создавай, не запускай и не возобновляй reviewer/tester sessions. '
+                         'Если независимая приёмка всё ещё нужна, передай готовый результат назначенному координатору; '
+                         'не нанимай проверяющего ради закрытия state. ')
     return ('LHC outcome: ' + outcome['task_class'] + '; ' + outcome['finish_verdict'] +
             '. Canary: ' + json.dumps(outcome['canary'], ensure_ascii=False) +
             '. Следующий этап: ' + str(next_stage(outcome)) +
             '. Сначала конкретизируй scenario/target/expected и owned paths через python3 ' + shlex.quote(str(tool)) +
             ' --cwd ' + shlex.quote(outcome['cwd']) + ' --runtime ' + outcome['owner']['harness'] +
             ' --session-id ' + shlex.quote(outcome['owner']['session_id']) +
-            ' contract --help; затем реальные действия и один независимый source-backed review через review --manifest. '
+            ' contract --help; затем реальные действия. ' + review_route +
             'Refs, echo, pytest и собственный PASS не заменяют исходный canary. Testing может complete при product=changes-required; '
             'не нанимай вложенных тестировщиков. Human stop/permission не обходить. Вопрос человеку: question --message; '
             'existing bound request → Notify card → sent receipt → canonical answer; receipt != answer. '

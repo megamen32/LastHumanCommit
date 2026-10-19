@@ -30,6 +30,7 @@ def context_for(event, root):
         "Обычный engineering prompt, без @LHC: до кода назови пользователя, исход, что раньше и что после, место проверки. "
         "Спроектируй рабочий→идеальный→80%-полезный минимум. Баг: RED→fix→GREEN→сценарий. "
         "Одна цель — один delivery owner: готовые gates→разрешённый test/demo deploy→consumer check→независимая milestone-приёмка. "
+        "Ограниченный leaf quickfix с запретом делегирования закрывает своё задание через native self-check; не нанимай reviewer ради state. "
         "Direction review и receipt не доказывают действие или доставку; partial остаётся pending. "
         "Прямые prompts хранятся как контекст, не permission: соблюдай policy текущего harness, human stop и свежую ревокацию. "
         "Ошибка одной поверхности не запрещает независимую работу. Повтор неизменного blocker/status меняй на конкретное действие. "
@@ -83,7 +84,7 @@ def rehydrate(state, state_path=None):
         restored["action_evidence"] = business["action_evidence"][-8:]
     if business.get('outcome'):
         restored['outcome_contract'] = {key: business['outcome'].get(key) for key in
-            ('id', 'owner', 'task_class', 'actionable', 'canary', 'stages', 'stage_claims', 'revision', 'coverage', 'finish_verdict', 'question')}
+            ('id', 'owner', 'task_class', 'actionable', 'canary', 'stages', 'stage_claims', 'revision', 'coverage', 'finish_verdict', 'question', 'delegation_prohibited', 'verification_level')}
         # Original/latest native sources already appear above; do not inject
         # duplicate scope histories and full native review text on every resume.
     native_entry = state.get("native_entry") or {}
