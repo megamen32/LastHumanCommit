@@ -47,7 +47,8 @@ def digest(value):
 def positive_intent(goal):
     # Bounded clause handling, never a permission parser. Preserve raw scope;
     # the Lead confirms the hypothesis against the actual native user source.
-    return re.sub(r"\b(?:do not|don't|never|no code changes)[^.?!\n]*|не (?:меняй|редактируй|создавай|деплой)[^.?!\n]*", '', goal, flags=re.I)
+    goal = re.sub(r'исправление[^.?!\n]*не\s+входит[^.?!\n]*', '', goal, flags=re.I)
+    return re.sub(r"\b(?:do not|don't|never|no code changes)[^.?!\n]*|не (?:меняй|редактируй|создавай|деплой|исправляй)[^.?!\n]*", '', goal, flags=re.I)
 
 
 def classify(goal):
@@ -276,11 +277,11 @@ def observe_job_progress(outcome, business, event, cwd):
 
 
 def reminder(outcome, tool):
-    review_route = ('Ограниченный quickfix без делегирования: закончи само задание через реальные tests + CLI и '
-                    'самопроверку собственного native transcript (export_transcript → review --manifest). '
+    review_route = ('Ограниченное собственное задание: закончи по реальным tests/CLI или assigned coverage и '
+                    'самопроверку собственного native transcript (review --native-self; Herder export_transcript → review --manifest тоже доступен). '
                     'Сначала напиши raw expected/observed отдельным сообщением commentary, сохрани FEEDBACK; уровень self-check, '
                     'не independent acceptance родительского продукта. '
-                    if bounded_self_check(outcome) else
+                    if bounded_self_check(outcome) or outcome['task_class'] in {'testing', 'research'} else
                     'Для engineering milestone нужен существующий независимый source-backed review через review --manifest. ')
     if outcome.get('delegation_prohibited'):
         review_route += ('Прямой запрет делегирования: не создавай, не запускай и не возобновляй reviewer/tester sessions. '
@@ -450,7 +451,9 @@ def main():
     contract.add_argument('--stage-target', action='append', default=[], metavar='STAGE=TARGET')
     contract.add_argument('--stage-expected', action='append', default=[], metavar='STAGE=EXPECTED')
     review = sub.add_parser('review')
-    review.add_argument('--manifest', type=Path, required=True)
+    route = review.add_mutually_exclusive_group(required=True)
+    route.add_argument('--manifest', type=Path)
+    route.add_argument('--native-self', action='store_true', help='read this own native Codex/OpenCode source without depending on Herder export CWD')
     question = sub.add_parser('question')
     question.add_argument('--message', required=True)
     sub.add_parser('status')
@@ -524,8 +527,9 @@ def main():
                         stage['status'] = 'pending'
             outcome['revision'] = scope_revision(outcome, cwd)
         elif args.command == 'review':
-            from lhc_outcome_review import accept_review
-            accept_review(outcome, state, args.manifest, cwd, args.session_id)
+            from lhc_outcome_review import accept_review, native_self_manifest
+            manifest = native_self_manifest(outcome, cwd, args.runtime, args.session_id) if args.native_self else args.manifest
+            accept_review(outcome, state, manifest, cwd, args.session_id)
         elif args.command == 'question':
             result = question_plan(outcome, args.message)
         outcome['finish_verdict'] = verdict(outcome, state)

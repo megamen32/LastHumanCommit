@@ -541,9 +541,16 @@ def opencode_transcript(target, raw):
     by_id = {(m.get("info") or m).get("id"): m for m in live}
     if any(not (m.get("info") or m).get("id") or by_id.get((m.get("info") or m).get("id")) != m for m in archived):
         raise ValueError("export does not match native messages")
+    return opencode_messages(info, archived)
+
+
+def opencode_messages(info, archived):
+    """Parse already source-verified native messages; do not infer provenance."""
+    sid = info['id']
     created = info["time"]["created"] / 1000
     meta = {"id": sid, "timestamp": datetime.fromtimestamp(created).astimezone().isoformat(),
-            "cwd": (info.get("location") or {}).get("directory") or info.get("directory")}
+            "cwd": (info.get("location") or {}).get("directory") or info.get("directory"),
+            "model": info.get("model")}
     messages, observations = [], []
     for message in archived:
         header = message.get("info") or message

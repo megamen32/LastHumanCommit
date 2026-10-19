@@ -848,3 +848,80 @@ def test_dev_merge_permission_cannot_be_promoted_to_main(tmp_path, permitted_bra
     assert outcome['integration_policy']['main_permission_confirmed'] is False
     manifest = review_export(tmp_path, outcome, stage_names=('technical','deploy','consumer','publication','integration'))
     cli(tmp_path, 'review', '--manifest', str(manifest), ok=False)
+
+
+def test_own_native_codex_source_can_close_without_herder_export(tmp_path):
+    outcome = anchored(tmp_path, NO_DELEGATE_PROMPT)
+    review_export(tmp_path, outcome, sid='leader', raw_final='PASS. Focused regression tests passed. python3 total.py output 0 matched expected 0. Self-check only.')
+    result = cli(tmp_path, 'review', '--native-self')
+    assert result['finish_verdict'] == 'complete'
+    assert result['verification_level'] == 'self-check'
+
+
+def test_native_self_fallback_does_not_accept_fullcycle(tmp_path):
+    anchored(tmp_path, 'Implement the complete total CLI. Do not delegate.')
+    cli(tmp_path, 'review', '--native-self', ok=False)
+    assert cli(tmp_path, 'status')['finish_verdict'] == 'pending'
+
+
+def test_real_russian_testing_prompt_with_excluded_repair_is_testing(tmp_path):
+    goal = 'Только протестируй существующий checkout CLI в двух случаях: пустая корзина и корзина two из двух товаров. Пользователь ожидает успешный ответ и сумму 0 для пустой корзины, сумму 20 для two. Выполни реальные команды, сравни наблюдения и сохрани полный отзыв в FEEDBACK.md. Не меняй код, не создавай новые тесты, не деплой и не делегируй. Найденный дефект нужно честно описать; исправление продукта в эту задачу не входит.'
+    invoke(tmp_path, 'UserPromptSubmit', prompt=goal)
+    assert cli(tmp_path, 'status')['task_class'] == 'testing'
+
+
+def native_v2_export_fixture(root, outcome):
+    manifest = review_export(root, outcome, sid='leader',
+        raw_final='PASS. Focused regression tests passed. python3 total.py output 0 matched expected 0. Self-check only.')
+    data = json.loads(manifest.read_text());rows=[json.loads(l) for l in Path(data['target']['path']).read_text().splitlines()]
+    stamp=int((datetime.now(timezone.utc)+timedelta(seconds=2)).timestamp()*1000)
+    messages=[]
+    for i,row in enumerate(rows):
+        p=row['payload'];kind=p.get('type');at=stamp+i*10
+        if kind=='message':
+            text=p['content'][0]['text']
+            messages.append({'id':'msg-'+str(i),'type':p['role'],'time':{'created':at,'completed':at+1},
+                **({'text':text} if p['role']=='user' else {'content':[{'type':'text','text':text}]})})
+        if kind=='function_call':
+            output=rows[i+1]['payload']['output']
+            messages.append({'id':'msg-'+str(i),'type':'assistant','time':{'created':at,'completed':at+1},
+                'content':[{'type':'tool','id':p['call_id'],'name':'shell','time':{'created':at,'ran':at,'completed':at+1},
+                    'state':{'status':'completed','input':json.loads(p['arguments']),'content':[{'type':'text','text':output}]}}]})
+    return {'info':{'id':'leader','location':{'directory':str(root)},'time':{'created':stamp},
+                    'model':{'providerID':'minimax-coding-plan','modelID':'MiniMax-M3.1-Flash'}},'messages':messages}
+
+
+@pytest.mark.parametrize('tamper', [None, 'identity', 'text', 'model', 'cwd', 'call'])
+def test_native_opencode_cli_self_export_checks_original_source(tmp_path, monkeypatch, tamper):
+    sys.path.insert(0,str(ROOT/'src/common/tools'))
+    import lhc_outcome_review as reviews
+    import lhc_outcome as outcomes
+    outcome=anchored(tmp_path,NO_DELEGATE_PROMPT)
+    payload=native_v2_export_fixture(tmp_path,outcome)
+    outcome['owner']['harness']='opencode'
+    original_run=subprocess.run
+    calls=[]
+    def run(args,**kwargs):
+        if args[:3]==['opencode','session','export']:
+            assert args==['opencode','session','export','--standalone','leader']
+            assert kwargs['cwd']==tmp_path
+            calls.append(args)
+            return subprocess.CompletedProcess(args,0,json.dumps(payload).encode(),b'')
+        return original_run(args,**kwargs)
+    monkeypatch.setattr(reviews.subprocess,'run',run)
+    manifest=reviews.native_self_manifest(outcome,tmp_path,'opencode','leader')
+    if tamper=='identity':payload['info']['id']='foreign'
+    if tamper=='text':payload['messages'][-1]['content'][0]['text']='A different source result'
+    if tamper=='model':payload['info']['model']['modelID']='different-model'
+    if tamper=='cwd':payload['info']['location']['directory']=str(tmp_path/'foreign')
+    if tamper=='call':
+        message=next(m for m in payload['messages'] if any(p.get('type')=='tool' for p in m.get('content',[])))
+        message['content'][0]['state']['content'][0]['text']='forged output'
+    context=state(tmp_path)
+    if tamper:
+        with pytest.raises(ValueError):reviews.accept_review(outcome,context,manifest,tmp_path,'leader')
+    else:
+        reviews.accept_review(outcome,context,manifest,tmp_path,'leader')
+        assert outcomes.verdict(outcome,context)=='complete'
+        assert outcome['verification_level']=='self-check'
+    assert len(calls)==2

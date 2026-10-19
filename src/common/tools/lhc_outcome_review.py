@@ -10,12 +10,79 @@ import os
 from pathlib import Path
 import re
 import shlex
+import subprocess
 from datetime import datetime, timezone
 
 import lhc_milestone as native
 from lhc_outcome import ENGINEERING, STAGES, scope_revision, remote_binding
 
 MARKER = 'LHC_OUTCOME_REVIEW '
+
+
+def opencode_native_export(cwd, sid):
+    """Existing native CLI, no inference, credentials/config edits or server install."""
+    try:
+        result = subprocess.run(['opencode', 'session', 'export', '--standalone', sid],
+                                cwd=cwd, capture_output=True, timeout=20)
+    except subprocess.TimeoutExpired as error:
+        raise ValueError('native OpenCode export unavailable; preserve pending') from error
+    if result.returncode or len(result.stdout) > native.MAX_BYTES:
+        raise ValueError('native OpenCode export unavailable or outside bounded source window')
+    exported = json.loads(result.stdout)
+    info = exported['info']
+    if info.get('id') != sid or Path((info.get('location') or {}).get('directory', '/unknown')).resolve() != cwd:
+        raise ValueError('native export identity/project mismatch')
+    messages = []
+    for message in exported['messages']:
+        role = message.get('type')
+        if role not in {'user', 'assistant'}:
+            continue
+        parts = [{'type': 'text', 'text': message['text']}] if role == 'user' else []
+        for part in message.get('content', []):
+            if part.get('type') == 'text':
+                parts.append({'type': 'text', 'text': part['text']})
+            elif part.get('type') == 'tool':
+                state, timing = part.get('state') or {}, part.get('time') or {}
+                parts.append({'type': 'tool', 'tool': part['name'], 'callID': part['id'], 'state': {
+                    'status': state.get('status'), 'input': state.get('input'), 'output': native.content(state.get('content')),
+                    'time': {'start': timing.get('ran') or timing.get('created'), 'end': timing.get('completed')}}})
+        # Preserve original text and calls; hidden reasoning is not feedback.
+        messages.append({'info': {'id': message['id'], 'sessionID': sid, 'role': role,
+                                  'time': message.get('time', {})}, 'parts': parts})
+    return info, messages
+
+
+def native_self_manifest(outcome, cwd, runtime, owner):
+    from lhc_outcome import bounded_self_check
+    if outcome['owner'] != {'harness': runtime, 'session_id': owner} or not (outcome['task_class'] in {'testing', 'research'} or bounded_self_check(outcome)):
+        raise ValueError('native self-check closes only its own bounded assignment, never fullcycle/parent acceptance')
+    archive = cwd / '.tmp/lhc-native-self'
+    archive.mkdir(parents=True, exist_ok=True, mode=0o700)
+    if runtime == 'codex':
+        home = Path(os.environ.get('CODEX_HOME') or Path.home() / '.codex')
+        candidates = []
+        for candidate in (home / 'sessions').rglob('*' + owner + '*.jsonl'):
+            raw = native.read(candidate)
+            meta, _, _ = native.native_transcript(raw)
+            if meta.get('id') == owner and Path(meta.get('cwd', '/unknown')).resolve() == cwd:
+                candidates.append(candidate.resolve())
+        if len(candidates) != 1:
+            raise ValueError('own native Codex source unavailable/ambiguous; preserve pending')
+        path = candidates[0]
+        source = {'kind': 'native-file', 'location': str(path)}
+    elif runtime == 'opencode':
+        info, messages = opencode_native_export(cwd, owner)
+        path = archive / (runtime + '-' + owner + '.json')
+        path.write_text(json.dumps(messages, ensure_ascii=False)); path.chmod(0o600)
+        source = {'kind': 'native-cli', 'location': 'opencode:session-export:' + owner,
+                  'cwd': str(cwd), 'model': info.get('model')}
+    else:
+        raise ValueError('native self-export unsupported in this runtime; preserve pending/observer boundary')
+    manifest = archive / (runtime + '-' + owner + '.manifest.json')
+    manifest.write_text(json.dumps({'format': 'agent-herder-transcript-manifest-v1', 'exporter': 'existing-native-self-route',
+        'target': {'path': str(path), 'harness': runtime, 'sessionId': owner, 'complete': runtime == 'codex', 'source': source}}))
+    manifest.chmod(0o600)
+    return manifest
 
 
 def load_review(path):
@@ -31,6 +98,8 @@ def load_review(path):
             raise ValueError('review export differs from native source')
         result = native.native_transcript(raw)
         rows = [json.loads(line) for line in raw.decode().splitlines() if line.strip()]
+        result[0]['model'] = list(dict.fromkeys(row['payload']['model'] for row in rows
+                                               if row.get('type') == 'turn_context' and row.get('payload', {}).get('model')))
         assignments, call_meta = [], {}
         for index, row in enumerate(rows):
             p = row.get('payload', {})
@@ -53,7 +122,27 @@ def load_review(path):
                   and row.get('payload', {}).get('role') == 'assistant' and row['payload'].get('phase') != 'commentary']
         result[0]['reviewed_at'] = next((stamp for stamp in reversed(finals) if stamp), result[0].get('timestamp'))
     elif target.get('harness') == 'opencode':
-        result = native.opencode_transcript(target, raw)
+        if target.get('source', {}).get('kind') == 'native-cli':
+            sid = target['sessionId']
+            source = target['source']
+            if source.get('location') != 'opencode:session-export:' + sid:
+                raise ValueError('unsupported native CLI operation')
+            cwd = Path(source['cwd']).resolve()
+            info, live = opencode_native_export(cwd, sid)
+            if not source.get('model') or source['model'] != info.get('model'):
+                raise ValueError('native model identity unavailable/changed')
+            by_id = {m['info']['id']: m for m in live}
+            for message in json.loads(raw):
+                actual = by_id.get(message['info']['id'])
+                if not actual or any(message['info'].get(k) != actual['info'].get(k) for k in ('id', 'sessionID', 'role')) or message['info']['time']['created'] != actual['info']['time']['created']:
+                    raise ValueError('export differs from native CLI source')
+                for index, part in enumerate(message['parts']):
+                    if part.get('type') == 'text' or part.get('state', {}).get('status') == 'completed':
+                        if index >= len(actual['parts']) or part != actual['parts'][index]:
+                            raise ValueError('native report/call changed; preserve original source')
+            result = native.opencode_messages(info, json.loads(raw))
+        else:
+            result = native.opencode_transcript(target, raw)
         assignments, call_meta = [], {}
         def iso(milliseconds):
             return datetime.fromtimestamp(milliseconds / 1000, timezone.utc).isoformat() if milliseconds else None
@@ -403,6 +492,7 @@ def accept_review(outcome, state, path, cwd, owner):
     for stage, row in updates.items():
         outcome['stages'][stage].update(status='complete', evidence=[{
             'manifest': str(path.resolve()), 'reviewer': sid, 'revision': revision,
+            'native_model': meta.get('model'),
             'verification_level': 'self-check' if own_attempt else 'independent-review',
             'calls': row['evidence_calls'], 'expected': row['expected'], 'observed': row['observed'],
         }])

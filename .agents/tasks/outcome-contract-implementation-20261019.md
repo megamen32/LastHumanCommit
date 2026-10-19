@@ -131,3 +131,29 @@ upstream owner label is explicit when name unknown. Exact REDs main-permission,
 main-identity and smoke-without-owner frozen2cac retained; current targeted B4/B5
 positives/negatives preserved, final full outcome suite in outcome-b45-final.log.
 No new model council, service, agents, branch target or runtime mutation in this fix.
+
+## Native positive-close correction, 2026-10-19 22:22 UTC
+
+Frozen d215053 actually loaded in Codex quickfix01a15633-f6e8-7da3-b4ef-32ca4fdd3c6b:
+UTF8 regression and actual CLI passed, no reviewer hired; close stayed pending because
+Herder export is scoped to its MCP CWD. Correct-profile OpenCode testing
+ses_ea9c9f69affe66gNCvS53cFQe2 ran both checkout cases then hit the same export
+blocker. Its own bounded runner was SIGINTed as test-controller abort, not human
+Stop; CONTROLLER_ABORT.json and all raw evidence remain, neither run is resumed.
+The earlier wrong-profile testing run is NOT LHC acceptance. Global new-session
+Codex selection and OpenCode wrapper have been restored to their prior1.4.13 LHC
+paths without reload/model/MCP/auth changes. Next candidate uses process-local
+selection or a documented immediate-restore selection window only.
+
+Bounded correction: `review --native-self` resolves the actual own Codex session
+or fixed existing OpenCode native CLI export, checks original native identity,
+project/model/text/completed calls, then uses the unchanged revision/assignment/
+claim checks. Testing/research and explicit no-delegation quickfix self-check only;
+no fullcycle/parent acceptance. Actual Russian testing exclusion no longer becomes
+repair scope. Nine targeted cases pass5.80s (identity/model/cwd/text/call tampering
+negative controls); actual stopped OpenCode native export readback confirms
+MiniMax-M3.1-Flash and43 completed calls, not new candidate acceptance.
+Planning-only d215 native run01a1563c-2b4d-7173-ab40-45d20eae8e71 omitted required
+research/council sequence: workflow CHANGES_REQUIRED; entry reminder now explicitly
+requires this sequence in a plan even when creating sessions is forbidden. Full
+validator and existing reviewer delta precede a fresh native test, no new council.

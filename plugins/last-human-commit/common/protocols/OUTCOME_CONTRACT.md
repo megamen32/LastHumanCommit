@@ -44,8 +44,14 @@ exception (branch, reason, dependent stage, native refs); it is not final accept
 A bounded quickfix with a direct no-delegation restriction and no applicable
 deploy/publication/integration stages may close its own assignment with native
 technical tests and actual CLI/consumer observations plus original expected-vs-
-observed feedback. Export its own transcript and use the same `review --manifest`
-route below; no author-supplied PASS file or weaker provenance path is added.
+observed feedback. Use `review --native-self` for its own bounded assignment,
+or the same `review --manifest` route below. This reads the actual Codex native
+session file or existing `opencode session export --standalone <session-id>`;
+Herder export CWD is not a dependency. Exact session/project/model/calls and
+original text are source-checked with the same assignment/revision evidence
+window. First write the actual expected/observed feedback as commentary, then
+invoke review; uncompleted export calls are never evidence. No author-supplied
+PASS file, inference, new service or weaker provenance path is added.
 The stored level is `self-check`, never independent product acceptance. Preserve
 raw FEEDBACK and limitations. Worker/testing/research assignment completion does
 not accept the broader parent outcome. Fullcycle and pending milestone acceptance
@@ -78,7 +84,9 @@ native files and OpenCode native exports reuse the existing parsers. Unknown
 formats are explicit: use that existing reviewer path, not an invented PASS.
 For an already independent testing/research assignment, its own raw source report
 can close that assignment; no recursive hiring. It never accepts the parent
-product. Testing may report `product_verdict=changes-required`, with each coverage
+product. Its `--native-self` route has the same limit; unsupported runtime/source
+stays pending with an explicit boundary, not a request to repair Herder or resume
+a stopped test. Testing may report `product_verdict=changes-required`, with each coverage
 item mapped to an object with `verdict` (`passed` or `defect`), `expected`,
 `observed`, and `evidence_calls`; engineering requires product pass. Each closed
 stage/coverage claim needs its own expected→observed comparison and native refs.
