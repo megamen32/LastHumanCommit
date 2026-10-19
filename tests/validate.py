@@ -21,7 +21,7 @@ def require(condition:bool,message:str)->None:
 
 router=(ROOT/"AGENTS.md").read_bytes()
 require(router==(ROOT/"CLAUDE.md").read_bytes(),"agent and Claude routers differ")
-require(len(router.decode().splitlines())<=160,"automatic entry grew beyond its context budget")
+require(len(router.decode().splitlines())<=150,"automatic entry grew beyond its context budget")
 for role in ("Lead","Worker","Overseer","Tester","Reviewer","Adviser","Critic"):
     require((ROOT/f"src/common/agents/{role}.md").is_file(),f"missing optional role {role}")
 for harness in ("codex","opencode","claude-code","hermes","zcode"):
