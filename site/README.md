@@ -28,3 +28,22 @@ and ignored by Git. The Pages environment must be configured to use **GitHub
 Actions** as its build/deployment source once in repository settings. An
 optional manual `workflow_dispatch` can deploy a verified preview branch;
 ordinary pushes to main automatically keep the site in sync.
+
+## English / Russian interface
+
+The header language switch updates the whole UI without reloading. The initial
+language is an explicit `?lang=en` / `?lang=ru` URL choice, then the locally saved
+preference, then the browser language (Russian or English fallback). The switch
+still works if browser storage is disabled; it also preserves the selected cycle,
+current stage and expanded role cards.
+
+`site/i18n.js` contains only site copy, labels and accessibility translations.
+Canonical agent names, Markdown role definitions and Git source excerpts are
+shown in their original language, explicitly labeled, and never translated or
+duplicated into language-specific documentation. Git continues to provide one
+source of truth. `locale.css` accommodates the longer Russian UI labels.
+The build fingerprints CSS/JavaScript assets to avoid mixing cached versions.
+
+`python3 -m unittest discover -s site -p 'test_*.py' -v` includes checks for source
+preservation, language-asset packaging and every generated loop label/description
+having both translations. Dictionary validation uses Node when available.

@@ -7,6 +7,8 @@
   <meta name="theme-color" content="#0c0d12">
   <title>Last Human Commit — Ship the result, not the ritual.</title>
   <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./locale.css">
+  <script defer src="./i18n.js"></script>
   <script defer src="./app.js"></script>
 </head>
 <body>
@@ -21,7 +23,13 @@
       <a href="#roles">The roles</a>
       <a href="#principles">The philosophy</a>
     </nav>
-    <a class="nav-repo" href="https://github.com/megamen32/LastHumanCommit" target="_blank" rel="noopener noreferrer">View on GitHub <span aria-hidden="true">↗</span></a>
+    <div class="nav-actions">
+      <div class="lang-switch" role="group" aria-label="Site language">
+        <button type="button" data-lang="en" lang="en" aria-label="Switch to English" aria-pressed="true" class="is-active">EN</button>
+        <button type="button" data-lang="ru" lang="ru" aria-label="Switch to Russian" aria-pressed="false">RU</button>
+      </div>
+      <a class="nav-repo" href="https://github.com/megamen32/LastHumanCommit" target="_blank" rel="noopener noreferrer">View on GitHub <span aria-hidden="true">↗</span></a>
+    </div>
   </header>
 
   <main id="main">
@@ -111,7 +119,7 @@
     </section>
     <section class="closing wrap"><span class="section-number">THE CODE IS THE MEANS. THE RESULT IS THE POINT.</span><p>Make the <em>last commit</em> count.</p><a href="https://github.com/megamen32/LastHumanCommit" target="_blank" rel="noopener noreferrer" class="button-primary">Explore the repository <span aria-hidden="true">↗</span></a></section>
   </main>
-  <footer class="footer wrap"><span class="footer-mark">L／H<span class="copyright"> © 2026</span></span><span>Built from commit <a id="commit-link" href="https://github.com/megamen32/LastHumanCommit" target="_blank" rel="noopener noreferrer"><code id="commit-sha">checking…</code></a> <span class="foot-divider">·</span> <span id="commit-date">Git is the source of truth</span></span><a href="#top">BACK TO TOP ↑</a></footer>
-  <noscript><p class="noscript">Enable JavaScript to inspect live Git-derived workflow and role definitions. The rest of the landing remains available.</p></noscript>
+  <footer class="footer wrap"><span class="footer-mark">L／H<span class="copyright"> © 2026</span></span><span><span id="built-from-label">Built from commit</span> <a id="commit-link" href="https://github.com/megamen32/LastHumanCommit" target="_blank" rel="noopener noreferrer"><code id="commit-sha">checking…</code></a> <span class="foot-divider">·</span> <span id="commit-date">Git is the source of truth</span></span><a href="#top">BACK TO TOP ↑</a></footer>
+  <noscript><p class="noscript"><span lang="en">Enable JavaScript to switch language and inspect Git-derived workflow and role definitions.</span><br><span lang="ru">Включите JavaScript, чтобы выбрать язык и прочитать определения циклов и ролей из Git.</span></p></noscript>
 </body>
 </html>

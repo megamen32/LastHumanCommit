@@ -145,8 +145,15 @@ def build() -> dict:
         "roles": roles,
     }
     DIST.mkdir(parents=True, exist_ok=True)
-    for name in ("index.html", "styles.css", "app.js"):
+    assets = ("styles.css", "locale.css", "i18n.js", "app.js")
+    for name in ("index.html", *assets):
         shutil.copy2(SITE / name, DIST / name)
+    # Content-addressed query strings prevent cached scripts mixing language versions.
+    markup = (DIST / "index.html").read_text(encoding="utf-8")
+    for name in assets:
+        digest = hashlib.sha256((DIST / name).read_bytes()).hexdigest()[:12]
+        markup = markup.replace(f'"./{name}"', f'"./{name}?v={digest}"')
+    (DIST / "index.html").write_text(markup, encoding="utf-8")
     (DIST / "data.json").write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return data
 
