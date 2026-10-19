@@ -1,5 +1,5 @@
 name: last-human-commit
-version: 1.4.11
+version: 1.4.12
 description: "Inject LHC role context, business time guards, and bounded compaction handoffs into Hermes."
 author: "Last Human Commit"
 hooks:

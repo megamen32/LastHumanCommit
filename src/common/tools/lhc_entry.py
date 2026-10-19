@@ -26,27 +26,22 @@ QUIET_EVENTS = {"Interrupt", "SessionEnd", "PermissionRequest", "ToolFailure", "
 def context_for(event, root):
     root = Path(root).resolve()
     return (
-        f"LHC — порядок инженерной работы. Текущий router: {root/'AGENTS.md'}. "
-        "Используй текущий путь, не старую версию из истории. "
-        "Без @LHC и slash-команд: до изменения кратко сформулируй осязаемый результат — "
-        "кто решает какую задачу, что не работало раньше, что получится после и где попробовать. "
-        "При выборе решения пройди рабочее решение → идеальная версия → минимальная рабочая "
-        "версия с ~80% полезной ценности; реализуй её, не три версии. Для бага сразу TDD: "
-        "RED → исправление → GREEN и реальный сценарий. Не подменяй результат SHA или тест-счётчиком. "
-        "Ошибка в receipt (SHA/имя/JSON) при известном проверенном коде — локальная правка метаданных, "
-        "не новое ревью и не новая задача агента. Бери метаданные из Git/CI, не переписывай вручную. "
-        "При изменении кода, зависимостей или среды проверь значимую дельту; неизвестный охват не считай PASS. "
-        "После достаточных проверок делай ближайший рабочий результат: разрешённый deployment и сценарий пользователя, "
-        "не ревью справки. Действующие release gates сохраняются. "
+        f"LHC — рабочий контракт: {root/'AGENTS.md'}. Всегда используй его актуальную версию. "
+        "Обычный engineering prompt, без @LHC: до кода назови пользователя, исход, что раньше и что после, место проверки. "
+        "Спроектируй рабочий→идеальный→80%-полезный минимум. Баг: RED→fix→GREEN→сценарий. "
+        "Одна цель — один delivery owner: готовые gates→разрешённый test/demo deploy→consumer check→независимая milestone-приёмка. "
+        "Direction review и receipt не доказывают действие или доставку; partial остаётся pending. "
+        "Прямые prompts хранятся как контекст, не permission: соблюдай policy текущего harness, human stop и свежую ревокацию. "
+        "Ошибка одной поверхности не запрещает независимую работу. Повтор неизменного blocker/status меняй на конкретное действие. "
+        "Сохраняй native job ID; не дублируй и не отменяй живую сборку. При изменении кода проверь дельту. "
+        "Ошибка в receipt при известном проверенном коде исправляй локально по Git/CI; это не новое ревью. "
+        "Проверяй дельту изменений и consumer путь; затем выбирай ближайший рабочий результат. Тесты не заменяют его. "
         f"Контракт review→delivery: {method_root(root)/'protocols/REVIEW_TO_DELIVERY.md'}. "
-        "Часовая сверка направления и самоулучшение через 120 минут обязательны; native hook "
-        "напомнит, запись напоминания не закрывает проверку. На готовом крупном milestone "
-        "(~3 часа цельной работы, не на каждый чих) нужны свежие Zero Knowledge тестировщики "
-        "с разными реалистичными персонами/целями и полным положительным/отрицательным отзывом. "
-        "Не сообщай полную приёмку без этих результатов. После compaction восстанови цель и решения из записи задачи. "
-        "Другой писатель — worktree; резерв связи — файловый чат. Сначала доступная работа; в конце PR/интеграция. "
-        "Для делегирования — существующий Agent Herder new_or_resume с явным model, роль отдельно; "
-        f"{method_root(root)/'skills/model-routing/SKILL.md'}. Простой вопрос не запускает разработку; полномочия сохраняются."
+        "Каждые 60 минут — direction review, 120 минут — learning review. На готовом milestone (~3 часа) нужны "
+        "свежие Zero Knowledge проверки с разными реалистичными персонами и полным feedback; без них не заявляй PASS. "
+        "Compaction/handoff сохраняют исходную цель, прямой scope и последний отзыв. Параллельный писатель — отдельный worktree; "
+        "сначала доступная работа, затем PR/интеграция. Делегируй через Agent Herder new_or_resume с model и отдельной ролью: "
+        f"{method_root(root)/'skills/model-routing/SKILL.md'}."
     )
 
 def package_version(root):
@@ -78,6 +73,17 @@ def rehydrate(state, state_path=None):
         restored.pop("latest_prompt", None)
     if business.get("transcript_path") and business.get("runtime") != "zcode":
         restored["full_native_transcript"] = business["transcript_path"]
+    if business.get("execution_context"):
+        restored["execution_context"] = business["execution_context"]
+    if business.get("running_jobs"):
+        restored["running_jobs"] = business["running_jobs"]
+    if business.get("tool_observations"):
+        restored["recent_tool_observations"] = business["tool_observations"][-8:]
+    if business.get("action_evidence"):
+        restored["action_evidence"] = business["action_evidence"][-8:]
+    native_entry = state.get("native_entry") or {}
+    if native_entry.get("scoped_failures"):
+        restored["scoped_tool_failures"] = native_entry["scoped_failures"][-8:]
     if len(business.get("original_prompt_full", "")) > 4096:
         restored["full_original_prompt_in_saved_state"] = "business.original_prompt_full"
     if len(business.get("latest_prompt_full", "")) > 4096:
@@ -87,10 +93,11 @@ def rehydrate(state, state_path=None):
     milestone = state.get("milestone") or {}
     if milestone.get("status") in {"pending", "changes-required", "blocked"}:
         restored["milestone_acceptance"] = {key: milestone.get(key) for key in
-            ("task", "goal", "urls", "surface_key", "surface", "status", "blocker", "continuation_requested")}
+            ("task", "goal", "urls", "surface_key", "surface", "status", "blocker", "scoped_blockers", "continuation_requested")}
     review = business.get("last_review") or {}
     if review:
-        restored["last_direction"] = {key: review[key][:450] for key in ("business_result", "scope_decision", "next_action") if review.get(key)}
+        restored["last_direction"] = {key: review[key][:450] if isinstance(review[key], str) else review[key]
+                                       for key in ("business_result", "scope_decision", "next_action", "action_status", "action_evidence_count") if review.get(key) is not None}
     checkpoint = state.get("last_checkpoint") or {}
     if checkpoint.get("remaining_critical_path"):
         restored["remaining_critical_path"] = checkpoint["remaining_critical_path"][:500]
@@ -121,8 +128,7 @@ def handle(event, name, runtime, root):
     with path.with_suffix(".lock").open("a", encoding="utf-8") as lock:
         fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
         state = guard.load_state(path)
-        milestone_event = "PostToolUse" if name == "PostToolUseFailure" else name
-        milestone = milestones.observe(state, event, milestone_event, cwd, session, now)
+        milestone = milestones.observe(state, event, name, cwd, session, now)
         # A concurrent native hook or an explicit review command may have cleared
         # a debt after our first observation. Decisions use the locked readback.
         current_pending = state.get("business", {}).get("pending")
@@ -135,14 +141,23 @@ def handle(event, name, runtime, root):
             learning["prompt"] = ""
         learning.update(due=still_due, due_at=current_due)
         delivery = state.setdefault("native_entry", {})
+        scoped_failure = (milestones.scoped_surface_failure(event)
+                          if name == "PostToolUse" and milestones.tool_failed(event) else None)
+        if scoped_failure:
+            failures = delivery.setdefault("scoped_failures", [])
+            if scoped_failure not in failures:
+                failures.append(scoped_failure)
+            del failures[:-16]
         delivery["last_observed_event"] = name
         if name in QUIET_EVENTS:
             delivery["finish_hold"] = name
-        elif (name == "UserPromptSubmit" and not control_prompt) or name == "permission.replied":
+        elif ((name == "UserPromptSubmit" and not control_prompt and delivery.get("finish_hold") != "PermissionRequest")
+              or name == "permission.replied"):
             delivery.pop("finish_hold", None)
-        elif name in {"PostToolUse", "PostToolUseFailure"} and milestones.tool_failed(event):
-            delivery["finish_hold"] = "ToolFailure"
-        elif name in {"PostToolUse", "PostToolUseFailure"} and delivery.get("finish_hold") in {"ToolFailure", "PermissionRequest"}:
+        elif name in {"PostToolUse", "PostToolUseFailure"} and (name == "PostToolUseFailure" or milestones.tool_failed(event)):
+            if not scoped_failure and delivery.get("finish_hold") not in {"PermissionRequest", "Interrupt", "SessionEnd"}:
+                delivery["finish_hold"] = "ToolFailure"
+        elif name == "PostToolUse" and delivery.get("finish_hold") in {"ToolFailure", "PermissionRequest"}:
             delivery.pop("finish_hold", None)
         version = package_version(root)
         signature = json.dumps([str(root), version])
@@ -185,7 +200,7 @@ def handle(event, name, runtime, root):
                 parts.append(acceptance_notice)
             output = {"handoff": "\n\n".join(parts)}
         held = bool(delivery.get("finish_hold") or (milestone and (milestone.get("hold") or milestone.get("read_only"))))
-        acceptance_due = acceptance_pending and milestone["status"] != "blocked"
+        acceptance_due = acceptance_pending and milestone["status"] != "accepted"
         if runtime in {"codex", "zcode"} and name == "Stop" and not held and (business["due"] or learning["due"] or acceptance_due):
             identity = [event.get("turn_id") or event.get("turnId"), business.get("review_id"), learning["due_at"] if learning["due"] else None]
             fresh_acceptance = acceptance_due and not milestone.get("continuation_requested")
@@ -212,6 +227,17 @@ def handle(event, name, runtime, root):
                     reason = ""
                 if acceptance_notice:
                     reason += ("\n" if reason else "") + acceptance_notice
+                    running_jobs = state.get("business", {}).get("running_jobs", {})
+                    if running_jobs:
+                        summary = [{"id": key, "operation": value.get("operation", "unknown"),
+                                    "target": value.get("target", "unknown")}
+                                   for key, value in sorted(running_jobs.items())[:4]]
+                        reason += "\nNative running work (do not duplicate or abort; independent actions remain available): " + json.dumps(summary, ensure_ascii=False)
+                    scoped_failures = delivery.get("scoped_failures", [])
+                    if scoped_failures:
+                        summary = [{"target": row.get("target"), "operation": row.get("operation"),
+                                    "http_status": row.get("http_status")} for row in scoped_failures[-4:]]
+                        reason += "\nThese failures belong only to the listed surface; do not repeat without changed evidence, and continue independent actions: " + json.dumps(summary, ensure_ascii=False)
                 delivery["stop_prompt"] = {"identity": identity, "text": reason}
                 output = {"decision": "block", "reason": reason}
             else:
