@@ -91,18 +91,27 @@ def applicable(kind, goal):
     return stages
 
 
-def scope_revision(outcome, cwd):
-    # Explicit owned paths only. Foreign WIP, clocks, new turns and call IDs must
-    # not manufacture progress. Git itself remains the revision source.
+def product_paths(outcome, cwd):
     paths = outcome.get('owned_paths', [])
     scope = '\n'.join([outcome['original_goal'], *outcome.get('corrections', [])])
-    report = re.search(r'(?:сохран\w*|запиш\w*|save|record|keep)\s+[^.?!\n]{0,180}(?:результат|отзыв|наблюден|feedback|observations|results)[^.?!\n]{0,180}FEEDBACK\.md', scope, re.I)
-    product = re.search(r'(?:fix|repair|исправ\w*|почин\w*)\s+[^.?!\n]{0,80}FEEDBACK\.md', scope, re.I)
+    mentions = list(re.finditer(r'\bFEEDBACK\.md\b', scope, re.I))
+    report = bool(mentions)
+    for mention in mentions:
+        # Every occurrence must be an observation-output directive. An earlier
+        # product mention or ambiguous role conservatively retains the hash.
+        prefix = re.split(r'[;!?\n]|\.(?=\s|$)', scope[:mention.start()])[-1]
+        report &= bool(re.search(r'(?:сохран\w*|запиш\w*|save|record|keep)\s+[^.?!\n]{0,180}(?:результат|отзыв|наблюден|feedback|observations|results)[^.?!\n]{0,180}$', prefix, re.I))
     # The explicitly requested observation report is evidence, not a new code
     # revision. Keep ownership, but writing feedback must not invalidate the
     # very native observations it records. A product edit retains its barrier.
-    if report and not product:
+    if report:
         paths = [p for p in paths if (cwd / p).resolve() != (cwd / 'FEEDBACK.md').resolve()]
+    return paths
+
+
+def scope_revision(outcome, cwd):
+    # Explicit owned product only; clocks/receipts cannot manufacture progress.
+    paths = product_paths(outcome, cwd)
     return digest([(p, native.file_hash(cwd, p)) for p in paths])
 
 

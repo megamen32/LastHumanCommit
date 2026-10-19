@@ -113,8 +113,9 @@ Unknown source timestamps/order stay explicit instead of being guessed fresh.
 
 CLI source matching normalizes known Python aliases (`python3 -B`, script path
 or local `file://` URI) against the actual native cwd, including Codex's file-URI
-cwd metadata. A `project:<cwd>` target resolves only to one actual script named
-in the unchanged user scope; foreign/unnamed/ambiguous scripts cannot close it.
+cwd metadata. A `project:<cwd>` target resolves only to one actual scope path
+(and owned product for engineering); a nested basename is not the root script.
+Foreign/unnamed/ambiguous scripts cannot close it.
 An equivalent target spelling preserves the existing evidence window. Unknown
 compound shell formats need one direct supported reread with a precise reason,
 not a contract/review retry loop; echo is never consumer evidence. Failed actual

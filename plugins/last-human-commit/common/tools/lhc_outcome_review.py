@@ -245,8 +245,15 @@ def cli_matches(words, target, cwd):
     return bool(wanted and actual[:len(wanted)] == wanted)
 
 
-def scope_names_script(scope, script):
-    return bool(re.search(r'(?<![\w.-])(?:' + re.escape(script.name) + '|' + re.escape(script.stem) + r')(?![\w-]|\.[\w/-])', scope, re.I))
+def scope_names_script(scope, script, cwd):
+    # A basename in the goal means the root script, not a nested namesake.
+    names = [str(script), script.as_uri()]
+    if script.is_relative_to(cwd):
+        relative = script.relative_to(cwd).as_posix()
+        names += [relative, './' + relative]
+        if script.parent == cwd:
+            names.append(script.stem)
+    return bool(re.search(r'(?<![\w./-])(?:' + '|'.join(re.escape(n) for n in names) + r')(?![\w-]|\.[\w/-])', scope, re.I))
 
 
 def equivalent_target(old, new, cwd, scope):
@@ -258,7 +265,7 @@ def equivalent_target(old, new, cwd, scope):
         if Path(project[8:]).resolve() != cwd or len(identity) != 2 or identity[0] != 'python':
             return False
         script = Path(identity[1])
-        return script.is_relative_to(cwd) and scope_names_script(scope, script)
+        return script.is_relative_to(cwd) and scope_names_script(scope, script, cwd)
     return bool(target_identity(old, cwd) and target_identity(old, cwd) == target_identity(new, cwd))
 
 
@@ -276,13 +283,18 @@ def consumer_target(outcome, observations, cwd):
         if len(identity) < 2 or identity[0] != 'python' or identity[1].startswith('-'):
             continue
         script = Path(identity[1])
-        if not script.is_relative_to(cwd) or not scope_names_script(scope, script):
+        if not script.is_relative_to(cwd) or not scope_names_script(scope, script, cwd):
             continue
         if real_observation(call, output, str(script), 'consumer', outcome['task_class'], cwd):
             scripts.add(str(script))
     if len(scripts) != 1:
         raise ValueError('project target needs one scope-named native CLI; unsupported/ambiguous source: one direct CLI reread, no echo/compound or review loop')
-    return scripts.pop()
+    selected = scripts.pop()
+    if outcome['task_class'] in ENGINEERING:
+        from lhc_outcome import product_paths
+        if Path(selected) not in {(cwd / p).resolve() for p in product_paths(outcome, cwd)}:
+            raise ValueError('project CLI is not the scoped owned product')
+    return selected
 
 
 def real_observation(call, output, target, stage, task_class=None, cwd=None, expected=None):
@@ -395,9 +407,9 @@ def expected_compared(expected, final, observations, defect):
         return False
     outputs = '\n'.join(output for _, output in observations)
     csv = re.findall(r'(?<![\w,])[\w]+,[\w]+(?![\w,])', expected)
-    number_pattern = r'(?<![\w.+-])[-+]?\d+(?:\.\d+)?(?![\w.])'
+    number_pattern = r'(?<![\w.+-])[-+]?\d+(?:\.\d+)?(?!\w)'
     numbers = re.findall(number_pattern, expected)
-    number_in = lambda value, text: re.search(r'(?<![\w.+-])' + re.escape(value) + r'(?![\w.])', text)
+    number_in = lambda value, text: re.search(r'(?<![\w.+-])' + re.escape(value) + r'(?!\w|\.\d)', text)
     if not csv and not (numbers and re.search(r'total|сумм|exit|status|статус|код', expected, re.I)):
         return False
     if csv and not all(normalize(value) in normalize(outputs) for value in csv):

@@ -1042,3 +1042,41 @@ def test_raw_numeric_comparison_does_not_drop_the_sign():
     from lhc_outcome_review import expected_compared
     assert not expected_compared('total -1','Expected total 1; matched CLI output 1',[({},'1')],False)
     assert expected_compared('total -1','Expected total -1; matched CLI output -1',[({},'-1')],False)
+
+
+def test_project_alias_rejects_nested_namesake_instead_of_owned_root_cli(tmp_path):
+    goal='Fix the small total.py CLI. Do not delegate. No deploy, no push, no merge.'
+    outcome=anchored(tmp_path,goal)
+    (tmp_path/'total.py').write_text('print(99)\n')
+    (tmp_path/'test_total.py').write_text("import unittest,subprocess,sys\nclass T(unittest.TestCase):\n def test_decimal(self):self.assertTrue(subprocess.check_output([sys.executable,'total.py']).strip().isdigit())\n")
+    (tmp_path/'foreign').mkdir();(tmp_path/'foreign/total.py').write_text('print(0)\n')
+    outcome=cli(tmp_path,'contract','--scenario',outcome['canary']['scenario'],'--target','project:'+str(tmp_path),
+                '--expected','0','--owned-path','total.py')
+    review_export(tmp_path,outcome,sid='leader',command='python3 foreign/total.py',
+                  raw_final='PASS. Regression tests passed. python3 foreign/total.py output 0 matched expected 0. Self-check only.')
+    cli(tmp_path,'review','--native-self',ok=False)
+    assert subprocess.check_output(['python3','total.py'],cwd=tmp_path).strip()==b'99'
+
+
+@pytest.mark.parametrize('goal',[
+    'FEEDBACK.md has a broken example; fix it. Save results in FEEDBACK.md.',
+    'FEEDBACK.md содержит ошибку: исправь её. Сохрани результат и наблюдения в FEEDBACK.md.',
+])
+def test_explicit_feedback_product_keeps_its_revision_when_named_before_repair(tmp_path,goal):
+    import lhc_outcome as outcomes
+    outcome=anchored(tmp_path,goal);outcome['owned_paths']=['FEEDBACK.md']
+    (tmp_path/'FEEDBACK.md').write_text('Broken product document')
+    before=outcomes.scope_revision(outcome,tmp_path)
+    (tmp_path/'FEEDBACK.md').write_text('Repaired product document')
+    assert outcomes.scope_revision(outcome,tmp_path)!=before
+
+
+def test_explicit_owned_nested_cli_works_without_rebinding_the_root_name(tmp_path):
+    from lhc_outcome_review import consumer_target,equivalent_target
+    outcome=anchored(tmp_path,'Fix foreign/total.py CLI. Do not delegate. No deploy, no push, no merge.')
+    (tmp_path/'foreign').mkdir();(tmp_path/'foreign/total.py').write_text('print(0)\n')
+    outcome['owned_paths']=['foreign/total.py'];outcome['canary']['target']='project:'+str(tmp_path)
+    call={'name':'exec_command','arguments':json.dumps({'cmd':'python3 foreign/total.py','workdir':str(tmp_path)})}
+    output=subprocess.check_output(['python3','foreign/total.py'],cwd=tmp_path,text=True)
+    assert consumer_target(outcome,[(call,output)],tmp_path)==str(tmp_path/'foreign/total.py')
+    assert not equivalent_target('project:'+str(tmp_path),'python3 foreign/total.py',tmp_path,'Fix the root total.py CLI.')
