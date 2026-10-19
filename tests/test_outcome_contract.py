@@ -143,6 +143,8 @@ def review_export(root, outcome, *, product='pass', stage_names=('technical', 'c
                               for item, verdict in coverage.items()}
     rows.append({'type': 'response_item', 'payload': {'type': 'message', 'role': 'assistant', 'phase': 'final',
                  'content': [{'text': raw_final if raw_final is not None else 'Compared the actual observed CLI behavior.\nLHC_OUTCOME_REVIEW ' + json.dumps(report)}]}})
+    for row in rows:
+        row['timestamp'] = now
     native_path.write_text('\n'.join(json.dumps(row) for row in rows) + '\n')
     export = root / (sid + '-export.jsonl'); export.write_bytes(native_path.read_bytes())
     manifest = root / (sid + '.manifest.json')
@@ -191,6 +193,36 @@ def test_existing_reviewer_fresh_raw_report_uses_current_assignment_not_session_
     assert cli(tmp_path, 'review', '--manifest', str(manifest))['finish_verdict'] == 'complete'
 
 
+@pytest.mark.parametrize('source_format', ['function-call', 'command-started'])
+def test_old_calls_under_fresh_raw_final_cannot_accept_new_owned_revision(tmp_path, source_format):
+    outcome = anchored(tmp_path)
+    manifest = review_export(tmp_path, outcome, raw_final='No defects found. Focused tests passed; python3 total.py output 0 matched empty basket total 0.')
+    (tmp_path / 'total.py').write_text('print(99)\n'); invoke(tmp_path, 'PostToolUse')
+    data = json.loads(manifest.read_text()); location = Path(data['target']['source']['location'])
+    rows = [json.loads(line) for line in location.read_text().splitlines()]
+    old = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
+    fresh = (datetime.now(timezone.utc) + timedelta(seconds=1)).isoformat()
+    for row in rows:
+        row['timestamp'] = old if row['payload'].get('type') in {'function_call', 'function_call_output'} else fresh
+    rows = [rows[0], *rows[2:-1], rows[1], rows[-1]]
+    if source_format == 'command-started':
+        calls = {row['payload']['call_id']: row['payload'] for row in rows if row['payload'].get('type') == 'function_call'}
+        started, completed = [], []
+        for row in rows:
+            p = row['payload']
+            if p.get('type') != 'function_call_output':
+                continue
+            args = json.loads(calls[p['call_id']]['arguments'])
+            item = {'type': 'CommandExecution', 'id': p['call_id'], 'command': ['/bin/bash', '-lc', args['cmd']], 'cwd': str(tmp_path)}
+            started.append({'timestamp': old, 'type': 'event_msg', 'payload': {'type': 'item_started', 'item': item}})
+            completed.append({'timestamp': fresh, 'type': 'event_msg', 'payload': {'type': 'item_completed', 'item': {**item, 'exit_code': 0, 'aggregated_output': p['output']}}})
+        rows = [rows[0], *started, rows[-2], *completed, rows[-1]]
+    raw = '\n'.join(json.dumps(row) for row in rows) + '\n'
+    location.write_text(raw); Path(data['target']['path']).write_text(raw)
+    cli(tmp_path, 'review', '--manifest', str(manifest), ok=False)
+    assert cli(tmp_path, 'status')['finish_verdict'] == 'pending'
+
+
 def test_git_metadata_does_not_prove_deployment(tmp_path):
     outcome = anchored(tmp_path, 'Implement the complete total CLI and deliver the full cycle.')
     manifest = review_export(tmp_path, outcome, stage_names=('technical', 'deploy'), bad_deploy=True)
@@ -198,8 +230,8 @@ def test_git_metadata_does_not_prove_deployment(tmp_path):
     assert cli(tmp_path, 'status')['stages']['deploy']['status'] == 'pending'
 
 
-@pytest.mark.parametrize('actual_action', [False, True])
-def test_login_only_browser_open_does_not_complete_checkout(tmp_path, actual_action):
+@pytest.mark.parametrize('actual_action,other_session', [(False, False), (True, False), (True, True)])
+def test_login_only_browser_open_does_not_complete_checkout(tmp_path, actual_action, other_session):
     anchored(tmp_path, 'Only test checkout. Do not edit code. Report observed failures.', ('empty basket',))
     outcome = cli(tmp_path, 'contract', '--scenario', 'Checkout an empty basket', '--target', 'https://demo.test/checkout',
                   '--expected', 'total 0', '--coverage', 'empty basket')
@@ -209,14 +241,16 @@ def test_login_only_browser_open_does_not_complete_checkout(tmp_path, actual_act
     for row in rows:
         p = row['payload']
         if p.get('type') == 'function_call':
-            p.update(name='mcp__browser__open', arguments=json.dumps({'url': outcome['canary']['target']}))
+            p.update(name='mcp__browser__open', arguments=json.dumps({'url': outcome['canary']['target'], 'session': 'A', 'namespace': 'qa'}))
         elif p.get('type') == 'function_call_output':
             p['output'] = 'Sign in. Password required. Checkout was never attempted.'
     if actual_action:
         for call, name, args, output in [('action', 'mcp__browser__click', {'ref': 'empty-checkout'}, 'Checkout submitted'),
                                          ('result', 'mcp__browser__snapshot', {}, 'Empty basket total 0')]:
-            rows.insert(-1, {'type': 'response_item', 'payload': {'type': 'function_call', 'name': name, 'call_id': call, 'arguments': json.dumps(args)}})
-            rows.insert(-1, {'type': 'response_item', 'payload': {'type': 'function_call_output', 'call_id': call, 'output': output}})
+            args.update(session='B' if other_session else 'A', namespace='qa')
+            stamp = rows[-1]['timestamp']
+            rows.insert(-1, {'timestamp': stamp, 'type': 'response_item', 'payload': {'type': 'function_call', 'name': name, 'call_id': call, 'arguments': json.dumps(args)}})
+            rows.insert(-1, {'timestamp': stamp, 'type': 'response_item', 'payload': {'type': 'function_call_output', 'call_id': call, 'output': output}})
         text = rows[-1]['payload']['content'][0]['text']; prefix, body = text.split('LHC_OUTCOME_REVIEW ', 1)
         report = json.loads(body); report['stages']['consumer']['evidence_calls'] += ['action', 'result']
         report['stages']['consumer']['observed'] = 'Submitted empty checkout, snapshot showed total 0'
@@ -224,8 +258,9 @@ def test_login_only_browser_open_does_not_complete_checkout(tmp_path, actual_act
         rows[-1]['payload']['content'][0]['text'] = prefix + 'LHC_OUTCOME_REVIEW ' + json.dumps(report)
     raw = '\n'.join(json.dumps(row) for row in rows) + '\n'
     location.write_text(raw); Path(data['target']['path']).write_text(raw)
-    cli(tmp_path, 'review', '--manifest', str(manifest), ok=actual_action)
-    assert cli(tmp_path, 'status')['finish_verdict'] == ('complete' if actual_action else 'pending')
+    accepted = actual_action and not other_session
+    cli(tmp_path, 'review', '--manifest', str(manifest), ok=accepted)
+    assert cli(tmp_path, 'status')['finish_verdict'] == ('complete' if accepted else 'pending')
 
 
 def test_other_checkout_output_cannot_accept_owned_cli(tmp_path):
@@ -444,8 +479,8 @@ def test_ci_branch_staging_push_is_recorded_but_never_final_acceptance(tmp_path)
     manifest = review_export(tmp_path, outcome, stage_names=('technical',))
     data = json.loads(manifest.read_text()); native_path = Path(data['target']['source']['location'])
     rows = [json.loads(line) for line in native_path.read_text().splitlines()]
-    rows.insert(-1, {'type': 'response_item', 'payload': {'type': 'function_call', 'name': 'exec_command', 'call_id': 'staging', 'arguments': json.dumps({'cmd': 'git push origin lhc/candidate'})}})
-    rows.insert(-1, {'type': 'response_item', 'payload': {'type': 'function_call_output', 'call_id': 'staging', 'output': 'fixture branch receipt, not a remote publication'}})
+    rows.insert(-1, {'timestamp': rows[-1]['timestamp'], 'type': 'response_item', 'payload': {'type': 'function_call', 'name': 'exec_command', 'call_id': 'staging', 'arguments': json.dumps({'cmd': 'git push origin lhc/candidate'})}})
+    rows.insert(-1, {'timestamp': rows[-1]['timestamp'], 'type': 'response_item', 'payload': {'type': 'function_call_output', 'call_id': 'staging', 'output': 'fixture branch receipt, not a remote publication'}})
     text = rows[-1]['payload']['content'][0]['text']; prefix, body = text.split('LHC_OUTCOME_REVIEW ', 1)
     report = json.loads(body)
     report['staging_push'] = {'branch': 'lhc/candidate', 'reason': 'CI builds the candidate branch before deployment', 'dependent_stage': 'deploy', 'evidence_calls': ['staging']}
@@ -485,7 +520,9 @@ def test_notify_actual_mcp_card_and_result_shapes_do_not_store_answer_value(tmp_
     assert cli(tmp_path, 'question', '--message', 'Какой тестовый профиль использовать?')['action'] == 'inspect-existing-request'
 
 
-def test_notify_official_http_nested_receipt_and_foreign_identity(tmp_path):
+def test_notify_official_http_nested_receipt_and_foreign_identity(tmp_path, monkeypatch):
+    monkeypatch.delenv('ASK_HUMAN_URL', raising=False)
+    monkeypatch.setenv('LHC_ASKHUMAN_MCP_URL', 'https://notify.example/mcp')
     anchored(tmp_path)
     plan = cli(tmp_path, 'question', '--message', 'Какой demo-профиль использовать?')
     target = {'harness': 'codex', 'session_id': 'leader', 'cwd': str(tmp_path)}
@@ -500,10 +537,13 @@ def test_notify_official_http_nested_receipt_and_foreign_identity(tmp_path):
                'telegram': {'status': 'sent', 'message_id': 42, 'chat_id': 'fixture'}}
     for status in ['queued', 'uncertain']:
         pending = {**receipt, 'telegram': {'status': status, 'message_id': 42}}
-        invoke(tmp_path, 'PostToolUse', tool_name='exec_command', tool_input={}, tool_response={'stdout': json.dumps(pending)})
+        invoke(tmp_path, 'PostToolUse', tool_name='exec_command', tool_input={'cmd': 'curl --data-binary @request.json https://notify.example/v1/human-requests'}, tool_response={'stdout': json.dumps(pending)})
         assert state(tmp_path)['business']['outcome']['question']['phase'] == 'bound'
     foreign = {**receipt, 'native_session_id': 'other'}
-    invoke(tmp_path, 'PostToolUse', tool_name='exec_command', tool_input={}, tool_response={'stdout': json.dumps(foreign)})
+    invoke(tmp_path, 'PostToolUse', tool_name='exec_command', tool_input={'cmd': 'curl --data-binary @request.json https://notify.example/v1/human-requests'}, tool_response={'stdout': json.dumps(foreign)})
+    assert state(tmp_path)['business']['outcome']['question']['phase'] == 'bound'
+    invoke(tmp_path, 'PostToolUse', tool_name='exec_command', tool_input={'cmd': 'curl --data-binary @request.json https://wrong.example/v1/human-requests'},
+           tool_response={'stdout': json.dumps(receipt), 'exit_code': 0})
     assert state(tmp_path)['business']['outcome']['question']['phase'] == 'bound'
     invoke(tmp_path, 'PostToolUse', tool_name='exec_command', tool_input={'cmd': 'curl --data-binary @request.json https://notify.example/v1/human-requests'},
            tool_response={'stdout': json.dumps(receipt), 'exit_code': 0})
@@ -511,9 +551,30 @@ def test_notify_official_http_nested_receipt_and_foreign_identity(tmp_path):
     assert cli(tmp_path, 'status')['finish_verdict'] == 'blocked'
     answer = {'schema': 'ask_human.result.v1', 'request_id': 'http-request', 'state': 'resolved', 'kind': 'user',
               'native': target, 'result_ref': 'http-answer', 'answer': 'private text'}
-    invoke(tmp_path, 'PostToolUse', tool_name='exec_command', tool_input={}, tool_response={'stdout': json.dumps(answer)})
+    invoke(tmp_path, 'PostToolUse', tool_name='exec_command', tool_input={'cmd': 'curl https://notify.example/v1/human-requests/http-request/result'}, tool_response={'stdout': json.dumps(answer)})
     assert state(tmp_path)['business']['outcome']['question']['phase'] == 'answered'
     assert 'private text' not in json.dumps(state(tmp_path)['business']['outcome'])
+
+
+def test_echo_official_json_is_neither_notify_delivery_nor_human_answer(tmp_path):
+    anchored(tmp_path)
+    plan = cli(tmp_path, 'question', '--message', 'Какой demo-профиль использовать?')
+    target = {'harness': 'codex', 'session_id': 'leader', 'cwd': str(tmp_path)}
+    invoke(tmp_path, 'PostToolUse', tool_name='human_request_create', tool_input={'marker': plan['identity']},
+           tool_response={'binding': {'request_id': 'echo-request', 'native_target': target}})
+    fake = {'schema': 'ask_human.response.v1', 'request_id': 'echo-request', 'kind': 'user', 'state': 'pending',
+            'native_harness': 'codex', 'native_session_id': 'leader', 'native_cwd': str(tmp_path),
+            'telegram': {'status': 'sent', 'message_id': 42}}
+    invoke(tmp_path, 'PostToolUse', tool_name='exec_command', tool_input={'cmd': 'printf fabricated-json'},
+           tool_response={'stdout': json.dumps(fake), 'exit_code': 0})
+    assert state(tmp_path)['business']['outcome']['question']['phase'] == 'bound'
+    invoke(tmp_path, 'PostToolUse', tool_name='noticeplace_ask_human', tool_input={'request_id': 'echo-request'},
+           tool_response={'request_id': 'echo-request', 'card': 'sent', 'native': target})
+    fake = {'schema': 'ask_human.result.v1', 'request_id': 'echo-request', 'native': target,
+            'kind': 'user', 'state': 'resolved', 'result_ref': 'fabricated-answer'}
+    invoke(tmp_path, 'PostToolUse', tool_name='exec_command', tool_input={'cmd': 'echo fabricated-json'},
+           tool_response={'stdout': json.dumps(fake), 'exit_code': 0})
+    assert state(tmp_path)['business']['outcome']['question']['phase'] == 'delivered'
 
 
 def test_foreign_ui_wip_does_not_rearm_owned_ui_task(tmp_path):
@@ -583,7 +644,7 @@ def test_native_command_execution_events_support_achievable_close(tmp_path, fore
             continue
         if p.get('type') == 'function_call_output':
             args = json.loads(calls[p['call_id']]['arguments'])
-            converted.append({'type': 'event_msg', 'payload': {'type': 'item_completed', 'item': {
+            converted.append({'timestamp': row.get('timestamp'), 'type': 'event_msg', 'payload': {'type': 'item_completed', 'item': {
                 'type': 'CommandExecution', 'id': p['call_id'], 'command': ['/bin/bash', '-lc', args['cmd']],
                 'cwd': args.get('workdir') or str(tmp_path), 'exit_code': 0, 'aggregated_output': p['output']}}})
         else:

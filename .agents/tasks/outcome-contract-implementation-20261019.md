@@ -59,3 +59,24 @@ Learning: inspect actual native/HTTP payloads and stage operation/cwd, not nonem
 receipts or schema headers. Reused as paired positive/negative regressions above.
 Herder uses existing user singleton18787 via http-mcp-stdio.js, never index/root.
 Ownership note99b3be45-8593-45eb-a8f2-cb04f6cab211 renewed20:21UTC with7200s TTL.
+
+21:15UTC delta: frozen5c5328b full371passed129.23s/parity23/Bun12, but independent
+review correctly retained CHANGES_REQUIRED for old calls under fresh raw final,
+mixed browser sessions, schema-only echoed Notify data. Exact old-package controls
+residual-red-frozen-5c5328b.log reproduced all3; fixes bind native call order/time
+to current assignment/evidence_after, browser navigation/action/result to the same
+session/namespace/tab/target, and HTTP responses to configured direct curl endpoint/
+operation. Native MCP remains supported, no live question sent. Residual source
+suite51passed40.46s; source revision/package regenerated next, full checks pending.
+Hourly business-1 was actually reviewed and recorded in existing native state;
+decision continue these three provenance repairs toward real candidate acceptance,
+not another audit or receipt-only release. Native user result remains unproved.
+
+21:18UTC: residual exact old-source RED controls retained; current51passed40.46s.
+Added native CommandExecution start-before-assignment/completion-after control: RED
+(command-start-red.log), fixed by preserving earliest source event, then7 targeted
+provenance cases passed7.89s (provenance-delta-green.log). Native call window also
+ends at the original final; missing time/order is explicit unsupported evidence.
+HTTP positive controls use the configured actual operation; fake printf delivery
+and echo answer remain blocked even after a real-shaped MCP delivery receipt.
+Package regenerated; next frozen SHA gets a fresh full validator and delta review.

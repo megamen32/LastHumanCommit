@@ -10,6 +10,7 @@ import os
 from pathlib import Path
 import re
 import shlex
+from datetime import datetime, timezone
 
 import lhc_milestone as native
 from lhc_outcome import ENGINEERING, STAGES, scope_revision
@@ -30,16 +31,47 @@ def load_review(path):
             raise ValueError('review export differs from native source')
         result = native.native_transcript(raw)
         rows = [json.loads(line) for line in raw.decode().splitlines() if line.strip()]
+        assignments, call_meta = [], {}
+        for index, row in enumerate(rows):
+            p = row.get('payload', {})
+            if row.get('type') == 'response_item' and p.get('role') == 'user':
+                assignments.append({'index': index, 'at': row.get('timestamp'), 'text': native.content(p.get('content'))})
+            if p.get('type') in {'function_call', 'custom_tool_call'}:
+                call_meta[p.get('call_id')] = (index, row.get('timestamp'))
+            item = p.get('item') or {}
+            if item.get('type') == 'CommandExecution':
+                call_meta.setdefault(item.get('id'), (index, row.get('timestamp')))
+        result[0]['assignments'] = assignments
+        result[0]['review_end_index'] = max((i for i, row in enumerate(rows) if row.get('payload', {}).get('role') == 'assistant'
+                                            and row['payload'].get('phase') != 'commentary'), default=-1)
+        for call, _ in result[2]:
+            call['_source_index'], call['_source_time'] = call_meta.get(call.get('call_id'), (None, None))
         finals = [row.get('timestamp') for row in rows if row.get('type') == 'response_item'
                   and row.get('payload', {}).get('role') == 'assistant' and row['payload'].get('phase') != 'commentary']
         result[0]['reviewed_at'] = next((stamp for stamp in reversed(finals) if stamp), result[0].get('timestamp'))
     elif target.get('harness') == 'opencode':
         result = native.opencode_transcript(target, raw)
+        assignments, call_meta = [], {}
+        def iso(milliseconds):
+            return datetime.fromtimestamp(milliseconds / 1000, timezone.utc).isoformat() if milliseconds else None
+        for index, message in enumerate(json.loads(raw)):
+            header = message.get('info') or message
+            if header.get('role') == 'user':
+                assignments.append({'index': index, 'at': iso(header.get('time', {}).get('created')),
+                                    'text': native.content(message.get('parts') or message.get('content')) or message.get('text', '')})
+            for part in message.get('parts') or []:
+                if part.get('type') == 'tool':
+                    stamp = (part.get('state') or {}).get('time', {}).get('start') or header.get('time', {}).get('created')
+                    call_meta[part.get('callID') or part.get('id')] = (index, iso(stamp))
+        result[0]['assignments'] = assignments
+        result[0]['review_end_index'] = max((i for i, message in enumerate(json.loads(raw))
+                                            if (message.get('info') or message).get('role') == 'assistant'), default=-1)
+        for call, _ in result[2]:
+            call['_source_index'], call['_source_time'] = call_meta.get(call.get('call_id'), (None, None))
         finals = [(message.get('info') or message).get('time', {}).get('completed') for message in json.loads(raw)
                   if (message.get('info') or message).get('role') == 'assistant']
         stamp = next((value for value in reversed(finals) if value), None)
         if stamp:
-            from datetime import datetime, timezone
             result[0]['reviewed_at'] = datetime.fromtimestamp(stamp / 1000, timezone.utc).isoformat()
     else:
         raise ValueError('native review format unsupported; use existing independent Codex/OpenCode reviewer')
@@ -138,14 +170,37 @@ def real_observation(call, output, target, stage, task_class=None, cwd=None, exp
 
 
 def browser_journey(refs, by_call, target):
-    browser = [(call, output) for ref in refs for call, output in [by_call[ref]]
+    browser = [(call, output) for ref, (call, output) in by_call.items() if ref in refs
                if 'browser' in str(call.get('name', '')).casefold() or 'agent-browser' in command(call)[0]]
     if not browser:
         return True  # CLI/API has its own exact target floor.
-    names = [str(call.get('name', '')).casefold() + ' ' + command(call)[0] for call, _ in browser]
-    actions = [i for i, name in enumerate(names) if re.search(r'click|fill|type|press|select|submit', name)]
-    return bool(actions and any(i > actions[0] and re.search(r'snapshot|screenshot|evaluate|extract|get.text', name)
-                                and browser[i][1].strip() for i, name in enumerate(names)))
+    contexts = {}
+    for call, output in browser:
+        args = call.get('arguments') or call.get('input') or '{}'
+        args = json.loads(args) if isinstance(args, str) else args
+        text, words = command(call)
+        name = str(call.get('name', '')).casefold()
+        def field(*names):
+            value = next((args[k] for k in names if args.get(k) is not None), None)
+            for k in names:
+                if '--' + k in words:
+                    index = words.index('--' + k)
+                    return words[index + 1] if index + 1 < len(words) else None
+            return value
+        key = (name.rsplit('__', 1)[0], field('session', 'session_id', 'sessionId'),
+               field('namespace'), field('tabId', 'pageId', 'targetId'))
+        action = name + ' ' + text
+        url = args.get('url') or next((word for word in words if word.startswith(('http://', 'https://'))), None)
+        if url and re.search(r'open|navigate|goto', action):
+            contexts[key] = {'target': url, 'acted': False}
+        current = contexts.get(key, {})
+        if current.get('target') != target or (url and url != target):
+            continue
+        if re.search(r'click|fill|type|press|select|submit', action) and output.strip():
+            current['acted'] = True
+        elif current.get('acted') and re.search(r'snapshot|screenshot|evaluate|extract|get.text', action) and output.strip():
+            return True
+    return False
 
 
 def raw_review(outcome, final, observations, cwd):
@@ -210,6 +265,19 @@ def accept_review(outcome, state, path, cwd, owner):
         raise ValueError('review assignment must identify the outcome')
     if any(correction not in prompt for correction in outcome.get('corrections', [])):
         raise ValueError('review omits the latest accepted scope corrections')
+    assignments = [row for row in meta.get('assignments', []) if outcome['original_goal'] in row['text']
+                   and (own_attempt or outcome['id'] in row['text'])]
+    if not assignments:
+        raise ValueError('native source has no current scope-bound assignment window')
+    assignment = max(assignments, key=lambda row: row['index'])
+    after = max(native.timestamp(outcome.get('evidence_after') or outcome['started_at']),
+                native.timestamp(assignment['at'] or outcome['started_at']))
+    observations = [(call, output) for call, output in observations
+                    if call.get('_source_index') is not None and call['_source_index'] > assignment['index']
+                    and call['_source_index'] < meta.get('review_end_index', -1)
+                    and call.get('_source_time') and after <= native.timestamp(call['_source_time']) <= native.timestamp(meta.get('reviewed_at') or meta['timestamp'])]
+    if scope_revision(outcome, cwd) != outcome['revision']:
+        raise ValueError('owned revision changed; refresh the contract and actual evidence before review')
     lines = [line[len(MARKER):] for line in final.splitlines() if line.startswith(MARKER)]
     if len(lines) > 1:
         raise ValueError('ambiguous independent review summaries')

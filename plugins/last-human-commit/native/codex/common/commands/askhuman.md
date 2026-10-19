@@ -23,6 +23,10 @@ When a real human decision blocks the accepted canary:
    configured project/recipient/actors and the same native_target/message.
    Herder choices `choiceId,label` map to Notify `value,label`; keep labels ≤80.
    Use protected existing credentials, never put tokens/headers in logs.
+   Native outcome observation recognizes direct curl at the existing configured
+   ASK_HUMAN_URL (or origin of LHC_ASKHUMAN_MCP_URL), plus that exact request's
+   result GET. Echoed JSON/unknown wrappers are not delivery/answer provenance;
+   use the native MCP path when HTTP provenance cannot be established.
 4. Check actual `sent` provider receipt. Created, queued, not_configured and
    uncertain are not delivery. On an accepted/UNKNOWN attempt query the existing
    request/result; never repeat the side effect or create a replacement session.

@@ -80,8 +80,14 @@ mergeCommit oid); publication also supports exact `git ls-remote ... refs/heads/
 with the expected head SHA. These are reads, not reviewer mutation rights. Unknown
 readback formats stay explicit instead of being accepted as arbitrary CLI output.
 Browser coverage needs action followed by snapshot/result, not open/login alone.
+Navigation, action and result must share the target-bound browser session,
+namespace and tab; another application's snapshot cannot close this claim.
 Effective native workdir must remain in the project; relative CLI canaries run
 at the bound project root, not another checkout with the same filename.
+Reused review sessions are supported, but only native calls after the current
+scope-bound assignment and latest owned revision/contract observation can count.
+Fresh final prose cannot relabel old calls as evidence of the new revision.
+Unknown source timestamps/order stay explicit instead of being guessed fresh.
 
 This is a bounded mechanical floor. The independent reviewer owns semantic
 truth: same operation, host, revision and real expected result. Native refs, echo,
@@ -118,3 +124,10 @@ uses native_target). MCP card=sent is source-backed send status but omits the
 provider message ID; preserve that limitation. Canonical ask_human.result.v1 has
 state=resolved plus exact native target/result_ref. Never store its answer value
 in the outcome ledger or interpret that state as permission.
+
+The HTTP floor supports direct native curl POST and exact request-result GET at
+the endpoint from existing ASK_HUMAN_URL or LHC_ASKHUMAN_MCP_URL configuration,
+captured before the attempt. Echo/printf, shell wrappers/compound commands,
+write-out JSON, redirects and foreign endpoints are not Notify provenance.
+Unknown HTTP clients/configuration use the existing native MCP path; schema text
+alone cannot establish delivery or a human answer. No live roundtrip is implied.

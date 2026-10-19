@@ -13,6 +13,8 @@ from pathlib import Path
 import re
 import sys
 import shlex
+import os
+from urllib.parse import urlsplit
 
 if str(Path(__file__).resolve().parent) not in sys.path:
     sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -126,6 +128,7 @@ def observe(state, event, name, cwd, session, now):
             'id': digest([session, goal]), 'owner': {'harness': business.get('runtime'), 'session_id': session},
             'original_goal': goal, 'latest_correction': goal, 'task_class': kind,
             'started_at': now.isoformat(), 'cwd': str(cwd), 'native_source': business.get('transcript_path'), 'contract_confirmed': kind == 'status',
+            'evidence_after': now.isoformat(),
             'canary': {'scenario': goal[:512], 'target': target, 'expected': expected[:512], 'status': 'pending'},
             'owned_paths': [], 'stages': applicable(kind, goal), 'used_continuations': [],
             'class_confirmed': False, 'scope_sources': list(business.get('execution_context', {}).get('direct_user_messages', [])),
@@ -169,11 +172,13 @@ def observe(state, event, name, cwd, session, now):
             outcome.setdefault('corrections', []).append(prompt)
             outcome['contract_confirmed'] = False
             outcome['canary']['status'] = 'pending'
+            outcome['evidence_after'] = now.isoformat()
             for row in outcome['stages'].values():
                 if row['status'] == 'complete':
                     row['status'] = 'pending'
     revision = scope_revision(outcome, cwd)
     if outcome.get('revision') and revision != outcome['revision']:
+        outcome['evidence_after'] = now.isoformat()
         outcome['canary']['status'] = 'pending'
         # Evidence from an old owned revision cannot accept the new code.
         for row in outcome['stages'].values():
@@ -241,6 +246,11 @@ def question_plan(outcome, message):
     if old and (old.get('phase') != 'answered' or old.get('identity') == identity):
         return {'action': 'inspect-existing-request', 'question': old}
     question = outcome['question'] = {'identity': identity, 'phase': 'prepared', 'message': message}
+    configured = os.environ.get('ASK_HUMAN_URL') or os.environ.get('LHC_ASKHUMAN_MCP_URL')
+    if configured:
+        url = urlsplit(configured)
+        if url.scheme in {'http', 'https'} and url.netloc and not (url.username or url.password or url.query or url.fragment):
+            question['http_endpoint'] = configured.rstrip('/') if os.environ.get('ASK_HUMAN_URL') else url._replace(path='/v1/human-requests').geturl()
     return {'action': 'bound-question', 'identity': identity,
             'binding': {'tool': 'human_request_create', 'arguments': {'kind': 'user',
                 'harness': outcome['owner']['harness'], 'sessionId': outcome['owner']['session_id'],
@@ -250,6 +260,41 @@ def question_plan(outcome, message):
                          'cwd': outcome['cwd'], 'message': message},
             'result': {'tool': 'noticeplace_question_result', 'request_id': '<same request_id>'},
             'policy': 'Persist binding before delivery; inspect accepted/UNKNOWN, never replay. Missing actors/project is a scoped blocker; no invented incident. Delivery != answer != permission.'}
+
+
+def http_question_operation(name, args, question):
+    """Known direct HTTP read/write route, never a schema emitted by echo.
+
+    The endpoint comes from existing configuration before the attempt. Unknown
+    clients/wrappers cannot establish delivery; the native MCP path still works.
+    """
+    endpoint = question.get('http_endpoint')
+    if not endpoint or name not in {'exec_command', 'Bash', 'shell_exec'}:
+        return None
+    text = str(args.get('cmd') or args.get('command') or '')
+    if any(char in text for char in ('\n', ';', '|', '`', '$(', '&&', '>', '<')):
+        return None
+    try:
+        words = shlex.split(text)
+    except ValueError:
+        return None
+    if not words or Path(words[0]).name != 'curl' or any(
+            word in {'-w', '--write-out', '-K', '--config', '-L', '--location', '--next', '--resolve', '--connect-to', '-k', '--insecure'}
+            or word.startswith(('--write-out=', '--config=', '--resolve=', '--connect-to=')) for word in words):
+        return None
+    if any(word.startswith(('-w', '-K', '-k', '-L')) or (re.fullmatch(r'-[a-zA-Z]+', word) and set(word[1:]) & set('wKkL')) for word in words[1:]):
+        return None
+    urls = [word for word in words if word.startswith(('http://', 'https://'))]
+    if len(urls) != 1:
+        return None
+    method = next((words[i + 1] for i, word in enumerate(words[:-1]) if word in {'-X', '--request'}), None)
+    method = method or next((word[2:] for word in words if word.startswith('-X') and len(word) > 2), None)
+    method = method or ('POST' if any(word in {'-d', '--data', '--data-binary', '--data-raw', '--json'} for word in words) else 'GET')
+    if urls[0] == endpoint and method.upper() == 'POST':
+        return 'delivery'
+    if urls[0] == endpoint + '/' + str(question.get('request_id')) + '/result' and method.upper() == 'GET':
+        return 'answer'
+    return None
 
 
 def observe_question(outcome, event):
@@ -275,6 +320,7 @@ def observe_question(outcome, event):
     if not isinstance(data, dict):
         return
     source = 'native-tool:' + str(event.get('tool_call_id') or event.get('call_id') or name)
+    http_operation = http_question_operation(name, args, question)
     if name == 'human_request_create':
         binding = data.get('binding') or {}
         target = binding.get('native_target') or {}
@@ -288,7 +334,7 @@ def observe_question(outcome, event):
             if question['phase'] == 'prepared':
                 question['phase'] = 'bound'
     elif (args.get('request_id') or data.get('request_id')) == question.get('request_id') and question.get('request_id'):
-        if name == 'noticeplace_ask_human' or data.get('schema') == 'ask_human.response.v1':
+        if name == 'noticeplace_ask_human' or (http_operation == 'delivery' and data.get('schema') == 'ask_human.response.v1'):
             # Only an actual sent receipt; queued/uncertain is still pending.
             # HTTP carries provider receipt; MCP returns the verified card status
             # and exact native target, but strips the provider message ID.
@@ -306,7 +352,7 @@ def observe_question(outcome, event):
             elif data.get('card') == 'sent' and same_target:
                 if question['phase'] != 'answered':
                     question.update(phase='delivered', delivery_ref=source, provider_message_ref='not-exposed-by-MCP')
-        elif name == 'noticeplace_question_result' or data.get('schema') == 'ask_human.result.v1':
+        elif name == 'noticeplace_question_result' or (http_operation == 'answer' and data.get('schema') == 'ask_human.result.v1'):
             target = data.get('native') or {}
             if (data.get('schema') == 'ask_human.result.v1' and data.get('request_id') == question['request_id']
                     and data.get('state') == 'resolved' and data.get('kind') == 'user' and data.get('result_ref')
@@ -382,6 +428,7 @@ def main():
             changed = canary != outcome['canary'] or args.owned_path != outcome['owned_paths'] or args.coverage != outcome.get('coverage', []) or claims != outcome.get('stage_claims', {})
             outcome.update(canary=canary, owned_paths=args.owned_path, coverage=args.coverage, contract_confirmed=True, stage_claims=claims)
             if changed:
+                outcome['evidence_after'] = datetime.now().astimezone().isoformat()
                 for stage in outcome['stages'].values():
                     if stage['status'] == 'complete':
                         stage['status'] = 'pending'
