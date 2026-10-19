@@ -706,8 +706,9 @@ def test_no_delegation_self_check_works_before_final_via_native_commentary(tmp_p
     assert cli(tmp_path, 'review', '--manifest', str(manifest))['finish_verdict'] == 'complete'
 
 
-def test_explicit_independent_acceptance_is_not_removed_by_no_delegation(tmp_path):
-    outcome = anchored(tmp_path, 'Fix the small total CLI. Independent review required. Do not delegate.')
+@pytest.mark.parametrize('requirement', ['Independent review required.', 'Independent verification required.', 'Нужна независимая проверка.'])
+def test_explicit_independent_acceptance_is_not_removed_by_no_delegation(tmp_path, requirement):
+    outcome = anchored(tmp_path, 'Fix the small total CLI. ' + requirement + ' Do not delegate. No deploy, no push, no merge.')
     manifest = review_export(tmp_path, outcome, sid='leader')
     cli(tmp_path, 'review', '--manifest', str(manifest), ok=False)
     assert cli(tmp_path, 'status')['finish_verdict'] == 'pending'

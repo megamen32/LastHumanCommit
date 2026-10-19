@@ -34,7 +34,7 @@ def bounded_self_check(outcome):
     # A leaf assignment can finish without claiming the parent's independent
     # milestone acceptance. A scope restriction never removes remote stages.
     scope = '\n'.join([outcome['original_goal'], *outcome.get('corrections', [])])
-    independent = re.search(r'independent\s+(?:review|acceptance)|независим.{0,25}(?:при[её]м|ревью|review)', scope, re.I)
+    independent = re.search(r'independent\s+(?:review|acceptance|verification|check|test)|независим.{0,25}(?:при[её]м|ревью|review|проверк|тест)', scope, re.I)
     return (outcome['task_class'] == 'quickfix' and outcome.get('delegation_prohibited') and not independent
             and all(outcome['stages'][s]['status'] == 'not-applicable'
                     for s in ('deploy', 'publication', 'integration')))
