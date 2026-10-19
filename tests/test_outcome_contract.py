@@ -1091,7 +1091,7 @@ def test_project_ui_surface_does_not_become_a_similarly_named_cli(tmp_path):
     with pytest.raises(ValueError):consumer_target(outcome,[(call,'20')],tmp_path)
 
 
-@pytest.mark.parametrize('progress', ['', 'The review reads the persisted transcript; now checking its metadata.'])
+@pytest.mark.parametrize('progress', ['', 'The review reads the persisted transcript; now checking its metadata.', 'Metadata check passed.', 'Metadata check 0 passed.'])
 def test_native_opencode_tool_only_spacing_does_not_replace_actual_review(tmp_path, monkeypatch, progress):
     import lhc_outcome_review as reviews
     import lhc_outcome as outcomes
@@ -1123,3 +1123,20 @@ def test_project_display_annotation_cannot_select_a_foreign_script_or_cwd(tmp_pa
     assert not equivalent_target(local + ' (foreign/total.py)', 'python3 foreign/total.py', tmp_path, 'Fix the root total.py CLI.')
     assert not equivalent_target(local + ' (checkout CLI)', 'python3 checkout.py', tmp_path, 'Only test the checkout UI.')
     assert equivalent_target(local + ' (total CLI)', 'python3 total.py', tmp_path, 'Fix total.py CLI.')
+
+
+def test_newer_native_negative_assessment_is_not_skipped_for_an_older_pass(tmp_path, monkeypatch):
+    import lhc_outcome_review as reviews
+    outcome = anchored(tmp_path, NO_DELEGATE_PROMPT)
+    outcome['owner']['harness'] = 'opencode'
+    payload = native_v2_export_fixture(tmp_path, outcome)
+    stamp = payload['messages'][-1]['time']['completed'] + 10
+    payload['messages'].append({'id': 'new-negative', 'type': 'assistant',
+        'time': {'created': stamp, 'completed': stamp + 1},
+        'content': [{'type': 'text', 'text': 'FAILURE. A new defect was found; further coverage remains untested.'}]})
+    monkeypatch.setattr(reviews.subprocess, 'run', lambda *a, **k:
+        subprocess.CompletedProcess(a[0], 0, json.dumps(payload).encode(), b''))
+    manifest = reviews.native_self_manifest(outcome, tmp_path, 'opencode', 'leader')
+    with pytest.raises(ValueError, match='product result does not satisfy engineering canary'):
+        reviews.accept_review(outcome, state(tmp_path), manifest, tmp_path, 'leader')
+    assert outcome.get('product_verdict') != 'pass'

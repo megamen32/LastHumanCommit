@@ -126,7 +126,7 @@ meaningful results, blockers or decisions. Notification never acknowledges revie
 
 ## Estimate overrun
 
-Crossing the original maximum immediately emits the tool's complete Russian
+Crossing the original maximum immediately emits the tool's complete English
 business-first diagnostic. The original estimate remains visible; changing it
 does not clear the event. L must answer with evidence and choose a shorter route,
 one concrete canary-reaching continuation, or one necessary user decision.

@@ -489,6 +489,24 @@ def raw_review(outcome, final, observations, cwd):
             'comparison': final, 'stages': stages, 'coverage': coverage, 'format': 'original-native-prose'}
 
 
+def own_assessment(outcome, text, observations, cwd):
+    if MARKER in text or outcome['task_class'] == 'research':
+        return True
+    defect, positive = report_result(text)
+    # Never fall back over newer negative findings, even if unsupported/partial.
+    if defect:
+        return True
+    if not positive:
+        return False
+    try:
+        target = consumer_target(outcome, observations, cwd)
+    except ValueError:
+        return False
+    short_target = Path(shlex.split(target)[-1]).name
+    names_consumer = any(name.casefold() in text.casefold() for name in (target, short_target)) or re.search(r'\bCLI\b', text, re.I)
+    return bool(names_consumer and expected_compared(outcome['canary']['expected'], text, observations, False))
+
+
 def accept_review(outcome, state, path, cwd, owner):
     from lhc_outcome import bounded_self_check
     meta, messages, observations = load_review(path)
@@ -499,8 +517,7 @@ def accept_review(outcome, state, path, cwd, owner):
     # A later progress remark/tool message is not a replacement assessment.
     # Keep the actual report's own source index/time: no freshness extension.
     own_report = next((report for report in reversed(meta.get('own_reports', []))
-                       if MARKER in report['text'] or any(report_result(report['text']))
-                       or outcome['task_class'] == 'research'), None) if own_attempt else None
+                       if own_assessment(outcome, report['text'], observations, cwd)), None) if own_attempt else None
     if own_report:
         # Own commentary is available before the final response; source call
         # order still ends at that actual report, never at a later export call.

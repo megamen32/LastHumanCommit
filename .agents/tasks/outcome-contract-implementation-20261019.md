@@ -223,3 +223,15 @@ not a frozen final-tree receipt. Final unchanged-source validator now running.
 Next: one bounded existing reviewer checks this actual language/native-close delta;
 then fresh ordinary Russian OpenCode followup proves English coordination/task note
 and Russian final, preserving completed Codex/demo receipts. No new research/council.
+
+23:20 UTC — independent553 review accepted English semantics/projections but found
+residual positive metadata displacement. Exact Metadata check passed / Metadata
+check0passed RED2failed2passed reproduced. Selection now requires positive canary
+context and expected comparison, while newer negative findings remain authoritative
+with original source index/time (no fallback over defects/freshness extension).
+Exact5 controls GREEN; current complete outcome/language suites running. Local
+TIME_CONTROL wording corrected from Russian to English diagnostic. No install
+or old-canary resumption. Prior full553442PASS170.28s/Bun13 remain scoped correctly;
+this real report-selector delta gets its own full affected outcome suite/parity,
+not another unchanged whole-system validator or council. Same existing reviewer
+checks only this residual; English semantic review is not restarted.
