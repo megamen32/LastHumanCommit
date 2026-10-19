@@ -12,6 +12,7 @@ import re
 import shlex
 import subprocess
 from datetime import datetime, timezone
+from urllib.parse import unquote, urlsplit
 
 import lhc_milestone as native
 from lhc_outcome import ENGINEERING, STAGES, scope_revision, remote_binding
@@ -188,6 +189,10 @@ def command(call):
         if words and Path(words[0]).name in {'bash', 'sh', 'zsh'}:
             index = next((i for i, w in enumerate(words) if w in {'-c', '-lc'}), None)
             return command(dict(arguments=json.dumps({'cmd': words[index + 1]}))) if index is not None else ('', [])
+        lexer = shlex.shlex(text, posix=True, punctuation_chars=';&|<>')
+        lexer.whitespace_split = True
+        if any(token and set(token) <= set(';&|<>') for token in lexer):
+            return '', []
     except (ValueError, IndexError):
         return '', []
     # Quoted commands, echo+receipt and compound shell output are not real
@@ -200,11 +205,91 @@ def command(call):
     return text, words
 
 
+def cli_identity(words, cwd):
+    """Known Python argv aliases only; never evaluate shell or user code."""
+    if words and re.fullmatch(r'python(?:3(?:\.\d+)?)?', Path(words[0]).name):
+        rest = words[1:]
+        while rest and rest[0] == '-B':
+            rest = rest[1:]
+        if rest[:1] == ['-m']:
+            return ('python', *rest)
+        if not rest or rest[0].startswith('-'):
+            return ()
+        return ('python', str((cwd / rest[0]).resolve()), *rest[1:])
+    return tuple(words)
+
+
+def target_identity(target, cwd):
+    uri = urlsplit(target) if target.startswith('file:') else None
+    if uri and (uri.netloc not in {'', 'localhost'} or uri.query or uri.fragment):
+        return ()
+    expected = [unquote(uri.path)] if uri else shlex.split(target)
+    if len(expected) == 1 and (uri or expected[0].endswith('.py')):
+        return ('python', str((cwd / expected[0]).resolve()))
+    return cli_identity(expected, cwd)
+
+
+def local_native_path(value):
+    value = str(value)
+    if not value.startswith('file:'):
+        return Path(value)
+    uri = urlsplit(value)
+    if uri.netloc not in {'', 'localhost'} or uri.query or uri.fragment or not Path(unquote(uri.path)).is_absolute():
+        raise ValueError('not a local native file URI')
+    return Path(unquote(uri.path))
+
+
+def cli_matches(words, target, cwd):
+    actual = cli_identity(words, cwd)
+    wanted = target_identity(target, cwd)
+    return bool(wanted and actual[:len(wanted)] == wanted)
+
+
+def scope_names_script(scope, script):
+    return bool(re.search(r'(?<![\w.-])(?:' + re.escape(script.name) + '|' + re.escape(script.stem) + r')(?![\w.-])', scope, re.I))
+
+
+def equivalent_target(old, new, cwd, scope):
+    if old == new:
+        return True
+    if old.startswith('project:') or new.startswith('project:'):
+        project, target = (old, new) if old.startswith('project:') else (new, old)
+        identity = target_identity(target, cwd)
+        if Path(project[8:]).resolve() != cwd or len(identity) != 2 or identity[0] != 'python':
+            return False
+        script = Path(identity[1])
+        return script.is_relative_to(cwd) and scope_names_script(scope, script)
+    return bool(target_identity(old, cwd) and target_identity(old, cwd) == target_identity(new, cwd))
+
+
+def consumer_target(outcome, observations, cwd):
+    target = outcome['canary']['target']
+    if not target.startswith('project:'):
+        return target
+    if Path(target[8:]).resolve() != cwd:
+        raise ValueError('project canary belongs to another native cwd')
+    scope = '\n'.join([outcome['original_goal'], *outcome.get('corrections', [])])
+    scripts = set()
+    for call, output in observations:
+        _, words = command(call)
+        identity = cli_identity(words, cwd)
+        if len(identity) < 2 or identity[0] != 'python' or identity[1].startswith('-'):
+            continue
+        script = Path(identity[1])
+        if not script.is_relative_to(cwd) or not scope_names_script(scope, script):
+            continue
+        if real_observation(call, output, str(script), 'consumer', outcome['task_class'], cwd):
+            scripts.add(str(script))
+    if len(scripts) != 1:
+        raise ValueError('project target needs one scope-named native CLI; unsupported/ambiguous source: one direct CLI reread, no echo/compound or review loop')
+    return scripts.pop()
+
+
 def real_observation(call, output, target, stage, task_class=None, cwd=None, expected=None):
     args = call.get('arguments') or call.get('input') or '{}'
     try:
         args = json.loads(args) if isinstance(args, str) else args
-        directory = Path(args.get('workdir') or args.get('cwd') or cwd)
+        directory = local_native_path(args.get('workdir') or args.get('cwd') or cwd)
         directory = (cwd / directory).resolve() if not directory.is_absolute() else directory.resolve()
         directory.relative_to(cwd)
         # Relative CLI targets are bound to the canary project root. A second
@@ -218,7 +303,8 @@ def real_observation(call, output, target, stage, task_class=None, cwd=None, exp
     if not output.strip():
         return False
     if stage == 'technical':
-        return bool(words and (Path(words[0]).name == 'pytest' or words[:2] in [['go', 'test'], ['cargo', 'test'], ['bun', 'test'], ['npm', 'test']] or (Path(words[0]).name in {'python', 'python3'} and words[1:3] in [['-m', 'pytest'], ['-m', 'unittest']])))
+        normalized = cli_identity(words, cwd)
+        return call.get('_exit_code', 0) == 0 and bool(words and (Path(words[0]).name == 'pytest' or words[:2] in [['go', 'test'], ['cargo', 'test'], ['bun', 'test'], ['npm', 'test']] or normalized[:3] in [('python', '-m', 'pytest'), ('python', '-m', 'unittest')]))
     if stage == 'consumer':
         if task_class == 'research':
             try:
@@ -232,8 +318,9 @@ def real_observation(call, output, target, stage, task_class=None, cwd=None, exp
         if target.startswith(('http://', 'https://')):
             # Full URL token, not a host substring in echo, another host or log.
             return target in words and (bool(words and Path(words[0]).name in {'curl', 'wget', 'agent-browser'}) or 'browser' in name)
-        expected = shlex.split(target)
-        return bool(expected and words[:len(expected)] == expected and not re.search(r'pytest|\btest\b', text))
+        return (not target.startswith('project:') and cli_matches(words, target, cwd)
+                and not re.search(r'pytest|\btest\b', text)
+                and (task_class not in ENGINEERING or call.get('_exit_code', 0) == 0))
     # Readbacks are stage-specific and contract-bound, never arbitrary Git
     # metadata or a reviewer mutation. Unknown formats need the existing review
     # path plus a supported readback, not a guessed deployment certificate.
@@ -299,6 +386,27 @@ def browser_journey(refs, by_call, target):
     return False
 
 
+def expected_compared(expected, final, observations, defect):
+    """Literal prose or bounded CLI data comparison, not a semantic parser."""
+    normalize = lambda value: ' '.join(value.casefold().split())
+    if normalize(expected) in normalize(final):
+        return True
+    if not re.search(r'ожид|expected|matched|соответств|ровно|подтвержд', final, re.I):
+        return False
+    outputs = '\n'.join(output for _, output in observations)
+    csv = re.findall(r'(?<![\w,])[\w]+,[\w]+(?![\w,])', expected)
+    numbers = re.findall(r'(?<!\w)\d+(?!\w)', expected)
+    if not csv and not (numbers and re.search(r'total|сумм|exit|status|статус|код', expected, re.I)):
+        return False
+    if csv and not all(normalize(value) in normalize(outputs) for value in csv):
+        return False
+    if numbers and not all(re.search(r'(?<!\d)' + value + r'(?!\d)', final) for value in numbers):
+        return False
+    data = re.sub(r'exit\s*[:=]?\s*\d+|код(?:\s+выхода)?\s*[:=]?\s*\d+', '', expected, flags=re.I)
+    return defect or all(re.search(r'(?<!\d)' + value + r'(?!\d)', outputs)
+                         for value in re.findall(r'(?<!\w)\d+(?!\w)', data))
+
+
 def raw_review(outcome, final, observations, cwd):
     """Small ordinary-report route; keep original prose as semantic assessment.
 
@@ -308,18 +416,20 @@ def raw_review(outcome, final, observations, cwd):
     """
     canary = outcome['canary']
     defect = bool(re.search(r'changes.required|\bfailed\b|\bfailure\b|defect found|ошибк|не соответствует', final, re.I))
-    positive = bool(re.search(r'\bPASS\b|no defects|match(?:ed|es)|соответствует|работает', final, re.I))
+    positive = bool(re.search(r'\bPASS(?:ED)?\b|no defects|match(?:ed|es)|соответствует|работает|прош[её]л|прошл[аои]', final, re.I))
     if not final.strip() or not (positive or defect or outcome['task_class'] == 'research'):
         raise ValueError('raw review must state its actual result; retain the original report')
     stages = {}
     by_call = {call.get('call_id'): (call, output) for call, output in observations if call.get('call_id')}
+    resolved = consumer_target(outcome, observations, cwd)
     for stage in STAGES:
         if outcome['stages'][stage]['status'] != 'pending':
             continue
         claim = outcome.get('stage_claims', {}).get(stage, canary)
         target, expected = claim['target'], claim['expected']
+        observed_target = resolved if stage == 'consumer' else target
         refs = [ref for ref, (call, output) in by_call.items()
-                if real_observation(call, output, target, stage, outcome['task_class'], cwd, expected)]
+                if real_observation(call, output, observed_target, stage, outcome['task_class'], cwd, expected)]
         if stage == 'technical' and not re.search(r'test|regression|тест|провер', final, re.I):
             refs = []
         if stage in {'deploy', 'publication', 'integration'} and (expected.casefold() not in final.casefold() or target.casefold() not in final.casefold()):
@@ -327,15 +437,17 @@ def raw_review(outcome, final, observations, cwd):
         if stage == 'consumer':
             # Ordinary prose must actually cover this expected consumer result,
             # not a generic all-PASS sentence over unrelated calls.
-            short_target = Path(shlex.split(target)[-1]).name
-            if expected.casefold() not in final.casefold() or not any(t.casefold() in final.casefold() for t in (target, short_target)):
+            short_target = Path(shlex.split(observed_target)[-1]).name
+            compared = expected_compared(expected, final, [by_call[ref] for ref in refs], defect)
+            named = any(t.casefold() in final.casefold() for t in (target, short_target))
+            if not compared or not (named or (refs and re.search(r'\bCLI\b', final, re.I))):
                 refs = []
             if refs:
                 refs += [ref for ref, (call, _) in by_call.items() if 'browser' in str(call.get('name', '')).casefold()]
         if stage == 'integration' and refs and outcome.get('integration_policy', {}).get('branch') not in {None, 'main', 'master'}:
             read_at = max(list(by_call).index(ref) for ref in refs)
             refs += [ref for i, (ref, (call, output)) in enumerate(by_call.items()) if i > read_at
-                     and real_observation(call, output, canary['target'], 'consumer', outcome['task_class'], cwd)]
+                     and real_observation(call, output, resolved, 'consumer', outcome['task_class'], cwd)]
         if not refs:
             break
         stages[stage] = {'target': target, 'expected': expected, 'observed': final,
@@ -406,6 +518,7 @@ def accept_review(outcome, state, path, cwd, owner):
     if outcome['task_class'] == 'testing' and not coverage:
         raise ValueError('testing needs explicit assigned coverage')
     by_call = {call.get('call_id'): (call, output) for call, output in observations if call.get('call_id')}
+    resolved = consumer_target(outcome, observations, cwd)
     for item in coverage:
         claim = report.get('coverage', {}).get(item)
         if (not isinstance(claim, dict) or claim.get('verdict') not in {'passed', 'defect'}
@@ -413,7 +526,7 @@ def accept_review(outcome, state, path, cwd, owner):
             raise ValueError('each assigned coverage claim needs expected/observed comparison')
         refs = claim.get('evidence_calls') or []
         if not refs or not all(ref in by_call for ref in refs) or not any(
-                real_observation(*by_call[ref], canary['target'], 'consumer', outcome['task_class'], cwd) for ref in refs):
+                real_observation(*by_call[ref], resolved, 'consumer', outcome['task_class'], cwd) for ref in refs):
             raise ValueError('assigned coverage needs its actual native consumer observations')
         if not browser_journey(refs, by_call, canary['target']):
             raise ValueError('each browser coverage claim needs its action/result observations')
@@ -482,17 +595,19 @@ def accept_review(outcome, state, path, cwd, owner):
             if not reads:
                 raise ValueError('integration readback must prove the configured branch/head')
             if stage == 'integration' and branch not in {'main', 'master'}:
-                smoke = [ref for ref in refs if real_observation(*by_call[ref], canary['target'], 'consumer', outcome['task_class'], cwd)
+                smoke = [ref for ref in refs if real_observation(*by_call[ref], resolved, 'consumer', outcome['task_class'], cwd)
                          and call_order[ref] > max(call_order[r] for r in reads)]
                 if not smoke or not browser_journey(smoke, by_call, canary['target']):
                     raise ValueError('dev integration needs actual integrated smoke after branch readback')
-        if not any(real_observation(*by_call[ref], claim['target'], stage, outcome['task_class'], cwd, claim['expected']) for ref in refs):
+        observed_target = resolved if stage == 'consumer' else claim['target']
+        if not any(real_observation(*by_call[ref], observed_target, stage, outcome['task_class'], cwd, claim['expected']) for ref in refs):
             raise ValueError('echo/health/test-only/wrong-target receipt is not the assigned consumer operation')
         completed.add(stage)
     for stage, row in updates.items():
         outcome['stages'][stage].update(status='complete', evidence=[{
             'manifest': str(path.resolve()), 'reviewer': sid, 'revision': revision,
             'native_model': meta.get('model'),
+            'consumer_target': resolved if stage == 'consumer' else None,
             'verification_level': 'self-check' if own_attempt else 'independent-review',
             'calls': row['evidence_calls'], 'expected': row['expected'], 'observed': row['observed'],
         }])

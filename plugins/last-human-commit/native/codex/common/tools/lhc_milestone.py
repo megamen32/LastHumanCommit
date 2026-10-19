@@ -105,10 +105,10 @@ def native_transcript(data):
         p = row.get("payload", {})
         if row.get("type") == "event_msg" and p.get("type") == "item_completed":
             item = p.get("item", {})
-            if item.get("type") == "CommandExecution" and item.get("exit_code") == 0:
+            if item.get("type") == "CommandExecution" and isinstance(item.get("exit_code"), int):
                 command = item.get("command", [])
                 if isinstance(command, list) and len(command) >= 3:
-                    observations.append(({"name": "exec_command", "call_id": item.get("id"), "arguments": json.dumps({"cmd": command[-1], "workdir": item.get("cwd")})},
+                    observations.append(({"name": "exec_command", "call_id": item.get("id"), "_exit_code": item['exit_code'], "arguments": json.dumps({"cmd": command[-1], "workdir": item.get("cwd")})},
                                          str(item.get("aggregated_output") or "")))
         if row.get("type") != "response_item":
             continue

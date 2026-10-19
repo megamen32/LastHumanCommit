@@ -61,6 +61,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 OUTCOME = ROOT / 'src/common/tools/lhc_outcome.py'
+sys.path.insert(0, str(OUTCOME.parent))
 
 
 def cli(root, *args, ok=True):
@@ -925,3 +926,113 @@ def test_native_opencode_cli_self_export_checks_original_source(tmp_path, monkey
         assert outcomes.verdict(outcome,context)=='complete'
         assert outcome['verification_level']=='self-check'
     assert len(calls)==2
+
+@pytest.mark.parametrize('target_kind', ['file', 'uri', 'command', 'project'])
+def test_native_cli_target_aliases_close_the_same_actual_script(tmp_path, monkeypatch, target_kind):
+    monkeypatch.setenv('CODEX_HOME',str(tmp_path/'native-home/.codex'))
+    outcome=anchored(tmp_path,'Fix the small total.py CLI. Do not delegate. No deploy, no push, no merge.')
+    aliases={'file':str(tmp_path/'total.py'),'uri':(tmp_path/'total.py').as_uri(),
+             'command':'python3 total.py','project':'project:'+str(tmp_path)}
+    outcome['canary']['target']=aliases[target_kind]
+    manifest=review_export(tmp_path,outcome,sid='leader',command='python3 -B total.py',
+        raw_final='Проверка прошла. python3 total.py: ожидалось 0, stdout 0, exit 0. Тесты прошли. Self-check.')
+    import lhc_outcome_review as reviews
+    import lhc_outcome as outcomes
+    reviews.accept_review(outcome,state(tmp_path),manifest,tmp_path,'leader')
+    assert outcomes.verdict(outcome,state(tmp_path))=='complete'
+
+
+def test_optional_python_flag_keeps_native_unittest_operation(tmp_path):
+    from lhc_outcome_review import real_observation
+    call={'name':'exec_command','arguments':json.dumps({'cmd':'python3 -B -m unittest -v test_export','workdir':str(tmp_path)})}
+    assert real_observation(call,'Ran 1 test\nOK','python3 export.py','technical','quickfix',tmp_path)
+    assert not real_observation({**call,'_exit_code':1},'FAILED','python3 export.py','technical','quickfix',tmp_path)
+
+
+@pytest.mark.parametrize('bad', ['wrong-file','wrong-cwd','echo','unbound-project','compound'])
+def test_cli_alias_normalization_keeps_native_negative_boundaries(tmp_path,bad):
+    from lhc_outcome_review import real_observation
+    cmd='python3 -B total.py';cwd=tmp_path;target=str(tmp_path/'total.py')
+    if bad=='wrong-file':cmd='python3 unrelated.py'
+    if bad=='wrong-cwd':cwd=tmp_path/'foreign'
+    if bad=='echo':cmd='echo python3 total.py'
+    if bad=='unbound-project':target='project:'+str(tmp_path/'foreign')
+    if bad=='compound':cmd='python3 total.py empty; printf 0'
+    call={'name':'exec_command','arguments':json.dumps({'cmd':cmd,'workdir':str(cwd)})}
+    assert not real_observation(call,'0',target,'consumer','quickfix',tmp_path)
+
+
+def test_target_alias_contract_does_not_require_repeating_fresh_product_work(tmp_path):
+    outcome=anchored(tmp_path,NO_DELEGATE_PROMPT)
+    after=outcome['evidence_after'];revision=outcome['revision']
+    updated=cli(tmp_path,'contract','--scenario',outcome['canary']['scenario'],'--target',str(tmp_path/'total.py'),
+                '--expected',outcome['canary']['expected'],'--owned-path','total.py')
+    assert updated['evidence_after']==after
+    assert updated['revision']==revision
+
+
+def test_original_native_csv_comparison_needs_actual_expected_rows():
+    from lhc_outcome_review import expected_compared
+    expected='Ровно две строки: Ирина,Москва и Олег,Казань; exit 0; символы сохранены'
+    report='Исправление прошло регрессионный тест. Настоящий CLI вывел ровно две нужные строки; UTF-8 подтверждён, код выхода 0.'
+    observations=[({'name':'exec_command'},'Ирина,Москва\nОлег,Казань\n')]
+    assert expected_compared(expected,report,observations,False)
+    assert not expected_compared(expected,report,[({},'?????,??????\n????,??????\n')],False)
+    assert not expected_compared(expected,'all PASS',observations,False)
+
+
+def test_failed_native_command_is_testing_observation_not_technical_pass(tmp_path):
+    import lhc_milestone as native
+    from lhc_outcome_review import real_observation
+    rows=[{'type':'session_meta','payload':{'id':'leader','cwd':str(tmp_path)}},
+          {'type':'event_msg','payload':{'type':'item_completed','item':{'type':'CommandExecution','id':'empty-call',
+              'exit_code':1,'command':['/bin/bash','-lc','python3 checkout.py empty'],'cwd':str(tmp_path),
+              'aggregated_output':'{"status":500,"error":"empty basket"}'}}}]
+    _,_,observations=native.native_transcript(('\n'.join(json.dumps(r)for r in rows)+'\n').encode())
+    assert len(observations)==1
+    call,output=observations[0]
+    assert call['_exit_code']==1
+    assert real_observation(call,output,str(tmp_path/'checkout.py'),'consumer','testing',tmp_path)
+    assert not real_observation(call,output,str(tmp_path/'checkout.py'),'consumer','quickfix',tmp_path)
+
+
+def test_real_target_change_keeps_the_freshness_barrier(tmp_path):
+    outcome=anchored(tmp_path,NO_DELEGATE_PROMPT)
+    updated=cli(tmp_path,'contract','--scenario',outcome['canary']['scenario'],'--target','python3 unrelated.py',
+                '--expected',outcome['canary']['expected'],'--owned-path','total.py')
+    assert updated['evidence_after']!=outcome['evidence_after']
+
+
+@pytest.mark.parametrize('foreign',[False,True])
+def test_actual_codex_file_uri_cwd_remains_project_bound(tmp_path,foreign):
+    from lhc_outcome_review import real_observation
+    cwd=tmp_path/'foreign' if foreign else tmp_path
+    call={'name':'exec_command','arguments':json.dumps({'cmd':'python3 -B total.py','workdir':cwd.as_uri()})}
+    assert real_observation(call,'0',str(tmp_path/'total.py'),'consumer','quickfix',tmp_path)==(not foreign)
+
+
+def test_requested_raw_feedback_does_not_invalidate_the_product_observations(tmp_path):
+    import lhc_outcome as outcomes
+    outcome=anchored(tmp_path,NO_DELEGATE_PROMPT)
+    outcome['owned_paths']=['total.py','FEEDBACK.md']
+    before=outcomes.scope_revision(outcome,tmp_path)
+    (tmp_path/'FEEDBACK.md').write_text('Actual expected/observed report after the CLI calls')
+    assert outcomes.scope_revision(outcome,tmp_path)==before
+    (tmp_path/'total.py').write_text('print(99)\n')
+    assert outcomes.scope_revision(outcome,tmp_path)!=before
+    outcome['original_goal']='Fix FEEDBACK.md. Save results in FEEDBACK.md.'
+    before=outcomes.scope_revision(outcome,tmp_path)
+    (tmp_path/'FEEDBACK.md').write_text('Changed product document')
+    assert outcomes.scope_revision(outcome,tmp_path)!=before
+
+
+@pytest.mark.parametrize('scope',['Fix the total CLI.','Fix total.py and unrelated.py.'])
+def test_project_alias_cannot_choose_foreign_or_ambiguous_script(tmp_path,scope):
+    from lhc_outcome_review import consumer_target
+    outcome=anchored(tmp_path,scope)
+    outcome['canary']['target']='project:'+str(tmp_path)
+    def observed(name):
+        return ({'name':'exec_command','arguments':json.dumps({'cmd':'python3 '+name,'workdir':str(tmp_path)})},'0')
+    observations=[observed('unrelated.py')]
+    if 'and' in scope:observations.append(observed('total.py'))
+    with pytest.raises(ValueError):consumer_target(outcome,observations,tmp_path)

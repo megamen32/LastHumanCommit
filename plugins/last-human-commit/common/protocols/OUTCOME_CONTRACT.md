@@ -111,6 +111,20 @@ scope-bound assignment and latest owned revision/contract observation can count.
 Fresh final prose cannot relabel old calls as evidence of the new revision.
 Unknown source timestamps/order stay explicit instead of being guessed fresh.
 
+CLI source matching normalizes known Python aliases (`python3 -B`, script path
+or local `file://` URI) against the actual native cwd, including Codex's file-URI
+cwd metadata. A `project:<cwd>` target resolves only to one actual script named
+in the unchanged user scope; foreign/unnamed/ambiguous scripts cannot close it.
+An equivalent target spelling preserves the existing evidence window. Unknown
+compound shell formats need one direct supported reread with a precise reason,
+not a contract/review retry loop; echo is never consumer evidence. Failed actual
+CLI calls are observations for a tester, never successful engineering tests.
+Original prose may compare supported CSV rows or numeric CLI results through
+their native output; arbitrary semantic claims still need the existing reviewer.
+The explicitly requested root `FEEDBACK.md` observation report retains ownership
+but does not change the product revision it describes. Product code and an
+explicit task to repair that document retain their revision/freshness barriers.
+
 This is a bounded mechanical floor. The independent reviewer owns semantic
 truth: same operation, host, revision and real expected result. Native refs, echo,
 generic health/HTTP 200, unit-test output and a writer's PASS are insufficient.

@@ -95,6 +95,14 @@ def scope_revision(outcome, cwd):
     # Explicit owned paths only. Foreign WIP, clocks, new turns and call IDs must
     # not manufacture progress. Git itself remains the revision source.
     paths = outcome.get('owned_paths', [])
+    scope = '\n'.join([outcome['original_goal'], *outcome.get('corrections', [])])
+    report = re.search(r'(?:сохран\w*|запиш\w*|save|record|keep)\s+[^.?!\n]{0,180}(?:результат|отзыв|наблюден|feedback|observations|results)[^.?!\n]{0,180}FEEDBACK\.md', scope, re.I)
+    product = re.search(r'(?:fix|repair|исправ\w*|почин\w*)\s+[^.?!\n]{0,80}FEEDBACK\.md', scope, re.I)
+    # The explicitly requested observation report is evidence, not a new code
+    # revision. Keep ownership, but writing feedback must not invalidate the
+    # very native observations it records. A product edit retains its barrier.
+    if report and not product:
+        paths = [p for p in paths if (cwd / p).resolve() != (cwd / 'FEEDBACK.md').resolve()]
     return digest([(p, native.file_hash(cwd, p)) for p in paths])
 
 
@@ -514,7 +522,14 @@ def main():
                     claims.setdefault(stage, {})[field] = value
             if any(set(row) != {'target', 'expected'} for row in claims.values()):
                 raise ValueError('stage readback needs both target and expected')
-            changed = canary != outcome['canary'] or args.owned_path != outcome['owned_paths'] or args.coverage != outcome.get('coverage', []) or claims != outcome.get('stage_claims', {}) or policy != outcome.get('integration_policy')
+            from lhc_outcome_review import equivalent_target
+            previous = outcome['canary']
+            same_canary = (all(canary[k] == previous[k] for k in ('scenario', 'expected')) and
+                           equivalent_target(previous['target'], canary['target'], cwd,
+                                             '\n'.join([outcome['original_goal'], *outcome.get('corrections', [])])))
+            changed = not same_canary or args.owned_path != outcome['owned_paths'] or args.coverage != outcome.get('coverage', []) or claims != outcome.get('stage_claims', {}) or policy != outcome.get('integration_policy')
+            if not changed:
+                canary['status'] = previous['status']
             outcome.update(canary=canary, owned_paths=args.owned_path, coverage=args.coverage, contract_confirmed=True, stage_claims=claims)
             if policy:
                 outcome['integration_policy'] = policy
