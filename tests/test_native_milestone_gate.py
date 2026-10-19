@@ -109,7 +109,9 @@ def test_genuine_fresh_feedback_closes_without_leader_attestation(tmp_path):
     setup(tmp_path)
     export_tester(tmp_path)
     export_tester(tmp_path, "tester-two", "Ivan, 61, methodical accountant on desktop")
-    assert invoke(tmp_path, "Stop").get("decision") != "block"
+    # UI acceptance closes its own debt, not the new full-cycle delivery ledger.
+    assert invoke(tmp_path, "Stop").get("decision") == "block"
+    assert state(tmp_path)["business"]["outcome"]["finish_verdict"] == "pending"
     assert state(tmp_path)["milestone"]["status"] == "accepted"
     assert len(state(tmp_path)["milestone"]["feedback"]) == 2
 
@@ -199,15 +201,28 @@ def test_blocked_final_can_explain_incomplete_acceptance(tmp_path):
     "You are a fresh Zero Knowledge tester. Try the UI goal, do not modify code.", "Status of the dashboard?"])
 def test_minor_questions_and_readonly_testers_do_not_recruit(tmp_path, prompt):
     setup(tmp_path, prompt)
-    assert invoke(tmp_path, "Stop").get("decision") != "block"
+    result = invoke(tmp_path, "Stop")
+    assert "Через существующий Herder нужны минимум две" not in result.get("reason", ""), "no recursive milestone recruitment"
+    assert state(tmp_path)["milestone"]["status"] == "not-required"
+    if state(tmp_path)["business"]["outcome"]["task_class"] in {"quickfix", "testing", "research"}:
+        assert result.get("decision") == "block", "small/test-only still need their own result"
+    else:
+        assert result.get("decision") != "block"
 
 def test_arbitrary_tool_text_and_unchanged_task_do_not_create_milestone(tmp_path):
     subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
     invoke(tmp_path, "UserPromptSubmit", prompt="Explain the module")
     invoke(tmp_path, "PostToolUse", tool_response={"stdout": GOAL})
-    assert invoke(tmp_path, "Stop").get("decision") != "block"
+    initial = invoke(tmp_path, "Stop")
+    assert initial.get("decision") == "block", "research still needs its own verified finding"
+    assert "Через существующий Herder нужны минимум две" not in initial.get("reason", "")
+    assert state(tmp_path)["business"]["outcome"]["task_class"] == "research"
+    assert state(tmp_path)["business"]["outcome"]["original_goal"] == "Explain the module", "tool output is not a user assignment"
+    assert state(tmp_path)["milestone"]["status"] == "not-required"
     invoke(tmp_path, "UserPromptSubmit", prompt=GOAL)
-    assert invoke(tmp_path, "Stop").get("decision") != "block"
+    assert invoke(tmp_path, "Stop").get("decision") == "block"
+    assert state(tmp_path)["milestone"]["status"] == "not-required", "no UI change to recruit against"
+    assert state(tmp_path)["business"]["outcome"]["finish_verdict"] == "pending"
 
 def test_later_human_ui_task_and_generated_html_are_detected(tmp_path):
     subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
@@ -272,7 +287,10 @@ def test_tool_failure_is_authoritative_for_due_clock_without_known_goal(tmp_path
 
 def test_explicit_ui_acceptance_is_not_a_requirement_quoted_in_an_internal_task(tmp_path):
     setup(tmp_path, "Implement the native LHC defect fix.\nA UI task must not finish without milestone acceptance.")
-    assert invoke(tmp_path, "Stop").get("decision") != "block"
+    result = invoke(tmp_path, "Stop")
+    assert result.get("decision") == "block", "general outcome remains unproved"
+    assert "Zero Knowledge" not in result.get("reason", ""), "no false UI recruitment"
+    assert state(tmp_path)["milestone"]["status"] == "not-required"
 
 def test_test_html_fixtures_do_not_count_as_changed_product_surface(tmp_path):
     subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
@@ -280,7 +298,10 @@ def test_test_html_fixtures_do_not_count_as_changed_product_surface(tmp_path):
     (tmp_path / "tests").mkdir()
     (tmp_path / "tests/test_render.py").write_text('expected="<main><button>Import</button></main>"')
     invoke(tmp_path, "PostToolUse")
-    assert invoke(tmp_path, "Stop").get("decision") != "block"
+    result = invoke(tmp_path, "Stop")
+    assert result.get("decision") == "block", "general outcome remains unproved"
+    assert "Zero Knowledge" not in result.get("reason", ""), "no false UI recruitment"
+    assert state(tmp_path)["milestone"]["status"] == "not-required"
 
 @pytest.mark.parametrize("report", [
     "Goal achieved. PASS. Positive: I liked the page heading. Negative: I had no complaints about the heading. Everything is verified and looks fine.",
@@ -353,7 +374,10 @@ def test_new_small_task_after_accepted_major_does_not_recruit_new_group(tmp_path
     invoke(tmp_path, "UserPromptSubmit", prompt="Fix a small padding issue in the dashboard")
     (tmp_path / "style.css").write_text("main { padding: 2px }")
     invoke(tmp_path, "PostToolUse")
-    assert invoke(tmp_path, "Stop").get("decision") != "block"
+    result = invoke(tmp_path, "Stop")
+    assert result.get("decision") == "block", "general outcome remains unproved"
+    assert "Zero Knowledge" not in result.get("reason", ""), "no false UI recruitment"
+    assert state(tmp_path)["milestone"]["status"] == "not-required"
 
 def test_exact_native_stop_reason_is_control_not_a_new_human_ui_assignment(tmp_path):
     setup(tmp_path)

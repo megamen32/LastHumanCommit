@@ -1,3 +1,11 @@
+# 1.5.0 — outcome contract candidate
+
+Explicit task class/canary, ordered applicable stages, source-backed positive close
+and progress-bound continuation in existing state. Testing coverage is a result;
+bound question delivery and canonical answers remain distinct. One quota skill
+serves council/model routing/focus groups; candid no-defect feedback is accepted.
+Native candidate acceptance and installation are separate release gates.
+
 # 1.4.13 — mixed-scope read-only classification
 
 - Scoped, quoted or negated "only review/check" text no longer marks an entire

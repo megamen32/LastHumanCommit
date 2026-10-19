@@ -50,7 +50,7 @@ Every declared work cycle has its own immutable minimum / maximum estimate
 before execution. Tiny commands share their enclosing coherent cycle.
 
 Actual active time always names its source. If it was not continuously measured,
-write `не контролировал` for that historical gap; never infer it from wall-clock
+write `not measured` for that historical gap; never infer it from wall-clock
 or file mtime. L owns starting/repairing `lhc_active_time.py` interval accounting
 before new work; each executor owns its intervals. Name pause/resume evidence.
 
@@ -110,14 +110,14 @@ not every hour; preserve tangible result and next useful action in the review.
 At every crossed wall-clock hour while the task remains active, run
 `lhc_time_guard.py` and report:
 
-- Какие реальные задачи закрыты:
-- Реальная бизнес-дельта:
-- Завершённые файлы:
-- План minimum/maximum активных минут:
-- Факт active / wall-clock:
-- Что мешает:
-- Какие гейты или инструкции задерживают бизнес-результат:
-- Контроль времени и следующий самый короткий маршрут:
+- Real tasks completed:
+- Actual business delta:
+- Completed files:
+- Planned minimum/maximum active minutes:
+- Actual active / wall-clock:
+- Current blockers:
+- Gates/instructions delaying business results:
+- Time accounting and next shortest route:
 
 ## Decisive evidence
 

@@ -1,79 +1,66 @@
-# Часовая сверка бизнес-результата
+# Hourly business-result direction check
 
-Это обязательный контроль, а не факультативный навык. Он срабатывает каждый час
-наблюдаемой активной работы даже при зелёных тестах и уверенности исполнителя.
-Источник цели — исходное поручение, приложенный документ и последние прямые поправки
-пользователя. Собственный план, summary или новая task-card этот источник не заменяют.
+This control is mandatory every hour of observed active work, including with green
+tests and a confident implementer. The original assignment, attached document and
+latest direct user corrections define the goal; your plan, summary or new task card
+cannot replace them.
 
-## Решение, а не отчёт о прочтении
+## Decision, not a reading receipt
 
-Сверь исходный результат с доступным пользователю сейчас. Назови результат часа:
-рабочее поведение, необходимый промежуточный результат, снятую существенную
-неопределённость либо отсутствие прогресса. SHA, число тестов, новых файлов и
-стартовавших агентов сами по себе не доказывают полезного результата.
-Если последние ходы исправляли SHA, filename или receipt вместо доставки,
-раздели реальный непроверенный риск и ошибку оформления. При известном проверенном
-коде поправь метаданные локально и перейди к ближайшему разрешённому пользовательскому
-шагу; неопределённость закрой по исходному результату проверки, не перепривязывай PASS.
-Не откладывай такое переключение до следующего часа. Дополнительный протокол:
-`REVIEW_TO_DELIVERY.md`. Нужные тесты и существующие gates сохраняются.
+Compare the requested outcome with what the user can use now. Name the hour's result:
+working behavior, necessary intermediate result, material uncertainty resolved, or
+no progress. SHAs, test/file counts and launched agents alone prove no user benefit.
+If recent work corrected a SHA, filename or receipt instead of delivery, distinguish
+an unverified real risk from a formatting error. For known checked code, correct
+metadata locally and perform the nearest authorized user step. Resolve unknown
+coverage from the original verification result; never relabel PASS. Switch now,
+not next hour. See REVIEW_TO_DELIVERY.md; required tests and existing gates remain.
+Check new mandatory conditions/extensions: who requested them, whether the result
+needs them, whether a local problem blocks independent work unnecessarily.
+Decide to continue the necessary path, remove invented scope, change approach or do
+an available part of the assignment. Record and execute that decision in existing
+state. Promising more attention without changing the next action does not fix goal
+loss. For design reconsideration use working → ideal → minimum working ~80% value.
 
+## Direction check is not acceptance
 
-Проверь новые обязательные условия и расширения: кто их запросил, нужны ли они
-для выбранного результата, не задерживает ли локальная проблема независимую работу.
-Прими решение: продолжить необходимый путь, сократить придуманное расширение,
-сменить подход или переключиться на доступную часть поручения. Сохрани его в текущем
-состоянии и исполни; обещание «быть внимательнее» без изменения следующего действия
-не исправляет повторившуюся потерю цели. При пересмотре архитектуры используй
-рабочее решение → идеальная версия → минимально работающая версия с ~80% ценности.
+Lead checks alignment with the original goal and chooses the next useful step;
+do not launch a group every hour. Fresh Zero Knowledge testers belong at major
+milestones (~3 hours of coherent work) and final acceptance: ready user result,
+varied realistic personas/goals, independent attempts and detailed positive/negative
+feedback. This is an outcome boundary, not a strict timer or every-commit check.
+Methods: `../skills/user-testing/SKILL.md`, `../skills/focus-groups/SKILL.md`.
+Before code the goal already identifies the user, task, before/after difference and
+check point. Bugs immediately use TDD RED → fix → GREEN → original scenario.
+Continuous technical verification does not wait for major acceptance. If the test
+runtime is unavailable, Lead continues independent work without invented tester results.
 
-## Не путать сверку и приёмку
+## Trigger and recording
 
-Часовая сверка — не приёмка milestone. Здесь ведущий проверяет связь работы с
-исходной целью и выбирает следующий полезный шаг; группа не запускается каждый час.
-Zero Knowledge тестировщики нужны на крупных milestones (~3 часа цельной работы)
-и их итоговой приёмке: готовый пользовательский результат, разные реалистичные
-личности и цели, независимая попытка и подробный положительный/отрицательный фидбек.
-Это граница значимого результата, не жёсткий таймер и не проверка каждого коммита.
-Методы: `../skills/user-testing/SKILL.md` и `../skills/focus-groups/SKILL.md`.
-
-До написания кода цель уже содержит пользователя, его задачу, наблюдаемую разницу
-«раньше / после» и точку проверки. Для бага воспроизведение через TDD начинается
-сразу: RED, исправление, GREEN, исходный сценарий. Непрерывные технические проверки
-не откладываются до большой приёмки. При недоступном тестовом runtime ведущий
-продолжает независимую работу, не записывая вымышленный результат тестировщиков.
-
-## Срабатывание и запись
-
-`lhc_entry.py` подключён к native SessionStart/UserPromptSubmit/PreToolUse/PostToolUse,
-компактации и остановкам. Он использует существующий `lhc_time_guard.py`, без нового
-демона, cron, фонового чата или таймера. Monotonic интервалы закрываются на Stop,
-Interrupt и запросе разрешения; ожидание человека не записывается как активная работа.
-Неизвестный интервал после reconnect/reboot не восстанавливается задним числом.
-Если runtime не даёт полного lifecycle, часовой wall-clock служит явно обозначенным
-резервным сигналом; он не называется измеренной активной работой.
-
-Один session-state хранит исходный ввод, последнюю поправку, clock и последнюю
-проверку. Новая фаза, карточка и компактация не начинают часы заново. Напоминание
-не отмечает проверку выполненной. Незакрытая проверка повторно напоминает о себе
-на возобновлении либо не чаще одного раза за пять минут работы, без спама на каждый tool.
-
-После фактической проверки запиши в этом же состоянии:
+`lhc_entry.py` connects native SessionStart/UserPromptSubmit/PreToolUse/PostToolUse,
+compaction and stopping to existing `lhc_time_guard.py`; no daemon, cron, background
+chat or timer. Monotonic intervals close on Stop, Interrupt and permission requests;
+human waiting is not active work. Unknown intervals after reconnect/reboot are not
+reconstructed. With incomplete lifecycle, hourly wall-clock is an explicitly labeled
+fallback signal, never measured active work.
+One session state retains original input, latest correction, clock and last review.
+New phases/cards/compaction do not reset clocks. A reminder is not completed review.
+An overdue check reminds again on resume or at most every five active minutes,
+without spamming each tool call.
+After the actual check, record it in the same state:
 
 ```sh
 python3 <LHC>/tools/lhc_time_guard.py business-review \
-  --cwd <project> --runtime <runtime> --session-id <native-id> --review-id <id-из-hook> \
-  --source-ref '<исходное поручение/документ и последняя поправка>' \
-  --business-result '<что реально изменилось для пользователя>' \
-  --scope-decision '<решение о направлении>' --next-action '<следующее действие>'
+  --cwd <project> --runtime <runtime> --session-id <native-id> --review-id <hook-id> \
+  --source-ref '<original assignment/document and latest correction>' \
+  --business-result '<actual user-visible difference>' \
+  --scope-decision '<direction decision>' --next-action '<next action>'
 ```
 
-Для этой записи независимый тестировщик не требуется. `direction_reviewed` означает
-только выполненную сверку направления; `milestone_acceptance=not_evaluated` не даёт
-объявить продукт принятым. Старые необязательные поля о тестировщике могут сохранить
-наблюдение, но не заменить отдельные фактические результаты milestone-приёмки.
-Команда проверяет полноту записи, не истинность свободного текста; ведущий отвечает
-за исходные ссылки и за исполнение выбранного шага.
-
-Пользователю сообщай только новый существенный результат, проблему или нужное
-решение; обязательная внутренняя проверка не требует ежечасного пустого отчёта.
+No independent tester is required for this record. `direction_reviewed` means only
+a direction check; `milestone_acceptance=not_evaluated` does not accept the product.
+Legacy optional tester fields may retain observations but cannot replace separate
+actual milestone acceptance results. The command checks record completeness, not
+free-text truth; Lead owns the source references and execution of the selected action.
+Use English for new internal records. Tell the user only a material result, problem
+or needed decision; mandatory internal checks do not require empty hourly reports.

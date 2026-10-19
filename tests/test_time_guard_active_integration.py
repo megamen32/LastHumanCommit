@@ -91,7 +91,7 @@ class TimeGuardActiveIntegrationTest(unittest.TestCase):
         self.assertIn("active source=task-card", initial)
         self.assertEqual(self.active_minutes(initial), 777)
         self.assertIn("657", initial, "The original 120-minute maximum must still be exceeded")
-        self.assertIn("Ты это как-то контролировал? Ответ: unknown.", initial)
+        self.assertIn("Did you track it? Answer: unknown.", initial)
         self.assertIn(f"source=interval-ledger: {paused['measured_active_seconds']} seconds", initial)
         # A pre-existing hook estimate can be much larger than the real ledger.
         legacy = json.loads(self.guard_state.read_text())
@@ -140,7 +140,7 @@ class TimeGuardActiveIntegrationTest(unittest.TestCase):
         self.assertIn("Separate measurement source=interval-ledger:", prompt)
         self.assertIn("estimated 125 active minutes", prompt)
         self.assertEqual(json.loads(self.guard_state.read_text())["last_active_minutes"], 125)
-        self.assertIn("Ты это как-то контролировал? Ответ: unknown.", prompt)
+        self.assertIn("Did you track it? Answer: unknown.", prompt)
 
     def assert_repair(self, prompt):
         self.assertIn("Lead must start or repair", prompt)
