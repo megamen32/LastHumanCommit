@@ -119,7 +119,7 @@ def main_permission(source, quote, repository, branch):
                      or (len(acronym) > 1 and re.search(r'(?<![A-Z0-9])' + re.escape(acronym) + r'(?![A-Z0-9])', quote)))
                 and re.search(r'allow|permit|разреш|можно', quote, re.I)
                 and re.search(r'merge|интегр|слия|сливай', quote, re.I)
-                and re.search(r'(?:\binto\s+|\bto\s+|\bв\s+|\bна\s+)(?:branch\s+)?[`\'"]?' + re.escape(branch) + r'\b', quote, re.I)
+                and re.search(r'(?:\binto\s+|\bto\s+|\bв\s+|\bна\s+)(?:branch\s+)?[`\'"]?' + re.escape(branch) + r'(?![\w./-])', quote, re.I)
                 and clause and not re.search(r"do not|don't|never|forbidden|not allowed|not permitted|\bno\b|\bне\b|нельзя|запрещ", clause, re.I))
 
 
