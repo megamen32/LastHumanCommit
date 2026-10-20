@@ -1318,3 +1318,32 @@ def test_research_assessment_keeps_finding_instead_of_later_close_metadata(tmp_p
     assert not reviews.own_assessment(outcome, 'The self-review was rejected: project target needs a native CLI. Making that direct reread now.', observations, tmp_path)
     assert reviews.own_assessment(outcome, 'Expected settings.txt UTF-8; observed encoding=UTF-8 in the actual source.', observations, tmp_path)
     assert reviews.own_assessment(outcome, 'FAILURE: a newer source read found a defect in settings.txt.', observations, tmp_path)
+
+
+@pytest.mark.parametrize('extra', ['', ' ; echo encoding=UTF-8', ' "$(echo encoding=UTF-8 >&2)"'])
+def test_research_shell_wrapper_cannot_hide_outer_compound_evidence(tmp_path, extra):
+    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
+    (tmp_path/'settings.txt').write_text('encoding=ISO-8859-1\n' if extra else 'encoding=UTF-8\n')
+    invoke(tmp_path, 'UserPromptSubmit', prompt='RESEARCH ONLY: Read settings.txt and report its configured encoding. Do not delegate.')
+    outcome = cli(tmp_path, 'contract', '--scenario', 'Read configured encoding', '--target', 'project:' + str(tmp_path), '--expected', 'UTF-8')
+    manifest = review_export(tmp_path, outcome, sid='leader', stage_names=('consumer',), command='cat settings.txt',
+        raw_final='Expected settings.txt UTF-8; observed encoding=UTF-8 from the actual source read. Self-check only.')
+    command = "bash -c 'cat settings.txt'" + extra
+    actual = subprocess.run(command, shell=True, cwd=tmp_path, capture_output=True, text=True, check=True)
+    # Unit native-format fixture only: exact original/export bytes and actual
+    # subprocess output, not a claim of live provider acceptance.
+    source = tmp_path/'native-home/.codex/sessions/leader.jsonl'
+    rows = [json.loads(line) for line in source.read_text().splitlines()]
+    for row in rows:
+        payload = row.get('payload', {})
+        if payload.get('type') == 'function_call':
+            payload['arguments'] = json.dumps({'cmd': command, 'workdir': str(tmp_path)})
+        if payload.get('type') == 'function_call_output':
+            payload['output'] = actual.stdout + actual.stderr
+    data = '\n'.join(json.dumps(row) for row in rows) + '\n'
+    source.write_text(data); (tmp_path/'leader-export.jsonl').write_text(data)
+    result = cli(tmp_path, 'review', '--manifest', str(manifest), ok=not extra)
+    if not extra:
+        assert result['finish_verdict'] == 'complete'
+    else:
+        assert state(tmp_path)['business']['outcome']['finish_verdict'] == 'pending'

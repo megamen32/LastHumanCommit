@@ -8,7 +8,8 @@ OpenCode reapplies canonical operating instructions to each rebuilt model contex
 Research reminders prioritize the assigned finding/report over close-helper investigation.
 Research project canaries bind a direct cat read to one explicitly named in-project source file.
 Planning-only replies explicitly retain the research/council sequence.
-No permission, evidence, lifecycle or human-stop gate changes. Native planning route
+Outer compound commands are rejected before unwrapping a known simple shell command.
+Permission, lifecycle and human-stop gates remain; native source evidence is required. Native planning route
 selection and global activation remain separate acceptance claims.
 
 # 1.5.1 — grouped delivery prohibitions

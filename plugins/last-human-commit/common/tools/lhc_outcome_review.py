@@ -186,13 +186,16 @@ def command(call, allow_source_read=False):
     text = str(args.get('cmd') or args.get('command') or args.get('url') or '')
     try:
         words = shlex.split(text)
-        if words and Path(words[0]).name in {'bash', 'sh', 'zsh'}:
-            index = next((i for i, w in enumerate(words) if w in {'-c', '-lc'}), None)
-            return command(dict(arguments=json.dumps({'cmd': words[index + 1]})), allow_source_read) if index is not None else ('', [])
         lexer = shlex.shlex(text, posix=True, punctuation_chars=';&|<>')
         lexer.whitespace_split = True
         if any(token and set(token) <= set(';&|<>') for token in lexer):
             return '', []
+        if words and Path(words[0]).name in {'bash', 'sh', 'zsh'}:
+            if len(words) != 3 or words[1] not in {'-c', '-lc'}:
+                return '', []
+            if allow_source_read and words[0] not in {'bash', 'sh', 'zsh', '/bin/bash', '/bin/sh', '/bin/zsh', '/usr/bin/bash', '/usr/bin/sh', '/usr/bin/zsh'}:
+                return '', []
+            return command(dict(arguments=json.dumps({'cmd': words[2]})), allow_source_read)
     except (ValueError, IndexError):
         return '', []
     # Quoted commands, echo+receipt and compound shell output are not real
