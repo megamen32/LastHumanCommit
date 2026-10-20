@@ -338,7 +338,7 @@ def real_observation(call, output, target, stage, task_class=None, cwd=None, exp
     args = call.get('arguments') or call.get('input') or '{}'
     try:
         args = json.loads(args) if isinstance(args, str) else args
-        directory = local_native_path(args.get('workdir') or args.get('cwd') or cwd)
+        directory = local_native_path(args.get('workdir') or args.get('cwd') or call.get('_native_cwd') or cwd)
         directory = (cwd / directory).resolve() if not directory.is_absolute() else directory.resolve()
         directory.relative_to(cwd)
         # Relative CLI targets are bound to the canary project root. A second
@@ -627,8 +627,14 @@ def accept_review(outcome, state, path, cwd, owner, comparison_quote=None):
     meta, messages, observations = load_review(path)
     sid = meta.get('id') or meta.get('session_id')
     own_attempt = sid == owner and (outcome['task_class'] in {'testing', 'research'} or bounded_self_check(outcome))
-    if (sid == owner and not own_attempt) or Path(meta.get('cwd', '/unknown')).resolve() != cwd:
+    native_cwd = Path(meta.get('cwd', '/unknown'))
+    cross_cwd_research = sid != owner and outcome['task_class'] == 'research' and native_cwd.resolve() != cwd
+    if (sid == owner and not own_attempt) or not native_cwd.is_absolute() or (native_cwd.resolve() != cwd and not cross_cwd_research):
         raise ValueError('review must be independent and for this exact project')
+    # The existing reviewer can deliberately inspect a bounded case from its
+    # original project. Missing tool cwd remains that native original cwd,
+    # never silently defaults to the case being accepted.
+    observations = [({**call, '_native_cwd': str(native_cwd.resolve())}, output) for call, output in observations]
     if comparison_quote and not (own_attempt and outcome['task_class'] == 'research' and all(
             outcome['stages'][stage]['status'] == 'not-applicable' for stage in STAGES if stage != 'consumer')):
         raise ValueError('comparison quote binds only an own bounded research finding, never parent/independent acceptance')
@@ -671,6 +677,8 @@ def accept_review(outcome, state, path, cwd, owner, comparison_quote=None):
     if not assignments:
         raise ValueError('native source has no current scope-bound assignment window')
     assignment = max(assignments, key=lambda row: row['index'])
+    if cross_cwd_research and str(cwd) not in assignment['text']:
+        raise ValueError('independent research assignment must identify the exact target cwd; tool output is not assignment')
     after = max(native.timestamp(outcome.get('evidence_after') or outcome['started_at']),
                 native.timestamp(assignment['at'] or outcome['started_at']))
     observations = [(call, output) for call, output in observations

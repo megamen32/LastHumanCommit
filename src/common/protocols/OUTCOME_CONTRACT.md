@@ -29,6 +29,12 @@ This is self-check, never independent parent acceptance or a general translation
 parser. Source/revision gates remain; a newer negative finding cannot be skipped.
 Unsupported or additional expected predicates stay pending; no charset blacklist
 or repeated unchanged read can replace their actual comparison.
+Use the existing independent reviewer for unsupported prose: its native assignment
+must identify this outcome, original scope and exact case directory. A reviewer
+starting in the canonical project may use explicit native tool workdirs to read
+the case. An omitted workdir remains its actual native cwd, never the target cwd.
+This is independent review of the bounded finding, not parent product acceptance
+or permission to resume a held session.
 
 The existing native entry stores `business.outcome` in the existing learning JSON.
 It survives compaction and keeps original/latest corrections, owner and clocks.

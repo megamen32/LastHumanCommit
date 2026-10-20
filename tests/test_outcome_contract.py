@@ -1569,3 +1569,39 @@ def test_research_explicit_source_alias_retains_scope_and_operation(tmp_path, fa
     elif fault == 'wrong-cwd':args['workdir']=str(tmp_path/'foreign')
     calls=[({'name':'exec_command','call_id':'source','arguments':json.dumps(args)},'encoding=UTF-8\n')]
     assert not reviews.source_finding_quote(outcome, raw, calls, tmp_path, raw)
+
+
+@pytest.mark.parametrize('binding', ['explicit', 'implicit-cwd', 'missing-native-target', 'own-session'])
+def test_independent_research_review_can_read_exact_target_from_existing_session(tmp_path, binding):
+    _, _, _, _ = semantic_research_fixture(tmp_path)
+    outcome = cli(tmp_path, 'status')
+    # An existing reviewer may start in the canonical project and deliberately
+    # read this assignment's case via an explicit native tool workdir.
+    sid = 'leader' if binding == 'own-session' else 'reviewer'
+    expected = outcome['canary']['expected']
+    raw = ('Expected: ' + expected + '. Observed: cat settings.txt returned encoding=UTF-8; '
+           'FEEDBACK.md records that value and states that it cannot establish implementation/tests → deploy → merge completion. '
+           'No defects found in the assigned source finding and report.')
+    manifest = review_export(tmp_path, outcome, sid=sid, stage_names=('consumer',),
+                             command='cat settings.txt', consumer_workdir=tmp_path, raw_final=raw)
+    data=json.loads(manifest.read_text()); source=Path(data['target']['source']['location'])
+    rows=[json.loads(line) for line in source.read_text().splitlines()]
+    feedback=subprocess.check_output(['cat','FEEDBACK.md'],cwd=tmp_path,text=True)
+    stamp=rows[-1]['timestamp']
+    rows[-1:-1]=[{'type':'response_item','timestamp':stamp,'payload':{'type':'function_call',
+        'name':'exec_command','call_id':'reviewer-feedback','arguments':json.dumps({'cmd':'cat FEEDBACK.md','workdir':str(tmp_path)})}},
+        {'type':'response_item','timestamp':stamp,'payload':{'type':'function_call_output','call_id':'reviewer-feedback','output':feedback}}]
+    rows[0]['payload']['cwd']=str(tmp_path.parent)
+    if binding != 'missing-native-target':
+        rows[1]['payload']['content'][0]['text'] += '\nTarget CWD: '+str(tmp_path)
+    if binding == 'implicit-cwd':
+        args=json.loads(rows[2]['payload']['arguments']);args.pop('workdir');rows[2]['payload']['arguments']=json.dumps(args)
+    raw_source='\n'.join(json.dumps(row) for row in rows)+'\n'
+    source.write_text(raw_source);Path(data['target']['path']).write_text(raw_source)
+    before=state(tmp_path)
+    result=cli(tmp_path,'review','--manifest',str(manifest),ok=binding=='explicit')
+    if binding=='explicit':
+        assert result['finish_verdict']=='complete' and result['verification_level']=='independent-review'
+        assert result['canary']=={**outcome['canary'],'status':'complete'}
+    else:
+        assert state(tmp_path)==before
