@@ -14,6 +14,13 @@ Lead's own canary cannot replace that gate. Use `$user-testing` for standalone
 goal-driven attempts and `$focus-groups` when varied goals add value. Repair
 observed in-scope failures and repeat the affected real journey until accepted.
 
+Before implementation, testing or deployment, load the primary checkout's
+`.agents/TEST_ACCESS.md` via Git worktree mapping and follow the active package's
+`common/protocols/REVIEW_TO_DELIVERY.md` execution-access contract. Reuse/recover
+authorized local test access with supported administration; persist only protected
+references/scope at handoff. Existing authority permits preparation without reasking;
+unknown/revoked operations stay blocked. Sudo alone never grants authority.
+
 ## Interaction tool ladder
 
 Climb from the best available rung. Never claim an action is impossible before

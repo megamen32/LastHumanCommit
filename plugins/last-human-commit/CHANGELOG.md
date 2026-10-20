@@ -1,3 +1,15 @@
+# 1.5.4 — authorized local test access
+
+Before implementation or acceptance, resolve the primary checkout's TEST_ACCESS.md
+registry. Reuse and recover explicitly authorized local test identities with existing
+protected references and supported app-native administration, including scoped sudo,
+initial password change and bounded disposable OAuth registration. Preserve secret
+values outside prompts/logs; update the same protected reference atomically and keep
+entry/access scope current after resume. External/revoked operations remain blocked.
+This instruction release uses the accepted 1.5.2 executable runtime unchanged.
+Private 1.5.3 runtime experiments remain deferred, preserved in source history;
+this version does not claim their OpenCode or ZCode native acceptance.
+
 # 1.5.2 — bounded research and planning scope
 
 An explicit sentence-level RESEARCH ONLY assignment header takes precedence over

@@ -5,6 +5,14 @@ description: Run diverse independent goal-driven Testers on the real product, sy
 
 # Autonomous focus groups
 
+Load `<primary checkout>/.agents/TEST_ACCESS.md` via Git worktree mapping before
+acceptance; follow `src/common/protocols/REVIEW_TO_DELIVERY.md` execution-access contract.
+Reuse/recover authorized fixtures through supported local administration before classifying a missing login as BLOCKED_REAL_SURFACE.
+Initial password change and authorized disposable OAuth registration are preparation,
+not blanket blockers. Keep protected references, never values, in context/handoffs.
+Do not use admin as ordinary QA or exceed direct limits. Completed assigned coverage
+needs no recursive testing; product defects and parent acceptance remain separate.
+
 Use fresh Zero Knowledge groups for major milestone acceptance and the final
 acceptance of that work, roughly 3 hours of coherent implementation per tangible
 outcome, not every hour or small change. Normal TDD and technical checks remain

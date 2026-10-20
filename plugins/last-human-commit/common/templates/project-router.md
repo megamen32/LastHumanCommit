@@ -8,6 +8,11 @@ For LHC changes use its `lhc-update-agents` skill and canonical LHC repository.
 Infer the current work's owning project from the conversation and files being
 changed. Keep its ToDo/tasks under that project's `.agents/`, even when this
 session was opened elsewhere. Do not require a project-selection ritual.
+Before implementation/acceptance resolve `<primary checkout>/.agents/TEST_ACCESS.md`
+through Git worktree metadata. Follow the active package's
+`common/protocols/REVIEW_TO_DELIVERY.md` execution-access contract; after compaction
+restore references/scope, never secret values. Reuse/recover authorized local fixtures
+without reasking; sudo alone is not authority. Keep latest entry/access scope aligned.
 Automatically retain task class and explicit scenario/target/expected canary in
 existing outcome state; testing coverage can complete with product defects.
 Bounded quickfix with no delegation uses native self-check for its assignment;
