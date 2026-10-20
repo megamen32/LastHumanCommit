@@ -70,3 +70,7 @@ without automatically expanding scope. See docs/V1.4.3.md in the source reposito
 
 OpenCode 2 uses the native `opencode/lhc-v2.ts` entrypoint; V1 retains
 `opencode/lhc-time-guard.ts`. OpenChamber shares the connected server installation.
+OpenCode can reload a changed loader during a running process: a native rollout
+probe observed its hook version change without a restart. An immutable artifact
+alone does not isolate active contexts. If they must retain their version, keep
+the working selection until the supported isolation route is verified.
