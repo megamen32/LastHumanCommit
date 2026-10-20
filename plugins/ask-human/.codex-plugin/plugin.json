@@ -1,7 +1,7 @@
 {
   "name": "ask-human",
   "version": "0.3.0",
-  "description": "Deliver genuinely important information to the human via the connected AskHuman/notify MCP (Telegram).",
+  "description": "Deliver genuinely important information to the human via the connected AskHuman/notify MCP.",
   "author": {
     "name": "megamen32",
     "url": "https://github.com/megamen32"

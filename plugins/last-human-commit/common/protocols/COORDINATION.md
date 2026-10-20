@@ -31,3 +31,20 @@ resource remains a specific dependency, not an invented lease.
 Ignore only runtime subdirectories `chat/`, `readers/`, `sessions/` in project
 `.gitignore`. Keep accepted decisions/results in the task; finishing code does not
 require rereading or committing the whole message stream.
+
+## Optional operator-communication provider
+
+When installed/configured, Notice Place owns the agent/operator notification,
+question and escalation entry API/MCP and contact policy; UserIO owns account-scoped
+communications transport. UserIO covers messages, chats, files, history AND calls
+and meetings: Telegram, Matrix/MatrixRTC, Telemost and cellular/SIM, not just Android.
+UserIO Voice/AgentCall is internal; Asterisk/GSM2SIP is cellular-only transport,
+not a dependency of every channel. Use one Notice Place request with the same
+receipt/canonical confirmed answer and quiet-hours/recipient safeguards; accepted
+is not answered. Herder resumes the exact originating session only after the
+canonical confirmed answer, preserving HumanStop and active-harness authority.
+No agent-invented direct bot/ADB/socket/SIP fallback. Discover actual provider
+capabilities; ownership does not prove legacy call migration or interactive support.
+Other compatible providers remain optional; do not install a permanent dependency.
+The [canonical project contract](https://github.com/megamen32/universal-userio/blob/main/docs/COMMUNICATIONS-ARCHITECTURE.md)
+owns concrete integration details; do not copy private host paths or secrets here.
