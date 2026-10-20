@@ -15,6 +15,9 @@ SCOPE = ['Fix export.py. Work only in this directory. Do not delegate.']
     'python3 export.py >> ../foreign/out.txt',
     'python3 export.py 2> /tmp/opencode/error.txt',
     "bash -lc 'python3 export.py > /tmp/opencode/out.txt'",
+    'python3 export.py > "/tmp/operator-example.txt"',
+    "python3 export.py >'/tmp/operator-example.txt'",
+    r"printf '%s' \\> /tmp/operator-example.txt",
 ])
 def test_known_external_shell_outputs_are_denied(tmp_path, command):
     assert write_denial(SCOPE, tmp_path, 'shell', {'command': command})
@@ -26,6 +29,9 @@ def test_known_external_shell_outputs_are_denied(tmp_path, command):
     'cat /etc/os-release',
     'cd /tmp && cat note.txt 2>/dev/null',
     "printf '%s' 'example > /tmp/opencode/out.txt'",
+    r"printf '%s\n' '>' '/tmp/operator-example.txt'",
+    r'printf "%s\n" ">" "/tmp/operator-example.txt"',
+    r"printf '%s\n' \> /tmp/operator-example.txt",
 ])
 def test_local_outputs_and_read_or_quoted_data_are_not_vetoed(tmp_path, command):
     assert write_denial(SCOPE, tmp_path, 'shell', {'command': command}) is None

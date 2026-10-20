@@ -33,6 +33,25 @@ def outside(path, directory):
     return not (directory / path).resolve().is_relative_to(directory)
 
 
+def shell_tokens(command):
+    # Keep operator provenance until after recognizing it. shlex alone turns
+    # both '>' and \> argument data into an indistinguishable redirect token.
+    token = re.compile(r'''\#[^\n]*|(?:[^\s;&|<>'"\\]|\\[\s\S]|'[^']*'|"(?:\\[\s\S]|[^"\\])*")+|[;&|<>]+''')
+    result, end = [], 0
+    for match in token.finditer(command):
+        if command[end:match.start()].strip():
+            raise ValueError('unsupported shell quoting')
+        raw, end = match.group(), match.end()
+        if raw.startswith('#'):
+            continue
+        operator = bool(re.fullmatch(r'[;&|<>]+', raw))
+        decoded = [raw] if operator else shlex.split(raw)
+        result.extend((word, operator) for word in decoded)
+    if command[end:].strip():
+        raise ValueError('unsupported shell quoting')
+    return result
+
+
 def write_denial(sources, cwd, tool, arguments):
     if not isinstance(arguments, dict) or not directory_bound(sources):
         return None
@@ -49,13 +68,12 @@ def write_denial(sources, cwd, tool, arguments):
             words = shlex.split(command)
             if len(words) == 3 and Path(words[0]).name in {'sh', 'bash'} and words[1] in {'-c', '-lc'}:
                 command = words[2]
-            lexer = shlex.shlex(command, posix=True, punctuation_chars=';&|<>')
-            lexer.whitespace_split = True
-            words = list(lexer)
+            tokens = shell_tokens(command)
+            words = [word for word, _ in tokens]
         except ValueError:
             return None  # Native shell validation still applies.
-        paths = [words[i + 1] for i, word in enumerate(words[:-1])
-                 if word in {'>', '>>', '>|', '&>'} and words[i + 1] != '/dev/null']
+        paths = [words[i + 1] for i, (word, operator) in enumerate(tokens[:-1])
+                 if operator and word in {'>', '>>', '>|', '&>'} and words[i + 1] != '/dev/null']
         # Relative redirects after an unknown cwd change cannot be resolved
         # safely by interpreting only a literal redirection.
         if paths and any(word == 'cd' and i + 1 < len(words) and outside(words[i + 1], directory)
