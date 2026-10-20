@@ -36,11 +36,15 @@ vm.runInNewContext(fs.readFileSync(process.argv[1], 'utf8'), sandbox);
 const i18n = sandbox.window.LHC_I18N;
 const data = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
 for (const mode of Object.values(data.modes)) {
-  for (const key of [mode.note, mode.tagline, ...mode.steps.flatMap(s => [s.title, s.editorial])]) {
+  for (const key of [mode.noteKey, mode.taglineKey, ...mode.steps.flatMap(s => [s.titleKey, s.descriptionKey])]) {
     assert.ok(i18n.messages[key], 'Missing translation: ' + key);
-    assert.equal(i18n.t(key, 'en'), key);
+    assert.match(i18n.t(key, 'en'), /[A-Za-z]/);
     assert.match(i18n.t(key, 'ru'), /[А-Яа-яЁё]/);
   }
+}
+for (const key of [data.decisionDepth.titleKey, data.decisionDepth.noteKey]) {
+  assert.ok(i18n.messages[key], 'Missing translation: ' + key);
+  assert.match(i18n.t(key, 'ru'), /[А-Яа-яЁё]/);
 }
 for (const entry of Object.values(i18n.messages)) {
   assert.equal(entry.length, 2);

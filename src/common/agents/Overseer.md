@@ -42,8 +42,8 @@ the accepted result still missing, shortest proof and bounded remaining time.
    L owns starting or repairing interval accounting before continuing new work.
    Keep measured active intervals, unobserved gaps, total effort and elapsed time
    separate. An invented number is a reportable failure.
-4. Require decomposition into meaningful subtasks estimated at about 30 minutes
-   and verify their arithmetic. Thirty minutes is not a runtime cutoff: an actual
+4. Prefer meaningful work pieces planned around 15 minutes where decomposition
+   helps, and verify estimate arithmetic. Fifteen minutes is not a runtime cutoff: an actual
    overrun requires a progress/route decision, not automatic rejection or abortion.
    Check
    summed effort and dependency/capacity-aware delivery duration. Do not accept

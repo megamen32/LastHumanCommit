@@ -6,13 +6,14 @@ another copy of the role definitions. Every push to `main` runs
 the self-contained static site on GitHub Pages.
 
 The build reads:
-- `AGENTS.md` — canonical routing (Quick is a visual short path, not a mandatory new mode).
-- `templates/FULL_CYCLE.md` — conditional material-decision path.
-- **Every** `src/common/agents/*.md` — role cards and verbatim descriptions, including newly added roles.
+- `docs/PRODUCT_CONCEPT.md` — canonical product concept and stable-ID lifecycle sections used by both Quick and Full.
+- `templates/FULL_CYCLE.md` — the conditional material-decision method shown as a depth inside Full.
+- `plugins/last-human-commit/plugin.json` — displayed product version.
+- **Every** `src/common/agents/*.md` — role cards, classifications, summaries and verbatim definitions.
 
-All citations link to the exact Git commit behind the generated snapshot.
-If required headings disappear, the build fails rather than publishing stale
-workflow descriptions. No credentials, runtime LHC code, server process,
+All citations link to the exact Git revision used for the generated snapshot. Workflow
+labels are translated by stable lifecycle IDs; source excerpts and role documents
+remain in their original language. No credentials, runtime LHC code, server process,
 third-party UI libraries or extra package manager are needed.
 
 Run locally from the repository root:
@@ -37,7 +38,7 @@ preference, then the browser language (Russian or English fallback). The switch
 still works if browser storage is disabled; it also preserves the selected cycle,
 current stage and expanded role cards.
 
-`site/i18n.js` contains only site copy, labels and accessibility translations.
+`site/i18n.js` contains site copy, stable-ID workflow labels and accessibility translations.
 Canonical agent names, Markdown role definitions and Git source excerpts are
 shown in their original language, explicitly labeled, and never translated or
 duplicated into language-specific documentation. Git continues to provide one

@@ -1,5 +1,7 @@
 # LHC landing / GitHub Pages — 2026-10-20
 
+> Earlier verification and publication notes below are historical for the previous landing version; the bounded redesign scope and current handoff state are recorded at the end.
+
 - User goal: visually show actual Full Cycle and conceptual Quick path plus all current roles with descriptions automatically refreshed from Git on push; publish on GitHub Pages.
 - User can try: public Pages site; switch cycles, select steps and read role descriptions linking to exact repo source.
 - Decision: site separate from LHC runtime in `site/`; Python standard-library static generator reads `AGENTS.md`, `templates/FULL_CYCLE.md`, `src/common/agents/*.md` from current checkout; Pages Actions run generator for every main push. Quick is an illustrated short route, not an invented mandatory protocol. Template Full is material-decision-only.
@@ -9,3 +11,14 @@
 - Implemented: EN/RU header switch, browser-language default, local preference, shareable language URL, translated copy and accessibility labels, preserved cycle/stage/expanded cards, explicit original-language Git excerpts. CSS handles longer Russian labels. Build fingerprints UI assets.
 - Verified: 8 passing build/dictionary/source-preservation tests; real Chromium at 320–1440 px for both languages, both five-stage cycles, seven byte-exact role definitions, keyboard tabs, persistence, blocked storage, translated network errors; no uncaught JS exceptions. Runtime, AGENTS.md and canonical role/template files unchanged.
 - Next: push this scoped update to the same PR, publish the already authorized Pages preview, verify live behavior. Keep main unchanged and restore any task-owned temporary preview deployment rule after publication.
+
+
+## Updated bounded implementation assignment — 2026-10-20
+
+- Accepted result: explain LHC as one work method from human intent to a verified change in the project's configured shared development history. Quick and Full are depths of the same lifecycle; material product/architecture/migration decisions add a conditional decision depth. Backlog priority and harness/session launch belong to adjacent systems.
+- Implementation owner: assigned Worker in `lhc/landing-impl-20261020`; Lead owns review, integration, publication and final acceptance. No push, merge, install or deploy in this slice.
+- Canonical lifecycle source: `docs/PRODUCT_CONCEPT.md` with stable workflow IDs. `AGENTS.md` points to it; `templates/FULL_CYCLE.md` remains the conditional decision method and preserves its decision/dispatch safeguards.
+- Planning prose: roughly 15-minute useful planning pieces where decomposition helps; keep 20-minute reporting checkpoints and all execution-budget code/values unchanged.
+- Site scope: derive both modes from the one lifecycle source; show conditional material-decision depth; preserve verbatim Git role files and exact revision links; summarize beyond inherited policy boilerplate; label compatibility aliases/method references accurately; keep English/Russian UI and original-language excerpts; use dynamic workflow counts and generated snapshot provenance.
+- Verification restriction: do not run automated test commands. `python3 site/build.py` is permitted to generate the static artifact. Independent user acceptance and any publication remain with Lead.
+- Current state: implementation changes are complete in the assigned worktree. The Worker will inspect owned paths, generate `site/dist` with the permitted build command and make one scoped local commit. Automated tests, consumer acceptance, deployment and integration remain with Lead.

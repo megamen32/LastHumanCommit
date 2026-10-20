@@ -14,8 +14,13 @@
   }
   const state = { data: null, mode: "quick", step: 0, language: initialLanguage(), error: null };
   const t = (key, values) => i18n.t(key, state.language, values);
-  const coordinates = [{ x: 50, y: 15 }, { x: 84, y: 40 }, { x: 74, y: 80 }, { x: 26, y: 80 }, { x: 16, y: 40 }];
   const sourceLanguage = (text) => /[А-Яа-яЁё]/.test(text) ? "ru" : "en";
+  function coordinates(count) {
+    return Array.from({ length: count }, (_, index) => {
+      const angle = -Math.PI / 2 + (2 * Math.PI * index) / count;
+      return { x: 50 + 35 * Math.cos(angle), y: 50 + 35 * Math.sin(angle) };
+    });
+  }
 
   function make(tag, cls, text) {
     const el = document.createElement(tag);
@@ -29,8 +34,8 @@
     state.step = (index + steps.length) % steps.length;
     const step = steps[state.step];
     byId("stage-kicker").textContent = t("step", { number: step.number });
-    byId("stage-title").textContent = t(step.title);
-    byId("stage-description").textContent = t(step.editorial);
+    byId("stage-title").textContent = t(step.titleKey);
+    byId("stage-description").textContent = t(step.descriptionKey);
     // Do not translate, render as HTML, or otherwise change canonical Git excerpts.
     byId("stage-source").textContent = step.sourceExcerpt || t("missingExcerpt");
     byId("stage-source").lang = step.sourceExcerpt ? sourceLanguage(step.sourceExcerpt) : state.language;
@@ -53,18 +58,29 @@
       tab.tabIndex = active ? 0 : -1;
     });
     byId("workflow-panel").setAttribute("aria-labelledby", mode + "-tab");
-    byId("loop-label").textContent = t(mode) + " / " + t(info.tagline).toLocaleUpperCase(state.language);
+    byId("loop-label").textContent = t(mode) + " / " + t(info.taglineKey).toLocaleUpperCase(state.language);
     byId("loop-status").textContent = "01—" + String(info.steps.length).padStart(2, "0");
-    byId("workflow-note").textContent = t(info.note);
+    byId("workflow-note").textContent = t(info.noteKey);
+    const decision = state.data.decisionDepth;
+    byId("decision-depth").hidden = mode !== "full";
+    if (mode === "full" && decision) {
+      byId("decision-title").textContent = t(decision.titleKey);
+      byId("decision-copy").textContent = t(decision.noteKey);
+      byId("decision-source").textContent = decision.sourceExcerpt;
+      byId("decision-source").lang = sourceLanguage(decision.sourceExcerpt);
+      byId("decision-link").href = decision.source;
+    }
     const container = byId("cycle-nodes");
     container.replaceChildren();
+    const positions = coordinates(info.steps.length);
     info.steps.forEach((step, i) => {
       const node = make("button", "cycle-node");
       node.type = "button";
-      node.style.setProperty("--x", coordinates[i % coordinates.length].x + "%");
-      node.style.setProperty("--y", coordinates[i % coordinates.length].y + "%");
-      node.setAttribute("aria-label", t("showStage", { number: step.number, title: t(step.title) }));
-      node.append(make("span", "cycle-node-number", step.number), make("strong", "cycle-node-label", t(step.title)));
+      node.style.setProperty("--x", positions[i].x + "%");
+      node.style.setProperty("--y", positions[i].y + "%");
+      const title = t(step.titleKey);
+      node.setAttribute("aria-label", t("showStage", { number: step.number, title }));
+      node.append(make("span", "cycle-node-number", step.number), make("strong", "cycle-node-label", title));
       node.addEventListener("click", () => showStep(i));
       container.append(node);
     });
@@ -79,17 +95,12 @@
       const card = make("article", "role-card");
       const top = make("div", "role-top");
       top.append(make("span", "role-num", t("role", { number: String(i + 1).padStart(2, "0") })));
-      top.append(make("span", "role-optional", t(role.optional ? "onDemand" : "orchestrator")));
+      top.append(make("span", "role-kind", t("role.kind." + role.kind)));
       const title = make("h3", "", role.name);
       title.lang = "en"; // Canonical identifiers (Lead, Adviser, etc.) remain unchanged.
       card.append(top, make("div", "role-monogram", role.name.slice(0, 1)), title);
       card.append(make("p", "role-source-label", t("original")));
-      const legacyPrefix = "Optional method reference; the active router decides when to use it. ";
-      let summaryText = role.summary;
-      if (summaryText.startsWith(legacyPrefix)) {
-        summaryText = summaryText.slice(legacyPrefix.length);
-        card.append(make("p", "role-reference-note", t("roleNotice")));
-      }
+      const summaryText = role.summary;
       const summary = make("p", "role-summary", summaryText);
       summary.lang = sourceLanguage(summaryText);
       card.append(summary);
@@ -130,6 +141,7 @@
       return;
     }
     const data = state.data;
+    byId("product-version").textContent = data.productVersion;
     byId("commit-sha").textContent = data.shortRevision;
     byId("commit-link").href = data.repository + "/commit/" + data.revision;
     const built = new Date(data.generatedAt);
@@ -165,15 +177,15 @@
       showMode(state.mode, state.step);
     } else {
       byId("stage-kicker").textContent = t("step", { number: "01" });
-      byId("stage-title").textContent = t("Define the outcome");
-      byId("stage-description").textContent = t("Name the real user, before/after difference and a hands-on canary.");
-      byId("loop-label").textContent = t("quick") + " / " + t("Smallest useful route").toLocaleUpperCase(language);
+      byId("stage-title").textContent = t("workflow.outcome.title");
+      byId("stage-description").textContent = t("workflow.outcome.description");
+      byId("loop-label").textContent = t("mode.quick") + " / " + t("mode.quick.tagline").toLocaleUpperCase(language);
       if (state.error) renderError();
       else {
         byId("roles-count").textContent = t("loadingRoles");
         byId("roles-grid").replaceChildren(make("p", "role-loading", t("loadingRoles")));
         byId("stage-source").textContent = t("loadingSource");
-        byId("workflow-note").textContent = t("An illustration of the short path through the actual LHC router, not a separately mandated protocol.");
+        byId("workflow-note").textContent = t("mode.quick.note");
       }
     }
   }
@@ -207,7 +219,8 @@
       if (!response.ok) throw { key: "fetchHTTP", values: { status: response.status } };
       const data = await response.json();
       if (!data || !data.modes || !Array.isArray(data.roles) || !data.roles.length ||
-          !["quick", "full"].every((mode) => Array.isArray(data.modes[mode]?.steps) && data.modes[mode].steps.length)) {
+          !["quick", "full"].every((mode) => Array.isArray(data.modes[mode]?.steps) && data.modes[mode].steps.length) ||
+          !data.modes.quick.steps.every((step, i) => step.id === data.modes.full.steps[i]?.id)) {
         throw { key: "fetchInvalid" };
       }
       state.data = data;
