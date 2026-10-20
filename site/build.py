@@ -15,6 +15,7 @@ SITE = ROOT / "site"
 DIST = SITE / "dist"
 REPO_URL = "https://github.com/megamen32/LastHumanCommit"
 STEP_MARKER = re.compile(r"(?m)^<!-- lhc-workflow-step:([a-z0-9-]+) -->\s*$")
+FULL_DEPTH_MARKER = re.compile(r"(?m)^<!-- lhc-full-depth-step:([a-z0-9-]+) -->\s*$")
 DEPTH_MARKER = re.compile(r"(?m)^<!-- lhc-decision-depth:([a-z0-9-]+) -->\s*$")
 
 
@@ -144,6 +145,9 @@ def build() -> dict:
     workflow = structured_blocks(concept, STEP_MARKER, concept_path)
     if not workflow:
         raise ValueError(f"No stable workflow sections found in {concept_path}")
+    full_depth = structured_blocks(concept, FULL_DEPTH_MARKER, concept_path)
+    if not full_depth:
+        raise ValueError(f"No stable Full depth sections found in {concept_path}")
     depths = structured_blocks(full, DEPTH_MARKER, full_path)
     material_depth = next((item for item in depths if item["id"] == "material-choice"), None)
     if not material_depth:
@@ -166,6 +170,18 @@ def build() -> dict:
             "id": item["id"], "number": f"{number:02d}",
             "titleKey": f"workflow.{item['id']}.title",
             "descriptionKey": f"workflow.{item['id']}.description",
+            "sourceExcerpt": excerpt,
+            "source": source_url(sha, concept_path),
+        })
+
+    full_depth_steps = []
+    for number, item in enumerate(full_depth, start=1):
+        excerpt = first_paragraph(item["body"])
+        if not excerpt:
+            raise ValueError(f"Full depth step {item['id']!r} has no source prose")
+        full_depth_steps.append({
+            "id": item["id"], "number": f"{number:02d}",
+            "titleKey": f"fullDepth.{item['id']}.title",
             "sourceExcerpt": excerpt,
             "source": source_url(sha, concept_path),
         })
@@ -196,6 +212,7 @@ def build() -> dict:
             "full": {
                 "name": "Full cycle", "taglineKey": "mode.full.tagline",
                 "noteKey": "mode.full.note", "steps": steps,
+                "depthTrack": full_depth_steps,
                 "decisionDepth": "material-choice",
             },
         },

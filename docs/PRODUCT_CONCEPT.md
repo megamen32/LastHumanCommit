@@ -57,6 +57,58 @@ work. When a material product, architecture or migration choice remains, the
 decision method in `templates/FULL_CYCLE.md` is a conditional depth inside Full,
 not another lifecycle. Skip that comparison when one route is already clear.
 
+The Full depth track is adaptive: use the parts that resolve the task's
+uncertainty and risk, and keep the five lifecycle stages as the shared spine.
+It is not a required checklist for every Full task.
+
+<!-- lhc-full-depth-step:research -->
+### Research current code
+
+Read the current project code and relevant constraints before choosing how to
+change it. Research is deeper when the task is large or uncertain.
+
+<!-- lhc-full-depth-step:working-solution -->
+### Build a working solution
+
+Describe the complete route that solves the requested result with the evidence
+available now.
+
+<!-- lhc-full-depth-step:ideal-version -->
+### Consider the ideal version
+
+Identify what a more complete version would improve and why that benefit
+matters to the person using the result.
+
+<!-- lhc-full-depth-step:yagni-minimum -->
+### Choose the useful minimum with YAGNI
+
+Keep the essential value of the ideal version and defer additions that do not
+help prove or deliver this task's result.
+
+<!-- lhc-full-depth-step:small-pieces -->
+### Split useful work into small pieces
+
+When decomposition helps, shape pieces that can usually be completed in about
+15 minutes, with a clear owner and checkable result.
+
+<!-- lhc-full-depth-step:worker-dispatch -->
+### Dispatch bounded Worker tasks
+
+Use parallel Workers for independent, well-bounded work when it reduces total
+time or improves evidence; keep one owner for each shared resource.
+
+<!-- lhc-full-depth-step:review-manual-test -->
+### Review and manually test
+
+Review the implementation and exercise the relevant user scenario manually;
+automated checks alone do not prove the consumer result.
+
+<!-- lhc-full-depth-step:shared-history -->
+### Push and integrate into shared history
+
+Use the configured route to push or open a PR, then merge into the project's
+shared development history when that route permits it.
+
 ## The boundary of the method
 
 The project's own roadmap/backlog determines which work is wanted and owns its

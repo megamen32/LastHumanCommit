@@ -61,6 +61,26 @@
     byId("loop-label").textContent = t(mode) + " / " + t(info.taglineKey).toLocaleUpperCase(state.language);
     byId("loop-status").textContent = "01—" + String(info.steps.length).padStart(2, "0");
     byId("workflow-note").textContent = t(info.noteKey);
+    const fullDepth = byId("full-depth-track");
+    fullDepth.hidden = mode !== "full";
+    const fullDepthSteps = byId("full-depth-steps");
+    fullDepthSteps.replaceChildren();
+    if (mode === "full" && Array.isArray(info.depthTrack)) {
+      info.depthTrack.forEach((step) => {
+        const item = make("li", "full-depth-step");
+        const number = make("span", "full-depth-number", step.number);
+        number.setAttribute("aria-hidden", "true");
+        const title = make("h4", "", t(step.titleKey));
+        const excerpt = make("p", "full-depth-excerpt", step.sourceExcerpt);
+        excerpt.lang = sourceLanguage(step.sourceExcerpt);
+        const source = make("a", "full-depth-source", t("fullDepth.sourceLink"));
+        source.href = step.source;
+        source.target = "_blank";
+        source.rel = "noopener noreferrer";
+        item.append(number, title, excerpt, source);
+        fullDepthSteps.append(item);
+      });
+    }
     const decision = state.data.decisionDepth;
     byId("decision-depth").hidden = mode !== "full";
     if (mode === "full" && decision) {
@@ -216,6 +236,8 @@
     if (!["revision", "shortRevision", "productVersion", "generatedAt", "repository"].every((key) => typeof data[key] === "string" && data[key])) return false;
     const modes = [data.modes.quick, data.modes.full];
     if (!modes.every((mode) => mode && typeof mode.taglineKey === "string" && typeof mode.noteKey === "string" && Array.isArray(mode.steps) && mode.steps.length)) return false;
+    if (!Array.isArray(data.modes.full.depthTrack) || !data.modes.full.depthTrack.length ||
+        !data.modes.full.depthTrack.every((step) => step && ["id", "number", "titleKey", "sourceExcerpt", "source"].every((key) => typeof step[key] === "string" && step[key]))) return false;
     const quickSteps = data.modes.quick.steps;
     const fullSteps = data.modes.full.steps;
     const validStep = (step) => step && ["id", "number", "titleKey", "descriptionKey", "sourceExcerpt", "source"].every((key) => typeof step[key] === "string" && step[key]);
