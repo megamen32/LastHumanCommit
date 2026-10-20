@@ -590,9 +590,12 @@ def test_foreign_ui_wip_does_not_rearm_owned_ui_task(tmp_path):
     assert 'foreign.css' not in state(tmp_path)['milestone']['surface']
 
 
-def test_research_assignment_can_close_from_actual_source_read(tmp_path):
+@pytest.mark.parametrize('goal', [
+    'Research the configured export encoding. Do not edit code.',
+    'RESEARCH ONLY: Research the configured export encoding and explain implementation/tests→deploy ordering. Do not edit code.',
+])
+def test_research_assignment_can_close_from_actual_source_read(tmp_path, goal):
     subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
-    goal = 'Research the configured export encoding. Do not edit code.'
     (tmp_path / 'settings.txt').write_text('encoding=UTF-8\n')
     invoke(tmp_path, 'UserPromptSubmit', prompt=goal)
     outcome = cli(tmp_path, 'contract', '--scenario', 'Read configured encoding', '--target', 'cat settings.txt', '--expected', 'UTF-8')
@@ -1189,3 +1192,34 @@ def test_grouped_prohibition_allows_only_its_bounded_assignment_to_close(tmp_pat
     assert outcomes.verdict(outcome, state(tmp_path)) == 'complete'
     assert outcome['verification_level'] == 'self-check'
     assert all(outcome['stages'][s]['status'] == 'not-applicable' for s in ('deploy', 'publication', 'integration'))
+
+
+def test_explicit_research_only_assignment_does_not_execute_its_subject():
+    import lhc_outcome as outcomes
+    goal = ('Прочти AGENTS.md. RESEARCH ONLY: проверенные причины и минимальные рекомендации, не изменения кода. '
+            'Почему class quickfix/fullcycle/testing отсутствует. Minimal state/transitions+behavioral RED regressions '
+            'для user order implementation/tests→deploy→hands-on→push/PR→ownrepo merge. Записывай только evidence файл.')
+    assert outcomes.classify(goal) == 'research'
+    stages = outcomes.applicable(outcomes.classify(goal), goal)
+    assert stages['consumer']['status'] == 'pending'
+    assert all(stages[s]['status'] == 'not-applicable' for s in ('technical', 'deploy', 'publication', 'integration'))
+
+
+@pytest.mark.parametrize('goal', [
+    'Implement support for the literal "RESEARCH ONLY:" label in the CLI.',
+    'Implement support for the literal ". RESEARCH ONLY:" label in the CLI.',
+    'Fix total.py. Explain why a research only helper missed the defect.',
+    'Fix total.py. RESEARCH ONLY: Inspect the subsequent failure first.',
+])
+def test_research_words_inside_engineering_subject_do_not_remove_repair(goal):
+    import lhc_outcome as outcomes
+    assert outcomes.classify(goal) in outcomes.ENGINEERING
+
+
+def test_later_research_only_does_not_erase_existing_repair(tmp_path):
+    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
+    invoke(tmp_path, 'UserPromptSubmit', prompt='Fix the small total.py CLI.')
+    invoke(tmp_path, 'UserPromptSubmit', prompt='RESEARCH ONLY: Explain the failing test. Do not edit code.')
+    outcome = state(tmp_path)['business']['outcome']
+    assert outcome['task_class'] == 'quickfix'
+    assert outcome['stages']['technical']['status'] == outcome['stages']['consumer']['status'] == 'pending'

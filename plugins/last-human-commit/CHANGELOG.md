@@ -1,3 +1,11 @@
+# 1.5.2 — bounded research and planning scope
+
+An explicit sentence-level RESEARCH ONLY assignment header takes precedence over
+engineering terms in its subject. Later research does not erase an existing repair.
+Automatic context clarifies describe-only behavior when execution/tools are forbidden.
+No permission, evidence, lifecycle or human-stop gate changes. Native planning route
+selection and global activation remain separate acceptance claims.
+
 # 1.5.1 — grouped delivery prohibitions
 
 A direct operation list such as "No deploy, push, or merge" excludes each named

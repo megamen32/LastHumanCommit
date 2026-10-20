@@ -53,6 +53,11 @@ def positive_intent(goal):
 
 def classify(goal):
     intent = positive_intent(goal)
+    # Explicit assignment header scopes the work; engineering terms below it
+    # can describe the subject being reviewed, rather than authorize execution.
+    header = re.search(r'(?:^|[.!?\n])\s*RESEARCH\s+ONLY\s*:', intent, re.I)
+    if header and not REPAIR.search(intent[:header.start()]):
+        return 'research'
     if REPAIR.search(intent):
         broad = re.search(r'\b(?:full|entire|complete|all)\b|весь|целиком|полностью', intent, re.I)
         small = re.search(r'\b(?:fix|repair|small|minor|typo)\b|исправ|почин|мелк|опечат', intent, re.I)
