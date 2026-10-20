@@ -338,7 +338,9 @@ def reminder(outcome, tool):
             '. Specify scenario/target/expected and owned paths using python3 ' + shlex.quote(str(tool)) +
             ' --cwd ' + shlex.quote(outcome['cwd']) + ' --runtime ' + outcome['owner']['harness'] +
             ' --session-id ' + shlex.quote(outcome['owner']['session_id']) +
-            ' contract --help; then perform actual work. ' + review_route +
+            ' contract --help; then perform actual work. '
+            'Task path/action limits include temporary outputs. When allowed, keep task temps in assigned cwd/.tmp unless the user names another location; '
+            'tool defaults confer no permission. ' + review_route +
             'Refs, echo, pytest and own PASS do not replace the original canary. Testing may complete with product=changes-required; '
             'do not hire nested testers. Never bypass human stop/permission. Human question: question --message; '
             'existing bound request → Notify card → sent receipt → canonical answer; receipt != answer. '

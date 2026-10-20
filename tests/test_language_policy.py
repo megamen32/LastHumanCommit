@@ -86,3 +86,33 @@ def test_opencode_rebuilt_model_context_keeps_policy_without_resetting_goal_cloc
         after = json.loads(state_path.read_text())
         assert after['business']['original_prompt'] == prompt
         assert after['business']['started_at'] == before['business']['started_at']
+
+
+def test_opencode_task_path_limits_reach_temporary_outputs_at_each_model_boundary(tmp_path):
+    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
+    prompt = ('Исправь потерю кириллицы в export.py. Проверь существующий регрессионный тест и настоящий запуск CLI: '
+              'нужны ровно две строки Ирина,Москва и Олег,Казань. После работы сообщи фактический результат и ограничения '
+              'пользователю, а также сохрани их в FEEDBACK.md. Работай только в этом каталоге. Не делегируй. '
+              'Без deploy, push, merge и внешних действий.')
+    def emit(event, **fields):
+        result = subprocess.run([sys.executable, str(ROOT/'src/common/tools/lhc_entry.py'),
+            '--root', str(ROOT), '--runtime', 'opencode', '--event', event],
+            input=json.dumps({'cwd': str(tmp_path), 'session_id': 'temp-path-scope', **fields}, ensure_ascii=False),
+            text=True, capture_output=True, check=True)
+        payload = json.loads(result.stdout)
+        return payload.get('handoff') or payload['hookSpecificOutput']['additionalContext']
+    first = emit('UserPromptSubmit', prompt=prompt)
+    path = next((tmp_path/'.agents/shared-session/learning').glob('*.json'))
+    before = json.loads(path.read_text())
+    contexts = [first, emit('PreToolUse', model_boundary=True), emit('PreCompact')]
+    for context in contexts:
+        assert 'Task path/action limits include temporary outputs.' in context
+        assert 'When allowed, keep task temps in assigned cwd/.tmp unless the user names another location' in context
+        assert 'tool defaults confer no permission' in context
+        assert 'Explicit no-delegation' in context
+    after = json.loads(path.read_text())
+    assert after['business']['original_prompt'] == prompt
+    assert after['business']['outcome'] == before['business']['outcome']
+    assert after['business']['started_at'] == before['business']['started_at']
+    for key in ('started_at', 'due_at'):
+        assert after.get(key) == before.get(key)

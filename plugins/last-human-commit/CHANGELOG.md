@@ -1,3 +1,12 @@
+# 1.5.3 — task directory limits include temporary outputs
+
+The existing outcome reminder carries task path/action limits into temporary-file
+operations at startup, rebuilt model boundaries and compaction. Task temps default
+to the assigned cwd/.tmp only when file writes are allowed; explicit user locations
+and stricter limits take precedence. Tool defaults do not authorize other paths.
+No filesystem permissions, lifecycle/evidence gates or model configuration change.
+Native adherence and rollout remain separate acceptance claims.
+
 # 1.5.2 — bounded research and planning scope
 
 An explicit sentence-level RESEARCH ONLY assignment header takes precedence over
