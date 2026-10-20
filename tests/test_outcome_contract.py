@@ -593,11 +593,13 @@ def test_foreign_ui_wip_does_not_rearm_owned_ui_task(tmp_path):
 @pytest.mark.parametrize('goal', [
     'Research the configured export encoding. Do not edit code.',
     'RESEARCH ONLY: Research the configured export encoding and explain implementation/tests→deploy ordering. Do not edit code.',
+    '"RESEARCH ONLY: Research the configured export encoding and explain implementation/tests→deploy ordering. Do not edit code.\n"',
 ])
 def test_research_assignment_can_close_from_actual_source_read(tmp_path, goal):
     subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
     (tmp_path / 'settings.txt').write_text('encoding=UTF-8\n')
     invoke(tmp_path, 'UserPromptSubmit', prompt=goal)
+    assert state(tmp_path)['business']['outcome']['original_goal'] == goal
     outcome = cli(tmp_path, 'contract', '--scenario', 'Read configured encoding', '--target', 'cat settings.txt', '--expected', 'UTF-8')
     assert outcome['task_class'] == 'research'
     assert invoke(tmp_path, 'Stop').get('decision') == 'block'
@@ -607,6 +609,13 @@ def test_research_assignment_can_close_from_actual_source_read(tmp_path, goal):
     assert result['finish_verdict'] == 'complete'
     assert result['stages']['deploy']['status'] == 'not-applicable'
     assert invoke(tmp_path, 'Stop').get('decision') != 'block'
+
+
+def test_native_whole_prompt_quotes_do_not_hide_assignment_header():
+    import lhc_outcome as outcomes
+    raw = '"RESEARCH ONLY: Прочитай settings.txt и объясни implementation/tests→deploy→merge.\n"'
+    assert outcomes.classify(raw) == 'research'
+    assert outcomes.classify('"Implement support for the literal RESEARCH ONLY: label.\n"') == 'fullcycle'
 
 
 @pytest.mark.parametrize('goal,blocked', [('Hello, good evening!', False), ('Status of the current release?', False),

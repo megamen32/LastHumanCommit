@@ -32,6 +32,7 @@ def context_for(event, root):
         "One delivery owner: gates→permitted test/demo deploy→consumer→independent milestone acceptance. "
         "Lead delegates: small=one bounded Worker+Lead review. No-delegation leaf=native self-check, no reviewer hiring. "
         "Large fullcycle MUST: bounded independent research Workers→working→ideal→YAGNI→quota-aware frontier council→bounded dispatch. "
+        "In planning-only answers, state this research/council route explicitly; generic review does not replace council. "
         "If execution/tools forbidden, describe that route without inspection/tools/recruitment. User limits override workflow. "
         "Quickfix/testing/leaf excluded; sessions forbidden means plan, not recruit. "
         "Decision/receipt≠execution/delivery; partial stays pending. Saved prompts=context, not permission; obey harness, HumanStop/revocation. "

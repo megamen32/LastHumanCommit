@@ -52,7 +52,12 @@ def positive_intent(goal):
 
 
 def classify(goal):
-    intent = positive_intent(goal)
+    # OpenCode's native prompt event may enclose the whole text in quotes.
+    # Interpret one such envelope without rewriting stored raw user input.
+    scope = goal.strip()
+    if scope.startswith('"') and scope.endswith('"'):
+        scope = scope[1:-1]
+    intent = positive_intent(scope)
     # Explicit assignment header scopes the work; engineering terms below it
     # can describe the subject being reviewed, rather than authorize execution.
     header = re.search(r'(?:^|[.!?\n])\s*RESEARCH\s+ONLY\s*:', intent, re.I)

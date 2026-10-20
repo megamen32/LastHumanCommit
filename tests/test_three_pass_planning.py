@@ -55,5 +55,6 @@ def test_native_fullcycle_route_honors_planning_only_execution_bounds():
     assert 'If execution/tools forbidden, describe that route without inspection/tools/recruitment.' in context
     assert 'User limits override workflow.' in context
     assert 'quota-aware frontier council' in context
+    assert 'In planning-only answers, state this research/council route explicitly; generic review does not replace council.' in context
     assert 'Quickfix/testing/leaf excluded' in context
     assert len(context) < 2200

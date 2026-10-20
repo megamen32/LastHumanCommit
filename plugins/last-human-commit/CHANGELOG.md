@@ -2,7 +2,9 @@
 
 An explicit sentence-level RESEARCH ONLY assignment header takes precedence over
 engineering terms in its subject. Later research does not erase an existing repair.
+One whole-prompt native quote envelope is interpreted without rewriting raw input.
 Automatic context clarifies describe-only behavior when execution/tools are forbidden.
+Planning-only replies explicitly retain the research/council sequence.
 No permission, evidence, lifecycle or human-stop gate changes. Native planning route
 selection and global activation remain separate acceptance claims.
 
