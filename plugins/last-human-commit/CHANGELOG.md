@@ -1,3 +1,9 @@
+# 1.5.5 — installed test-skill protocol pointers
+
+Correct the two testing skills to resolve the execution-access protocol from the
+active package root. Regression checks all four installed root/native skill paths.
+Policy semantics and the accepted 1.5.2 executable runtime are unchanged.
+
 # 1.5.4 — authorized local test access
 
 Before implementation or acceptance, resolve the primary checkout's TEST_ACCESS.md
