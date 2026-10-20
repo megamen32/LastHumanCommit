@@ -66,10 +66,11 @@ def classify(goal):
     return 'unknown'
 
 
+NEGATIVE_LIST = r'(?:no|without|do not|без)\s+(?:(?:deploy|push|publish|merge)\s*(?:[,/]\s*(?:(?:and|or|и|или)\s+)?|(?:and|or|и|или)\s+))*'
 EXCLUSIONS = {
-    'deploy': r'(?:no|without|do not)\s+(?:\w+\s+)?deploy|без\s*(?:push/)?deploy|не\s+(?:деплой|выкладывай)',
-    'publication': r'(?:no|without|do not)\s+push|без\s+push|не\s+публику',
-    'integration': r'(?:no|without|do not)\s+(?:main\s+)?merge|без\s+(?:main\s+)?merge|external.repo|PR.only|внешн.{0,30}репозит|не\s+(?:merge|слива)',
+    'deploy': NEGATIVE_LIST + r'deploy\b|(?:no|without|do not)\s+(?:\w+\s+)?deploy|без\s*(?:push/)?deploy|не\s+(?:деплой|выкладывай)',
+    'publication': NEGATIVE_LIST + r'(?:push|publish)\b|не\s+публику',
+    'integration': NEGATIVE_LIST + r'(?:main\s+)?merge\b|external.repo|PR.only|внешн.{0,30}репозит|не\s+(?:merge|слива)',
 }
 
 

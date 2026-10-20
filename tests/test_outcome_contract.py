@@ -1159,3 +1159,33 @@ def test_raw_quickfix_selects_ordered_acceptance_not_earlier_diagnostic_cli(tmp_
         with pytest.raises(ValueError):
             reviews.accept_review(outcome, state(tmp_path), manifest, tmp_path, 'leader')
         assert outcomes.verdict(outcome, state(tmp_path)) != 'complete'
+
+
+@pytest.mark.parametrize('restriction', ['Без deploy, push, merge и внешних действий.', 'No deploy, push, or merge.', 'Without deploy/push/merge.'])
+def test_grouped_explicit_delivery_prohibitions_apply_to_each_named_operation(restriction):
+    import lhc_outcome as outcomes
+    stages = outcomes.applicable('quickfix', 'Fix export.py CLI. ' + restriction)
+    assert all(stages[s]['status'] == 'not-applicable' for s in ('deploy', 'publication', 'integration'))
+    assert stages['technical']['status'] == stages['consumer']['status'] == 'pending'
+
+
+@pytest.mark.parametrize('restriction', ['No deploy; push the branch and merge it.', 'Без deploy; push и merge разрешены.', 'No deploy, but push and merge are required.'])
+def test_delivery_prohibition_does_not_cross_an_explicit_clause_boundary(restriction):
+    import lhc_outcome as outcomes
+    stages = outcomes.applicable('quickfix', 'Fix export.py CLI. ' + restriction)
+    assert stages['deploy']['status'] == 'not-applicable'
+    assert stages['publication']['status'] == stages['integration']['status'] == 'pending'
+
+
+@pytest.mark.parametrize('restriction', ['Без deploy, push, merge и внешних действий.', 'No deploy, push, or merge.', 'Without deploy/push/merge.'])
+def test_grouped_prohibition_allows_only_its_bounded_assignment_to_close(tmp_path, monkeypatch, restriction):
+    monkeypatch.setenv('CODEX_HOME', str(tmp_path / 'native-home/.codex'))
+    import lhc_outcome_review as reviews
+    import lhc_outcome as outcomes
+    outcome = anchored(tmp_path, 'Fix the small total.py CLI. Do not delegate. ' + restriction)
+    manifest = review_export(tmp_path, outcome, sid='leader',
+        raw_final='PASS. Regression tests passed. python3 total.py expected 0, observed output 0 matched. Self-check only.')
+    reviews.accept_review(outcome, state(tmp_path), manifest, tmp_path, 'leader')
+    assert outcomes.verdict(outcome, state(tmp_path)) == 'complete'
+    assert outcome['verification_level'] == 'self-check'
+    assert all(outcome['stages'][s]['status'] == 'not-applicable' for s in ('deploy', 'publication', 'integration'))
