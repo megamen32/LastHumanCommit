@@ -1,22 +1,3 @@
-# 1.5.3 — task directory limits include temporary outputs
-
-The existing outcome reminder carries task path/action limits into temporary-file
-operations at startup, rebuilt model boundaries and compaction. Task temps default
-to the assigned cwd/.tmp only when file writes are allowed; explicit user locations
-and stricter limits take precedence. Tool defaults do not authorize other paths.
-No filesystem permissions, lifecycle/evidence gates or model configuration change.
-Current acceptance observations use direct native commands and a current report
-separate from historical RED. A mixed failure/positive report stays rejected,
-with one bounded correction route; no semantic reinterpretation or evidence rewrite.
-Confirmed contracts stop receiving setup instructions on every model boundary;
-they retain scope and show the exact existing close command. A direct scope
-correction still requires confirmation; helper/state investigation is not leaf work.
-OpenCode's existing before-tool hook rejects recognized file writes/literal shell
-redirects outside an unambiguous native-user directory restriction. Tool output
-cannot supply an exception. Other named locations/ambiguous scope leave existing
-harness policy in charge; this bounded preflight is not an OS sandbox or shell parser.
-Native adherence and rollout remain separate acceptance claims.
-
 # 1.5.2 — bounded research and planning scope
 
 An explicit sentence-level RESEARCH ONLY assignment header takes precedence over

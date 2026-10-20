@@ -44,16 +44,6 @@ the same size cap, source identity, original line indexes/times and later negati
 findings still apply. It never creates/resumes a session or rewrites its assessment.
 If the journal advances, refresh the snapshot, not the report or evidence clocks.
 
-OpenCode's existing before-tool hook applies a bounded write preflight when the
-native original task explicitly says to work only in this directory. Built-in
-write/edit paths and literal shell output redirections must stay inside its real
-cwd, including symlink resolution; an in-directory `.tmp/` output is available
-only when writing is allowed. Tool output cannot introduce an exception. Other
-named locations or ambiguous user scope require semantic resolution and retain
-the existing harness policy. This is not an OS sandbox/general shell parser and
-does not grant permissions, answer a human request or accept a result. Actual
-native hook propagation and consumer behavior still need separate verification.
-
 The existing native entry stores `business.outcome` in the existing learning JSON.
 It survives compaction and keeps original/latest corrections, owner and clocks.
 Before work, concretize the automatically captured contract (not a mode interview):

@@ -58,7 +58,7 @@ def test_generated_instruction_projections_retain_english_policy():
         assert not re.search('[А-Яа-яЁё]', (root/'AGENTS.md').read_text())
         assert (root/'common/templates/project-router.md').read_bytes() == (ROOT/'src/common/templates/project-router.md').read_bytes()
         for directory in [root/'tools', root/'common/tools']:
-            for name in ['lhc_entry.py', 'lhc_outcome.py', 'lhc_outcome_review.py', 'lhc_milestone.py', 'lhc_time_guard.py', 'lhc_task_scope.py']:
+            for name in ['lhc_entry.py', 'lhc_outcome.py', 'lhc_outcome_review.py', 'lhc_milestone.py', 'lhc_time_guard.py']:
                 assert (directory/name).read_bytes() == (ROOT/'src/common/tools'/name).read_bytes()
 
 
@@ -86,71 +86,3 @@ def test_opencode_rebuilt_model_context_keeps_policy_without_resetting_goal_cloc
         after = json.loads(state_path.read_text())
         assert after['business']['original_prompt'] == prompt
         assert after['business']['started_at'] == before['business']['started_at']
-
-
-def test_opencode_task_path_limits_reach_temporary_outputs_at_each_model_boundary(tmp_path):
-    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
-    prompt = ('Исправь потерю кириллицы в export.py. Проверь существующий регрессионный тест и настоящий запуск CLI: '
-              'нужны ровно две строки Ирина,Москва и Олег,Казань. После работы сообщи фактический результат и ограничения '
-              'пользователю, а также сохрани их в FEEDBACK.md. Работай только в этом каталоге. Не делегируй. '
-              'Без deploy, push, merge и внешних действий.')
-    def emit(event, **fields):
-        result = subprocess.run([sys.executable, str(ROOT/'src/common/tools/lhc_entry.py'),
-            '--root', str(ROOT), '--runtime', 'opencode', '--event', event],
-            input=json.dumps({'cwd': str(tmp_path), 'session_id': 'temp-path-scope', **fields}, ensure_ascii=False),
-            text=True, capture_output=True, check=True)
-        payload = json.loads(result.stdout)
-        return payload.get('handoff') or payload['hookSpecificOutput']['additionalContext']
-    first = emit('UserPromptSubmit', prompt=prompt)
-    path = next((tmp_path/'.agents/shared-session/learning').glob('*.json'))
-    before = json.loads(path.read_text())
-    contexts = [first, emit('PreToolUse', model_boundary=True), emit('PreCompact')]
-    for context in contexts:
-        assert 'Task path/action limits include temporary outputs.' in context
-        assert 'When allowed, keep task temps in assigned cwd/.tmp unless the user names another location' in context
-        assert 'tool defaults confer no permission' in context
-        assert 'Explicit no-delegation' in context
-    after = json.loads(path.read_text())
-    assert after['business']['original_prompt'] == prompt
-    assert after['business']['outcome'] == before['business']['outcome']
-    assert after['business']['started_at'] == before['business']['started_at']
-    for key in ('started_at', 'due_at'):
-        assert after.get(key) == before.get(key)
-
-
-def test_confirmed_leaf_context_moves_from_contract_setup_to_actual_work_and_close(tmp_path):
-    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
-    (tmp_path/'export.py').write_text('print("Ирина,Москва")\n')
-    prompt = 'Исправь export.py CLI и проверь настоящий вывод. Не делегируй. Без deploy, push, merge.'
-    def emit(event, **fields):
-        result = subprocess.run([sys.executable, str(ROOT/'src/common/tools/lhc_entry.py'),
-            '--root', str(ROOT), '--runtime', 'opencode', '--event', event],
-            input=json.dumps({'cwd': str(tmp_path), 'session_id': 'confirmed-leaf', **fields}, ensure_ascii=False),
-            text=True, capture_output=True, check=True)
-        payload = json.loads(result.stdout)
-        return payload.get('handoff') or payload['hookSpecificOutput']['additionalContext']
-    assert 'contract --help' in emit('UserPromptSubmit', prompt=prompt)
-    subprocess.run([sys.executable, str(ROOT/'src/common/tools/lhc_outcome.py'),
-        '--cwd', str(tmp_path), '--runtime', 'opencode', '--session-id', 'confirmed-leaf',
-        'contract', '--scenario', 'UTF-8 CSV', '--target', 'python3 export.py',
-        '--expected', 'Ирина,Москва', '--owned-path', 'export.py'], capture_output=True, text=True, check=True)
-    path = next((tmp_path/'.agents/shared-session/learning').glob('*.json'))
-    before = json.loads(path.read_text())
-    for context in [emit('PreToolUse', model_boundary=True), emit('PreToolUse', model_boundary=True), emit('PreCompact')]:
-        assert 'Contract confirmed' in context
-        assert 'contract --help' not in context
-        assert '--runtime opencode --session-id confirmed-leaf review --native-self' in context
-        assert 'no helper implementation or session-storage investigation unless assigned' in context
-        assert 'self-check, not independent parent product acceptance' in context
-    after = json.loads(path.read_text())
-    assert after['business']['outcome'] == before['business']['outcome']
-    assert after['business']['original_prompt'] == prompt
-    assert after['business']['started_at'] == before['business']['started_at']
-    assert after['started_at'] == before['started_at'] and after['due_at'] == before['due_at']
-    correction = 'Исправь export.py CLI: теперь нужны три строки. Не делегируй.'
-    assert 'contract --help' in emit('UserPromptSubmit', prompt=correction)
-    corrected = json.loads(path.read_text())
-    assert corrected['business']['outcome']['contract_confirmed'] is False
-    assert corrected['business']['outcome']['original_goal'] == prompt
-    assert corrected['business']['outcome']['corrections'][-1] == correction
-    assert corrected['business']['started_at'] == before['business']['started_at']

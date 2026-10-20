@@ -791,10 +791,7 @@ def accept_review(outcome, state, path, cwd, owner, comparison_quote=None):
         raise ValueError('independent expected/observed comparison required')
     product = report.get('product_verdict')
     if product not in {'pass', 'changes-required'} or (outcome['task_class'] in ENGINEERING and product != 'pass'):
-        raise ValueError('product result does not satisfy engineering canary: the selected assessment reports a failure/defect. '
-                         'Keep genuine failures pending. If it mixes historical RED and current GREEN, retain it and send a separate current expected/observed '
-                         'assessment after any needed supported direct test/CLI reread; evidence must precede that assessment. '
-                         'Retry once, then hand off the exact error; do not debug helper sources or rewrite evidence')
+        raise ValueError('product result does not satisfy engineering canary')
     coverage = outcome.get('coverage', [])
     if outcome['task_class'] == 'testing' and not coverage:
         raise ValueError('testing needs explicit assigned coverage')

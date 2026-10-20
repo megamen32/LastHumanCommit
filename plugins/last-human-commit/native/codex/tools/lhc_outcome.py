@@ -48,10 +48,7 @@ def positive_intent(goal):
     # Bounded clause handling, never a permission parser. Preserve raw scope;
     # the Lead confirms the hypothesis against the actual native user source.
     goal = re.sub(r'исправление[^.?!\n]*не\s+входит[^.?!\n]*', '', goal, flags=re.I)
-    goal = re.sub(r"\b(?:do not|don't|never|no code changes)[^.?!\n]*|не (?:меняй|редактируй|создавай|деплой|исправляй)[^.?!\n]*", '', goal, flags=re.I)
-    # Reuse the bounded stage exclusion list for classification as well:
-    # "Only test ... Без deploy" does not authorize engineering work.
-    return re.sub(NEGATIVE_LIST + r'(?:deploy|push|publish|merge)\b', '', goal, flags=re.I)
+    return re.sub(r"\b(?:do not|don't|never|no code changes)[^.?!\n]*|не (?:меняй|редактируй|создавай|деплой|исправляй)[^.?!\n]*", '', goal, flags=re.I)
 
 
 def semantic_scope(goal):
@@ -83,9 +80,9 @@ def classify(goal):
     return 'unknown'
 
 
-NEGATIVE_LIST = r'\b(?:no|without|do not|без)\s+(?:(?:deploy|push|publish|merge)\s*(?:[,/]\s*(?:(?:and|or|и|или)\s+)?|(?:and|or|и|или)\s+))*'
+NEGATIVE_LIST = r'(?:no|without|do not|без)\s+(?:(?:deploy|push|publish|merge)\s*(?:[,/]\s*(?:(?:and|or|и|или)\s+)?|(?:and|or|и|или)\s+))*'
 EXCLUSIONS = {
-    'deploy': NEGATIVE_LIST + r'deploy\b|\b(?:no|without|do not)\s+(?:\w+\s+)?deploy|без\s*(?:push/)?deploy|не\s+(?:деплой|выкладывай)',
+    'deploy': NEGATIVE_LIST + r'deploy\b|(?:no|without|do not)\s+(?:\w+\s+)?deploy|без\s*(?:push/)?deploy|не\s+(?:деплой|выкладывай)',
     'publication': NEGATIVE_LIST + r'(?:push|publish)\b|не\s+публику',
     'integration': NEGATIVE_LIST + r'(?:main\s+)?merge\b|external.repo|PR.only|внешн.{0,30}репозит|не\s+(?:merge|слива)',
 }
@@ -315,26 +312,19 @@ def observe_job_progress(outcome, business, event, cwd):
 
 
 def reminder(outcome, tool):
-    command = ('python3 ' + shlex.quote(str(tool)) + ' --cwd ' + shlex.quote(outcome['cwd']) +
-               ' --runtime ' + outcome['owner']['harness'] + ' --session-id ' + shlex.quote(outcome['owner']['session_id']))
-    contract_route = ('Contract confirmed; preserve scenario/target/expected and owned paths unless the accepted scope changes. Perform the actual task. '
-                      if outcome.get('contract_confirmed') else
-                      'First confirm the concrete contract: specify scenario/target/expected and owned paths using ' + command + ' contract --help; then perform actual work. ')
-    review_route = ('Research leaf: verify the assigned source and deliver the requested report '
-                    'and raw expected/observed commentary before close bookkeeping. Use the documented ' + command + ' review --native-self route; '
+    review_route = ('Research leaf: confirm the concrete contract before evidence; then verify the assigned source and deliver the requested report '
+                    'and raw expected/observed commentary before close bookkeeping. Use the documented review --native-self route; '
                     'level self-check, not independent parent product acceptance. '
                     "Use each command's --help; no helper implementation research unless assigned. "
                     'FEEDBACK alone is not a visible assistant assessment. Respect no-code limits: no scratch scripts. '
                     'On rejection, one supported reread or pending exact-error handoff; no helper debugging or session-storage inspection. '
                     if outcome['task_class'] == 'research' else
                     'Own bounded assignment: finish actual tests/CLI or assigned coverage and native transcript self-check '
-                    '(' + command + ' review --native-self; Herder export_transcript → review --manifest also available). '
-                    'Use supported direct native commands for final observations; keep the current expected/observed assessment separate from historical RED diagnostics. '
+                    '(review --native-self; Herder export_transcript → review --manifest also available). '
                     'First write raw expected/observed as a separate commentary message and preserve FEEDBACK; '
-                    'no helper implementation or session-storage investigation unless assigned. On rejection, one supported reread/current assessment or pending exact-error handoff. '
                     'level self-check, not independent parent product acceptance. '
                     if bounded_self_check(outcome) or outcome['task_class'] in {'testing', 'research'} else
-                    'Engineering milestones require existing independent source-backed review via ' + command + ' review --manifest. ')
+                    'Engineering milestones require existing independent source-backed review via review --manifest. ')
     if outcome.get('delegation_prohibited'):
         review_route += ('Explicit no-delegation: do not create, launch or resume reviewer/tester sessions. '
                          'If independent acceptance remains required, hand ready results to the assigned coordinator; '
@@ -345,9 +335,10 @@ def reminder(outcome, tool):
     return ('LHC outcome: ' + outcome['task_class'] + '; ' + outcome['finish_verdict'] +
             '. Canary: ' + json.dumps(outcome['canary'], ensure_ascii=False) +
             '. Next stage: ' + str(next_stage(outcome)) +
-            '. ' + contract_route +
-            'Task path/action limits include temporary outputs. When allowed, keep task temps in assigned cwd/.tmp unless the user names another location; '
-            'tool defaults confer no permission. ' + review_route +
+            '. Specify scenario/target/expected and owned paths using python3 ' + shlex.quote(str(tool)) +
+            ' --cwd ' + shlex.quote(outcome['cwd']) + ' --runtime ' + outcome['owner']['harness'] +
+            ' --session-id ' + shlex.quote(outcome['owner']['session_id']) +
+            ' contract --help; then perform actual work. ' + review_route +
             'Refs, echo, pytest and own PASS do not replace the original canary. Testing may complete with product=changes-required; '
             'do not hire nested testers. Never bypass human stop/permission. Human question: question --message; '
             'existing bound request → Notify card → sent receipt → canonical answer; receipt != answer. '

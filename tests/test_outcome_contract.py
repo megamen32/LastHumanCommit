@@ -393,36 +393,6 @@ def test_reviewed_original_scope_controls_class_and_applicability(goal, kind, de
     assert stages['integration']['status'] == merge
 
 
-@pytest.mark.parametrize('goal,kind', [
-    ('Только проверь checkout CLI в этом каталоге. Пустая корзина: python3 checkout.py empty должен завершиться с кодом 0 и вернуть status 200, total 0. Корзина two: python3 checkout.py two должна завершиться с кодом 0 и вернуть status 200, total 20. Сообщи реальные результаты и ограничения по-русски и сохрани наблюдения в FEEDBACK.md. Код не меняй, тестов не создавай. Работай только здесь. Не делегируй. Без deploy, push, merge и внешних действий.', 'testing'),
-    ('Only test the checkout CLI. No deploy, push or merge.', 'testing'),
-    ('Only test the checkout CLI. Without push, merge, deploy.', 'testing'),
-    ('RESEARCH ONLY: inspect the checkout CLI. Без deploy, push и merge.', 'research'),
-    ('Без deploy, push и merge; исправь ошибку checkout CLI.', 'quickfix'),
-    ('No deploy, push or merge; implement the checkout CLI.', 'fullcycle'),
-])
-def test_negative_remote_operations_do_not_invent_engineering_scope(goal, kind):
-    import lhc_outcome as outcomes
-    assert outcomes.classify(goal) == kind
-    stages = outcomes.applicable(kind, goal)
-    if kind in {'testing', 'research'}:
-        assert stages['technical']['status'] == 'not-applicable'
-        assert stages['consumer']['status'] == 'pending'
-    else:
-        assert stages['technical']['status'] == 'pending'
-    assert all(stages[s]['status'] == 'not-applicable'
-               for s in ('deploy', 'publication', 'integration'))
-
-
-def test_affirmative_deno_deploy_is_not_a_negative_scope(tmp_path):
-    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
-    invoke(tmp_path, 'UserPromptSubmit', prompt='Run deno deploy.')
-    outcome = state(tmp_path)['business']['outcome']
-    assert outcome['task_class'] == 'fullcycle'
-    assert outcome['stages']['technical']['status'] == 'pending'
-    assert outcome['stages']['deploy']['status'] == 'pending'
-
-
 def test_session_end_is_inactive_pending_not_a_manual_stop(tmp_path):
     anchored(tmp_path)
     invoke(tmp_path, 'SessionEnd')
@@ -1239,31 +1209,6 @@ def test_raw_quickfix_selects_ordered_acceptance_not_earlier_diagnostic_cli(tmp_
         with pytest.raises(ValueError):
             reviews.accept_review(outcome, state(tmp_path), manifest, tmp_path, 'leader')
         assert outcomes.verdict(outcome, state(tmp_path)) != 'complete'
-
-
-def test_historical_red_in_current_report_gets_actionable_nonsemantic_handoff(tmp_path):
-    outcome = anchored(tmp_path, 'Fix the small total.py CLI. Do not delegate. No deploy, no push, no merge.')
-    manifest = review_export(tmp_path, outcome, sid='leader', raw_final=(
-        'Expected: CLI total 0. Observed before fix, RED: FAILED (failures=1). '
-        'Observed after fix, GREEN: focused tests passed; python3 total.py output 0 matched expected 0.'))
-    before = state(tmp_path)
-    error = cli(tmp_path, 'review', '--manifest', str(manifest), ok=False)
-    assert 'Keep genuine failures pending' in error
-    assert 'historical RED' in error and 'separate current expected/observed' in error
-    assert 'evidence must precede that assessment' in error and 'do not debug helper sources' in error
-    assert state(tmp_path) == before
-    # An ordinary new current assessment may close the same real evidence;
-    # the helper does not reinterpret history or require a certificate line.
-    target = json.loads(manifest.read_text())['target']
-    native_path = Path(target['source']['location'])
-    original = native_path.read_bytes()
-    current = {'timestamp': (datetime.now(timezone.utc) + timedelta(seconds=2)).isoformat(),
-               'type': 'response_item', 'payload': {'type': 'message', 'role': 'assistant', 'phase': 'commentary',
-               'content': [{'text': 'PASS. Current focused tests passed. python3 total.py expected 0; observed output 0 matched. Self-check only.'}]}}
-    native_path.write_bytes(original + (json.dumps(current) + '\n').encode())
-    Path(target['path']).write_bytes(native_path.read_bytes())
-    assert cli(tmp_path, 'review', '--manifest', str(manifest))['finish_verdict'] == 'complete'
-    assert native_path.read_bytes().startswith(original)
 
 
 @pytest.mark.parametrize('restriction', ['Без deploy, push, merge и внешних действий.', 'No deploy, push, or merge.', 'Without deploy/push/merge.'])
