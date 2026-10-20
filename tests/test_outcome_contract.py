@@ -414,6 +414,15 @@ def test_negative_remote_operations_do_not_invent_engineering_scope(goal, kind):
                for s in ('deploy', 'publication', 'integration'))
 
 
+def test_affirmative_deno_deploy_is_not_a_negative_scope(tmp_path):
+    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
+    invoke(tmp_path, 'UserPromptSubmit', prompt='Run deno deploy.')
+    outcome = state(tmp_path)['business']['outcome']
+    assert outcome['task_class'] == 'fullcycle'
+    assert outcome['stages']['technical']['status'] == 'pending'
+    assert outcome['stages']['deploy']['status'] == 'pending'
+
+
 def test_session_end_is_inactive_pending_not_a_manual_stop(tmp_path):
     anchored(tmp_path)
     invoke(tmp_path, 'SessionEnd')
