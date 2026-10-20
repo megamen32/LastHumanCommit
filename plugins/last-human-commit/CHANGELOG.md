@@ -1,3 +1,10 @@
+# 1.5.1 — grouped delivery prohibitions
+
+A direct operation list such as "No deploy, push, or merge" excludes each named
+stage. Clause boundaries preserve separately requested publication/integration.
+No permission, evidence, independent acceptance or human-stop gate changes.
+Native candidate acceptance and activation remain separate release gates.
+
 # 1.5.0 — outcome contract candidate
 
 Explicit task class/canary, ordered applicable stages, source-backed positive close

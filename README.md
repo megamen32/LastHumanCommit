@@ -41,7 +41,7 @@ available; scheduled inspection is required even when the current plan looks cor
 
 ## Package and installation
 
-The native Agent Plugin is `plugins/last-human-commit`, version 1.5.0, with 23 optional
+The native Agent Plugin is `plugins/last-human-commit`, version 1.5.1, with 23 optional
 skills and small automatic-entry hooks. Use the harness's native plugin manager.
 For clients whose plugin hooks are unavailable or still await trust, the package
 provides a supported user-instruction bootstrap:
@@ -70,3 +70,7 @@ without automatically expanding scope. See docs/V1.4.3.md in the source reposito
 
 OpenCode 2 uses the native `opencode/lhc-v2.ts` entrypoint; V1 retains
 `opencode/lhc-time-guard.ts`. OpenChamber shares the connected server installation.
+OpenCode can reload a changed loader during a running process: a native rollout
+probe observed its hook version change without a restart. An immutable artifact
+alone does not isolate active contexts. If they must retain their version, keep
+the working selection until the supported isolation route is verified.
