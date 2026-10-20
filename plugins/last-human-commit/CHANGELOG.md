@@ -1,3 +1,50 @@
+# 1.5.5 — installed test-skill protocol pointers
+
+Correct the two testing skills to resolve the execution-access protocol from the
+active package root. Regression checks all four installed root/native skill paths.
+Policy semantics and the accepted 1.5.2 executable runtime are unchanged.
+
+# 1.5.4 — authorized local test access
+
+Before implementation or acceptance, resolve the primary checkout's TEST_ACCESS.md
+registry. Reuse and recover explicitly authorized local test identities with existing
+protected references and supported app-native administration, including scoped sudo,
+initial password change and bounded disposable OAuth registration. Preserve secret
+values outside prompts/logs; update the same protected reference atomically and keep
+entry/access scope current after resume. External/revoked operations remain blocked.
+This instruction release uses the accepted 1.5.2 executable runtime unchanged.
+Private 1.5.3 runtime experiments remain deferred, preserved in source history;
+this version does not claim their OpenCode or ZCode native acceptance.
+
+# 1.5.2 — bounded research and planning scope
+
+An explicit sentence-level RESEARCH ONLY assignment header takes precedence over
+engineering terms in its subject. Later research does not erase an existing repair.
+One whole-prompt native quote envelope is interpreted without rewriting raw input.
+Automatic context clarifies describe-only behavior when execution/tools are forbidden.
+OpenCode reapplies canonical operating instructions to each rebuilt model context.
+Research reminders prioritize the assigned finding/report over close-helper investigation.
+Research project canaries bind a direct cat read to one explicitly named in-project source file.
+Planning-only replies explicitly retain the research/council sequence.
+Outer compound commands are rejected before unwrapping a known simple shell command.
+Permission, lifecycle and human-stop gates remain; native source evidence is required. Native planning route
+selection and global activation remain separate acceptance claims.
+
+# 1.5.1 — grouped delivery prohibitions
+
+A direct operation list such as "No deploy, push, or merge" excludes each named
+stage. Clause boundaries preserve separately requested publication/integration.
+No permission, evidence, independent acceptance or human-stop gate changes.
+Native candidate acceptance and activation remain separate release gates.
+
+# 1.5.0 — outcome contract candidate
+
+Explicit task class/canary, ordered applicable stages, source-backed positive close
+and progress-bound continuation in existing state. Testing coverage is a result;
+bound question delivery and canonical answers remain distinct. One quota skill
+serves council/model routing/focus groups; candid no-defect feedback is accepted.
+Native candidate acceptance and installation are separate release gates.
+
 # 1.4.13 — mixed-scope read-only classification
 
 - Scoped, quoted or negated "only review/check" text no longer marks an entire

@@ -5,6 +5,14 @@ description: Independently attempt a user goal through a real browser, device, a
 
 # Real-use testing
 
+Load `<primary checkout>/.agents/TEST_ACCESS.md` via Git worktree mapping before
+acceptance; follow the active package's `common/protocols/REVIEW_TO_DELIVERY.md` execution-access contract.
+Reuse/recover authorized fixtures through supported local administration before classifying a missing login as BLOCKED_REAL_SURFACE.
+Initial password change and authorized disposable OAuth registration are preparation,
+not blanket blockers. Keep protected references, never values, in context/handoffs.
+Do not use admin as ordinary QA or exceed direct limits. Completed assigned coverage
+needs no recursive testing; product defects and parent acceptance remain separate.
+
 Run at a major milestone and its final acceptance, roughly 3 hours of coherent
 work, not every hour, tool call or small edit. The boundary is a usable outcome,
 not an arbitrary elapsed deadline; do not wait three hours for a ready milestone

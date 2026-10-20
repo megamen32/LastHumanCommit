@@ -57,7 +57,7 @@ def test_codex_hook_emits_one_idempotent_hourly_context(tmp_path: Path) -> None:
     assert first is not None
     specific = first["hookSpecificOutput"]
     assert specific["hookEventName"] == "PostToolUse"
-    assert "Какие реальные задачи закрыты" in specific["additionalContext"]
+    assert "Which real tasks were completed" in specific["additionalContext"]
     assert run(tmp_path, "codex", "PostToolUse") is None
 
 
@@ -65,7 +65,7 @@ def test_opencode_hook_reports_explicit_active_overrun(tmp_path: Path) -> None:
     task(tmp_path, active=125)
     result = run(tmp_path, "opencode", "tool.execute.after")
     assert result is not None
-    assert "Превышение исходного maximum: 5 активных минут" in result["prompt"]
+    assert "Original maximum exceeded by: 5 active minutes" in result["prompt"]
 
 
 def test_hook_is_fail_open_without_task_card(tmp_path: Path, monkeypatch) -> None:

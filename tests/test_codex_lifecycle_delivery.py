@@ -32,12 +32,12 @@ def context(output):return output.get("hookSpecificOutput",{}).get("additionalCo
 def test_existing_thread_bootstraps_on_first_tool_without_sessionstart(tmp_path):
     text=context(invoke(tmp_path,"PreToolUse",tool_name="exec_command",tool_input={"cmd":"true"}))
     assert str(ROOT/"AGENTS.md") in text
-    assert "RED" in text and "80%" in text and "результат" in text
+    assert "RED" in text and "80%" in text and "consumer result" in text
     assert not context(invoke(tmp_path,"PostToolUse")), "do not repeat the entry on every tool"
 
 def test_plain_prompt_gets_outcome_design_tdd_and_milestone_contract(tmp_path):
     text=context(invoke(tmp_path,"UserPromptSubmit",prompt="поправь отображение пустого отчёта"))
-    for term in ("раньше", "после", "RED", "GREEN", "80%", "milestone"):
+    for term in ("before", "after", "RED", "GREEN", "80%", "milestone"):
         assert term in text
 
 def test_compaction_rehydrates_original_correction_and_keeps_clock_running(tmp_path):

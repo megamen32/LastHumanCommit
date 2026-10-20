@@ -25,8 +25,8 @@ assumptions and the end-to-end path before substantial implementation.
 1. Record the latest business outcome and accepted MVP Definition of Done.
 2. Trace the actual production consumer path.
 3. State the shortest real canary and cheapest sufficient proof.
-4. Rank direct Lead work and delegation by wall-clock, scarce quota, handoff,
-   retry, human interruption, and wrong-path cost.
+4. Lead delegates implementation (small: one bounded Worker plus Lead review).
+   Rank worker allocation by wall-clock, scarce quota, handoff, retry and wrong-path cost.
 5. Load `$task-decomposition` and `$decompose-and-dispatch` when parallel or
    multi-cycle work remains. Use `$model-routing` for actual model selection;
    hard decisions use the strongest suitable model before bounded execution.

@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Any
 
 
-BUSINESS_FIRST_HEADER = "Меньше безопасности, больше бизнес-результата."
+BUSINESS_FIRST_HEADER = "Less process overhead, more business results."
 MAX_HANDOFF_TASK_CHARS = 16_000
 MAX_NATIVE_HANDOFF_CHARS = 16_000
 STARTED_AT = re.compile(
@@ -141,62 +141,62 @@ def render_prompt(
 
     planned = state["planned_minutes"]
     active_note = {
-        "reported": "явно передано вызывающей стороной",
-        "task-card": "явно записано в task-card",
-        "hook-observed": "наблюдалось хуком; точное active-time не контролировалось",
-        "interval-ledger": "явные monotonic интервалы; открытый интервал предварительный",
+        "reported": "explicitly supplied by caller",
+        "task-card": "explicitly recorded in task card",
+        "hook-observed": "hook-observed; exact active time was not measured",
+        "interval-ledger": "explicit monotonic intervals; open interval is provisional",
     }[active_source]
     lines = [
         BUSINESS_FIRST_HEADER,
-        f"Цикл: {state['cycle_id']}",
+        f"Cycle: {state['cycle_id']}",
         (
-            "План: "
-            f"{planned['minimum']}–{planned['maximum']} активных минут; "
-            f"факт: {active_minutes} активных ({active_note}) / "
-            f"{wall_minutes} wall-clock минут."
+            "Plan: "
+            f"{planned['minimum']}–{planned['maximum']} active minutes; "
+            f"actual: {active_minutes} active ({active_note}) / "
+            f"{wall_minutes} wall-clock minutes."
         ),
-        "Какие реальные задачи закрыты?",
-        list_line("Закрытые задачи", completed_tasks, "не указаны"),
-        f"Реальная бизнес-дельта: {business_delta or 'не указана'}",
-        "Выведи все завершённые файлы.",
-        list_line("Завершённые файлы", completed_files, "не указаны"),
-        "Что мешает?",
-        list_line("Какие гейты помешали?", gates, "не указаны"),
+        "Which real tasks were completed?",
+        list_line("Completed tasks", completed_tasks, "not specified"),
+        f"Actual business delta: {business_delta or 'not specified'}",
+        "List all completed files.",
+        list_line("Completed files", completed_files, "not specified"),
+        "What is blocking progress?",
+        list_line("Which gates delayed progress?", gates, "not specified"),
         list_line(
-            "Какие инструкции заставляли больше идти в безопасность вместо бизнеса?",
+            "Which instructions caused safety process overhead instead of business progress?",
             instructions,
-            "не указаны",
+            "not specified",
         ),
-        "Сколько планировал потратить на задачу, а сколько потратил?",
-        f"Ты это как-то контролировал? Ответ: {controlled}.",
+        "How much time was planned and actually spent?",
+        f"Did you track it? Answer: {controlled}.",
     ]
 
     if "overrun" in events:
         lines.extend(
             [
                 (
-                    "Превышение исходного maximum: "
-                    f"{max(0, active_minutes - planned['maximum'])} активных минут."
+                    "Original maximum exceeded by: "
+                    f"{max(0, active_minutes - planned['maximum'])} active minutes."
                 ),
                 (
-                    "Почему по времени так превысил задачу, но не менял подход "
-                    "и делал лишнее, а не бизнес?"
+                    "Why did the task overrun without changing approach "
+                    "while doing extra process instead of business work?"
                 ),
-                f"Маршрут уже менялся: {route_changed}.",
-                "Что меняется в маршруте сейчас?",
+                f"Route already changed: {route_changed}.",
+                "What changes in the route now?",
             ]
         )
 
     if "estimate_mutation" in events:
         lines.append(
-            "Нельзя легализовать прежний маршрут простой заменой оценки; "
-            "исходный minimum/maximum остаётся контрольной точкой."
+            "Do not legitimize the old route by replacing the estimate; "
+            "original minimum/maximum remain the checkpoint."
         )
 
     lines.append(
-        "Не ослабляй обязательную безопасность, секретность, пользовательские "
-        "полномочия или границы разрушительных действий; убери только процесс, "
-        "не нужный для текущего бизнес-результата."
+        "Do not weaken mandatory safety, secrecy, user "
+        "authority or destructive-action boundaries; remove only process "
+        "unneeded for the current business result."
     )
     return "\n".join(lines)
 
@@ -500,7 +500,7 @@ def compaction_hook(
                     f"Latest captured user prompt: {fallback_prompt}\n"
                     "Started at: unknown\n"
                     "Initial estimate: unknown\n"
-                    "Actual active time: unknown / не контролировал\n"
+                    "Actual active time: unknown / not measured\n"
                     "Current blocker: unknown\n"
                     "Next shortest action: reconstruct only from the prompt and workspace snapshot."
                 )
@@ -528,7 +528,7 @@ def compaction_hook(
                     f"Latest captured user prompt: {fallback_prompt}\n"
                     "Started at: unknown\n"
                     "Initial estimate: unknown\n"
-                    "Actual active time: unknown / не контролировал\n"
+                    "Actual active time: unknown / not measured\n"
                     "Current blocker: unknown\n"
                     "Next shortest action: reconstruct only from the prompt and workspace snapshot."
                 )
@@ -663,7 +663,7 @@ def learning_checkpoint(args: argparse.Namespace, cwd: Path, session_id: str,
             "--runtime, --session-id, --due-at and the required review/evidence fields. "
             f"Session={session_id}; runtime={args.runtime}; due-at={state['due_at']}; "
             f"first observed={state['started_at']}; state={path}. "
-            "This is wall-clock scheduling; active time: не контролировал."
+            "This is wall-clock scheduling; active time: not measured."
         )
         if session_id == "unknown-session":
             prompt += (
@@ -964,27 +964,23 @@ def business_checkpoint(args, cwd: Path, session_id: str, payload: dict,
         if due and not acknowledge and event not in pauses and not (args.runtime == "codex" and event in {"precompact", "postcompact"}) and not (args.runtime == "opencode" and event in {"tool.execute.before", "permission.replied"}) and (not previous or refresh or
                 (now-parse_time(previous)).total_seconds() >= 300):
             reminder = (
-                "Обязательная часовая сверка LHC: сначала перечитай исходное поручение и последние поправки пользователя, "
-                "а не только собственный план. Какой результат получил пользователь за этот час? "
-                "SHA, число тестов и обновление реестра сами по себе не отвечают на этот вопрос. "
-                "Если последний результат — только исправленный receipt или ревью справки, не запускай ещё один аудит: "
-                "отдели реальный непроверенный риск от метаданных и выбери следующее изменение, доступное пользователю. "
-                "При известных неизменных исходниках исправь метаданные локально; при новой дельте или неизвестном охвате "
-                "проверь только нужное. Release gates и реальные тесты не обходить. "
-                "Выбери решение: продолжить необходимый путь, сократить придуманное расширение, сменить подход "
-                "или выполнить доступную независимую задачу. Это контроль направления, не приёмка milestone. "
-                "Zero Knowledge с разными персонами и подробной обратной связью нужен на готовом крупном "
-                "milestone (~3 часа работы), не каждый час и не после каждого изменения. "
-                "Прочитай common/protocols/BUSINESS_CHECKPOINT.md. Зафиксируй источник, результат, решение, следующий шаг "
-                "через lhc_time_guard.py business-review; не выдавай эту запись за приёмку продукта. "
+                "Mandatory hourly LHC direction check: reread the original assignment and latest user corrections, "
+                "not only your plan. What result did the user receive this hour? SHA/test counts/registry updates alone do not answer. "
+                "If the latest result only repaired/reviewed a receipt, do not start another audit: separate actual unverified risk "
+                "from metadata and choose the next user-available change. Correct metadata locally over known unchanged source; "
+                "verify only the needed new delta/unknown coverage. Never bypass release gates or real tests. "
+                "Continue the necessary route, reduce invented scope, change approach or perform available independent work. "
+                "This is direction control, not milestone acceptance. Zero Knowledge with varied personas/full feedback belongs "
+                "at ready major milestones (~3 hours), not every hour/change. Read common/protocols/BUSINESS_CHECKPOINT.md. "
+                "Record source/result/decision/next action through lhc_time_guard.py business-review; it is not product acceptance. "
                 f"review-id={pending['id']}; runtime={args.runtime}; session={session_id}; state={path}. "
-                f"Clock: {clock_source}. Напоминание не закрывает проверку; milestone-приёмка хранится отдельно. "
-                "При отсутствии новой информации не отправляй пользователю очередной статус."
+                f"Clock: {clock_source}. A reminder does not close review; milestone acceptance is separate. "
+                "Without new information, do not send another user status."
             )
             if business["original_prompt"]:
-                reminder += "\nИсходный ввод (фрагмент; сверить полный источник): " + business["original_prompt"][:1000]
+                reminder += "\nOriginal input (excerpt; check full source): " + business["original_prompt"][:1000]
             if business["latest_prompt"] != business["original_prompt"]:
-                reminder += "\nПоследняя поправка (фрагмент): " + business["latest_prompt"][:1000]
+                reminder += "\nLatest correction (excerpt): " + business["latest_prompt"][:1000]
             business["last_injected_at"] = now.isoformat()
         write_state(path, state)
     return {"due": due, "review_id": pending["id"] if pending else None, "state": str(path),
@@ -1115,7 +1111,7 @@ def cycle_hook(args: argparse.Namespace, payload: dict[str, Any],
             minimum_minutes=minimum,
             maximum_minutes=maximum,
             active_minutes=active_minutes,
-            business_delta="см. активную task-card",
+            business_delta="see active task card",
             completed_task=[],
             completed_file=[],
             gate=[],

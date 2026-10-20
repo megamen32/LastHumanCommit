@@ -8,6 +8,13 @@ description: Lead-owned claim-calibrated procedure for a controlled consequentia
 Use only when the accepted result needs a release, deploy, tag, publication, or
 another consequential action.
 
+Before implementation, testing or deployment, load the primary checkout's
+`.agents/TEST_ACCESS.md` via Git worktree mapping and follow the active package's
+`common/protocols/REVIEW_TO_DELIVERY.md` execution-access contract. Reuse/recover
+authorized local test access with supported administration; persist only protected
+references/scope at handoff. Existing authority permits preparation without reasking;
+unknown/revoked operations stay blocked. Sudo alone never grants authority.
+
 ## Procedure
 
 1. Confirm the target, artifact/commit, accepted claim, active-harness policy,

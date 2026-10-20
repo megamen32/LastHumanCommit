@@ -7,6 +7,13 @@ description: Worker-owned implementation procedure for writing the smallest cohe
 
 Implement one accepted business vertical. Lead owns route and integration.
 
+Before implementation, testing or deployment, load the primary checkout's
+`.agents/TEST_ACCESS.md` via Git worktree mapping and follow the active package's
+`common/protocols/REVIEW_TO_DELIVERY.md` execution-access contract. Reuse/recover
+authorized local test access with supported administration; persist only protected
+references/scope at handoff. Existing authority permits preparation without reasking;
+unknown/revoked operations stay blocked. Sudo alone never grants authority.
+
 ## Procedure
 
 1. Confirm the accepted outcome, actual consumer, allowed paths, exclusions,

@@ -1,6 +1,6 @@
 Deliver something genuinely important to the human: a needed decision, a hard
 blocker, a timing/status answer, or long-cycle completion. One compact
-message through the already-connected AskHuman/notify MCP (Telegram). No new
+message through the already-connected AskHuman/notify MCP. No new
 infrastructure.
 
 ## When
@@ -10,10 +10,33 @@ infrastructure.
 - a timing/status answer while the human is away from the terminal;
 - completion of a long cycle the human asked to be told about.
 
+## Optional Notice Place / UserIO integration
+
+When Notice Place/UserIO are installed and configured, Notice Place API/MCP is the
+entry point for agent/operator notifications, questions and escalation policy;
+UserIO performs account-scoped delivery. UserIO is the universal gateway for
+messages/chats/files/history AND calls/meetings, including Telegram,
+Matrix/MatrixRTC, Telemost and cellular/SIM; it is not Android-only.
+UserIO Voice/AgentCall is internal implementation. Asterisk/GSM2SIP is cellular
+transport only, not a prerequisite for every channel.
+Use one Notice Place request: retain its identity, delivery receipt, canonical
+confirmed answer and quiet-hours/recipient policy. Accepted != answered. Herder
+resumes only the exact bound session after that confirmed answer, subject to Stop
+and harness policy. Do not invent direct bot/ADB/socket/SIP fallbacks or retry an
+uncertain delivery under another identity; reconcile the existing request.
+Follow declared provider/account capabilities. This optional ownership rule does
+not prove legacy Android-only calls migrated or interactive questions work; it
+creates no permanent dependency on this stack. Other configured compatible
+providers remain valid within their declared safeguards; absent capabilities stay
+pending, without installing a replacement service.
+See the [canonical project communications contract](https://github.com/megamen32/universal-userio/blob/main/docs/COMMUNICATIONS-ARCHITECTURE.md);
+keep instance host paths, credentials and private recipients out of this package.
+
 ## How
 
-- decision: `ask_human` with 2-3 concrete `choices`; wait only when the answer
-  truly blocks, otherwise keep working;
+- decision: use the configured provider's declared question method with 2-3
+  concrete choices and the exact request/session binding; wait only when the
+  canonical confirmed answer truly blocks, otherwise keep working;
 - notification: `send_message` with a short title and the fact
   (`expect_reply=false`).
 

@@ -87,7 +87,7 @@ as delivery time. Use `../tools/lhc_active_time.py` with state under the existin
 `.agents/shared-session/time/` directory. Pause when yielding to the user or
 waiting without doing work; resume before execution. Record missing lifecycle
 coverage or interrupted intervals as gaps, not measured work.
-Historical `не контролировал` stays honest, but L must repair missing accounting
+Historical `not measured` stays honest, but L must repair missing accounting
 before new execution. Overseer enforces that repair and checks the resulting
 measurement evidence; a disclaimer alone never closes the finding.
 
@@ -126,7 +126,7 @@ meaningful results, blockers or decisions. Notification never acknowledges revie
 
 ## Estimate overrun
 
-Crossing the original maximum immediately emits the tool's complete Russian
+Crossing the original maximum immediately emits the tool's complete English
 business-first diagnostic. The original estimate remains visible; changing it
 does not clear the event. L must answer with evidence and choose a shorter route,
 one concrete canary-reaching continuation, or one necessary user decision.

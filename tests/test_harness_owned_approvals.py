@@ -22,7 +22,7 @@ def test_repeated_prompts_do_not_manufacture_confirmation() -> None:
         text = " ".join(read(path).split())
         assert "The active harness owns approval policy." in text
         assert "count as confirmation" not in text
-    assert "не является ответом пользователя" in " ".join(read("AGENTS.md").split())
+    assert "is not an answer" in " ".join(read("AGENTS.md").split())
 
 
 def test_lhc_has_no_mandatory_human_approval_gates() -> None:

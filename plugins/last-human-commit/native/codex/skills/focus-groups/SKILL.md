@@ -5,6 +5,14 @@ description: Run diverse independent goal-driven Testers on the real product, sy
 
 # Autonomous focus groups
 
+Load `<primary checkout>/.agents/TEST_ACCESS.md` via Git worktree mapping before
+acceptance; follow the active package's `common/protocols/REVIEW_TO_DELIVERY.md` execution-access contract.
+Reuse/recover authorized fixtures through supported local administration before classifying a missing login as BLOCKED_REAL_SURFACE.
+Initial password change and authorized disposable OAuth registration are preparation,
+not blanket blockers. Keep protected references, never values, in context/handoffs.
+Do not use admin as ordinary QA or exceed direct limits. Completed assigned coverage
+needs no recursive testing; product defects and parent acceptance remain separate.
+
 Use fresh Zero Knowledge groups for major milestone acceptance and the final
 acceptance of that work, roughly 3 hours of coherent implementation per tangible
 outcome, not every hour or small change. Normal TDD and technical checks remain
@@ -12,6 +20,13 @@ continuous. Three hours is a planning scale, not a forced delay or a rigid timer
 A milestone must already name a user, a realistic goal, a before/after difference
 and a result that can actually be tried. No observable outcome means re-anchor
 the work, not spend another round on hashes and waiting for unrelated sessions.
+
+Apply `../model-availability/SKILL.md` before model allocation. Catalog/quotas
+and real computer-use capabilities are independent. Prefer multiple eligible
+frontier models for meaningful diversity; do not claim multimodel evidence from
+one model or a model name in a prompt. Already assigned testers do not hire.
+For an applicable major milestone use at least two audience-relevant profiles;
+small fixes retain their narrow real canary without a mandatory focus group.
 
 ## Form a useful group
 
@@ -69,3 +84,8 @@ regression results, fresh retest outcomes and unresolved issues. Keep a concise
 synthesis for the user without truncating the testers' underlying observations. Synthetic
 participants expose scenarios; they do not estimate the percentage of real users
 with a problem. Do not present their preferences as market demand evidence.
+
+Preserve actual device/tool/model/build/native session references alongside raw
+feedback. Honest no-defects/limitations with real coverage is valid; no mandatory
+POSITIVE/NEGATIVE keywords, length quota or fabricated criticism. Login-only,
+child launch and source tests are not the assigned hands-on goal.

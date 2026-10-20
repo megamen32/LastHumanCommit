@@ -36,15 +36,11 @@ access: no parent chat, implementation/task-card answers or prior verdicts.
 A different model alone is not an independent context. All children remain
 parts of the original goal and budget; dispatch does not reset the parent clock.
 
-For this user's server-100 installation the desired model routes are:
-
-| Model | Harness | Model selection |
-| --- | --- | --- |
-| GPT-6.1 Sol | codex | `gpt-6.1-sol` (existing native ChatGPT login) |
-| GPT-6 Luna | opencode | `omniroute/cx/gpt-6-luna` |
-| MiniMax 3.1 Flash | opencode | `omniroute/minimax/MiniMax-M3.1-Flash` |
-| GLM 5.3 Flash | opencode | `omniroute/zc/glm-5.3-flash` |
-| GLM 5.3 | opencode | `omniroute/zc/glm-5.3` |
+Before dispatch apply `../model-availability/SKILL.md`: existing Herder
+`model_quotas` + `list_models`, with separate availability/auth/quota/tool/vision
+and actual-model evidence. Its preferred direct subscription routes supersede
+historical OmniRoute hints. No automatic paid/weak fallback; pass an explicit
+allowed fallback policy, never change parent/global models or credentials.
 
 These are installation routing hints, not fixed role assignments or quality
 rankings. Resolve current availability/limits. The previous direct Codex Sol
@@ -130,3 +126,7 @@ model reasoning failures. Re-evaluate on relevant model/harness changes.
 
 Output: model assignment + short suitability reason + attested limitations +
 acceptance evidence to feed the next allocation. No fixed cheap-token quota.
+
+Include the parent outcome/canary reference and bounded child acceptance in the
+assignment. A child result never closes the parent delivery stages or resets
+60/120 clocks. An already assigned executor/reviewer/tester does not hire recursively.

@@ -45,7 +45,7 @@ def test_ordinary_zcode_prompt_gets_complete_lhc_context_and_state(tmp_path):
     output = invoke(tmp_path, "UserPromptSubmit", prompt="Fix the empty account label")
     context = output.get("hookSpecificOutput", {}).get("additionalContext", "")
     assert str(ROOT / "AGENTS.md") in context
-    for term in ("раньше", "после", "RED", "80%", "120 минут", "Zero Knowledge"):
+    for term in ("before", "after", "RED", "80%", "120-minute", "Zero Knowledge"):
         assert term in context
     state = json.loads(state_file(tmp_path).read_text())
     assert state["business"]["original_prompt"] == "Fix the empty account label"

@@ -1,45 +1,44 @@
-# MEMORY — обязательное сохранение знаний (порядок деградации)
+# MEMORY — mandatory durable knowledge preservation (degradation order)
 
-Каждый цикл, получивший **durable-знание**, обязан записать его в память в
-порядке деградации. Пустая память при закрытии цикла с новым знанием —
-незавершённый цикл.
+Each cycle producing durable knowledge must save it through the degradation order.
+Closing with new durable knowledge and no memory record leaves the cycle incomplete.
 
-## Порядок деградации
+## Degradation order
 
-1. **agentmemory** — общий слой для всех агентов и харнессов
+1. **agentmemory:** shared across agents/harnesses
    (MCP `agentmemory.memory_save`: concepts, files, project, type).
-2. **harness memory** — персистентная память активного харнесса
-   (zcode: `~/.zcode/cli/memories/<project>/memory/*.md` + строка в
-   `MEMORY.md`; другие харнесса — их эквивалент).
-3. **project** — файлы проекта: секция в `AGENTS.md`, `.agents/`,
-   task-файл.
+2. **harness memory:** active harness persistent memory
+   (zcode: `~/.zcode/cli/memories/<project>/memory/*.md` plus a `MEMORY.md` entry;
+   other harnesses use their equivalent).
+3. **project:** `AGENTS.md` section, `.agents/`, task file.
 
-Записывать во **все доступные** уровни начиная с первого. Отказ уровня
-(нет MCP, нет прав, файл недоступен) — не повод пропустить остальные:
-деградация, а не замена.
+Write to every available level, starting with the first. Missing MCP, permission
+or file access at one level does not skip the others: degradation, not replacement.
+Apply the active harness's memory-write authority; never store secret values.
 
-## Что qualifies
+## What qualifies
 
-- Работающие конфиги: эндпоинты/модели/ключи (без самих секретов — ссылка
-  на env), таймауты, «эта модель висит, эта отвечает».
-- Root-cause инцидентов + правило предотвращения (что делать/не делать).
-- Решения владельца и запреты (всегда дословно по сути запрета).
-- Найденные обходы и канареечные процедуры, которые пригодятся снова.
+- Working configuration: endpoints/models/key references (environment pointers,
+  never secret values), timeouts, models observed hanging/responding.
+- Incident root causes and prevention rules (what to do/avoid).
+- Owner decisions and prohibitions, preserving the substance exactly.
+- Reusable workarounds and canary procedures.
 
-## Что НЕ qualifies
+## What does not qualify
 
-- Разовая отладка, промежуточные артефакты, одноразовые скрипты.
-- Всё, что уже отражено в коде/коммитах/git-истории.
-- Дубликаты существующих записей (сначала поиск, потом запись).
+- One-off debugging, intermediate artifacts and disposable scripts.
+- Facts already captured in code/commits/Git history.
+- Duplicate records: search before writing.
 
-## Формат
+## Format
 
-Компактно: дата, суть, точные пути/эндпоинты/имена полей, ссылка на
-task-файл или коммит. В harness memory — один факт в одном файле с
-frontmatter и строкой в индексе. В project — правила владельца в
-`AGENTS.md`, расследования в `.agents/tasks/`.
+Keep it compact: date, fact, exact paths/endpoints/field names, task/commit link.
+In harness memory use one fact per file with frontmatter and index entry.
+Project owner rules belong in `AGENTS.md`; investigations in `.agents/tasks/`.
+New records follow the router's English operating-language policy; preserve source
+quotations and original user text.
 
-## Проверка Lead при закрытии цикла
+## Lead close check
 
-«Какое durable-знание получено и в какой памяти оно теперь живёт?» —
-ответ должен быть в финальном отчёте цикла.
+The cycle's final report answers: what durable knowledge was obtained, and in which
+memory does it now live?

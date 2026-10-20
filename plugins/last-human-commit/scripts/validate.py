@@ -25,6 +25,7 @@ EXPECTED_SKILLS = {
     "focus-groups",
     "improve-workflow",
     "model-routing",
+    "model-availability",
     "user-testing",
     "bugfix-tdd",
     "business-delivery",

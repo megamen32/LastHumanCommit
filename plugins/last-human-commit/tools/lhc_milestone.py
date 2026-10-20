@@ -105,10 +105,10 @@ def native_transcript(data):
         p = row.get("payload", {})
         if row.get("type") == "event_msg" and p.get("type") == "item_completed":
             item = p.get("item", {})
-            if item.get("type") == "CommandExecution" and item.get("exit_code") == 0:
+            if item.get("type") == "CommandExecution" and isinstance(item.get("exit_code"), int):
                 command = item.get("command", [])
                 if isinstance(command, list) and len(command) >= 3:
-                    observations.append(({"name": "exec_command", "arguments": json.dumps({"cmd": command[-1]})},
+                    observations.append(({"name": "exec_command", "call_id": item.get("id"), "_exit_code": item['exit_code'], "arguments": json.dumps({"cmd": command[-1], "workdir": item.get("cwd")})},
                                          str(item.get("aggregated_output") or "")))
         if row.get("type") != "response_item":
             continue
@@ -200,7 +200,9 @@ def observe(state, event, name, cwd, session, now):
     milestone["urls"] = urls
     # Reconcile observable repository changes, never keywords in tool stdout.
     surface = {}
-    for p in sorted(set(candidates(cwd, milestone["head"])) | set(milestone["surface"])):
+    owned = set(state.get("business", {}).get("outcome", {}).get("owned_paths", []))
+    changed = set(candidates(cwd, milestone["head"])) | set(milestone["surface"])
+    for p in sorted(changed & owned if owned else changed):
         value = file_hash(cwd, p)
         original = milestone["baseline"].get(p)
         if original is None:
@@ -443,7 +445,9 @@ def feedback_from(path, milestone, session):
     if len(persona_text) < 15:
         return None
     final = next((text for role, text, phase in reversed(messages) if role == "assistant" and phase != "commentary"), "")
-    if len(final) < 100 or not POSITIVE.search(final) or not NEGATIVE.search(final):
+    # Candid task-relevant observations need no praise/complaint keywords or
+    # word quota. Actual actions, goal/result and native provenance remain below.
+    if not final.strip():
         return None
     # The fresh native assignment may explicitly name a managed tunnel/staging
     # address for the same correlated task. It need not equal the public URL.
@@ -537,9 +541,16 @@ def opencode_transcript(target, raw):
     by_id = {(m.get("info") or m).get("id"): m for m in live}
     if any(not (m.get("info") or m).get("id") or by_id.get((m.get("info") or m).get("id")) != m for m in archived):
         raise ValueError("export does not match native messages")
+    return opencode_messages(info, archived)
+
+
+def opencode_messages(info, archived):
+    """Parse already source-verified native messages; do not infer provenance."""
+    sid = info['id']
     created = info["time"]["created"] / 1000
     meta = {"id": sid, "timestamp": datetime.fromtimestamp(created).astimezone().isoformat(),
-            "cwd": (info.get("location") or {}).get("directory") or info.get("directory")}
+            "cwd": (info.get("location") or {}).get("directory") or info.get("directory"),
+            "model": info.get("model")}
     messages, observations = [], []
     for message in archived:
         header = message.get("info") or message
@@ -557,24 +568,22 @@ def opencode_transcript(target, raw):
             for part in parts:
                 state = part.get("state") or {}
                 if part.get("type") == "tool" and state.get("status") == "completed":
-                    observations.append(({"name": part.get("tool") or part.get("name") or "", "arguments": json.dumps(state.get("input", {}))}, content(state.get("output"))))
+                    observations.append(({"name": part.get("tool") or part.get("name") or "", "call_id": part.get("callID") or part.get("id"), "arguments": json.dumps(state.get("input", {}))}, content(state.get("output"))))
     return meta, messages, observations
 
 def pending(milestone):
     return bool(milestone and milestone["status"] in {"pending", "changes-required", "blocked"})
 
 def reminder(milestone):
-    return ("LHC: пользовательская приёмка milestone ещё не завершена (" + milestone["status"] + "). "
-        "Не объявляй UI готовым по своим тестам, запуску дочерней сессии или странице входа. "
-        "Подготовь разрешённый sandbox/test identity до попыток; не извлекай секреты, не обходи permissions. "
-        "Через существующий Herder нужны минимум две свежие независимые Zero Knowledge попытки с разными "
-        "реалистичными персонами и полным raw feedback: что понравилось/помогло и что мешало/не понравилось, "
-        "наблюдаемые действия и достигнута ли цель. Используй существующий model-routing. "
-        "В обычное задание тестировщику включи Persona: <возраст, опыт, цель, условия>, исходную цель/URL "
-        "и ссылки текущей задачи/поверхности: " + milestone["task"] + " / " + milestone["surface_key"] + ". "
-        "Прочитай исходные ответы штатным Herder export_transcript; hook сохранит возвращённый Lineage manifest "
-        "по его фактическому пути без ручного переноса файлов. "
-        "Не сочиняй PASS и не создавай новую форму отчёта. Замечания требуют исправления и свежей попытки; "
-        "login-only означает blocked/not-tested. Если доступ реально заблокирован, заверши с точной причиной "
-        "и неполной приёмкой; повторных автозапусков не будет. Независимую разрешённую работу продолжай. "
-        "Изменённая поверхность: " + ", ".join(milestone["surface"]) + ".")
+    return ("LHC: milestone user acceptance remains incomplete (" + milestone["status"] +
+        "). Do not declare UI ready from own tests, child-session launch or a login page. Prepare permitted "
+        "sandbox/test identity before attempts; never extract secrets or bypass permissions. Existing Herder "
+        "must provide at least two fresh independent Zero Knowledge attempts with varied realistic personas "
+        "and full raw feedback: what helped/was liked, obstacles/dislikes, observed actions and goal achieved. "
+        "Use existing model-routing. Include Persona: <age, experience, goal, conditions>, original goal/URL "
+        "and current task/surface refs in the ordinary tester assignment: " + milestone["task"] + " / " + milestone["surface_key"] + ". "
+        "Read original answers through native Herder export_transcript; the hook retains the returned Lineage "
+        "manifest at its actual path without manual file copying. Never invent PASS or create a new report form. "
+        "Findings require repairs and fresh attempts; login-only means blocked/not-tested. If access is truly "
+        "blocked, finish with its exact reason and incomplete acceptance; no repeated automatic launches. "
+        "Continue independent permitted work. Changed surface: " + ", ".join(milestone["surface"]) + ".")

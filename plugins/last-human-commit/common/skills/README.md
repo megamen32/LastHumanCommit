@@ -3,6 +3,7 @@
 | Skill | Use when | Typical owner |
 | --- | --- | --- |
 | [architecture-design](architecture-design/SKILL.md) | Resolve costly design uncertainty, prove boundaries and simplify into complete outcomes before dispatch | Lead / independent challenger |
+| [model-availability](model-availability/SKILL.md) | Verify catalog, read-only quotas and assignment capabilities | Lead / council / focus owner |
 | [model-routing](model-routing/SKILL.md) | Select/update models using capability and accepted-result cost | Lead / Overseer |
 | [decompose-and-dispatch](decompose-and-dispatch/SKILL.md) | Build coherent tasks, parallel lanes and integration joins | Lead |
 | [user-testing](user-testing/SKILL.md) | Attempt an actual user goal without implementation context | Tester |

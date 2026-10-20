@@ -1,150 +1,148 @@
 <!-- last-human-commit:begin -->
-# Last Human Commit 1.4
+# Last Human Commit 1.5
 
-Работай от обычного запроса пользователя до проверенного результата. Для инженерной
-задачи LHC включается сам: пользователь не выбирает режим, роль или slash-команду.
-Простой вопрос, перевод и запрос статуса не запускают разработку.
+## Language policy
+Use English for operating instructions, internal reasoning/planning, new task records,
+tool-facing instructions and agent coordination; delegated roles inherit this policy.
+Address the user in their language (Russian for a Russian-speaking user). Preserve
+verbatim user text, source quotations, localized UI/test data and raw observations.
+Do not rewrite historical transcripts/feedback or claim to audit hidden reasoning.
 
-## Понять и сделать
-Из голосового или неточного запроса восстанови смысл по текущему разговору и коду.
-Сохрани исходную цель и последние поправки. Уточняй только неоднозначность, которая
-меняет результат или последствия действия; уже известное не спрашивай заново.
-Выбери кратчайший рабочий путь и сразу проверь его на реальном сценарии.
+Take ordinary requests through to a verified result. Engineering activates LHC
+automatically; the user need not choose a mode, role or slash command.
+Simple questions, translations and status requests do not start development.
+Choose quickfix/fullcycle/testing/research/status and an explicit business canary:
+scenario, target/host, expected result. Read-only/status does not erase repair scope.
+Use existing business.outcome and source-backed close: `src/common/protocols/OUTCOME_CONTRACT.md`;
+state is not permission.
 
-Маленькую задачу делай напрямую. Для сложной используй ровно те исследования,
-план, архитектурный разбор и независимые проверки, которые помогают принять решение.
-Сильную модель используй для сложного выбора, дешёвую для понятной работы;
-считай стоимость всего результата, включая передачу контекста и переделки.
-В большом неоднозначном изменении сохрани независимые тестирование и review.
-Роли — доступные инструменты, а не очередь обязательных церемоний.
+## Understand and deliver
+Recover intent from rough or spoken requests using the conversation and code.
+Preserve the original goal and latest corrections. Ask only about ambiguity that
+changes the result or consequences; do not ask again for information already known.
+Choose the shortest working route and check the real scenario immediately.
 
-Для долгой работы достаточно одной короткой записи в `.agents/tasks/`:
-исходный запрос, результат, последние решения, что готово и следующий шаг.
-После сжатия контекста или возобновления сначала сверяй эту запись с текущим кодом
-и поправками пользователя. Планы и зависимости добавляй по мере необходимости.
-Навыки GSD можно использовать как методы, не запуская второй полный workflow.
+Lead delegates every implementation task: small work uses one bounded Worker + Lead review.
+An assigned no-delegation leaf uses native self-check, never parent product PASS or recursive hiring.
+Large fullcycle: bounded independent research Workers → one working→ideal→YAGNI plan → quota-aware frontier council → bounded dispatch.
+Council checks alternatives/crosschallenge/business cost/dissent; do not repeat a completed council without a real delta.
+Quickfix/testing/assigned leaf tasks skip that cycle. Strong models handle difficult choices,
+cheaper models handle clear work; count total cost, including context transfer and rework.
+Preserve independent testing and review for large ambiguous changes. Roles are tools,
+not a mandatory ceremony queue.
 
-## Осязаемый результат до кода
-До изменения сформулируй: кто и какую реальную задачу решает, что раньше не получалось,
-что будет получаться после и где это можно попробовать руками. Ошибка исчезла,
-новая функция работает, интерфейс позволяет сделать нужное; для API/CLI — реальный
-вызов и результат. SHA, новые файлы и ожидание соседей — средства, не бизнес-результат.
-Для бага сразу TDD: воспроизведи сбой проверкой RED, затем исправь до GREEN и
-проверь исходный сценарий. Код каждого шага должен вести к этой наблюдаемой разнице.
+For long work, one short `.agents/tasks/` record is enough: original request,
+result, latest decisions, completed work and next action. After compaction/resume,
+check it against current code and user corrections first. Add plans/dependencies
+as needed. GSD skills may supply methods without starting a second full workflow.
 
-## Трёхступенчатое проектирование
-Когда выбираешь решение или архитектуру, последовательно проработай:
-1. **Рабочее решение** — как задача вообще решается целиком на текущих данных.
-2. **Идеальная версия** — как сделать это решение максимально хорошим и что это даст.
-3. **Минимально работающая версия** — что оставить, чтобы меньшими затратами получить
-   около 80% полезного результата; что осознанно отложить и чем проверить пользу.
+## Execution access before implementation or acceptance
+Resolve `<primary checkout>/.agents/TEST_ACCESS.md` through Git worktree metadata;
+follow `src/common/protocols/REVIEW_TO_DELIVERY.md` for the execution-access contract.
+Reuse/repair authorized local test fixtures with supported app-native administration,
+including scoped sudo; stale credentials/initial password change are preparation.
+Persist protected references and scope, never secret values. Recheck latest authority
+and entry/access references after compaction; sudo alone grants no permission.
+Block only the exact unauthorized operation; continue independent authorized work.
 
-Это три шага проектирования одного решения, не три отдельных отчёта, реализации
-или согласования. Реализуй третью версию; нужные части идеальной не выкидывай,
-если без них результат не работает. 80% — ориентир ценности, не степень готовности
-и не разрешение потерять обязательный результат. Для очевидной мелочи проход короткий.
-Подробный метод: `src/common/skills/architecture-design/SKILL.md`.
+## Tangible result before code
+State who needs what real task solved, what failed before, what will work after,
+and where to try it. For API/CLI, name the actual call and result. SHAs, files and
+waiting for others are means, not business results. For bugs start TDD immediately:
+RED → fix → GREEN → original scenario. Every technical step must advance that difference.
 
-## Обязательный контроль направления
-Каждые 60 минут активной работы перечитай исходное поручение/документ и последние
-поправки: какой результат получен для пользователя, не стал ли свой план новой целью,
-какие условия ты придумал сам? Реши: продолжить, сократить объём, сменить подход
-или перейти к доступной работе. Это сверка направления, не новый запуск тестировщиков.
-На крупных milestones (~3 часа работы) и их итоговой приёмке запускай свежих Zero
-Knowledge тестировщиков с разными реалистичными персонами, возрастом и целью.
-Они сами пробуют результат без твоей истории и оставляют подробную критику: что
-получилось, что понравилось, что мешает и почему. Не на каждый чих и не каждый час;
-~3 часа — размер цельного результата, не таймер ожидания или разрешение дробить приёмку.
-См. `src/common/skills/focus-groups/SKILL.md`.
-Инструкция: `src/common/protocols/BUSINESS_CHECKPOINT.md`. Это обязательно, даже
-когда все тесты зелёные; напоминание или прочтение файла не закрывает проверку.
+## Three design passes
+1. **Working solution:** solve the whole task using current data.
+2. **Ideal version:** improve that solution fully and explain the benefit.
+3. **Minimum working version:** retain roughly 80% of useful value at lower cost;
+   state what is deliberately deferred and how to verify the benefit.
+These are three passes over one solution, not three reports, builds or approvals.
+Implement the third; keep essential ideal components when the result needs them.
+80% describes value, not incomplete delivery or permission to drop required outcomes.
+For obvious small work the pass is brief. Method: `src/common/skills/architecture-design/SKILL.md`.
 
-Каждые 120 wall-clock минут незавершённой работы и сразу при повторном сбое или
-коррекции пользователя выполняй `src/common/protocols/SELF_IMPROVE.md`: наблюдение,
-исправление способа работы, проверка на исходном сбое и доступное повторное применение.
-Проверка обязательна; обоснованное «изменение не нужно» допустимо, выдуманный патч — нет.
-Native hooks вызывают существующий time guard на границах работы, без нового daemon.
-Если hook недоступен, сверяй сроки явно на рабочих границах; отсутствие механизма
-не отменяет контроль. Пауза не является активной работой, остановленная сессия не будится.
+## Mandatory direction control
+Every 60 minutes of active work reread the original assignment/document and latest
+corrections: what user result exists, has your plan become the goal, which conditions
+were self-imposed? Continue, reduce scope, change approach or do available work.
+This is a direction check, not another tester launch. Major milestones (~3 hours of
+coherent work) and final acceptance require fresh Zero Knowledge testers with varied
+realistic personas, ages and goals. They try the result without your history and
+provide detailed feedback: what worked/helped, what obstructed them and why.
+This is not every edit/hour; ~3 hours measures a coherent outcome, not an idle timer
+or permission to fragment acceptance. See `src/common/skills/focus-groups/SKILL.md`
+and `src/common/protocols/BUSINESS_CHECKPOINT.md`. Green tests do not waive this check;
+a reminder or reading the file does not complete it.
 
-## Параллельная работа
-Перед изменениями проверь другие сессии этого проекта через Agent Herder.
-Если другая сессия может писать в тот же репозиторий, работай в отдельном Git worktree.
-Используй существующий назначенный worktree; новый создай инструментом
-`src/common/tools/lhc_worktree.py` в `<основной-корень>/.worktrees/<задача>`.
-Сессии другого проекта не мешают, пока не делят конкретный ресурс.
-При недоступном Herder проверь общий файловый чат; при неизвестном владельце
-изолируй свою работу, сохранив чужие изменения.
+Every 120 wall-clock minutes of unfinished work, and immediately after repeated
+failure or user correction, follow `src/common/protocols/SELF_IMPROVE.md`: observation,
+method correction, verification against the failure and available reuse. Verification
+is mandatory; justified no-change is allowed, an invented patch is not. Native hooks
+use the existing time guard at work boundaries, without a daemon. If unavailable,
+check deadlines explicitly at work boundaries. Pauses are not active work; stopped
+sessions are not awakened.
 
-Обмен по проекту: `<основной-корень>/.agents/shared-session/chat/`.
-Системный обмен: `~/.agents/shared-session/chat/`. Одно сообщение — один JSON-файл;
-`src/common/tools/lhc_chat.py` публикует его атомарно и читает новые сообщения.
-Все worktree используют чат основного checkout, все харнессы — один выбранный канал.
-Пиши только сведения, меняющие следующий шаг: область работ, конфликт, решение,
-готовый результат или зависимость. Подробности: `src/common/protocols/COORDINATION.md`.
+## Parallel work
+Before writing, inspect this project's sessions through Agent Herder. If another
+session may write the repository, use a separate Git worktree. Reuse the assigned
+worktree; otherwise use `src/common/tools/lhc_worktree.py` under
+`<primary-root>/.worktrees/<task>`. Other projects matter only for a concrete shared
+resource. If Herder is unavailable, inspect the shared file chat; unknown ownership
+requires isolation and preserving others' work.
+Project chat: `<primary-checkout>/.agents/shared-session/chat/`; system chat:
+`~/.agents/shared-session/chat/`. Each message is one JSON file, atomically published
+and read with `src/common/tools/lhc_chat.py`. Worktrees share the primary chat; all
+harnesses use one selected channel. Send only scope, conflicts, decisions, completed
+results or dependencies that change the next action. See `src/common/protocols/COORDINATION.md`.
 
-## Сначала доступная работа
-Конкретная зависимость откладывает только зависящую от неё операцию.
-Пока есть полезные разрешённые задачи, делай их, затем возвращайся к блокерам.
-Чужой WIP, занятый ресурс, отсутствие отчёта или недоступный Herder сами по себе
-не останавливают весь цикл. Причину настоящей задержки и следующий шаг сохраняй кратко.
+## Available work first
+A dependency delays only its dependent operation. Do useful authorized work before
+returning to blockers. Foreign WIP, a busy resource, missing report or unavailable
+Herder does not stop the whole cycle. Record the real delay and next action briefly.
+If only another session remains, call Herder `resume_after` with your harness/session,
+exact dependencies and continuation. Publish ready work/PR first; avoid mutual waiting.
+Herder resumes the same session once. If unavailable, leave a targeted file message
+and `waiting` state; writing a file does not prove delivery or awakening.
 
-Если осталась только зависимость от других сессий, вызови Herder `resume_after`:
-свой harness/sessionId, точные зависимости и действие после их завершения.
-Сначала опубликуй готовую работу/PR; затем жди, не создавая взаимного ожидания.
-Herder возобновляет ту же сессию один раз. Если он недоступен, оставь адресную просьбу
-в файловом чате и состояние `waiting`; запись файла не выдавай за доставку или пробуждение.
+## One green history
+Applicable order: implementation/tests → permitted deploy → real consumer and
+independent milestone acceptance → unified published dev history → integrated smoke.
+PR per worker is optional. Local checkpoint commits may precede this. If CI needs an
+early branch push, record a staging exception with reason/native refs; it is neither
+final acceptance nor main merge. Testing completes its coverage/raw observations,
+including product defects, without mandatory code/deploy/hiring. Required but unavailable
+merge is blocked, not N/A. Resolve the target: Airlock megamen32-dev; external/shared
+upstream main belongs to Oleg. Main CI uses GitHub-hosted runners, not ARC.
+See `src/common/protocols/REVIEW_TO_DELIVERY.md`.
+Before publication and after peers finish, fetch. Merge a newer permitted integration
+target, resolve conflicts by meaning, rerun affected checks and push. Review covers
+the PR delta; merge uses current HEAD and CI. Check the integrated result after merge.
+Full completes when the accepted owned goal and applicable delivery are proven.
+Dev delivery complete is separate from release handoff awaiting-owner; do not include
+or wait for foreign WIP/projects. Within owned scope, including nested repositories,
+participants' worktrees are clean; preserve foreign WIP. Scoped handoff does not replace
+consumer proof. Unchanged Stop stays pending; meaningful owned progress allows one
+new continuation without HumanStop/permission bypass. An OpenCode observer is not a
+native final veto; preserve 60/120 clocks. Remove only your clean worktree after its
+inclusion in the confirmed primary branch. See `src/common/protocols/SHARED_WORKTREE.md`.
 
-## Единая зелёная история
-Каждая рабочая ветка заканчивается push и PR в основную ветку; при возможности
-доведи PR до merge в этом же цикле. Это относится и к сессии, начатой не в worktree:
-общий checkout не освобождает от итоговой интеграции и проверки.
-
-Этот порядок интеграции не задерживает отдельно и явно разрешённый пользователем
-live deployment: после обязательных release gates выполни его и исходный сценарий
-потребителя до независимой Zero Knowledge проверки и PR/merge. Разрешение на deploy
-не разрешает merge; для merge нужно отдельное явное согласие пользователя, если
-оно ещё не дано. Подробнее: `src/common/protocols/REVIEW_TO_DELIVERY.md`.
-
-Перед публикацией и после завершения других сессий сделай fetch. Если отстал,
-влей свежую основную ветку, разреши конфликты по смыслу, повтори затронутые тесты
-и push. Изменения PR проходят review; слияние учитывает актуальную голову и CI.
-После merge проверь уже объединённый результат, а не только отдельную ветку.
-
-Full-цикл завершён, когда относящиеся к нему изменения, включая чужие готовые
-изменения и вложенные репозитории, разобраны и доступны из общей опубликованной
-истории; рабочие деревья участников чистые, проверки зелёные, реальный сценарий работает.
-Активного владельца не обгоняй захватом его WIP: своди готовые результаты, а финальную
-сверку оставляй интегратору или последней завершающейся сессии. До этого выполняй
-независимую работу. Недоступные права на merge или реальный красный тест обозначай
-точно, сохраняя PR; незавершённое не называй полным завершением.
-
-Чужую работу сохраняй. Удаляй только собственный чистый worktree, включённый в
-подтверждённую основную ветку. Подробности: `src/common/protocols/SHARED_WORKTREE.md`.
-
-## Проверка и общение
-Проверяй заявленное поведение: для исправления регрессия, для пользовательского
-результата реальный путь. Ошибка требует исправления и повторной проверки;
-один успешный повтор нестабильного теста не устраняет причину.
-
-Сообщай результат, значимое решение или конкретную проблему обычным языком
-пользователя. После достаточных проверок переходи к разрешённой доставке и реальному сценарию.
-Ошибка SHA/имени/JSON справки при известном проверенном коде — локальная правка,
-не новый review. Метаданные бери из Git/CI; неизвестный охват не превращай в PASS.
-Реальную дельту кода/среды и текущий release gate проверяй. Не создавай новый сервис
-справок; см. `src/common/protocols/REVIEW_TO_DELIVERY.md`.
-Действующие полномочия, защита данных и ограничения ресурсов остаются в силе.
-
-Секреты используй через существующее защищённое окружение или `/secret`, не выводи
-их в сообщения и не строй для задачи новое хранилище. Важный вопрос человеку —
-через имеющийся AskHuman; автоматический инцидент — через NoticePlace.
-Временные материалы задачи храни в `<project-root>/.tmp/`.
-The active harness owns approval policy. Повтор запроса разрешения сам по себе
-не является ответом пользователя; полученное разрешение на ту же задачу не выпрашивай снова.
-
-Редактируемый источник LHC: `LastHumanCommit`; переносимый пакет:
-`plugins/last-human-commit`. Меняй источник, генерируй пакет, проверяй и публикуй
-через native manager. Проекты хранят свои правила, а не отдельную копию всего LHC.
-Методы из `src/common/skills/` и роли из `src/common/agents/` читаются по задаче;
-этот router определяет применение методов; часовой контроль и самоулучшение обязательны.
+## Verification and communication
+Verify the claim: regression for a fix, actual consumer path for a user result.
+Fix failures and recheck; one successful rerun does not resolve flaky behavior.
+Report a result, material decision or precise problem in the user's language.
+After sufficient checks, perform authorized delivery and the real scenario. SHA/name/
+receipt-JSON errors over known checked code are local corrections, not new review.
+Read metadata from Git/CI; unknown coverage is not PASS. Check real code/environment
+deltas and current release gates; do not create a receipt service. Existing authority,
+data protection and resource restrictions remain in force.
+Use existing protected environments or `/secret`; never print secrets or create a
+new store for this task. Important human questions use existing AskHuman; automated
+incidents use NoticePlace. Keep temporary work under `<project-root>/.tmp/`.
+The active harness owns approval policy. Repeating a permission request is not an
+answer; do not request an already valid authorization again.
+Editable source: `LastHumanCommit`; portable package: `plugins/last-human-commit`.
+Edit source, generate, validate and publish through the native manager. Projects
+retain their own rules instead of copying LHC. Load methods in `src/common/skills/`
+and roles in `src/common/agents/` as needed; this router controls their use.
+Hourly direction control and workflow improvement remain mandatory.
 <!-- last-human-commit:end -->

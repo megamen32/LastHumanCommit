@@ -1,12 +1,21 @@
-# Last Human Commit 1.4
+# Last Human Commit 1.5
 
 An automatic engineering workflow for ordinary requests, including rough voice transcripts.
 Understand the intended result, do the useful work, test it and integrate the shared result.
 
 ## What changed
 
-Parallel writers use Git worktrees. Each working branch is pushed and gets a PR;
-merge it when review and checks permit. Before finishing, fetch, merge newer work,
+Operating instructions, internal planning, new task records and agent/tool messages
+use English. User answers use the user’s language; original messages, localized
+fixtures and raw feedback retain their language.
+
+Ordinary tasks retain their class, explicit business canary and applicable delivery
+stages in existing session state. Independent native source-backed review can close
+the outcome; testing can complete with a product defect. See
+[the outcome contract](src/common/protocols/OUTCOME_CONTRACT.md).
+
+Parallel writers use Git worktrees. Ready work converges into the explicitly permitted published dev history; PR per
+worker is optional. Merge only with authorization, review and green checks. Before finishing, fetch, merge newer work,
 retest and push. A Full cycle converges the participants' changes, including nested
 repositories, into one reachable green history. Foreign active work is preserved.
 
@@ -32,7 +41,7 @@ available; scheduled inspection is required even when the current plan looks cor
 
 ## Package and installation
 
-The native Agent Plugin is `plugins/last-human-commit`, version 1.4.4, with 22 optional
+The native Agent Plugin is `plugins/last-human-commit`, version 1.5.5, with 23 optional
 skills and small automatic-entry hooks. Use the harness's native plugin manager.
 For clients whose plugin hooks are unavailable or still await trust, the package
 provides a supported user-instruction bootstrap:
@@ -61,3 +70,7 @@ without automatically expanding scope. See docs/V1.4.3.md in the source reposito
 
 OpenCode 2 uses the native `opencode/lhc-v2.ts` entrypoint; V1 retains
 `opencode/lhc-time-guard.ts`. OpenChamber shares the connected server installation.
+OpenCode can reload a changed loader during a running process: a native rollout
+probe observed its hook version change without a restart. An immutable artifact
+alone does not isolate active contexts. If they must retain their version, keep
+the working selection until the supported isolation route is verified.
