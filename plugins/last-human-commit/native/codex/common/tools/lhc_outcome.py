@@ -21,6 +21,7 @@ if str(Path(__file__).resolve().parent) not in sys.path:
 import lhc_milestone as native
 
 STAGES = ('technical', 'deploy', 'consumer', 'publication', 'integration')
+VERIFICATION_KINDS = ('standard', 'source-publication')
 ENGINEERING = {'quickfix', 'fullcycle'}
 RU_INSTALL = r'установ(?:и|ить)\s+(?!(?:что|факт\w*|статус\w*|причин\w*)\b)\w+'
 REPAIR = re.compile(r'\b(?:fix|repair|implement|build|create|write|add|make|configure|deploy|install|update|change)\b|исправ|почин|реализ|созда|сделай|обнов|' + RU_INSTALL + r'|развер', re.I)
@@ -216,7 +217,8 @@ def classify(goal):
 
 NEGATIVE_LIST = r'(?:no|without|do not|без)\s+(?:(?:deploy|push|publish|merge)\s*(?:[,/]\s*(?:(?:and|or|и|или)\s+)?|(?:and|or|и|или)\s+))*'
 EXCLUSIONS = {
-    'deploy': NEGATIVE_LIST + r'deploy\b|(?:no|without|do not)\s+(?:\w+\s+)?deploy|без\s*(?:push/)?deploy|не\s+(?:деплой|выкладывай)',
+    'deploy': (NEGATIVE_LIST + r'deploy\b|(?:no|without|do not)\s+(?:\w+\s+)?deploy|без\s*(?:push/)?deploy|не\s+(?:деплой|выкладывай)'
+               r'|(?:no|without|do not)\s+[^.!?\n]{0,100}\b(?:deployment|runtime\s+actions?)\b'),
     'publication': NEGATIVE_LIST + r'(?:push|publish)\b|не\s+публику',
     'integration': NEGATIVE_LIST + r'(?:main\s+)?merge\b|external.repo|PR.only|внешн.{0,30}репозит|не\s+(?:merge|слива)',
 }
@@ -890,6 +892,8 @@ def main():
         contract.add_argument('--' + field, required=True)
     contract.add_argument('--task-class', choices=('quickfix', 'fullcycle', 'testing', 'research', 'status'))
     contract.add_argument('--scope-source', help='exact native user source reference for a semantic class correction')
+    contract.add_argument('--verification-kind', choices=VERIFICATION_KINDS, default='standard',
+                          help='source-publication binds native source readiness and exact Git publication evidence')
     contract.add_argument('--product-root', type=Path, help='explicit product checkout; --cwd remains the native session-state root')
     contract.add_argument('--require-stage', action='append', choices=STAGES, default=[])
     contract.add_argument('--not-applicable', action='append', choices=STAGES, default=[])
@@ -984,6 +988,57 @@ def main():
                     claims.setdefault(stage, {})[field] = value
             if any(set(row) != {'target', 'expected'} for row in claims.values()):
                 raise ValueError('stage readback needs both target and expected')
+            prior_verification_kind = outcome.get('verification_kind', 'standard')
+            prior_source_publication = outcome.get('source_publication')
+            source_publication = None
+            if args.verification_kind == 'source-publication':
+                from lhc_source_publication import capture_contract
+                if not args.scope_source or not source:
+                    raise ValueError('source-publication needs an exact current native --scope-source')
+                if outcome['task_class'] not in ENGINEERING or not args.owned_path:
+                    raise ValueError('source-publication is bounded engineering work with explicit owned paths')
+                if canary['target'] != 'project:' + str(product_root):
+                    raise ValueError('source-publication requires the explicit plain project:<root> target')
+                policy = policy or outcome.get('integration_policy')
+                if not policy or not all((policy.get('remote'), policy.get('branch'), policy.get('ownership'))):
+                    raise ValueError('source-publication needs explicit current remote, branch, and ownership')
+                if policy.get('repository') != remote_binding(product_root, policy['remote']):
+                    raise ValueError('source-publication repository binding is missing or changed')
+                pub_claim = claims.get('publication', {})
+                source_publication = capture_contract(
+                    outcome, source, product_root, args.owned_path, policy['remote'], policy['branch'],
+                    policy['repository'], canary['target'], pub_claim.get('target'),
+                    pub_claim.get('expected'), product_root_scope_allowed,
+                )
+                if policy['ownership'] != 'owned' and policy['branch'] in {'main', 'master'}:
+                    raise ValueError('source-publication to shared/external main remains owner-only')
+                source_applicable = applicable(outcome['task_class'], source_scope)
+                if source_applicable['deploy']['status'] == 'pending':
+                    raise ValueError('source-publication cannot omit deployment still required by the current native scope')
+                for stage in ('deploy', 'integration'):
+                    row = source_applicable[stage]
+                    if row['status'] == 'not-applicable':
+                        outcome['stages'][stage] = row
+                candidate_expected = 'candidate:' + source_publication['candidate_fingerprint']
+                claims.setdefault('publication', {})['expected'] = candidate_expected
+                if outcome['stages']['integration']['status'] == 'pending':
+                    if (policy['ownership'] != 'owned' or
+                            (policy['branch'] in {'main', 'master'} and not policy.get('main_permission_confirmed'))):
+                        raise ValueError('source integration retains the existing main permission and ownership gates')
+                    integration_claim = claims.get('integration')
+                    if integration_claim and integration_claim.get('target') != pub_claim.get('target'):
+                        raise ValueError('source-publication integration must bind the exact same verified ref')
+                    claims['integration'] = {'target': pub_claim['target'], 'expected': candidate_expected}
+                # Only the explicitly source-only native scope may omit an app consumer.
+                outcome['stages']['consumer'] = {
+                    'status': 'not-applicable',
+                    'basis': 'source-publication:' + scope_source_id,
+                    'evidence': [],
+                }
+                outcome['source_publication'] = source_publication
+            else:
+                outcome.pop('source_publication', None)
+            outcome['verification_kind'] = args.verification_kind
             from lhc_outcome_review import equivalent_target
             previous = outcome['canary']
             same_canary = (all(canary[k] == previous[k] for k in ('scenario', 'expected')) and
@@ -991,7 +1046,9 @@ def main():
                                              '\n'.join([outcome['original_goal'], *outcome.get('corrections', [])])))
             changed = (not same_canary or args.owned_path != outcome['owned_paths'] or
                        args.coverage != outcome.get('coverage', []) or claims != outcome.get('stage_claims', {}) or
-                       policy != outcome.get('integration_policy') or product_root != prior_product_root)
+                       policy != outcome.get('integration_policy') or product_root != prior_product_root or
+                       prior_verification_kind != args.verification_kind or
+                       (source_publication and source_publication != prior_source_publication))
             if not changed:
                 canary['status'] = previous['status']
             outcome.update(canary=canary, owned_paths=args.owned_path, coverage=args.coverage, contract_confirmed=True, stage_claims=claims)

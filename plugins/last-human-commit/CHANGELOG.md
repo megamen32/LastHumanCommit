@@ -1,3 +1,7 @@
+# 1.5.12 — verify source-only publication
+
+Add explicit source-publication verification for native assignments that deliver reviewed source artifacts. Independent source readiness uses the exact owned candidate files; Git publication requires the configured repository, branch, commit and owned content readbacks. Runtime checks remain unchanged for application work. Source readiness does not claim publication, runtime acceptance or permission.
+
 # 1.5.11 — bind reviews across native project directories
 
 Allow an independent engineering reviewer in a different native directory to bind the currently assigned product when the publisher works directly in that product. Require the exact current outcome, full goal, assigned product root and actual product-bound observations. Preserve native directories, evidence times, revisions and independent-review gates.

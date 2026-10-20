@@ -594,6 +594,27 @@ def report_result(text):
     return defect, positive
 
 
+def source_report_result(text):
+    """Accept the bounded source-review rubric without upgrading app PASS."""
+    defect, positive = report_result(text)
+    explicit_negative = re.search(
+        r'\b(?:not\s+approved|cannot\s+approve|do\s+not\s+approve|revise|reject(?:ed)?|'
+        r'changes?\s+required|failed|failure|defect(?:s)?\s+(?:found|remain|unresolved))\b|'
+        r'ошибк|не\s+одобрен|нужн\w*\s+исправ', text, re.I)
+    if defect or explicit_negative:
+        return True, False
+    if positive:
+        return False, True
+    bounded = re.search(r'\bAPPROVE\s+BOUNDED\b', text, re.I)
+    scope = re.search(r'\bscope\s+(?:is\s+)?(?:covered|confirmed|complete)\b', text, re.I)
+    return False, bool(bounded and scope)
+
+
+def _source_evidence_refs(by_file):
+    return sorted({ref for value in by_file.values()
+                    for ref in (value if isinstance(value, (list, tuple)) else [value])})
+
+
 def source_finding_quote(outcome, text, observations, cwd, quote):
     """Explicit own-research semantic binding, never an independent verdict.
 
@@ -665,6 +686,54 @@ def raw_review(outcome, final, observations, cwd, comparison_quote=None):
     line, rather than recursively hiring somebody to manufacture a certificate.
     """
     canary = outcome['canary']
+    if outcome.get('verification_kind') == 'source-publication':
+        from lhc_source_publication import permission_unchanged, publication_readback, source_readiness
+        defect, positive = source_report_result(final)
+        if not final.strip() or defect or not positive:
+            raise ValueError('source readiness needs the existing reviewer’s explicit current result; preserve pending')
+        metadata = outcome.get('source_publication') or {}
+        source = next((row for row in outcome.get('scope_sources', [])
+                      if row.get('source') == metadata.get('permission_source')), None)
+        if not permission_unchanged(metadata, source, outcome.get('corrections', [])):
+            raise ValueError('source-publication authorization was revoked or no longer matches the current source')
+        readiness = source_readiness(metadata, observations, cwd, floor=outcome.get('evidence_after'))
+        read_calls = _source_evidence_refs(readiness['read_calls'])
+        hash_calls = _source_evidence_refs(readiness['hash_calls'])
+        candidate = 'candidate:' + metadata['candidate_fingerprint']
+        stages = {'technical': {
+            'target': 'project:' + str(cwd), 'expected': candidate,
+            'observed': final, 'evidence_calls': sorted(set(read_calls + hash_calls)),
+        }}
+        product_verdict = 'source-ready'
+        try:
+            published = publication_readback(metadata, observations, cwd, outcome,
+                                             outcome.get('evidence_after'))
+            stage_claim = outcome.get('stage_claims', {}).get('publication', {})
+            if (published['commit'] in final and metadata['ref'] in final and
+                    stage_claim.get('target') == f"git ls-remote {metadata['remote']} {metadata['ref']}"):
+                stages['publication'] = {
+                    'target': stage_claim['target'], 'expected': candidate,
+                    'observed': final, 'evidence_calls': [published['readback_call']],
+                }
+                if outcome.get('stages', {}).get('integration', {}).get('status') == 'pending':
+                    policy = outcome.get('integration_policy') or {}
+                    if (policy.get('remote') == metadata['remote'] and
+                            policy.get('branch') == metadata['branch'] and
+                            policy.get('ownership') == 'owned' and
+                            (policy.get('branch') not in {'main', 'master'} or policy.get('main_permission_confirmed'))):
+                        stages['integration'] = {
+                            'target': stage_claim['target'], 'expected': candidate,
+                            'observed': final, 'evidence_calls': [published['readback_call']],
+                        }
+                product_verdict = 'source-published'
+        except (OSError, ValueError, KeyError, TypeError):
+            published = None
+        return {'outcome_id': outcome['id'], 'revision': scope_revision(outcome, cwd),
+                **{key: canary[key] for key in ('target', 'scenario', 'expected')},
+                'assignment_verdict': 'complete', 'product_verdict': product_verdict,
+                'comparison': final, 'stages': stages, 'coverage': {},
+                **({'source_publication': published} if product_verdict == 'source-published' else {}),
+                'format': 'original-native-source-review'}
     defect, positive = report_result(final)
     if not final.strip() and outcome['task_class'] == 'research':
         raise ValueError('no native assessment yet: send the actual source finding and expected/observed as a separate visible assistant message before review; FEEDBACK alone is not that message. Do not debug helper/session storage; preserve pending if unavailable')
@@ -731,7 +800,27 @@ def raw_review(outcome, final, observations, cwd, comparison_quote=None):
             'comparison': final, 'stages': stages, 'coverage': coverage, 'format': 'original-native-prose'}
 
 
-def own_assessment(outcome, text, observations, cwd, comparison_quote=None):
+def own_assessment(outcome, text, observations, cwd, comparison_quote=None, assessment_index=None):
+    if outcome.get('verification_kind') == 'source-publication':
+        from lhc_source_publication import permission_unchanged, source_readiness
+        defect, positive = source_report_result(text)
+        if not positive and not defect:
+            return False
+        if defect:
+            # Preserve the latest explicit negative instead of falling back to
+            # an earlier positive assessment.
+            return True
+        metadata = outcome.get('source_publication') or {}
+        source = next((row for row in outcome.get('scope_sources', [])
+                      if row.get('source') == metadata.get('permission_source')), None)
+        if not permission_unchanged(metadata, source, outcome.get('corrections', [])):
+            return False
+        try:
+            source_readiness(metadata, observations, cwd,
+                             floor=outcome.get('evidence_after'), before=assessment_index)
+            return True
+        except ValueError:
+            return False
     if MARKER in text:
         return True
     defect, positive = report_result(text)
@@ -754,6 +843,7 @@ def accept_review(outcome, state, path, cwd, owner, comparison_quote=None, testi
     from lhc_outcome import bounded_self_check
     meta, messages, observations = load_review(path)
     product_cwd = product_root_path(outcome, cwd)
+    source_mode = outcome.get('verification_kind') == 'source-publication'
     reuse_original = reuse_report = None
     if testing_reuse is not None:
         from lhc_testing_reuse import prepare
@@ -761,7 +851,8 @@ def accept_review(outcome, state, path, cwd, owner, comparison_quote=None, testi
         if comparison_quote:
             raise ValueError('testing reuse cannot bind research comparison')
     sid = meta.get('id') or meta.get('session_id')
-    own_attempt = sid == owner and (outcome['task_class'] in {'testing', 'research'} or bounded_self_check(outcome))
+    own_attempt = (not source_mode and sid == owner and
+                   (outcome['task_class'] in {'testing', 'research'} or bounded_self_check(outcome)))
     native_cwd = Path(meta.get('cwd', '/unknown'))
     cross_cwd_research = sid != owner and outcome['task_class'] == 'research' and native_cwd.resolve() != cwd
     # Native cwd identifies where the independent reviewer runs, not which
@@ -769,7 +860,7 @@ def accept_review(outcome, state, path, cwd, owner, comparison_quote=None, testi
     # prove product identity from the exact current native assignment below.
     cross_cwd_product = (sid != owner and outcome['task_class'] in ENGINEERING
                          and native_cwd.resolve() != cwd)
-    if (sid == owner and not own_attempt) or not native_cwd.is_absolute() or (
+    if (sid == owner and (source_mode or not own_attempt)) or not native_cwd.is_absolute() or (
             native_cwd.resolve() != cwd and not cross_cwd_research and not cross_cwd_product):
         raise ValueError('review must be independent and for this exact project')
     # The existing reviewer can deliberately inspect a bounded case from its
@@ -786,7 +877,8 @@ def accept_review(outcome, state, path, cwd, owner, comparison_quote=None, testi
         # A bound old passage must not hide a later explicit source correction.
         negative_binding = comparison_quote and outcome['task_class'] == 'research' and re.search(
             r'\b(?:defect|wrong|needs? correction)\b|ошибк|не соответствует', text, re.I)
-        return negative_binding or own_assessment(outcome, text, observations, product_cwd, comparison_quote)
+        return negative_binding or own_assessment(outcome, text, observations, product_cwd,
+                                                  comparison_quote, report['index'])
     independent_engineering_review = sid != owner and outcome['task_class'] in ENGINEERING
     own_report = next((report for report in reversed(meta.get('own_reports', []))
                        if selected_assessment(report)), None) if (
@@ -869,6 +961,25 @@ def accept_review(outcome, state, path, cwd, owner, comparison_quote=None, testi
     if len(lines) > 1:
         raise ValueError('ambiguous independent review summaries')
     report = reuse_report if reuse_report is not None else json.loads(lines[0]) if lines else raw_review(outcome, final, observations, product_cwd, comparison_quote)
+    source_readiness_result = source_publication_result = None
+    if source_mode:
+        from lhc_source_publication import permission_unchanged, publication_readback, source_readiness
+        metadata = outcome.get('source_publication') or {}
+        source = next((row for row in outcome.get('scope_sources', [])
+                      if row.get('source') == metadata.get('permission_source')), None)
+        if not permission_unchanged(metadata, source, outcome.get('corrections', [])):
+            raise ValueError('source-publication permission no longer matches the current source and latest scope')
+        source_readiness_result = source_readiness(
+            metadata, observations, product_cwd, floor=outcome.get('evidence_after'),
+            before=meta.get('review_end_index'),
+        )
+        if 'publication' in (report.get('stages') or {}):
+            source_publication_result = publication_readback(
+                metadata, observations, product_cwd, outcome, outcome.get('evidence_after'),
+                before=meta.get('review_end_index'),
+            )
+            if report.get('source_publication') != source_publication_result:
+                raise ValueError('source-publication report does not bind the exact native push and current remote commit')
     canary = outcome['canary']
     revision = scope_revision(outcome, cwd)
     for key, expected in {'outcome_id': outcome['id'], 'revision': revision,
@@ -878,13 +989,19 @@ def accept_review(outcome, state, path, cwd, owner, comparison_quote=None, testi
     if report.get('assignment_verdict') != 'complete' or not report.get('comparison'):
         raise ValueError('independent expected/observed comparison required')
     product = report.get('product_verdict')
-    if product not in {'pass', 'changes-required'} or (outcome['task_class'] in ENGINEERING and product != 'pass'):
+    if source_mode:
+        expected_product = 'source-published' if source_publication_result else 'source-ready'
+        if product != expected_product or (report.get('stages', {}).get('consumer') is not None):
+            raise ValueError('source-only review must distinguish readiness from publication and cannot claim an app consumer result')
+    elif product not in {'pass', 'changes-required'} or (outcome['task_class'] in ENGINEERING and product != 'pass'):
         raise ValueError('product result does not satisfy engineering canary')
     coverage = outcome.get('coverage', [])
+    if source_mode and coverage:
+        raise ValueError('source-publication cannot replace explicit application coverage')
     if outcome['task_class'] == 'testing' and not coverage:
         raise ValueError('testing needs explicit assigned coverage')
     by_call = {call.get('call_id'): (call, output) for call, output in observations if call.get('call_id')}
-    resolved = consumer_target(outcome, observations, product_cwd)
+    resolved = None if source_mode else consumer_target(outcome, observations, product_cwd)
     for item in coverage:
         claim = report.get('coverage', {}).get(item)
         if (not isinstance(claim, dict) or claim.get('verdict') not in {'passed', 'defect'}
@@ -929,15 +1046,40 @@ def accept_review(outcome, state, path, cwd, owner, comparison_quote=None, testi
         refs = row.get('evidence_calls') or []
         if not row.get('expected') or not row.get('observed') or not refs or not all(ref in by_call for ref in refs):
             raise ValueError('each stage needs expected/observed comparison and actual native calls')
-        if min(call_order[ref] for ref in refs) <= last_call:
+        source_reused_readback = bool(source_mode and stage == 'integration' and source_publication_result
+                                      and refs == [source_publication_result['readback_call']])
+        if min(call_order[ref] for ref in refs) <= last_call and not source_reused_readback:
             raise ValueError('source observations violate stage order')
         last_call = max(call_order[ref] for ref in refs)
         claim = outcome.get('stage_claims', {}).get(stage, canary)
+        if source_mode and stage == 'technical':
+            claim = {'target': 'project:' + str(product_cwd),
+                     'expected': 'candidate:' + outcome['source_publication']['candidate_fingerprint']}
         if stage in {'deploy', 'publication', 'integration'} and (stage not in outcome.get('stage_claims', {}) or any(row.get(k) != claim[k] for k in ('target', 'expected'))):
             raise ValueError('remote stage requires its exact contract target/expected readback')
+        if source_mode and stage == 'technical':
+            if row.get('target') != 'project:' + str(product_cwd) or row.get('expected') != claim['expected']:
+                raise ValueError('technical readiness must bind the immutable source candidate and exact project root')
+            expected_refs = (set(_source_evidence_refs(source_readiness_result['read_calls'])) |
+                             set(_source_evidence_refs(source_readiness_result['hash_calls'])))
+            if set(refs) != expected_refs:
+                raise ValueError('technical source readiness must cite each owned-file read and matching hash')
+        if source_mode and stage == 'publication':
+            if (not source_publication_result or source_publication_result['readback_call'] not in refs or
+                    row.get('expected') != 'candidate:' + outcome['source_publication']['candidate_fingerprint']):
+                raise ValueError('publication needs the native push, exact current branch readback, and candidate blob proof')
+        if source_mode and stage == 'integration':
+            policy = outcome.get('integration_policy') or {}
+            if (not source_publication_result or policy.get('branch') != outcome['source_publication']['branch'] or
+                    policy.get('remote') != outcome['source_publication']['remote'] or
+                    policy.get('ownership') != 'owned' or
+                    (policy.get('branch') in {'main', 'master'} and not policy.get('main_permission_confirmed'))):
+                raise ValueError('source integration retains exact existing remote, ownership, and main permission gates')
+            if source_publication_result['readback_call'] not in refs:
+                raise ValueError('integration needs exact target-branch candidate commit/tree/blob proof')
         if stage == 'consumer' and not browser_journey(refs, by_call, canary['target']):
             raise ValueError('browser open/login alone is not the assigned action and result')
-        if stage == 'integration' or (stage == 'publication' and outcome.get('integration_policy')):
+        if stage == 'integration' or (stage == 'publication' and outcome.get('integration_policy') and not source_mode):
             policy = outcome.get('integration_policy')
             if not policy:
                 raise ValueError('integration target/ownership unresolved; never default to main')
@@ -966,7 +1108,9 @@ def accept_review(outcome, state, path, cwd, owner, comparison_quote=None, testi
                 if not smoke or not browser_journey(smoke, by_call, canary['target']):
                     raise ValueError('dev integration needs actual integrated smoke after branch readback')
         observed_target = resolved if stage == 'consumer' else claim['target']
-        if not any(real_observation(*by_call[ref], observed_target, stage, outcome['task_class'], product_cwd, claim['expected']) for ref in refs):
+        if source_mode and stage in {'technical', 'publication', 'integration'}:
+            pass  # Specialized source/hash and commit/ref proof was checked above.
+        elif not any(real_observation(*by_call[ref], observed_target, stage, outcome['task_class'], product_cwd, claim['expected']) for ref in refs):
             raise ValueError('echo/health/test-only/wrong-target receipt is not the assigned consumer operation')
         completed.add(stage)
     if reuse_original:
@@ -980,12 +1124,19 @@ def accept_review(outcome, state, path, cwd, owner, comparison_quote=None, testi
             'calls': {ref: {'at': by_call[ref][0]['_source_time'], 'index': by_call[ref][0]['_source_index']}
                       for ref in report['stages']['consumer']['evidence_calls']}}
     for stage, row in updates.items():
+        source_stage_level = ('independent-source-review' if source_mode and stage == 'technical' else
+                              'source-publication-readback' if source_mode and stage in {'publication', 'integration'} else None)
         outcome['stages'][stage].update(status='complete', evidence=[{
             'manifest': str(path.resolve()), 'reviewer': sid, 'revision': reuse_original['revision'] if reuse_original else revision,
             'native_model': meta.get('model'),
             'consumer_target': resolved if stage == 'consumer' else None,
-            'verification_level': 'self-check' if own_attempt else 'independent-review',
+            'verification_level': source_stage_level or ('self-check' if own_attempt else 'independent-review'),
             'calls': row['evidence_calls'], 'expected': row['expected'], 'observed': row['observed'],
+            **({'source_candidate': outcome['source_publication']['candidate_fingerprint'],
+                'source_readiness': source_readiness_result} if source_mode and stage == 'technical' else {}),
+            **({'published_commit': source_publication_result['commit'],
+                'publisher_call': source_publication_result['publisher_call'],
+                'ref': source_publication_result['ref']} if source_mode and stage in {'publication', 'integration'} else {}),
         }])
     if staging:
         outcome['staging_push'] = {**staging, 'manifest': str(path.resolve()), 'reviewer': sid}
@@ -996,8 +1147,18 @@ def accept_review(outcome, state, path, cwd, owner, comparison_quote=None, testi
     if outcome['task_class'] == 'research' and own_report:
         outcome['review_assessment'] = {'reviewer': sid, 'index': own_report['index'], 'at': own_report['at']}
     outcome.update(product_verdict=product, revision=revision, coverage_evidence=report.get('coverage', {}))
-    outcome['verification_level'] = 'self-check' if own_attempt else 'independent-review'
+    outcome['verification_level'] = 'independent-source-review' if source_mode else ('self-check' if own_attempt else 'independent-review')
     if outcome.get('release_handoff') and outcome['stages']['integration']['status'] == 'complete':
         outcome['release_handoff']['status'] = 'awaiting-owner'
-    outcome['canary']['status'] = 'complete' if 'consumer' in completed else 'pending'
+    if source_mode:
+        required_source_stages = {'technical', 'publication'} | ({'integration'} if outcome['stages']['integration']['status'] == 'pending' else set())
+        source_complete = required_source_stages.issubset(completed)
+        outcome['product_verdict'] = 'source-published' if source_publication_result else 'source-ready'
+        outcome['source_publication']['readiness'] = source_readiness_result
+        if source_publication_result:
+            outcome['source_publication']['published_commit'] = source_publication_result['commit']
+            outcome['source_publication']['publication_evidence'] = source_publication_result
+        outcome['canary']['status'] = 'complete' if source_complete else 'pending'
+    else:
+        outcome['canary']['status'] = 'complete' if 'consumer' in completed else 'pending'
     outcome['sources'] = list(dict.fromkeys([*outcome.get('sources', []), str(path.resolve())]))

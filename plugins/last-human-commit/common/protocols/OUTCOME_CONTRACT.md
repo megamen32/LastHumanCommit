@@ -61,6 +61,39 @@ this record. Explicit `--require-stage` adds an applicable obligation;
 access. Direct repair corrections add stages/target while keeping owner/lineage
 and clocks; a status/read-only question cannot erase confirmed repair.
 
+### Source-only publication
+
+For an assignment that explicitly delivers source files, select
+`contract --verification-kind source-publication` with its exact native
+`--scope-source`, canonical `project:<product-root>` target and every owned path.
+The flag does not turn application work into source-only work or grant access.
+The native assignment must bind the actual source-only task, product and files.
+Keep repository, remote and destination branch explicit; an arrow suffix in a
+project label is not a Git publication contract or permission.
+
+Bind them with the existing integration remote/branch/ownership fields and
+`--stage-target 'publication=git ls-remote origin refs/heads/main'
+--stage-expected publication=candidate` for the selected `origin/main` case.
+The `candidate` expectation is fixed from the current remote base, repository,
+destination ref and owned-file hashes. The future commit SHA is established by
+the actual publication readback; it is not guessed before readiness or inserted
+through a later contract edit that would reset the review floor.
+
+In this mode, independent technical readiness means reviewing the actual current
+owned source and matching its immutable candidate hashes. It does not require a
+Python CLI or credit source inspection as an executed application test. Runtime
+consumer/deploy stages are excluded only by that explicit source-only scope.
+Readiness leaves publication pending. Publication requires the authorized normal
+Git operation and native readback linking the actual remote commit, parent/base,
+owned delta and every candidate blob to the bound repository and branch. A branch
+SHA alone, an author PASS or repository write access does not establish this.
+
+An explicit native publish/push directive is scoped to that publication operation;
+it does not become merge, force-push, deployment or foreign-source permission.
+Keep HumanStop, revocations and UNKNOWN prior operations. A changed verification
+contract gets its actual new evidence floor; do not backdate or rewrite an earlier
+review. Source-artifact acceptance never claims runtime or parent consumer PASS.
+
 For an assigned product in another checkout, keep `--cwd` at the native session
 root and add `contract --product-root <canonical-product-checkout>
 --scope-source <original-native-assignment-ref> --owned-path <product-relative-file>`.
