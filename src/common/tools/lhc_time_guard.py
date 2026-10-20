@@ -711,11 +711,23 @@ def update_execution_context(business, prompt, payload, session_id):
     turn_ref = payload.get("turn_id") or payload.get("turnId") or "current"
     prompt_ref = f"{turn_ref}:{hashlib.sha256(prompt.strip().encode()).hexdigest()[:12]}"
     source = f"native-user-prompt:{session_id}:{prompt_ref}"
+    raw_prompt = prompt.strip()
+    safe_prompt = prompt_excerpt(raw_prompt)
+    # Share the outcome parser so truncation, deferred frames, and supported
+    # native attribution headers have one exact interpretation.
+    tools_dir = str(Path(__file__).resolve().parent)
+    if tools_dir not in sys.path:
+        sys.path.insert(0, tools_dir)
+    import lhc_outcome
+    origin = lhc_outcome.source_origin(raw_prompt, safe_prompt)
     rows = context.setdefault("direct_user_messages", [])
     if not rows or rows[-1].get("source") != source:
-        rows.append({"source": source, "prompt": prompt.strip()[:2048],
-                     "scope_prompt": prompt_excerpt(prompt)[:4096],
+        rows.append({"source": source, "prompt": raw_prompt[:2048],
+                     "scope_prompt": safe_prompt[:4096], "origin": origin,
                      "observed_at": str(payload.get("timestamp") or "native-event")[:64]})
+    else:
+        # A source recorded by an older hook may predate this origin field.
+        rows[-1].update(prompt=raw_prompt[:2048], scope_prompt=safe_prompt[:4096], origin=origin)
     del rows[:-4]
 
 

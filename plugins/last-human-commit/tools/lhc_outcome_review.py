@@ -134,6 +134,8 @@ def native_reviewer_manifest(outcome, cwd, reviewer):
     if len(candidates) != 1:
         raise ValueError('existing native reviewer unavailable/ambiguous')
     location = candidates[0].resolve(); start = None; context = None
+    saw_outcome_id = False
+    saw_current_goal = False
     with location.open('rb') as stream:
         header = stream.readline(native.MAX_BYTES + 1)
         if json.loads(header).get('payload', {}).get('id') != reviewer:
@@ -150,11 +152,27 @@ def native_reviewer_manifest(outcome, cwd, reviewer):
                 context = (offset, index)
             if row.get('type') == 'response_item' and payload.get('role') == 'user':
                 text = native.content(payload.get('content'))
+                saw_outcome_id = saw_outcome_id or outcome['id'] in text
+                saw_current_goal = saw_current_goal or outcome['original_goal'] in text
                 if outcome['id'] in text and outcome['original_goal'] in text:
                     start = context or (offset, index)
             index += 1
     if not start:
-        raise ValueError('existing reviewer has no native assignment for this outcome')
+        if saw_outcome_id and not saw_current_goal:
+            detail = f"reviewer assignment names active outcome id {outcome['id']} but omits the full current task goal"
+        elif saw_current_goal and not saw_outcome_id:
+            detail = f"reviewer assignment includes the current task goal but omits active outcome id {outcome['id']}"
+        elif saw_current_goal and saw_outcome_id:
+            detail = f"reviewer mentions active outcome id {outcome['id']} and the current task goal, but not together in one native assignment"
+        else:
+            detail = f"existing reviewer has no native assignment for active outcome {outcome['id']} and its full current task goal"
+        action = (
+            "No reviewer evidence was accepted. Keep the predecessor outcome and its report pending. Create a NEW native worker session "
+            "whose first assignment carries the actual human mandate (or a verified parent dispatch) plus the current canonical root, "
+            "exact owned files, and publication scope. Bind the existing independent reviewer to the fresh outcome id and the full "
+            "current task text before collecting new observations. Do not reuse this report, edit state/cache, or replay product/provider actions."
+        )
+        raise ValueError(f'{detail}. {action}')
     source = {'kind': 'native-file-window', 'location': str(location),
               'start_byte': start[0], 'end_byte': end, 'start_line': start[1]}
     raw, _ = codex_window(source)

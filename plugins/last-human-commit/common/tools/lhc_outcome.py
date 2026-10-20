@@ -33,6 +33,23 @@ HERDER_ENVELOPE = re.compile(
     r'<agent-herder-(?:coordination|repo-peers)\b[^>]*>.*?</agent-herder-(?:coordination|repo-peers)\s*>',
     re.I | re.S,
 )
+HERDER_ORIGIN_PROLOG = re.compile(
+    r'^\s*(?:🤖 Сообщение от ИИ через Agent Herder\s*\r?\n)?'
+    r'<agent-herder-origin version="1" kind="agent-relay" transport="(?:new_or_resume|deliver)"\s*/>\s*\r?\n(?:\r?\n)?',
+    re.I,
+)
+LEGACY_HERDER_RELAY_PREFIX = re.compile(r'^\s*🤖 Сообщение от ИИ через Agent Herder\s*\r?\n+', re.I)
+HERDER_DEFERRED_ITEM = re.compile(
+    r'^- id=([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}) :: (.*)$', re.I,
+)
+CODEX_SESSION_UUID = r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
+HERDER_RELAY_ATTRIBUTION = re.compile(
+    r'^\s*🤖\s+(?:Codex\s+SID\b[^\r\n]*|'
+    r'Codex\s+(?P<codex_sid>' + CODEX_SESSION_UUID + r')\s+·\s+'
+    r'https://agent\.bezrabotnyi\.com/#/session/codex%3A(?P=codex_sid)|'
+    r'Сообщение от AI-сессии\b[^\r\n]*|Сообщение от ИИ через Agent Herder[^\r\n]*)'
+    r'\s*\r?\n(?:\r?\n)?', re.I,
+)
 EXPECTATION_CHANGE = re.compile(
     r'^\s*the\b[^.?!\n]{0,120}\b(?:must|should|needs to)\s+(?:be|return)\s+'
     r'[^.?!\n]{1,120}\b(?:rather than|instead of)\b', re.I,
@@ -71,12 +88,82 @@ def positive_intent(goal):
 
 
 def semantic_scope(goal):
-    # OpenCode may quote the prompt; Herder coordination markup is metadata.
-    # Raw input remains preserved in the native state as source evidence.
+    # OpenCode may quote the prompt; Herder coordination and relay prologs are
+    # transport metadata. Raw input remains preserved as source evidence.
     scope = HERDER_ENVELOPE.sub('', goal).strip()
+    deferred = _deferred_messages(scope)
+    if deferred is None:
+        scope = _strip_relay_attribution(scope)
+    else:
+        messages, remainder = deferred
+        scope = '\n\n'.join(text for text in
+                             [_strip_relay_attribution(message) for message in messages] +
+                             [_strip_relay_attribution(remainder)] if text)
     if scope.startswith('"') and scope.endswith('"'):
         scope = scope[1:-1]
     return scope.strip()
+
+
+def _deferred_messages(prompt):
+    """Parse only Agent Herder's exact leading deferred-message frame."""
+    lines = prompt.splitlines()
+    if not lines or lines[0] != '<agent-herder-deferred>':
+        return None
+    try:
+        close = lines.index('</agent-herder-deferred>', 1)
+    except ValueError:
+        return None
+    messages = []
+    current = None
+    for line in lines[1:close]:
+        item = HERDER_DEFERRED_ITEM.fullmatch(line)
+        if line.startswith('- id=') and not item:
+            return None
+        if item:
+            if current is not None:
+                messages.append('\n'.join(current))
+            current = [item.group(2)]
+        elif current is not None:
+            current.append(line)
+        else:
+            return None
+    if current is None:
+        return None
+    messages.append('\n'.join(current))
+    return messages, '\n'.join(lines[close + 1:]).lstrip('\n')
+
+
+def _strip_relay_attribution(text):
+    text = HERDER_ORIGIN_PROLOG.sub('', text, count=1).strip()
+    text = HERDER_RELAY_ATTRIBUTION.sub('', text, count=1).strip()
+    text = LEGACY_HERDER_RELAY_PREFIX.sub('', text, count=1).strip()
+    return text
+
+
+def source_origin(prompt, scope_prompt=''):
+    """Classify explicit relay attribution only; unmarked sources stay unknown."""
+    raw_scope = HERDER_ENVELOPE.sub('', prompt).strip() if isinstance(prompt, str) else ''
+    safe_scope = scope_prompt.strip() if isinstance(scope_prompt, str) else ''
+    for value in (raw_scope, safe_scope):
+        deferred = _deferred_messages(value)
+        candidates = [value] if deferred is None else [*deferred[0], deferred[1]]
+        if any(HERDER_ORIGIN_PROLOG.match(candidate) or HERDER_RELAY_ATTRIBUTION.match(candidate) or
+               LEGACY_HERDER_RELAY_PREFIX.match(candidate) for candidate in candidates):
+            return 'agent-relay'
+    return 'unknown'
+
+
+def scope_source_with_origin(source):
+    """Annotate a copy without rewriting the original raw prompt."""
+    result = dict(source)
+    origin = source_origin(result.get('prompt', ''), result.get('scope_prompt', ''))
+    if result.get('origin') == 'agent-relay' or origin == 'agent-relay':
+        result['origin'] = 'agent-relay'
+    else:
+        result['origin'] = 'unknown'
+    if isinstance(result.get('scope_prompt'), str):
+        result['scope_prompt'] = semantic_scope(result['scope_prompt'])
+    return result
 
 
 def classify(goal):
@@ -401,8 +488,12 @@ def observe(state, event, name, cwd, session, now):
         raw_goal = submitted
         goal = semantic_scope(submitted)
     outcome = business.get('outcome')
-    prompt = semantic_scope(str(event.get('prompt') or '')) if name == 'UserPromptSubmit' and not event.get('_lhc_control_prompt') else ''
-    human = bool(prompt and not prompt.startswith('🤖'))
+    raw_submitted = str(event.get('prompt') or '') if name == 'UserPromptSubmit' and not event.get('_lhc_control_prompt') else ''
+    prompt_origin = source_origin(raw_submitted)
+    prompt = semantic_scope(raw_submitted)
+    # Unmarked role=user input keeps the legacy scope-update behavior, but its
+    # stored origin remains unknown and never becomes a human-auth claim.
+    processable_user_update = bool(prompt and not prompt.startswith('🤖') and prompt_origin != 'agent-relay')
     if not outcome and goal:
         kind = classify(goal)
         target = next(iter(native.URL.findall(goal)), 'project:' + str(cwd))
@@ -415,13 +506,15 @@ def observe(state, event, name, cwd, session, now):
             'delegation_prohibited': bool(NO_DELEGATION.search(goal)),
             'canary': {'scenario': goal[:512], 'target': target, 'expected': expected[:512], 'status': 'pending'},
             'owned_paths': [], 'stages': applicable(kind, goal), 'used_continuations': [],
-            'class_confirmed': False, 'scope_sources': list(business.get('execution_context', {}).get('direct_user_messages', [])),
+            'class_confirmed': False, 'scope_sources': [
+                scope_source_with_origin(row)
+                for row in business.get('execution_context', {}).get('direct_user_messages', [])],
             'actionable': kind in ENGINEERING | {'testing', 'research'} or bool(ACTIONABLE_UNKNOWN.search(goal)),
             'sources': [], 'product_verdict': 'not-tested', 'blockers': [],
         }
     if not outcome:
         return None
-    if human and prompt != semantic_scope(outcome['original_goal']):
+    if processable_user_update and prompt != semantic_scope(outcome['original_goal']):
         if NO_DELEGATION.search(prompt):
             outcome['delegation_prohibited'] = True
         # Read-only/status/peer updates cannot erase a previously accepted repair.
@@ -467,7 +560,7 @@ def observe(state, event, name, cwd, session, now):
         if actionable_correction:
             for source in business.get('execution_context', {}).get('direct_user_messages', []):
                 if source.get('source') not in {r.get('source') for r in outcome.get('scope_sources', [])}:
-                    outcome.setdefault('scope_sources', []).append(source)
+                    outcome.setdefault('scope_sources', []).append(scope_source_with_origin(source))
         if actionable_correction and prompt not in outcome.get('corrections', []):
             outcome.setdefault('corrections', []).append(prompt)
             outcome['contract_confirmed'] = False

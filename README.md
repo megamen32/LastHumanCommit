@@ -14,6 +14,14 @@ stages in existing session state. Independent native source-backed review can cl
 the outcome; testing can complete with a product defect. See
 [the outcome contract](src/common/protocols/OUTCOME_CONTRACT.md).
 
+Independent native review remains bound to the reviewer's current task assignment.
+When work is genuinely reassigned, use a new native worker session under the existing
+mandate and assign the existing reviewer again with the fresh outcome ID and full
+current goal. Old reports remain historical and cannot be reused for the new scope.
+
+Agent Herder relays are marked as `agent-relay` transport origin; unmarked origin
+remains `unknown`. This marker preserves provenance and does not grant authority.
+
 Parallel writers use Git worktrees. Ready work converges into the explicitly permitted published dev history; PR per
 worker is optional. Merge only with authorization, review and green checks. Before finishing, fetch, merge newer work,
 retest and push. A Full cycle converges the participants' changes, including nested
@@ -41,7 +49,7 @@ available; scheduled inspection is required even when the current plan looks cor
 
 ## Package and installation
 
-The native Agent Plugin is `plugins/last-human-commit`, version 1.5.9, with 23 optional
+The native Agent Plugin is `plugins/last-human-commit`, version 1.5.10, with 23 optional
 skills and small automatic-entry hooks. Use the harness's native plugin manager.
 For clients whose plugin hooks are unavailable or still await trust, the package
 provides a supported user-instruction bootstrap:

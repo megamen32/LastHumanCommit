@@ -78,6 +78,67 @@ Changing roots invalidates prior acceptance normally; this does not backdate
 evidence, supply missing reviewer provenance or accept a parent consumer canary.
 Missing session state is an explicit error; changing `--cwd` does not move a task.
 
+### Agent-origin task relays
+
+Agent Herder's `new_or_resume` and `deliver` paths prefix relayed task messages
+with this transport marker, followed by the caller's unchanged task text:
+
+```text
+🤖 Сообщение от ИИ через Agent Herder
+<agent-herder-origin version="1" kind="agent-relay" transport="new_or_resume" />
+```
+
+The `deliver` path uses the same marker with `transport="deliver"`.
+
+LHC detects the marker from the raw native input before applying source excerpt
+bounds, records the source origin as `agent-relay`, and removes the leading prolog
+only from the derived task-scope view. Native prompt evidence remains unchanged;
+the full-source reference/hash is computed from the original message. The legacy
+Agent Herder prefix without the XML marker remains recognized for existing relays.
+An initial delegated task still creates the ordinary LHC outcome from its task
+body and follows the existing mandate and permission gates.
+
+The explicit marker or a supported leading legacy header establishes
+`agent-relay`. An unmarked origin stays
+`unknown`; it is not promoted to human identity. Neither value authenticates a
+human or grants execution permission. The transport label does not expand task
+scope or bypass existing stop, permission, ownership, or stage gates.
+
+### Reassigned worker and reviewer lineage
+
+A native review stays bound to the outcome ID and full original goal in the
+reviewer's exact current assignment. On mismatch, the reader says whether the
+assignment has only the outcome ID, only the goal, or neither exact pair, and
+rejects with this action:
+
+> No reviewer evidence was accepted. Keep the predecessor outcome and its report pending. Create a NEW native worker session whose first assignment carries the actual human mandate (or a verified parent dispatch) plus the current canonical root, exact owned files, and publication scope. Bind the existing independent reviewer to the fresh outcome id and the full current task text before collecting new observations. Do not reuse this report, edit state/cache, or replay product/provider actions.
+
+When a worker's authorized mandate changes
+from an earlier research assignment to implementation or publication, do not
+rebind the old outcome or make an earlier reviewer report appear current. Use the
+existing authorized native task-dispatch route to start a **new worker session**
+with the actual current mandate, repository/root, exact owned paths, and publication
+scope. Its ordinary native entry creates a fresh outcome; confirm the concrete
+contract with the existing `contract` command in that new session's original
+`--cwd`. There is no same-session reassignment CLI that grants authority or rewrites
+outcome identity.
+
+Assign the already-selected independent reviewer anew in its native task session.
+That assignment must name the fresh outcome ID and full current goal. The reviewer
+must make a fresh source assessment from current native reads and hash comparisons
+after the new evidence floor. This bounded source review does not replay product,
+provider, or deployment work and does not establish a product canary, publication,
+or C2 PASS. Native source pairing, source-call cutoff, assessment time, later
+negative findings, and stage gates remain unchanged.
+
+The predecessor outcome and any older reviewer report stay in history with their
+original pending state. Do not rewrite or backdate them, carry their PASS/evidence/
+permission into the new task, clear UNKNOWN work or existing native holds, or reset
+the session clocks. The new reviewer assignment does not broaden the mandate or
+remove no-code, ownership, or scope restrictions. The historical H32 research
+outcome and reviews that lack its exact assignment binding remain pending; a fresh
+task cannot retroactively accept H32.
+
 For testing add repeated `--coverage '<assigned scenario>'` and omit owned paths.
 For fullcycle, the applicable sequence is implementation/tests → authorized deploy
 → hands-on/applicable independent acceptance → publication/integration into the

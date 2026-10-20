@@ -1,3 +1,9 @@
+# 1.5.10 — preserve exact reviewer assignment lineage
+
+Keep native reviewers bound to the exact outcome ID and full goal in their current task assignment. A genuine reassignment uses a new native worker session under the existing mandate and a fresh review assignment; old reports stay historical and cannot be remapped. This source-only route does not replay product/provider/deploy work or accept historical H32/C2.
+
+Recognize Agent Herder `new_or_resume` and `deliver` relays through an explicit `agent-relay` prolog and unwrap it only for LHC task scope. Unmarked origin remains `unknown`; the marker records transport provenance, not human identity or authorization. Delegated initial tasks continue through the existing mandate and permission gates.
+
 # 1.5.9 — bind independent review to its assignment
 
 The native independent-review export route extends only when exact assignment gates remain. Resolve owned source, revision and Git remote against the explicitly assigned product root while keeping native session identity/state at its original root; report missing session state with an actionable error. Preserve actual external-tool working-directory, ownership, and provenance gates. This release does not synthesize historical evidence or imply C2 PASS.
