@@ -60,7 +60,7 @@ def browser_sources(observations, cwd):
         # Only native shell command records, never functions.exec source strings.
         if call.get('name') not in {'exec_command', 'shell_command', 'bash'}:
             result.append((copy, output)); continue
-        lines = text.splitlines(); index = 0
+        lines = text.splitlines(); index = 0; unsafe_shell = False
         while index < len(lines):
             line = lines[index]; index += 1
             creation = re.fullmatch(r"cat > ([\w./-]+\.py) <<'([A-Za-z_]+)'", line)
@@ -80,9 +80,20 @@ def browser_sources(observations, cwd):
                 index = next((i + 1 for i in range(index, len(lines)) if lines[i] == match[1]), len(lines))
                 continue
             try:
-                shlex.split(line)
+                lexer = shlex.shlex(line, posix=True, punctuation_chars=';&|<>')
+                lexer.whitespace_split = True
+                tokens = list(lexer)
             except ValueError:
                 break  # Never treat lines inside a quoted multiline value as commands.
+            # We cannot attribute output to one command inside shell control
+            # flow, pipelines, redirections, or a compound command. Fail closed
+            # for the complete native call, including earlier literal lines.
+            control_words = {'if','then','elif','else','fi','for','while','until',
+                             'select','do','done','case','esac','function'}
+            if any((token and set(token) <= set(';&|<>(){}!')) or token in control_words
+                   for token in tokens):
+                unsafe_shell = True
+                break
             _, words = command({'arguments': json.dumps({'cmd': line})})
             if not words or any(token in line for token in ('$(', '`', '${')):
                 continue
@@ -106,7 +117,7 @@ def browser_sources(observations, cwd):
                 continue
             operations.append({'argv': rest, 'context': (context.get('--session'), context.get('--namespace')),
                                'wrapper_call': wrapper_call})
-        copy['_browser_ops'] = operations
+        copy['_browser_ops'] = [] if unsafe_shell else operations
         result.append((copy, output))
     return result
 
@@ -203,8 +214,13 @@ def prepare(outcome, meta, observations, owner, binding, cwd):
             or native.timestamp(authorizations[0]['at']) < max(
                 native.timestamp(original['evidence_after']), native.timestamp(assessments[0]['at']))):
         raise ValueError('reuse authorization predates original contract or assessment')
-    if original['revision'] != outcome['revision']:
-        baseline = binding.get('baseline_commit','')
+    baseline = binding.get('baseline_commit','')
+    reports = set(original['owned_paths'])
+    historical_report_route = bool(reports) and all(
+        p.startswith('.agents/tasks/') and p.endswith('.md') for p in reports)
+    if historical_report_route and not baseline:
+        raise ValueError('historical testing report reuse requires exact native Git baseline')
+    if baseline or original['revision'] != outcome['revision']:
         baseline_call, baseline_output = calls.get(binding.get('baseline_call'), ({},''))
         if not re.fullmatch('[0-9a-f]{8,40}',baseline) or baseline not in baseline_output:
             raise ValueError('historical revision requires exact native Git baseline')
@@ -214,12 +230,16 @@ def prepare(outcome, meta, observations, owner, binding, cwd):
         raw_cmd = json.loads(baseline_call.get('arguments') or '{}').get('cmd','')
         if not re.search(r'(?:^|[;\n])\s*git (?:log|rev-parse)\b',raw_cmd):
             raise ValueError('historical baseline must be an actual native Git read')
-        reports = set(original['owned_paths'])
         if not reports or any(not p.startswith('.agents/tasks/') or not p.endswith('.md') for p in reports):
             raise ValueError('revision exception only covers exact owned testing reports')
-        changed = set(native.git(cwd,'diff',baseline,'HEAD','--name-only').decode().splitlines())
-        if not changed or not changed <= reports:
+        changed = set(native.git(cwd,'diff','-z',baseline,'HEAD','--name-only').decode().split('\0'))
+        changed.update(native.git(cwd,'diff','-z','--name-only').decode().split('\0'))
+        changed.update(native.git(cwd,'diff','-z','--cached','--name-only').decode().split('\0'))
+        changed.discard('')
+        if changed - reports:
             raise ValueError('product changed since historical testing baseline')
+        if original['revision'] != outcome['revision'] and not changed:
+            raise ValueError('historical report revision changed without a report-only Git delta')
     return original
 
 

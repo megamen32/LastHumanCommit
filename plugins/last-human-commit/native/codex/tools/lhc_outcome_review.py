@@ -11,11 +11,22 @@ from pathlib import Path
 import re
 import shlex
 import subprocess
+import sys
 from datetime import datetime, timezone
 from urllib.parse import unquote, urlsplit
 
 import lhc_milestone as native
 from lhc_outcome import ENGINEERING, STAGES, scope_revision, remote_binding, product_paths, digest
+
+# The package entrypoints keep their primary tool directory first. Append the
+# canonical shared tools directory so review-only helpers resolve in both
+# generated plugin layouts without shadowing their local outcome module.
+_REVIEW_PATH = Path(__file__).resolve()
+_SHARED_TOOL_DIRS = [_REVIEW_PATH.parent]
+_SHARED_TOOL_DIRS += [parent / 'common' / 'tools' for parent in _REVIEW_PATH.parents]
+for _shared_tools in _SHARED_TOOL_DIRS:
+    if (_shared_tools / 'lhc_testing_reuse.py').is_file() and str(_shared_tools) not in sys.path:
+        sys.path.append(str(_shared_tools))
 
 MARKER = 'LHC_OUTCOME_REVIEW '
 

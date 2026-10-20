@@ -1,6 +1,7 @@
 """Native format fixtures only; never product acceptance."""
 import json
 from pathlib import Path
+import subprocess
 import sys
 
 import pytest
@@ -20,6 +21,52 @@ def test_source_bound_newline_browser_journey(tmp_path):
     ops = browser_sources(ops, tmp_path)
     assert review.real_observation(*ops[0], 'https://example.test', 'consumer', 'testing', tmp_path)
     assert review.browser_journey(['open', 'action'], dict((c['call_id'], (c,o)) for c,o in ops), 'https://example.test')
+
+
+def test_unexecuted_shell_control_flow_cannot_supply_browser_evidence(tmp_path):
+    from lhc_testing_reuse import browser_sources
+    command_text = (
+        'if false; then\n'
+        'agent-browser --session own open https://example.test/login\n'
+        'agent-browser --session own click @e1\n'
+        'agent-browser --session own snapshot -i\n'
+        'fi')
+    output = 'https://example.test/login\n✓ Done\nCabinet list'
+    call_value, output = browser_sources([call(command_text, 'conditional-journey', output)], tmp_path)[0]
+    assert not call_value.get('_browser_ops')
+    assert not review.browser_journey(['conditional-journey'],
+        {'conditional-journey': (call_value, output)}, 'https://example.test')
+
+
+@pytest.mark.parametrize('function_header', ['journey() {', 'journey(){'])
+def test_uninvoked_shell_function_cannot_supply_browser_evidence(tmp_path, function_header):
+    from lhc_testing_reuse import browser_sources
+    command_text = (
+        function_header+'\n'
+        'agent-browser --session own open https://example.test/login\n'
+        'agent-browser --session own click @e1\n'
+        'agent-browser --session own snapshot -i\n'
+        '}\n'
+        'printf result')
+    output = 'https://example.test/login\n✓ Done\nCabinet list'
+    call_value, output = browser_sources([call(command_text, 'function-journey', output)], tmp_path)[0]
+    assert not call_value.get('_browser_ops')
+    assert not review.browser_journey(['function-journey'],
+        {'function-journey': (call_value, output)}, 'https://example.test')
+
+
+@pytest.mark.parametrize('tools_relative', ['tools', 'native/codex/tools'])
+def test_packaged_review_can_resolve_reuse_helper(tmp_path, tools_relative):
+    package = Path(__file__).resolve().parents[1] / 'plugins/last-human-commit'
+    tool_directory = package / tools_relative
+    code = (
+        'import importlib.util, sys; '
+        f'sys.path.insert(0, {str(tool_directory)!r}); '
+        'import lhc_outcome_review; '
+        'assert importlib.util.find_spec("lhc_testing_reuse") is not None')
+    result = subprocess.run([sys.executable, '-c', code], cwd=tmp_path,
+                            capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
 
 
 @pytest.mark.parametrize('fault', ['wrong-origin', 'no-action', 'wrong-session', 'echo'])
@@ -161,9 +208,11 @@ def test_quoted_examples_are_never_browser_sources(tmp_path,script):
     assert not review.real_observation(*op,'https://example.test','consumer','testing',tmp_path)
 
 
-@pytest.mark.parametrize('product_edit', [False, True])
+@pytest.mark.parametrize('product_edit_state', ['none', 'committed', 'staged', 'unstaged'])
 @pytest.mark.parametrize('later_report_refresh', [False, True])
-def test_historical_revision_difference_needs_report_only_git_delta(tmp_path,monkeypatch,product_edit,later_report_refresh):
+@pytest.mark.parametrize('report_changed', [False, True])
+@pytest.mark.parametrize('baseline_present', [False, True])
+def test_historical_revision_difference_needs_report_only_git_delta(tmp_path,monkeypatch,product_edit_state,later_report_refresh,report_changed,baseline_present):
     import subprocess
     import lhc_outcome as outcomes
     outcome,manifest,binding,source=reuse_fixture(tmp_path,monkeypatch)
@@ -176,9 +225,18 @@ def test_historical_revision_difference_needs_report_only_git_delta(tmp_path,mon
     baseline=git('rev-parse','HEAD')
     outcome['owned_paths']=[report_path]
     old_revision=outcomes.scope_revision(outcome,tmp_path)
-    (tmp_path/report_path).write_text('actual testing feedback')
-    if product_edit:(tmp_path/'total.py').write_text('changed product')
-    git('add',report_path,'total.py');git('commit','-qm','fixture changes')
+    if report_changed:
+        (tmp_path/report_path).write_text('actual testing feedback')
+    if product_edit_state != 'none':
+        (tmp_path/'total.py').write_text('changed product')
+    if report_changed:
+        git('add',report_path)
+    if product_edit_state in {'committed','staged'}:
+        git('add','total.py')
+    if product_edit_state == 'committed':
+        git('commit','-qm','fixture report and product changes')
+    elif report_changed:
+        git('commit','--only','-m','fixture report-only change','--',report_path)
     outcome['revision']=outcomes.scope_revision(outcome,tmp_path)
     rows=[json.loads(line) for line in source.read_text().splitlines()]
     original=json.loads(rows[3]['payload']['output']);original.update(owned_paths=[report_path],revision=old_revision)
@@ -189,19 +247,26 @@ def test_historical_revision_difference_needs_report_only_git_delta(tmp_path,mon
         {'type':'response_item','timestamp':stamp,'payload':{'type':'function_call_output','call_id':'baseline','output':baseline}}]
     binding.update(baseline_commit=baseline,baseline_call='baseline',assessment_index=binding['assessment_index']+2,
                    authorization_index=binding['authorization_index']+2)
+    if not baseline_present:
+        binding.pop('baseline_commit')
+        binding.pop('baseline_call')
     source.write_text('\n'.join(json.dumps(row) for row in rows)+'\n')
     if later_report_refresh:
         from datetime import datetime, timedelta
         outcome['evidence_after']=(datetime.fromisoformat(rows[binding['authorization_index']]['timestamp'])+timedelta(minutes=2)).isoformat()
     evidence_after=outcome['evidence_after']
     original_bytes=source.read_bytes()
-    if product_edit:
+    if not baseline_present:
+        with pytest.raises(ValueError,match='baseline'):
+            review.accept_review(outcome,{},manifest,tmp_path,'leader',testing_reuse=binding)
+    elif product_edit_state != 'none':
         with pytest.raises(ValueError,match='product changed'):
             review.accept_review(outcome,{},manifest,tmp_path,'leader',testing_reuse=binding)
     else:
         review.accept_review(outcome,{},manifest,tmp_path,'leader',testing_reuse=binding)
-        assert outcome['testing_reuse_binding']['historical_revision']==old_revision
-        assert outcome['stages']['consumer']['evidence'][0]['revision']==old_revision
+        if report_changed:
+            assert outcome['testing_reuse_binding']['historical_revision']==old_revision
+            assert outcome['stages']['consumer']['evidence'][0]['revision']==old_revision
         assert outcome['evidence_after']==evidence_after and source.read_bytes()==original_bytes
         assert outcome['testing_reuse_binding']['calls']['action']['at']==rows[6]['timestamp']
 

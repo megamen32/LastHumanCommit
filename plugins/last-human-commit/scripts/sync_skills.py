@@ -192,7 +192,7 @@ def main() -> int:
                     print(f"projection error: {error}", file=sys.stderr)
                 return 1
         tool_errors = []
-        for tool_name in ("lhc_time_guard.py", "lhc_active_time.py", "lhc_task_budget.py", "lhc_worktree.py", "lhc_chat.py", "lhc_entry.py", "lhc_milestone.py", "lhc_outcome.py", "lhc_outcome_review.py"):
+        for tool_name in ("lhc_time_guard.py", "lhc_active_time.py", "lhc_task_budget.py", "lhc_worktree.py", "lhc_chat.py", "lhc_entry.py", "lhc_milestone.py", "lhc_outcome.py", "lhc_outcome_review.py", "lhc_testing_reuse.py"):
             tool_errors += sync_tool(
                 plugin_root().parent.parent / "src" / "common" / "tools" / tool_name,
                 plugin_root() / "tools" / tool_name,
