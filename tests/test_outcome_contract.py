@@ -1077,6 +1077,7 @@ def test_project_alias_rejects_nested_namesake_instead_of_owned_root_cli(tmp_pat
     'FEEDBACK.md содержит ошибку: исправь её. Сохрани результат и наблюдения в FEEDBACK.md.',
     'FEEDBACK.md содержит ошибку: исправь её. Сообщи результат пользователю, а также сохрани их в FEEDBACK.md.',
     'Fix the product documentation. Сохрани их в FEEDBACK.md.',
+    'Исправь таблицы с результатами расчёта и сохрани их в FEEDBACK.md.',
 ])
 def test_explicit_feedback_product_keeps_its_revision_when_named_before_repair(tmp_path,goal):
     import lhc_outcome as outcomes

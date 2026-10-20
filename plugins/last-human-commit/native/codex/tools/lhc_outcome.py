@@ -118,7 +118,7 @@ def product_paths(outcome, cwd):
         output = re.search(r'(?:сохран\w*|запиш\w*|save|record|keep)\s+[^.?!\n]{0,180}(?:результат|отзыв|наблюден|feedback|observations|results)[^.?!\n]{0,180}$', prefix, re.I)
         # The report can refer back to the explicitly named results: the real
         # request says "сообщи фактический результат ... сохрани их в FEEDBACK.md".
-        output = output or re.search(r'(?:результат\w*|отзыв\w*|наблюдени\w*)[^.?!\n]{0,180}сохран\w*\s+их\s+в\s*$', prefix, re.I)
+        output = output or re.search(r'\bсообщи\s+фактический\s+результат\s+и\s+ограничения\s+пользователю,\s+а\s+также\s+сохрани\s+их\s+в\s*$', prefix, re.I)
         report &= bool(output)
     # The explicitly requested observation report is evidence, not a new code
     # revision. Keep ownership, but writing feedback must not invalidate the
