@@ -133,6 +133,58 @@ def test_overdue_finish_continues_once_and_does_not_forge_acceptance(tmp_path):
     d=json.loads(state_file(tmp_path).read_text())
     assert d["business"]["pending"] and d["business"]["last_review"] is None and d["last_checkpoint"] is None
 
+def test_stop_learning_checkpoint_wording_when_business_review_is_not_due(tmp_path):
+    invoke(tmp_path,"UserPromptSubmit",prompt="Deliver the report")
+    p=state_file(tmp_path);d=json.loads(p.read_text())
+    d["due_at"]=(datetime.now(timezone.utc)-timedelta(minutes=1)).isoformat()
+    d["business"]["pending"]=None
+    d["business"]["wall_due_at"]=(datetime.now(timezone.utc)+timedelta(days=1)).isoformat()
+    d["business"]["next_active_seconds"]=24*3600
+    p.write_text(json.dumps(d))
+
+    result=invoke(tmp_path,"Stop",stop_hook_active=False)
+    reason=result.get("reason","")
+    assert result.get("decision")=="block"
+    assert "120-minute learning checkpoint" in reason.lower()
+    assert "lhc_time_guard.py checkpoint" in reason
+    assert "direction/method review" not in reason.lower()
+    assert "business-review" not in reason
+
+def test_repeated_stop_reblocks_only_for_changed_progress_or_due_identity(tmp_path):
+    def start_case(name,prompt):
+        root=tmp_path/name
+        subprocess.run(["git","init","-q",str(root)],check=True)
+        invoke(root,"UserPromptSubmit",session_id=name,turn_id=f"{name}-start",prompt=prompt)
+        due(root)
+        first=invoke(root,"Stop",session_id=name,turn_id=f"{name}-stop",stop_hook_active=False)
+        assert first.get("decision")=="block"
+        return root,name
+
+    same_root,same_session=start_case("same-progress","Deliver the report")
+    same_state_before=json.loads(state_file(same_root).read_text())
+    repeated=invoke(same_root,"Stop",session_id=same_session,turn_id="new-turn-same-progress",stop_hook_active=False)
+    same_state_after=json.loads(state_file(same_root).read_text())
+
+    progress_root,progress_session=start_case("changed-progress","Implement the dashboard and verify the final page")
+    p=state_file(progress_root);d=json.loads(p.read_text())
+    d["business"]["outcome"]["latest_correction"]="Include CSV export in the accepted result"
+    d["business"]["outcome"]["canary"]["expected"]+=" and include CSV export"
+    p.write_text(json.dumps(d))
+    changed_progress=invoke(progress_root,"Stop",session_id=progress_session,turn_id="changed-progress-stop",stop_hook_active=False)
+
+    due_root,due_session=start_case("new-due-id","Deliver the report")
+    p=state_file(due_root);d=json.loads(p.read_text())
+    d["business"]["pending"]["id"]="business-2"
+    p.write_text(json.dumps(d))
+    changed_due=invoke(due_root,"Stop",session_id=due_session,turn_id="new-due-id-stop",stop_hook_active=False)
+
+    assert changed_progress.get("decision")=="block", changed_progress
+    assert changed_due.get("decision")=="block", changed_due
+    assert repeated.get("decision")!="block", repeated
+    assert "systemMessage" not in repeated, repeated
+    assert same_state_after["business"]["pending"] == same_state_before["business"]["pending"]
+    assert same_state_after["business"]["outcome"]["finish_verdict"] == "pending"
+
 def test_explicit_interrupt_and_permission_wait_never_force_continuation(tmp_path):
     invoke(tmp_path,"UserPromptSubmit",prompt="Keep my original task")
     due(tmp_path)
