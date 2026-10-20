@@ -393,6 +393,27 @@ def test_reviewed_original_scope_controls_class_and_applicability(goal, kind, de
     assert stages['integration']['status'] == merge
 
 
+@pytest.mark.parametrize('goal,kind', [
+    ('Только проверь checkout CLI в этом каталоге. Пустая корзина: python3 checkout.py empty должен завершиться с кодом 0 и вернуть status 200, total 0. Корзина two: python3 checkout.py two должна завершиться с кодом 0 и вернуть status 200, total 20. Сообщи реальные результаты и ограничения по-русски и сохрани наблюдения в FEEDBACK.md. Код не меняй, тестов не создавай. Работай только здесь. Не делегируй. Без deploy, push, merge и внешних действий.', 'testing'),
+    ('Only test the checkout CLI. No deploy, push or merge.', 'testing'),
+    ('Only test the checkout CLI. Without push, merge, deploy.', 'testing'),
+    ('RESEARCH ONLY: inspect the checkout CLI. Без deploy, push и merge.', 'research'),
+    ('Без deploy, push и merge; исправь ошибку checkout CLI.', 'quickfix'),
+    ('No deploy, push or merge; implement the checkout CLI.', 'fullcycle'),
+])
+def test_negative_remote_operations_do_not_invent_engineering_scope(goal, kind):
+    import lhc_outcome as outcomes
+    assert outcomes.classify(goal) == kind
+    stages = outcomes.applicable(kind, goal)
+    if kind in {'testing', 'research'}:
+        assert stages['technical']['status'] == 'not-applicable'
+        assert stages['consumer']['status'] == 'pending'
+    else:
+        assert stages['technical']['status'] == 'pending'
+    assert all(stages[s]['status'] == 'not-applicable'
+               for s in ('deploy', 'publication', 'integration'))
+
+
 def test_session_end_is_inactive_pending_not_a_manual_stop(tmp_path):
     anchored(tmp_path)
     invoke(tmp_path, 'SessionEnd')

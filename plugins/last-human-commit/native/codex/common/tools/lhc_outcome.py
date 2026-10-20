@@ -48,7 +48,10 @@ def positive_intent(goal):
     # Bounded clause handling, never a permission parser. Preserve raw scope;
     # the Lead confirms the hypothesis against the actual native user source.
     goal = re.sub(r'исправление[^.?!\n]*не\s+входит[^.?!\n]*', '', goal, flags=re.I)
-    return re.sub(r"\b(?:do not|don't|never|no code changes)[^.?!\n]*|не (?:меняй|редактируй|создавай|деплой|исправляй)[^.?!\n]*", '', goal, flags=re.I)
+    goal = re.sub(r"\b(?:do not|don't|never|no code changes)[^.?!\n]*|не (?:меняй|редактируй|создавай|деплой|исправляй)[^.?!\n]*", '', goal, flags=re.I)
+    # Reuse the bounded stage exclusion list for classification as well:
+    # "Only test ... Без deploy" does not authorize engineering work.
+    return re.sub(NEGATIVE_LIST + r'(?:deploy|push|publish|merge)\b', '', goal, flags=re.I)
 
 
 def semantic_scope(goal):
