@@ -1,6 +1,15 @@
 <!-- last-human-commit:begin -->
 # Last Human Commit 1.5
 
+## Product concept
+
+`docs/PRODUCT_CONCEPT.md` is the canonical product concept and lifecycle. LHC
+defines the work method from human intent through real-result verification into
+the project's configured shared development history. It does not own backlog
+priority or harness/session launching. Quick and Full are depths of that same
+path; use the conditional decision method in `templates/FULL_CYCLE.md` only
+when a material choice remains.
+
 ## Language policy
 Use English for operating instructions, internal reasoning/planning, new task records,
 tool-facing instructions and agent coordination; delegated roles inherit this policy.

@@ -68,13 +68,31 @@ def rooted(text, root):
 def rehydrate(state, state_path=None):
     business = state.get("business", {})
     # Quoted source data, never an instruction to execute arbitrary transcript text.
-    restored = {key: business[key] for key in ("original_prompt", "latest_prompt") if business.get(key)}
+    restored = {
+        "original_prompt": business.get("original_prompt_full") or business.get("original_scope_prompt") or business.get("original_prompt"),
+        "latest_prompt": business.get("latest_prompt_full") or business.get("latest_scope_prompt") or business.get("latest_prompt"),
+    }
+    restored = {key: value for key, value in restored.items() if value}
+    import lhc_outcome as outcomes
+    for key in ("original_prompt", "latest_prompt"):
+        if key in restored:
+            restored[key] = outcomes.semantic_scope(restored[key])
+            if not restored[key]:
+                restored.pop(key)
     if restored.get("latest_prompt") == restored.get("original_prompt"):
         restored.pop("latest_prompt", None)
     if business.get("transcript_path") and business.get("runtime") != "zcode":
         restored["full_native_transcript"] = business["transcript_path"]
     if business.get("execution_context"):
-        restored["execution_context"] = business["execution_context"]
+        context = business["execution_context"]
+        restored_context = dict(context)
+        restored_context["direct_user_messages"] = [
+            {**{key: value for key, value in row.items() if key != "scope_prompt"},
+             "prompt": outcomes.semantic_scope(row.get("scope_prompt") or row.get("prompt", ""))}
+            for row in context.get("direct_user_messages", [])
+            if outcomes.semantic_scope(row.get("scope_prompt") or row.get("prompt", ""))
+        ]
+        restored["execution_context"] = restored_context
     if business.get("running_jobs"):
         restored["running_jobs"] = business["running_jobs"]
     if business.get("tool_observations"):
@@ -83,7 +101,7 @@ def rehydrate(state, state_path=None):
         restored["action_evidence"] = business["action_evidence"][-8:]
     if business.get('outcome'):
         restored['outcome_contract'] = {key: business['outcome'].get(key) for key in
-            ('id', 'owner', 'task_class', 'actionable', 'canary', 'stages', 'stage_claims', 'revision', 'coverage', 'finish_verdict', 'question', 'delegation_prohibited', 'verification_level', 'integration_policy', 'release_handoff')}
+            ('id', 'owner', 'task_class', 'actionable', 'contract_confirmed', 'contract_rejection', 'canary', 'stages', 'stage_claims', 'revision', 'coverage', 'finish_verdict', 'question', 'delegation_prohibited', 'verification_level', 'integration_policy', 'release_handoff')}
         # Original/latest native sources already appear above; do not inject
         # duplicate scope histories and full native review text on every resume.
     native_entry = state.get("native_entry") or {}
@@ -185,8 +203,20 @@ def handle(event, name, runtime, root):
             # does not carry operating instructions into the next request.
             contexts.append(context_for(event, root))
         outcome_notice = outcomes.reminder(outcome, method_root(root)/'tools/lhc_outcome.py') if outcome and outcome['finish_verdict'] != 'complete' else ''
-        if outcome_notice and (bootstrap or event.get('model_boundary')):
+        rejection = outcome.get('contract_rejection') or {} if outcome else {}
+        outcome_notice_fingerprint = json.dumps([
+            outcome['id'], outcome.get('latest_correction'),
+            [(key, row['status']) for key, row in sorted(outcome.get('stages', {}).items())],
+            outcome.get('canary', {}).get('status'), outcome.get('contract_confirmed'),
+            rejection.get('scope_fingerprint'), rejection.get('exact_error'), rejection.get('corrective_action'),
+        ], ensure_ascii=False) if outcome_notice else None
+        rehydrating_outcome = name == 'PostCompact' or (name == 'SessionStart' and event.get('source') == 'compact')
+        if outcome_notice and (bootstrap or event.get('model_boundary')) and (
+                outcome_notice_fingerprint != delivery.get('outcome_notice_fingerprint') or rehydrating_outcome):
             contexts.append(outcome_notice)
+            delivery['outcome_notice_fingerprint'] = outcome_notice_fingerprint
+            if not outcome.get('contract_confirmed') and not outcome.get('contract_rejection'):
+                outcome['contract_request_fingerprint'] = outcomes.contract_scope_fingerprint(outcome)
         acceptance_pending = milestones.pending(milestone)
         acceptance_notice = milestones.reminder(milestone) if acceptance_pending else ""
         acceptance_id = [milestone.get("surface_key"), milestone["status"]] if acceptance_pending else None

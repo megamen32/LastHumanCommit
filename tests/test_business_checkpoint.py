@@ -58,6 +58,38 @@ def test_no_card_hourly_is_due_and_notification_is_not_completion(tmp_path,clock
     assert not tick(tmp_path,clock,3602)["due"]
     assert tick(tmp_path,clock,7201)["due"]
 
+def test_prompt_refresh_does_not_repeat_the_same_pending_feedback(tmp_path,clock):
+    prompt="Original customer task"
+    tick(tmp_path,clock,0,"UserPromptSubmit",prompt=prompt)
+    first=tick(tmp_path,clock,3600,"PostToolUse")
+    assert first["prompt"] and first["review_id"]=="business-1"
+    repeated=tick(tmp_path,clock,3601,"UserPromptSubmit",prompt=prompt)
+    assert repeated["due"] and repeated["review_id"]==first["review_id"]
+    assert not repeated["prompt"]
+
+def test_hourly_reminder_uses_clean_scope_but_preserves_raw_coordination_source(tmp_path,clock):
+    board='<agent-herder-coordination board="active">\n- [working] status\n</agent-herder-coordination>'
+    raw=board+"\nOriginal customer task"
+    tick(tmp_path,clock,0,"UserPromptSubmit",prompt=raw)
+    due=tick(tmp_path,clock,3600)
+    saved=json.loads(Path(due["state"]).read_text())["business"]
+    assert saved["original_prompt"]==raw
+    assert saved["execution_context"]["direct_user_messages"][-1]["prompt"]==raw
+    assert "Original customer task" in due["prompt"]
+    assert "<agent-herder-coordination" not in due["prompt"]
+
+def test_long_coordination_prefix_hourly_reminder_uses_full_task_scope(tmp_path,clock):
+    prefix = '<agent-herder-coordination board="active">\n' + ("coordination filler " * 300)
+    task = "Fix the small total CLI. Verify the empty basket returns 0."
+    prompt = prefix + "\n</agent-herder-coordination>\n" + task
+    assert prompt.index("</agent-herder-coordination>") > 4096
+    tick(tmp_path,clock,0,"UserPromptSubmit",prompt=prompt)
+    due = tick(tmp_path,clock,3600)
+    assert due["due"]
+    assert task in due["prompt"]
+    assert "<agent-herder-coordination" not in due["prompt"]
+    assert "</agent-herder-coordination>" not in due["prompt"]
+
 def test_pause_does_not_count_idle_or_wake_a_session(tmp_path,clock):
     tick(tmp_path,clock,0,"UserPromptSubmit")
     tick(tmp_path,clock,1800,"Stop")

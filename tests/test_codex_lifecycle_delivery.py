@@ -40,6 +40,41 @@ def test_plain_prompt_gets_outcome_design_tdd_and_milestone_contract(tmp_path):
     for term in ("before", "after", "RED", "GREEN", "80%", "milestone"):
         assert term in text
 
+def test_unchanged_in_progress_outcome_feedback_is_not_repeated_on_each_prompt(tmp_path):
+    prompt="Fix the small total CLI. Verify the empty basket returns 0."
+    first=context(invoke(tmp_path,"UserPromptSubmit",prompt=prompt))
+    assert "LHC outcome: quickfix" in first
+    second=context(invoke(tmp_path,"UserPromptSubmit",prompt=prompt))
+    assert "LHC outcome:" not in second
+    assert "Original input" not in second
+
+def test_rejection_and_contract_acceptance_each_refresh_notice_once(tmp_path):
+    prompt="Fix the small total CLI. Verify the empty basket returns 0."
+    first=context(invoke(tmp_path,"UserPromptSubmit",prompt=prompt))
+    assert "LHC outcome: quickfix" in first
+    tool=str(ROOT/"src/common/tools/lhc_outcome.py")
+    command=f"python3 {tool} --cwd {tmp_path} --runtime codex --session-id existing-thread contract --scenario Empty --target FEEDBACK.md --expected zero"
+    error="LHC outcome: research file target must name the scoped in-project source, not the requested report output"
+    invoke(tmp_path,"PostToolUse",tool_name="exec_command",tool_input={"cmd":command},
+           tool_response={"exit_code":1,"stderr":error})
+    invoke(tmp_path,"PostToolUse",tool_name="exec_command",tool_input={"cmd":command},
+           tool_response={"status":"completed","stdout":"finished"})
+    rejected=context(invoke(tmp_path,"UserPromptSubmit",prompt=prompt))
+    assert error in rejected
+    assert "report path separately as an owned deliverable" in rejected
+    unchanged=context(invoke(tmp_path,"UserPromptSubmit",prompt=prompt))
+    assert "LHC outcome: quickfix" not in unchanged
+    assert "Contract rejection (exact)" not in unchanged
+    contract=subprocess.run([sys.executable,str(ROOT/"src/common/tools/lhc_outcome.py"),
+        "--cwd",str(tmp_path),"--runtime","codex","--session-id","existing-thread","contract",
+        "--scenario","Empty basket total","--target","python3 total.py","--expected","0",
+        "--owned-path","total.py"],capture_output=True,text=True,check=True)
+    accepted=context(invoke(tmp_path,"UserPromptSubmit",prompt=prompt))
+    assert "Contract confirmed" in accepted and "Next stage: technical" in accepted
+    assert error not in accepted and "contract --help" not in accepted
+    after_acceptance=context(invoke(tmp_path,"UserPromptSubmit",prompt=prompt))
+    assert "LHC outcome: quickfix" not in after_acceptance
+
 def test_compaction_rehydrates_original_correction_and_keeps_clock_running(tmp_path):
     invoke(tmp_path,"UserPromptSubmit",prompt="Original report must open for the manager")
     invoke(tmp_path,"UserPromptSubmit",prompt="Correction: preserve the CSV export")
@@ -49,6 +84,34 @@ def test_compaction_rehydrates_original_correction_and_keeps_clock_running(tmp_p
     restored=context(invoke(tmp_path,"SessionStart",source="compact"))
     assert "Original report must open" in restored and "preserve the CSV export" in restored
     assert json.loads(state_file(tmp_path).read_text())["business"]["interval"]["status"]=="running"
+
+def test_rehydration_keeps_raw_coordination_source_out_of_task_instructions(tmp_path):
+    board='<agent-herder-coordination board="active">\n- [working] status\n</agent-herder-coordination>'
+    prompt=board+"\nOriginal customer task"
+    invoke(tmp_path,"UserPromptSubmit",prompt=prompt)
+    restored=context(invoke(tmp_path,"SessionStart",source="compact"))
+    assert "Original customer task" in restored
+    assert "<agent-herder-coordination" not in restored
+    saved=json.loads(state_file(tmp_path).read_text())["business"]
+    assert saved["original_prompt"]==prompt
+
+def test_long_coordination_prefix_is_removed_before_source_excerpt_truncation(tmp_path):
+    prefix='<agent-herder-coordination board="active">\n'+("coordination filler "*260)
+    board=prefix+"\n</agent-herder-coordination>\n"
+    task="Fix the small total CLI. Verify the empty basket returns 0."
+    prompt=board+task
+    invoke(tmp_path,"UserPromptSubmit",prompt=prompt)
+    saved=json.loads(state_file(tmp_path).read_text())["business"]
+    assert saved["original_prompt"]==prompt[:4096]
+    assert saved["original_prompt_full"]==prompt
+    assert saved["original_scope_prompt"]==task
+    assert saved["execution_context"]["direct_user_messages"][-1]["scope_prompt"]==task
+    outcome=saved["outcome"]
+    assert outcome["task_class"]=="quickfix"
+    assert outcome["original_goal"]==prompt
+    restored=context(invoke(tmp_path,"SessionStart",source="compact"))
+    assert task in restored
+    assert "<agent-herder-coordination" not in restored
 
 def test_compaction_does_not_consume_an_undelivered_due_reminder(tmp_path):
     invoke(tmp_path,"UserPromptSubmit",prompt="Original business task")

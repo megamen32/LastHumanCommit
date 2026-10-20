@@ -79,14 +79,16 @@ independent Tester/review for large ambiguous changes. Diagnose flakiness instea
 masking it with a successful rerun.
 
 At each hourly native checkpoint, follow BUSINESS_CHECKPOINT.md: original
-assignment/latest corrections → actual user result → route decision. Then dispatch
-exactly one fresh frontier Zero Knowledge observer through existing Agent Herder.
-Give it only the original goal and allowed consumer target/API; do not expose source,
+assignment/latest corrections → actual user result → route decision. This is a
+direction check, not a tester dispatch. Do not launch a fresh observer every hour.
+Fresh frontier Zero Knowledge observers belong at ready major milestones (~3 hours
+of coherent work) and final acceptance, through existing Agent Herder. Give each
+observer only the original goal and allowed consumer target/API; do not expose source,
 implementation history, reports, or task/session management. Ask it to try the goal
 on that consumer surface and report any blocker to the owner. Track the native due ID
 and do not launch again while that same ID is pending. Do not add a scheduler or
-daemon, and do not assume a sleeping session can be woken. This hourly observation
-informs direction; it does not replace milestone acceptance.
+daemon, and do not assume a sleeping session can be woken. Hourly direction checks
+do not replace milestone acceptance.
 
 Ready major milestones (~3 hours of coherent work) and final acceptance still need
 separate fresh independent testers without your history, with varied realistic

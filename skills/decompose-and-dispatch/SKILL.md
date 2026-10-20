@@ -24,7 +24,7 @@ whole architecture or choose an unmade product decision. Use
 
 Estimate each node from its actual work and verification: minimum/maximum minutes,
 known steps or comparable evidence, and the specific uncertainty widening the
-range. Decompose into subtasks estimated at about 30 minutes, including verification;
+range. Plan small, independently useful pieces around 15 minutes, including verification;
 this is planning granularity, never an actual execution cutoff or rejection rule.
 Split larger work at meaningful proof boundaries before dispatch, including
 direct Lead, review and testing work. Twenty minutes remains a checkpoint, not

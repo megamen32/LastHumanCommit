@@ -28,6 +28,24 @@ RESEARCH = re.compile(r'\b(?:research|review|audit|inspect|explain|investigate|r
 ACTIONABLE_UNKNOWN = re.compile(r'^\s*(?:please\s+)?(?:ensure|resolve|refactor|optimize|migrate|обеспечь|перенеси|проведи)\b', re.I)
 HOLD = {'Interrupt', 'SessionEnd', 'PermissionRequest', 'session.error', 'ToolFailure'}
 NO_DELEGATION = re.compile(r"не\s+делегируй|не\s+нанимай|\b(?:do not|don't|never)\s+delegate\b|\bno\s+delegation\b", re.I)
+HERDER_ENVELOPE = re.compile(
+    r'<agent-herder-(?:coordination|repo-peers)\b[^>]*>.*?</agent-herder-(?:coordination|repo-peers)\s*>',
+    re.I | re.S,
+)
+EXPECTATION_CHANGE = re.compile(
+    r'^\s*the\b[^.?!\n]{0,120}\b(?:must|should|needs to)\s+(?:be|return)\s+'
+    r'[^.?!\n]{1,120}\b(?:rather than|instead of)\b', re.I,
+)
+CORRECTION_HEADER = re.compile(r'^\s*correction\s*:\s*', re.I)
+EXPECTATION_VALUE = re.compile(
+    r'^\s*the\b[^.?!\n]{0,120}\b(?:must|should|needs to)\s+(?:be|return)\s+'
+    r'(.+?)\s+(?:rather than|instead of)\s+.+?[.!?]?\s*$', re.I,
+)
+
+
+def expectation_text(value):
+    """Strip one explicit bounded correction label for expectation parsing."""
+    return CORRECTION_HEADER.sub('', value, count=1)
 
 
 def bounded_self_check(outcome):
@@ -52,9 +70,9 @@ def positive_intent(goal):
 
 
 def semantic_scope(goal):
-    # OpenCode's native prompt event may enclose the whole text in quotes.
-    # Interpret one such envelope without rewriting stored raw user input.
-    scope = goal.strip()
+    # OpenCode may quote the prompt; Herder coordination markup is metadata.
+    # Raw input remains preserved in the native state as source evidence.
+    scope = HERDER_ENVELOPE.sub('', goal).strip()
     if scope.startswith('"') and scope.endswith('"'):
         scope = scope[1:-1]
     return scope.strip()
@@ -62,19 +80,47 @@ def semantic_scope(goal):
 
 def classify(goal):
     intent = positive_intent(semantic_scope(goal))
+    # A leading status request scopes the whole prompt, even if it names a
+    # task class in the requested status value.
+    status_request = re.search(
+        r'^\s*(?:read.only\s+)?(?:status\b|what is\b|what.s\b|how is\b|when\b|'
+        r'how is (?:the )?(?:task|work|progress) progressing\b|(?:give|send|provide) (?:me )?(?:a )?(?:progress|feedback) update\b|'
+        r'статус|как дела|когда|какая версия|как продвигается (?:задача|работа)|дай обратную связь по прогрессу)',
+        intent,
+        re.I,
+    )
+    later_intent = intent[status_request.end():] if status_request else ''
+    later_intent = re.sub(r'\b(?:progress|feedback)\s+update\b', '', later_intent, flags=re.I)
+    if status_request and not (REPAIR.search(later_intent) or TEST.search(later_intent)):
+        return 'status'
     # Explicit assignment header scopes the work; engineering terms below it
     # can describe the subject being reviewed, rather than authorize execution.
     header = re.search(r'(?:^|[.!?\n])\s*RESEARCH\s+ONLY\s*:', intent, re.I)
     if header and not REPAIR.search(intent[:header.start()]):
         return 'research'
+    if EXPECTATION_CHANGE.search(expectation_text(intent)):
+        return 'quickfix'
+    # The declaration is a class hint only when it stands as an affirmative
+    # clause. Do not let a literal fixture label or a negated mention override
+    # the task's actual intent.
+    declaration = re.search(
+        r'(?:^|[.!?;]\s+|\n)\s*(?<![\"\'`])LHC\s+fullcycle\s+'
+        r'с\s+видимым\s+бизнес-результатом\b'
+        r'(?=\s*(?:[.;,]|$))',
+        intent,
+        re.I,
+    )
+    if declaration:
+        prefix = intent[:declaration.start()].lower()
+        context = re.search(r'(?:literal|fixture|example|quoted|строк[аеу]|литерал|пример|цитат)[^.!?\n:]*:\s*$', prefix, re.I)
+        if not context:
+            return 'fullcycle'
     if REPAIR.search(intent):
         broad = re.search(r'\b(?:full|entire|complete|all)\b|весь|целиком|полностью', intent, re.I)
         small = re.search(r'\b(?:fix|repair|small|minor|typo)\b|исправ|почин|мелк|опечат', intent, re.I)
         return 'quickfix' if small and not broad else 'fullcycle'
     if TEST.search(intent):
         return 'testing'
-    if re.search(r'^\s*(?:read.only\s+)?(?:status\b|what is\b|what.s\b|how is\b|when\b|статус|как дела|когда|какая версия)', intent, re.I):
-        return 'status'
     if RESEARCH.search(intent):
         return 'research'
     return 'unknown'
@@ -192,22 +238,25 @@ def verdict(outcome, state):
 
 def observe(state, event, name, cwd, session, now):
     business = state.setdefault('business', {})
-    goal = native.first_goal(event, state)
+    raw_goal = native.first_goal(event, state)
+    goal = semantic_scope(raw_goal)
     submitted = event.get('prompt')
     if (not business.get('outcome') and name == 'UserPromptSubmit' and isinstance(submitted, str)
             and not event.get('_lhc_control_prompt') and not submitted.startswith('🤖')
-            and submitted.startswith(business.get('original_prompt') or submitted)):
-        goal = submitted
+            and semantic_scope(submitted).startswith(semantic_scope(
+                business.get('original_prompt_full') or business.get('original_prompt') or submitted))):
+        raw_goal = submitted
+        goal = semantic_scope(submitted)
     outcome = business.get('outcome')
-    prompt = str(event.get('prompt') or '') if name == 'UserPromptSubmit' and not event.get('_lhc_control_prompt') else ''
+    prompt = semantic_scope(str(event.get('prompt') or '')) if name == 'UserPromptSubmit' and not event.get('_lhc_control_prompt') else ''
     human = bool(prompt and not prompt.startswith('🤖'))
     if not outcome and goal:
         kind = classify(goal)
         target = next(iter(native.URL.findall(goal)), 'project:' + str(cwd))
         expected = re.split(r'\b(?:verify|expected|check that)\b|проверь|ожидаем', semantic_scope(goal), maxsplit=1, flags=re.I)[-1].strip()
         outcome = business['outcome'] = {
-            'id': digest([session, goal]), 'owner': {'harness': business.get('runtime'), 'session_id': session},
-            'original_goal': goal, 'latest_correction': goal, 'task_class': kind,
+            'id': digest([session, raw_goal]), 'owner': {'harness': business.get('runtime'), 'session_id': session},
+            'original_goal': raw_goal, 'latest_correction': goal, 'task_class': kind,
             'started_at': now.isoformat(), 'cwd': str(cwd), 'native_source': business.get('transcript_path'), 'contract_confirmed': kind == 'status',
             'evidence_after': now.isoformat(),
             'delegation_prohibited': bool(NO_DELEGATION.search(goal)),
@@ -219,20 +268,30 @@ def observe(state, event, name, cwd, session, now):
         }
     if not outcome:
         return None
-    if human and prompt != outcome['original_goal']:
+    if human and prompt != semantic_scope(outcome['original_goal']):
         if NO_DELEGATION.search(prompt):
             outcome['delegation_prohibited'] = True
-        outcome['latest_correction'] = prompt
         # Read-only/status/peer updates cannot erase a previously accepted repair.
         kind = classify(prompt)
-        if kind != 'status' and re.search(r'\b(?:branch|upstream|integration|main|megamen32-dev)\b|ветк|интеграц', prompt, re.I):
+        actionable_correction = (kind in ENGINEERING | {'testing', 'research'}
+                                 or bool(ACTIONABLE_UNKNOWN.search(prompt))
+                                 or bool(EXPECTATION_CHANGE.search(expectation_text(prompt))))
+        if actionable_correction:
+            outcome['latest_correction'] = prompt
+        if actionable_correction and re.search(r'\b(?:branch|upstream|integration|main|megamen32-dev)\b|ветк|интеграц', prompt, re.I):
             outcome.pop('integration_policy', None)
             outcome.pop('release_handoff', None)
-        if kind in ENGINEERING | {'testing', 'research'} or ACTIONABLE_UNKNOWN.search(prompt):
+        if kind in ENGINEERING | {'testing', 'research'} or ACTIONABLE_UNKNOWN.search(prompt) or EXPECTATION_CHANGE.search(expectation_text(prompt)):
             outcome['actionable'] = True
         if kind == 'unknown' and ACTIONABLE_UNKNOWN.search(prompt) and outcome['task_class'] == 'status':
             outcome['task_class'] = 'unknown'
             outcome['stages'] = applicable('unknown', prompt)
+        expectation = EXPECTATION_VALUE.search(expectation_text(prompt))
+        if expectation:
+            if outcome['task_class'] in {'status', 'unknown'}:
+                outcome['task_class'] = 'quickfix'
+                outcome['stages'] = applicable('quickfix', prompt)
+            outcome['canary']['expected'] = expectation.group(1).strip().rstrip('.!?')
         if kind in ENGINEERING or (kind == 'testing' and outcome['task_class'] in {'status', 'unknown'}):
             old_class = outcome['task_class']
             outcome['task_class'] = 'fullcycle' if old_class == 'fullcycle' else kind
@@ -252,10 +311,11 @@ def observe(state, event, name, cwd, session, now):
         for stage, pattern in EXCLUSIONS.items():
             if match := re.search(pattern, prompt, re.I):
                 outcome['stages'][stage] = {'status': 'not-applicable', 'basis': 'latest-scope:' + match.group(), 'evidence': []}
-        for source in business.get('execution_context', {}).get('direct_user_messages', []):
-            if source.get('source') not in {r.get('source') for r in outcome.get('scope_sources', [])}:
-                outcome.setdefault('scope_sources', []).append(source)
-        if kind != 'status' and prompt not in outcome.get('corrections', []):
+        if actionable_correction:
+            for source in business.get('execution_context', {}).get('direct_user_messages', []):
+                if source.get('source') not in {r.get('source') for r in outcome.get('scope_sources', [])}:
+                    outcome.setdefault('scope_sources', []).append(source)
+        if actionable_correction and prompt not in outcome.get('corrections', []):
             outcome.setdefault('corrections', []).append(prompt)
             outcome['contract_confirmed'] = False
             outcome['canary']['status'] = 'pending'
@@ -275,6 +335,8 @@ def observe(state, event, name, cwd, session, now):
     if name == 'PostToolUse':
         observe_job_progress(outcome, business, event, cwd)
         observe_question(outcome, event)
+    if name in {'PostToolUse', 'PostToolUseFailure'}:
+        observe_contract_rejection(outcome, event, name)
     outcome['finish_verdict'] = verdict(outcome, state)
     return outcome
 
@@ -284,10 +346,89 @@ def next_stage(outcome):
 
 
 def fingerprint(outcome, milestone=None):
-    return digest([outcome['id'], outcome['revision'], next_stage(outcome), outcome['canary'],
-                   [(k, v['status'], v['basis']) for k, v in outcome['stages'].items()],
+    return digest([outcome['id'], outcome['revision'], outcome.get('latest_correction'), next_stage(outcome), outcome['canary'],
+                   [(k, v['status'], v['basis']) for k, v in sorted(outcome['stages'].items())],
                    outcome.get('question', {}).get('answer_ref'), sorted(outcome.get('finished_jobs', [])),
                    (milestone or {}).get('surface_key') if not outcome.get('owned_paths') else None])
+
+
+def contract_scope_fingerprint(outcome):
+    return digest([outcome['id'], outcome.get('latest_correction'), outcome.get('task_class'),
+                   [(key, row['status'], row['basis']) for key, row in sorted(outcome['stages'].items())]])
+
+
+def contract_rejection_action(error):
+    if 'research file target must name the scoped in-project source, not the requested report output' in error:
+        return ('Use the exact in-project source path actually inspected as the research source/target; '
+                'list the requested report path separately as an owned deliverable, never as source evidence.')
+    if 'engineering contract requires explicit owned paths' in error:
+        return 'Add --owned-path for each file the task actually owns; do not list unrelated outputs.'
+    if 'canary must be concrete' in error:
+        return 'Supply the concrete scenario, real target, and observable expected result.'
+    if 'class correction requires an exact original/latest native user source' in error:
+        return 'Use the exact native user source reference shown in scope_sources as --scope-source.'
+    if 'stage readback needs both target and expected' in error:
+        return 'Provide both --stage-target and --stage-expected for each claimed stage.'
+    if 'N/A needs explicit original/latest scope' in error:
+        return 'Remove the unsupported N/A claim or cite a native user scope that explicitly excludes that stage.'
+    return 'Correct only the rejected contract field named above; do not retry the unchanged command.'
+
+
+def outcome_error_text(value):
+    if isinstance(value, str):
+        parts = [value]
+    elif isinstance(value, dict):
+        parts = []
+        for key in ('stderr', 'error', 'output', 'stdout'):
+            item = value.get(key)
+            if isinstance(item, str):
+                parts.append(item)
+        parts.extend(outcome_error_text(value[key]) for key in ('structuredContent', 'result')
+                     if isinstance(value.get(key), (dict, str)))
+        content = value.get('content')
+        if isinstance(content, list):
+            parts.extend(block.get('text', '') for block in content
+                         if isinstance(block, dict) and isinstance(block.get('text'), str))
+    else:
+        return ''
+    for part in parts:
+        for line in part.splitlines():
+            marker = line.find('LHC outcome:')
+            if marker >= 0:
+                return line[marker:].strip()[:4096]
+            marker = line.find('research file target must name the scoped in-project source, not the requested report output')
+            if marker >= 0:
+                return line[marker:].strip()[:4096]
+    return ''
+
+
+def observe_contract_rejection(outcome, event, event_name):
+    args = event.get('tool_input') or event.get('arguments') or {}
+    command = args.get('cmd') or args.get('command') or '' if isinstance(args, dict) else ''
+    try:
+        words = shlex.split(str(command))
+    except ValueError:
+        return
+    tool_index = next((i for i, word in enumerate(words)
+                       if Path(word).name == 'lhc_outcome.py'), None)
+    if tool_index is None:
+        return
+    subcommand = next((word for word in words[tool_index + 1:] if word in {'contract', 'review'}), None)
+    if subcommand is None:
+        return
+    response = event.get('tool_response') or {}
+    if event_name == 'PostToolUse' and isinstance(response, dict) and response.get('exit_code') == 0:
+        outcome.pop('contract_rejection', None)
+        return
+    exact = outcome_error_text(response) or outcome_error_text(event.get('error'))
+    if not exact:
+        return
+    outcome['contract_rejection'] = {
+        'scope_fingerprint': contract_scope_fingerprint(outcome),
+        'source': str(event.get('tool_call_id') or event.get('call_id') or 'native-review-attempt'),
+        'exact_error': exact,
+        'corrective_action': contract_rejection_action(exact),
+    }
 
 
 def observe_job_progress(outcome, business, event, cwd):
@@ -312,7 +453,7 @@ def observe_job_progress(outcome, business, event, cwd):
 
 
 def reminder(outcome, tool):
-    review_route = ('Research leaf: confirm the concrete contract before evidence; then verify the assigned source and deliver the requested report '
+    review_route = ('Research leaf: verify the assigned source and deliver the requested report '
                     'and raw expected/observed commentary before close bookkeeping. Use the documented review --native-self route; '
                     'level self-check, not independent parent product acceptance. '
                     "Use each command's --help; no helper implementation research unless assigned. "
@@ -332,13 +473,34 @@ def reminder(outcome, tool):
     review_route += ('Integrate only into an explicitly selected permitted target (contract --integration-branch/remote/ownership); '
                      'Airlock: megamen32-dev; external/shared upstream main is never auto-merged. Completed dev delivery '
                      'does not require Oleg final main merge: release_handoff awaiting-owner is separate. ')
+    stage = next_stage(outcome)
+    rejection = outcome.get('contract_rejection') or {}
+    if (rejection and rejection.get('scope_fingerprint') == contract_scope_fingerprint(outcome)):
+        contract_guidance = (' Contract rejection (exact): ' + rejection.get('exact_error', '') +
+                             ' Corrective action: ' + rejection.get('corrective_action',
+                             'Correct only the rejected field; do not retry unchanged.'))
+    elif outcome.get('contract_confirmed'):
+        if stage:
+            claim = outcome.get('stage_claims', {}).get(stage, {})
+            target = claim.get('target', outcome['canary']['target'])
+            expected = claim.get('expected', outcome['canary']['expected'])
+            contract_guidance = (f' Contract confirmed. Next stage={stage}; perform the assigned {stage} action '
+                                 f'for scenario {outcome["canary"]["scenario"]!r} at target {target!r}; '
+                                 f'compare with expected {expected!r}. Preserve existing permissions and gates.')
+        else:
+            contract_guidance = (' Contract confirmed and no technical stage remains; continue the existing pending '
+                                 'milestone, acceptance, or recorded blocker. Do not restate the contract.')
+    elif outcome.get('contract_request_fingerprint') == contract_scope_fingerprint(outcome):
+        contract_guidance = (' The unchanged task contract was already requested; resume from the existing request '
+                             'without restating the scenario or owned paths.')
+    else:
+        contract_guidance = (' confirm the concrete contract once: provide the scenario, target, expected result, and owned paths with '
+                             'python3 ' + shlex.quote(str(tool)) + ' --cwd ' + shlex.quote(outcome['cwd']) +
+                             ' --runtime ' + outcome['owner']['harness'] + ' --session-id ' +
+                             shlex.quote(outcome['owner']['session_id']) + ' contract --help; then perform actual work.')
     return ('LHC outcome: ' + outcome['task_class'] + '; ' + outcome['finish_verdict'] +
             '. Canary: ' + json.dumps(outcome['canary'], ensure_ascii=False) +
-            '. Next stage: ' + str(next_stage(outcome)) +
-            '. Specify scenario/target/expected and owned paths using python3 ' + shlex.quote(str(tool)) +
-            ' --cwd ' + shlex.quote(outcome['cwd']) + ' --runtime ' + outcome['owner']['harness'] +
-            ' --session-id ' + shlex.quote(outcome['owner']['session_id']) +
-            ' contract --help; then perform actual work. ' + review_route +
+            '. Next stage: ' + str(stage) + '.' + contract_guidance + ' ' + review_route +
             'Refs, echo, pytest and own PASS do not replace the original canary. Testing may complete with product=changes-required; '
             'do not hire nested testers. Never bypass human stop/permission. Human question: question --message; '
             'existing bound request → Notify card → sent receipt → canonical answer; receipt != answer. '
@@ -509,6 +671,7 @@ def main():
         state = guard.load_state(path)
         outcome = state['business']['outcome']
         if args.command == 'contract':
+            outcome.pop('contract_rejection', None)
             source = next((r for r in outcome.get('scope_sources', []) if r.get('source') == args.scope_source), None)
             policy = outcome.get('integration_policy')
             if any((args.integration_branch, args.integration_remote, args.integration_ownership, args.release_owner, args.integration_permission_quote)):

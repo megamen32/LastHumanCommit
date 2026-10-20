@@ -25,11 +25,10 @@ My compact assignment names:
 - one primary acceptance check;
 - allowed and excluded scope/paths;
 - dependencies, owned resources, selected model and suitability reason;
-- evidence-based leaf `minimum / maximum active minutes`, targeting about 30
-  including acceptance verification; external waits listed separately;
+- evidence-based leaf `minimum / maximum active minutes`, with planning pieces around 15 minutes where useful, including acceptance verification; external waits listed separately;
 - a 20-minute reporting checkpoint, stop conditions, and return format.
 
-Lead decomposes the goal into meaningful subtasks estimated at about 30 minutes.
+Lead plans small meaningful work pieces around 15 minutes when decomposition helps.
 This is planning granularity, not a runtime limit or grounds to reject an ongoing
 task. For a large unsplit assignment, propose meaningful proof boundaries to L.
 A 20-minute report remains a control checkpoint. Ambiguous goals,

@@ -51,7 +51,7 @@ when this distinction is needed; do not create a new evidence pipeline.
 
 ## Time and responsibility boundary
 
-L decomposes work into verifiable subtasks estimated at about 30 minutes,
+L plans work in verifiable pieces around 15 minutes when decomposition helps,
 including verification and report. This is planning granularity, not a runtime
 limit or a reason to reject/abort an ongoing task. Report estimate overruns so
 L can assess progress and adjust the remaining decomposition.

@@ -78,13 +78,24 @@ Match verification to the claim: regression for bugs, real use for user outcomes
 independent Tester/review for large ambiguous changes. Diagnose flakiness instead of
 masking it with a successful rerun.
 
-Every active hour follow BUSINESS_CHECKPOINT.md: original assignment/latest corrections
-→ actual user result → route decision. This is not hourly Zero Knowledge recruitment.
-Ready major milestones (~3 hours of coherent work) and final acceptance need fresh
-independent testers without your history, with varied realistic personas, age,
-experience, conditions and goals. Preserve detailed positive/negative feedback, not
-only PASS/FAIL. Repair obstacles to the original task; do not make every idea a new
-mandatory product. Use focus-groups; technical checks continue during development.
+At each hourly native checkpoint, follow BUSINESS_CHECKPOINT.md: original
+assignment/latest corrections → actual user result → route decision. This is a
+direction check, not a tester dispatch. Do not launch a fresh observer every hour.
+Fresh frontier Zero Knowledge observers belong at ready major milestones (~3 hours
+of coherent work) and final acceptance, through existing Agent Herder. Give each
+observer only the original goal and allowed consumer target/API; do not expose source,
+implementation history, reports, or task/session management. Ask it to try the goal
+on that consumer surface and report any blocker to the owner. Track the native due ID
+and do not launch again while that same ID is pending. Do not add a scheduler or
+daemon, and do not assume a sleeping session can be woken. Hourly direction checks
+do not replace milestone acceptance.
+
+Ready major milestones (~3 hours of coherent work) and final acceptance still need
+separate fresh independent testers without your history, with varied realistic
+personas, age, experience, conditions and goals. Preserve detailed positive/negative
+feedback, not only PASS/FAIL. Repair obstacles to the original task; do not make
+every idea a new mandatory product. Use focus-groups; technical checks continue
+during development.
 Every 120 wall-clock minutes and after repeated failure follow SELF_IMPROVE.md:
 change the method from observation and verify it. Justified no-change is valid;
 reading or promising does not complete the checkpoint. Also use Overseer for repeated

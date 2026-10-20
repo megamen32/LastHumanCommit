@@ -1,3 +1,9 @@
+# 1.5.6 — hook feedback and task-scope continuity
+
+Prevent repeated unchanged reminders and keep coordination metadata out of task
+scope. Preserve long task prompts in hourly reminders and recognize bounded
+expectation corrections without treating status feedback as a task change.
+
 # 1.5.5 — installed test-skill protocol pointers
 
 Correct the two testing skills to resolve the execution-access protocol from the

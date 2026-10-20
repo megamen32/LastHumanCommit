@@ -34,6 +34,16 @@ ACTIVE_MINUTES = re.compile(
     r"^\s*-\s*(?:Active minutes|Actual active minutes):\s*(\d+)",
     re.MULTILINE | re.IGNORECASE,
 )
+HERDER_ENVELOPE = re.compile(
+    r'<agent-herder-(?:coordination|repo-peers)\b[^>]*>.*?</agent-herder-(?:coordination|repo-peers)\s*>',
+    re.IGNORECASE | re.DOTALL,
+)
+
+
+def prompt_excerpt(value: str) -> str:
+    """Keep Herder coordination metadata out of repeated task reminders."""
+
+    return HERDER_ENVELOPE.sub("", value).strip()
 
 
 def parse_time(value: str) -> datetime:
@@ -704,6 +714,7 @@ def update_execution_context(business, prompt, payload, session_id):
     rows = context.setdefault("direct_user_messages", [])
     if not rows or rows[-1].get("source") != source:
         rows.append({"source": source, "prompt": prompt.strip()[:2048],
+                     "scope_prompt": prompt_excerpt(prompt)[:4096],
                      "observed_at": str(payload.get("timestamp") or "native-event")[:64]})
     del rows[:-4]
 
@@ -863,16 +874,19 @@ def business_checkpoint(args, cwd: Path, session_id: str, payload: dict,
             is_original_prompt = not business.get("original_prompt")
             business["original_prompt"] = business["original_prompt"] or full_prompt[:4096]
             business["latest_prompt"] = full_prompt[:4096]
-            if args.runtime == "zcode":
-                if is_original_prompt:
+            scope_excerpt = prompt_excerpt(full_prompt)[:4096]
+            if is_original_prompt:
+                business["original_scope_prompt"] = scope_excerpt
+                if len(full_prompt) > 4096:
                     business["original_prompt_full"] = full_prompt
-                original_full = business.get("original_prompt_full", "")
-                if full_prompt == original_full:
-                    business.pop("latest_prompt_full", None)
-                elif len(full_prompt) > 4096:
-                    business["latest_prompt_full"] = full_prompt
-                else:
-                    business.pop("latest_prompt_full", None)
+            business["latest_scope_prompt"] = scope_excerpt
+            original_full = business.get("original_prompt_full") or business.get("original_prompt", "")
+            if full_prompt == original_full:
+                business.pop("latest_prompt_full", None)
+            elif len(full_prompt) > 4096:
+                business["latest_prompt_full"] = full_prompt
+            else:
+                business.pop("latest_prompt_full", None)
             if payload.get("transcript_path") and args.runtime != "zcode":
                 business["transcript_path"] = str(payload["transcript_path"])[:1024]
         record_native_action(business, payload, event, session_id, now)
@@ -960,8 +974,8 @@ def business_checkpoint(args, cwd: Path, session_id: str, payload: dict,
         due = pending is not None
         reminder = ""
         previous = business.get("last_injected_at")
-        refresh = event in {"userpromptsubmit","sessionstart","postcompact","chat.message"}
-        if due and not acknowledge and event not in pauses and not (args.runtime == "codex" and event in {"precompact", "postcompact"}) and not (args.runtime == "opencode" and event in {"tool.execute.before", "permission.replied"}) and (not previous or refresh or
+        if due and not acknowledge and event not in pauses and not (args.runtime == "codex" and event in {"precompact", "postcompact"}) and not (args.runtime == "opencode" and event in {"tool.execute.before", "permission.replied"}) and (not previous or
+                business.get("last_injected_review_id") != pending["id"] or
                 (now-parse_time(previous)).total_seconds() >= 300):
             reminder = (
                 "Mandatory hourly LHC direction check: reread the original assignment and latest user corrections, "
@@ -977,11 +991,18 @@ def business_checkpoint(args, cwd: Path, session_id: str, payload: dict,
                 f"Clock: {clock_source}. A reminder does not close review; milestone acceptance is separate. "
                 "Without new information, do not send another user status."
             )
-            if business["original_prompt"]:
-                reminder += "\nOriginal input (excerpt; check full source): " + business["original_prompt"][:1000]
-            if business["latest_prompt"] != business["original_prompt"]:
-                reminder += "\nLatest correction (excerpt): " + business["latest_prompt"][:1000]
+            original_scope = business.get("original_scope_prompt") or prompt_excerpt(
+                business.get("original_prompt_full") or business["original_prompt"]
+            )
+            latest_scope = business.get("latest_scope_prompt") or prompt_excerpt(
+                business.get("latest_prompt_full") or business["latest_prompt"]
+            )
+            if original_scope:
+                reminder += "\nOriginal input (excerpt; check full source): " + original_scope[:1000]
+            if latest_scope and latest_scope != original_scope:
+                reminder += "\nLatest correction (excerpt): " + latest_scope[:1000]
             business["last_injected_at"] = now.isoformat()
+            business["last_injected_review_id"] = pending["id"]
         write_state(path, state)
     return {"due": due, "review_id": pending["id"] if pending else None, "state": str(path),
             "active_seconds": measured, "clock_source": clock_source, "prompt": reminder}

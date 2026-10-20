@@ -393,6 +393,46 @@ def test_reviewed_original_scope_controls_class_and_applicability(goal, kind, de
     assert stages['integration']['status'] == merge
 
 
+def test_persisted_lhc_fullcycle_declaration_beats_repair_wording():
+    import lhc_outcome as outcomes
+    goal = (
+        'ПРЯМОЕ поручение пользователя от 20.10.2026: «всем указания, создай сессии, которые всё это исправят». '
+        'Действуй до реально проверенного результата, не только до анализа/отчёта. На server-100 через существующие '
+        'Codex, Agent Herder, LHC. Изучи актуальные repo instructions, рабочие задачи, ранее незавершённую работу, '
+        'владельцев и реальные механизмы прежде фикса; GrepMesh до широкого поиска. Используй свой независимый worktree '
+        'от подходящего текущего head, не перезаписывай чужой WIP. Тщательно разграничь настоящую ошибку и предусмотренную '
+        'политику. Для подтверждённой проблемы RED → минимальный фикс → GREEN → независимая проверка → полный релевантный '
+        'gate → push/PR/handoff, безопасное обновление действующих сред только по явному владению. LHC fullcycle с видимым '
+        'бизнес-результатом; не зацикливайся на ревью/хэшах.'
+    )
+    assert outcomes.classify(goal) == 'fullcycle'
+    assert all(stage['status'] == 'pending'
+               for stage in outcomes.applicable('fullcycle', goal).values())
+
+
+def test_lhc_fullcycle_phrase_in_literal_subject_does_not_override_quickfix():
+    import lhc_outcome as outcomes
+    goal = 'Fix the small CLI bug for the literal string "LHC fullcycle с видимым бизнес-результатом".'
+    assert outcomes.classify(goal) == 'quickfix'
+
+
+@pytest.mark.parametrize('goal,expected', [
+    ('RESEARCH ONLY: inspect the prompt parser.\n'
+     'LHC fullcycle с видимым бизнес-результатом; fix the CLI.', 'research'),
+    ('Fix the small parser bug for this literal fixture:\n'
+     'LHC fullcycle с видимым бизнес-результатом', 'quickfix'),
+    ('LHC fullcycle с видимым бизнес-результатом не требуется. '
+     'Fix the small CLI bug.', 'quickfix'),
+    ('Status of this task:\n'
+     'LHC fullcycle с видимым бизнес-результатом', 'status'),
+    ('What is the current version? Fix the small CLI bug.', 'quickfix'),
+    ('Status of the CLI. Implement JSON export.', 'fullcycle'),
+])
+def test_fullcycle_declaration_respects_higher_level_task_intent(goal, expected):
+    import lhc_outcome as outcomes
+    assert outcomes.classify(goal) == expected
+
+
 def test_session_end_is_inactive_pending_not_a_manual_stop(tmp_path):
     anchored(tmp_path)
     invoke(tmp_path, 'SessionEnd')
@@ -502,6 +542,138 @@ def test_status_question_is_not_continuation_progress(tmp_path):
     invoke(tmp_path, 'UserPromptSubmit', prompt='What is the current status?')
     assert invoke(tmp_path, 'Stop').get('decision') != 'block'
     assert state(tmp_path)['business']['outcome']['task_class'] == 'quickfix'
+
+
+def test_coordination_board_is_not_a_task_correction_or_progress_reset(tmp_path):
+    outcome = anchored(tmp_path)
+    cli(tmp_path, 'review', '--manifest', str(review_export(tmp_path, outcome)))
+    before = state(tmp_path)['business']['outcome']
+    correction = before['evidence_after']
+    board = ('<agent-herder-coordination board="active">\n'
+             '- [working] author=codex paths=src/common/tools/lhc_outcome.py :: Fix the contract parser\n'
+             '</agent-herder-coordination>')
+    invoke(tmp_path, 'UserPromptSubmit', prompt=board)
+    after = state(tmp_path)['business']['outcome']
+    assert after.get('corrections', []) == before.get('corrections', [])
+    assert after['evidence_after'] == correction
+    assert after['stages']['technical']['status'] == 'complete'
+    assert after['finish_verdict'] == 'complete'
+
+
+def test_feedback_only_prompt_does_not_invalidate_completed_work(tmp_path):
+    outcome = anchored(tmp_path)
+    cli(tmp_path, 'review', '--manifest', str(review_export(tmp_path, outcome)))
+    before = state(tmp_path)['business']['outcome']
+    invoke(tmp_path, 'UserPromptSubmit', prompt='How is the task progressing? Please send a short feedback update.')
+    after = state(tmp_path)['business']['outcome']
+    assert after.get('corrections', []) == before.get('corrections', [])
+    assert after['evidence_after'] == before['evidence_after']
+    assert after['stages']['technical']['status'] == 'complete'
+    assert after['finish_verdict'] == 'complete'
+
+
+def test_real_action_correction_still_invalidates_affected_completion(tmp_path):
+    outcome = anchored(tmp_path)
+    cli(tmp_path, 'review', '--manifest', str(review_export(tmp_path, outcome)))
+    invoke(tmp_path, 'UserPromptSubmit', prompt='Also add a --format json option to the total CLI.')
+    after = state(tmp_path)['business']['outcome']
+    assert after['corrections'][-1] == 'Also add a --format json option to the total CLI.'
+    assert after['evidence_after'] != outcome['evidence_after']
+    assert after['stages']['technical']['status'] == 'pending'
+
+
+def test_declarative_expectation_change_invalidates_stale_acceptance(tmp_path):
+    outcome = anchored(tmp_path)
+    cli(tmp_path, 'review', '--manifest', str(review_export(tmp_path, outcome)))
+    before = state(tmp_path)['business']['outcome']
+    correction = 'The empty result must be [] rather than null.'
+    invoke(tmp_path, 'UserPromptSubmit', prompt=correction)
+    after = state(tmp_path)['business']['outcome']
+    assert after['task_class'] == 'quickfix'
+    assert after['corrections'][-1] == correction
+    assert after['canary']['expected'] == '[]'
+    assert after['evidence_after'] != before['evidence_after']
+    assert not after['contract_confirmed']
+    assert after['stages']['technical']['status'] == 'pending'
+
+
+def test_bounded_correction_header_updates_expectation_and_invalidates_acceptance(tmp_path):
+    outcome = anchored(tmp_path)
+    cli(tmp_path, 'review', '--manifest', str(review_export(tmp_path, outcome)))
+    before = state(tmp_path)['business']['outcome']
+    correction = 'Correction: the empty result must be [] rather than null.'
+    invoke(tmp_path, 'UserPromptSubmit', prompt=correction)
+    after = state(tmp_path)['business']['outcome']
+    assert after['task_class'] == 'quickfix'
+    assert after['corrections'][-1] == correction
+    assert after['canary']['expected'] == '[]'
+    assert after['evidence_after'] != before['evidence_after']
+    assert not after['contract_confirmed']
+    assert after['stages']['technical']['status'] == 'pending'
+
+
+@pytest.mark.parametrize(('event_name', 'response'), [
+    ('PostToolUse', {'exit_code': 1, 'stderr': 'LHC outcome: research file target must name the scoped in-project source, not the requested report output'}),
+    ('PostToolUse', {'exit_code': 1, 'stdout': 'LHC outcome: research file target must name the scoped in-project source, not the requested report output'}),
+    ('PostToolUseFailure', 'LHC outcome: research file target must name the scoped in-project source, not the requested report output'),
+])
+def test_review_target_rejection_variants_are_preserved_from_native_failures(tmp_path, event_name, response):
+    import lhc_outcome_review as reviews
+    anchored(tmp_path, 'RESEARCH ONLY: Read settings.txt and save findings in FEEDBACK.md.')
+    outcome = cli(tmp_path, 'contract', '--scenario', 'Read the settings source',
+                  '--target', 'FEEDBACK.md', '--expected', 'Findings report')
+    with pytest.raises(ValueError, match='research file target must name the scoped in-project source') as rejected:
+        reviews.raw_review(outcome, 'The report is ready.', [], tmp_path)
+    exact = 'LHC outcome: ' + str(rejected.value)
+    command = 'python3 /tmp/lhc_outcome.py --cwd ' + str(tmp_path) + ' --runtime codex --session-id leader review --native-self'
+    invoke(tmp_path, event_name, tool_name='exec_command', tool_input={'cmd': command}, tool_response=response)
+    rejection = state(tmp_path)['business']['outcome'].get('contract_rejection')
+    assert rejection and rejection['exact_error'] == exact
+    import lhc_outcome as outcomes
+    notice = outcomes.reminder(state(tmp_path)['business']['outcome'], OUTCOME)
+    assert exact in notice
+    assert 'report path separately as an owned deliverable' in notice
+
+
+def test_confirmed_contract_reminder_names_next_consumer_action_without_reasking_contract(tmp_path):
+    outcome = anchored(tmp_path)
+    outcome['stages']['technical']['status'] = 'complete'
+    import lhc_outcome as outcomes
+    notice = outcomes.reminder(outcome, OUTCOME)
+    assert 'Next stage: consumer' in notice
+    assert 'Contract confirmed' in notice
+    assert 'target' in notice and 'python3 total.py' in notice and 'expected' in notice
+    assert 'contract --help' not in notice
+
+
+def test_unchanged_unconfirmed_resume_does_not_repeat_contract_demand(tmp_path):
+    outcome = anchored(tmp_path)
+    import lhc_outcome as outcomes
+    outcome['contract_confirmed'] = False
+    outcome['contract_request_fingerprint'] = outcomes.contract_scope_fingerprint(outcome)
+    notice = outcomes.reminder(outcome, OUTCOME)
+    assert 'unchanged task contract was already requested' in notice
+    assert 'contract --help' not in notice
+
+
+def test_rejected_research_target_is_preserved_through_rehydrate_with_exact_action(tmp_path):
+    outcome = anchored(tmp_path, 'Research the in-project report source and deliver a findings report.')
+    exact = 'LHC outcome: research file target must name the scoped in-project source, not the requested report output'
+    invoke(tmp_path, 'PostToolUse', tool_name='exec_command',
+           tool_input={'cmd': 'python3 /tmp/lhc_outcome.py contract --scenario research --target FEEDBACK.md'},
+           tool_response={'exit_code': 1, 'stderr': exact})
+    persisted = state(tmp_path)['business']['outcome']['contract_rejection']
+    assert persisted['exact_error'] == exact
+    import lhc_entry
+    restored = lhc_entry.rehydrate(state(tmp_path), tmp_path / 'state.json')
+    assert exact in restored
+    assert 'Use the exact in-project source path actually inspected' in restored
+    import lhc_outcome as outcomes
+    notice = outcomes.reminder(state(tmp_path)['business']['outcome'], OUTCOME)
+    assert exact in notice
+    assert 'report path separately as an owned deliverable' in notice
+    assert 'contract --help' not in notice
+    assert 'confirm the concrete contract' not in notice
 
 
 def test_notify_actual_mcp_card_and_result_shapes_do_not_store_answer_value(tmp_path):
@@ -1405,12 +1577,14 @@ def test_empty_research_assessment_gives_bounded_visible_report_recovery(tmp_pat
     import lhc_outcome_review as reviews
     import lhc_outcome as outcomes
     subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
-    invoke(tmp_path, 'UserPromptSubmit', prompt='RESEARCH ONLY: Read settings.txt and save results in FEEDBACK.md. Do not delegate.')
+    initial = invoke(tmp_path, 'UserPromptSubmit', prompt='RESEARCH ONLY: Read settings.txt and save results in FEEDBACK.md. Do not delegate.')
     outcome = state(tmp_path)['business']['outcome']
     with pytest.raises(ValueError, match='visible assistant message'):
         reviews.raw_review(outcome, '', [], tmp_path)
+    initial_notice = initial.get('hookSpecificOutput', {}).get('additionalContext', '')
+    assert initial_notice.index('confirm the concrete contract') < initial_notice.index('verify the assigned source')
     notice = outcomes.reminder(outcome, tmp_path/'lhc_outcome.py')
-    assert notice.index('confirm the concrete contract') < notice.index('verify the assigned source')
+    assert 'unchanged task contract was already requested' in notice
     assert 'FEEDBACK alone' in notice and 'scratch scripts' in notice
 
 
