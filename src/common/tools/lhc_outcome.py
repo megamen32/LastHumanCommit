@@ -115,7 +115,11 @@ def product_paths(outcome, cwd):
         # Every occurrence must be an observation-output directive. An earlier
         # product mention or ambiguous role conservatively retains the hash.
         prefix = re.split(r'[;!?\n]|\.(?=\s|$)', scope[:mention.start()])[-1]
-        report &= bool(re.search(r'(?:сохран\w*|запиш\w*|save|record|keep)\s+[^.?!\n]{0,180}(?:результат|отзыв|наблюден|feedback|observations|results)[^.?!\n]{0,180}$', prefix, re.I))
+        output = re.search(r'(?:сохран\w*|запиш\w*|save|record|keep)\s+[^.?!\n]{0,180}(?:результат|отзыв|наблюден|feedback|observations|results)[^.?!\n]{0,180}$', prefix, re.I)
+        # The report can refer back to the explicitly named results: the real
+        # request says "сообщи фактический результат ... сохрани их в FEEDBACK.md".
+        output = output or re.search(r'(?:результат\w*|отзыв\w*|наблюдени\w*)[^.?!\n]{0,180}сохран\w*\s+их\s+в\s*$', prefix, re.I)
+        report &= bool(output)
     # The explicitly requested observation report is evidence, not a new code
     # revision. Keep ownership, but writing feedback must not invalidate the
     # very native observations it records. A product edit retains its barrier.

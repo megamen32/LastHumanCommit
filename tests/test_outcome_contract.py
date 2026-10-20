@@ -1075,6 +1075,8 @@ def test_project_alias_rejects_nested_namesake_instead_of_owned_root_cli(tmp_pat
 @pytest.mark.parametrize('goal',[
     'FEEDBACK.md has a broken example; fix it. Save results in FEEDBACK.md.',
     'FEEDBACK.md содержит ошибку: исправь её. Сохрани результат и наблюдения в FEEDBACK.md.',
+    'FEEDBACK.md содержит ошибку: исправь её. Сообщи результат пользователю, а также сохрани их в FEEDBACK.md.',
+    'Fix the product documentation. Сохрани их в FEEDBACK.md.',
 ])
 def test_explicit_feedback_product_keeps_its_revision_when_named_before_repair(tmp_path,goal):
     import lhc_outcome as outcomes
@@ -1083,6 +1085,40 @@ def test_explicit_feedback_product_keeps_its_revision_when_named_before_repair(t
     before=outcomes.scope_revision(outcome,tmp_path)
     (tmp_path/'FEEDBACK.md').write_text('Repaired product document')
     assert outcomes.scope_revision(outcome,tmp_path)!=before
+
+
+def test_requested_pronoun_feedback_append_does_not_reopen_verified_product(tmp_path):
+    import lhc_outcome as outcomes
+    goal=('Исправь потерю кириллицы в export.py. Проверь существующий регрессионный тест и настоящий запуск CLI: '
+          'нужны ровно две строки Ирина,Москва и Олег,Казань. После работы сообщи фактический результат и ограничения '
+          'пользователю, а также сохрани их в FEEDBACK.md. Работай только в этом каталоге. Не делегируй. '
+          'Без deploy, push, merge и внешних действий.')
+    outcome=anchored(tmp_path,goal);outcome['owned_paths']=['export.py','FEEDBACK.md']
+    (tmp_path/'export.py').write_text("print('Ирина,Москва\\nОлег,Казань')\n")
+    (tmp_path/'FEEDBACK.md').write_text('Actual CLI and regression match the expected output.\n')
+    before=outcomes.scope_revision(outcome,tmp_path)
+    with (tmp_path/'FEEDBACK.md').open('a') as report:report.write('Native self-check is now complete.\n')
+    assert outcomes.scope_revision(outcome,tmp_path)==before
+    (tmp_path/'export.py').write_text("print('wrong')\n")
+    assert outcomes.scope_revision(outcome,tmp_path)!=before
+
+
+def test_pronoun_report_append_keeps_native_self_close_through_session_end(tmp_path):
+    goal=('Fix the small total.py CLI and verify its actual output is 0. После работы сообщи фактический результат '
+          'и ограничения пользователю, а также сохрани их в FEEDBACK.md. Do not delegate. No deploy, no push, no merge.')
+    outcome=anchored(tmp_path,goal)
+    (tmp_path/'FEEDBACK.md').write_text('Actual CLI output 0 matches expected 0; existing regression passed.\n')
+    outcome=cli(tmp_path,'contract','--scenario',outcome['canary']['scenario'],'--target',outcome['canary']['target'],
+                '--expected',outcome['canary']['expected'],'--owned-path','total.py','--owned-path','FEEDBACK.md')
+    manifest=review_export(tmp_path,outcome,sid='leader',raw_final='PASS. Regression tests passed; python3 total.py output 0 matched expected 0. Self-check only.')
+    assert cli(tmp_path,'review','--manifest',str(manifest))['finish_verdict']=='complete'
+    with (tmp_path/'FEEDBACK.md').open('a') as report:report.write('Native self-check is now complete.\n')
+    invoke(tmp_path,'PostToolUse',tool_name='apply_patch',tool_input={'path':str(tmp_path/'FEEDBACK.md')},tool_response={'status':'success'})
+    invoke(tmp_path,'SessionEnd')
+    final=state(tmp_path)
+    assert final['business']['outcome']['finish_verdict']=='complete'
+    assert final['native_entry']['finish_hold']=='SessionEnd'
+    assert final['business']['outcome']['evidence_after']==outcome['evidence_after']
 
 
 def test_explicit_owned_nested_cli_works_without_rebinding_the_root_name(tmp_path):
