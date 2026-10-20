@@ -159,8 +159,7 @@ def main_permission(source, quote, repository, branch):
 def verdict(outcome, state):
     if outcome['task_class'] == 'status':
         return 'complete'
-    if state.get('native_entry', {}).get('finish_hold') == 'Interrupt':
-        return 'human-stopped'
+    # Interrupt preserves the stop hold; it does not identify who stopped it.
     if state.get('native_entry', {}).get('finish_hold') not in {None, 'SessionEnd'}:
         return 'blocked'
     if outcome.get('question', {}).get('phase') not in {None, 'answered'}:

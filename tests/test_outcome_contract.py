@@ -402,7 +402,8 @@ def test_session_end_is_inactive_pending_not_a_manual_stop(tmp_path):
     invoke(tmp_path, 'UserPromptSubmit', prompt='Продолжай исходную задачу')
     invoke(tmp_path, 'Interrupt')
     invoke(tmp_path, 'Stop')
-    assert cli(tmp_path, 'status')['finish_verdict'] == 'human-stopped'
+    assert cli(tmp_path, 'status')['finish_verdict'] == 'blocked'
+    assert state(tmp_path)['native_entry']['finish_hold'] == 'Interrupt'
 
 
 def test_latest_direct_repair_correction_adds_deploy_and_target_without_resetting_clocks(tmp_path):
@@ -1374,3 +1375,20 @@ def test_empty_research_assessment_gives_bounded_visible_report_recovery(tmp_pat
     notice = outcomes.reminder(outcome, tmp_path/'lhc_outcome.py')
     assert notice.index('confirm the concrete contract') < notice.index('verify the assigned source')
     assert 'FEEDBACK alone' in notice and 'scratch scripts' in notice
+
+
+def test_unattributed_interrupt_does_not_claim_a_human_stop_or_resume(tmp_path):
+    anchored(tmp_path)
+    before = state(tmp_path)
+    invoke(tmp_path, 'Interrupt')
+    held = state(tmp_path)
+    assert held['business']['outcome']['finish_verdict'] == 'blocked'
+    assert held['native_entry']['finish_hold'] == 'Interrupt'
+    assert held['business']['interval']['status'] == 'paused'
+    result = invoke(tmp_path, 'Stop')
+    after = state(tmp_path)
+    assert result.get('decision') != 'block'  # No synthetic continuation while held.
+    assert after['native_entry']['finish_hold'] == 'Interrupt'
+    assert after['business']['outcome']['used_continuations'] == before['business']['outcome']['used_continuations']
+    assert after['business']['started_at'] == before['business']['started_at']
+    assert after['due_at'] == before['due_at']
