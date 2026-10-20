@@ -312,20 +312,26 @@ def observe_job_progress(outcome, business, event, cwd):
 
 
 def reminder(outcome, tool):
-    review_route = ('Research leaf: confirm the concrete contract before evidence; then verify the assigned source and deliver the requested report '
-                    'and raw expected/observed commentary before close bookkeeping. Use the documented review --native-self route; '
+    command = ('python3 ' + shlex.quote(str(tool)) + ' --cwd ' + shlex.quote(outcome['cwd']) +
+               ' --runtime ' + outcome['owner']['harness'] + ' --session-id ' + shlex.quote(outcome['owner']['session_id']))
+    contract_route = ('Contract confirmed; preserve scenario/target/expected and owned paths unless the accepted scope changes. Perform the actual task. '
+                      if outcome.get('contract_confirmed') else
+                      'Specify scenario/target/expected and owned paths using ' + command + ' contract --help; then perform actual work. ')
+    review_route = ('Research leaf: verify the assigned source and deliver the requested report '
+                    'and raw expected/observed commentary before close bookkeeping. Use the documented ' + command + ' review --native-self route; '
                     'level self-check, not independent parent product acceptance. '
                     "Use each command's --help; no helper implementation research unless assigned. "
                     'FEEDBACK alone is not a visible assistant assessment. Respect no-code limits: no scratch scripts. '
                     'On rejection, one supported reread or pending exact-error handoff; no helper debugging or session-storage inspection. '
                     if outcome['task_class'] == 'research' else
                     'Own bounded assignment: finish actual tests/CLI or assigned coverage and native transcript self-check '
-                    '(review --native-self; Herder export_transcript → review --manifest also available). '
+                    '(' + command + ' review --native-self; Herder export_transcript → review --manifest also available). '
                     'Use supported direct native commands for final observations; keep the current expected/observed assessment separate from historical RED diagnostics. '
                     'First write raw expected/observed as a separate commentary message and preserve FEEDBACK; '
+                    'no helper implementation or session-storage investigation unless assigned. On rejection, one supported reread/current assessment or pending exact-error handoff. '
                     'level self-check, not independent parent product acceptance. '
                     if bounded_self_check(outcome) or outcome['task_class'] in {'testing', 'research'} else
-                    'Engineering milestones require existing independent source-backed review via review --manifest. ')
+                    'Engineering milestones require existing independent source-backed review via ' + command + ' review --manifest. ')
     if outcome.get('delegation_prohibited'):
         review_route += ('Explicit no-delegation: do not create, launch or resume reviewer/tester sessions. '
                          'If independent acceptance remains required, hand ready results to the assigned coordinator; '
@@ -336,10 +342,7 @@ def reminder(outcome, tool):
     return ('LHC outcome: ' + outcome['task_class'] + '; ' + outcome['finish_verdict'] +
             '. Canary: ' + json.dumps(outcome['canary'], ensure_ascii=False) +
             '. Next stage: ' + str(next_stage(outcome)) +
-            '. Specify scenario/target/expected and owned paths using python3 ' + shlex.quote(str(tool)) +
-            ' --cwd ' + shlex.quote(outcome['cwd']) + ' --runtime ' + outcome['owner']['harness'] +
-            ' --session-id ' + shlex.quote(outcome['owner']['session_id']) +
-            ' contract --help; then perform actual work. '
+            '. ' + contract_route +
             'Task path/action limits include temporary outputs. When allowed, keep task temps in assigned cwd/.tmp unless the user names another location; '
             'tool defaults confer no permission. ' + review_route +
             'Refs, echo, pytest and own PASS do not replace the original canary. Testing may complete with product=changes-required; '

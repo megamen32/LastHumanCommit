@@ -8,6 +8,9 @@ No filesystem permissions, lifecycle/evidence gates or model configuration chang
 Current acceptance observations use direct native commands and a current report
 separate from historical RED. A mixed failure/positive report stays rejected,
 with one bounded correction route; no semantic reinterpretation or evidence rewrite.
+Confirmed contracts stop receiving setup instructions on every model boundary;
+they retain scope and show the exact existing close command. A direct scope
+correction still requires confirmation; helper/state investigation is not leaf work.
 Native adherence and rollout remain separate acceptance claims.
 
 # 1.5.2 — bounded research and planning scope
