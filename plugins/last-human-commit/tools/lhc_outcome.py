@@ -321,6 +321,7 @@ def reminder(outcome, tool):
                     if outcome['task_class'] == 'research' else
                     'Own bounded assignment: finish actual tests/CLI or assigned coverage and native transcript self-check '
                     '(review --native-self; Herder export_transcript → review --manifest also available). '
+                    'Use supported direct native commands for final observations; keep the current expected/observed assessment separate from historical RED diagnostics. '
                     'First write raw expected/observed as a separate commentary message and preserve FEEDBACK; '
                     'level self-check, not independent parent product acceptance. '
                     if bounded_self_check(outcome) or outcome['task_class'] in {'testing', 'research'} else

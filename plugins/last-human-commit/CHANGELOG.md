@@ -5,6 +5,9 @@ operations at startup, rebuilt model boundaries and compaction. Task temps defau
 to the assigned cwd/.tmp only when file writes are allowed; explicit user locations
 and stricter limits take precedence. Tool defaults do not authorize other paths.
 No filesystem permissions, lifecycle/evidence gates or model configuration change.
+Current acceptance observations use direct native commands and a current report
+separate from historical RED. A mixed failure/positive report stays rejected,
+with one bounded correction route; no semantic reinterpretation or evidence rewrite.
 Native adherence and rollout remain separate acceptance claims.
 
 # 1.5.2 — bounded research and planning scope

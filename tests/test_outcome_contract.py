@@ -1211,6 +1211,31 @@ def test_raw_quickfix_selects_ordered_acceptance_not_earlier_diagnostic_cli(tmp_
         assert outcomes.verdict(outcome, state(tmp_path)) != 'complete'
 
 
+def test_historical_red_in_current_report_gets_actionable_nonsemantic_handoff(tmp_path):
+    outcome = anchored(tmp_path, 'Fix the small total.py CLI. Do not delegate. No deploy, no push, no merge.')
+    manifest = review_export(tmp_path, outcome, sid='leader', raw_final=(
+        'Expected: CLI total 0. Observed before fix, RED: FAILED (failures=1). '
+        'Observed after fix, GREEN: focused tests passed; python3 total.py output 0 matched expected 0.'))
+    before = state(tmp_path)
+    error = cli(tmp_path, 'review', '--manifest', str(manifest), ok=False)
+    assert 'Keep genuine failures pending' in error
+    assert 'historical RED' in error and 'separate current expected/observed' in error
+    assert 'evidence must precede that assessment' in error and 'do not debug helper sources' in error
+    assert state(tmp_path) == before
+    # An ordinary new current assessment may close the same real evidence;
+    # the helper does not reinterpret history or require a certificate line.
+    target = json.loads(manifest.read_text())['target']
+    native_path = Path(target['source']['location'])
+    original = native_path.read_bytes()
+    current = {'timestamp': (datetime.now(timezone.utc) + timedelta(seconds=2)).isoformat(),
+               'type': 'response_item', 'payload': {'type': 'message', 'role': 'assistant', 'phase': 'commentary',
+               'content': [{'text': 'PASS. Current focused tests passed. python3 total.py expected 0; observed output 0 matched. Self-check only.'}]}}
+    native_path.write_bytes(original + (json.dumps(current) + '\n').encode())
+    Path(target['path']).write_bytes(native_path.read_bytes())
+    assert cli(tmp_path, 'review', '--manifest', str(manifest))['finish_verdict'] == 'complete'
+    assert native_path.read_bytes().startswith(original)
+
+
 @pytest.mark.parametrize('restriction', ['Без deploy, push, merge и внешних действий.', 'No deploy, push, or merge.', 'Without deploy/push/merge.'])
 def test_grouped_explicit_delivery_prohibitions_apply_to_each_named_operation(restriction):
     import lhc_outcome as outcomes
