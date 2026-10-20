@@ -402,7 +402,8 @@ def test_session_end_is_inactive_pending_not_a_manual_stop(tmp_path):
     invoke(tmp_path, 'UserPromptSubmit', prompt='Продолжай исходную задачу')
     invoke(tmp_path, 'Interrupt')
     invoke(tmp_path, 'Stop')
-    assert cli(tmp_path, 'status')['finish_verdict'] == 'human-stopped'
+    assert cli(tmp_path, 'status')['finish_verdict'] == 'blocked'
+    assert state(tmp_path)['native_entry']['finish_hold'] == 'Interrupt'
 
 
 def test_latest_direct_repair_correction_adds_deploy_and_target_without_resetting_clocks(tmp_path):
@@ -590,11 +591,16 @@ def test_foreign_ui_wip_does_not_rearm_owned_ui_task(tmp_path):
     assert 'foreign.css' not in state(tmp_path)['milestone']['surface']
 
 
-def test_research_assignment_can_close_from_actual_source_read(tmp_path):
+@pytest.mark.parametrize('goal', [
+    'Research the configured export encoding. Do not edit code.',
+    'RESEARCH ONLY: Research the configured export encoding and explain implementation/tests→deploy ordering. Do not edit code.',
+    '"RESEARCH ONLY: Research the configured export encoding and explain implementation/tests→deploy ordering. Do not edit code.\n"',
+])
+def test_research_assignment_can_close_from_actual_source_read(tmp_path, goal):
     subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
-    goal = 'Research the configured export encoding. Do not edit code.'
     (tmp_path / 'settings.txt').write_text('encoding=UTF-8\n')
     invoke(tmp_path, 'UserPromptSubmit', prompt=goal)
+    assert state(tmp_path)['business']['outcome']['original_goal'] == goal
     outcome = cli(tmp_path, 'contract', '--scenario', 'Read configured encoding', '--target', 'cat settings.txt', '--expected', 'UTF-8')
     assert outcome['task_class'] == 'research'
     assert invoke(tmp_path, 'Stop').get('decision') == 'block'
@@ -604,6 +610,13 @@ def test_research_assignment_can_close_from_actual_source_read(tmp_path):
     assert result['finish_verdict'] == 'complete'
     assert result['stages']['deploy']['status'] == 'not-applicable'
     assert invoke(tmp_path, 'Stop').get('decision') != 'block'
+
+
+def test_native_whole_prompt_quotes_do_not_hide_assignment_header():
+    import lhc_outcome as outcomes
+    raw = '"RESEARCH ONLY: Прочитай settings.txt и объясни implementation/tests→deploy→merge.\n"'
+    assert outcomes.classify(raw) == 'research'
+    assert outcomes.classify('"Implement support for the literal RESEARCH ONLY: label.\n"') == 'fullcycle'
 
 
 @pytest.mark.parametrize('goal,blocked', [('Hello, good evening!', False), ('Status of the current release?', False),
@@ -1062,6 +1075,9 @@ def test_project_alias_rejects_nested_namesake_instead_of_owned_root_cli(tmp_pat
 @pytest.mark.parametrize('goal',[
     'FEEDBACK.md has a broken example; fix it. Save results in FEEDBACK.md.',
     'FEEDBACK.md содержит ошибку: исправь её. Сохрани результат и наблюдения в FEEDBACK.md.',
+    'FEEDBACK.md содержит ошибку: исправь её. Сообщи результат пользователю, а также сохрани их в FEEDBACK.md.',
+    'Fix the product documentation. Сохрани их в FEEDBACK.md.',
+    'Исправь таблицы с результатами расчёта и сохрани их в FEEDBACK.md.',
 ])
 def test_explicit_feedback_product_keeps_its_revision_when_named_before_repair(tmp_path,goal):
     import lhc_outcome as outcomes
@@ -1070,6 +1086,40 @@ def test_explicit_feedback_product_keeps_its_revision_when_named_before_repair(t
     before=outcomes.scope_revision(outcome,tmp_path)
     (tmp_path/'FEEDBACK.md').write_text('Repaired product document')
     assert outcomes.scope_revision(outcome,tmp_path)!=before
+
+
+def test_requested_pronoun_feedback_append_does_not_reopen_verified_product(tmp_path):
+    import lhc_outcome as outcomes
+    goal=('Исправь потерю кириллицы в export.py. Проверь существующий регрессионный тест и настоящий запуск CLI: '
+          'нужны ровно две строки Ирина,Москва и Олег,Казань. После работы сообщи фактический результат и ограничения '
+          'пользователю, а также сохрани их в FEEDBACK.md. Работай только в этом каталоге. Не делегируй. '
+          'Без deploy, push, merge и внешних действий.')
+    outcome=anchored(tmp_path,goal);outcome['owned_paths']=['export.py','FEEDBACK.md']
+    (tmp_path/'export.py').write_text("print('Ирина,Москва\\nОлег,Казань')\n")
+    (tmp_path/'FEEDBACK.md').write_text('Actual CLI and regression match the expected output.\n')
+    before=outcomes.scope_revision(outcome,tmp_path)
+    with (tmp_path/'FEEDBACK.md').open('a') as report:report.write('Native self-check is now complete.\n')
+    assert outcomes.scope_revision(outcome,tmp_path)==before
+    (tmp_path/'export.py').write_text("print('wrong')\n")
+    assert outcomes.scope_revision(outcome,tmp_path)!=before
+
+
+def test_pronoun_report_append_keeps_native_self_close_through_session_end(tmp_path):
+    goal=('Fix the small total.py CLI and verify its actual output is 0. После работы сообщи фактический результат '
+          'и ограничения пользователю, а также сохрани их в FEEDBACK.md. Do not delegate. No deploy, no push, no merge.')
+    outcome=anchored(tmp_path,goal)
+    (tmp_path/'FEEDBACK.md').write_text('Actual CLI output 0 matches expected 0; existing regression passed.\n')
+    outcome=cli(tmp_path,'contract','--scenario',outcome['canary']['scenario'],'--target',outcome['canary']['target'],
+                '--expected',outcome['canary']['expected'],'--owned-path','total.py','--owned-path','FEEDBACK.md')
+    manifest=review_export(tmp_path,outcome,sid='leader',raw_final='PASS. Regression tests passed; python3 total.py output 0 matched expected 0. Self-check only.')
+    assert cli(tmp_path,'review','--manifest',str(manifest))['finish_verdict']=='complete'
+    with (tmp_path/'FEEDBACK.md').open('a') as report:report.write('Native self-check is now complete.\n')
+    invoke(tmp_path,'PostToolUse',tool_name='apply_patch',tool_input={'path':str(tmp_path/'FEEDBACK.md')},tool_response={'status':'success'})
+    invoke(tmp_path,'SessionEnd')
+    final=state(tmp_path)
+    assert final['business']['outcome']['finish_verdict']=='complete'
+    assert final['native_entry']['finish_hold']=='SessionEnd'
+    assert final['business']['outcome']['evidence_after']==outcome['evidence_after']
 
 
 def test_explicit_owned_nested_cli_works_without_rebinding_the_root_name(tmp_path):
@@ -1189,3 +1239,472 @@ def test_grouped_prohibition_allows_only_its_bounded_assignment_to_close(tmp_pat
     assert outcomes.verdict(outcome, state(tmp_path)) == 'complete'
     assert outcome['verification_level'] == 'self-check'
     assert all(outcome['stages'][s]['status'] == 'not-applicable' for s in ('deploy', 'publication', 'integration'))
+
+
+def test_explicit_research_only_assignment_does_not_execute_its_subject():
+    import lhc_outcome as outcomes
+    goal = ('Прочти AGENTS.md. RESEARCH ONLY: проверенные причины и минимальные рекомендации, не изменения кода. '
+            'Почему class quickfix/fullcycle/testing отсутствует. Minimal state/transitions+behavioral RED regressions '
+            'для user order implementation/tests→deploy→hands-on→push/PR→ownrepo merge. Записывай только evidence файл.')
+    assert outcomes.classify(goal) == 'research'
+    stages = outcomes.applicable(outcomes.classify(goal), goal)
+    assert stages['consumer']['status'] == 'pending'
+    assert all(stages[s]['status'] == 'not-applicable' for s in ('technical', 'deploy', 'publication', 'integration'))
+
+
+@pytest.mark.parametrize('goal', [
+    'Implement support for the literal "RESEARCH ONLY:" label in the CLI.',
+    'Implement support for the literal ". RESEARCH ONLY:" label in the CLI.',
+    'Fix total.py. Explain why a research only helper missed the defect.',
+    'Fix total.py. RESEARCH ONLY: Inspect the subsequent failure first.',
+])
+def test_research_words_inside_engineering_subject_do_not_remove_repair(goal):
+    import lhc_outcome as outcomes
+    assert outcomes.classify(goal) in outcomes.ENGINEERING
+
+
+def test_later_research_only_does_not_erase_existing_repair(tmp_path):
+    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
+    invoke(tmp_path, 'UserPromptSubmit', prompt='Fix the small total.py CLI.')
+    invoke(tmp_path, 'UserPromptSubmit', prompt='RESEARCH ONLY: Explain the failing test. Do not edit code.')
+    outcome = state(tmp_path)['business']['outcome']
+    assert outcome['task_class'] == 'quickfix'
+    assert outcome['stages']['technical']['status'] == outcome['stages']['consumer']['status'] == 'pending'
+
+
+def test_research_reminder_prioritizes_assigned_finding_before_close_bookkeeping(tmp_path):
+    import lhc_outcome as outcomes
+    goal = ('RESEARCH ONLY: Проверь кодировку в settings.txt и сохрани результат в FEEDBACK.md. '
+            'Не меняй исходник, не создавай тесты, ничего не деплой и не делегируй.')
+    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
+    (tmp_path/'settings.txt').write_text('encoding=UTF-8\n')
+    invoke(tmp_path, 'UserPromptSubmit', prompt=goal)
+    outcome = state(tmp_path)['business']['outcome']
+    notice = outcomes.reminder(outcome, tmp_path/'lhc_outcome.py')
+    assert 'finish actual tests/CLI' not in notice
+    assert notice.index('requested report') < notice.index('review --native-self')
+    assert 'helper implementation' in notice and '--help' in notice
+    assert 'self-check, not independent parent product acceptance' in notice
+    assert 'do not create, launch or resume reviewer/tester sessions' in notice
+    assert outcome['stages']['consumer']['status'] == 'pending'
+    assert all(outcome['stages'][s]['status'] == 'not-applicable'
+               for s in ('technical', 'deploy', 'publication', 'integration'))
+
+
+@pytest.mark.parametrize('absolute', [False, True])
+@pytest.mark.parametrize('relative', ['settings.txt', 'data/settings.txt', 'FEEDBACK.md'])
+def test_project_research_closes_from_direct_scope_named_source_read(tmp_path, absolute, relative):
+    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
+    source = tmp_path/relative; source.parent.mkdir(exist_ok=True)
+    source.write_text('encoding=UTF-8\n')
+    invoke(tmp_path, 'UserPromptSubmit', prompt=f'RESEARCH ONLY: Read {relative} and report the configured encoding. Do not delegate.')
+    outcome = cli(tmp_path, 'contract', '--scenario', 'Read configured encoding',
+                  '--target', 'project:' + str(tmp_path), '--expected', 'UTF-8')
+    command = 'cat ' + (str(source) if absolute else relative)
+    manifest = review_export(tmp_path, outcome, sid='leader', stage_names=('consumer',), command=command,
+                             raw_final=f'Expected {relative} UTF-8; observed encoding=UTF-8 from the actual source read. Self-check only.')
+    result = cli(tmp_path, 'review', '--manifest', str(manifest))
+    assert result['finish_verdict'] == 'complete'
+    assert result['verification_level'] == 'self-check'
+    assert result['stages']['consumer']['evidence'][0]['consumer_target'] == 'cat ' + str(source)
+
+
+@pytest.mark.parametrize('case', ['foreign-file', 'foreign-cwd', 'wrong-file', 'echo', 'compound', 'bare-stem', 'feedback-only'])
+def test_project_research_rejects_unassigned_or_nonread_sources(tmp_path, case):
+    import lhc_outcome_review as reviews
+    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
+    (tmp_path/'settings.txt').write_text('encoding=UTF-8\n')
+    (tmp_path/'other.txt').write_text('encoding=UTF-8\n')
+    (tmp_path/'FEEDBACK.md').write_text('Author report: encoding=UTF-8\n')
+    foreign = tmp_path/'foreign'; foreign.mkdir(); (foreign/'settings.txt').write_text('encoding=UTF-8\n')
+    goal = 'RESEARCH ONLY: Read settings.txt and save results in FEEDBACK.md.' if case != 'bare-stem' else 'RESEARCH ONLY: Inspect the settings CLI.'
+    invoke(tmp_path, 'UserPromptSubmit', prompt=goal)
+    outcome = state(tmp_path)['business']['outcome']
+    cmd = {'foreign-file': 'cat foreign/settings.txt', 'foreign-cwd': 'cat settings.txt',
+           'wrong-file': 'cat other.txt', 'echo': 'echo encoding=UTF-8',
+           'compound': 'cat settings.txt; echo complete', 'bare-stem': 'cat settings.txt',
+           'feedback-only': 'cat FEEDBACK.md'}[case]
+    call = {'name': 'exec_command', 'call_id': 'actual-read', 'arguments': json.dumps(
+        {'cmd': cmd, 'workdir': str(foreign if case == 'foreign-cwd' else tmp_path)})}
+    with pytest.raises(ValueError):
+        reviews.consumer_target(outcome, [(call, 'encoding=UTF-8\n')], tmp_path)
+
+
+def test_project_research_aliases_keep_one_source_and_reject_ambiguous_sources(tmp_path):
+    import copy
+    import lhc_outcome_review as reviews
+    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
+    invoke(tmp_path, 'UserPromptSubmit', prompt='RESEARCH ONLY: Read settings.txt and other.txt.')
+    outcome = state(tmp_path)['business']['outcome']; before = copy.deepcopy(outcome)
+    def observation(name):
+        return ({'name': 'exec_command', 'arguments': json.dumps({'cmd': 'cat ' + name})}, 'encoding=UTF-8\n')
+    aliases = [observation('settings.txt'), observation(str(tmp_path/'settings.txt'))]
+    assert reviews.consumer_target(outcome, aliases, tmp_path) == 'cat ' + str(tmp_path/'settings.txt')
+    assert outcome == before
+    with pytest.raises(ValueError):
+        reviews.consumer_target(outcome, aliases + [observation('other.txt')], tmp_path)
+    for kind in ('quickfix', 'testing', 'fullcycle'):
+        assert not reviews.real_observation(*aliases[0], 'cat settings.txt', 'consumer', kind, tmp_path)
+
+
+def test_research_assessment_keeps_finding_instead_of_later_close_metadata(tmp_path):
+    import lhc_outcome_review as reviews
+    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
+    invoke(tmp_path, 'UserPromptSubmit', prompt='RESEARCH ONLY: Read settings.txt.')
+    outcome = state(tmp_path)['business']['outcome']; outcome['canary']['expected'] = 'UTF-8'
+    observations = [({'name': 'exec_command', 'arguments': json.dumps({'cmd': 'cat settings.txt'})}, 'encoding=UTF-8\n')]
+    assert not reviews.own_assessment(outcome, 'The self-review was rejected: project target needs a native CLI. Making that direct reread now.', observations, tmp_path)
+    assert reviews.own_assessment(outcome, 'Expected settings.txt UTF-8; observed encoding=UTF-8 in the actual source.', observations, tmp_path)
+    assert reviews.own_assessment(outcome, 'FAILURE: a newer source read found a defect in settings.txt.', observations, tmp_path)
+
+
+@pytest.mark.parametrize('extra', ['', ' ; echo encoding=UTF-8', ' "$(echo encoding=UTF-8 >&2)"'])
+def test_research_shell_wrapper_cannot_hide_outer_compound_evidence(tmp_path, extra):
+    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
+    (tmp_path/'settings.txt').write_text('encoding=ISO-8859-1\n' if extra else 'encoding=UTF-8\n')
+    invoke(tmp_path, 'UserPromptSubmit', prompt='RESEARCH ONLY: Read settings.txt and report its configured encoding. Do not delegate.')
+    outcome = cli(tmp_path, 'contract', '--scenario', 'Read configured encoding', '--target', 'project:' + str(tmp_path), '--expected', 'UTF-8')
+    manifest = review_export(tmp_path, outcome, sid='leader', stage_names=('consumer',), command='cat settings.txt',
+        raw_final='Expected settings.txt UTF-8; observed encoding=UTF-8 from the actual source read. Self-check only.')
+    command = "bash -c 'cat settings.txt'" + extra
+    actual = subprocess.run(command, shell=True, cwd=tmp_path, capture_output=True, text=True, check=True)
+    # Unit native-format fixture only: exact original/export bytes and actual
+    # subprocess output, not a claim of live provider acceptance.
+    source = tmp_path/'native-home/.codex/sessions/leader.jsonl'
+    rows = [json.loads(line) for line in source.read_text().splitlines()]
+    for row in rows:
+        payload = row.get('payload', {})
+        if payload.get('type') == 'function_call':
+            payload['arguments'] = json.dumps({'cmd': command, 'workdir': str(tmp_path)})
+        if payload.get('type') == 'function_call_output':
+            payload['output'] = actual.stdout + actual.stderr
+    data = '\n'.join(json.dumps(row) for row in rows) + '\n'
+    source.write_text(data); (tmp_path/'leader-export.jsonl').write_text(data)
+    result = cli(tmp_path, 'review', '--manifest', str(manifest), ok=not extra)
+    if not extra:
+        assert result['finish_verdict'] == 'complete'
+    else:
+        assert state(tmp_path)['business']['outcome']['finish_verdict'] == 'pending'
+
+
+def test_quoted_research_prompt_does_not_leak_wrapper_into_expected_result(tmp_path):
+    import lhc_outcome_review as reviews
+    goal = ('RESEARCH ONLY: Проверь, какая кодировка экспорта задана в settings.txt. '
+            'Сохрани результат в FEEDBACK.md. Ничего не деплой и не делегируй.\n')
+    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
+    invoke(tmp_path, 'UserPromptSubmit', prompt='"' + goal + '"')
+    outcome = state(tmp_path)['business']['outcome']
+    expected = ', какая кодировка экспорта задана в settings.txt. Сохрани результат в FEEDBACK.md. Ничего не деплой и не делегируй.'
+    assert outcome['original_goal'] == '"' + goal + '"'
+    assert outcome['canary']['expected'] == expected
+    observations = [({'name': 'exec_command', 'arguments': json.dumps({'cmd': 'cat settings.txt'})}, 'encoding=UTF-8\n')]
+    assert reviews.own_assessment(outcome, f'Expected: {expected}\nObserved: settings.txt contains encoding=UTF-8.', observations, tmp_path)
+
+
+def test_empty_research_assessment_gives_bounded_visible_report_recovery(tmp_path):
+    import lhc_outcome_review as reviews
+    import lhc_outcome as outcomes
+    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
+    invoke(tmp_path, 'UserPromptSubmit', prompt='RESEARCH ONLY: Read settings.txt and save results in FEEDBACK.md. Do not delegate.')
+    outcome = state(tmp_path)['business']['outcome']
+    with pytest.raises(ValueError, match='visible assistant message'):
+        reviews.raw_review(outcome, '', [], tmp_path)
+    notice = outcomes.reminder(outcome, tmp_path/'lhc_outcome.py')
+    assert notice.index('confirm the concrete contract') < notice.index('verify the assigned source')
+    assert 'FEEDBACK alone' in notice and 'scratch scripts' in notice
+
+
+def test_unattributed_interrupt_does_not_claim_a_human_stop_or_resume(tmp_path):
+    anchored(tmp_path)
+    before = state(tmp_path)
+    invoke(tmp_path, 'Interrupt')
+    held = state(tmp_path)
+    assert held['business']['outcome']['finish_verdict'] == 'blocked'
+    assert held['native_entry']['finish_hold'] == 'Interrupt'
+    assert held['business']['interval']['status'] == 'paused'
+    result = invoke(tmp_path, 'Stop')
+    after = state(tmp_path)
+    assert result.get('decision') != 'block'  # No synthetic continuation while held.
+    assert after['native_entry']['finish_hold'] == 'Interrupt'
+    assert after['business']['outcome']['used_continuations'] == before['business']['outcome']['used_continuations']
+    assert after['business']['started_at'] == before['business']['started_at']
+    assert after['due_at'] == before['due_at']
+
+
+def semantic_research_fixture(tmp_path, expected_extra='', target_alias=None):
+    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
+    (tmp_path/'settings.txt').write_text('encoding=UTF-8\n')
+    invoke(tmp_path, 'UserPromptSubmit', prompt='RESEARCH ONLY: Read settings.txt, identify the export encoding and explain whether this file proves implementation/tests, deploy and merge. Save results in FEEDBACK.md. Do not delegate.')
+    source = tmp_path/'settings.txt'
+    target = str(source) if target_alias == 'absolute' else source.as_uri() if target_alias == 'file-uri' else 'settings.txt' if target_alias == 'relative' else 'project:' + str(tmp_path)
+    outcome = cli(tmp_path, 'contract', '--scenario', 'Read encoding and assess evidence limits',
+                  '--target', target, '--expected',
+                  'FEEDBACK.md quotes the actual export encoding and explains that settings alone cannot prove implementation/tests, deployment or merge completion' + expected_extra)
+    raw = ('FEEDBACK.md сохранён и прочитан обратно. Повторное чтение settings.txt подтвердило `encoding=UTF-8`, '
+           'контрольная сумма не изменилась. Результат соответствует поручению: кодировка установлена, '
+           'а завершение implementation/tests → deploy → merge этим файлом не подтверждается.')
+    manifest = review_export(tmp_path, outcome, sid='leader', stage_names=('consumer',), command='cat settings.txt', raw_final=raw)
+    source = tmp_path/'native-home/.codex/sessions/leader.jsonl'
+    rows = [json.loads(line) for line in source.read_text().splitlines()]
+    feedback = 'settings.txt contains encoding=UTF-8.\nThis file does not prove that implementation/tests → deploy → merge have completed.\n'
+    (tmp_path/'FEEDBACK.md').write_text(feedback)
+    actual_feedback = subprocess.check_output(['cat', 'FEEDBACK.md'], cwd=tmp_path, text=True)
+    stamp = rows[-1]['timestamp']
+    rows[-1:-1] = [{'type': 'response_item', 'timestamp': stamp, 'payload': {'type': 'function_call',
+                   'name': 'exec_command', 'call_id': 'call-feedback', 'arguments': json.dumps({'cmd': 'cat FEEDBACK.md'})}},
+                  {'type': 'response_item', 'timestamp': stamp, 'payload': {'type': 'function_call_output',
+                   'call_id': 'call-feedback', 'output': actual_feedback}}]
+    # Actual Codex session exists just before its prompt hook creates outcome.
+    # Assessment/calls/assignment remain current; do not freshen old calls.
+    rows[0]['payload']['timestamp'] = (datetime.fromisoformat(outcome['started_at']) - timedelta(seconds=2)).isoformat()
+    rows[-1]['payload']['phase'] = 'commentary'
+    write_semantic_source(tmp_path, rows)
+    return outcome, manifest, raw, rows
+
+
+def write_semantic_source(root, rows):
+    data = '\n'.join(json.dumps(row) for row in rows) + '\n'
+    (root/'native-home/.codex/sessions/leader.jsonl').write_text(data)
+    (root/'leader-export.jsonl').write_text(data)
+
+
+def test_current_research_raw_finding_is_not_stale_for_a_semantic_expected_result(tmp_path):
+    from lhc_outcome import digest
+    outcome, manifest, raw, rows = semantic_research_fixture(tmp_path)
+    before = state(tmp_path)
+    error = cli(tmp_path, 'review', '--manifest', str(manifest), ok=False)
+    assert '--comparison-quote' in error and 'stale reviewer' not in error
+    result = cli(tmp_path, 'review', '--manifest', str(manifest), '--comparison-quote', raw)
+    assert result['finish_verdict'] == 'complete'
+    assert result['verification_level'] == 'self-check'
+    assert result['comparison_binding']['quote'] == raw
+    assert result['comparison_binding']['original_index'] == len(rows) - 1
+    assert result['comparison_binding']['original_at'] == rows[-1]['timestamp']
+
+    claims = result['comparison_binding']['claims']
+    assert claims['canary_hash'] == digest({key: outcome['canary'][key] for key in ('scenario', 'target', 'expected')})
+    assert claims['source_calls'] == ['call-0'] and claims['report_calls'] == ['call-feedback']
+    after = state(tmp_path)
+    for key in ('started_at', 'evidence_after', 'original_goal', 'scenario', 'revision'):
+        assert result.get(key) == outcome.get(key)
+    assert after['due_at'] == before['due_at']
+    assert after['business']['started_at'] == before['business']['started_at']
+
+
+@pytest.mark.parametrize('fault', [
+    'before-feedback', 'no-feedback-read', 'wrong-feedback-file', 'wrong-source-file',
+    'wrong-cwd', 'echo', 'outer-compound', 'stale-source', 'source-after-report',
+    'wrong-feedback-value', 'missing-feedback-limits', 'positive-feedback-limits',
+    'non-original-quote', 'newer-negative', 'changed-product',
+])
+def test_research_semantic_binding_retains_native_claim_boundaries(tmp_path, fault):
+    outcome, manifest, raw, rows = semantic_research_fixture(tmp_path)
+    if fault == 'before-feedback':
+        raw = ('В settings.txt прочитано: encoding=UTF-8. Сохраню это в FEEDBACK.md. '
+               'Завершение implementation/tests → deploy → merge этим файлом не подтверждается.')
+        rows[-1]['payload']['content'][0]['text'] = raw
+        rows.insert(4, rows.pop())  # Source read exists, requested report not yet read.
+    elif fault == 'no-feedback-read':
+        del rows[4:6]
+    elif fault == 'wrong-feedback-file':
+        rows[4]['payload']['arguments'] = json.dumps({'cmd': 'cat other.md'})
+    elif fault == 'wrong-source-file':
+        rows[2]['payload']['arguments'] = json.dumps({'cmd': 'cat other.txt'})
+    elif fault == 'wrong-cwd':
+        rows[2]['payload']['arguments'] = json.dumps({'cmd': 'cat settings.txt', 'workdir': str(tmp_path/'foreign')})
+    elif fault == 'echo':
+        rows[2]['payload']['arguments'] = json.dumps({'cmd': 'echo encoding=UTF-8'})
+    elif fault == 'outer-compound':
+        rows[2]['payload']['arguments'] = json.dumps({'cmd': "bash -lc 'cat settings.txt'; echo encoding=UTF-8"})
+    elif fault == 'stale-source':
+        rows[2]['timestamp'] = (datetime.fromisoformat(outcome['evidence_after']) - timedelta(seconds=1)).isoformat()
+    elif fault == 'source-after-report':
+        rows = rows[:2] + rows[4:] + rows[2:4]
+    elif fault == 'wrong-feedback-value':
+        rows[5]['payload']['output'] = rows[5]['payload']['output'].replace('UTF-8', 'ASCII')
+    elif fault == 'missing-feedback-limits':
+        rows[5]['payload']['output'] = 'settings.txt contains encoding=UTF-8.'
+    elif fault == 'positive-feedback-limits':
+        rows[5]['payload']['output'] = 'settings.txt contains encoding=UTF-8. This proves implementation/tests → deploy → merge have completed.'
+    elif fault == 'non-original-quote':
+        raw += ' Added author claim.'
+    elif fault == 'newer-negative':
+        rows.append({'type': 'response_item', 'timestamp': rows[-1]['timestamp'], 'payload': {
+            'type': 'message', 'role': 'assistant', 'phase': 'commentary',
+            'content': [{'text': 'settings.txt has a defect: observed encoding is wrong. FEEDBACK.md needs correction.'}]}})
+    elif fault == 'changed-product':
+        (tmp_path/'settings.txt').write_text('encoding=ASCII\n')
+    write_semantic_source(tmp_path, rows)
+    before = state(tmp_path)
+    cli(tmp_path, 'review', '--manifest', str(manifest), '--comparison-quote', raw, ok=False)
+    assert state(tmp_path) == before
+
+
+def test_research_comparison_quote_never_closes_fullcycle_or_independent_parent(tmp_path):
+    _, manifest, raw, _ = semantic_research_fixture(tmp_path)
+    invoke(tmp_path, 'UserPromptSubmit', prompt='Implement the complete checkout and deploy it, then publish and merge the PR.')
+    before = state(tmp_path)
+    cli(tmp_path, 'review', '--manifest', str(manifest), '--comparison-quote', raw, ok=False)
+    assert state(tmp_path) == before
+
+
+def test_research_comparison_quote_does_not_alias_a_literal_expected_value(tmp_path, monkeypatch):
+    import lhc_outcome_review as reviews
+    outcome, manifest, raw, _ = semantic_research_fixture(tmp_path)
+    monkeypatch.setenv('CODEX_HOME', str(tmp_path/'native-home/.codex'))
+    _, _, calls = reviews.load_review(manifest)
+    outcome['canary']['expected'] += '; encoding must be ASCII'
+    assert reviews.research_comparison_binding(outcome, raw, calls, tmp_path, raw) is None
+
+
+def test_research_comparison_quote_cannot_claim_another_reviewers_independence(tmp_path, monkeypatch):
+    import lhc_outcome_review as reviews
+    outcome, manifest, raw, _ = semantic_research_fixture(tmp_path)
+    monkeypatch.setenv('CODEX_HOME', str(tmp_path/'native-home/.codex'))
+    before = json.loads(json.dumps(outcome))
+    with pytest.raises(ValueError, match='own bounded research'):
+        reviews.accept_review(outcome, state(tmp_path), manifest, tmp_path, 'another-owner', raw)
+    assert outcome == before
+
+
+@pytest.mark.parametrize('extra', ['; encoding must be KOI8-R', '; encoding must be Windows-1251',
+                                  '; also prove the exporter really consumes settings.txt'])
+def test_research_typed_binding_never_drops_an_extra_expected_predicate(tmp_path, extra):
+    _, manifest, raw, _ = semantic_research_fixture(tmp_path, expected_extra=extra)
+    before = state(tmp_path)
+    cli(tmp_path, 'review', '--manifest', str(manifest), '--comparison-quote', raw, ok=False)
+    assert state(tmp_path) == before
+
+
+@pytest.mark.parametrize('alias', ['absolute', 'relative', 'file-uri'])
+def test_research_explicit_source_path_matches_its_actual_cat_read(tmp_path, alias):
+    import lhc_outcome_review as reviews
+    outcome, manifest, raw, _ = semantic_research_fixture(tmp_path, target_alias=alias)
+    target = tmp_path/'settings.txt'
+    outcome['canary']['target'] = str(target) if alias == 'absolute' else 'settings.txt' if alias == 'relative' else target.as_uri()
+    call = {'name': 'exec_command', 'call_id': 'source', 'arguments': json.dumps({'cmd': 'cat settings.txt'})}
+    actual = [(call, subprocess.check_output(['cat','settings.txt'],cwd=tmp_path,text=True))]
+    assert reviews.consumer_target(outcome, actual, tmp_path) == 'cat ' + str(target)
+    assert reviews.source_finding_quote(outcome, raw, actual, tmp_path, raw)
+    result = cli(tmp_path, 'review', '--manifest', str(manifest), '--comparison-quote', raw)
+    assert result['finish_verdict'] == 'complete' and result['verification_level'] == 'self-check'
+    assert result['canary']['target'] == outcome['canary']['target']
+    assert result['evidence_after'] == outcome['evidence_after']
+
+
+@pytest.mark.parametrize('fault', ['foreign-target', 'report-output', 'echo', 'wrong-file', 'wrong-cwd'])
+def test_research_explicit_source_alias_retains_scope_and_operation(tmp_path, fault):
+    import lhc_outcome_review as reviews
+    outcome, _, raw, _ = semantic_research_fixture(tmp_path)
+    target = tmp_path/'settings.txt'
+    outcome['canary']['target'] = str(target)
+    args = {'cmd':'cat settings.txt'}
+    if fault == 'foreign-target':outcome['canary']['target'] = str(tmp_path.parent/'settings.txt')
+    elif fault == 'report-output':outcome['canary']['target'] = str(tmp_path/'FEEDBACK.md');args['cmd']='cat FEEDBACK.md'
+    elif fault == 'echo':args['cmd']='echo encoding=UTF-8'
+    elif fault == 'wrong-file':args['cmd']='cat other.txt'
+    elif fault == 'wrong-cwd':args['workdir']=str(tmp_path/'foreign')
+    calls=[({'name':'exec_command','call_id':'source','arguments':json.dumps(args)},'encoding=UTF-8\n')]
+    assert not reviews.source_finding_quote(outcome, raw, calls, tmp_path, raw)
+
+
+@pytest.mark.parametrize('binding', ['explicit', 'explicit-with-metadata', 'explicit-newer-negative', 'relative-target-cwd', 'implicit-cwd',
+    'relative-foreign-cwd', 'missing-native-target', 'neighbor-native-target', 'own-session'])
+def test_independent_research_review_can_read_exact_target_from_existing_session(tmp_path, binding):
+    _, _, _, _ = semantic_research_fixture(tmp_path)
+    outcome = cli(tmp_path, 'status')
+    # An existing reviewer may start in the canonical project and deliberately
+    # read this assignment's case via an explicit native tool workdir.
+    sid = 'leader' if binding == 'own-session' else 'reviewer'
+    expected = outcome['canary']['expected']
+    raw = ('Expected: ' + expected + '. Observed: cat settings.txt returned encoding=UTF-8; '
+           'FEEDBACK.md records that value and states that it cannot establish implementation/tests → deploy → merge completion. '
+           'No defects found in the assigned source finding and report.')
+    manifest = review_export(tmp_path, outcome, sid=sid, stage_names=('consumer',),
+                             command='cat settings.txt', consumer_workdir=tmp_path, raw_final=raw)
+    data=json.loads(manifest.read_text()); source=Path(data['target']['source']['location'])
+    rows=[json.loads(line) for line in source.read_text().splitlines()]
+    feedback=subprocess.check_output(['cat','FEEDBACK.md'],cwd=tmp_path,text=True)
+    stamp=rows[-1]['timestamp']
+    rows[-1:-1]=[{'type':'response_item','timestamp':stamp,'payload':{'type':'function_call',
+        'name':'exec_command','call_id':'reviewer-feedback','arguments':json.dumps({'cmd':'cat FEEDBACK.md','workdir':str(tmp_path)})}},
+        {'type':'response_item','timestamp':stamp,'payload':{'type':'function_call_output','call_id':'reviewer-feedback','output':feedback}}]
+    rows[0]['payload']['cwd']=str(tmp_path.parent)
+    if binding != 'missing-native-target':
+        declared=str(tmp_path)+('-other' if binding=='neighbor-native-target' else '')
+        rows[1]['payload']['content'][0]['text'] += '\nTarget CWD: '+declared
+    if binding == 'implicit-cwd':
+        args=json.loads(rows[2]['payload']['arguments']);args.pop('workdir');rows[2]['payload']['arguments']=json.dumps(args)
+    elif binding in {'relative-target-cwd','relative-foreign-cwd'}:
+        args=json.loads(rows[2]['payload']['arguments']);args['workdir']=tmp_path.name if binding=='relative-target-cwd' else '.';rows[2]['payload']['arguments']=json.dumps(args)
+    assessment_index=len(rows)-1
+    assessment_at=rows[-1]['timestamp']
+    if binding in {'explicit-with-metadata','explicit-newer-negative'}:
+        note='Source guard tests passed; metadata check complete.' if binding=='explicit-with-metadata' else 'settings.txt failed the requested comparison; report incomplete.'
+        rows.append({'type':'response_item','timestamp':(datetime.fromisoformat(assessment_at)+timedelta(seconds=1)).isoformat(),
+                     'payload':{'type':'message','role':'assistant','phase':'final','content':[{'text':note}]}})
+    raw_source='\n'.join(json.dumps(row) for row in rows)+'\n'
+    source.write_text(raw_source);Path(data['target']['path']).write_text(raw_source)
+    before=state(tmp_path)
+    valid=binding in {'explicit','explicit-with-metadata','relative-target-cwd'}
+    result=cli(tmp_path,'review','--manifest',str(manifest),ok=valid)
+    if valid:
+        assert result['finish_verdict']=='complete' and result['verification_level']=='independent-review'
+        assert result['canary']=={**outcome['canary'],'status':'complete'}
+        assert result['review_assessment']=={'reviewer':sid,'index':assessment_index,'at':assessment_at}
+    else:
+        assert state(tmp_path)==before
+
+
+def large_native_reviewer_fixture(root):
+    outcome, _, _, _ = semantic_research_fixture(root)
+    final='Expected: '+outcome['canary']['expected']+'. Observed: cat settings.txt returned encoding=UTF-8; FEEDBACK.md quotes it and does not establish implementation/tests → deploy → merge completion. No defects found.'
+    manifest=review_export(root,outcome,sid='reviewer',stage_names=('consumer',),command='cat settings.txt',consumer_workdir=root,raw_final=final)
+    data=json.loads(manifest.read_text());source=Path(data['target']['source']['location'])
+    rows=[json.loads(line) for line in source.read_text().splitlines()]
+    rows[0]['payload']['cwd']=str(root.parent)
+    rows[1]['payload']['content'][0]['text']+='\nTarget CWD: '+str(root)
+    padding=[{'type':'event_msg','payload':{'type':'opaque_test_padding','data':'x'*(1024*1024)}} for _ in range(9)]
+    rows=rows[:1]+padding+[{'type':'turn_context','payload':{'model':'gpt-6.1-sol','cwd':str(root.parent)}}]+rows[1:]
+    raw='\n'.join(json.dumps(row) for row in rows)+'\n';source.write_text(raw);Path(data['target']['path']).write_text(raw)
+    return outcome,manifest,source,rows
+
+
+def test_existing_large_native_reviewer_closes_without_new_session_or_rewritten_report(tmp_path):
+    import hashlib
+    outcome,manifest,source,rows=large_native_reviewer_fixture(tmp_path)
+    original=hashlib.sha256(source.read_bytes()).hexdigest()
+    assert 'bounded native window' in cli(tmp_path,'review','--manifest',str(manifest),ok=False)
+    result=cli(tmp_path,'review','--native-reviewer','reviewer')
+    assert result['finish_verdict']=='complete' and result['verification_level']=='independent-review'
+    assert result['review_assessment']=={'reviewer':'reviewer','index':len(rows)-1,'at':rows[-1]['timestamp']}
+    assert result['canary']=={**outcome['canary'],'status':'complete'}
+    assert result['evidence_after']==outcome['evidence_after']
+    assert hashlib.sha256(source.read_bytes()).hexdigest()==original
+    snapshot=next((tmp_path/'.tmp/lhc-native-review').glob('*.jsonl'))
+    assert snapshot.stat().st_size<8192 and source.stat().st_size>8*1024*1024
+
+
+@pytest.mark.parametrize('fault',['raw-tamper','line-index','non-boundary','later-negative','oversized-window','foreign-native-location'])
+def test_native_reviewer_window_retains_exact_source_and_later_negatives(tmp_path,monkeypatch,fault):
+    import lhc_outcome_review as reviews
+    outcome,_,source,rows=large_native_reviewer_fixture(tmp_path)
+    monkeypatch.setenv('CODEX_HOME',str(tmp_path/'native-home/.codex'))
+    manifest=reviews.native_reviewer_manifest(outcome,tmp_path,'reviewer');data=json.loads(manifest.read_text())
+    snapshot=Path(data['target']['path'])
+    if fault=='raw-tamper':snapshot.write_bytes(snapshot.read_bytes().replace(b'encoding=UTF-8',b'encoding=ASCII'))
+    elif fault=='line-index':data['target']['source']['start_line']+=1
+    elif fault=='non-boundary':data['target']['source']['start_byte']+=1
+    elif fault=='oversized-window':
+        with source.open('rb') as f:header=f.readline()
+        data['target']['source'].update(start_byte=len(header),start_line=1)
+    elif fault=='foreign-native-location':data['target']['source']['location']=str(tmp_path/'not-native.jsonl')
+    elif fault=='later-negative':
+        row={'type':'response_item','timestamp':rows[-1]['timestamp'],'payload':{'type':'message','role':'assistant','phase':'final',
+             'content':[{'text':'settings.txt failed the requested comparison; FEEDBACK.md incomplete.'}]}}
+        with source.open('a') as f:f.write(json.dumps(row)+'\n')
+    manifest.write_text(json.dumps(data))
+    before=state(tmp_path)
+    cli(tmp_path,'review','--manifest',str(manifest),ok=False)
+    if fault=='later-negative':cli(tmp_path,'review','--native-reviewer','reviewer',ok=False)
+    assert state(tmp_path)==before

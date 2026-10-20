@@ -51,8 +51,22 @@ def positive_intent(goal):
     return re.sub(r"\b(?:do not|don't|never|no code changes)[^.?!\n]*|не (?:меняй|редактируй|создавай|деплой|исправляй)[^.?!\n]*", '', goal, flags=re.I)
 
 
+def semantic_scope(goal):
+    # OpenCode's native prompt event may enclose the whole text in quotes.
+    # Interpret one such envelope without rewriting stored raw user input.
+    scope = goal.strip()
+    if scope.startswith('"') and scope.endswith('"'):
+        scope = scope[1:-1]
+    return scope.strip()
+
+
 def classify(goal):
-    intent = positive_intent(goal)
+    intent = positive_intent(semantic_scope(goal))
+    # Explicit assignment header scopes the work; engineering terms below it
+    # can describe the subject being reviewed, rather than authorize execution.
+    header = re.search(r'(?:^|[.!?\n])\s*RESEARCH\s+ONLY\s*:', intent, re.I)
+    if header and not REPAIR.search(intent[:header.start()]):
+        return 'research'
     if REPAIR.search(intent):
         broad = re.search(r'\b(?:full|entire|complete|all)\b|весь|целиком|полностью', intent, re.I)
         small = re.search(r'\b(?:fix|repair|small|minor|typo)\b|исправ|почин|мелк|опечат', intent, re.I)
@@ -101,7 +115,11 @@ def product_paths(outcome, cwd):
         # Every occurrence must be an observation-output directive. An earlier
         # product mention or ambiguous role conservatively retains the hash.
         prefix = re.split(r'[;!?\n]|\.(?=\s|$)', scope[:mention.start()])[-1]
-        report &= bool(re.search(r'(?:сохран\w*|запиш\w*|save|record|keep)\s+[^.?!\n]{0,180}(?:результат|отзыв|наблюден|feedback|observations|results)[^.?!\n]{0,180}$', prefix, re.I))
+        output = re.search(r'(?:сохран\w*|запиш\w*|save|record|keep)\s+[^.?!\n]{0,180}(?:результат|отзыв|наблюден|feedback|observations|results)[^.?!\n]{0,180}$', prefix, re.I)
+        # The report can refer back to the explicitly named results: the real
+        # request says "сообщи фактический результат ... сохрани их в FEEDBACK.md".
+        output = output or re.search(r'\bсообщи\s+фактический\s+результат\s+и\s+ограничения\s+пользователю,\s+а\s+также\s+сохрани\s+их\s+в\s*$', prefix, re.I)
+        report &= bool(output)
     # The explicitly requested observation report is evidence, not a new code
     # revision. Keep ownership, but writing feedback must not invalidate the
     # very native observations it records. A product edit retains its barrier.
@@ -145,8 +163,7 @@ def main_permission(source, quote, repository, branch):
 def verdict(outcome, state):
     if outcome['task_class'] == 'status':
         return 'complete'
-    if state.get('native_entry', {}).get('finish_hold') == 'Interrupt':
-        return 'human-stopped'
+    # Interrupt preserves the stop hold; it does not identify who stopped it.
     if state.get('native_entry', {}).get('finish_hold') not in {None, 'SessionEnd'}:
         return 'blocked'
     if outcome.get('question', {}).get('phase') not in {None, 'answered'}:
@@ -187,7 +204,7 @@ def observe(state, event, name, cwd, session, now):
     if not outcome and goal:
         kind = classify(goal)
         target = next(iter(native.URL.findall(goal)), 'project:' + str(cwd))
-        expected = re.split(r'\b(?:verify|expected|check that)\b|проверь|ожидаем', goal, maxsplit=1, flags=re.I)[-1].strip()
+        expected = re.split(r'\b(?:verify|expected|check that)\b|проверь|ожидаем', semantic_scope(goal), maxsplit=1, flags=re.I)[-1].strip()
         outcome = business['outcome'] = {
             'id': digest([session, goal]), 'owner': {'harness': business.get('runtime'), 'session_id': session},
             'original_goal': goal, 'latest_correction': goal, 'task_class': kind,
@@ -295,7 +312,14 @@ def observe_job_progress(outcome, business, event, cwd):
 
 
 def reminder(outcome, tool):
-    review_route = ('Own bounded assignment: finish actual tests/CLI or assigned coverage and native transcript self-check '
+    review_route = ('Research leaf: confirm the concrete contract before evidence; then verify the assigned source and deliver the requested report '
+                    'and raw expected/observed commentary before close bookkeeping. Use the documented review --native-self route; '
+                    'level self-check, not independent parent product acceptance. '
+                    "Use each command's --help; no helper implementation research unless assigned. "
+                    'FEEDBACK alone is not a visible assistant assessment. Respect no-code limits: no scratch scripts. '
+                    'On rejection, one supported reread or pending exact-error handoff; no helper debugging or session-storage inspection. '
+                    if outcome['task_class'] == 'research' else
+                    'Own bounded assignment: finish actual tests/CLI or assigned coverage and native transcript self-check '
                     '(review --native-self; Herder export_transcript → review --manifest also available). '
                     'First write raw expected/observed as a separate commentary message and preserve FEEDBACK; '
                     'level self-check, not independent parent product acceptance. '
@@ -472,6 +496,8 @@ def main():
     route = review.add_mutually_exclusive_group(required=True)
     route.add_argument('--manifest', type=Path)
     route.add_argument('--native-self', action='store_true', help='read this own native Codex/OpenCode source without depending on Herder export CWD')
+    route.add_argument('--native-reviewer', metavar='CODEX_SESSION_ID', help='read an existing independent Codex research reviewer via a byte-verified native assignment window; never create/resume it')
+    review.add_argument('--comparison-quote', help='bind an unchanged own research source-finding passage to the confirmed expectation; source filename/readback required, self-check only')
     question = sub.add_parser('question')
     question.add_argument('--message', required=True)
     sub.add_parser('status')
@@ -552,9 +578,10 @@ def main():
                         stage['status'] = 'pending'
             outcome['revision'] = scope_revision(outcome, cwd)
         elif args.command == 'review':
-            from lhc_outcome_review import accept_review, native_self_manifest
-            manifest = native_self_manifest(outcome, cwd, args.runtime, args.session_id) if args.native_self else args.manifest
-            accept_review(outcome, state, manifest, cwd, args.session_id)
+            from lhc_outcome_review import accept_review, native_self_manifest, native_reviewer_manifest
+            manifest = (native_self_manifest(outcome, cwd, args.runtime, args.session_id) if args.native_self else
+                        native_reviewer_manifest(outcome, cwd, args.native_reviewer) if args.native_reviewer else args.manifest)
+            accept_review(outcome, state, manifest, cwd, args.session_id, args.comparison_quote)
         elif args.command == 'question':
             result = question_plan(outcome, args.message)
         outcome['finish_verdict'] = verdict(outcome, state)

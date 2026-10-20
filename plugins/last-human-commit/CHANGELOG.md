@@ -1,3 +1,17 @@
+# 1.5.2 — bounded research and planning scope
+
+An explicit sentence-level RESEARCH ONLY assignment header takes precedence over
+engineering terms in its subject. Later research does not erase an existing repair.
+One whole-prompt native quote envelope is interpreted without rewriting raw input.
+Automatic context clarifies describe-only behavior when execution/tools are forbidden.
+OpenCode reapplies canonical operating instructions to each rebuilt model context.
+Research reminders prioritize the assigned finding/report over close-helper investigation.
+Research project canaries bind a direct cat read to one explicitly named in-project source file.
+Planning-only replies explicitly retain the research/council sequence.
+Outer compound commands are rejected before unwrapping a known simple shell command.
+Permission, lifecycle and human-stop gates remain; native source evidence is required. Native planning route
+selection and global activation remain separate acceptance claims.
+
 # 1.5.1 — grouped delivery prohibitions
 
 A direct operation list such as "No deploy, push, or merge" excludes each named

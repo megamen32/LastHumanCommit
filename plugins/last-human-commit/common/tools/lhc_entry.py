@@ -32,7 +32,9 @@ def context_for(event, root):
         "One delivery owner: gates→permitted test/demo deploy→consumer→independent milestone acceptance. "
         "Lead delegates: small=one bounded Worker+Lead review. No-delegation leaf=native self-check, no reviewer hiring. "
         "Large fullcycle MUST: bounded independent research Workers→working→ideal→YAGNI→quota-aware frontier council→bounded dispatch. "
-        "If sessions forbidden, plan that route; quickfix/testing/leaf excluded. "
+        "In planning-only answers, state this research/council route explicitly; generic review does not replace council. "
+        "If execution/tools forbidden, describe that route without inspection/tools/recruitment. User limits override workflow. "
+        "Quickfix/testing/leaf excluded; sessions forbidden means plan, not recruit. "
         "Decision/receipt≠execution/delivery; partial stays pending. Saved prompts=context, not permission; obey harness, HumanStop/revocation. "
         "Surface failure does not block independent work. Repeated unchanged status→action. Keep native job IDs; never duplicate/cancel live builds. "
         "Check actual code/environment delta; receipt SHA/name/JSON correction uses Git/CI, no new review. Tests≠consumer result. "
@@ -178,6 +180,10 @@ def handle(event, name, runtime, root):
         if bootstrap:
             contexts.extend((context_for(event, root), rehydrate(state, path)))
             delivery.update(loaded=signature, version=version, root=str(root), rehydrate_needed=False)
+        elif runtime == 'opencode' and event.get('model_boundary'):
+            # V2 rebuilds system parts for every model request; loaded state
+            # does not carry operating instructions into the next request.
+            contexts.append(context_for(event, root))
         outcome_notice = outcomes.reminder(outcome, method_root(root)/'tools/lhc_outcome.py') if outcome and outcome['finish_verdict'] != 'complete' else ''
         if outcome_notice and (bootstrap or event.get('model_boundary')):
             contexts.append(outcome_notice)

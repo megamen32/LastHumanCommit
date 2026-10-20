@@ -10,6 +10,40 @@ deploy or another tester. Research needs its verified finding, status only its
 answer. A later read-only/status question never cancels earlier repair obligations.
 Only an explicit direct replacement changes scope; preserve its source/lineage.
 
+For a research `project:<cwd>` canary, the source floor supports one direct `cat`
+read of a file explicitly named in the accepted scope. Relative and absolute forms
+resolve to the same source without changing clocks or evidence freshness. Foreign
+cwd/files, bare stems, ambiguous files, echo and compound commands do not qualify.
+An unsupported read format may use one actual direct reread; research does not
+need Python execution, tests or delivery merely to close its finding.
+The requested FEEDBACK output is not that source; an explicitly researched
+FEEDBACK product document remains eligible. Later helper progress is not a new
+assessment: preserve the actual finding's original time and evidence window.
+For the bounded encoding finding, requested FEEDBACK readback and explicit limits
+on proving implementation/tests → deploy → merge, an own research report may use
+`review --native-self --comparison-quote '<unchanged passage>'`. This narrow typed
+mapping requires the original report to name the source, actual encoding and
+negative proof limits; current native source and FEEDBACK reads must precede it.
+The original canary hash, report index/time and call references are recorded.
+This is self-check, never independent parent acceptance or a general translation
+parser. Source/revision gates remain; a newer negative finding cannot be skipped.
+Unsupported or additional expected predicates stay pending; no charset blacklist
+or repeated unchanged read can replace their actual comparison.
+Use the existing independent reviewer for unsupported prose: its native assignment
+must identify this outcome, original scope and exact case directory as
+`Target CWD: <absolute path>` (line or semicolon-delimited field). A reviewer
+starting in the canonical project may use explicit native tool workdirs to read
+the case. Omitted or relative workdirs resolve against its actual native cwd,
+never the target cwd; neighboring/ambiguous directory declarations do not match.
+This is independent review of the bounded finding, not parent product acceptance
+or permission to resume a held session.
+For an existing Codex research reviewer whose full native journal exceeds the
+bounded reader, use `review --native-reviewer CODEX_SESSION_ID`. This reads the
+original native header and contiguous current-assignment tail through actual EOF;
+the same size cap, source identity, original line indexes/times and later negative
+findings still apply. It never creates/resumes a session or rewrites its assessment.
+If the journal advances, refresh the snapshot, not the report or evidence clocks.
+
 The existing native entry stores `business.outcome` in the existing learning JSON.
 It survives compaction and keeps original/latest corrections, owner and clocks.
 Before work, concretize the automatically captured contract (not a mode interview):

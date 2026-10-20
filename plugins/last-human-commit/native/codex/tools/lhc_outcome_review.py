@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 from urllib.parse import unquote, urlsplit
 
 import lhc_milestone as native
-from lhc_outcome import ENGINEERING, STAGES, scope_revision, remote_binding
+from lhc_outcome import ENGINEERING, STAGES, scope_revision, remote_binding, product_paths, digest
 
 MARKER = 'LHC_OUTCOME_REVIEW '
 
@@ -86,6 +86,80 @@ def native_self_manifest(outcome, cwd, runtime, owner):
     return manifest
 
 
+def codex_window(source):
+    """Verify a bounded, contiguous native tail; retain physical source indexes."""
+    location = Path(source['location'])
+    start, end, first = (source.get(key) for key in ('start_byte', 'end_byte', 'start_line'))
+    if any(type(value) is not int for value in (start, end, first)) or not 0 < start < end:
+        raise ValueError('invalid native source window')
+    with location.open('rb') as stream:
+        header = stream.readline(native.MAX_BYTES + 1)
+        if len(header) + end - start > native.MAX_BYTES or end != os.fstat(stream.fileno()).st_size:
+            raise ValueError('native window oversized or source advanced; refresh its snapshot, not its assessment')
+        stream.seek(start - 1)
+        if stream.read(1) != b'\n' or start < len(header):
+            raise ValueError('native window must begin on an original line boundary')
+        stream.seek(0); remaining, lines = start, 0
+        while remaining:
+            chunk = stream.read(min(remaining, 65536))
+            if not chunk:
+                raise ValueError('native source changed during snapshot')
+            lines += chunk.count(b'\n'); remaining -= len(chunk)
+        if lines != first:
+            raise ValueError('native original line index mismatch')
+        body = stream.read(end - start)
+        if not body.endswith(b'\n') or end != location.stat().st_size:
+            raise ValueError('native source is incomplete/advanced; preserve pending')
+    indexes = [0] + [first + i for i, line in enumerate(body.splitlines()) if line.strip()]
+    return header + body, indexes
+
+
+def native_reviewer_manifest(outcome, cwd, reviewer):
+    """Read one EXISTING Codex reviewer; never create, resume or impersonate it."""
+    if outcome['task_class'] != 'research' or reviewer == outcome['owner']['session_id']:
+        raise ValueError('native reviewer route is independent bounded research only')
+    home = Path(os.environ.get('CODEX_HOME') or Path.home() / '.codex')
+    candidates = list((home / 'sessions').rglob('*' + reviewer + '*.jsonl'))
+    if len(candidates) != 1:
+        raise ValueError('existing native reviewer unavailable/ambiguous')
+    location = candidates[0].resolve(); start = None; context = None
+    with location.open('rb') as stream:
+        header = stream.readline(native.MAX_BYTES + 1)
+        if json.loads(header).get('payload', {}).get('id') != reviewer:
+            raise ValueError('native reviewer identity mismatch')
+        index = 1
+        while True:
+            offset = stream.tell(); line = stream.readline(native.MAX_BYTES + 1)
+            if not line:
+                end = offset; break
+            if len(line) > native.MAX_BYTES or not line.endswith(b'\n'):
+                raise ValueError('native reviewer has an oversized/incomplete record')
+            row = json.loads(line); payload = row.get('payload', {})
+            if row.get('type') == 'turn_context':
+                context = (offset, index)
+            if row.get('type') == 'response_item' and payload.get('role') == 'user':
+                text = native.content(payload.get('content'))
+                if outcome['id'] in text and outcome['original_goal'] in text:
+                    start = context or (offset, index)
+            index += 1
+    if not start:
+        raise ValueError('existing reviewer has no native assignment for this outcome')
+    source = {'kind': 'native-file-window', 'location': str(location),
+              'start_byte': start[0], 'end_byte': end, 'start_line': start[1]}
+    raw, _ = codex_window(source)
+    archive = cwd / '.tmp/lhc-native-review'; archive.mkdir(parents=True, exist_ok=True, mode=0o700)
+    stem = 'codex-' + reviewer + '-' + digest(source)
+    snapshot = archive / (stem + '.jsonl')
+    if snapshot.exists() and snapshot.read_bytes() != raw:
+        raise ValueError('native snapshot changed; never overwrite original evidence')
+    snapshot.write_bytes(raw); snapshot.chmod(0o600)
+    manifest = archive / (stem + '.manifest.json')
+    manifest.write_text(json.dumps({'format': 'agent-herder-transcript-manifest-v1', 'exporter': 'existing-native-review-route',
+        'target': {'path': str(snapshot), 'harness': 'codex', 'sessionId': reviewer, 'complete': True, 'source': source}}))
+    manifest.chmod(0o600)
+    return manifest
+
+
 def load_review(path):
     manifest = json.loads(native.read(path))
     if manifest.get('format') != 'agent-herder-transcript-manifest-v1':
@@ -95,14 +169,20 @@ def load_review(path):
     if target.get('harness') == 'codex' and target.get('complete'):
         location = Path(target['source']['location']).resolve()
         location.relative_to((Path(os.environ.get('CODEX_HOME') or Path.home() / '.codex') / 'sessions').resolve())
-        if target['source'].get('kind') != 'native-file' or not native.read(location).startswith(raw):
+        indexes = None
+        if target['source'].get('kind') == 'native-file-window':
+            actual, indexes = codex_window(target['source'])
+            if actual != raw:
+                raise ValueError('review window differs from original native bytes')
+        elif target['source'].get('kind') != 'native-file' or not native.read(location).startswith(raw):
             raise ValueError('review export differs from native source')
         result = native.native_transcript(raw)
         rows = [json.loads(line) for line in raw.decode().splitlines() if line.strip()]
+        indexes = indexes if indexes is not None else list(range(len(rows)))
         result[0]['model'] = list(dict.fromkeys(row['payload']['model'] for row in rows
                                                if row.get('type') == 'turn_context' and row.get('payload', {}).get('model')))
         assignments, call_meta = [], {}
-        for index, row in enumerate(rows):
+        for index, row in zip(indexes, rows):
             p = row.get('payload', {})
             if row.get('type') == 'response_item' and p.get('role') == 'user':
                 assignments.append({'index': index, 'at': row.get('timestamp'), 'text': native.content(p.get('content'))})
@@ -113,9 +193,9 @@ def load_review(path):
                 call_meta.setdefault(item.get('id'), (index, row.get('timestamp')))
         result[0]['assignments'] = assignments
         result[0]['own_reports'] = [{'index': i, 'at': row.get('timestamp'), 'text': native.content(row['payload'].get('content'))}
-                                    for i, row in enumerate(rows) if row.get('payload', {}).get('role') == 'assistant'
+                                    for i, row in zip(indexes, rows) if row.get('payload', {}).get('role') == 'assistant'
                                     and native.content(row['payload'].get('content'))]
-        result[0]['review_end_index'] = max((i for i, row in enumerate(rows) if row.get('payload', {}).get('role') == 'assistant'
+        result[0]['review_end_index'] = max((i for i, row in zip(indexes, rows) if row.get('payload', {}).get('role') == 'assistant'
                                             and row['payload'].get('phase') != 'commentary'), default=-1)
         for call, _ in result[2]:
             call['_source_index'], call['_source_time'] = call_meta.get(call.get('call_id'), (None, None))
@@ -177,7 +257,7 @@ def load_review(path):
     return result
 
 
-def command(call):
+def command(call, allow_source_read=False):
     args = call.get('arguments') or call.get('input') or '{}'
     try:
         args = json.loads(args) if isinstance(args, str) else args
@@ -186,19 +266,22 @@ def command(call):
     text = str(args.get('cmd') or args.get('command') or args.get('url') or '')
     try:
         words = shlex.split(text)
-        if words and Path(words[0]).name in {'bash', 'sh', 'zsh'}:
-            index = next((i for i, w in enumerate(words) if w in {'-c', '-lc'}), None)
-            return command(dict(arguments=json.dumps({'cmd': words[index + 1]}))) if index is not None else ('', [])
         lexer = shlex.shlex(text, posix=True, punctuation_chars=';&|<>')
         lexer.whitespace_split = True
         if any(token and set(token) <= set(';&|<>') for token in lexer):
             return '', []
+        if words and Path(words[0]).name in {'bash', 'sh', 'zsh'}:
+            if len(words) != 3 or words[1] not in {'-c', '-lc'}:
+                return '', []
+            if allow_source_read and words[0] not in {'bash', 'sh', 'zsh', '/bin/bash', '/bin/sh', '/bin/zsh', '/usr/bin/bash', '/usr/bin/sh', '/usr/bin/zsh'}:
+                return '', []
+            return command(dict(arguments=json.dumps({'cmd': words[2]})), allow_source_read)
     except (ValueError, IndexError):
         return '', []
     # Quoted commands, echo+receipt and compound shell output are not real
     # consumer observations. Unknown tool formats need review of a supported
     # native source, never an invented receipt.
-    if words and Path(words[0]).name in {'echo', 'printf', 'cat', 'pwd', 'ls', 'rg', 'grep', 'true'}:
+    if words and Path(words[0]).name in {'echo', 'printf', 'cat', 'pwd', 'ls', 'rg', 'grep', 'true'} and not (allow_source_read and words[0] in {'cat', '/bin/cat', '/usr/bin/cat'}):
         return '', []
     if any(w in {';', '&&', '||', '|'} for w in words):
         return '', []
@@ -245,13 +328,13 @@ def cli_matches(words, target, cwd):
     return bool(wanted and actual[:len(wanted)] == wanted)
 
 
-def scope_names_script(scope, script, cwd):
+def scope_names_script(scope, script, cwd, allow_stem=True):
     # A basename in the goal means the root script, not a nested namesake.
     names = [str(script), script.as_uri()]
     if script.is_relative_to(cwd):
         relative = script.relative_to(cwd).as_posix()
         names += [relative, './' + relative]
-        if script.parent == cwd and re.search(r'\bCLI\b|command.line|командн.{0,15}строк|скрипт', scope, re.I):
+        if allow_stem and script.parent == cwd and re.search(r'\bCLI\b|command.line|командн.{0,15}строк|скрипт', scope, re.I):
             names.append(script.stem)
     return bool(re.search(r'(?<![\w./-])(?:' + '|'.join(re.escape(n) for n in names) + r')(?![\w-]|\.[\w/-])', scope, re.I))
 
@@ -279,16 +362,39 @@ def equivalent_target(old, new, cwd, scope):
     return bool(target_identity(old, cwd) and target_identity(old, cwd) == target_identity(new, cwd))
 
 
+def source_read_path(words, cwd):
+    if len(words) == 2 and words[0] in {'cat', '/bin/cat', '/usr/bin/cat'} and not words[1].startswith('-'):
+        return (cwd / words[1]).resolve()
+    return None
+
+
 def consumer_target(outcome, observations, cwd):
     target = outcome['canary']['target']
     if not target.startswith('project:'):
+        if outcome['task_class'] == 'research' and len(shlex.split(target)) == 1:
+            source = (cwd / local_native_path(shlex.split(target)[0])).resolve()
+            scope = '\n'.join([outcome['original_goal'], *outcome.get('corrections', [])])
+            if (source.is_relative_to(cwd) and source.is_file()
+                    and scope_names_script(scope, source, cwd, allow_stem=False)
+                    and product_paths({**outcome, 'owned_paths': [source.relative_to(cwd).as_posix()]}, cwd)):
+                return 'cat ' + shlex.quote(str(source))
+            raise ValueError('research file target must name the scoped in-project source, not the requested report output')
         return target
     if not project_matches(target, cwd):
         raise ValueError('project canary belongs to another native cwd')
     scope = '\n'.join([outcome['original_goal'], *outcome.get('corrections', [])])
     scripts = set()
     for call, output in observations:
-        _, words = command(call)
+        _, words = command(call, allow_source_read=outcome['task_class'] == 'research')
+        if outcome['task_class'] == 'research':
+            source = source_read_path(words, cwd)
+            if source and source.is_relative_to(cwd) and scope_names_script(scope, source, cwd, allow_stem=False):
+                if not product_paths({**outcome, 'owned_paths': [source.relative_to(cwd).as_posix()]}, cwd):
+                    continue  # Requested FEEDBACK output is not the researched source.
+                target = 'cat ' + shlex.quote(str(source))
+                if real_observation(call, output, target, 'consumer', 'research', cwd):
+                    scripts.add(target)
+            continue
         identity = cli_identity(words, cwd)
         if len(identity) < 2 or identity[0] != 'python' or identity[1].startswith('-'):
             continue
@@ -298,10 +404,11 @@ def consumer_target(outcome, observations, cwd):
         if real_observation(call, output, str(script), 'consumer', outcome['task_class'], cwd):
             scripts.add(str(script))
     if len(scripts) != 1:
+        if outcome['task_class'] == 'research':
+            raise ValueError('project research needs one explicitly named in-project source file; use one direct cat read and report its actual expected/observed afterward; not echo/compound or a review loop')
         raise ValueError('project target needs one scope-named native CLI; unsupported/ambiguous source: one direct CLI reread, no echo/compound or review loop')
     selected = scripts.pop()
     if outcome['task_class'] in ENGINEERING:
-        from lhc_outcome import product_paths
         if Path(selected) not in {(cwd / p).resolve() for p in product_paths(outcome, cwd)}:
             raise ValueError('project CLI is not the scoped owned product')
     return selected
@@ -311,8 +418,9 @@ def real_observation(call, output, target, stage, task_class=None, cwd=None, exp
     args = call.get('arguments') or call.get('input') or '{}'
     try:
         args = json.loads(args) if isinstance(args, str) else args
-        directory = local_native_path(args.get('workdir') or args.get('cwd') or cwd)
-        directory = (cwd / directory).resolve() if not directory.is_absolute() else directory.resolve()
+        directory = local_native_path(args.get('workdir') or args.get('cwd') or call.get('_native_cwd') or cwd)
+        native_cwd = Path(call.get('_native_cwd') or cwd)
+        directory = (native_cwd / directory).resolve() if not directory.is_absolute() else directory.resolve()
         directory.relative_to(cwd)
         # Relative CLI targets are bound to the canary project root. A second
         # checkout with the same filename is not the assigned product.
@@ -320,7 +428,7 @@ def real_observation(call, output, target, stage, task_class=None, cwd=None, exp
             return False
     except (ValueError, TypeError, AttributeError):
         return False
-    text, words = command(call)
+    text, words = command(call, allow_source_read=stage == 'consumer' and task_class == 'research')
     name = str(call.get('name', '')).casefold()
     if not output.strip():
         return False
@@ -330,6 +438,9 @@ def real_observation(call, output, target, stage, task_class=None, cwd=None, exp
     if stage == 'consumer':
         if task_class == 'research':
             try:
+                selected = source_read_path(shlex.split(target), cwd)
+                if selected:
+                    return source_read_path(words, cwd) == selected
                 args = json.loads(call.get('arguments') or '{}')
                 cmd = args.get('cmd') or args.get('command') or ''
                 return shlex.split(cmd)[:len(shlex.split(target))] == shlex.split(target) and bool(shlex.split(target)) and not re.match(r'^(?:echo|printf)\b', cmd)
@@ -436,7 +547,70 @@ def report_result(text):
     return defect, positive
 
 
-def raw_review(outcome, final, observations, cwd):
+def source_finding_quote(outcome, text, observations, cwd, quote):
+    """Explicit own-research semantic binding, never an independent verdict.
+
+    Keep the report unchanged; the quoted passage must name the exact source
+    and contain its actual native readback. Meaning is the researcher's stated
+    comparison, not an automatic prose/translation parser.
+    """
+    if outcome['task_class'] != 'research' or not quote or quote not in text:
+        return False
+    try:
+        target = consumer_target(outcome, observations, cwd)
+        words = shlex.split(target)
+        if not source_read_path(words, cwd) or Path(words[-1]).name.casefold() not in quote.casefold():
+            return False
+        normalize = lambda value: ' '.join(value.split())
+        return any(real_observation(call, output, target, 'consumer', 'research', cwd)
+                   and normalize(output) in normalize(quote) for call, output in observations)
+    except (ValueError, IndexError):
+        return False
+
+
+def research_comparison_binding(outcome, final, observations, cwd, quote):
+    """Typed encoding/report/non-proof claim, not an arbitrary prose alias."""
+    if not source_finding_quote(outcome, final, observations, cwd, quote):
+        return None
+    pipeline = r'implementation\s*/\s*tests\s*(?:→|->|,)\s*deploy(?:ment)?\s*(?:→|->|,|or)\s*merge'
+    negative = r'(?:cannot\s+(?:prove|establish|confirm)|does\s+not\s+(?:prove|establish|confirm)|не\s+(?:подтвержд\w*|доказыва\w*))'
+    def limits(text):
+        return any(not re.search(r'\b(?:but|however|зато|однако|но)\b', line, re.I) and re.search(
+            negative + r'[^;\n]{0,80}' + pipeline + '|' + pipeline + r'[^;\n]{0,80}' + negative, line, re.I)
+            for line in text.splitlines())
+    expected = outcome['canary']['expected']
+    # Consume the entire supported predicate, rather than blacklisting charset
+    # names. Any extra requirement needs its own comparison; never drop it.
+    typed_expected = (r'FEEDBACK\.md\s+(?:quotes|records)\s+the\s+actual\s+(?:export\s+)?encoding\s+'
+                      r'and\s+(?:explains|states)\s+that\s+(?:settings(?:\.txt)?|(?:this|the)\s+file)\s+'
+                      r'alone\s+cannot\s+(?:prove|establish|confirm)\s+' + pipeline + r'\s+completion\.?')
+    if (not re.fullmatch(typed_expected, expected.strip(), re.I)
+            or 'feedback.md' not in quote.casefold() or not limits(quote)):
+        return None
+    target = consumer_target(outcome, observations, cwd)
+    reads = [(call['call_id'], output.strip()) for call, output in observations if call.get('call_id')
+             and real_observation(call, output, target, 'consumer', 'research', cwd)
+             and re.fullmatch(r'encoding=[A-Za-z0-9_.+-]+', output.strip())]
+    if len({value for _, value in reads}) != 1:
+        return None
+    value = reads[0][1]
+    source = source_read_path(shlex.split(target), cwd)
+    if source.stat().st_size > native.MAX_BYTES or source.read_text().strip() != value:
+        return None
+    report = cwd / 'FEEDBACK.md'
+    if product_paths({**outcome, 'owned_paths': ['FEEDBACK.md']}, cwd):
+        return None  # A product document is not the requested observation report.
+    report_calls = [call['call_id'] for call, output in observations if call.get('call_id')
+                    and real_observation(call, output, 'cat ' + shlex.quote(str(report)), 'consumer', 'research', cwd)
+                    and value in output and Path(shlex.split(target)[-1]).name in output and limits(output)]
+    if not report_calls:
+        return None
+    return {'kind': 'encoding-report-delivery-limits', 'source': target, 'value': value,
+            'source_calls': [ref for ref, _ in reads], 'report': str(report), 'report_calls': report_calls,
+            'canary_hash': digest({k: outcome['canary'][k] for k in ('scenario', 'target', 'expected')})}
+
+
+def raw_review(outcome, final, observations, cwd, comparison_quote=None):
     """Small ordinary-report route; keep original prose as semantic assessment.
 
     No author PASS/map file and no rewriting the review. Complex unsupported
@@ -445,6 +619,8 @@ def raw_review(outcome, final, observations, cwd):
     """
     canary = outcome['canary']
     defect, positive = report_result(final)
+    if not final.strip() and outcome['task_class'] == 'research':
+        raise ValueError('no native assessment yet: send the actual source finding and expected/observed as a separate visible assistant message before review; FEEDBACK alone is not that message. Do not debug helper/session storage; preserve pending if unavailable')
     if not final.strip() or not (positive or defect or outcome['task_class'] == 'research'):
         raise ValueError('raw review must state its actual result; retain the original report')
     stages = {}
@@ -480,7 +656,12 @@ def raw_review(outcome, final, observations, cwd):
             # Ordinary prose must actually cover this expected consumer result,
             # not a generic all-PASS sentence over unrelated calls.
             short_target = Path(shlex.split(observed_target)[-1]).name
-            compared = expected_compared(expected, final, [by_call[ref] for ref in refs], defect)
+            binding = research_comparison_binding(outcome, final, observations, cwd, comparison_quote) if comparison_quote else None
+            if comparison_quote and not binding:
+                raise ValueError('research binding needs the fully supported expectation, actual current source, requested FEEDBACK readback and explicit negative delivery-limit claim before the original assessment; unsupported extra predicates stay pending, do not repeat unchanged reads')
+            compared = expected_compared(expected, final, [by_call[ref] for ref in refs], defect) or bool(binding)
+            if binding:
+                refs += binding['report_calls']
             named = any(t.casefold() in final.casefold() for t in (target, short_target))
             if not compared or not (named or (refs and re.search(r'\bCLI\b', final, re.I))):
                 refs = []
@@ -503,14 +684,14 @@ def raw_review(outcome, final, observations, cwd):
             'comparison': final, 'stages': stages, 'coverage': coverage, 'format': 'original-native-prose'}
 
 
-def own_assessment(outcome, text, observations, cwd):
-    if MARKER in text or outcome['task_class'] == 'research':
+def own_assessment(outcome, text, observations, cwd, comparison_quote=None):
+    if MARKER in text:
         return True
     defect, positive = report_result(text)
     # Never fall back over newer negative findings, even if unsupported/partial.
     if defect:
         return True
-    if not positive:
+    if not positive and outcome['task_class'] != 'research':
         return False
     try:
         target = consumer_target(outcome, observations, cwd)
@@ -518,23 +699,46 @@ def own_assessment(outcome, text, observations, cwd):
         return False
     short_target = Path(shlex.split(target)[-1]).name
     names_consumer = any(name.casefold() in text.casefold() for name in (target, short_target)) or re.search(r'\bCLI\b', text, re.I)
-    return bool(names_consumer and expected_compared(outcome['canary']['expected'], text, observations, False))
+    return bool(names_consumer and (expected_compared(outcome['canary']['expected'], text, observations, False)
+                or source_finding_quote(outcome, text, observations, cwd, comparison_quote)))
 
 
-def accept_review(outcome, state, path, cwd, owner):
+def accept_review(outcome, state, path, cwd, owner, comparison_quote=None):
     from lhc_outcome import bounded_self_check
     meta, messages, observations = load_review(path)
     sid = meta.get('id') or meta.get('session_id')
     own_attempt = sid == owner and (outcome['task_class'] in {'testing', 'research'} or bounded_self_check(outcome))
-    if (sid == owner and not own_attempt) or Path(meta.get('cwd', '/unknown')).resolve() != cwd:
+    native_cwd = Path(meta.get('cwd', '/unknown'))
+    cross_cwd_research = sid != owner and outcome['task_class'] == 'research' and native_cwd.resolve() != cwd
+    if (sid == owner and not own_attempt) or not native_cwd.is_absolute() or (native_cwd.resolve() != cwd and not cross_cwd_research):
         raise ValueError('review must be independent and for this exact project')
+    # The existing reviewer can deliberately inspect a bounded case from its
+    # original project. Missing tool cwd remains that native original cwd,
+    # never silently defaults to the case being accepted.
+    observations = [({**call, '_native_cwd': str(native_cwd.resolve())}, output) for call, output in observations]
+    if comparison_quote and not (own_attempt and outcome['task_class'] == 'research' and all(
+            outcome['stages'][stage]['status'] == 'not-applicable' for stage in STAGES if stage != 'consumer')):
+        raise ValueError('comparison quote binds only an own bounded research finding, never parent/independent acceptance')
     # A later progress remark/tool message is not a replacement assessment.
     # Keep the actual report's own source index/time: no freshness extension.
+    def selected_assessment(report):
+        text = report['text']
+        # A bound old passage must not hide a later explicit source correction.
+        negative_binding = comparison_quote and outcome['task_class'] == 'research' and re.search(
+            r'\b(?:defect|wrong|needs? correction)\b|ошибк|не соответствует', text, re.I)
+        return negative_binding or own_assessment(outcome, text, observations, cwd, comparison_quote)
     own_report = next((report for report in reversed(meta.get('own_reports', []))
-                       if own_assessment(outcome, report['text'], observations, cwd)), None) if own_attempt else None
+                       if selected_assessment(report)), None) if own_attempt or outcome['task_class'] == 'research' else None
+    if comparison_quote and (not own_report or not source_finding_quote(outcome, own_report['text'], observations, cwd, comparison_quote)):
+        raise ValueError('comparison quote must bind the current unchanged native source finding; never skip a newer negative assessment')
+    if not own_report and own_attempt and outcome['task_class'] == 'research' and any(
+            native.timestamp(report['at']) >= native.timestamp(outcome['started_at'])
+            and source_finding_quote(outcome, report['text'], observations, cwd, report['text'])
+            for report in meta.get('own_reports', [])):
+        raise ValueError('fresh source finding needs a semantic comparison binding, not a reread: retain the report and use review --native-self --comparison-quote with its unchanged source-finding passage; self-check only')
     if own_report:
-        # Own commentary is available before the final response; source call
-        # order still ends at that actual report, never at a later export call.
+        # Preserve the actual assessment before later bookkeeping, including
+        # an independent research report; never extend its source-call window.
         meta['review_end_index'] = own_report['index']
         meta['reviewed_at'] = own_report['at']
     if native.timestamp(meta.get('reviewed_at') or meta['timestamp']) < native.timestamp(outcome['started_at']):
@@ -554,6 +758,15 @@ def accept_review(outcome, state, path, cwd, owner):
     if not assignments:
         raise ValueError('native source has no current scope-bound assignment window')
     assignment = max(assignments, key=lambda row: row['index'])
+    if cross_cwd_research:
+        declared = []
+        for literal in re.findall(r'(?:^|[;\n])\s*Target CWD:\s*([^;\n]+)', assignment['text'], re.I):
+            path = local_native_path(literal.strip(' `\"\''))
+            if not path.is_absolute():
+                raise ValueError('research Target CWD must be absolute')
+            declared.append(path.resolve())
+        if set(declared) != {cwd}:
+            raise ValueError('independent research assignment needs exact normalized Target CWD; tool output or a neighboring path is not assignment')
     after = max(native.timestamp(outcome.get('evidence_after') or outcome['started_at']),
                 native.timestamp(assignment['at'] or outcome['started_at']))
     observations = [(call, output) for call, output in observations
@@ -563,9 +776,11 @@ def accept_review(outcome, state, path, cwd, owner):
     if scope_revision(outcome, cwd) != outcome['revision']:
         raise ValueError('owned revision changed; refresh the contract and actual evidence before review')
     lines = [line[len(MARKER):] for line in final.splitlines() if line.startswith(MARKER)]
+    if comparison_quote and lines:
+        raise ValueError('comparison quote binds original research prose, not a structured certificate')
     if len(lines) > 1:
         raise ValueError('ambiguous independent review summaries')
-    report = json.loads(lines[0]) if lines else raw_review(outcome, final, observations, cwd)
+    report = json.loads(lines[0]) if lines else raw_review(outcome, final, observations, cwd, comparison_quote)
     canary = outcome['canary']
     revision = scope_revision(outcome, cwd)
     for key, expected in {'outcome_id': outcome['id'], 'revision': revision,
@@ -676,6 +891,12 @@ def accept_review(outcome, state, path, cwd, owner):
         }])
     if staging:
         outcome['staging_push'] = {**staging, 'manifest': str(path.resolve()), 'reviewer': sid}
+    if comparison_quote:
+        outcome['comparison_binding'] = {'quote': comparison_quote, 'reviewer': sid, 'original_index': own_report['index'],
+                                         'original_at': own_report['at'], 'verification_level': 'self-check',
+                                         'claims': research_comparison_binding(outcome, final, observations, cwd, comparison_quote)}
+    if outcome['task_class'] == 'research' and own_report:
+        outcome['review_assessment'] = {'reviewer': sid, 'index': own_report['index'], 'at': own_report['at']}
     outcome.update(product_verdict=product, revision=revision, coverage_evidence=report.get('coverage', {}))
     outcome['verification_level'] = 'self-check' if own_attempt else 'independent-review'
     if outcome.get('release_handoff') and outcome['stages']['integration']['status'] == 'complete':
