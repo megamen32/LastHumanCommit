@@ -1,8 +1,14 @@
-# Material-decision cycle
+# Full-cycle decision method
 
-Use this view only when a material product, architecture, migration, or
-expensive-wrong-path choice remains after the real production path is known.
-Full is not a synonym for long, important, polished, or release-bound work.
+This template is a conditional decision depth inside the lifecycle in
+`docs/PRODUCT_CONCEPT.md`. Use it only when a material product, architecture,
+migration, or expensive-wrong-path choice remains after the real production
+path is known. Full is not a synonym for long, important, polished, or
+release-bound work.
+
+For large Full work, retain the router's bounded independent research, working
+→ ideal → YAGNI plan, quota-aware frontier council, then bounded dispatch.
+This template supplies the material-choice method within that route.
 
 ## Business claim
 
@@ -31,6 +37,7 @@ First 20-minute reporting checkpoint:
 Stop when:
 Redirect when:
 
+<!-- lhc-decision-depth:material-choice -->
 ## Material options — only when a route choice matters
 
 Design sequence: working solution -> ideal version -> 80%-value MVP.
