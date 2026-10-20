@@ -51,12 +51,11 @@ def test_missing_current_reviewer_pair_returns_actionable_fresh_task_boundary(tm
     message = str(error.value)
     assert reason in message
     assert "no reviewer evidence was accepted" in message.casefold()
-    assert "NEW native worker session" in message
-    assert "actual human mandate" in message
-    assert "current canonical root, exact owned files, and publication scope" in message
-    assert "fresh outcome id and the full current task text" in message
-    assert "Keep the predecessor outcome and its report pending" in message
-    assert "Do not reuse this report" in message
+    assert "fresh user assignment in the existing reviewer session" in message
+    assert "outcome id and current review subject digest" in message
+    assert "readable exact product root, scenario, and expected result" in message
+    assert "legacy assignments must include the full current goal and corrections" in message
+    assert "digest identifies the subject only; it is not permission" in message
     assert hashlib.sha256(source.read_bytes()).hexdigest() == before
     assert not (tmp_path / ".tmp/lhc-native-review").exists()
 

@@ -164,7 +164,9 @@ def test_long_coordination_prefix_keeps_origin_before_native_prompt_excerpts(tmp
 
     source = business["execution_context"]["direct_user_messages"][-1]
     assert len(source["prompt"]) == 2048
-    assert source["scope_prompt"].startswith("<agent-herder-deferred>")
+    assert source["prompt"] == raw[:2048]
+    assert source["scope_prompt"].startswith("Keep this assigned note in scope.")
+    assert "Implement the delegated task in the assigned files." in source["scope_prompt"]
     assert source["origin"] == "agent-relay"
 
     source.pop("origin")

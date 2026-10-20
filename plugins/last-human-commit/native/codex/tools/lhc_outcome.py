@@ -5,6 +5,7 @@ Classification is a conservative hint. A native independent review supplies the
 semantic comparison; this helper never interprets a tool receipt as business PASS.
 """
 import argparse
+import copy
 from datetime import datetime
 import fcntl
 import hashlib
@@ -48,7 +49,8 @@ HERDER_RELAY_ATTRIBUTION = re.compile(
     r'^\s*🤖\s+(?:Codex\s+SID\b[^\r\n]*|'
     r'Codex\s+(?P<codex_sid>' + CODEX_SESSION_UUID + r')\s+·\s+'
     r'https://agent\.bezrabotnyi\.com/#/session/codex%3A(?P=codex_sid)|'
-    r'Сообщение от AI-сессии\b[^\r\n]*|Сообщение от ИИ через Agent Herder[^\r\n]*)'
+    r'Сообщение от AI-сессии\b[^\r\n]*(?:\r?\nОтправитель неизвестен: сессия не указана\.)?|'
+    r'Сообщение от ИИ через Agent Herder[^\r\n]*)'
     r'\s*\r?\n(?:\r?\n)?', re.I,
 )
 EXPECTATION_CHANGE = re.compile(
@@ -165,6 +167,31 @@ def scope_source_with_origin(source):
     if isinstance(result.get('scope_prompt'), str):
         result['scope_prompt'] = semantic_scope(result['scope_prompt'])
     return result
+
+
+def _verified_native_assignment_source(business):
+    """Expose only a receipt-bound child dispatch as a typed scope source."""
+    source = business.get('native_assignment_source')
+    identity = business.get('native_identity')
+    assignment = identity.get('assignment') if isinstance(identity, dict) else None
+    prompt = source.get('prompt') if isinstance(source, dict) else None
+    if (not isinstance(source, dict) or source.get('source_kind') != 'native-parent-dispatch' or
+            not isinstance(identity, dict) or identity.get('verified') is not True or
+            not isinstance(assignment, dict) or assignment.get('status') != 'bound' or
+            not isinstance(prompt, str) or not prompt.strip() or
+            source.get('origin') != 'agent-relay' or
+            source.get('source') != ('native-parent-dispatch:' + str(identity.get('parent_native_id')) + ':' +
+                                     str(identity.get('dispatch_call_id')) + ':' + str(assignment.get('prompt_sha256'))) or
+            source.get('parent_native_id') != identity.get('parent_native_id') or
+            source.get('child_native_id') != identity.get('native_id') or
+            source.get('dispatch_call_id') != identity.get('dispatch_call_id') or
+            source.get('parent_journal_path') != identity.get('parent_journal_path') or
+            source.get('child_journal_path') != identity.get('journal_path') or
+            source.get('prompt_sha256') != assignment.get('prompt_sha256') or
+            prompt != assignment.get('prompt') or
+            hashlib.sha256(prompt.encode()).hexdigest() != assignment.get('prompt_sha256')):
+        return None
+    return scope_source_with_origin(source)
 
 
 def classify(goal):
@@ -368,9 +395,392 @@ def _brief_read_assignment(outcome, source, root, paths):
     return bool(normalized_assigned and normalized_requested.issubset(normalized_assigned))
 
 
+def _project_name_mentions(prompt, repository):
+    """Return true only for an affirmative, unquoted full repository name."""
+    if not isinstance(prompt, str) or not isinstance(repository, str) or repository.count('/') != 1:
+        return False
+    name = repository.split('/', 1)[1].removesuffix('.git')
+    spaced = re.sub(r'(?<=[a-z0-9])(?=[A-Z])', ' ', name)
+    variants = {name, spaced}
+    pattern = re.compile(r'(?<![\w])(?:' + '|'.join(
+        re.escape(value).replace(r'\ ', r'\s+') for value in sorted(variants, key=len, reverse=True)
+    ) + r')(?![\w])', re.I)
+    # Quotes and fenced/code examples cannot establish a direct project assignment.
+    clean = re.sub(r'```.*?```|`[^`\n]*`|"[^"\n]*"|“[^”\n]*”|‘[^’\n]*’|\'[^\'\n]*\'', ' ', prompt, flags=re.S)
+    mentions = list(pattern.finditer(clean))
+    if not mentions:
+        return False
+    for match in mentions:
+        clause = re.split(r'[.!?;\n]', clean[:match.start()])[-1]
+        if re.search(r"\b(?:do not|don't|never|not|without|no|preserve|avoid)\b|\b(?:не|нельзя|запрещ|сохрани|не трогай)\b", clause, re.I):
+            return False
+    return True
+
+
+def _repository_mentioned(prompt, repository):
+    """Match a repository name neutrally, including in a negated sentence."""
+    if not isinstance(prompt, str) or not isinstance(repository, str) or repository.count('/') != 1:
+        return False
+    name = repository.split('/', 1)[1].removesuffix('.git')
+    spaced = re.sub(r'(?<=[a-z0-9])(?=[A-Z])', ' ', name)
+    variants = {name, spaced}
+    name_pattern = r'(?<![\w])(?:' + '|'.join(
+        re.escape(value).replace(r'\ ', r'\s+') for value in sorted(variants, key=len, reverse=True)
+    ) + r')(?![\w])'
+    full_pattern = r'(?<![\w.-])' + re.escape(repository) + r'(?![\w.-])'
+    return bool(re.search(name_pattern, prompt, re.I) or re.search(full_pattern, prompt, re.I))
+
+
+def _native_user_source_record(outcome, source):
+    """Return one exact native user prompt and its immutable journal coordinates."""
+    sid = outcome.get('owner', {}).get('session_id')
+    source_id = source.get('source', '')
+    prefix = f'native-user-prompt:{sid}:'
+    if not sid or not source_id.startswith(prefix) or not outcome.get('native_source'):
+        return None
+    parts = source_id[len(prefix):].rsplit(':', 1)
+    if len(parts) != 2 or not re.fullmatch(r'[0-9a-f]{12}', parts[1]):
+        return None
+    location = Path(outcome['native_source']).resolve()
+    sessions = (Path(os.environ.get('CODEX_HOME') or Path.home() / '.codex') / 'sessions').resolve()
+    try:
+        location.relative_to(sessions)
+        expected_cwd = Path(outcome.get('cwd', '')).resolve(strict=True)
+    except (OSError, ValueError):
+        return None
+    matches = []
+    user_rows = []
+    meta_seen = False
+    try:
+        with location.open('rb') as stream:
+            for index, raw in enumerate(stream):
+                if index > 50000 or len(raw) > native.MAX_BYTES or not raw.endswith(b'\n'):
+                    return None
+                row = json.loads(raw)
+                payload = row.get('payload') or {}
+                if row.get('type') == 'session_meta':
+                    if payload.get('id') != sid or Path(payload.get('cwd', '')).resolve() != expected_cwd:
+                        return None
+                    meta_seen = True
+                    continue
+                if (row.get('type') != 'response_item' or payload.get('type') != 'message' or
+                        payload.get('role') != 'user'):
+                    continue
+                text = native.content(payload.get('content'))
+                metadata = payload.get('internal_chat_message_metadata_passthrough') or {}
+                turn = payload.get('turn_id') or payload.get('turnId') or metadata.get('turn_id') or 'current'
+                digest_value = hashlib.sha256(text.strip().encode()).hexdigest()[:12]
+                user_rows.append({'index': index, 'at': row.get('timestamp'), 'turn_id': str(turn), 'prompt': text})
+                saved_scope = source.get('scope_prompt')
+                scope_matches = (semantic_scope(text) == saved_scope if isinstance(saved_scope, str) and saved_scope
+                                 else text.strip()[:2048] == str(source.get('prompt', '')).strip())
+                if (parts[0] == str(turn) and parts[1] == digest_value and
+                        text.strip()[:2048] == str(source.get('prompt', '')).strip() and
+                        scope_matches):
+                    matches.append({'index': index, 'at': row.get('timestamp'), 'turn_id': str(turn),
+                                    'prompt': text, 'sha256': hashlib.sha256(text.strip().encode()).hexdigest()})
+    except (OSError, ValueError, TypeError, json.JSONDecodeError):
+        return None
+    if (not meta_seen or len(matches) != 1 or source.get('origin') == 'agent-relay' or
+            source_origin(source.get('prompt', ''), source.get('scope_prompt', '')) == 'agent-relay' or
+            source_origin(matches[0]['prompt']) == 'agent-relay'):
+        return None
+    record = matches[0]
+    record['later_user_messages'] = [row for row in user_rows if row['index'] > record['index']]
+    return record
+
+
+def _native_user_source_matches(outcome, source):
+    """Revalidate one exact current native user prompt from the session journal."""
+    return _native_user_source_record(outcome, source) is not None
+
+
+def _valid_publication_manifest(repo_root, manifest_path, reviewer_id, *, outcome_id, candidate,
+                                published_commit=None, ref=None, report_kind):
+    try:
+        manifest_path = Path(manifest_path).resolve(strict=True)
+        archive = (repo_root / '.tmp/lhc-native-review').resolve(strict=True)
+        manifest_path.relative_to(archive)
+        manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+        target = manifest['target']
+        source_path = Path(target['source']['location']).resolve(strict=True)
+        sessions = (Path(os.environ.get('CODEX_HOME') or Path.home() / '.codex') / 'sessions').resolve()
+        source_path.relative_to(sessions)
+        snapshot_path = Path(target['path']).resolve(strict=True)
+        snapshot_path.relative_to(archive)
+        if (manifest.get('format') != 'agent-herder-transcript-manifest-v1' or
+                target.get('harness') != 'codex' or target.get('sessionId') != reviewer_id or
+                target.get('complete') is not True or target.get('source', {}).get('kind') not in {'native-file', 'native-file-window'}):
+            return False
+        if target.get('source', {}).get('kind') == 'native-file':
+            snapshot = snapshot_path.read_bytes()
+            with source_path.open('rb') as stream:
+                source_prefix = stream.read(len(snapshot))
+                if source_prefix != snapshot:
+                    return False
+        else:
+            source = target['source']
+            start, end, first_line = (source.get(key) for key in ('start_byte', 'end_byte', 'start_line'))
+            if any(type(value) is not int for value in (start, end, first_line)) or not 0 < start < end:
+                return False
+            with source_path.open('rb') as stream:
+                header = stream.readline(native.MAX_BYTES + 1)
+                if not header.endswith(b'\n') or len(header) + end - start > native.MAX_BYTES:
+                    return False
+                stream.seek(start - 1)
+                if stream.read(1) != b'\n':
+                    return False
+                stream.seek(0)
+                prefix = stream.read(start)
+                if prefix.count(b'\n') != first_line:
+                    return False
+                stream.seek(start)
+                body = stream.read(end - start)
+                if len(body) != end - start or not body.endswith(b'\n'):
+                    return False
+                snapshot = snapshot_path.read_bytes()
+                if snapshot != header + body:
+                    return False
+        rows = [json.loads(line) for line in snapshot.splitlines() if line.strip()]
+        if not rows or rows[0].get('type') != 'session_meta':
+            return False
+        header = rows[0].get('payload') or {}
+        if (header.get('id') != reviewer_id or Path(header.get('cwd', '')).resolve() != repo_root):
+            return False
+        user_texts, assistant_texts = [], []
+        for row in rows:
+            payload = row.get('payload') or {}
+            if row.get('type') != 'response_item' or payload.get('type') != 'message':
+                continue
+            text = native.content(payload.get('content'))
+            if payload.get('role') == 'user':
+                user_texts.append(text)
+            elif payload.get('role') == 'assistant' and payload.get('phase') not in {'analysis', 'commentary'}:
+                assistant_texts.append(text)
+        bound_assignment = any(outcome_id in text and candidate in text and str(repo_root) in text
+                               for text in user_texts)
+        source_ready_report = any(
+            'APPROVE BOUNDED' in text and 'source-ready' in text and
+            outcome_id in text and candidate in text for text in assistant_texts)
+        publication_report = any(
+            'APPROVE BOUNDED' in text and 'source-published' in text and
+            isinstance(published_commit, str) and published_commit in text and
+            isinstance(ref, str) and ref in text for text in assistant_texts)
+        required_report = (source_ready_report if report_kind == 'source-ready' else
+                           publication_report if report_kind == 'source-published' else False)
+        if not (bound_assignment and required_report):
+            return False
+        with source_path.open('rb') as stream:
+            for index, raw in enumerate(stream):
+                if index > 100 or len(raw) > native.MAX_BYTES:
+                    return False
+                row = json.loads(raw)
+                payload = row.get('payload') or {}
+                if row.get('type') == 'session_meta':
+                    return (payload.get('id') == reviewer_id and
+                            Path(payload.get('cwd', '')).resolve() == repo_root)
+    except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError):
+        return False
+    return False
+
+
+def _verified_historical_source_publication(saved, root):
+    """Verify immutable historical source-publication identity, not current PASS."""
+    publication = saved.get('source_publication') or {}
+    repository = publication.get('repository')
+    remote = publication.get('remote')
+    candidate = publication.get('candidate_fingerprint')
+    owned_files = publication.get('owned_files')
+    base = publication.get('base')
+    head = publication.get('candidate_head')
+    commit = publication.get('published_commit')
+    ref = publication.get('ref')
+    if (saved.get('verification_kind') != 'source-publication' or
+            publication.get('schema') != 'lhc-source-publication-v1' or
+            publication.get('root') != str(root) or not isinstance(repository, str) or
+            not re.fullmatch(r'[^/\s]+/[^/\s]+', repository) or
+            remote not in {'origin'} or publication.get('branch') != 'main' or ref != 'refs/heads/main' or
+            not re.fullmatch(r'[0-9a-f]{40,64}', str(base)) or
+            not re.fullmatch(r'[0-9a-f]{40,64}', str(head)) or
+            not re.fullmatch(r'[0-9a-f]{40,64}', str(commit)) or
+            not isinstance(owned_files, dict) or not owned_files or
+            any(not isinstance(name, str) or Path(name).is_absolute() or '..' in Path(name).parts or
+                not name or not re.fullmatch(r'[0-9a-f]{64}', str(digest))
+                for name, digest in owned_files.items()) or
+            not re.fullmatch(r'[0-9a-f]{64}', str(candidate))):
+        return None
+    candidate_body = {key: publication[key] for key in (
+        'root', 'repository', 'remote', 'branch', 'ref', 'base', 'candidate_head',
+        'owned_files', 'permission_source', 'permission_quote')}
+    full_body_candidate = hashlib.sha256(
+        json.dumps(candidate_body, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+    content_body = {key: publication[key] for key in ('root', 'candidate_head', 'owned_files')}
+    content_candidate = hashlib.sha256(
+        json.dumps(content_body, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+    if candidate not in {full_body_candidate, content_candidate}:
+        return None
+    from lhc_source_publication import historical_publication_commit_matches
+    if not historical_publication_commit_matches(publication, root):
+        return None
+    if (saved.get('product_verdict') != 'source-published' or
+            (saved.get('integration_policy') or {}).get('repository') != repository or
+            (saved.get('integration_policy') or {}).get('remote') != remote or
+            (saved.get('integration_policy') or {}).get('branch') != 'main'):
+        return None
+    readiness = publication.get('readiness') or {}
+    paths = set(owned_files)
+    if (set(readiness.get('read_calls', [])) != paths or
+            set(readiness.get('hash_calls', [])) != paths):
+        return None
+    publication_receipt = publication.get('publication_evidence') or {}
+    if (publication_receipt.get('base') != base or publication_receipt.get('commit') != commit or
+            publication_receipt.get('ref') != ref or not publication_receipt.get('publisher_call') or
+            not publication_receipt.get('readback_call')):
+        return None
+    if publication.get('published_commit') != commit:
+        return None
+    stages = saved.get('stages') or {}
+    technical_rows = [row for row in (stages.get('technical') or {}).get('evidence', [])
+                      if isinstance(row, dict) and row.get('verification_level') == 'independent-source-review' and
+                      row.get('source_candidate') == candidate and
+                      set((row.get('source_readiness') or {}).get('read_calls', {})) == paths and
+                      set((row.get('source_readiness') or {}).get('hash_calls', {})) == paths]
+    publication_rows = [row for row in (stages.get('publication') or {}).get('evidence', [])
+                        if isinstance(row, dict) and row.get('verification_level') == 'source-publication-readback' and
+                        row.get('published_commit') == commit and row.get('ref') == ref and
+                        row.get('expected') == 'candidate:' + candidate]
+    owner_id = (saved.get('owner') or {}).get('session_id')
+    for technical in technical_rows:
+        for published in publication_rows:
+            if (not technical.get('reviewer') or technical.get('reviewer') == owner_id or
+                    not published.get('reviewer') or published.get('reviewer') == owner_id or
+                    technical.get('revision') != published.get('revision') or
+                    published.get('publisher_call') != publication_receipt.get('publisher_call') or
+                    publication_receipt.get('readback_call') not in published.get('calls', [])):
+                continue
+            if (not _valid_publication_manifest(
+                    root, technical.get('manifest'), technical['reviewer'], outcome_id=saved.get('id'),
+                    candidate=candidate, report_kind='source-ready') or
+                    not _valid_publication_manifest(
+                        root, published.get('manifest'), published['reviewer'], outcome_id=saved.get('id'),
+                        candidate=candidate, published_commit=commit, ref=ref,
+                        report_kind='source-published')):
+                continue
+            return {'repository': repository, 'remote': remote, 'root': str(root),
+                    'candidate': candidate, 'candidate_head': head, 'base': base,
+                    'owned_files': dict(owned_files), 'published_commit': commit, 'ref': ref,
+                    'source_id': publication.get('permission_source'),
+                    'technical_reviewer_id': technical.get('reviewer'),
+                    'publication_reviewer_id': published.get('reviewer'),
+                    'technical_manifest': technical.get('manifest'),
+                    'publication_manifest': published.get('manifest')}
+    return None
+
+
+def _accepted_source_publication_binding(root):
+    """Find one immutable, independently reviewed publication identity at root."""
+    learning = root / '.agents/shared-session/learning'
+    try:
+        files = sorted(learning.glob('*.json'))
+        if not files or len(files) > 256:
+            return None
+        matches = []
+        for path in files:
+            if path.is_symlink() or path.stat().st_size > 8 * 1024 * 1024:
+                return None
+            state = json.loads(path.read_text(encoding='utf-8'))
+            saved = (state.get('business') or {}).get('outcome') or {}
+            identity = _verified_historical_source_publication(saved, root)
+            if identity:
+                matches.append((identity['repository'], identity['remote']))
+        # Repeated accepted receipts for one identity are equivalent; conflicting
+        # repository or remote bindings remain ambiguous and fail closed.
+        identities = set(matches)
+        return next(iter(identities)) if len(identities) == 1 else None
+    except (OSError, ValueError, TypeError, json.JSONDecodeError):
+        return None
+
+
+def _metadata_project_root_mapping(outcome, source, root, paths, requested_root=None):
+    if (not isinstance(source, dict) or source.get('origin') == 'agent-relay' or
+            classify(source.get('scope_prompt') or source.get('prompt', '')) not in ENGINEERING or
+            not _native_user_source_matches(outcome, source)):
+        return False
+    native_root = Path(outcome.get('cwd', '')).resolve(strict=True)
+    try:
+        requested_root = requested_root or root
+        if (requested_root.parent != native_root or requested_root.is_symlink() or
+                requested_root.resolve(strict=True) != root or root.parent != native_root):
+            return False
+        resolved = root.resolve(strict=True)
+        if resolved.parent != native_root:
+            return False
+        remote = 'origin'
+        binding = _accepted_source_publication_binding(resolved)
+        if not binding:
+            return False
+        repository, proof_remote = binding
+        project_name = repository.split('/', 1)[1].removesuffix('.git')
+        normalized_name = re.sub(r'[^a-z0-9]', '', project_name.lower())
+        aliases = []
+        for child in native_root.iterdir():
+            child_name = re.sub(r'[^a-z0-9]', '', child.name.lower())
+            if child_name == normalized_name:
+                aliases.append(child)
+                if child.is_symlink() or child.resolve(strict=True) != resolved:
+                    return False
+        if aliases != [root] and not (len(aliases) == 1 and aliases[0] == root):
+            return False
+        if (remote != proof_remote or remote_binding(resolved, remote) != repository or
+                Path(native.git(resolved, 'rev-parse', '--show-toplevel').decode().strip()).resolve() != resolved or
+                not _project_name_mentions(source.get('scope_prompt') or source.get('prompt', ''), repository)):
+            return False
+        # Bind only paths explicitly owned by the current parent task. The accepted
+        # publication's old file list is identity evidence, never current ownership.
+        prefix = root.name + '/'
+        existing_mapping = (
+            Path(outcome.get('product_root', '')).resolve() == resolved and
+            outcome.get('product_root_source') == source.get('source')
+        )
+        owned = set()
+        for item in outcome.get('owned_paths', []):
+            value = Path(item)
+            if value.is_absolute() or '..' in value.parts:
+                continue
+            text = value.as_posix()
+            if text.startswith(prefix):
+                owned.add(text[len(prefix):])
+            elif existing_mapping:
+                # A prior successful binding stores only product-relative paths.
+                # Reuse that exact binding after revalidating its source, root,
+                # repository identity, containment, and current ownership set.
+                owned.add(text)
+        requested = set()
+        for item in paths:
+            value = Path(item)
+            if value.is_absolute() or '..' in value.parts:
+                return False
+            text = value.as_posix()
+            relative = text[len(prefix):] if text.startswith(prefix) else text
+            if not relative or relative.startswith('../'):
+                return False
+            candidate = resolved / relative
+            candidate.resolve(strict=False).relative_to(resolved)
+            cursor = resolved
+            for part in Path(relative).parts:
+                cursor = cursor / part
+                if cursor.is_symlink():
+                    return False
+            requested.add(relative)
+        return bool(requested) and requested.issubset(owned)
+    except (OSError, ValueError, TypeError):
+        return False
+
+
 def product_root_scope_allowed(outcome, source, root, paths):
     if not source or not isinstance(root, Path) or not root.is_absolute() or not paths:
         return False
+    requested_root = root
     try:
         root = root.resolve(strict=True)
         if not root.is_dir():
@@ -383,8 +793,9 @@ def product_root_scope_allowed(outcome, source, root, paths):
     def names_path(value):
         return bool(re.search(r'(?<![\w./-])' + re.escape(str(value)) + r'(?![\w./-])', prompt))
     relative = [(root / path).resolve().relative_to(root).as_posix() for path in paths]
-    return (names_path(root) and all(names_path(path) or names_path(rel) for path, rel in zip(paths, relative))) or _brief_read_assignment(
-        outcome, source, root, paths)
+    direct = names_path(root) and all(names_path(path) or names_path(rel) for path, rel in zip(paths, relative))
+    return direct or _brief_read_assignment(outcome, source, root, paths) or _metadata_project_root_mapping(
+        outcome, source, root, paths, requested_root)
 
 
 def product_paths(outcome, cwd):
@@ -430,29 +841,214 @@ def remote_binding(cwd, remote):
     return match.group(1) if match else None
 
 
-def main_permission(source, quote, repository, branch):
-    if not source or not quote or quote not in source['prompt'] or not repository:
+def _universal_project_main_permission(text, repository, branch):
+    if branch != 'main' or not repository or 'airlock' in repository.casefold():
         return False
-    owner, repo = repository.split('/')
-    acronym = ''.join(c for c in repo if c.isupper())
-    # A caller cannot strip "Do not" from a native sentence and submit its
-    # affirmative tail as consent. Ambiguous clauses stay owner-handoff.
+    segments = re.split(r'[.!?;\n]|,\s*(?:а|но|but|however)\b', text, flags=re.I)
+    scope_pattern = re.compile(
+        r'(?:для\s+всех\s+проект(?:ов|а)\s*,?\s*кроме\s+airlock\b|'
+        r'all\s+projects?\s+except\s+airlock\b)', re.I)
+    merge_pattern = re.compile(r'(?:\bmerge\b|мерж|слия|интегр)[^.!?;\n]{0,48}(?<![\w/-])main(?![\w/-])', re.I)
+    for segment in segments:
+        scope = scope_pattern.search(segment)
+        merge = merge_pattern.search(segment)
+        permission = re.search(r'allow|permit|authori[sz]|разреш|позвол', segment, re.I)
+        secretary_only = re.search(r'(?:only|только)\s+(?:for\s+|для\s+)?(?:the\s+)?секретар|(?:only|только)\s+(?:for\s+|для\s+)?secretar', segment, re.I)
+        if not (scope and merge and permission) or secretary_only:
+            continue
+        # Keep the universal scope close to the authorized merge action in the
+        # same clause. A grant for tests or deployment cannot float across clauses.
+        if abs(scope.start() - merge.start()) <= 100 and abs(permission.start() - merge.start()) <= 160:
+            return True
+    return False
+
+
+def main_permission(source, quote, repository, branch):
+    """Check one unchanged native quote; universal text needs explicit project scope."""
+    if (not isinstance(source, dict) or not isinstance(source.get('prompt'), str) or
+            not isinstance(quote, str) or not quote or not repository or
+            source['prompt'].count(quote) != 1):
+        return False
     clauses = re.split(r'[.!?;\n]', source['prompt'])
-    clause = next((text for text in clauses if quote.rstrip('.!?;') in text), '')
-    return bool(re.search(r'(?<![\w.-])' + re.escape(owner) + r'(?![\w.])', quote, re.I)
-                and (re.search(r'(?<![\w.-])' + re.escape(repo) + r'(?![\w.-])', quote, re.I)
-                     or (len(acronym) > 1 and re.search(r'(?<![A-Z0-9])' + re.escape(acronym) + r'(?![A-Z0-9])', quote)))
-                and re.search(r'allow|permit|разреш|можно', quote, re.I)
-                and re.search(r'merge|интегр|слия|сливай', quote, re.I)
-                and re.search(r'(?:\binto\s+|\bto\s+|\bв\s+|\bна\s+)(?:branch\s+)?[`\'"]?' + re.escape(branch) + r'(?![\w/-]|\.[\w/-])', quote, re.I)
-                and clause and not re.search(r"do not|don't|never|forbidden|not allowed|not permitted|\bno\b|\bне\b|нельзя|запрещ", clause, re.I))
+    comparison_quote = quote.rstrip('.!?;')
+    clause = next((text for text in clauses if comparison_quote and comparison_quote in text), '')
+    if not clause or re.search(r"do not|don't|never|forbidden|not allowed|not permitted|\bno\b|\bне\b|нельзя|запрещ", clause, re.I):
+        return False
+    if re.search(
+            r'\b(?:only|только)\s+(?:if|when|after|once|until|unless|provided|for\s+the|для)\b|'
+            r'\b(?:if|unless|provided\s+that|subject\s+to|pending|upon|until)\b|'
+            r'\b(?:при\s+условии|если|при\s+согласовании|после\s+(?:моего\s+)?(?:одобрения|согласования|подтверждения|разрешения))\b|'
+            r'\b(?:only|только)\s+(?:for\s+)?(?:the\s+)?(?:secretary|секретар)',
+            clause, re.I):
+        return False
+    quote_index = source['prompt'].find(quote)
+    before = source['prompt'][:quote_index].rstrip()
+    after = source['prompt'][quote_index + len(quote):].lstrip()
+    if ((before[-1:] in {'"', "'", '“', '‘', '`'}) or
+            (after[:1] in {'"', "'", '”', '’', '`'})):
+        return False
+    owner, repo = repository.split('/', 1) if '/' in repository else ('', '')
+    acronym = ''.join(c for c in repo if c.isupper())
+    legacy_identity = bool(owner and repo and
+                          re.search(r'(?<![\w.-])' + re.escape(owner) + r'(?![\w.])', quote, re.I) and
+                          (re.search(r'(?<![\w.-])' + re.escape(repo) + r'(?![\w.-])', quote, re.I) or
+                           (len(acronym) > 1 and re.search(r'(?<![A-Z0-9])' + re.escape(acronym) + r'(?![A-Z0-9])', quote))))
+    legacy = bool(legacy_identity and re.search(r'allow|permit|authori[sz]|разреш|можно', quote, re.I) and
+                  re.search(r'merge|интегр|слия|сливай|мерж', quote, re.I) and
+                  re.search(r'(?:\binto\s+|\bto\s+|\bв\s+|\bна\s+)(?:branch\s+)?[`\'"]?' + re.escape(branch) + r'(?![\w/-]|\.[\w/-])', quote, re.I))
+    return legacy or _universal_project_main_permission(quote, repository, branch)
+
+
+def _permission_revoked_later(record, repository, branch):
+    rows = list(record.get('later_user_messages', []))
+    same_source_suffix = record.get('same_source_suffix')
+    if isinstance(same_source_suffix, str) and same_source_suffix.strip():
+        # This is a derived slice of the exact same native user prompt. The
+        # original source index/hash/time remain the permission provenance.
+        rows.insert(0, {'prompt': same_source_suffix})
+    for later in rows:
+        prompt = later.get('prompt', '')
+        if source_origin(prompt) == 'agent-relay':
+            continue
+        prompt = HERDER_ENVELOPE.sub('', prompt)
+        deferred = _deferred_messages(prompt)
+        if deferred:
+            prompt = deferred[1]
+        if re.search(r'^\s*(?:i\s+revoke|i\s+withdraw|i\s+cancel)[^.!?\n]{0,100}\bpermission\b|^\s*(?:отзываю|отменяю)[^.!?\n]{0,100}разреш', prompt, re.I):
+            return True
+        direct_merge_denial = re.search(
+            r'^\s*(?:(?:please|kindly|thank\s+you|thanks|пожалуйста|спасибо)\s*[,!.]?\s*)*'
+            r'(?:do\s+not|don.t|never|no)\s+(?:(?:allow|permit)\s+)?merge\b|'
+            r'^\s*(?:(?:please|kindly|thank\s+you|thanks|пожалуйста|спасибо)\s*[,!.]?\s*)*'
+            r'не\s+(?:мержи|сливай|интегрируй)|'
+            r'^\s*(?:(?:please|kindly|thank\s+you|thanks|пожалуйста|спасибо)\s*[,!.]?\s*)*'
+            r'запрещаю\s+(?:мержить|сливать|интегрировать)',
+            prompt, re.I)
+        if not direct_merge_denial:
+            continue
+        denial_clause = re.split(r'[.!?\n]', prompt[direct_merge_denial.start():], maxsplit=1)[0]
+        if re.search(r'\b(?:if|unless|provided|when|once)\b|если|при\s+условии|когда', denial_clause, re.I):
+            continue
+        project_mentioned = _repository_mentioned(prompt, repository)
+        branch_mentioned = (branch in {'main', 'master'} and
+                            bool(re.search(r'(?<![\w/-])' + re.escape(branch) + r'(?![\w/-])', prompt, re.I)))
+        universal_mentioned = bool(re.search(r'for\s+all\s+projects|для\s+всех\s+проект', prompt, re.I))
+        airlock_only = ('airlock' in prompt.casefold() and not project_mentioned and not universal_mentioned)
+        if (project_mentioned or branch_mentioned or universal_mentioned) and not airlock_only:
+            return True
+    return False
+
+
+def _permission_suffix_is_limited(suffix):
+    """Reject an explicit condition or narrowed actor attached after a grant."""
+    if not isinstance(suffix, str):
+        return True
+    text = suffix.strip()
+    return bool(re.search(
+        r'\b(?:only|только)\s+(?:if|when|after|once|until|unless|provided)\b|'
+        r'\b(?:if|unless|provided\s+that|subject\s+to|pending|upon|until)\b.{0,100}'
+        r'\b(?:approval|permission|consent|authorization|authorisation|одобрени\w*|разрешени\w*|'
+        r'подтверждени\w*|согласовани\w*)\b|'
+        r'\b(?:after|upon|до|после)\b.{0,80}\b(?:approval|permission|consent|authorization|'
+        r'одобрени\w*|разрешени\w*|подтверждени\w*|согласовани\w*)\b|'
+        r'\b(?:only|только)\s+(?:for\s+)?(?:the\s+)?(?:secretary|секретар)', text, re.I))
+
+
+def resolve_main_permission_source(outcome, quote, repository, branch, state=None):
+    """Resolve exactly one native source carrying the permission quote and bind its bytes."""
+    if not quote or not repository or not isinstance(outcome.get('scope_sources'), list):
+        return None
+    if state and ((state.get('native_entry') or {}).get('finish_hold') not in {None, 'SessionEnd'} or
+                  (outcome.get('question') or {}).get('phase') not in {None, 'answered'}):
+        return None
+    candidates = []
+    for source in outcome.get('scope_sources', []):
+        record = _native_user_source_record(outcome, source)
+        if not record:
+            continue
+        direct_prompt = HERDER_ENVELOPE.sub('', record['prompt'])
+        deferred = _deferred_messages(direct_prompt)
+        if deferred:
+            messages, direct_prompt = deferred
+            if any(quote in message for message in messages):
+                continue
+        if direct_prompt.count(quote) != 1 or not main_permission({'prompt': direct_prompt}, quote, repository, branch):
+            continue
+        quote_end = direct_prompt.index(quote) + len(quote)
+        same_message_suffix = direct_prompt[quote_end:]
+        if _permission_suffix_is_limited(same_message_suffix):
+            continue
+        same_message_suffix = same_message_suffix.lstrip(' \t\r\n.!?,;:')
+        permission_record = {**record, 'same_source_suffix': same_message_suffix}
+        if _permission_revoked_later(permission_record, repository, branch):
+            continue
+        universal = _universal_project_main_permission(quote, repository, branch)
+        candidates.append({'source': source['source'], 'quote': quote,
+                           'sha256': record['sha256'], 'index': record['index'],
+                           'at': record['at'], 'turn_id': record['turn_id'],
+                           'kind': 'project-universal' if universal else 'exact-repository'})
+    unique = {candidate['source']: candidate for candidate in candidates}
+    return next(iter(unique.values())) if len(unique) == 1 else None
+
+
+def _permission_binding_valid(outcome, state):
+    policy = outcome.get('integration_policy') or {}
+    if policy.get('branch') not in {'main', 'master'} or not policy.get('main_permission_confirmed'):
+        return True
+    source_id = policy.get('permission_source')
+    source = next((row for row in outcome.get('scope_sources', []) if row.get('source') == source_id), None)
+    record = _native_user_source_record(outcome, source) if source else None
+    same_source_suffix = ''
+    permission_quote = policy.get('permission_quote')
+    direct_prompt = HERDER_ENVELOPE.sub('', record['prompt']) if record else ''
+    if isinstance(permission_quote, str) and direct_prompt.count(permission_quote) == 1:
+        same_source_suffix = direct_prompt.split(permission_quote, 1)[1]
+    if not record or any((record.get('sha256') != policy.get('permission_source_sha256'),
+                          record.get('index') != policy.get('permission_source_index'),
+                          record.get('at') != policy.get('permission_source_at'),
+                          _permission_suffix_is_limited(same_source_suffix),
+                          _permission_revoked_later({**record, 'same_source_suffix':
+                                                      same_source_suffix.lstrip(' \t\r\n.!?,;:')},
+                                                     policy.get('repository', ''), policy.get('branch', '')),
+                          not main_permission({'prompt': record['prompt']}, policy.get('permission_quote'),
+                                              policy.get('repository'), policy.get('branch')))):
+        return False
+    if (policy.get('ownership') != 'owned' or
+            remote_binding(product_root_path(outcome, Path(outcome.get('cwd') or '.')), policy.get('remote')) != policy.get('repository')):
+        return False
+    if state and ((state.get('native_entry') or {}).get('finish_hold') not in {None, 'SessionEnd'} or
+                  (outcome.get('question') or {}).get('phase') not in {None, 'answered'}):
+        return False
+    if policy.get('permission_kind') == 'project-universal':
+        project_source_id = policy.get('project_source') or policy.get('source')
+        project_source = next((row for row in outcome.get('scope_sources', [])
+                               if row.get('source') == project_source_id), None)
+        root = product_root_path(outcome, Path(outcome.get('cwd') or '.'))
+        paths = outcome.get('owned_paths', [])
+        scope_outcome = outcome
+        if root != Path(outcome.get('cwd') or '.').resolve():
+            if outcome.get('product_root_source') != project_source_id:
+                return False
+            try:
+                current_owned = []
+                for item in paths:
+                    value = Path(item)
+                    if value.is_absolute() or '..' in value.parts:
+                        return False
+                    current_owned.append(root.name + '/' + value.as_posix())
+                scope_outcome = {**outcome, 'owned_paths': current_owned}
+            except (OSError, ValueError):
+                return False
+        if not project_source or not product_root_scope_allowed(scope_outcome, project_source, root, paths):
+            return False
+    return True
 
 
 def verdict(outcome, state):
     if outcome['task_class'] == 'status':
         return 'complete'
     # Interrupt preserves the stop hold; it does not identify who stopped it.
-    if state.get('native_entry', {}).get('finish_hold') not in {None, 'SessionEnd'}:
+    if (state.get('native_entry') or {}).get('finish_hold') not in {None, 'SessionEnd'}:
         return 'blocked'
     if outcome.get('question', {}).get('phase') not in {None, 'answered'}:
         return 'blocked'
@@ -460,6 +1056,8 @@ def verdict(outcome, state):
         return 'running'
     if outcome.get('blockers'):
         return 'blocked'
+    if not _permission_binding_valid(outcome, state):
+        return 'pending'
     if not outcome.get('contract_confirmed'):
         return 'pending'
     if any(s['status'] not in {'complete', 'not-applicable'} for s in outcome['stages'].values()):
@@ -490,6 +1088,23 @@ def observe(state, event, name, cwd, session, now):
         raw_goal = submitted
         goal = semantic_scope(submitted)
     outcome = business.get('outcome')
+    had_existing_outcome = outcome is not None
+    source_identity = None
+    accepted_source_snapshot = None
+    if outcome and outcome.get('verification_kind') == 'source-publication':
+        try:
+            source_root = product_root_path(outcome, Path(cwd))
+            source_identity = _verified_historical_source_publication(outcome, source_root)
+        except (OSError, ValueError, TypeError):
+            source_identity = None
+        if (source_identity and outcome.get('finish_verdict') == 'complete' and
+                (outcome.get('stages') or {}).get('technical', {}).get('status') == 'complete' and
+                (outcome.get('stages') or {}).get('publication', {}).get('status') == 'complete'):
+            accepted_source_snapshot = copy.deepcopy(outcome)
+    previous_stage_fingerprints = outcome.get('stage_fingerprints') if outcome else None
+    legacy_fingerprints = bool(outcome and 'stage_fingerprints' not in outcome)
+    substantive_scope_change = False
+    direct_scope_change = False
     raw_submitted = str(event.get('prompt') or '') if name == 'UserPromptSubmit' and not event.get('_lhc_control_prompt') else ''
     prompt_origin = source_origin(raw_submitted)
     prompt = semantic_scope(raw_submitted)
@@ -500,6 +1115,11 @@ def observe(state, event, name, cwd, session, now):
         kind = classify(goal)
         target = next(iter(native.URL.findall(goal)), 'project:' + str(cwd))
         expected = re.split(r'\b(?:verify|expected|check that)\b|проверь|ожидаем', semantic_scope(goal), maxsplit=1, flags=re.I)[-1].strip()
+        assignment_source = _verified_native_assignment_source(business)
+        scope_sources = [scope_source_with_origin(row)
+                         for row in business.get('execution_context', {}).get('direct_user_messages', [])]
+        if assignment_source and assignment_source.get('source') not in {row.get('source') for row in scope_sources}:
+            scope_sources.append(assignment_source)
         outcome = business['outcome'] = {
             'id': digest([session, raw_goal]), 'owner': {'harness': business.get('runtime'), 'session_id': session},
             'original_goal': raw_goal, 'latest_correction': goal, 'task_class': kind,
@@ -508,9 +1128,7 @@ def observe(state, event, name, cwd, session, now):
             'delegation_prohibited': bool(NO_DELEGATION.search(goal)),
             'canary': {'scenario': goal[:512], 'target': target, 'expected': expected[:512], 'status': 'pending'},
             'owned_paths': [], 'stages': applicable(kind, goal), 'used_continuations': [],
-            'class_confirmed': False, 'scope_sources': [
-                scope_source_with_origin(row)
-                for row in business.get('execution_context', {}).get('direct_user_messages', [])],
+            'class_confirmed': False, 'scope_sources': scope_sources,
             'actionable': kind in ENGINEERING | {'testing', 'research'} or bool(ACTIONABLE_UNKNOWN.search(goal)),
             'sources': [], 'product_verdict': 'not-tested', 'blockers': [],
         }
@@ -524,7 +1142,16 @@ def observe(state, event, name, cwd, session, now):
         actionable_correction = (kind in ENGINEERING | {'testing', 'research'}
                                  or bool(ACTIONABLE_UNKNOWN.search(prompt))
                                  or bool(EXPECTATION_CHANGE.search(expectation_text(prompt))))
+        known_scope = {semantic_scope(str(value)) for value in [
+            outcome.get('original_goal'), outcome.get('latest_correction'),
+            *outcome.get('corrections', []),
+            *(source.get('scope_prompt') or source.get('prompt', '')
+              for source in outcome.get('scope_sources', [])),
+        ] if value}
+        if prompt in known_scope:
+            actionable_correction = False
         if actionable_correction:
+            direct_scope_change = True
             outcome['latest_correction'] = prompt
         if actionable_correction and re.search(r'\b(?:branch|upstream|integration|main|megamen32-dev)\b|ветк|интеграц', prompt, re.I):
             outcome.pop('integration_policy', None)
@@ -548,7 +1175,13 @@ def observe(state, event, name, cwd, session, now):
                 # New requirements accumulate. Explicit latest exclusions apply
                 # only to their operation, never cancel the whole repair.
                 if row['status'] == 'pending' or row['basis'].startswith('original-scope:'):
-                    if outcome['stages'][stage]['status'] != row['status']:
+                    current = outcome['stages'][stage]
+                    if current['status'] == 'complete' and row['status'] == 'pending':
+                        # Applicability additions do not replace a previously
+                        # accepted row; semantic fingerprints below invalidate
+                        # only stages whose actual contract changed.
+                        continue
+                    if current['status'] != row['status']:
                         outcome['stages'][stage] = row
             urls = native.URL.findall(prompt)
             if urls:
@@ -558,6 +1191,7 @@ def observe(state, event, name, cwd, session, now):
         # another repair verb. Apply only that exclusion, preserving the repair.
         for stage, pattern in EXCLUSIONS.items():
             if match := re.search(pattern, prompt, re.I):
+                direct_scope_change = True
                 outcome['stages'][stage] = {'status': 'not-applicable', 'basis': 'latest-scope:' + match.group(), 'evidence': []}
         if actionable_correction:
             for source in business.get('execution_context', {}).get('direct_user_messages', []):
@@ -566,25 +1200,86 @@ def observe(state, event, name, cwd, session, now):
         if actionable_correction and prompt not in outcome.get('corrections', []):
             outcome.setdefault('corrections', []).append(prompt)
             outcome['contract_confirmed'] = False
-            outcome['canary']['status'] = 'pending'
-            outcome['evidence_after'] = now.isoformat()
-            for row in outcome['stages'].values():
-                if row['status'] == 'complete':
-                    row['status'] = 'pending'
+            substantive_scope_change = True
     revision = scope_revision(outcome, cwd)
     if outcome.get('revision') and revision != outcome['revision']:
         outcome['evidence_after'] = now.isoformat()
         outcome['canary']['status'] = 'pending'
-        # Evidence from an old owned revision cannot accept the new code.
-        for row in outcome['stages'].values():
-            if row['status'] == 'complete':
-                row['status'] = 'pending'
+        # A changed candidate is a strict global floor for every stage.
+        previous_stage_fingerprints = None
+        substantive_scope_change = True
     outcome['revision'] = revision
+    if legacy_fingerprints and had_existing_outcome and not substantive_scope_change:
+        # An inert event (including a marked relay) must not rewrite historical
+        # acceptance or move its floor merely because this version adds hashes.
+        invalidated = set()
+    else:
+        invalidated = invalidate_changed_stage_evidence(outcome, previous_stage_fingerprints)
+    if invalidated:
+        outcome['evidence_after'] = now.isoformat()
+    if 'consumer' in invalidated:
+        outcome['canary']['status'] = 'pending'
     if name == 'PostToolUse':
         observe_job_progress(outcome, business, event, cwd)
         observe_question(outcome, event)
     if name in {'PostToolUse', 'PostToolUseFailure'}:
-        observe_contract_rejection(outcome, event, name)
+        observe_contract_rejection(outcome, event, name, session=session, cwd=cwd,
+                                   runtime=business.get('runtime'))
+
+    if source_identity and not direct_scope_change:
+        if accepted_source_snapshot:
+            for field in ('question', 'contract_rejection', 'blockers'):
+                if outcome.get(field) != accepted_source_snapshot.get(field):
+                    accepted_source_snapshot[field] = copy.deepcopy(outcome.get(field))
+            accepted_source_snapshot['finish_verdict'] = verdict(accepted_source_snapshot, state)
+            business['outcome'] = accepted_source_snapshot
+            return accepted_source_snapshot
+
+        # A prior observe may already have reopened the immutable published
+        # candidate after working-tree bytes changed. Recover only when the
+        # original accepted stage fingerprints still describe this exact scope.
+        source_meta = outcome.get('source_publication') or {}
+        stages = outcome.get('stages') or {}
+        technical_evidence = next((row for row in (stages.get('technical') or {}).get('evidence', [])
+                                   if row.get('verification_level') == 'independent-source-review' and
+                                   row.get('source_candidate') == source_identity['candidate']), None)
+        publication_evidence = next((row for row in (stages.get('publication') or {}).get('evidence', [])
+                                     if row.get('verification_level') == 'source-publication-readback' and
+                                     row.get('published_commit') == source_identity['published_commit'] and
+                                     row.get('ref') == source_identity['ref']), None)
+        historical_revision = (technical_evidence or {}).get('revision')
+        historical_pair = bool(
+            technical_evidence and publication_evidence and historical_revision and
+            publication_evidence.get('revision') == historical_revision and
+            outcome.get('owned_paths') and set(outcome['owned_paths']) == set(source_identity['owned_files']) and
+            source_meta.get('candidate_fingerprint') == source_identity['candidate'] and
+            str(product_root_path(outcome, Path(cwd))) == source_identity['root'])
+        if historical_pair:
+            comparison = copy.deepcopy(outcome)
+            comparison['revision'] = historical_revision
+            historical_fingerprints = stage_contract_fingerprints(comparison)
+            technical_matches = technical_evidence.get('contract_fingerprint') == historical_fingerprints['technical']
+            publication_matches = publication_evidence.get('contract_fingerprint') == historical_fingerprints['publication']
+            integration_ok = stages.get('integration', {}).get('status') == 'not-applicable'
+            integration_row = next((row for row in (stages.get('integration') or {}).get('evidence', [])
+                                    if row.get('verification_level') == 'source-publication-readback' and
+                                    row.get('published_commit') == source_identity['published_commit'] and
+                                    row.get('ref') == source_identity['ref'] and
+                                    (row.get('manifest'), row.get('reviewer')) ==
+                                    (source_identity['publication_manifest'],
+                                     source_identity['publication_reviewer_id'])), None)
+            if stages.get('integration', {}).get('status') != 'not-applicable':
+                integration_ok = bool(integration_row and
+                                       integration_row.get('contract_fingerprint') == historical_fingerprints['integration'])
+            if technical_matches and publication_matches and integration_ok:
+                outcome['revision'] = historical_revision
+                outcome['stage_fingerprints'] = historical_fingerprints
+                stages['technical']['status'] = 'complete'
+                stages['publication']['status'] = 'complete'
+                if integration_ok and stages.get('integration', {}).get('status') != 'not-applicable':
+                    stages['integration']['status'] = 'complete'
+                outcome['canary']['status'] = 'complete'
+                outcome['product_verdict'] = 'source-published'
     outcome['finish_verdict'] = verdict(outcome, state)
     return outcome
 
@@ -603,6 +1298,152 @@ def fingerprint(outcome, milestone=None):
 def contract_scope_fingerprint(outcome):
     return digest([outcome['id'], outcome.get('latest_correction'), outcome.get('task_class'),
                    [(key, row['status'], row['basis']) for key, row in sorted(outcome['stages'].items())]])
+
+
+def review_subject(outcome):
+    """Return the deterministic, non-authorizing digest for a current review assignment."""
+    policy = outcome.get('integration_policy') or {}
+    def applicability(row):
+        basis = str(row.get('basis') or '')
+        if basis.startswith('source-publication:'):
+            basis = 'source-publication'
+        elif basis.startswith('task-class:'):
+            basis = basis
+        elif basis.startswith('original-scope:') or basis.startswith('latest-scope:'):
+            basis = basis.split(':', 1)[0] + ':' + basis.split(':', 1)[1]
+        return (row.get('status') == 'not-applicable', basis)
+
+    semantic = {
+        'format': 'lhc-review-subject-v1',
+        'outcome_id': outcome.get('id'),
+        'original_goal': outcome.get('original_goal'),
+        'corrections': outcome.get('corrections', []),
+        'task_class': outcome.get('task_class'),
+        'product_root': str(product_root_path(outcome, Path(outcome.get('cwd') or '.'))),
+        'owned_paths': outcome.get('owned_paths', []),
+        'revision': outcome.get('revision'),
+        'candidate': source_candidate_semantics(outcome),
+        'canary': {key: outcome.get('canary', {}).get(key) for key in ('scenario', 'target', 'expected')},
+        'coverage': outcome.get('coverage', []),
+        'stage_claims': outcome.get('stage_claims', {}),
+        'verification_kind': outcome.get('verification_kind', 'standard'),
+        'policy': {key: policy.get(key) for key in ('remote', 'branch', 'ownership', 'repository')},
+        'stages': {key: applicability(row)
+                   for key, row in sorted(outcome.get('stages', {}).items())},
+    }
+    return 'lhc-review-subject-v1:' + digest(semantic)
+
+
+def source_candidate_semantics(outcome):
+    """Content/root identity without permission source references or destination policy."""
+    source = outcome.get('source_publication') or {}
+    if not source:
+        return None
+    return {'root': source.get('root'), 'candidate_head': source.get('candidate_head'),
+            'owned_files': source.get('owned_files')}
+
+
+def review_assignment_kind(outcome, text, product_root=None, *, allow_bound_dispatch=False):
+    """Shared native assignment predicate; the digest is a subject ID, never authority."""
+    if not isinstance(text, str):
+        return None
+    if outcome.get('id') not in text:
+        if not allow_bound_dispatch or outcome.get('original_goal') not in text or not all(
+                correction in text for correction in outcome.get('corrections', [])):
+            return None
+        return 'bound-dispatch'
+    if outcome.get('original_goal') in text and all(
+            correction in text for correction in outcome.get('corrections', [])):
+        return 'legacy'
+    canary = outcome.get('canary', {})
+    root = str(product_root or product_root_path(outcome, Path(outcome.get('cwd') or '.')))
+    readable = (root, canary.get('scenario'), canary.get('expected'))
+    if review_subject(outcome) in text and all(value and value in text for value in readable):
+        return 'digest'
+    return None
+
+
+STAGE_DEPENDENCIES = {
+    'technical': ('technical', 'consumer', 'deploy', 'publication', 'integration'),
+    'consumer': ('consumer',),
+    'deploy': ('deploy', 'consumer'),
+    'publication': ('publication', 'integration'),
+    'integration': ('integration',),
+}
+
+
+def _correction_domains(outcome):
+    consumer, broad = [], []
+    for correction in outcome.get('corrections', []):
+        value = semantic_scope(str(correction)).strip()
+        if EXPECTATION_VALUE.search(expectation_text(value)):
+            consumer.append(value)
+        elif re.match(r'^\s*(?:evidence\s+)?(?:format|manifest|receipt|citation|source[- ]ref)\s+correction\s*:', value, re.I):
+            # A typed evidence-shape repair does not alter the product contract.
+            continue
+        else:
+            # Unknown substantive changes conservatively bind every stage.
+            broad.append(value)
+    return consumer, broad
+
+
+def stage_contract_fingerprints(outcome):
+    """Fingerprint only stage semantics; omit clocks, transport and source references."""
+    claims = outcome.get('stage_claims', {})
+    canary = outcome.get('canary', {})
+    consumer_corrections, broad_corrections = _correction_domains(outcome)
+    root = str(product_root_path(outcome, Path(outcome.get('cwd') or '.')))
+    from lhc_outcome_review import project_matches, target_identity
+    def target_semantics(value):
+        if not value:
+            return value
+        if project_matches(value, Path(root)):
+            return ('project', root)
+        identity = target_identity(value, Path(root))
+        return identity or value
+    base = {'goal': outcome.get('original_goal'), 'corrections': broad_corrections,
+            'class': outcome.get('task_class'), 'root': root, 'paths': outcome.get('owned_paths', []),
+            'revision': outcome.get('revision'), 'kind': outcome.get('verification_kind', 'standard'),
+            'candidate': source_candidate_semantics(outcome)}
+    fields = {}
+    fields['technical'] = {**base, 'coverage': outcome.get('coverage', [])}
+    if outcome.get('verification_kind') == 'source-publication':
+        fields['technical'].update({key: canary.get(key) for key in ('scenario', 'target', 'expected')})
+    fields['consumer'] = {**base, 'scenario': canary.get('scenario'), 'target': target_semantics(canary.get('target')),
+                          'expected': canary.get('expected'), 'coverage': outcome.get('coverage', []),
+                          'corrections': [*broad_corrections, *consumer_corrections]}
+    fields['deploy'] = {**base, 'claim': claims.get('deploy')}
+    fields['publication'] = {**base, 'claim': claims.get('publication'),
+                             'remote': (outcome.get('integration_policy') or {}).get('remote'),
+                             'branch': (outcome.get('integration_policy') or {}).get('branch')}
+    if outcome.get('verification_kind') == 'source-publication':
+        fields['publication'].update({key: canary.get(key) for key in ('scenario', 'target', 'expected')})
+        fields['publication']['corrections'] = [*broad_corrections, *consumer_corrections]
+    fields['integration'] = {**base, 'claim': claims.get('integration'),
+                             'remote': (outcome.get('integration_policy') or {}).get('remote'),
+                             'branch': (outcome.get('integration_policy') or {}).get('branch'),
+                             'ownership': (outcome.get('integration_policy') or {}).get('ownership')}
+    return {stage: digest(fields[stage]) for stage in STAGES}
+
+
+def invalidate_changed_stage_evidence(outcome, previous):
+    current = stage_contract_fingerprints(outcome)
+    if not isinstance(previous, dict) or set(previous) != set(STAGES):
+        # Legacy complete rows have no trustworthy semantic binding. Preserve
+        # evidence bytes but require a fresh stage-specific assessment.
+        for row in outcome.get('stages', {}).values():
+            if row.get('status') == 'complete':
+                row['status'] = 'pending'
+        outcome['stage_fingerprints'] = current
+        return set(STAGES)
+    changed = {stage for stage in STAGES if previous.get(stage) != current[stage]}
+    invalidated = {dependent for stage in changed for dependent in STAGE_DEPENDENCIES[stage]}
+    for stage in invalidated:
+        row = outcome.get('stages', {}).get(stage, {})
+        if row.get('status') == 'complete':
+            row['status'] = 'pending'
+    outcome['stage_fingerprints'] = current
+    return invalidated
 
 
 def contract_rejection_action(error):
@@ -650,19 +1491,59 @@ def outcome_error_text(value):
     return ''
 
 
-def observe_contract_rejection(outcome, event, event_name):
+def observe_contract_rejection(outcome, event, event_name, *, session, cwd, runtime):
+    owner = outcome.get('owner') or {}
+    observer_root = Path(cwd).resolve()
+    outcome_root = Path(outcome.get('cwd', '/unknown')).resolve()
+    if (owner.get('session_id') != session or owner.get('harness') != runtime or
+            observer_root != outcome_root or owner.get('harness') not in {'codex', 'opencode', 'zcode', 'claude'}):
+        return
     args = event.get('tool_input') or event.get('arguments') or {}
     command = args.get('cmd') or args.get('command') or '' if isinstance(args, dict) else ''
     try:
-        words = shlex.split(str(command))
+        lexer = shlex.shlex(str(command), posix=True, punctuation_chars=';&|><')
+        lexer.whitespace_split = True
+        words = list(lexer)
     except ValueError:
         return
-    tool_index = next((i for i, word in enumerate(words)
-                       if Path(word).name == 'lhc_outcome.py'), None)
-    if tool_index is None:
+    if (not words or not re.fullmatch(r'python(?:3(?:\.\d+)?)?', Path(words[0]).name) or
+            any(word in {';', '&&', '||', '|', '>', '>>', '<'} or '$(' in word or '`' in word
+                for word in words)):
         return
-    subcommand = next((word for word in words[tool_index + 1:] if word in {'contract', 'review'}), None)
-    if subcommand is None:
+    tool_index = 1
+    if tool_index < len(words) and words[tool_index] == '-B':
+        tool_index += 1
+    if tool_index >= len(words) or Path(words[tool_index]).name != 'lhc_outcome.py':
+        return
+    options = {}
+    index = tool_index + 1
+    while index < len(words):
+        token = words[index]
+        if token not in {'--cwd', '--runtime', '--session-id'} or index + 1 >= len(words):
+            break
+        if token in options:
+            return
+        options[token] = words[index + 1]
+        index += 2
+    if (set(options) not in ({'--runtime', '--session-id'}, {'--cwd', '--runtime', '--session-id'}) or index >= len(words) or
+            words[index] not in {'contract', 'review'}):
+        return
+    command_cwd = options.get('--cwd')
+    if command_cwd is None:
+        command_cwd = args.get('workdir') or args.get('cwd') or event.get('cwd')
+    if not isinstance(command_cwd, str) or not command_cwd.strip():
+        return
+    if command_cwd.startswith('file://'):
+        uri = urlsplit(command_cwd)
+        if uri.netloc not in {'', 'localhost'} or uri.query or uri.fragment:
+            return
+        command_cwd = unquote(uri.path)
+    try:
+        command_root = Path(command_cwd).expanduser().resolve()
+    except (OSError, RuntimeError):
+        return
+    if (options['--session-id'] != owner.get('session_id') or
+            options['--runtime'] != owner.get('harness') or command_root != outcome_root):
         return
     response = event.get('tool_response') or {}
     if event_name == 'PostToolUse' and isinstance(response, dict) and response.get('exit_code') == 0:
@@ -749,7 +1630,8 @@ def reminder(outcome, tool):
                              shlex.quote(outcome['owner']['session_id']) + ' contract --help; then perform actual work.')
     return ('LHC outcome: ' + outcome['task_class'] + '; ' + outcome['finish_verdict'] +
             '. Canary: ' + json.dumps(outcome['canary'], ensure_ascii=False) +
-            '. Next stage: ' + str(stage) + '.' + contract_guidance + ' ' + review_route +
+            '. Review subject: ' + review_subject(outcome) + ' (subject binding only; not permission).' +
+            ' Next stage: ' + str(stage) + '.' + contract_guidance + ' ' + review_route +
             'Refs, echo, pytest and own PASS do not replace the original canary. Testing may complete with product=changes-required; '
             'do not hire nested testers. Never bypass human stop/permission. Human question: question --message; '
             'existing bound request → Notify card → sent receipt → canonical answer; receipt != answer. '
@@ -931,6 +1813,7 @@ def main():
         if expected_session_root != cwd:
             raise ValueError(f'LHC state for native session {args.session_id} is bound to session root {expected_session_root}; --cwd {cwd} is not that root')
         if args.command == 'contract':
+            previous_stage_fingerprints = outcome.get('stage_fingerprints')
             outcome.pop('contract_rejection', None)
             scope_source_id = args.scope_source or outcome.get('product_root_source')
             source = next((r for r in outcome.get('scope_sources', []) if r.get('source') == scope_source_id), None)
@@ -954,10 +1837,24 @@ def main():
                     raise ValueError('release handoff needs a separate permitted dev target')
                 policy = {'branch': args.integration_branch, 'remote': args.integration_remote,
                           'ownership': args.integration_ownership, 'source': scope_source_id,
+                          'project_source': scope_source_id,
                           'release_owner': args.release_owner,
                           'repository': remote_binding(product_root, args.integration_remote),
                           'permission_quote': args.integration_permission_quote}
-                policy['main_permission_confirmed'] = main_permission(semantic_source, args.integration_permission_quote, policy['repository'], policy['branch'])
+                permission = resolve_main_permission_source(
+                    outcome, args.integration_permission_quote, policy['repository'], policy['branch'], state)
+                if permission and permission['kind'] == 'project-universal':
+                    # A universal quote is usable only for the exact current project
+                    # scope and explicitly owned files, never as a workspace allowlist.
+                    if (args.integration_ownership != 'owned' or
+                            not product_root_scope_allowed(outcome, source, product_root, args.owned_path)):
+                        permission = None
+                policy['main_permission_confirmed'] = bool(permission and args.integration_ownership == 'owned')
+                policy['permission_source'] = permission['source'] if permission else None
+                policy['permission_source_sha256'] = permission['sha256'] if permission else None
+                policy['permission_source_index'] = permission['index'] if permission else None
+                policy['permission_source_at'] = permission['at'] if permission else None
+                policy['permission_kind'] = permission['kind'] if permission else None
                 policy['target_scope_confirmed'] = args.integration_branch in source_scope or policy['main_permission_confirmed']
             if args.task_class and args.task_class != outcome['task_class']:
                 if not source:
@@ -972,7 +1869,9 @@ def main():
                     raise ValueError('N/A needs explicit original/latest scope, not missing access')
                 outcome['stages'][stage] = {'status': 'not-applicable', 'basis': scope_source_id, 'evidence': []}
             for stage in args.require_stage:
-                outcome['stages'][stage] = {'status': 'pending', 'basis': 'confirmed-applicability', 'evidence': []}
+                current_stage = outcome.get('stages', {}).get(stage, {})
+                if current_stage.get('status') != 'complete':
+                    outcome['stages'][stage] = {'status': 'pending', 'basis': 'confirmed-applicability', 'evidence': []}
             outcome['class_confirmed'] = True
             if outcome['task_class'] in ENGINEERING and not args.owned_path:
                 raise ValueError('engineering contract requires explicit owned paths')
@@ -1049,8 +1948,7 @@ def main():
                        policy != outcome.get('integration_policy') or product_root != prior_product_root or
                        prior_verification_kind != args.verification_kind or
                        (source_publication and source_publication != prior_source_publication))
-            if not changed:
-                canary['status'] = previous['status']
+            canary['status'] = previous['status']
             outcome.update(canary=canary, owned_paths=args.owned_path, coverage=args.coverage, contract_confirmed=True, stage_claims=claims)
             if product_root != cwd:
                 outcome['product_root'] = str(product_root)
@@ -1062,20 +1960,24 @@ def main():
                 outcome['integration_policy'] = policy
                 if policy['branch'] not in {'main', 'master'}:
                     outcome['release_handoff'] = {'status': 'pending-dev-delivery', 'owner': policy.get('release_owner') or 'upstream owner', 'target': 'upstream main'}
-            if changed:
-                outcome['evidence_after'] = datetime.now().astimezone().isoformat()
-                for stage in outcome['stages'].values():
-                    if stage['status'] == 'complete':
-                        stage['status'] = 'pending'
             outcome['revision'] = scope_revision(outcome, cwd)
+            invalidated = invalidate_changed_stage_evidence(outcome, previous_stage_fingerprints)
+            if invalidated:
+                outcome['evidence_after'] = datetime.now().astimezone().isoformat()
+            if 'consumer' in invalidated:
+                outcome['canary']['status'] = 'pending'
         elif args.command == 'review':
             from lhc_outcome_review import accept_review, native_self_manifest, native_reviewer_manifest
-            manifest = (native_self_manifest(outcome, cwd, args.runtime, args.session_id) if args.native_self else
-                        native_reviewer_manifest(outcome, cwd, args.native_reviewer) if args.native_reviewer else args.manifest)
+            if not _permission_binding_valid(outcome, state):
+                raise ValueError('main integration permission source is missing, changed, revoked, or not bound to the current owned project')
+            manifest = (native_self_manifest(outcome, cwd, args.runtime, args.session_id, state=state) if args.native_self else
+                        native_reviewer_manifest(outcome, cwd, args.native_reviewer, state=state) if args.native_reviewer else args.manifest)
             accept_review(outcome, state, manifest, cwd, args.session_id, args.comparison_quote,
                           json.loads(native.read(args.testing_reuse_bindings)) if args.testing_reuse_bindings else None)
         elif args.command == 'question':
             result = question_plan(outcome, args.message)
+        if args.command == 'status':
+            outcome['review_subject'] = review_subject(outcome)
         outcome['finish_verdict'] = verdict(outcome, state)
         guard.write_state(path, state)
         print(json.dumps(result if args.command == 'question' else outcome, ensure_ascii=False))

@@ -131,6 +131,20 @@ def test_zcode_persists_long_prompt_instead_of_referencing_temporary_transcript(
     assert "original_prompt_full" in restored and str(state_file(tmp_path)) in restored
 
 
+def test_zcode_short_context_points_to_original_between_excerpt_and_full_prompt_limits(tmp_path):
+    prompt = "Original ZCode request: retain every requirement. " + "MID_LENGTH_REQUIREMENT " * 36
+    assert 600 < len(prompt) < 4096
+    invoke(tmp_path, "UserPromptSubmit", prompt=prompt)
+
+    state = json.loads(state_file(tmp_path).read_text())
+    assert state["business"]["original_prompt"] == prompt.strip()
+    restored = invoke(tmp_path, "SessionStart", source="startup")["hookSpecificOutput"]["additionalContext"]
+    assert "truncated_prompt_source_fields" in restored
+    assert "business.original_scope_prompt" in restored
+    assert str(state_file(tmp_path)) in restored
+    assert prompt not in restored
+
+
 def test_zcode_hook_bundle_declares_its_supported_native_events():
     hooks = json.loads((PLUGIN / "hooks/hooks.json").read_text())["hooks"]
     zcode_hooks = json.loads((PLUGIN / "hooks/zcode-hooks.json").read_text())["hooks"]

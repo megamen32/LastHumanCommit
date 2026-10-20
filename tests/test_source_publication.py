@@ -79,6 +79,29 @@ def test_source_readiness_requires_full_owned_file_read_and_exact_hash(tmp_path)
         source_pub.source_readiness(metadata, wrong_hash, root)
 
 
+def test_source_readiness_reuses_one_identical_body_with_explicit_aliases_and_hashes_each_path(tmp_path):
+    root, bare = repository(tmp_path)
+    content = "print('candidate')\n"
+    (root / "owned.py").write_text(content)
+    (root / "alias.py").write_text(content)
+    metadata = capture(root, bare, paths=["owned.py", "alias.py"],
+                       prompt=("Source-only task. Publish owned.py and alias.py from " + str(root) +
+                               " to origin/main."))
+    digest = metadata["owned_files"]["owned.py"]
+    assert metadata["owned_files"]["alias.py"] == digest
+    evidence = [
+        observation("one-body", "cat owned.py", content, root),
+        observation("both-hashes", "sha256sum owned.py alias.py",
+                    f"{digest}  owned.py\n{digest}  alias.py\n", root),
+    ]
+    readiness = source_pub.source_readiness(metadata, evidence, root)
+    assert readiness["read_calls"] == {"owned.py": "one-body", "alias.py": "one-body"}
+    assert readiness["read_aliases"] == {"owned.py": "owned.py", "alias.py": "owned.py"}
+    assert readiness["hash_calls"] == {"owned.py": "both-hashes", "alias.py": "both-hashes"}
+    with pytest.raises(ValueError, match="matching hash evidence"):
+        source_pub.source_readiness(metadata, evidence[:1], root)
+
+
 def test_contract_binds_exact_scope_ref_and_candidate_bytes(tmp_path):
     root, bare = repository(tmp_path)
     (root / "owned.py").write_text("print('candidate')\n")
@@ -226,33 +249,33 @@ def test_large_file_chunks_reject_gaps_overlap_wrong_file_truncation_and_stale_p
 
 
 @pytest.mark.parametrize("chunked", [False, True])
-def test_source_helper_literal_truncation_text_is_not_a_native_sentinel(tmp_path, chunked):
+def test_standalone_truncation_marker_inside_exact_candidate_is_valid_content(tmp_path, chunked):
     root, bare = repository(tmp_path)
-    helper_bytes = Path(source_pub.__file__).read_bytes()
-    marker = b"... command output truncated for persistence ..."
-    assert marker in helper_bytes
-    (root / "owned.py").write_bytes(helper_bytes)
+    content = b"heading\n... command output truncated for persistence ...\nbody\n"
+    (root / "owned.py").write_bytes(content)
     metadata = capture(root, bare)
-    helper_text = helper_bytes.decode("utf-8")
-    if chunked:
-        lines = helper_text.splitlines(keepends=True)
-        read_observations = []
-        start = 1
-        while start <= len(lines):
-            end = start + 299
-            output = "".join(lines[start - 1:end])
-            read_observations.append(observation(
-                f"helper-chunk-{start}", f"sed -n '{start},{end}p' owned.py", output, root,
-                at=f"2026-10-20T20:00:{len(read_observations):02d}+00:00"))
-            start = end + 1
-    else:
-        read_observations = [observation("helper-cat", "cat owned.py", helper_text, root)]
     digest = metadata["owned_files"]["owned.py"]
-    evidence = [*read_observations,
-                observation("helper-hash", "sha256sum owned.py", f"{digest}  owned.py\n", root,
-                            at="2026-10-20T20:00:20+00:00")]
+    if chunked:
+        read_calls = [observation("standalone-marker-chunk", "sed -n '1,300p' owned.py",
+                                  content.decode(), root)]
+    else:
+        read_calls = [observation("standalone-marker-cat", "cat owned.py", content.decode(), root)]
+    evidence = [*read_calls, observation("standalone-marker-hash", "sha256sum owned.py",
+                                         f"{digest}  owned.py\n", root)]
+    readiness = source_pub.source_readiness(metadata, evidence, root)
+    assert readiness["read_calls"]["owned.py"]
 
-    assert source_pub.source_readiness(metadata, evidence, root)["read_calls"]["owned.py"]
+
+def test_native_read_cap_still_rejects_oversized_single_body(tmp_path):
+    root, bare = repository(tmp_path)
+    content = b"x" * 65536
+    (root / "owned.py").write_bytes(content)
+    metadata = capture(root, bare)
+    digest = metadata["owned_files"]["owned.py"]
+    evidence = [observation("oversized-body", "cat owned.py", content.decode(), root),
+                observation("oversized-hash", "sha256sum owned.py", f"{digest}  owned.py\n", root)]
+    with pytest.raises(ValueError, match="full-file reads and matching hash"):
+        source_pub.source_readiness(metadata, evidence, root)
 
 
 def test_same_native_scope_revocation_cancels_earlier_publish_clause(tmp_path):
@@ -382,17 +405,19 @@ def test_public_cli_contract_review_keeps_publication_pending_then_completes(tmp
     assert current["stages"]["publication"]["status"] == "pending"
 
     def reviewer_manifest(reviewer_id, *, stale=False, include_remote=False, final=None,
-                          native_id=None, later_negative=False):
+                          native_id=None, later_negative=False, include_readiness=True):
         path = sessions / (reviewer_id + ".jsonl")
         current_time = datetime.now(timezone.utc) + timedelta(seconds=2)
         now = current_time.isoformat()
         old = (current_time - timedelta(hours=2)).isoformat()
         stamp = old if stale else now
+        current_candidate = current["source_publication"]["candidate_fingerprint"]
         rows = [{"type": "session_meta", "timestamp": stamp, "payload": {
-            "id": native_id or reviewer_id, "cwd": str(tmp_path / "reviewer")}},
+            "id": native_id or reviewer_id, "cwd": str(product_root)}},
             {"type": "response_item", "timestamp": stamp, "payload": {"type": "message", "role": "user",
-             "content": [{"text": f"Independent review of outcome {current['id']}. Original task: {original_goal}. "
-                                   f"Current scope: {goal}. Product root: {product_root}."}]}}]
+             "content": [{"text": f"Independent review of source-publication outcome {current['id']} "
+                                   f"candidate {current_candidate} for product root {product_root}. "
+                                   f"Original task: {original_goal}. Current scope: {goal}."}]}}]
         call_ids = []
         def call(call_id, command, output, *, at=stamp):
             call_ids.append(call_id)
@@ -405,24 +430,31 @@ def test_public_cli_contract_review_keeps_publication_pending_then_completes(tmp
             ])
         content = (product_root / "owned.py").read_text()
         digest = source_pub._sha(content.encode())
-        call("read-owned", "cat owned.py", content)
-        call("hash-owned", "sha256sum owned.py", f"{digest}  owned.py\n")
+        if include_readiness:
+            call("read-owned", "cat owned.py", content)
+            call("hash-owned", "sha256sum owned.py", f"{digest}  owned.py\n")
         if include_remote:
             remote = subprocess.run(["git", "-C", str(product_root), "ls-remote", "origin", "refs/heads/main"],
                                     check=True, capture_output=True, text=True).stdout
             call("remote-readback", "git ls-remote origin refs/heads/main", remote,
                      at=(current_time + timedelta(seconds=2)).isoformat())
+        report = final or (f"APPROVE BOUNDED; scope covered; source-ready outcome {current['id']} "
+                           f"candidate {current_candidate}.")
         rows.append({"type": "response_item", "timestamp": (current_time + timedelta(seconds=3)).isoformat(),
                      "payload": {"type": "message", "role": "assistant", "phase": "final",
-                                 "content": [{"text": final or "APPROVE BOUNDED; scope covered; owned source matches the assignment."}]}})
+                                 "content": [{"text": report}]}})
         if later_negative:
             rows.append({"type": "response_item", "timestamp": (current_time + timedelta(seconds=4)).isoformat(),
                          "payload": {"type": "message", "role": "assistant", "phase": "final",
                                      "content": [{"text": "Not approved: the latest review found a source defect."}]}})
         path.write_text("\n".join(json.dumps(row) for row in rows) + "\n")
-        manifest = tmp_path / (reviewer_id + ".manifest.json")
+        review_dir = product_root / ".tmp/lhc-native-review"
+        review_dir.mkdir(parents=True, exist_ok=True)
+        snapshot_path = review_dir / (reviewer_id + ".snapshot.jsonl")
+        snapshot_path.write_bytes(path.read_bytes())
+        manifest = review_dir / (reviewer_id + ".manifest.json")
         manifest.write_text(json.dumps({"format": "agent-herder-transcript-manifest-v1", "target": {
-            "path": str(path), "harness": "codex", "complete": True, "sessionId": native_id or reviewer_id,
+            "path": str(snapshot_path), "harness": "codex", "complete": True, "sessionId": native_id or reviewer_id,
             "source": {"kind": "native-file", "location": str(path)}}}))
         return manifest
 
@@ -455,6 +487,13 @@ def test_public_cli_contract_review_keeps_publication_pending_then_completes(tmp
     assert current["product_verdict"] == "source-ready"
     assert current["stages"]["technical"]["status"] == "complete"
     assert current["stages"]["publication"]["status"] == "pending"
+    original_technical_evidence = json.loads(json.dumps(current["stages"]["technical"]["evidence"]))
+    persisted = guard.load_state(state_path)
+    reused = review._reusable_source_readiness(current, persisted, session_root)
+    assert reused == current["stages"]["technical"]["evidence"][0]["source_readiness"]
+    remote_changed = json.loads(json.dumps(current))
+    remote_changed["integration_policy"]["remote"] = "new-remote"
+    assert review._reusable_source_readiness(remote_changed, persisted, session_root) == reused
 
     reject_manifest(reviewer_manifest("owner-self", native_id="publisher"),
                     expected="review must be independent")
@@ -471,8 +510,9 @@ def test_public_cli_contract_review_keeps_publication_pending_then_completes(tmp
             "payload": {"type": "item_completed", "item": {"type": "CommandExecution", "id": "publisher-push",
             "exit_code": 0, "cwd": str(product_root), "command": ["git", "push", "origin", "HEAD:refs/heads/main"]}}}) + "\n")
     commit = git(product_root, "rev-parse", "HEAD")
-    published_manifest = reviewer_manifest("reviewer-published", include_remote=True,
-        final=f"APPROVE BOUNDED; scope covered. Published commit {commit} at refs/heads/main.")
+    published_manifest = reviewer_manifest("reviewer-published", include_remote=True, include_readiness=False,
+        final=(f"APPROVE BOUNDED; scope covered; source-published outcome {current['id']} candidate "
+               f"{current['source_publication']['candidate_fingerprint']}. Published commit {commit} at refs/heads/main."))
     monkeypatch.setattr(sys, "argv", ["lhc_outcome.py", "--cwd", str(session_root), "--runtime", "codex",
                                       "--session-id", "publisher", "review", "--manifest", str(published_manifest)])
     outcome.main()
@@ -480,4 +520,82 @@ def test_public_cli_contract_review_keeps_publication_pending_then_completes(tmp
     current = guard.load_state(state_path)["business"]["outcome"]
     assert current["product_verdict"] == "source-published"
     assert current["stages"]["publication"]["status"] == "complete"
+    assert current["stages"]["technical"]["evidence"] == original_technical_evidence
     assert current["canary"]["status"] == "complete"
+
+    # A delivered source candidate is a historical result. Later repository
+    # edits and administrative traffic must not reopen it or rewrite its receipt.
+    accepted_snapshot = json.loads(json.dumps(current))
+    _tech = current["stages"]["technical"]["evidence"][0]
+    _pub = current["stages"]["publication"]["evidence"][0]
+    assert outcome._valid_publication_manifest(product_root, _tech["manifest"], _tech["reviewer"], outcome_id=current["id"], candidate=current["source_publication"]["candidate_fingerprint"], report_kind="source-ready")
+    assert outcome._valid_publication_manifest(product_root, _pub["manifest"], _pub["reviewer"], outcome_id=current["id"], candidate=current["source_publication"]["candidate_fingerprint"], published_commit=current["source_publication"]["published_commit"], ref=current["source_publication"]["ref"], report_kind="source-published")
+    assert outcome._verified_historical_source_publication(current, product_root), "accepted fixture must carry a verifiable immutable receipt"
+    state_after_delivery = guard.load_state(state_path)
+    (product_root / "owned.py").write_text("print('later repository change')\n")
+    observe_time = datetime.now(timezone.utc) + timedelta(minutes=1)
+    observed = outcome.observe(
+        state_after_delivery,
+        {"prompt": "Status: is the delivered source publication still complete?"},
+        "UserPromptSubmit", session_root, "publisher", observe_time,
+    )
+    assert observed == accepted_snapshot
+    assert observed["finish_verdict"] == "complete"
+    assert observed["source_publication"]["published_commit"] == commit
+    held_state = guard.load_state(state_path)
+    held_state["native_entry"] = {"finish_hold": "Interrupt"}
+    held = outcome.observe(
+        held_state,
+        {"prompt": "Status: is the delivered source publication still complete?"},
+        "UserPromptSubmit", session_root, "publisher", observe_time + timedelta(seconds=1),
+    )
+    assert held["finish_verdict"] == "blocked"
+    assert held["stages"]["publication"]["status"] == "complete"
+
+    # A previously reopened row is recovered only from its original paired
+    # candidate receipts; its newer floor stays in place.
+    stale_state = guard.load_state(state_path)
+    stale_outcome = stale_state["business"]["outcome"]
+    stale_outcome["stages"]["technical"]["status"] = "pending"
+    stale_outcome["stages"]["publication"]["status"] = "pending"
+    stale_outcome["canary"]["status"] = "pending"
+    stale_outcome["finish_verdict"] = "pending"
+    stale_floor = (observe_time + timedelta(seconds=5)).isoformat()
+    stale_outcome["evidence_after"] = stale_floor
+    stale_outcome["revision"] = outcome.scope_revision(stale_outcome, session_root)
+    stale_outcome["stage_fingerprints"] = outcome.stage_contract_fingerprints(stale_outcome)
+    recovered = outcome.observe(
+        stale_state,
+        {"prompt": "Status: is the previously published candidate still complete?"},
+        "UserPromptSubmit", session_root, "publisher", observe_time + timedelta(seconds=6),
+    )
+    assert recovered["finish_verdict"] == "complete"
+    assert recovered["revision"] == accepted_snapshot["revision"]
+    assert recovered["evidence_after"] == stale_floor
+    assert recovered["stages"]["technical"]["evidence"] == accepted_snapshot["stages"]["technical"]["evidence"]
+    assert recovered["stages"]["publication"]["evidence"] == accepted_snapshot["stages"]["publication"]["evidence"]
+
+    # A new direct requirement is effective and reopens the affected outcome.
+    changed_scope_state = guard.load_state(state_path)
+    changed_scope = outcome.observe(
+        changed_scope_state,
+        {"prompt": "Deploy the source artifact and verify the consumer flow."},
+        "UserPromptSubmit", session_root, "publisher", observe_time + timedelta(seconds=1),
+    )
+    assert changed_scope["latest_correction"] == "Deploy the source artifact and verify the consumer flow."
+    assert changed_scope["contract_confirmed"] is False
+    assert changed_scope["evidence_after"] == (observe_time + timedelta(seconds=1)).isoformat()
+
+    # A source-published label without both bound native receipts is not a seal.
+    false_receipt_state = guard.load_state(state_path)
+    false_outcome = false_receipt_state["business"]["outcome"]
+    false_outcome["stages"]["publication"]["evidence"] = []
+    before_false_receipt = json.loads(json.dumps(false_outcome))
+    (product_root / "owned.py").write_text("print('another repository change')\n")
+    unsealed = outcome.observe(
+        false_receipt_state,
+        {"prompt": "Status: is this still complete?"},
+        "UserPromptSubmit", session_root, "publisher", observe_time + timedelta(seconds=2),
+    )
+    assert unsealed != before_false_receipt
+    assert unsealed["stages"]["publication"]["status"] == "pending"

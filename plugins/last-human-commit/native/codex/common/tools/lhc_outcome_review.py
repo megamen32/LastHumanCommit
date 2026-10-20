@@ -64,24 +64,33 @@ def opencode_native_export(cwd, sid):
     return info, messages
 
 
-def native_self_manifest(outcome, cwd, runtime, owner):
+def native_self_manifest(outcome, cwd, runtime, owner, state=None):
     from lhc_outcome import bounded_self_check
     if outcome['owner'] != {'harness': runtime, 'session_id': owner} or not (outcome['task_class'] in {'testing', 'research'} or bounded_self_check(outcome)):
         raise ValueError('native self-check closes only its own bounded assignment, never fullcycle/parent acceptance')
     archive = cwd / '.tmp/lhc-native-self'
     archive.mkdir(parents=True, exist_ok=True, mode=0o700)
     if runtime == 'codex':
+        import lhc_native_identity as identity
         home = Path(os.environ.get('CODEX_HOME') or Path.home() / '.codex')
-        candidates = []
-        for candidate in (home / 'sessions').rglob('*' + owner + '*.jsonl'):
-            raw = native.read(candidate)
-            meta, _, _ = native.native_transcript(raw)
-            if meta.get('id') == owner and Path(meta.get('cwd', '/unknown')).resolve() == cwd:
-                candidates.append(candidate.resolve())
-        if len(candidates) != 1:
+        try:
+            identity_info = _resolve_native_actor(owner, None, [], cwd, runtime=runtime)
+        except (OSError, ValueError):
             raise ValueError('own native Codex source unavailable/ambiguous; preserve pending')
-        path = candidates[0]
-        source = {'kind': 'native-file', 'location': str(path)}
+        path = Path(identity_info['journal_path']).resolve()
+        if identity_info.get('parent_native_id'):
+            if Path(identity_info.get('native_cwd', '/unknown')).resolve() != cwd.resolve():
+                raise ValueError('verified child native cwd differs from the owned product root; preserve pending')
+            assignment = identity_info.get('assignment') or {}
+            if (assignment.get('status') != 'bound' or
+                    assignment.get('prompt', '').find(outcome.get('original_goal', '\0')) < 0 or
+                    not all(text in assignment.get('prompt', '') for text in outcome.get('corrections', []))):
+                raise ValueError('verified parent dispatch is missing the exact current bounded assignment; preserve pending')
+            source = {'kind': 'native-file', 'location': str(path),
+                      'dispatch_binding': _dispatch_binding(identity_info, owner)}
+        else:
+            source = {'kind': 'native-file', 'location': str(path)}
+        owner = identity_info.get('native_id') or owner
     elif runtime == 'opencode':
         info, messages = opencode_native_export(cwd, owner)
         path = archive / (runtime + '-' + owner + '.json')
@@ -105,6 +114,7 @@ def codex_window(source):
         raise ValueError('invalid native source window')
     with location.open('rb') as stream:
         header = stream.readline(native.MAX_BYTES + 1)
+        header_end = stream.tell()
         if len(header) + end - start > native.MAX_BYTES or end != os.fstat(stream.fileno()).st_size:
             raise ValueError('native window oversized or source advanced; refresh its snapshot, not its assessment')
         stream.seek(start - 1)
@@ -125,19 +135,21 @@ def codex_window(source):
     return header + body, indexes
 
 
-def native_reviewer_manifest(outcome, cwd, reviewer):
+def native_reviewer_manifest(outcome, cwd, reviewer, state=None):
     """Read one EXISTING Codex reviewer; never create, resume or impersonate it."""
-    if outcome['task_class'] not in ENGINEERING | {'research'} or reviewer == outcome['owner']['session_id']:
-        raise ValueError('native reviewer route is independent bounded engineering/research only')
+    from lhc_outcome import review_assignment_kind
+    if outcome['task_class'] not in ENGINEERING | {'research'}:
+        raise ValueError('native reviewer route is bounded engineering/research only')
     home = Path(os.environ.get('CODEX_HOME') or Path.home() / '.codex')
     candidates = list((home / 'sessions').rglob('*' + reviewer + '*.jsonl'))
     if len(candidates) != 1:
         raise ValueError('existing native reviewer unavailable/ambiguous')
-    location = candidates[0].resolve(); start = None; context = None
+    location = candidates[0].resolve(); start = None; context = None; dispatch_binding = None
     saw_outcome_id = False
     saw_current_goal = False
     with location.open('rb') as stream:
         header = stream.readline(native.MAX_BYTES + 1)
+        header_end = stream.tell()
         if json.loads(header).get('payload', {}).get('id') != reviewer:
             raise ValueError('native reviewer identity mismatch')
         index = 1
@@ -154,9 +166,24 @@ def native_reviewer_manifest(outcome, cwd, reviewer):
                 text = native.content(payload.get('content'))
                 saw_outcome_id = saw_outcome_id or outcome['id'] in text
                 saw_current_goal = saw_current_goal or outcome['original_goal'] in text
-                if outcome['id'] in text and outcome['original_goal'] in text:
+                if start is None and review_assignment_kind(outcome, text, product_root_path(outcome, cwd)):
                     start = context or (offset, index)
             index += 1
+    if not start and state is not None:
+        import lhc_native_identity as identity
+        try:
+            header = identity.read_native_header(location)
+            if header.get('parent_thread_id'):
+                logical_id = identity.composite_session_id(header['parent_thread_id'], header['native_id'])
+                resolved = _resolve_native_actor(logical_id, location, [], cwd, runtime='codex')
+                assignment = resolved.get('assignment') or {}
+                if (assignment.get('status') == 'bound' and
+                        review_assignment_kind(outcome, assignment.get('prompt', ''), product_root_path(outcome, cwd))):
+                    start = context or (header_end, 1)
+                    dispatch_binding = _dispatch_binding(resolved, logical_id)
+        except (OSError, ValueError):
+            # Only a verified native parent dispatch can substitute for a user row.
+            pass
     if not start:
         if saw_outcome_id and not saw_current_goal:
             detail = f"reviewer assignment names active outcome id {outcome['id']} but omits the full current task goal"
@@ -166,15 +193,15 @@ def native_reviewer_manifest(outcome, cwd, reviewer):
             detail = f"reviewer mentions active outcome id {outcome['id']} and the current task goal, but not together in one native assignment"
         else:
             detail = f"existing reviewer has no native assignment for active outcome {outcome['id']} and its full current task goal"
-        action = (
-            "No reviewer evidence was accepted. Keep the predecessor outcome and its report pending. Create a NEW native worker session "
-            "whose first assignment carries the actual human mandate (or a verified parent dispatch) plus the current canonical root, "
-            "exact owned files, and publication scope. Bind the existing independent reviewer to the fresh outcome id and the full "
-            "current task text before collecting new observations. Do not reuse this report, edit state/cache, or replay product/provider actions."
-        )
+        action = ("No reviewer evidence was accepted. Keep this outcome pending. Add a fresh user assignment in the existing reviewer "
+                  "session binding its outcome id and current review subject digest, with readable exact product root, scenario, and expected "
+                  "result; legacy assignments must include the full current goal and corrections. Keep exact owned paths and current scope. "
+                  "The digest identifies the subject only; it is not permission.")
         raise ValueError(f'{detail}. {action}')
     source = {'kind': 'native-file-window', 'location': str(location),
               'start_byte': start[0], 'end_byte': end, 'start_line': start[1]}
+    if dispatch_binding:
+        source['dispatch_binding'] = dispatch_binding
     raw, _ = codex_window(source)
     archive = cwd / '.tmp/lhc-native-review'; archive.mkdir(parents=True, exist_ok=True, mode=0o700)
     stem = 'codex-' + reviewer + '-' + digest(source)
@@ -189,7 +216,123 @@ def native_reviewer_manifest(outcome, cwd, reviewer):
     return manifest
 
 
-def load_review(path):
+def _dispatch_binding(resolved, logical_id):
+    assignment = resolved.get('assignment') or {}
+    return {'logical_id': logical_id, 'call_id': resolved.get('dispatch_call_id'),
+            'parent_journal_path': resolved.get('parent_journal_path'),
+            'parent_state_path': resolved.get('parent_state_path'),
+            'observed_at': assignment.get('observed_at'),
+            'prompt_sha256': assignment.get('prompt_sha256'),
+            'native_id': resolved.get('native_id'),
+            'parent_native_id': resolved.get('parent_native_id'),
+            'native_cwd': resolved.get('native_cwd')}
+
+
+def _resolve_native_actor(logical_id, journal_path, records, cwd, runtime='codex'):
+    import lhc_native_identity as identity
+    if not journal_path:
+        native_id = logical_id.rsplit(':subagent:', 1)[-1]
+        journal_path = identity.find_native_journal(native_id)
+    if ':subagent:' in logical_id:
+        header = identity.read_native_header(journal_path)
+        import lhc_time_guard as guard
+        event = {'session_id': header.get('parent_thread_id'), 'agent_id': header.get('native_id'),
+                 'transcript_path': str(journal_path)}
+        resolved = guard.resolve_native_child_assignment(event, logical_id, runtime,
+                                                         Path(header['native_cwd']))
+        if not resolved.get('verified'):
+            raise ValueError(resolved.get('reason') or 'native parent dispatch is unverified')
+        return resolved
+    return identity.resolve_standalone_identity(logical_id, journal_path, observed_native_cwd=str(cwd))
+
+
+def _verified_session_relation(outcome, state, meta, manifest_path, cwd):
+    """Resolve both native actors before deciding self, parent/child, or independent."""
+    import lhc_native_identity as identity
+    manifest = json.loads(native.read(manifest_path))
+    harness = manifest.get('target', {}).get('harness')
+    if harness == 'opencode':
+        # OpenCode's supported native CLI export is re-read and compared by
+        # load_review; it has no Codex parent/child identity graph.
+        reviewer = (harness, meta.get('id') or meta.get('session_id'), str(Path(meta.get('cwd', '/unknown')).resolve()))
+        task_owner = (outcome['owner'].get('harness'), outcome['owner'].get('session_id'),
+                      str(Path(outcome.get('cwd', '/unknown')).resolve()))
+        if reviewer[1] == task_owner[1] and reviewer != task_owner:
+            raise ValueError('native session id overlaps but its verified project identity differs')
+        return 'self' if reviewer == task_owner else 'independent'
+    if harness != 'codex':
+        raise ValueError('native reviewer identity is unavailable for this harness; preserve pending')
+    source = manifest.get('target', {}).get('source') or {}
+    if source.get('kind') not in {'native-file', 'native-file-window'}:
+        raise ValueError('reviewer native journal reference is unavailable; preserve pending')
+    reviewer_path = source.get('location')
+    owner_path = outcome.get('native_source')
+    try:
+        owner_identity = _resolve_native_actor(outcome['owner']['session_id'], owner_path, [], cwd, harness)
+    except (OSError, ValueError) as error:
+        raise ValueError('owner native journal identity is unavailable; preserve pending') from error
+    try:
+        reviewer_header = identity.read_native_header(reviewer_path)
+        if reviewer_header.get('parent_thread_id'):
+            reviewer_logical_id = identity.composite_session_id(
+                reviewer_header['parent_thread_id'], reviewer_header['native_id'])
+            reviewer_identity = _resolve_native_actor(reviewer_logical_id, reviewer_path, [], cwd, harness)
+        else:
+            reviewer_identity = identity.resolve_standalone_identity(
+                reviewer_header['native_id'], reviewer_path,
+                observed_native_cwd=str(reviewer_header['native_cwd']))
+    except (OSError, ValueError) as error:
+        raise ValueError('review must be independent; reviewer native identity is unavailable or ambiguous') from error
+    return identity.classify_session_relation(owner_identity, reviewer_identity)
+
+
+def _verify_current_actor(outcome, state, owner, cwd):
+    if outcome['owner'].get('harness') == 'opencode':
+        if owner != outcome['owner'].get('session_id') or Path(outcome.get('cwd', '/unknown')).resolve() != cwd.resolve():
+            raise ValueError('current review actor is not bound to the owning native session')
+        return
+    try:
+        owner_identity = _resolve_native_actor(
+            outcome['owner']['session_id'], outcome.get('native_source'),
+            [], cwd, outcome['owner'].get('harness', 'codex'))
+        current_identity = _resolve_native_actor(
+            owner, None, [], cwd, outcome['owner'].get('harness', 'codex'))
+        relation = __import__('lhc_native_identity').classify_session_relation(owner_identity, current_identity)
+    except (OSError, ValueError) as error:
+        raise ValueError('current review actor is not bound to the owning native session') from error
+    if relation != 'self':
+        raise ValueError('current review actor is not the exact owning native session')
+
+
+def _reusable_source_readiness(outcome, state, cwd):
+    """Revalidate an earlier accepted exact-candidate read proof without relabeling it."""
+    from lhc_outcome import stage_contract_fingerprints
+    row = outcome.get('stages', {}).get('technical', {})
+    evidence = (row.get('evidence') or [{}])[-1]
+    metadata = outcome.get('source_publication') or {}
+    if (row.get('status') != 'complete' or evidence.get('verification_level') != 'independent-source-review'
+            or evidence.get('contract_fingerprint') != stage_contract_fingerprints(outcome).get('technical')
+            or evidence.get('revision') != scope_revision(outcome, cwd)
+            or evidence.get('source_candidate') != metadata.get('candidate_fingerprint')
+            or not evidence.get('source_readiness') or not evidence.get('manifest')):
+        return None
+    manifest_path = Path(evidence['manifest'])
+    if not manifest_path.is_file():
+        return None
+    try:
+        prior_meta, _, prior_observations = load_review(manifest_path, state=state)
+        if _verified_session_relation(outcome, state, prior_meta, manifest_path, cwd) != 'independent':
+            return None
+        call_ids = set(evidence.get('calls', []))
+        exact_calls = [(call, output) for call, output in prior_observations if call.get('call_id') in call_ids]
+        from lhc_source_publication import source_readiness
+        readiness = source_readiness(metadata, exact_calls, product_root_path(outcome, cwd))
+        return readiness if readiness == evidence.get('source_readiness') else None
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+
+
+def load_review(path, state=None):
     manifest = json.loads(native.read(path))
     if manifest.get('format') != 'agent-herder-transcript-manifest-v1':
         raise ValueError('use the existing native export_transcript manifest')
@@ -199,12 +342,32 @@ def load_review(path):
         location = Path(target['source']['location']).resolve()
         location.relative_to((Path(os.environ.get('CODEX_HOME') or Path.home() / '.codex') / 'sessions').resolve())
         indexes = None
-        if target['source'].get('kind') == 'native-file-window':
+        source_kind = target['source'].get('kind')
+        binding = target['source'].get('dispatch_binding')
+        if source_kind == 'native-file-window':
             actual, indexes = codex_window(target['source'])
             if actual != raw:
                 raise ValueError('review window differs from original native bytes')
-        elif target['source'].get('kind') != 'native-file' or not native.read(location).startswith(raw):
+        elif source_kind == 'native-file' and not native.read(location).startswith(raw):
             raise ValueError('review export differs from native source')
+        elif source_kind != 'native-file':
+            raise ValueError('review export differs from native source')
+        if binding:
+            import lhc_native_identity as identity
+            header = identity.read_native_header(location)
+            logical_id = binding.get('logical_id')
+            resolved = _resolve_native_actor(logical_id, location, [], Path(header['native_cwd']), 'codex')
+            assignment = resolved.get('assignment') or {}
+            if (resolved.get('dispatch_call_id') != binding.get('call_id') or
+                    assignment.get('status') != 'bound' or
+                    assignment.get('observed_at') != binding.get('observed_at') or
+                    assignment.get('prompt_sha256') != binding.get('prompt_sha256') or
+                    resolved.get('native_id') != binding.get('native_id') or
+                    resolved.get('parent_native_id') != binding.get('parent_native_id') or
+                    resolved.get('native_cwd') != binding.get('native_cwd') or
+                    resolved.get('parent_journal_path') != binding.get('parent_journal_path') or
+                    resolved.get('parent_state_path') != binding.get('parent_state_path')):
+                raise ValueError('child dispatch assignment no longer matches its exact parent source and receipt')
         result = native.native_transcript(raw)
         rows = [json.loads(line) for line in raw.decode().splitlines() if line.strip()]
         indexes = indexes if indexes is not None else list(range(len(rows)))
@@ -221,6 +384,11 @@ def load_review(path):
             if item.get('type') == 'CommandExecution':
                 call_meta.setdefault(item.get('id'), (index, row.get('timestamp')))
         result[0]['assignments'] = assignments
+        binding = target['source'].get('dispatch_binding')
+        if binding:
+            result[0]['dispatch_assignments'] = [{
+                'index': None, 'at': binding['observed_at'], 'text': assignment['prompt'],
+                'source_call_id': binding['call_id'], 'source_kind': 'native-parent-dispatch'}]
         result[0]['own_reports'] = [{'index': i, 'at': row.get('timestamp'), 'text': native.content(row['payload'].get('content'))}
                                     for i, row in zip(indexes, rows) if row.get('payload', {}).get('role') == 'assistant'
                                     and native.content(row['payload'].get('content'))]
@@ -514,6 +682,36 @@ def real_observation(call, output, target, stage, task_class=None, cwd=None, exp
     if not isinstance(result, dict):
         return False
     if stage == 'deploy':
+        plugin_expected = re.fullmatch(r'plugin:([A-Za-z0-9._-]+)@([A-Za-z0-9._-]+):([A-Za-z0-9._-]+)', expected)
+        plugin_command = len(words) >= 3 and Path(words[0]).name == 'codex' and words[1:3] == ['plugin', 'list']
+        if plugin_expected or plugin_command:
+            if not plugin_expected or not plugin_command:
+                return False
+            plugin_name, marketplace, version = plugin_expected.groups()
+            canonical_target = ['codex', 'plugin', 'list', '--marketplace', marketplace, '--json']
+            try:
+                if (target != ' '.join(canonical_target) or words != canonical_target or
+                        native_cwd.resolve() != Path(cwd).resolve() or directory != Path(cwd).resolve() or
+                        result.get('marketplace') not in {None, marketplace}):
+                    return False
+            except (OSError, TypeError):
+                return False
+            installed = result.get('installed')
+            available = result.get('available')
+            if not isinstance(installed, list) or not isinstance(available, list):
+                return False
+            # Manager IDs may be bare or marketplace-qualified. The explicit
+            # expected identity must match exactly one installed record; the
+            # display name is required but is not used as a fuzzy alias.
+            accepted_ids = {plugin_name, plugin_name + '@' + marketplace}
+            matches = [row for row in installed if isinstance(row, dict) and
+                       row.get('pluginId') in accepted_ids]
+            if len(matches) != 1:
+                return False
+            row = matches[0]
+            return (isinstance(row.get('name'), str) and bool(row['name'].strip()) and
+                    row.get('marketplaceName') == marketplace and row.get('version') == version and
+                    row.get('installed') is True and row.get('enabled') is True)
         matches = target in words if target.startswith(('http://', 'https://')) else words[:len(shlex.split(target))] == shlex.split(target)
         if not matches or (target.startswith(('http://', 'https://')) and Path(words[0]).name not in {'curl', 'wget'}):
             return False
@@ -592,6 +790,27 @@ def report_result(text):
     defect = bool(re.search(r'changes.required|\bfailed\b|\bfailure\b|defect found|ошибк|не соответствует', text, re.I))
     positive = bool(re.search(r'\bPASS(?:ED)?\b|no defects|match(?:ed|es)|соответствует|работает|прош[её]л|прошл[аои]', text, re.I))
     return defect, positive
+
+
+def _technical_partial_assessment(text):
+    """A bounded technical result is partial only when consumer work is explicit as pending."""
+    defect, _ = report_result(text)
+    technical_pass = re.search(
+        r'\btechnical(?:\s+(?:tests?|checks?))?\s*[:=-]?\s*pass(?:ed)?\b', text, re.I)
+    consumer_pending = re.search(
+        r'\bconsumer\s*/\s*install(?:ation)?\s+(?:is\s+)?pending\b', text, re.I)
+    return bool(not defect and technical_pass and consumer_pending)
+
+
+def _has_successful_technical_call_before(observations, cwd, assessment_index, task_class):
+    if type(assessment_index) is not int:
+        return False
+    return any(
+        type(call.get('_source_index')) is int and call['_source_index'] < assessment_index
+        and call.get('_source_time')
+        and real_observation(call, output, '', 'technical', task_class, cwd)
+        for call, output in observations
+    )
 
 
 def source_report_result(text):
@@ -678,7 +897,7 @@ def research_comparison_binding(outcome, final, observations, cwd, quote):
             'canary_hash': digest({k: outcome['canary'][k] for k in ('scenario', 'target', 'expected')})}
 
 
-def raw_review(outcome, final, observations, cwd, comparison_quote=None):
+def raw_review(outcome, final, observations, cwd, comparison_quote=None, source_readiness_reuse=None):
     """Small ordinary-report route; keep original prose as semantic assessment.
 
     No author PASS/map file and no rewriting the review. Complex unsupported
@@ -696,14 +915,23 @@ def raw_review(outcome, final, observations, cwd, comparison_quote=None):
                       if row.get('source') == metadata.get('permission_source')), None)
         if not permission_unchanged(metadata, source, outcome.get('corrections', [])):
             raise ValueError('source-publication authorization was revoked or no longer matches the current source')
-        readiness = source_readiness(metadata, observations, cwd, floor=outcome.get('evidence_after'))
+        reused_readiness = False
+        try:
+            readiness = source_readiness(metadata, observations, cwd, floor=outcome.get('evidence_after'))
+        except ValueError:
+            if source_readiness_reuse is None:
+                raise
+            readiness = source_readiness_reuse
+            reused_readiness = True
         read_calls = _source_evidence_refs(readiness['read_calls'])
         hash_calls = _source_evidence_refs(readiness['hash_calls'])
         candidate = 'candidate:' + metadata['candidate_fingerprint']
-        stages = {'technical': {
-            'target': 'project:' + str(cwd), 'expected': candidate,
-            'observed': final, 'evidence_calls': sorted(set(read_calls + hash_calls)),
-        }}
+        stages = {}
+        if not reused_readiness:
+            stages['technical'] = {
+                'target': 'project:' + str(cwd), 'expected': candidate,
+                'observed': final, 'evidence_calls': sorted(set(read_calls + hash_calls)),
+            }
         product_verdict = 'source-ready'
         try:
             published = publication_readback(metadata, observations, cwd, outcome,
@@ -739,9 +967,14 @@ def raw_review(outcome, final, observations, cwd, comparison_quote=None):
         raise ValueError('no native assessment yet: send the actual source finding and expected/observed as a separate visible assistant message before review; FEEDBACK alone is not that message. Do not debug helper/session storage; preserve pending if unavailable')
     if not final.strip() or not (positive or defect or outcome['task_class'] == 'research'):
         raise ValueError('raw review must state its actual result; retain the original report')
+    technical_partial = _technical_partial_assessment(final)
+    if technical_partial and not any(
+            real_observation(call, output, '', 'technical', outcome['task_class'], cwd)
+            for call, output in observations):
+        raise ValueError('technical partial assessment needs a successful native test command before the report')
     stages = {}
     by_call = {call.get('call_id'): (call, output) for call, output in observations if call.get('call_id')}
-    resolved = consumer_target(outcome, observations, cwd)
+    resolved = outcome['canary']['target'] if technical_partial else consumer_target(outcome, observations, cwd)
     identity = target_identity(resolved, cwd)
     ordered_cli = (outcome['task_class'] == 'quickfix' and identity and identity[0] == 'python'
                    and all(outcome['stages'][s]['status'] == 'pending' for s in ('technical', 'consumer'))
@@ -750,6 +983,8 @@ def raw_review(outcome, final, observations, cwd, comparison_quote=None):
     technical_at = -1
     for stage in STAGES:
         if outcome['stages'][stage]['status'] != 'pending':
+            continue
+        if stage == 'consumer' and technical_partial:
             continue
         claim = outcome.get('stage_claims', {}).get(stage, canary)
         target, expected = claim['target'], claim['expected']
@@ -800,7 +1035,8 @@ def raw_review(outcome, final, observations, cwd, comparison_quote=None):
             'comparison': final, 'stages': stages, 'coverage': coverage, 'format': 'original-native-prose'}
 
 
-def own_assessment(outcome, text, observations, cwd, comparison_quote=None, assessment_index=None):
+def own_assessment(outcome, text, observations, cwd, comparison_quote=None, assessment_index=None,
+                   source_readiness_reuse=None):
     if outcome.get('verification_kind') == 'source-publication':
         from lhc_source_publication import permission_unchanged, source_readiness
         defect, positive = source_report_result(text)
@@ -815,6 +1051,8 @@ def own_assessment(outcome, text, observations, cwd, comparison_quote=None, asse
                       if row.get('source') == metadata.get('permission_source')), None)
         if not permission_unchanged(metadata, source, outcome.get('corrections', [])):
             return False
+        if source_readiness_reuse is not None:
+            return True
         try:
             source_readiness(metadata, observations, cwd,
                              floor=outcome.get('evidence_after'), before=assessment_index)
@@ -827,6 +1065,9 @@ def own_assessment(outcome, text, observations, cwd, comparison_quote=None, asse
     # Never fall back over newer negative findings, even if unsupported/partial.
     if defect:
         return True
+    if _technical_partial_assessment(text):
+        return _has_successful_technical_call_before(observations, cwd, assessment_index,
+                                                     outcome.get('task_class'))
     if not positive and outcome['task_class'] != 'research':
         return False
     try:
@@ -840,8 +1081,8 @@ def own_assessment(outcome, text, observations, cwd, comparison_quote=None, asse
 
 
 def accept_review(outcome, state, path, cwd, owner, comparison_quote=None, testing_reuse=None):
-    from lhc_outcome import bounded_self_check
-    meta, messages, observations = load_review(path)
+    from lhc_outcome import bounded_self_check, review_assignment_kind, stage_contract_fingerprints
+    meta, messages, observations = load_review(path, state=state)
     product_cwd = product_root_path(outcome, cwd)
     source_mode = outcome.get('verification_kind') == 'source-publication'
     reuse_original = reuse_report = None
@@ -851,22 +1092,25 @@ def accept_review(outcome, state, path, cwd, owner, comparison_quote=None, testi
         if comparison_quote:
             raise ValueError('testing reuse cannot bind research comparison')
     sid = meta.get('id') or meta.get('session_id')
-    own_attempt = (not source_mode and sid == owner and
+    _verify_current_actor(outcome, state, owner, cwd)
+    relation = _verified_session_relation(outcome, state, meta, path, cwd)
+    own_attempt = (not source_mode and relation == 'self' and
                    (outcome['task_class'] in {'testing', 'research'} or bounded_self_check(outcome)))
     native_cwd = Path(meta.get('cwd', '/unknown'))
-    cross_cwd_research = sid != owner and outcome['task_class'] == 'research' and native_cwd.resolve() != cwd
+    cross_cwd_research = relation == 'independent' and outcome['task_class'] == 'research' and native_cwd.resolve() != cwd
     # Native cwd identifies where the independent reviewer runs, not which
     # product it reviewed. For engineering reviews in a separate native cwd,
     # prove product identity from the exact current native assignment below.
-    cross_cwd_product = (sid != owner and outcome['task_class'] in ENGINEERING
+    cross_cwd_product = (relation == 'independent' and outcome['task_class'] in ENGINEERING
                          and native_cwd.resolve() != cwd)
-    if (sid == owner and (source_mode or not own_attempt)) or not native_cwd.is_absolute() or (
+    if (relation != 'independent' and (source_mode or not own_attempt)) or not native_cwd.is_absolute() or (
             native_cwd.resolve() != cwd and not cross_cwd_research and not cross_cwd_product):
         raise ValueError('review must be independent and for this exact project')
     # The existing reviewer can deliberately inspect a bounded case from its
     # original project. Missing tool cwd remains that native original cwd,
     # never silently defaults to the case being accepted.
     observations = [({**call, '_native_cwd': str(native_cwd.resolve())}, output) for call, output in observations]
+    source_readiness_reuse = (_reusable_source_readiness(outcome, state, cwd) if source_mode else None)
     if comparison_quote and not (own_attempt and outcome['task_class'] == 'research' and all(
             outcome['stages'][stage]['status'] == 'not-applicable' for stage in STAGES if stage != 'consumer')):
         raise ValueError('comparison quote binds only an own bounded research finding, never parent/independent acceptance')
@@ -878,8 +1122,8 @@ def accept_review(outcome, state, path, cwd, owner, comparison_quote=None, testi
         negative_binding = comparison_quote and outcome['task_class'] == 'research' and re.search(
             r'\b(?:defect|wrong|needs? correction)\b|ошибк|не соответствует', text, re.I)
         return negative_binding or own_assessment(outcome, text, observations, product_cwd,
-                                                  comparison_quote, report['index'])
-    independent_engineering_review = sid != owner and outcome['task_class'] in ENGINEERING
+                                                  comparison_quote, report['index'], source_readiness_reuse)
+    independent_engineering_review = relation == 'independent' and outcome['task_class'] in ENGINEERING
     own_report = next((report for report in reversed(meta.get('own_reports', []))
                        if selected_assessment(report)), None) if (
                            own_attempt or outcome['task_class'] == 'research' or independent_engineering_review
@@ -917,23 +1161,36 @@ def accept_review(outcome, state, path, cwd, owner, comparison_quote=None, testi
     final = next((text for role, text, phase in reversed(messages) if role == 'assistant' and (phase != 'commentary' or own_attempt)), '')
     if own_report:
         final = own_report['text']
-    if (outcome['id'] not in prompt and not own_attempt) or outcome['original_goal'] not in prompt:
+    all_assignments = [*meta.get('assignments', []), *meta.get('dispatch_assignments', [])]
+    bound_assignments = [row for row in all_assignments
+                         if review_assignment_kind(outcome, row['text'], product_cwd,
+                                                   allow_bound_dispatch=(own_attempt and row.get('source_kind') == 'native-parent-dispatch'))]
+    has_current_subject = outcome['original_goal'] in prompt or bool(bound_assignments)
+    if (outcome['id'] not in prompt and not own_attempt and not bound_assignments) or not has_current_subject:
         raise ValueError('review assignment must identify the outcome')
-    if any(correction not in prompt for correction in outcome.get('corrections', [])):
+    if any(correction not in prompt for correction in outcome.get('corrections', [])) and not any(
+            review_assignment_kind(outcome, row['text'], product_cwd,
+                                   allow_bound_dispatch=(own_attempt and row.get('source_kind') == 'native-parent-dispatch')) in {'digest', 'bound-dispatch'}
+            for row in all_assignments):
         raise ValueError('review omits the latest accepted scope corrections')
-    assignments = [row for row in meta.get('assignments', []) if outcome['original_goal'] in row['text']
-                   and (own_attempt or outcome['id'] in row['text'])]
+    assignments = [row for row in all_assignments
+                   if review_assignment_kind(outcome, row['text'], product_cwd,
+                                             allow_bound_dispatch=(own_attempt and row.get('source_kind') == 'native-parent-dispatch')) or
+                   (own_attempt and outcome['original_goal'] in row['text'])]
     if not assignments:
         raise ValueError('native source has no current scope-bound assignment window')
-    assignment = max(assignments, key=lambda row: row['index'])
+    # Preserve the original current-subject assignment window. A repeated
+    # identical assignment must not strand real calls made after its first
+    # occurrence and before the duplicate.
+    assignment = min(assignments, key=lambda row: native.timestamp(row.get('at') or outcome['started_at']))
     if cross_cwd_product:
-        product_token = re.compile(r'(?<![\w./-])' + re.escape(str(product_cwd)) + r'(?![\w./-])')
+        product_token = re.compile(
+            r'(?<![\w./-])' + re.escape(str(product_cwd)) + r'(?:[.!?](?=\s|$)|(?=\s|$))')
         exact_product_assignments = [row for row in assignments
-                                     if all(value in row['text'] for value in outcome.get('corrections', []))
-                                     and product_token.search(row['text'])]
+                                     if product_token.search(row['text'])]
         if not exact_product_assignments:
             raise ValueError('product-root native reviewer needs the exact assigned product root in its native assignment')
-        assignment = max(exact_product_assignments, key=lambda row: row['index'])
+        assignment = min(exact_product_assignments, key=lambda row: native.timestamp(row.get('at') or outcome['started_at']))
     if cross_cwd_research:
         declared = []
         for literal in re.findall(r'(?:^|[;\n])\s*Target CWD:\s*([^;\n]+)', assignment['text'], re.I):
@@ -945,8 +1202,12 @@ def accept_review(outcome, state, path, cwd, owner, comparison_quote=None, testi
             raise ValueError('independent research assignment needs exact normalized Target CWD; tool output or a neighboring path is not assignment')
     after = max(native.timestamp(reuse_original['evidence_after'] if reuse_original else outcome.get('evidence_after') or outcome['started_at']),
                 native.timestamp(assignment['at'] or outcome['started_at']))
+    dispatch_assignment = assignment.get('source_kind') == 'native-parent-dispatch'
     observations = [(call, output) for call, output in observations
-                    if call.get('_source_index') is not None and call['_source_index'] > assignment['index']
+                    if ((dispatch_assignment and call.get('_source_time') and
+                         native.timestamp(assignment['at']) <= native.timestamp(call['_source_time'])) or
+                        (not dispatch_assignment and call.get('_source_index') is not None and
+                         call['_source_index'] > assignment['index']))
                     and call['_source_index'] < meta.get('review_end_index', -1)
                     and call.get('_source_time') and after <= native.timestamp(call['_source_time']) <= native.timestamp(meta.get('reviewed_at') or meta['timestamp'])]
     if scope_revision(outcome, cwd) != outcome['revision']:
@@ -960,7 +1221,8 @@ def accept_review(outcome, state, path, cwd, owner, comparison_quote=None, testi
         raise ValueError('comparison quote binds original research prose, not a structured certificate')
     if len(lines) > 1:
         raise ValueError('ambiguous independent review summaries')
-    report = reuse_report if reuse_report is not None else json.loads(lines[0]) if lines else raw_review(outcome, final, observations, product_cwd, comparison_quote)
+    report = (reuse_report if reuse_report is not None else json.loads(lines[0]) if lines else
+              raw_review(outcome, final, observations, product_cwd, comparison_quote, source_readiness_reuse))
     source_readiness_result = source_publication_result = None
     if source_mode:
         from lhc_source_publication import permission_unchanged, publication_readback, source_readiness
@@ -969,10 +1231,13 @@ def accept_review(outcome, state, path, cwd, owner, comparison_quote=None, testi
                       if row.get('source') == metadata.get('permission_source')), None)
         if not permission_unchanged(metadata, source, outcome.get('corrections', [])):
             raise ValueError('source-publication permission no longer matches the current source and latest scope')
-        source_readiness_result = source_readiness(
-            metadata, observations, product_cwd, floor=outcome.get('evidence_after'),
-            before=meta.get('review_end_index'),
-        )
+        if source_readiness_reuse is not None and 'technical' not in (report.get('stages') or {}):
+            source_readiness_result = source_readiness_reuse
+        else:
+            source_readiness_result = source_readiness(
+                metadata, observations, product_cwd, floor=outcome.get('evidence_after'),
+                before=meta.get('review_end_index'),
+            )
         if 'publication' in (report.get('stages') or {}):
             source_publication_result = publication_readback(
                 metadata, observations, product_cwd, outcome, outcome.get('evidence_after'),
@@ -1001,7 +1266,10 @@ def accept_review(outcome, state, path, cwd, owner, comparison_quote=None, testi
     if outcome['task_class'] == 'testing' and not coverage:
         raise ValueError('testing needs explicit assigned coverage')
     by_call = {call.get('call_id'): (call, output) for call, output in observations if call.get('call_id')}
-    resolved = None if source_mode else consumer_target(outcome, observations, product_cwd)
+    technical_partial = _technical_partial_assessment(final)
+    resolved = (None if source_mode else
+                outcome['canary']['target'] if technical_partial else
+                consumer_target(outcome, observations, product_cwd))
     for item in coverage:
         claim = report.get('coverage', {}).get(item)
         if (not isinstance(claim, dict) or claim.get('verdict') not in {'passed', 'defect'}
@@ -1123,6 +1391,7 @@ def accept_review(outcome, state, path, cwd, owner, comparison_quote=None, testi
             'current_product_acceptance': False,
             'calls': {ref: {'at': by_call[ref][0]['_source_time'], 'index': by_call[ref][0]['_source_index']}
                       for ref in report['stages']['consumer']['evidence_calls']}}
+    current_stage_fingerprints = stage_contract_fingerprints(outcome)
     for stage, row in updates.items():
         source_stage_level = ('independent-source-review' if source_mode and stage == 'technical' else
                               'source-publication-readback' if source_mode and stage in {'publication', 'integration'} else None)
@@ -1132,6 +1401,7 @@ def accept_review(outcome, state, path, cwd, owner, comparison_quote=None, testi
             'consumer_target': resolved if stage == 'consumer' else None,
             'verification_level': source_stage_level or ('self-check' if own_attempt else 'independent-review'),
             'calls': row['evidence_calls'], 'expected': row['expected'], 'observed': row['observed'],
+            'contract_fingerprint': current_stage_fingerprints[stage],
             **({'source_candidate': outcome['source_publication']['candidate_fingerprint'],
                 'source_readiness': source_readiness_result} if source_mode and stage == 'technical' else {}),
             **({'published_commit': source_publication_result['commit'],
@@ -1144,7 +1414,8 @@ def accept_review(outcome, state, path, cwd, owner, comparison_quote=None, testi
         outcome['comparison_binding'] = {'quote': comparison_quote, 'reviewer': sid, 'original_index': own_report['index'],
                                          'original_at': own_report['at'], 'verification_level': 'self-check',
                                          'claims': research_comparison_binding(outcome, final, observations, product_cwd, comparison_quote)}
-    if outcome['task_class'] == 'research' and own_report:
+    if own_report and (outcome['task_class'] == 'research' or
+                       _technical_partial_assessment(own_report['text'])):
         outcome['review_assessment'] = {'reviewer': sid, 'index': own_report['index'], 'at': own_report['at']}
     outcome.update(product_verdict=product, revision=revision, coverage_evidence=report.get('coverage', {}))
     outcome['verification_level'] = 'independent-source-review' if source_mode else ('self-check' if own_attempt else 'independent-review')
@@ -1152,7 +1423,8 @@ def accept_review(outcome, state, path, cwd, owner, comparison_quote=None, testi
         outcome['release_handoff']['status'] = 'awaiting-owner'
     if source_mode:
         required_source_stages = {'technical', 'publication'} | ({'integration'} if outcome['stages']['integration']['status'] == 'pending' else set())
-        source_complete = required_source_stages.issubset(completed)
+        source_complete = all(stage in completed or outcome['stages'][stage]['status'] == 'complete'
+                              for stage in required_source_stages)
         outcome['product_verdict'] = 'source-published' if source_publication_result else 'source-ready'
         outcome['source_publication']['readiness'] = source_readiness_result
         if source_publication_result:

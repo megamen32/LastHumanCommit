@@ -7,6 +7,7 @@ Codex compact hooks only preserve state: SessionStart(source=compact) delivers i
 import argparse
 from datetime import datetime
 import fcntl
+import hashlib
 import json
 import os
 import re
@@ -41,7 +42,7 @@ def context_for(event, root):
         f"Review→delivery: {method_root(root)/'protocols/REVIEW_TO_DELIVERY.md'}. "
         "60-minute direction, 120-minute learning reviews mandatory. Ready major milestones (~3h) need fresh Zero Knowledge attempts, varied realistic personas/full feedback before PASS. "
         "Compaction/handoff retains original goal, direct scope/latest feedback. Parallel writer→separate worktree; available work first, then PR/integration. "
-        f"Delegate with Agent Herder new_or_resume, explicit model/role: {method_root(root)/'skills/model-routing/SKILL.md'}."
+        f"Delegate through supported native subagents or existing Agent Herder `new_or_resume` with an explicit model/role: {method_root(root)/'skills/model-routing/SKILL.md'}."
     )
 
 def package_version(root):
@@ -65,14 +66,39 @@ def rooted(text, root):
     instructions = instructions.replace("common/protocols/BUSINESS_CHECKPOINT.md", str(methods/"protocols/BUSINESS_CHECKPOINT.md"))
     return instructions + text[boundary:]
 
-def rehydrate(state, state_path=None):
+def rehydrate(state, state_path=None, *, detail=False):
+    import lhc_time_guard as time_guard
+
     business = state.get("business", {})
+    native_identity = business.get("native_identity") or {}
+    native_assignment = native_identity.get("assignment") if isinstance(native_identity, dict) else None
+    verified_child_assignment = bool(
+        isinstance(native_identity, dict) and native_identity.get("verified") is True
+        and isinstance(native_assignment, dict) and native_assignment.get("status") == "bound"
+    )
+    unverified_child = bool(
+        isinstance(native_identity, dict) and native_identity.get("parent_native_id")
+        and not verified_child_assignment
+    )
     # Quoted source data, never an instruction to execute arbitrary transcript text.
+    active_original, active_latest = time_guard.active_business_prompts(business)
     restored = {
-        "original_prompt": business.get("original_prompt_full") or business.get("original_scope_prompt") or business.get("original_prompt"),
-        "latest_prompt": business.get("latest_prompt_full") or business.get("latest_scope_prompt") or business.get("latest_prompt"),
+        "original_prompt": active_original or business.get("original_scope_prompt") or business.get("original_prompt"),
+        "latest_prompt": active_latest,
     }
+    truncated_prompts = []
+    if not detail:
+        for key, value in list(restored.items()):
+            if isinstance(value, str) and len(value) > 600:
+                restored[key] = value[:600] + "… [full source retained in native history]"
+                truncated_prompts.append(key)
     restored = {key: value for key, value in restored.items() if value}
+    if unverified_child:
+        restored.pop("original_prompt", None)
+        restored.pop("latest_prompt", None)
+        restored["native_assignment_status"] = native_identity.get("reason") or (
+            native_assignment.get("reason") if isinstance(native_assignment, dict) else None
+        ) or business.get("native_identity_error") or "No current native dispatch assignment has been verified."
     import lhc_outcome as outcomes
     for key in ("original_prompt", "latest_prompt"):
         if key in restored:
@@ -81,47 +107,101 @@ def rehydrate(state, state_path=None):
                 restored.pop(key)
     if restored.get("latest_prompt") == restored.get("original_prompt"):
         restored.pop("latest_prompt", None)
-    if business.get("transcript_path") and business.get("runtime") != "zcode":
+    if detail and business.get("transcript_path") and business.get("runtime") != "zcode" and not unverified_child:
         restored["full_native_transcript"] = business["transcript_path"]
-    if business.get("execution_context"):
+    if detail and business.get("execution_context"):
         context = business["execution_context"]
         restored_context = dict(context)
+        if unverified_child:
+            restored_context.pop("direct_user_messages", None)
         restored_context["direct_user_messages"] = [
             {**{key: value for key, value in row.items() if key != "scope_prompt"},
              "prompt": outcomes.semantic_scope(row.get("scope_prompt") or row.get("prompt", ""))}
-            for row in context.get("direct_user_messages", [])
+            for row in ([] if unverified_child else context.get("direct_user_messages", []))
             if outcomes.semantic_scope(row.get("scope_prompt") or row.get("prompt", ""))
         ]
-        restored["execution_context"] = restored_context
+        if not unverified_child:
+            restored["execution_context"] = restored_context
     if business.get("running_jobs"):
         restored["running_jobs"] = business["running_jobs"]
-    if business.get("tool_observations"):
+    if detail and business.get("tool_observations") and not unverified_child:
         restored["recent_tool_observations"] = business["tool_observations"][-8:]
-    if business.get("action_evidence"):
+    if detail and business.get("action_evidence") and not unverified_child:
         restored["action_evidence"] = business["action_evidence"][-8:]
-    if business.get('outcome'):
-        restored['outcome_contract'] = {key: business['outcome'].get(key) for key in
-            ('id', 'owner', 'task_class', 'actionable', 'contract_confirmed', 'contract_rejection', 'canary', 'stages', 'stage_claims', 'revision', 'coverage', 'finish_verdict', 'question', 'delegation_prohibited', 'verification_level', 'integration_policy', 'release_handoff')}
+    if business.get('outcome') and not unverified_child:
+        contract_keys = ('id', 'task_class', 'actionable', 'contract_confirmed', 'contract_rejection',
+                         'canary', 'stages', 'finish_verdict', 'question')
+        if detail:
+            contract_keys += ('owner', 'stage_claims', 'revision', 'coverage', 'delegation_prohibited',
+                              'verification_level', 'integration_policy', 'release_handoff')
+        restored['outcome_contract'] = {key: business['outcome'].get(key) for key in contract_keys}
+        if not detail and isinstance(restored['outcome_contract'].get('stages'), dict):
+            restored['outcome_contract']['stages'] = {
+                stage: {
+                    key: row.get(key) for key in ('status', 'basis') if row.get(key) is not None
+                } | {
+                    'evidence_count': len(row.get('evidence') or []),
+                    **({'evidence_manifest': (row.get('evidence') or [{}])[0].get('manifest')}
+                       if (row.get('evidence') or [{}])[0].get('manifest') else {}),
+                }
+                for stage, row in restored['outcome_contract']['stages'].items()
+                if isinstance(row, dict)
+            }
         # Original/latest native sources already appear above; do not inject
         # duplicate scope histories and full native review text on every resume.
     native_entry = state.get("native_entry") or {}
     if native_entry.get("scoped_failures"):
         restored["scoped_tool_failures"] = native_entry["scoped_failures"][-8:]
-    if len(business.get("original_prompt_full", "")) > 4096:
+    if truncated_prompts and not unverified_child:
+        locators = {}
+        if "original_prompt" in truncated_prompts:
+            if business.get("original_prompt_full"):
+                locators["original_prompt"] = "business.original_prompt_full"
+            elif business.get("original_scope_prompt"):
+                locators["original_prompt"] = "business.original_scope_prompt"
+            else:
+                locators["original_prompt"] = "business.original_prompt"
+        if "latest_prompt" in truncated_prompts:
+            current_latest = business.get("latest_prompt_full") or business.get("latest_prompt") or ""
+            current_latest_scope = time_guard._eligible_active_scope(
+                current_latest, business, active_original,
+                scope_hint=business.get("latest_scope_prompt"))
+            if current_latest_scope == active_latest and business.get("latest_prompt_full"):
+                locators["latest_prompt"] = "business.latest_prompt_full"
+            elif current_latest_scope == active_latest and business.get("latest_scope_prompt"):
+                locators["latest_prompt"] = "business.latest_scope_prompt"
+            else:
+                context_rows = (business.get("execution_context") or {}).get("direct_user_messages") or []
+                matching = [index for index, row in enumerate(context_rows)
+                            if isinstance(row, dict) and time_guard._eligible_active_scope(
+                                row.get("prompt", ""), business, active_original,
+                                origin=row.get("origin"), scope_hint=row.get("scope_prompt")) == active_latest]
+                if matching:
+                    row = context_rows[matching[-1]]
+                    field = "scope_prompt" if row.get("scope_prompt") else "prompt"
+                    locators["latest_prompt"] = f"business.execution_context.direct_user_messages[{matching[-1]}].{field}"
+                else:
+                    locators["latest_prompt"] = "business.latest_prompt"
+        restored["truncated_prompt_source_fields"] = locators
+        if state_path is not None:
+            restored["full_saved_state"] = str(state_path)
+    if detail and len(business.get("original_prompt_full", "")) > 4096 and not unverified_child:
         restored["full_original_prompt_in_saved_state"] = "business.original_prompt_full"
-    if len(business.get("latest_prompt_full", "")) > 4096:
+        if state_path is not None:
+            restored["full_saved_state"] = str(state_path)
+    if detail and len(business.get("latest_prompt_full", "")) > 4096 and not unverified_child:
         restored["full_latest_prompt_in_saved_state"] = "business.latest_prompt_full"
-    if state_path is not None:
+    if detail and state_path is not None and not unverified_child:
         restored["full_saved_state"] = str(state_path)
-    milestone = state.get("milestone") or {}
+    milestone = {} if unverified_child else state.get("milestone") or {}
     if milestone.get("status") in {"pending", "changes-required", "blocked"}:
         restored["milestone_acceptance"] = {key: milestone.get(key) for key in
             ("task", "goal", "urls", "surface_key", "surface", "status", "blocker", "scoped_blockers", "continuation_requested")}
-    review = business.get("last_review") or {}
+    review = {} if unverified_child or not detail else business.get("last_review") or {}
     if review:
         restored["last_direction"] = {key: review[key][:450] if isinstance(review[key], str) else review[key]
                                        for key in ("business_result", "scope_decision", "next_action", "action_status", "action_evidence_count") if review.get(key) is not None}
-    checkpoint = state.get("last_checkpoint") or {}
+    checkpoint = {} if unverified_child or not detail else state.get("last_checkpoint") or {}
     if checkpoint.get("remaining_critical_path"):
         restored["remaining_critical_path"] = checkpoint["remaining_critical_path"][:500]
     if not restored:
@@ -133,9 +213,9 @@ def handle(event, name, runtime, root):
     import lhc_milestone as milestones
     import lhc_outcome as outcomes
     cwd = Path(str(event.get("cwd") or os.getcwd())).expanduser().resolve()
-    session = str(event.get("session_id") or event.get("sessionID") or "unknown-session")
-    if event.get("agent_id"):
-        session += ":subagent:" + str(event["agent_id"])
+    native_session_id = str(event.get("session_id") or event.get("sessionID") or "unknown-session")
+    agent_id = str(event.get("agent_id") or "")
+    session = native_session_id + (":subagent:" + agent_id if agent_id else "")
     now = datetime.now().astimezone()
     args = argparse.Namespace(runtime=runtime, event=name, now=now, idle_cap_seconds=300, session_only=True)
     learning = guard.learning_checkpoint(args, cwd, session)
@@ -148,12 +228,81 @@ def handle(event, name, runtime, root):
         # Codex re-submits the exact block reason as a user prompt. It is native
         # control, not a new mandate; do not poison the business anchor either.
         event = dict(event, prompt="", text="", _lhc_control_prompt=True)
+    if agent_id:
+        event = dict(event, _lhc_subagent=True)
+        identity = None
+        previous_identity = prior.get("business", {}).get("native_identity") or {}
+        child_journal = event.get("transcript_path") or event.get("transcriptPath")
+        prior_assignment = previous_identity.get("assignment") if isinstance(previous_identity, dict) else None
+        prior_bound = bool(
+            isinstance(previous_identity, dict) and previous_identity.get("verified") is True
+            and previous_identity.get("logical_session_id") == session
+            and previous_identity.get("parent_native_id") == native_session_id
+            and previous_identity.get("native_id") == agent_id
+            and previous_identity.get("native_cwd") == os.fspath(cwd)
+            and isinstance(prior_assignment, dict) and prior_assignment.get("status") == "bound"
+            and (not child_journal or Path(child_journal).resolve() == Path(previous_identity.get("journal_path", "")))
+        )
+        if prior_bound:
+            identity = previous_identity
+        elif name in CONTEXT_EVENTS and not control_prompt:
+            identity = guard.resolve_native_child_assignment(event, session, runtime, cwd)
+        if not isinstance(identity, dict):
+            identity = {"verified": False, "status": "unavailable",
+                        "parent_native_id": native_session_id, "native_id": agent_id,
+                        "reason": "current child assignment has not been verified"}
+        event["_lhc_verified_native_identity"] = identity
+    prior_business = prior.get("business", {})
+    prior_outcome = prior_business.get("outcome", {})
+    prior_milestone = prior.get("milestone", {})
+    event = dict(event, _lhc_previous_active_prompts=[
+        prior_business.get("latest_prompt_full") or prior_business.get("latest_prompt") or "",
+        prior_business.get("original_prompt_full") or prior_business.get("original_prompt") or "",
+        prior_outcome.get("latest_correction") or "",
+        prior_outcome.get("original_goal") or "",
+        prior_milestone.get("goal") or "",
+    ])
     business = guard.business_checkpoint(args, cwd, session, event)
     with path.with_suffix(".lock").open("a", encoding="utf-8") as lock:
         fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
         state = guard.load_state(path)
-        milestone = milestones.observe(state, event, name, cwd, session, now)
-        outcome = outcomes.observe(state, event, name, cwd, session, now)
+        observer_event = event
+        if agent_id and name == "UserPromptSubmit":
+            # Keep the relayed native prompt as provenance, while the captured
+            # dispatch assignment remains the active task boundary.
+            observer_event = dict(event, prompt="", text="", transcript_path=None,
+                                  messages=[], _lhc_control_prompt=True)
+        child_identity = event.get("_lhc_verified_native_identity") or {}
+        child_assignment = child_identity.get("assignment") if isinstance(child_identity, dict) else None
+        prior_identity = prior.get("business", {}).get("native_identity") or {}
+        prior_assignment = prior_identity.get("assignment") if isinstance(prior_identity, dict) else None
+        assignment_conflict = bool(
+            isinstance(prior_identity, dict) and prior_identity.get("verified") is True
+            and prior_identity.get("dispatch_call_id")
+            and isinstance(child_identity, dict)
+            and (child_identity.get("dispatch_call_id") != prior_identity.get("dispatch_call_id")
+                 or (isinstance(prior_assignment, dict) and prior_assignment.get("status") == "bound"
+                     and isinstance(child_assignment, dict)
+                     and prior_assignment.get("prompt_sha256") != child_assignment.get("prompt_sha256")))
+        )
+        child_assignment_bound = bool(
+            agent_id and isinstance(child_identity, dict) and child_identity.get("verified") is True
+            and not assignment_conflict
+            and isinstance(child_assignment, dict) and child_assignment.get("status") == "bound"
+            and isinstance(child_assignment.get("prompt"), str)
+            and child_assignment.get("prompt_sha256") == hashlib.sha256(
+                child_assignment["prompt"].encode()
+            ).hexdigest()
+            and child_assignment.get("child_id") == agent_id
+        )
+        if agent_id and not child_assignment_bound:
+            # Keep unverified relay history in source context, but do not resume
+            # an old task summary or create active review state from it.
+            milestone = None
+            outcome = None
+        else:
+            milestone = milestones.observe(state, observer_event, name, cwd, session, now)
+            outcome = outcomes.observe(state, observer_event, name, cwd, session, now)
         # A concurrent native hook or an explicit review command may have cleared
         # a debt after our first observation. Decisions use the locked readback.
         current_pending = state.get("business", {}).get("pending")
@@ -176,8 +325,18 @@ def handle(event, name, runtime, root):
         delivery["last_observed_event"] = name
         if name in QUIET_EVENTS:
             delivery["finish_hold"] = name
-        elif ((name == "UserPromptSubmit" and not control_prompt and delivery.get("finish_hold") != "PermissionRequest")
-              or name == "permission.replied"):
+        elif name == "UserPromptSubmit" and not agent_id and not control_prompt and delivery.get("finish_hold") != "PermissionRequest":
+            raw_prompt = event.get("prompt") or event.get("text") or ""
+            origin = outcomes.source_origin(raw_prompt)
+            active_business = prior.get("business", {})
+            active_prompts = event.get("_lhc_previous_active_prompts") or [
+                active_business.get("latest_prompt_full") or active_business.get("latest_prompt") or "",
+                active_business.get("original_prompt_full") or active_business.get("original_prompt") or "",
+            ]
+            if guard.prompt_can_resume_hold(raw_prompt, active_prompts,
+                                            hold=delivery.get("finish_hold"), origin=origin):
+                delivery.pop("finish_hold", None)
+        elif name == "permission.replied" and delivery.get("finish_hold") == "PermissionRequest":
             delivery.pop("finish_hold", None)
         elif name in {"PostToolUse", "PostToolUseFailure"} and (name == "PostToolUseFailure" or milestones.tool_failed(event)):
             if not scoped_failure and delivery.get("finish_hold") not in {"PermissionRequest", "Interrupt", "SessionEnd"}:
@@ -189,14 +348,18 @@ def handle(event, name, runtime, root):
         version = package_version(root)
         signature = json.dumps([str(root), version])
         supported = name in CONTEXT_EVENTS or runtime != "codex"
-        refresh = name in {"SessionStart", "UserPromptSubmit"}
+        refresh = name in {"SessionStart", "PreCompact", "PostCompact"}
         bootstrap = supported and name not in QUIET_EVENTS | {"Stop"} and (
-            refresh or delivery.get("loaded") != signature or delivery.get("rehydrate_needed"))
+            refresh or event.get("lhc_detail") == "full" or
+            delivery.get("loaded") != signature or delivery.get("rehydrate_needed"))
         contexts = []
         if name in {"PreCompact", "PostCompact"}:
             delivery["rehydrate_needed"] = True
         if bootstrap:
-            contexts.extend((context_for(event, root), rehydrate(state, path)))
+            compact_detail = (name in {"PreCompact", "PostCompact"} or
+                              (name == "SessionStart" and event.get("source") == "compact") or
+                              event.get("lhc_detail") == "full")
+            contexts.extend((context_for(event, root), rehydrate(state, path, detail=compact_detail)))
             delivery.update(loaded=signature, version=version, root=str(root), rehydrate_needed=False)
         elif runtime == 'opencode' and event.get('model_boundary'):
             # V2 rebuilds system parts for every model request; loaded state
@@ -211,7 +374,8 @@ def handle(event, name, runtime, root):
             rejection.get('scope_fingerprint'), rejection.get('exact_error'), rejection.get('corrective_action'),
         ], ensure_ascii=False) if outcome_notice else None
         rehydrating_outcome = name == 'PostCompact' or (name == 'SessionStart' and event.get('source') == 'compact')
-        if outcome_notice and (bootstrap or event.get('model_boundary')) and (
+        if outcome_notice and (bootstrap or event.get('model_boundary') or
+                               outcome_notice_fingerprint != delivery.get('outcome_notice_fingerprint')) and (
                 outcome_notice_fingerprint != delivery.get('outcome_notice_fingerprint') or rehydrating_outcome):
             contexts.append(outcome_notice)
             delivery['outcome_notice_fingerprint'] = outcome_notice_fingerprint

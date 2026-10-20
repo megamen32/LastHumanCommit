@@ -9,6 +9,15 @@ and candid raw observations, including a product defect; it does not require cod
 deploy or another tester. Research needs its verified finding, status only its
 answer. A later read-only/status question never cancels earlier repair obligations.
 Only an explicit direct replacement changes scope; preserve its source/lineage.
+Keep administrative transport separate from task semantics. A status question,
+acknowledgement, duplicate, agent report or review handoff cannot by itself clear
+a stop, replace the task, advance the evidence floor or erase accepted progress.
+Preserve the original observations and later negative findings. Reuse an accepted
+proof only while its actual subject, candidate, scenario and relevant environment
+remain valid; an administrative timestamp is not a product change. A substantive
+requirement change reopens the affected checks and their dependent claims.
+An evidence-format rejection requires repairing the supported binding, not
+repeating a deployment, publication or other already accepted external action.
 
 For a research `project:<cwd>` canary, the source floor supports one direct `cat`
 read of a file explicitly named in the accepted scope. Relative and absolute forms
@@ -83,6 +92,15 @@ In this mode, independent technical readiness means reviewing the actual current
 owned source and matching its immutable candidate hashes. It does not require a
 Python CLI or credit source inspection as an executed application test. Runtime
 consumer/deploy stages are excluded only by that explicit source-only scope.
+Byte-identical candidate files may share one complete body read, with an explicit
+alias mapping and separate native hash evidence for every owned pathname. Large
+bodies use ordered gapless bounded reads through EOF. Below the native persistence
+cap, complete assembled candidate bytes decide completeness; source text resembling
+a truncation marker is data. Missing/cropped bytes and hash mismatches still fail.
+Earlier independently accepted exact-candidate readiness may be revalidated from
+its original manifest and call references for a publication-only continuation.
+Preserve its reviewer and observation times; recheck current publication permission,
+negative findings and remote identity. Source equivalence grants no runtime proof.
 Readiness leaves publication pending. Publication requires the authorized normal
 Git operation and native readback linking the actual remote commit, parent/base,
 owned delta and every candidate blob to the bound repository and branch. A branch
@@ -137,14 +155,28 @@ The explicit marker or a supported leading legacy header establishes
 human or grants execution permission. The transport label does not expand task
 scope or bypass existing stop, permission, ownership, or stage gates.
 
+Native Codex children keep their logical LHC state ID distinct from the actual
+native journal ID. A verified composite and bare child ID identify the same actor,
+never independent reviewers. Future pre-call task capture is only an intent until
+the exact parent call, successful child receipt and actual child journal header
+agree. Store it in the parent's protected existing dispatch records; child readers
+revalidate that source without modifying parent state. A bound initial assignment
+can enter at a native work boundary without inventing a user prompt. Its source
+remains `native-parent-dispatch`, with agent origin and actual call/hash/time refs.
+Missing or encrypted historical text stays unavailable; inherited AGENTS, task
+names, timing proximity and an old summary cannot supply the missing assignment.
+
 ### Reassigned worker and reviewer lineage
 
-A native review stays bound to the outcome ID and full original goal in the
-reviewer's exact current assignment. On mismatch, the reader says whether the
-assignment has only the outcome ID, only the goal, or neither exact pair, and
-rejects with this action:
-
-> No reviewer evidence was accepted. Keep the predecessor outcome and its report pending. Create a NEW native worker session whose first assignment carries the actual human mandate (or a verified parent dispatch) plus the current canonical root, exact owned files, and publication scope. Bind the existing independent reviewer to the fresh outcome id and the full current task text before collecting new observations. Do not reuse this report, edit state/cache, or replay product/provider actions.
+A native review stays bound to its actual current subject before observations.
+The legacy assignment contains the outcome ID, full original goal and accepted
+corrections. The bounded assignment instead contains the current versioned review
+subject digest, outcome ID and readable exact product root, scenario and expected
+result. The digest identifies the current contract and candidate; it grants no
+authority and cannot authenticate the sender. Discovery and acceptance use the
+same assignment check. A preview, arbitrary link or retrospective assignment is
+not that binding. Missing binding names the exact fact to repair; it does not
+require a replacement worker merely because the transport format was unsuitable.
 
 When a worker's authorized mandate changes
 from an earlier research assignment to implementation or publication, do not
@@ -157,7 +189,8 @@ contract with the existing `contract` command in that new session's original
 outcome identity.
 
 Assign the already-selected independent reviewer anew in its native task session.
-That assignment must name the fresh outcome ID and full current goal. The reviewer
+That assignment must bind the fresh outcome with the current subject or legacy
+full-goal assignment described above. The reviewer
 must make a fresh source assessment from current native reads and hash comparisons
 after the new evidence floor. This bounded source review does not replay product,
 provider, or deployment work and does not establish a product canary, publication,

@@ -15,8 +15,24 @@ ENTRY = ROOT / "src/common/tools/lhc_entry.py"
 GOAL = "Build a complete customer dashboard with search, import and mobile navigation at https://demo.test/dashboard"
 
 def invoke(root, event, **fields):
+    native_session = root / "native-home/.codex/sessions/leader.jsonl"
+    native_session.parent.mkdir(parents=True, exist_ok=True)
+    if not native_session.exists():
+        native_session.write_text(json.dumps({"type": "session_meta", "payload": {
+            "id": "leader", "cwd": str(root.resolve()), "timestamp": datetime.now(timezone.utc).isoformat()}}) + "\n")
+    # Keep the native transcript fixture aligned with a real UserPromptSubmit:
+    # LHC may bind permission only to a role=user message in this journal.
+    if event == "UserPromptSubmit" and isinstance(fields.get("prompt"), str):
+        native_row = {"type": "response_item", "timestamp": datetime.now(timezone.utc).isoformat(),
+                      "payload": {"type": "message", "role": "user",
+                                  "content": [{"type": "input_text", "text": fields["prompt"]}],
+                                  "internal_chat_message_metadata_passthrough": {
+                                      "turn_id": fields.get("turn_id", "one")}}}
+        with native_session.open("a", encoding="utf-8") as stream:
+            stream.write(json.dumps(native_row, ensure_ascii=False) + "\n")
     result = subprocess.run([sys.executable, str(ENTRY), "--root", str(ROOT), "--runtime", "codex", "--event", event],
-        input=json.dumps({"cwd": str(root), "session_id": "leader", "turn_id": "one", **fields}),
+        input=json.dumps({"cwd": str(root), "session_id": "leader", "turn_id": "one",
+                          "transcript_path": str(native_session), **fields}),
         capture_output=True, text=True, check=True, timeout=8, env={**os.environ, "HOME": str(root / "native-home"), "CODEX_HOME": str(root / "native-home/.codex")})
     return json.loads(result.stdout) if result.stdout.strip() else {}
 

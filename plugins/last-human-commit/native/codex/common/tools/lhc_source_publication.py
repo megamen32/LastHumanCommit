@@ -13,9 +13,6 @@ from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
 
-_PERSISTENCE_TRUNCATION_SENTINEL = "... command output truncated for persistence ..."
-
-
 def _git(root, *args):
     result = subprocess.run(["git", "-C", str(root), *args], capture_output=True,
                             timeout=5)
@@ -28,9 +25,34 @@ def _sha(data):
     return hashlib.sha256(data).hexdigest()
 
 
-def _output_was_truncated(output, encoded):
-    return (len(encoded) >= 65536 or
-            any(line == _PERSISTENCE_TRUNCATION_SENTINEL for line in output.splitlines()))
+def historical_publication_commit_matches(metadata, root):
+    """Check immutable local Git objects for the original published candidate."""
+    try:
+        root = Path(root).resolve(strict=True)
+        base = str(metadata['base'])
+        commit = str(metadata['published_commit'])
+        _git(root, 'cat-file', '-e', base + '^{commit}')
+        _git(root, 'cat-file', '-e', commit + '^{commit}')
+        ancestry = _git(root, 'rev-list', '--parents', '-n', '1', commit).decode().strip().split()
+        if ancestry != [commit, base]:
+            return False
+        paths = set(_git(root, 'diff', '--name-only', '--no-renames', base, commit).decode().splitlines())
+        expected_files = metadata.get('owned_files') or {}
+        if paths != set(expected_files):
+            return False
+        for name, expected_hash in expected_files.items():
+            blob = _git(root, 'show', commit + ':' + name)
+            if _sha(blob) != expected_hash:
+                return False
+        return True
+    except (OSError, KeyError, TypeError, ValueError):
+        return False
+
+
+def _output_exceeds_native_cap(encoded):
+    # Text that resembles a persistence marker may be ordinary file content.
+    # Below the native cap, exact candidate SHA is the completeness proof.
+    return len(encoded) >= 65536
 
 
 def _owned_file(root, name):
@@ -130,7 +152,10 @@ def capture_contract(outcome, source, root, paths, remote, branch, repository,
             "branch": branch, "ref": "refs/heads/" + branch, "base": base,
             "candidate_head": head, "owned_files": files,
             "permission_source": source.get("source"), "permission_quote": permission}
-    fingerprint = hashlib.sha256(json.dumps(body, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    # Candidate identity is product content/root only. Remote, branch and
+    # permission are separate publication gates and must not stale source reads.
+    candidate = {key: body[key] for key in ("root", "candidate_head", "owned_files")}
+    fingerprint = hashlib.sha256(json.dumps(candidate, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
     return {"schema": "lhc-source-publication-v1", **body, "candidate_fingerprint": fingerprint}
 
 
@@ -252,7 +277,7 @@ def source_readiness(metadata, observations, root, *, floor=None, before=None):
         if read_kind == "read":
             relative, _ = targets[0]
             encoded = output.encode("utf-8")
-            if (not _output_was_truncated(output, encoded)
+            if (not _output_exceeds_native_cap(encoded)
                     and _sha(encoded) == metadata["owned_files"][relative]):
                 read_refs.setdefault(relative, []).append(call_id)
         elif read_kind == "chunk":
@@ -261,7 +286,7 @@ def source_readiness(metadata, observations, root, *, floor=None, before=None):
             start, end = chunk_range
             requested_lines = end - start + 1
             output_lines = len(output.splitlines())
-            if (not _output_was_truncated(output, encoded)
+            if (not _output_exceeds_native_cap(encoded)
                     and output_lines <= requested_lines):
                 chunk_reads.setdefault(relative, []).append(
                     (start, end, encoded, output_lines, call_id))
@@ -303,12 +328,27 @@ def source_readiness(metadata, observations, root, *, floor=None, before=None):
                 expected_start = end + 1
         if complete and _sha(bytes(assembled)) == metadata["owned_files"].get(name):
             chunk_read_refs[name] = chunk_call_ids
-    missing = [name for name in metadata["owned_files"]
-               if not (read_refs.get(name) or chunk_read_refs.get(name)) or not hash_refs.get(name)]
+    groups = {}
+    for name, candidate_sha in metadata["owned_files"].items():
+        groups.setdefault(candidate_sha, []).append(name)
+    read_calls, read_aliases = {}, {}
+    missing = [name for name in metadata["owned_files"] if not hash_refs.get(name)]
+    for names in groups.values():
+        representative = next((name for name in names if read_refs.get(name)), None)
+        representative = representative or next((name for name in names if chunk_read_refs.get(name)), None)
+        if representative is None:
+            missing.extend(names)
+            continue
+        proof = (read_refs[representative][-1] if read_refs.get(representative)
+                 else chunk_read_refs[representative])
+        for name in names:
+            read_calls[name] = proof
+            read_aliases[name] = representative
+    missing = list(dict.fromkeys(missing))
     if missing:
         raise ValueError("source readiness needs native full-file reads and matching hash evidence for every owned path: " + ", ".join(missing))
-    return {"read_calls": {name: chunk_read_refs[name] if name in chunk_read_refs else read_refs[name][-1]
-                            for name in metadata["owned_files"]},
+    return {"read_calls": read_calls,
+            "read_aliases": read_aliases,
             "hash_calls": {name: hash_refs[name][-1] for name in metadata["owned_files"]}}
 
 

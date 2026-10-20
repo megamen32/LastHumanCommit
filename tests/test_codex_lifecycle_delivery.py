@@ -47,6 +47,7 @@ def test_unchanged_in_progress_outcome_feedback_is_not_repeated_on_each_prompt(t
     second=context(invoke(tmp_path,"UserPromptSubmit",prompt=prompt))
     assert "LHC outcome:" not in second
     assert "Original input" not in second
+    assert second == ""
 
 def test_rejection_and_contract_acceptance_each_refresh_notice_once(tmp_path):
     prompt="Fix the small total CLI. Verify the empty basket returns 0."
@@ -55,13 +56,13 @@ def test_rejection_and_contract_acceptance_each_refresh_notice_once(tmp_path):
     tool=str(ROOT/"src/common/tools/lhc_outcome.py")
     command=f"python3 {tool} --cwd {tmp_path} --runtime codex --session-id existing-thread contract --scenario Empty --target FEEDBACK.md --expected zero"
     error="LHC outcome: research file target must name the scoped in-project source, not the requested report output"
-    invoke(tmp_path,"PostToolUse",tool_name="exec_command",tool_input={"cmd":command},
-           tool_response={"exit_code":1,"stderr":error})
+    rejected_tool=context(invoke(tmp_path,"PostToolUse",tool_name="exec_command",tool_input={"cmd":command},
+                                 tool_response={"exit_code":1,"stderr":error}))
+    assert error in rejected_tool
     invoke(tmp_path,"PostToolUse",tool_name="exec_command",tool_input={"cmd":command},
            tool_response={"status":"completed","stdout":"finished"})
     rejected=context(invoke(tmp_path,"UserPromptSubmit",prompt=prompt))
-    assert error in rejected
-    assert "report path separately as an owned deliverable" in rejected
+    assert error not in rejected
     unchanged=context(invoke(tmp_path,"UserPromptSubmit",prompt=prompt))
     assert "LHC outcome: quickfix" not in unchanged
     assert "Contract rejection (exact)" not in unchanged

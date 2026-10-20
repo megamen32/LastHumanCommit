@@ -597,6 +597,7 @@ def test_declarative_expectation_change_invalidates_stale_acceptance(tmp_path):
     outcome = anchored(tmp_path)
     cli(tmp_path, 'review', '--manifest', str(review_export(tmp_path, outcome)))
     before = state(tmp_path)['business']['outcome']
+    original_technical = json.loads(json.dumps(before['stages']['technical']))
     correction = 'The empty result must be [] rather than null.'
     invoke(tmp_path, 'UserPromptSubmit', prompt=correction)
     after = state(tmp_path)['business']['outcome']
@@ -605,13 +606,15 @@ def test_declarative_expectation_change_invalidates_stale_acceptance(tmp_path):
     assert after['canary']['expected'] == '[]'
     assert after['evidence_after'] != before['evidence_after']
     assert not after['contract_confirmed']
-    assert after['stages']['technical']['status'] == 'pending'
+    assert after['stages']['technical'] == original_technical
+    assert after['stages']['consumer']['status'] == 'pending'
 
 
 def test_bounded_correction_header_updates_expectation_and_invalidates_acceptance(tmp_path):
     outcome = anchored(tmp_path)
     cli(tmp_path, 'review', '--manifest', str(review_export(tmp_path, outcome)))
     before = state(tmp_path)['business']['outcome']
+    original_technical = json.loads(json.dumps(before['stages']['technical']))
     correction = 'Correction: the empty result must be [] rather than null.'
     invoke(tmp_path, 'UserPromptSubmit', prompt=correction)
     after = state(tmp_path)['business']['outcome']
@@ -620,7 +623,8 @@ def test_bounded_correction_header_updates_expectation_and_invalidates_acceptanc
     assert after['canary']['expected'] == '[]'
     assert after['evidence_after'] != before['evidence_after']
     assert not after['contract_confirmed']
-    assert after['stages']['technical']['status'] == 'pending'
+    assert after['stages']['technical'] == original_technical
+    assert after['stages']['consumer']['status'] == 'pending'
 
 
 @pytest.mark.parametrize(('event_name', 'response'), [
@@ -671,7 +675,7 @@ def test_rejected_research_target_is_preserved_through_rehydrate_with_exact_acti
     outcome = anchored(tmp_path, 'Research the in-project report source and deliver a findings report.')
     exact = 'LHC outcome: research file target must name the scoped in-project source, not the requested report output'
     invoke(tmp_path, 'PostToolUse', tool_name='exec_command',
-           tool_input={'cmd': 'python3 /tmp/lhc_outcome.py contract --scenario research --target FEEDBACK.md'},
+           tool_input={'cmd': f'python3 /tmp/lhc_outcome.py --cwd {tmp_path} --runtime codex --session-id leader contract --scenario research --target FEEDBACK.md'},
            tool_response={'exit_code': 1, 'stderr': exact})
     persisted = state(tmp_path)['business']['outcome']['contract_rejection']
     assert persisted['exact_error'] == exact
@@ -685,6 +689,68 @@ def test_rejected_research_target_is_preserved_through_rehydrate_with_exact_acti
     assert 'report path separately as an owned deliverable' in notice
     assert 'contract --help' not in notice
     assert 'confirm the concrete contract' not in notice
+
+
+@pytest.mark.parametrize(('command_cwd', 'command_session'), [
+    ('/home/roomhacker/agents-projects/simple-secret-storage', 'child-session'),
+    (None, 'child-session'),
+])
+def test_child_contract_rejection_never_mutates_parent_outcome(tmp_path, command_cwd, command_session):
+    outcome = anchored(tmp_path)
+    before = json.loads(json.dumps(outcome))
+    flags = (f'--cwd {command_cwd} ' if command_cwd else '')
+    command = (f'python3 {OUTCOME} {flags}--runtime codex --session-id {command_session} '
+               'contract --scenario child --target "git ls-remote origin refs/heads/main" --expected main')
+    exact = 'LHC outcome: integration needs explicit branch/remote/ownership and native scope source; unknown is not main'
+
+    invoke(tmp_path, 'PostToolUse', tool_name='exec_command',
+           tool_input={'cmd': command, 'workdir': str(tmp_path)},
+           tool_response={'exit_code': 1, 'stderr': exact})
+
+    observed = state(tmp_path)['business']['outcome']
+    assert observed['id'] == before['id']
+    assert observed['revision'] == before['revision']
+    assert observed['contract_confirmed'] == before['contract_confirmed']
+    assert observed['stages'] == before['stages']
+    assert observed['canary'] == before['canary']
+    assert 'contract_rejection' not in observed
+
+
+def test_exact_same_session_and_root_contract_rejection_is_retained(tmp_path):
+    anchored(tmp_path)
+    exact = 'LHC outcome: N/A needs explicit original/latest scope, not missing access'
+    command = (f'python3 {OUTCOME} --cwd {tmp_path} --runtime codex --session-id leader '
+               'contract --scenario source --target project --expected ready')
+    invoke(tmp_path, 'PostToolUse', tool_name='exec_command',
+           tool_input={'cmd': command, 'workdir': str(tmp_path)},
+           tool_response={'exit_code': 1, 'stderr': exact})
+    rejection = state(tmp_path)['business']['outcome']['contract_rejection']
+    assert rejection['exact_error'] == exact
+
+
+def test_same_session_implicit_cli_cwd_uses_actual_tool_workdir(tmp_path):
+    anchored(tmp_path)
+    exact = 'LHC outcome: N/A needs explicit original/latest scope, not missing access'
+    command = (f'python3 {OUTCOME} --runtime codex --session-id leader '
+               'contract --scenario source --target project --expected ready')
+    invoke(tmp_path, 'PostToolUse', tool_name='exec_command',
+           tool_input={'cmd': command, 'workdir': f'file://{tmp_path}'},
+           tool_response={'exit_code': 1, 'stderr': exact})
+    rejection = state(tmp_path)['business']['outcome']['contract_rejection']
+    assert rejection['exact_error'] == exact
+
+
+@pytest.mark.parametrize('command', [
+    lambda root: f'echo "python3 {OUTCOME} --cwd {root} --runtime codex --session-id leader contract"',
+    lambda root: f'python3 {OUTCOME} --cwd {root} --runtime codex --session-id leader contract --scenario x; echo done',
+])
+def test_echo_or_compound_contract_text_cannot_be_bound_as_native_rejection(tmp_path, command):
+    anchored(tmp_path)
+    exact = 'LHC outcome: N/A needs explicit original/latest scope, not missing access'
+    invoke(tmp_path, 'PostToolUse', tool_name='exec_command',
+           tool_input={'cmd': command(tmp_path), 'workdir': str(tmp_path)},
+           tool_response={'exit_code': 1, 'stderr': exact})
+    assert 'contract_rejection' not in state(tmp_path)['business']['outcome']
 
 
 def test_notify_actual_mcp_card_and_result_shapes_do_not_store_answer_value(tmp_path):
@@ -1748,7 +1814,7 @@ def test_research_comparison_quote_cannot_claim_another_reviewers_independence(t
     outcome, manifest, raw, _ = semantic_research_fixture(tmp_path)
     monkeypatch.setenv('CODEX_HOME', str(tmp_path/'native-home/.codex'))
     before = json.loads(json.dumps(outcome))
-    with pytest.raises(ValueError, match='own bounded research'):
+    with pytest.raises(ValueError, match='current review actor'):
         reviews.accept_review(outcome, state(tmp_path), manifest, tmp_path, 'another-owner', raw)
     assert outcome == before
 

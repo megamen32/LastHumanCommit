@@ -46,6 +46,225 @@ def prompt_excerpt(value: str) -> str:
     return HERDER_ENVELOPE.sub("", value).strip()
 
 
+STATUS_OR_ACK_PROMPT = re.compile(
+    r"^\s*(?:status|progress|update|any news|any update|how is it going|"
+    r"ack(?:nowledged)?|ok(?:ay)?|thanks?(?:,\s*got it)?|got it|понятно|принято|спасибо|статус|"
+    r"как дела|есть новости)\b\s*[:.!?…-]*\s*$|"
+    r"^\s*(?:status|progress|update|any news|any update|how is it going|статус|как дела|есть новости)\s*[:?].*$",
+    re.I | re.S,
+)
+EXPLICIT_RESUME = re.compile(
+    r"^\s*(?:(?:please|yes|okay|ok|пожалуйста|да|хорошо)\s+)*(?:resume|continue|carry on|"
+    r"proceed with|go ahead with|возобнови|продолжай|продолжи|продолжай с|вернись к)\b",
+    re.I,
+)
+RESUME_PREVIOUS_TASK = re.compile(r"\b(?:previous|original|current|paused)\s+(?:task|work|request)\b|(?:исходн|текущ|прерван).{0,20}(?:задач|работ)", re.I)
+RESUME_DEFERRED_OR_NEGATED = re.compile(
+    r"\b(?:only\s+after|until|unless|when\s+(?:i|we)\s+(?:say|approve|confirm)|"
+    r"if\s+(?:i|we)\s+(?:say|approve|confirm)|for\s+now\b.{0,60}\b(?:stop|stopp?ed|pause|paused|hold)|"
+    r"(?:do\s+not|don't|never)\s+(?:resume|continue|proceed)|"
+    r"keep\s+(?:it|this|the\s+(?:task|work))\s+(?:stopped|paused|on\s+hold)|"
+    r"только\s+после|пока\s+не|до\s+(?:моего\s+)?(?:одобрени\w*|разрешени\w*)|"
+    r"если\s+(?:я|мы)\s+(?:одобр\w*|разреш\w*|скажу)|"
+    r"когда\s+(?:я|мы)\s+(?:скажу|одобр\w*|разреш\w*)|"
+    r"не\s+(?:продолжай|продолжи|возобновляй|возобнови|делай)|"
+    r"(?:оставь|держи)\s+(?:это\s+)?(?:остановленн\w*|приостановленн\w*|на\s+паузе))\b",
+    re.I,
+)
+GENERIC_TASK_WORDS = {
+    "please", "yes", "okay", "ok", "the", "a", "an", "now", "with", "to", "on", "and", "for",
+    "task", "work", "request", "original", "current", "previous", "paused", "continue", "resume",
+    "carry", "proceed", "ahead", "that", "this", "it", "мы", "это", "задачу", "задача", "работу",
+    "работа", "исходную", "текущую", "прерванную", "продолжай", "продолжи", "возобнови", "пожалуйста",
+}
+
+
+def prompt_metadata(prompt: str) -> tuple[str, str]:
+    """Use the outcome parser's exact transport framing for raw native prompts."""
+    import lhc_outcome
+
+    return lhc_outcome.source_origin(prompt), lhc_outcome.semantic_scope(prompt)
+
+
+def _semantic_text(prompt: str) -> str:
+    import lhc_outcome
+
+    return lhc_outcome.semantic_scope(prompt).strip()
+
+
+def prompt_can_resume_hold(prompt: str, active_prompt: str | list[str] | tuple[str, ...], *,
+                           hold: str | None = None, origin: str | None = None) -> bool:
+    """Only a fresh, unmarked, substantive native prompt resumes manual holds."""
+    import lhc_outcome
+
+    if not isinstance(prompt, str) or not prompt.strip():
+        return False
+    origin = origin or lhc_outcome.source_origin(prompt)
+    if origin == "agent-relay":
+        return False
+    scope = lhc_outcome.semantic_scope(prompt)
+    if not scope or STATUS_OR_ACK_PROMPT.fullmatch(scope.strip()):
+        return False
+    active_prompts = active_prompt if isinstance(active_prompt, (list, tuple)) else (active_prompt,)
+    active_scopes = {lhc_outcome.semantic_scope(value).strip() for value in active_prompts if value}
+    if scope.strip() in active_scopes:
+        return False
+    # Manual Interrupt/SessionEnd holds require an explicit continuation of
+    # that paused work. A new unrelated task is not implicit permission to
+    # resume. Tool failures retain the established direct-prompt recovery path.
+    if hold in {"Interrupt", "SessionEnd", "session.error"}:
+        if not EXPLICIT_RESUME.match(scope):
+            return False
+        if RESUME_DEFERRED_OR_NEGATED.search(scope):
+            return False
+        if RESUME_PREVIOUS_TASK.search(scope):
+            return True
+        words = {word.casefold() for word in re.findall(r"[\w'-]+", scope) if len(word) >= 4}
+        words -= GENERIC_TASK_WORDS
+        active_words = set()
+        for value in active_scopes:
+            active_words.update(word.casefold() for word in re.findall(r"[\w'-]+", value) if len(word) >= 4)
+        active_words -= GENERIC_TASK_WORDS
+        return bool(words & active_words)
+    return True
+
+
+def prompt_should_promote_latest(prompt: str, business: dict, *, origin: str | None = None) -> bool:
+    """Keep captured transport rows while excluding relays/status/old duplicates from active scope."""
+    import lhc_outcome
+
+    if not isinstance(prompt, str) or not prompt.strip():
+        return False
+    origin = origin or lhc_outcome.source_origin(prompt)
+    if origin == "agent-relay" and business.get("original_prompt"):
+        return False
+    scope = lhc_outcome.semantic_scope(prompt).strip()
+    if not scope or STATUS_OR_ACK_PROMPT.fullmatch(scope):
+        return False
+    original = lhc_outcome.semantic_scope(
+        business.get("original_prompt_full") or business.get("original_prompt") or ""
+    ).strip()
+    latest = lhc_outcome.semantic_scope(
+        business.get("latest_prompt_full") or business.get("latest_prompt") or ""
+    ).strip()
+    if scope == latest:
+        return False
+    if original and scope == original and latest and latest != original:
+        return False
+    return True
+
+
+def active_business_prompts(business: dict) -> tuple[str, str]:
+    """Derive active task text without promoting stored relay/status contamination."""
+    import lhc_outcome
+
+    original_raw = business.get("original_prompt_full") or business.get("original_prompt") or ""
+    original = (business.get("original_scope_prompt") or lhc_outcome.semantic_scope(original_raw)).strip()
+    latest_raw = business.get("latest_prompt_full") or business.get("latest_prompt") or ""
+    latest = _eligible_active_scope(latest_raw, business, original,
+                                    scope_hint=business.get("latest_scope_prompt"))
+    if latest and latest != original:
+        return original, latest
+    context = business.get("execution_context") or {}
+    for row in reversed(context.get("direct_user_messages") or []):
+        if not isinstance(row, dict):
+            continue
+        raw = row.get("prompt", "")
+        candidate = _eligible_active_scope(raw, business, original, origin=row.get("origin"),
+                                           scope_hint=row.get("scope_prompt"))
+        if candidate and candidate != original:
+            return original, candidate
+    return original, ""
+
+
+def _eligible_active_scope(prompt: str, business: dict, original: str, *, origin: str | None = None,
+                           scope_hint: str | None = None) -> str:
+    import lhc_outcome
+
+    if not isinstance(prompt, str) or not prompt.strip():
+        return ""
+    origin = origin or lhc_outcome.source_origin(prompt)
+    scope = lhc_outcome.semantic_scope(prompt_excerpt(scope_hint or prompt)).strip()
+    if (origin == "agent-relay" or not scope or STATUS_OR_ACK_PROMPT.fullmatch(scope) or
+            scope == original):
+        return ""
+    return scope
+
+
+def capture_native_dispatch(business: dict, payload: dict, parent_logical_id: str,
+                            observed_at: str) -> None:
+    """Retain only exact native spawn pre-call text; it is pending until child join."""
+    tool_name = str(payload.get("tool_name") or payload.get("toolName") or payload.get("tool") or "")
+    if not (tool_name == "spawn_agent" or tool_name.endswith("spawn_agent")):
+        return
+    call_id = (payload.get("tool_call_id") or payload.get("tool_use_id") or payload.get("toolUseId")
+               or payload.get("toolUseID") or payload.get("call_id") or payload.get("callId"))
+    if not isinstance(call_id, str) or not call_id.strip():
+        business["native_dispatch_capture_error"] = "spawn pre-call has no native tool call id"
+        return
+    import lhc_native_identity
+
+    parent_journal = payload.get("transcript_path") or payload.get("transcriptPath")
+    tool_input = payload.get("tool_input")
+    if tool_input is None:
+        tool_input = payload.get("arguments")
+    if tool_input is None:
+        tool_input = payload.get("input")
+    try:
+        record = lhc_native_identity.capture_spawn_intent(
+            parent_logical_id, parent_journal_path=parent_journal,
+            tool_name=tool_name, tool_call_id=call_id, tool_input=tool_input,
+            observed_at=observed_at,
+        )
+        record["join_status"] = "pending"
+        business["native_dispatches"] = lhc_native_identity.merge_dispatch_records(
+            business.get("native_dispatches", []), record
+        )
+        business.pop("native_dispatch_capture_error", None)
+    except (OSError, TypeError, ValueError) as exc:
+        errors = business.setdefault("native_dispatch_errors", [])
+        error = {"call_id": call_id, "reason": f"{type(exc).__name__}: {str(exc)[:256]}",
+                 "observed_at": observed_at}
+        existing = next((row for row in errors if row.get("call_id") == call_id), None)
+        if existing is None and len(errors) < 64:
+            errors.append(error)
+        elif existing is not None and existing.get("reason") != error["reason"]:
+            business["native_dispatch_capture_error"] = "conflicting unavailable pre-call for an existing tool id"
+        elif len(errors) >= 64 and existing is None:
+            business["native_dispatch_capture_error"] = "dispatch capture error capacity reached; no entries were evicted"
+
+
+def resolve_native_child_assignment(event: dict, logical_session_id: str,
+                                    runtime: str, observed_native_cwd: Path) -> dict:
+    """Verify a child against its exact parent journal, native receipt and captured intent."""
+    import lhc_native_identity
+
+    parent_native_id = str(event.get("session_id") or event.get("sessionID") or "")
+    child_native_id = str(event.get("agent_id") or "")
+    if not parent_native_id or not child_native_id:
+        return {"verified": False, "status": "unavailable", "reason": "native parent or child id is missing"}
+    try:
+        parent_journal = lhc_native_identity.find_native_journal(parent_native_id)
+        parent_header = lhc_native_identity.read_native_header(parent_journal)
+        child_journal = event.get("transcript_path") or event.get("transcriptPath")
+        if not child_journal:
+            child_journal = lhc_native_identity.find_native_journal(child_native_id)
+        parent_state_path = learning_path(Path(parent_header["native_cwd"]), runtime, parent_native_id)
+        parent_state = load_state(parent_state_path) or {}
+        parent_business = parent_state.get("business", {})
+        identity = lhc_native_identity.resolve_child_identity(
+            logical_session_id, parent_journal, child_journal,
+            observed_native_cwd=os.fspath(observed_native_cwd),
+            captured_intents=parent_business.get("native_dispatches", []),
+        )
+        identity["parent_state_path"] = os.fspath(parent_state_path)
+        return identity
+    except (OSError, TypeError, ValueError) as exc:
+        return {"verified": False, "status": "unavailable",
+                "parent_native_id": parent_native_id, "native_id": child_native_id,
+                "reason": f"{type(exc).__name__}: {str(exc)[:256]}"}
+
+
 def parse_time(value: str) -> datetime:
     """Parse one timezone-aware ISO-8601 timestamp."""
 
@@ -501,7 +720,7 @@ def compaction_hook(
             count += 1
             recent.append({"count": count, "at": now.isoformat(), "status": "pending"})
             recent = recent[-3:]
-            fallback_prompt = str(state.get("last_user_prompt") or "unknown")
+            fallback_prompt = _active_compaction_prompt(cwd, args.runtime, payload, state.get("last_user_prompt"))
             task_text = (
                 card.read_text(encoding="utf-8")
                 if card is not None
@@ -529,7 +748,7 @@ def compaction_hook(
         elif event == "postcompact":
             if recent and recent[-1].get("status") == "pending":
                 recent[-1]["status"] = "completed"
-            fallback_prompt = str(state.get("last_user_prompt") or "unknown")
+            fallback_prompt = _active_compaction_prompt(cwd, args.runtime, payload, state.get("last_user_prompt"))
             task_text = (
                 card.read_text(encoding="utf-8")
                 if card is not None
@@ -719,6 +938,7 @@ def update_execution_context(business, prompt, payload, session_id):
     if tools_dir not in sys.path:
         sys.path.insert(0, tools_dir)
     import lhc_outcome
+    safe_prompt = lhc_outcome.semantic_scope(safe_prompt)
     origin = lhc_outcome.source_origin(raw_prompt, safe_prompt)
     rows = context.setdefault("direct_user_messages", [])
     if not rows or rows[-1].get("source") != source:
@@ -877,28 +1097,114 @@ def business_checkpoint(args, cwd: Path, session_id: str, payload: dict,
             "review_sequence": 0, "pending": None, "last_review": None,
         })
         business["runtime"] = args.runtime
+        if event == "pretooluse":
+            capture_native_dispatch(business, payload, session_id, now.isoformat())
+        child_identity = payload.get("_lhc_verified_native_identity")
+        previous_identity = business.get("native_identity") or {}
+        assignment = child_identity.get("assignment") if isinstance(child_identity, dict) else None
+        assignment_prompt = assignment.get("prompt") if isinstance(assignment, dict) else None
+        assignment_bound = bool(
+            isinstance(child_identity, dict) and child_identity.get("verified") is True
+            and isinstance(assignment, dict) and assignment.get("status") == "bound"
+            and isinstance(assignment_prompt, str) and assignment_prompt.strip()
+            and assignment.get("child_id") == payload.get("agent_id")
+            and assignment.get("prompt_sha256") == hashlib.sha256(assignment_prompt.encode()).hexdigest()
+        )
+        prior_assignment = previous_identity.get("assignment") if isinstance(previous_identity, dict) else None
+        identity_conflict = bool(
+            assignment_bound and isinstance(previous_identity, dict) and previous_identity.get("verified") is True
+            and previous_identity.get("dispatch_call_id")
+            and (previous_identity.get("dispatch_call_id") != child_identity.get("dispatch_call_id")
+                 or (isinstance(prior_assignment, dict) and prior_assignment.get("status") == "bound"
+                     and prior_assignment.get("prompt_sha256") != assignment.get("prompt_sha256")))
+        )
+        if identity_conflict:
+            assignment_bound = False
+            business["native_identity_error"] = "verified child dispatch conflicts with the previously bound native assignment"
+        elif isinstance(child_identity, dict) and child_identity.get("verified") is True:
+            business["native_identity"] = child_identity
+            business.pop("native_identity_error", None)
+        elif isinstance(child_identity, dict):
+            if not (isinstance(previous_identity, dict) and previous_identity.get("verified") is True):
+                business["native_identity"] = child_identity
+            business["native_identity_error"] = child_identity.get("reason") or "current native child assignment is unavailable"
+        if assignment_bound:
+            # Older hook state may contain a relayed prompt without a verified
+            # dispatch join. Preserve it as history, then seed only the current
+            # captured plaintext assignment.
+            if business.get("original_prompt") and not (
+                    isinstance(previous_identity, dict) and previous_identity.get("verified") is True
+                    and isinstance(prior_assignment, dict) and prior_assignment.get("status") == "bound"):
+                history = business.setdefault("unverified_prompt_history", [])
+                history.append({"original_prompt": business.get("original_prompt"),
+                                "latest_prompt": business.get("latest_prompt")})
+                del history[:-4]
+            business["original_prompt"] = assignment_prompt.strip()[:4096]
+            business["latest_prompt"] = assignment_prompt.strip()[:4096]
+            business["original_scope_prompt"] = _semantic_text(assignment_prompt)[:4096]
+            business["latest_scope_prompt"] = business["original_scope_prompt"]
+            business["native_assignment_source"] = {
+                "source_kind": "native-parent-dispatch",
+                "source": "native-parent-dispatch:" + str(child_identity.get("parent_native_id")) + ":" +
+                          str(child_identity.get("dispatch_call_id")) + ":" + assignment["prompt_sha256"],
+                "prompt": assignment_prompt,
+                "scope_prompt": _semantic_text(assignment_prompt),
+                "origin": "agent-relay",
+                "parent_native_id": child_identity.get("parent_native_id"),
+                "child_native_id": child_identity.get("native_id"),
+                "dispatch_call_id": child_identity.get("dispatch_call_id"),
+                "parent_journal_path": child_identity.get("parent_journal_path"),
+                "child_journal_path": child_identity.get("journal_path"),
+                "observed_at": assignment.get("observed_at"),
+                "prompt_sha256": assignment["prompt_sha256"],
+            }
+            if len(assignment_prompt.encode("utf-8")) > 4096:
+                business["original_prompt_full"] = assignment_prompt.strip()
+                business["latest_prompt_full"] = assignment_prompt.strip()
+            else:
+                business.pop("original_prompt_full", None)
+                business.pop("latest_prompt_full", None)
         # Only native prompt events set user intent. A generated task-card never
         # becomes the source of the accepted business objective.
         prompt = payload.get("prompt") or payload.get("text")
         if event in {"userpromptsubmit", "chat.message"} and isinstance(prompt, str) and prompt.strip():
             full_prompt = prompt.strip()
             update_execution_context(business, full_prompt, payload, session_id)
+            if assignment_bound:
+                source_rows = business.get("execution_context", {}).get("direct_user_messages", [])
+                if source_rows:
+                    source_rows[-1].update(
+                        origin="agent-relay", scope_prompt=business["original_scope_prompt"],
+                        assignment_call_id=child_identity.get("dispatch_call_id"),
+                        assignment_prompt_sha256=assignment.get("prompt_sha256"),
+                    )
+            effective_prompt = full_prompt
             is_original_prompt = not business.get("original_prompt")
-            business["original_prompt"] = business["original_prompt"] or full_prompt[:4096]
-            business["latest_prompt"] = full_prompt[:4096]
-            scope_excerpt = prompt_excerpt(full_prompt)[:4096]
+            unverified_child = bool(payload.get("_lhc_subagent") and is_original_prompt and not assignment_bound)
+            if is_original_prompt and not unverified_child:
+                business["original_prompt"] = effective_prompt[:4096]
+            import lhc_outcome
+            origin = lhc_outcome.source_origin(full_prompt)
+            promote_latest = (is_original_prompt and not unverified_child) or (
+                not is_original_prompt and not payload.get("_lhc_subagent") and
+                prompt_should_promote_latest(full_prompt, business, origin=origin)
+            )
+            scope_excerpt = lhc_outcome.semantic_scope(prompt_excerpt(effective_prompt))[:4096]
             if is_original_prompt:
-                business["original_scope_prompt"] = scope_excerpt
-                if len(full_prompt) > 4096:
-                    business["original_prompt_full"] = full_prompt
-            business["latest_scope_prompt"] = scope_excerpt
-            original_full = business.get("original_prompt_full") or business.get("original_prompt", "")
-            if full_prompt == original_full:
-                business.pop("latest_prompt_full", None)
-            elif len(full_prompt) > 4096:
-                business["latest_prompt_full"] = full_prompt
-            else:
-                business.pop("latest_prompt_full", None)
+                if not unverified_child:
+                    business["original_scope_prompt"] = scope_excerpt
+                    if len(effective_prompt) > 4096:
+                        business["original_prompt_full"] = effective_prompt
+            if promote_latest:
+                business["latest_prompt"] = effective_prompt[:4096]
+                business["latest_scope_prompt"] = scope_excerpt
+                original_full = business.get("original_prompt_full") or business.get("original_prompt", "")
+                if effective_prompt == original_full:
+                    business.pop("latest_prompt_full", None)
+                elif len(effective_prompt) > 4096:
+                    business["latest_prompt_full"] = effective_prompt
+                else:
+                    business.pop("latest_prompt_full", None)
             if payload.get("transcript_path") and args.runtime != "zcode":
                 business["transcript_path"] = str(payload["transcript_path"])[:1024]
         record_native_action(business, payload, event, session_id, now)
@@ -1003,12 +1309,7 @@ def business_checkpoint(args, cwd: Path, session_id: str, payload: dict,
                 f"Clock: {clock_source}. A reminder does not close review; milestone acceptance is separate. "
                 "Without new information, do not send another user status."
             )
-            original_scope = business.get("original_scope_prompt") or prompt_excerpt(
-                business.get("original_prompt_full") or business["original_prompt"]
-            )
-            latest_scope = business.get("latest_scope_prompt") or prompt_excerpt(
-                business.get("latest_prompt_full") or business["latest_prompt"]
-            )
+            original_scope, latest_scope = active_business_prompts(business)
             if original_scope:
                 reminder += "\nOriginal input (excerpt; check full source): " + original_scope[:1000]
             if latest_scope and latest_scope != original_scope:
@@ -1028,6 +1329,8 @@ def hook(args: argparse.Namespace) -> dict[str, Any] | None:
         return None
     cwd = Path(str(payload.get("cwd") or os.getcwd())).expanduser().resolve()
     session_id = str(payload.get("session_id") or payload.get("sessionID") or "unknown-session")
+    if payload.get("agent_id"):
+        session_id += ":subagent:" + str(payload["agent_id"])
     learning = learning_checkpoint(args, cwd, session_id)
     business = business_checkpoint(args, cwd, session_id, payload)
     combined_prompt = "\n\n".join(v for v in (business["prompt"], learning["prompt"]) if v)
@@ -1060,6 +1363,21 @@ def hook(args: argparse.Namespace) -> dict[str, Any] | None:
     return result
 
 
+def _active_compaction_prompt(cwd: Path, runtime: str, payload: dict, captured: str | None) -> str:
+    """Prefer the active task scope over a legacy relay/status compaction value."""
+    session_id = str(payload.get("session_id") or payload.get("sessionID") or "unknown-session")
+    if payload.get("agent_id"):
+        session_id += ":subagent:" + str(payload["agent_id"])
+    business_state = load_state(learning_path(cwd, runtime, session_id)) or {}
+    business = business_state.get("business") or {}
+    if business:
+        original, latest = active_business_prompts(business)
+        if latest or original:
+            return latest or original
+    fallback = _eligible_active_scope(captured or "", business, "")
+    return fallback or "unknown"
+
+
 def cycle_hook(args: argparse.Namespace, payload: dict[str, Any],
                cwd: Path) -> dict[str, Any] | None:
     """Adapt task-local timing and compaction without owning the parent clock."""
@@ -1070,17 +1388,33 @@ def cycle_hook(args: argparse.Namespace, payload: dict[str, Any],
         if not isinstance(prompt, str):
             prompt = payload.get("text")
         if agents_root is not None and isinstance(prompt, str) and prompt.strip():
-            compaction_state, _, compaction_lock = compaction_paths(agents_root, payload)
-            compaction_lock.parent.mkdir(parents=True, exist_ok=True)
-            with compaction_lock.open("a", encoding="utf-8") as handle:
-                fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
-                current = load_state(compaction_state) or {
-                    "schema_version": 1,
-                    "compaction_count": 0,
-                    "recent": [],
-                }
-                current["last_user_prompt"] = prompt.strip()
-                write_state(compaction_state, current)
+            origin, semantic_prompt = prompt_metadata(prompt)
+            session_id = str(payload.get("session_id") or payload.get("sessionID") or "unknown-session")
+            if payload.get("agent_id"):
+                session_id += ":subagent:" + str(payload["agent_id"])
+            parent = load_state(learning_path(cwd, args.runtime, session_id)) or {}
+            business = parent.get("business", {})
+            # The raw event is already captured in execution_context. Keep the
+            # compaction handoff on the active task prompt, not relay/status or
+            # a duplicate of the superseded original prompt.
+            promote = (not payload.get("agent_id") and origin != "agent-relay" and bool(semantic_prompt.strip())
+                       and not STATUS_OR_ACK_PROMPT.fullmatch(semantic_prompt.strip()))
+            original = business.get("original_prompt_full") or business.get("original_prompt") or ""
+            latest = business.get("latest_prompt_full") or business.get("latest_prompt") or ""
+            if original and semantic_prompt.strip() == _semantic_text(original) and latest and semantic_prompt.strip() != _semantic_text(latest):
+                promote = False
+            if promote:
+                compaction_state, _, compaction_lock = compaction_paths(agents_root, payload)
+                compaction_lock.parent.mkdir(parents=True, exist_ok=True)
+                with compaction_lock.open("a", encoding="utf-8") as handle:
+                    fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+                    current = load_state(compaction_state) or {
+                        "schema_version": 1,
+                        "compaction_count": 0,
+                        "recent": [],
+                    }
+                    current["last_user_prompt"] = prompt.strip()
+                    write_state(compaction_state, current)
     if args.event.casefold() in {"precompact", "postcompact"}:
         return compaction_hook(args, payload, cwd)
     restored = compaction_hook(args, payload, cwd) if args.event.casefold() == "sessionstart" else None

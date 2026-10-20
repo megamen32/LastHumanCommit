@@ -10,7 +10,14 @@ reviewing which model assignments actually worked. Do not perform a full model
 market survey before every task.
 
 
-## Existing Herder is the execution path
+## Existing native and Herder execution paths
+
+Use supported native subagents when the active harness provides them and the task
+calls for delegation. Keep the human-selected model/settings, bounded ownership
+and independent context. Resolve actual child identity from native receipts;
+transport labels and an intended dispatch are not completed execution. Do not
+build another orchestrator or rewrite the parent/global model to choose a child.
+Use the existing Herder route below when it is the available or selected route.
 
 Use the already connected Agent Herder MCP: no new tool, delegation wrapper,
 router agent or role×model profile matrix. Role, model and harness are separate

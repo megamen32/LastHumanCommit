@@ -151,6 +151,17 @@ def observe(state, event, name, cwd, session, now):
     new_ui_task = bool(human_prompt and not human_prompt.startswith("🤖") and SURFACE.search(human_prompt)
                        and (BUILD.search(human_prompt) or re.search(r"\b(?:fix|adjust|change)\b|исправ|поправ", human_prompt, re.I) or ACCEPT.search(human_prompt))
                        and (not milestone or human_prompt != milestone["goal"]))
+    if new_ui_task and milestone and milestone.get("hold") in {"Interrupt", "SessionEnd", "session.error"}:
+        import lhc_outcome
+        import lhc_time_guard
+        business = state.get("business", {})
+        active_prompts = [business.get("latest_prompt_full") or business.get("latest_prompt") or "",
+                          business.get("original_prompt_full") or business.get("original_prompt") or "",
+                          milestone.get("goal") or ""]
+        if not lhc_time_guard.prompt_can_resume_hold(
+                human_prompt, active_prompts, hold=milestone.get("hold"),
+                origin=lhc_outcome.source_origin(human_prompt)):
+            new_ui_task = False
     if new_ui_task and milestone:
         if pending(milestone):
             if human_prompt not in milestone["goal"]:
@@ -180,8 +191,21 @@ def observe(state, event, name, cwd, session, now):
                     milestone["sources"] = (milestone["sources"] + [path])[-16:]
     if name in {"Interrupt", "SessionEnd", "PermissionRequest", "session.error", "ToolFailure"}:
         milestone["hold"] = name
-    elif ((name == "UserPromptSubmit" and not event.get("_lhc_control_prompt") and milestone.get("hold") != "PermissionRequest")
-          or name == "permission.replied"):
+    elif name == "UserPromptSubmit" and not event.get("_lhc_control_prompt") and milestone.get("hold") != "PermissionRequest":
+        raw_prompt = str(event.get("prompt") or event.get("text") or "")
+        import lhc_outcome
+        import lhc_time_guard
+        origin = lhc_outcome.source_origin(raw_prompt)
+        business = state.get("business", {})
+        active_prompts = event.get("_lhc_previous_active_prompts") or [
+            business.get("latest_prompt_full") or business.get("latest_prompt") or "",
+            business.get("original_prompt_full") or business.get("original_prompt") or "",
+            milestone.get("goal") or "",
+        ]
+        if lhc_time_guard.prompt_can_resume_hold(raw_prompt, active_prompts,
+                                                hold=milestone.get("hold"), origin=origin):
+            milestone.pop("hold", None)
+    elif name == "permission.replied" and milestone.get("hold") == "PermissionRequest":
         milestone.pop("hold", None)
     elif name == "PostToolUseFailure" or (name == "PostToolUse" and tool_failed(event)):
         scoped = scoped_surface_failure(event) if name == "PostToolUse" else None

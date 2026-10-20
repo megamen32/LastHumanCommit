@@ -19,19 +19,19 @@ Use existing business.outcome and source-backed close: `common/protocols/OUTCOME
 state is not permission.
 
 ## Understand and deliver
-Recover intent from rough or spoken requests using the conversation and code.
-Preserve the original goal and latest corrections. Ask only about ambiguity that
-changes the result or consequences; do not ask again for information already known.
-Choose the shortest working route and check the real scenario immediately.
+Recover spoken intent from context. Preserve the original goal and latest corrections; ask only consequence-changing unknowns. Choose the shortest working route and check the real scenario.
+Lead owns applicable delivery and observed Quick Loop/Full Cycle results; a child source receipt proves only that scope.
+Agent messages are not human prohibitions. Status, duplicates and review routing preserve valid progress; resolve conflicts against actual user authority.
+Repair evidence bindings without replaying accepted actions; preserve native stops, permissions, revocations, negative findings and unknown operations.
 
 Lead delegates every implementation task: small work uses one bounded Worker + Lead review.
 An assigned no-delegation leaf uses native self-check, never parent product PASS or recursive hiring.
 Large fullcycle: bounded independent research Workers → one working→ideal→YAGNI plan → quota-aware frontier council → bounded dispatch.
 Council checks alternatives/crosschallenge/business cost/dissent; do not repeat a completed council without a real delta.
-Quickfix/testing/assigned leaf tasks skip that cycle. Strong models handle difficult choices,
-cheaper models handle clear work; count total cost, including context transfer and rework.
-Preserve independent testing and review for large ambiguous changes. Roles are tools,
-not a mandatory ceremony queue.
+Quickfix/testing/assigned leaf tasks skip that cycle; preserve independent review for ambiguous changes.
+For each new blocker, the Lead must ask a frontier-model adviser for several permitted ways forward.
+If none is executable, ask a fresh-context Overseer for the most useful next action toward the business result.
+Act on the viable route; deduplicate unchanged blockers. Never bypass HumanStop or required permission.
 
 For long work, one short `.agents/tasks/` record is enough: original request,
 result, latest decisions, completed work and next action. After compaction/resume,
