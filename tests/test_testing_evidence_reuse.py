@@ -162,7 +162,8 @@ def test_quoted_examples_are_never_browser_sources(tmp_path,script):
 
 
 @pytest.mark.parametrize('product_edit', [False, True])
-def test_historical_revision_difference_needs_report_only_git_delta(tmp_path,monkeypatch,product_edit):
+@pytest.mark.parametrize('later_report_refresh', [False, True])
+def test_historical_revision_difference_needs_report_only_git_delta(tmp_path,monkeypatch,product_edit,later_report_refresh):
     import subprocess
     import lhc_outcome as outcomes
     outcome,manifest,binding,source=reuse_fixture(tmp_path,monkeypatch)
@@ -189,6 +190,11 @@ def test_historical_revision_difference_needs_report_only_git_delta(tmp_path,mon
     binding.update(baseline_commit=baseline,baseline_call='baseline',assessment_index=binding['assessment_index']+2,
                    authorization_index=binding['authorization_index']+2)
     source.write_text('\n'.join(json.dumps(row) for row in rows)+'\n')
+    if later_report_refresh:
+        from datetime import datetime, timedelta
+        outcome['evidence_after']=(datetime.fromisoformat(rows[binding['authorization_index']]['timestamp'])+timedelta(minutes=2)).isoformat()
+    evidence_after=outcome['evidence_after']
+    original_bytes=source.read_bytes()
     if product_edit:
         with pytest.raises(ValueError,match='product changed'):
             review.accept_review(outcome,{},manifest,tmp_path,'leader',testing_reuse=binding)
@@ -196,3 +202,15 @@ def test_historical_revision_difference_needs_report_only_git_delta(tmp_path,mon
         review.accept_review(outcome,{},manifest,tmp_path,'leader',testing_reuse=binding)
         assert outcome['testing_reuse_binding']['historical_revision']==old_revision
         assert outcome['stages']['consumer']['evidence'][0]['revision']==old_revision
+        assert outcome['evidence_after']==evidence_after and source.read_bytes()==original_bytes
+        assert outcome['testing_reuse_binding']['calls']['action']['at']==rows[6]['timestamp']
+
+
+def test_reuse_authorization_must_follow_original_assessment(tmp_path,monkeypatch):
+    from datetime import datetime,timedelta
+    outcome,manifest,binding,source=reuse_fixture(tmp_path,monkeypatch)
+    rows=[json.loads(line) for line in source.read_text().splitlines()]
+    rows[binding['authorization_index']]['timestamp']=(datetime.fromisoformat(rows[binding['assessment_index']]['timestamp'])-timedelta(seconds=1)).isoformat()
+    source.write_text('\n'.join(json.dumps(row) for row in rows)+'\n')
+    with pytest.raises(ValueError,match='authorization predates'):
+        review.accept_review(outcome,{},manifest,tmp_path,'leader',testing_reuse=binding)

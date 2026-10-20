@@ -195,8 +195,14 @@ def prepare(outcome, meta, observations, owner, binding, cwd):
     # permission from a tool result or a saved prompt.
     if not re.match(r'\s*(?:Reuse already performed testing|Продолжай:\s*привяжи уже выполненные проверки)', quote, re.I):
         raise ValueError('native user quote does not bind existing testing reuse')
-    if native.timestamp(authorizations[0]['at']) < native.timestamp(outcome['evidence_after']):
-        raise ValueError('reuse authorization predates the coverage correction')
+    assessments = [r for r in meta['own_reports'] if r['index'] == binding.get('assessment_index')]
+    if len(assessments) != 1:
+        raise ValueError('reuse needs original native assessment index')
+    # A later report refresh does not revoke this exact native reuse grant.
+    if (authorizations[0]['index'] <= max(contract_call['_source_index'], assessments[0]['index'])
+            or native.timestamp(authorizations[0]['at']) < max(
+                native.timestamp(original['evidence_after']), native.timestamp(assessments[0]['at']))):
+        raise ValueError('reuse authorization predates original contract or assessment')
     if original['revision'] != outcome['revision']:
         baseline = binding.get('baseline_commit','')
         baseline_call, baseline_output = calls.get(binding.get('baseline_call'), ({},''))
