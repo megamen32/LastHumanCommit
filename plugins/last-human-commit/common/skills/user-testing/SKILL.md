@@ -6,7 +6,7 @@ description: Independently attempt a user goal through a real browser, device, a
 # Real-use testing
 
 Load `<primary checkout>/.agents/TEST_ACCESS.md` via Git worktree mapping before
-acceptance; follow `common/protocols/REVIEW_TO_DELIVERY.md` execution-access contract.
+acceptance; follow the active package's `common/protocols/REVIEW_TO_DELIVERY.md` execution-access contract.
 Reuse/recover authorized fixtures through supported local administration before classifying a missing login as BLOCKED_REAL_SURFACE.
 Initial password change and authorized disposable OAuth registration are preparation,
 not blanket blockers. Keep protected references, never values, in context/handoffs.

@@ -105,3 +105,15 @@ def test_native_handoff_preserves_russian_goal_and_only_secret_reference(tmp_pat
     assert json.loads(state)['business']['original_prompt'] == prompt
     assert sentinel not in ''.join(outputs) + state
     assert secret.stat().st_mode & 0o777 == 0o600
+
+
+def test_installed_test_skills_resolve_access_protocol_in_both_native_facets():
+    import re
+    for facet in ('plugins/last-human-commit', 'plugins/last-human-commit/native/codex'):
+        root = ROOT / facet
+        for name in ('user-testing', 'focus-groups'):
+            text = (root/'skills'/name/'SKILL.md').read_text()
+            refs = re.findall(r'`([^`]*protocols/REVIEW_TO_DELIVERY.md)`', text)
+            assert refs
+            for ref in refs:
+                assert (root / ref).is_file(), (facet, name, ref)

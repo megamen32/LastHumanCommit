@@ -6,7 +6,7 @@ description: Run diverse independent goal-driven Testers on the real product, sy
 # Autonomous focus groups
 
 Load `<primary checkout>/.agents/TEST_ACCESS.md` via Git worktree mapping before
-acceptance; follow `src/common/protocols/REVIEW_TO_DELIVERY.md` execution-access contract.
+acceptance; follow the active package's `common/protocols/REVIEW_TO_DELIVERY.md` execution-access contract.
 Reuse/recover authorized fixtures through supported local administration before classifying a missing login as BLOCKED_REAL_SURFACE.
 Initial password change and authorized disposable OAuth registration are preparation,
 not blanket blockers. Keep protected references, never values, in context/handoffs.
