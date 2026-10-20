@@ -1,6 +1,4 @@
 name: last-human-commit
 version: 1.4.13
-description: "Inject LHC role context, business time guards, and bounded compaction handoffs into Hermes."
+description: "Resolve explicitly tagged LHC delegation role context in Hermes. Session lifecycle control is not installed."
 author: "Last Human Commit"
-hooks:
-  - pre_llm_call

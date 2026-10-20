@@ -1,8 +1,18 @@
 # Ordinary task → observable outcome
 
-Every actionable engineering/testing assignment has an automatic class and a
-concrete canary: scenario, actual consumer target/host, expected observation.
-Classification is a hint from the full accepted scope, not a permission engine.
+The Lead may record each actionable assignment through the existing outcome CLI,
+including its class and a concrete canary: scenario, actual consumer target/host,
+expected observation. The Lead derives that record from the user's authority and
+latest direct corrections. LHC does not classify ordinary messages or mutate the
+contract, evidence floor, stages or holds from acknowledgements, status, agent
+reports, tool events or hook prompts. Native startup hooks provide current
+instructions and tool paths only; they do not create task state. Time-only
+PostToolUse reminders may fire at 30/60 minutes. They may read elapsed time only;
+they must not interpret message language, infer a task, mutate state or veto Stop.
+The Lead owns task-note updates: initial/revised estimate and reason, actual active
+versus wall-clock elapsed time, next ~15-minute tasks/owners/dependencies and parallel
+opportunities. At 60 minutes the Lead also checks the original goal and business result.
+User updates report material progress, not every timer reminder.
 Quickfix needs focused RED/fix/GREEN and its real narrow canary; fullcycle also
 needs applicable deployment and publication. Testing completes assigned coverage
 and candid raw observations, including a product defect; it does not require code,
@@ -53,9 +63,10 @@ the same size cap, source identity, original line indexes/times and later negati
 findings still apply. It never creates/resumes a session or rewrites its assessment.
 If the journal advances, refresh the snapshot, not the report or evidence clocks.
 
-The existing native entry stores `business.outcome` in the existing learning JSON.
-It survives compaction and keeps original/latest corrections, owner and clocks.
-Before work, concretize the automatically captured contract (not a mode interview):
+The existing optional outcome CLI stores `business.outcome` in the existing learning
+JSON. It survives compaction and keeps the Lead's recorded scope, owner and clocks.
+When useful, the Lead records a concrete contract with the existing command (this is
+not a required message format or an interview):
 
 ```sh
 python3 <package>/tools/lhc_outcome.py --cwd <project> --runtime codex --session-id <native-id> contract \
@@ -319,14 +330,13 @@ actual discrepancies rather than leaving an unresolvable mandatory schema loop.
 
 ## Stop and questions
 
-Finish verdict is complete/pending/running/blocked/human-stopped. Only the proven
-applicable stages close it. The native Stop veto (Codex/ZCode) permits one bounded
-continuation per meaningful owned revision/stage/canonical answer, deduplicating
-identities including A→B→A. New calls/turns/status polls/foreign WIP are not progress.
-Repeated unchanged Stop preserves pending and exact next step; it is not success.
-Human stop, permission, accepted/UNKNOWN external work and job IDs remain protected.
-OpenCode currently observes completion and reinjects context/compaction; do not
-claim an unimplemented pre-final veto. No new daemon, cron or schedule.
+The optional outcome record uses complete/pending/running/blocked/human-stopped
+verdicts; only proven applicable stages support a recorded completion. LHC hooks do
+not infer a Stop veto, continuation, hold or permission from ordinary messages, tool
+events or status. Obey the harness/platform's actual stop and permission decisions.
+The Lead decides whether user authority permits continuation and records task
+progress through the existing CLI. Human stops, permission limits, accepted/UNKNOWN
+external work and job IDs remain protected. No new daemon, cron or schedule.
 
 For optional Notice Place/UserIO ownership, follow `COORDINATION.md` and
 `commands/askhuman.md`: one policy request, account-scoped universal transport,

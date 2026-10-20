@@ -1,23 +1,12 @@
 {
-  "description": "Automatic LHC entry and compulsory original-goal/learning checkpoints at native work boundaries",
+  "description": "Side-effect-free LHC instruction activation and isolated time-only PostToolUse reminders",
   "hooks": {
     "SessionStart": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${PLUGIN_ROOT:-${ZCODE_PLUGIN_ROOT:-$HOME/.codex/.tmp/marketplaces/megamen32-plugins/plugins/last-human-commit}}}}/tools/lhc_entry.py\" --event SessionStart || { printf '%s\\n' 'LHC entry unavailable; message processing continues.' >&2; :; }",
-            "timeout": 3
-          }
-        ]
-      }
-    ],
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${PLUGIN_ROOT:-${ZCODE_PLUGIN_ROOT:-$HOME/.codex/.tmp/marketplaces/megamen32-plugins/plugins/last-human-commit}}}}/tools/lhc_entry.py\" --event UserPromptSubmit || { printf '%s\\n' 'LHC entry unavailable; message processing continues.' >&2; :; }",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${PLUGIN_ROOT:-${ZCODE_PLUGIN_ROOT:-$HOME/.codex/.tmp/marketplaces/megamen32-plugins/plugins/last-human-commit}}}}/tools/lhc_entry.py\" --event SessionStart --instructions-only || { printf '%s\\n' 'LHC entry unavailable; message processing continues.' >&2; :; }",
             "timeout": 3
           }
         ]
@@ -28,19 +17,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${PLUGIN_ROOT:-${ZCODE_PLUGIN_ROOT:-$HOME/.codex/.tmp/marketplaces/megamen32-plugins/plugins/last-human-commit}}}}/tools/lhc_entry.py\" --event PostCompact || { printf '%s\\n' 'LHC entry unavailable; message processing continues.' >&2; :; }",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${PLUGIN_ROOT:-${ZCODE_PLUGIN_ROOT:-$HOME/.codex/.tmp/marketplaces/megamen32-plugins/plugins/last-human-commit}}}}/tools/lhc_entry.py\" --event PostCompact --instructions-only || { printf '%s\\n' 'LHC entry unavailable; message processing continues.' >&2; :; }",
             "timeout": 3
-          }
-        ]
-      }
-    ],
-    "PreToolUse": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${PLUGIN_ROOT:-${ZCODE_PLUGIN_ROOT:-$HOME/.codex/.tmp/marketplaces/megamen32-plugins/plugins/last-human-commit}}}}/tools/lhc_entry.py\" --event PreToolUse || { printf '%s\\n' 'LHC entry unavailable; message processing continues.' >&2; :; }",
-            "timeout": 5
           }
         ]
       }
@@ -50,62 +28,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${PLUGIN_ROOT:-${ZCODE_PLUGIN_ROOT:-$HOME/.codex/.tmp/marketplaces/megamen32-plugins/plugins/last-human-commit}}}}/tools/lhc_entry.py\" --event PostToolUse || { printf '%s\\n' 'LHC entry unavailable; message processing continues.' >&2; :; }",
-            "timeout": 5
-          }
-        ]
-      }
-    ],
-    "PreCompact": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${PLUGIN_ROOT:-${ZCODE_PLUGIN_ROOT:-$HOME/.codex/.tmp/marketplaces/megamen32-plugins/plugins/last-human-commit}}}}/tools/lhc_entry.py\" --event PreCompact || { printf '%s\\n' 'LHC entry unavailable; message processing continues.' >&2; :; }",
-            "timeout": 5
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${PLUGIN_ROOT:-${ZCODE_PLUGIN_ROOT:-$HOME/.codex/.tmp/marketplaces/megamen32-plugins/plugins/last-human-commit}}}}/tools/lhc_entry.py\" --event Stop || { printf '%s\\n' 'LHC entry unavailable; message processing continues.' >&2; :; }",
-            "timeout": 5
-          }
-        ]
-      }
-    ],
-    "Interrupt": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${PLUGIN_ROOT:-${ZCODE_PLUGIN_ROOT:-$HOME/.codex/.tmp/marketplaces/megamen32-plugins/plugins/last-human-commit}}}}/tools/lhc_entry.py\" --event Interrupt || { printf '%s\\n' 'LHC entry unavailable; message processing continues.' >&2; :; }",
-            "timeout": 5
-          }
-        ]
-      }
-    ],
-    "SessionEnd": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${PLUGIN_ROOT:-${ZCODE_PLUGIN_ROOT:-$HOME/.codex/.tmp/marketplaces/megamen32-plugins/plugins/last-human-commit}}}}/tools/lhc_entry.py\" --event SessionEnd || { printf '%s\\n' 'LHC entry unavailable; message processing continues.' >&2; :; }",
-            "timeout": 5
-          }
-        ]
-      }
-    ],
-    "PermissionRequest": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${PLUGIN_ROOT:-${ZCODE_PLUGIN_ROOT:-$HOME/.codex/.tmp/marketplaces/megamen32-plugins/plugins/last-human-commit}}}}/tools/lhc_entry.py\" --event PermissionRequest || { printf '%s\\n' 'LHC entry unavailable; message processing continues.' >&2; :; }",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${PLUGIN_ROOT:-${ZCODE_PLUGIN_ROOT:-$HOME/.codex/.tmp/marketplaces/megamen32-plugins/plugins/last-human-commit}}}}/tools/lhc_entry.py\" --event PostToolUse --heartbeat-only || { printf '%s\\n' 'LHC entry unavailable; message processing continues.' >&2; :; }",
             "timeout": 5
           }
         ]

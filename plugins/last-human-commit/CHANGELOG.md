@@ -1,3 +1,12 @@
+# 1.5.15 — remove conversation-driven control hooks
+
+Remove automatic conversation-driven prompt/tool/Stop lifecycle hooks. Startup
+and context restoration load instructions; a time-only heartbeat retains 30-minute
+planning and hourly original-goal reminders without semantic state inference. Ordinary text cannot
+reclassify tasks, reset evidence, resume holds, or trigger a completion veto.
+Explicit CLI evidence checks and native harness permissions/stops remain available;
+existing pending outcomes are preserved, not silently accepted.
+
 # 1.5.13 — preserve task and evidence identity
 
 Keep agent relays, status and duplicates separate from the active task and stop

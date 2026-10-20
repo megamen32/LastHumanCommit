@@ -340,4 +340,3 @@ def ordinary_entry(**_: Any) -> dict[str, str] | None:
 
 def register(ctx: Any) -> None:
     ctx.register_middleware("tool_request", rewrite_delegate_task)
-    ctx.register_hook("pre_llm_call", ordinary_entry if os.environ.get("LHC_TIME_GUARD_ENABLED") == "0" else observe_pre_llm)

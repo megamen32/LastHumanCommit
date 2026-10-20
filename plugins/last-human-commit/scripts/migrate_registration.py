@@ -42,9 +42,10 @@ def main():
         paths = skills.setdefault('paths', []) if isinstance(skills, dict) else skills
         paths[:] = [x for x in paths if 'last-human-commit' not in x.lower()]
         paths.append(str(root / 'skills'))
-        plugins = d.setdefault('plugin', [])
-        plugins[:] = [x for x in plugins if not isinstance(x, str) or ('last-human-commit' not in x.lower() and 'lhc-time-guard' not in x)]
-        plugins.append(str(root / 'opencode/lhc-time-guard.ts'))
+        plugins = d.get('plugin')
+        if isinstance(plugins, list):
+            plugins[:] = [x for x in plugins if not isinstance(x, str) or
+                          ('last-human-commit' not in x.lower() and 'lhc-time-guard' not in x)]
         changes[config] = json.dumps(d, indent=2) + '\n'
     for path, content in changes.items():
         if content == path.read_text():

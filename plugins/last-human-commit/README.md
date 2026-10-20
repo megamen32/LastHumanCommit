@@ -5,13 +5,29 @@ Understand the intended result, do the useful work, test it and integrate the sh
 
 ## What changed
 
-Ordinary tasks retain their class, explicit business canary and applicable delivery
-stages in existing session state. Independent native source-backed review can close
-the outcome; testing can complete with a product defect. See
+Operating instructions, internal planning, new task records and agent/tool messages
+use English. User answers use the user’s language; original messages, localized
+fixtures and raw feedback retain their language.
+
+Native hooks load instructions at session start or context restoration and issue
+time-only 30-minute planning and hourly goal-check reminders.
+They do not classify conversation text, mutate task contracts, or block completion.
+Every 30 minutes the Lead updates the task note with roughly 15-minute steps,
+initial estimate versus actual effort, dependencies and parallel delegation.
+The Lead owns the goal, applicable checks and delivery; existing explicit contract
+and review commands remain available without automatic conversation parsing. See
 [the outcome contract](common/protocols/OUTCOME_CONTRACT.md).
 
-Parallel writers use Git worktrees. Each working branch is pushed and gets a PR;
-merge it when review and checks permit. Before finishing, fetch, merge newer work,
+Independent native review remains bound to the reviewer's current task assignment.
+When work is genuinely reassigned, use a new native worker session under the existing
+mandate and assign the existing reviewer again with the fresh outcome ID and full
+current goal. Old reports remain historical and cannot be reused for the new scope.
+
+Agent Herder relays are marked as `agent-relay` transport origin; unmarked origin
+remains `unknown`. This marker preserves provenance and does not grant authority.
+
+Parallel writers use Git worktrees. Ready work converges into the explicitly permitted published dev history; PR per
+worker is optional. Merge only with authorization, review and green checks. Before finishing, fetch, merge newer work,
 retest and push. A Full cycle converges the participants' changes, including nested
 repositories, into one reachable green history. Foreign active work is preserved.
 
@@ -37,8 +53,8 @@ available; scheduled inspection is required even when the current plan looks cor
 
 ## Package and installation
 
-The native Agent Plugin is `plugins/last-human-commit`, version 1.5.7, with 23 optional
-skills and small automatic-entry hooks. Use the harness's native plugin manager.
+The native Agent Plugin is `plugins/last-human-commit`, version 1.5.15, with 23 optional
+skills, instruction-only startup hooks and time-only reminders. Use the harness's native plugin manager.
 For clients whose plugin hooks are unavailable or still await trust, the package
 provides a supported user-instruction bootstrap:
 
@@ -64,5 +80,10 @@ every hour or edit. Varied realistic personas leave detailed positive/negative
 feedback. Preserve raw feedback, fix actual obstacles and keep preferences
 without automatically expanding scope. See docs/V1.4.3.md in the source repository.
 
-OpenCode 2 uses the native `opencode/lhc-v2.ts` entrypoint; V1 retains
-`opencode/lhc-time-guard.ts`. OpenChamber shares the connected server installation.
+OpenCode uses its normal AGENTS.md and skill discovery; the old LHC event adapters
+are inert compatibility exports and are no longer registered. Hermes retains only
+explicit role-selection middleware, without a recurring lifecycle observer.
+Codex/Claude/ZCode load concise instructions and time-only 30/60-minute reminders.
+The reminders run at the next tool boundary, not through a background scheduler.
+Native manager installation does not prove that every existing chat has reloaded
+its registered hooks; verify the loaded version when diagnosing an old chat.

@@ -831,6 +831,131 @@ def learning_path(cwd: Path, runtime: str, session_id: str) -> Path:
     return agents / suffix
 
 
+def native_heartbeat(cwd: Path, runtime: str, session_id: str,
+                     *, now: datetime | None = None) -> dict[str, Any] | None:
+    """Record only a per-native-session wall clock and emit due reminders once.
+
+    This deliberately does not inspect prompts, task cards, outcomes, tools,
+    milestones or permission text. Active time is not inferred from tool gaps.
+    """
+    if runtime not in {"codex", "claude", "opencode", "zcode"}:
+        return None
+    if not isinstance(session_id, str) or not session_id.strip() or session_id.strip() == "unknown-session":
+        return None
+    if len(session_id) > 256 or any(ord(char) < 32 for char in session_id):
+        return None
+    if not isinstance(cwd, Path) or not cwd.is_absolute():
+        return None
+    try:
+        native_cwd = cwd.resolve(strict=True)
+    except OSError:
+        return None
+    if not native_cwd.is_dir():
+        return None
+    now = now or datetime.now().astimezone()
+    if now.tzinfo is None or now.utcoffset() is None:
+        return None
+
+    path = learning_path(native_cwd, runtime, session_id)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    lock = path.with_suffix(".lock")
+    with lock.open("a", encoding="utf-8") as handle:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        try:
+            state = load_state(path)
+        except (OSError, UnicodeError, ValueError):
+            return None
+        if state is None:
+            if path.is_file():
+                return None
+            state = {}
+        if not isinstance(state, dict):
+            return None
+        business = state.get("business", {})
+        if not isinstance(business, dict):
+            return None
+        if business:
+            if business.get("runtime") not in (None, runtime):
+                return None
+            identity = business.get("native_identity", {})
+            if not isinstance(identity, dict):
+                return None
+            if identity.get("verified") is True:
+                if identity.get("logical_session_id") not in (None, session_id):
+                    return None
+                if identity.get("native_cwd") not in (None, os.fspath(native_cwd)):
+                    return None
+        native_entry = state.get("native_entry", {})
+        milestone = state.get("milestone", {})
+        if not isinstance(native_entry, dict) or not isinstance(milestone, dict):
+            return None
+        if native_entry.get("finish_hold") or milestone.get("hold"):
+            return None
+
+        timer = state.get("native_heartbeat", {})
+        if not isinstance(timer, dict):
+            return None
+        if timer:
+            if timer.get("session_id") != session_id or timer.get("runtime") != runtime or timer.get("cwd") != os.fspath(native_cwd):
+                return None
+            try:
+                started = parse_time(timer["started_at"])
+                last_seen = parse_time(timer["last_seen_at"])
+            except (KeyError, ValueError, TypeError, argparse.ArgumentTypeError):
+                return None
+            if now < started or now < last_seen:
+                return None
+            last_plan_bucket = timer.get("last_plan_bucket")
+            last_goal_bucket = timer.get("last_goal_bucket")
+            if (not isinstance(last_plan_bucket, int) or last_plan_bucket < 0 or
+                    not isinstance(last_goal_bucket, int) or last_goal_bucket < 0):
+                return None
+        else:
+            started = now
+            last_plan_bucket = 0
+            last_goal_bucket = 0
+            timer = {
+                "schema": "lhc.native-heartbeat.v1",
+                "runtime": runtime,
+                "session_id": session_id,
+                "cwd": os.fspath(native_cwd),
+                "started_at": now.isoformat(),
+                "last_plan_bucket": 0,
+                "last_goal_bucket": 0,
+            }
+
+        elapsed = now - started
+        elapsed_seconds = max(0, int(elapsed.total_seconds()))
+        plan_bucket = elapsed_seconds // 1800
+        goal_bucket = elapsed_seconds // 3600
+        due: list[str] = []
+        if plan_bucket > last_plan_bucket:
+            due.append(f"plan:{plan_bucket}")
+            timer["last_plan_bucket"] = plan_bucket
+        if goal_bucket > last_goal_bucket:
+            due.append(f"goal:{goal_bucket}")
+            timer["last_goal_bucket"] = goal_bucket
+        timer["last_seen_at"] = now.isoformat()
+        state["native_heartbeat"] = timer
+        write_state(path, state)
+
+    reminders = []
+    if any(item.startswith("plan:") for item in due):
+        reminders.append(
+            "LHC 30-minute time check: update the canonical task record with its original estimate, "
+            "elapsed wall time since the first native tool boundary, and the next ~15-minute tasks "
+            "with owners, dependencies and possible parallel lanes. Active time is unknown unless "
+            "measured separately; this reminder is not completion."
+        )
+    if any(item.startswith("goal:") for item in due):
+        reminders.append(
+            "LHC 60-minute direction check: reread the original direct user goal and compare useful "
+            "user-visible progress with the remaining critical path. This reminder is not product acceptance."
+        )
+    return {"state": os.fspath(path), "elapsed_wall_seconds": max(0, int(elapsed.total_seconds())),
+            "due": due, "prompt": "\n\n".join(reminders)}
+
+
 def learning_checkpoint(args: argparse.Namespace, cwd: Path, session_id: str,
                         *, acknowledge: bool = False) -> dict[str, Any]:
     """Observe a persistent wall deadline; only an evidenced ack advances it."""

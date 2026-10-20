@@ -18,9 +18,9 @@ For missing information ask the user one compact question. Secrets are not
 work: read a password or token directly from an environment variable, `.env`,
 or a secret file in one step; never build secret handoff infrastructure.
 
-A SessionStart hook (`hooks/lhc_time_start.sh`) writes the durable time anchor
-`.agents/shared-session/time/zcode-<session-id>.json` from the real start
-clock; TIME_CONTROL start anchors cite that file.
+SessionStart loads instructions only; the legacy `hooks/lhc_time_start.sh` is inert.
+Time-only PostToolUse reminders track their first tool boundary in the existing
+learning state. The Lead records the actual task start and estimates separately.
 
 Do not promise scheduled resume until proven. Before L's final answer, run
 `SELF_IMPROVE.md` only when its trigger occurred.

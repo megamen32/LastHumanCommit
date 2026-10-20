@@ -1,12 +1,34 @@
 {
-  "description": "ZCode events not shared by the portable hook bundle",
+  "description": "ZCode instruction activation and isolated time-only heartbeat",
   "hooks": {
-    "PostToolUseFailure": [
+    "SessionStart": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${PLUGIN_ROOT:-${ZCODE_PLUGIN_ROOT:-$HOME/.codex/.tmp/marketplaces/megamen32-plugins/plugins/last-human-commit}}}}/tools/lhc_entry.py\" --event PostToolUseFailure || { printf '%s\\n' 'LHC entry unavailable; message processing continues.' >&2; :; }",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${PLUGIN_ROOT:-${ZCODE_PLUGIN_ROOT:-$HOME/.codex/.tmp/marketplaces/megamen32-plugins/plugins/last-human-commit}}}}/tools/lhc_entry.py\" --event SessionStart --instructions-only || { printf '%s\\n' 'LHC entry unavailable; message processing continues.' >&2; :; }",
+            "timeoutMs": 3000
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${PLUGIN_ROOT:-${ZCODE_PLUGIN_ROOT:-$HOME/.codex/.tmp/marketplaces/megamen32-plugins/plugins/last-human-commit}}}}/tools/lhc_entry.py\" --event PostCompact --instructions-only || { printf '%s\\n' 'LHC entry unavailable; message processing continues.' >&2; :; }",
+            "timeoutMs": 5000
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${PLUGIN_ROOT:-${ZCODE_PLUGIN_ROOT:-$HOME/.codex/.tmp/marketplaces/megamen32-plugins/plugins/last-human-commit}}}}/tools/lhc_entry.py\" --event PostToolUse --heartbeat-only || { printf '%s\\n' 'LHC entry unavailable; message processing continues.' >&2; :; }",
             "timeoutMs": 5000
           }
         ]

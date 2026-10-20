@@ -26,24 +26,7 @@ QUIET_EVENTS = {"Interrupt", "SessionEnd", "PermissionRequest", "ToolFailure", "
 
 def context_for(event, root):
     root = Path(root).resolve()
-    return (
-        f"LHC contract: {root/'AGENTS.md'}. Use current instructions. "
-        "English internal planning/new records/tools/agent messages; user's language for user answers. Preserve raw user/feedback/test data. "
-        "Ordinary engineering, no @LHC: user/task/before→after/check before code; working→ideal→80% useful minimum; bugs RED→fix→GREEN→scenario. "
-        "One delivery owner: gates→permitted test/demo deploy→consumer→independent milestone acceptance. "
-        "Lead delegates: small=one bounded Worker+Lead review. No-delegation leaf=native self-check, no reviewer hiring. "
-        "Large fullcycle MUST: bounded independent research Workers→working→ideal→YAGNI→quota-aware frontier council→bounded dispatch. "
-        "In planning-only answers, state this research/council route explicitly; generic review does not replace council. "
-        "If execution/tools forbidden, describe that route without inspection/tools/recruitment. User limits override workflow. "
-        "Quickfix/testing/leaf excluded; sessions forbidden means plan, not recruit. "
-        "Decision/receipt≠execution/delivery; partial stays pending. Saved prompts=context, not permission; obey harness, HumanStop/revocation. "
-        "Surface failure does not block independent work. Repeated unchanged status→action. Keep native job IDs; never duplicate/cancel live builds. "
-        "Check actual code/environment delta; receipt SHA/name/JSON correction uses Git/CI, no new review. Tests≠consumer result. "
-        f"Review→delivery: {method_root(root)/'protocols/REVIEW_TO_DELIVERY.md'}. "
-        "60-minute direction, 120-minute learning reviews mandatory. Ready major milestones (~3h) need fresh Zero Knowledge attempts, varied realistic personas/full feedback before PASS. "
-        "Compaction/handoff retains original goal, direct scope/latest feedback. Parallel writer→separate worktree; available work first, then PR/integration. "
-        f"Delegate through supported native subagents or existing Agent Herder `new_or_resume` with an explicit model/role: {method_root(root)/'skills/model-routing/SKILL.md'}."
-    )
+    return f"LHC: read {root/'AGENTS.md'} for current instructions."
 
 def package_version(root):
     for rel in (".codex-plugin/plugin.json", "plugin.json", "plugins/last-human-commit/plugin.json"):
@@ -490,30 +473,50 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--event", default="SessionStart")
     parser.add_argument("--root", type=Path)
+    parser.add_argument("--instructions-only", action="store_true",
+                        help="emit the source AGENTS.md pointer without reading or changing session state")
+    parser.add_argument("--heartbeat-only", action="store_true",
+                        help="record only an isolated wall-time reminder at PostToolUse")
     default_runtime = ("zcode" if os.environ.get("ZCODE_PLUGIN_ROOT") else
                        "claude" if os.environ.get("CLAUDE_PROJECT_DIR") else "codex")
     parser.add_argument("--runtime", choices=("codex", "claude", "opencode", "zcode"), default=default_runtime)
     args = parser.parse_args()
-    try:
-        # Native tool responses routinely exceed 64 KiB. Truncating JSON used to
-        # silently erase session_id and update a shared unknown-session clock.
-        raw = sys.stdin.read(8 * 1024 * 1024 + 1)
-        if len(raw) > 8 * 1024 * 1024:
-            raise ValueError("native payload exceeds the bounded 8 MiB character window")
-        event = json.loads(raw or "{}")
-        if not isinstance(event, dict) or not (event.get("session_id") or event.get("sessionID")):
-            raise ValueError("native session identity is missing")
-    except ValueError:
-        print(json.dumps({"systemMessage": "LHC: invalid or oversized native payload; event not recorded. Other/unknown session state unchanged."}, ensure_ascii=False))
+    if args.heartbeat_only:
+        if args.event != "PostToolUse":
+            return
+        try:
+            raw = sys.stdin.read(8 * 1024 * 1024 + 1)
+            if len(raw) > 8 * 1024 * 1024:
+                return
+            event = json.loads(raw or "{}")
+            if not isinstance(event, dict):
+                return
+            cwd_value = event.get("cwd")
+            session_id = event.get("session_id") or event.get("sessionID")
+            if not isinstance(cwd_value, str) or not isinstance(session_id, str):
+                return
+            if event.get("agent_id"):
+                session_id += ":subagent:" + str(event["agent_id"])
+            import lhc_time_guard
+            result = lhc_time_guard.native_heartbeat(Path(cwd_value).expanduser(), args.runtime, session_id)
+        except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError):
+            return
+        if result and result.get("prompt"):
+            print(json.dumps({"hookSpecificOutput": {
+                "hookEventName": "PostToolUse",
+                "additionalContext": result["prompt"],
+            }}, ensure_ascii=False))
+        return
+    # Native hooks only activate the project instructions. Stateful outcome,
+    # review and status behavior stays behind the explicit CLI commands.
+    # Legacy hook invocations without this flag are intentionally inert.
+    if not args.instructions_only or args.event not in {"SessionStart", "PostCompact"}:
         return
     root = (args.root or Path(__file__).resolve().parents[1]).resolve()
-    try:
-        output = handle(event, args.event, args.runtime, root)
-    except (OSError, ValueError, KeyError, TypeError, StopIteration, subprocess.SubprocessError) as error:
-        warning = "LHC runtime unavailable: " + type(error).__name__ + ". Automatic control unconfirmed; preserve the goal and continue available work."
-        output = {"systemMessage": warning}
-        if args.event in CONTEXT_EVENTS:
-            output["hookSpecificOutput"] = {"hookEventName": args.event, "additionalContext": context_for(event, root)+"\n"+warning}
-    if output: print(json.dumps(output, ensure_ascii=False))
+    print(json.dumps({"hookSpecificOutput": {
+        "hookEventName": args.event,
+        "additionalContext": context_for(args.event, root),
+    }}, ensure_ascii=False))
+    return
 
 if __name__ == "__main__": main()

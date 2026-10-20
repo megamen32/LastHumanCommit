@@ -21,13 +21,17 @@ CONTINUE receipt must name the achieved user result, concrete remaining blocker,
 next proof and time bound; approving another phase without the cumulative cost
 is not control. Never weaken accepted scope silently to make a budget green.
 
-Every120 wall-clock minutes during unfinished work, run SELF_IMPROVE.md before
-further implementation at the next observable boundary, even inside one slice.
-The persistent hook checkpoint survives phase
-changes and remains due until the improvement result is recorded. Wall time is
-a trigger, not a claim about active work; after idle time check on resumption,
-without waking an idle agent. Missing hooks require an explicit manual check at
-observable work boundaries, never a silent exemption.
+Every 30 minutes, update the canonical task note: preserve the original estimate,
+compare actual effort and elapsed wall time, and plan the next approximately
+15-minute tasks with owners, dependencies and independent parallel lanes. Every
+60 minutes, reread the original direct user goal and check useful business progress.
+Native PostToolUse reminders track only time and deduplicate each due interval;
+without tool activity, a reminder arrives at the next work boundary. They never
+classify text, mutate task/evidence/holds or block completion.
+
+Every 120 wall-clock minutes of unfinished work, the Lead follows SELF_IMPROVE.md
+at the next observable boundary. This is a Lead responsibility without a native
+hook veto. Wall time is a trigger, not active effort; do not wake idle sessions.
 
 Every declared work cycle has its own immutable `minimum / maximum active
 minutes` estimate before execution. A cycle is one coherent route to one
@@ -37,11 +41,11 @@ estimate of their enclosing cycle; do not create an estimate per shell command.
 
 ## Start anchor
 
-Before setting an anchor, construct the estimate from the work. Twenty minutes
-is a reporting interval; decompose work into subtasks estimated at about 30
+Before setting an anchor, construct the estimate from the work. Thirty minutes
+is the plan-update interval; decompose work into subtasks estimated at about 15
 minutes. This is planning granularity, not a maximum actual task duration.
 Split large work into independently verifiable results before dispatch;
-an estimate materially larger than 30 minutes means the next steps are not yet
+an estimate materially larger than 15 minutes means the next steps are not yet
 understood well enough: clarify and decompose further. First sum all subtask
 estimates as the whole work estimate; then choose parallel lanes and blocking
 dependencies and derive the separate elapsed forecast. Do not reverse this by
@@ -57,8 +61,7 @@ review and real-use testing where required, plus external waits separately.
 Explain why ready independent work must be serialized. A dependency-only graph
 duration is a lower bound, not a complete forecast when capacity is constrained.
 
-Validate the leaf JSON plan with `../tools/lhc_task_budget.py PLAN.json` before
-dispatch. It flags larger estimates for decomposition without rejecting the task;
+Optionally check a structured leaf plan with `../tools/lhc_task_budget.py PLAN.json`. It flags larger estimates for decomposition without rejecting the task;
 it rejects malformed estimates and cycles and computes sums and dependency
 bounds. Its parallel duration is explicitly a lower bound; show the actual slot
 assignment or waves before calling that number a delivery forecast. Include all
@@ -73,11 +76,10 @@ active or wall-clock time.
 A cycle does not start before its task record carries
 `Started at <UTC+3 ISO> (<source>)` taken from a real clock anchor:
 
-- ZCode: the SessionStart hook writes
-  `.agents/shared-session/time/zcode-<session-id>.json`; cite that file.
-- Codex, Hermes, OpenCode: the native lifecycle time-guard hook state.
-- No hook available: capture `date --iso-8601=seconds` at cycle start and name
-  the source `manual clock`.
+- Record `date --iso-8601=seconds` at the actual task/cycle start and cite it.
+- A native time-only heartbeat anchors its own first tool boundary, not the task
+  start. It cannot establish historical active time or reset the original estimate.
+- Preserve existing verified start receipts; do not manufacture old timestamps.
 
 Wall-clock comes from this anchor. Active time requires explicit measured work
 intervals, never file mtimes, the objective's wall-clock or capped hook gaps.
