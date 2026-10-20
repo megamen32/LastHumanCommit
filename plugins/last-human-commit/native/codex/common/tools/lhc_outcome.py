@@ -309,12 +309,12 @@ def observe_job_progress(outcome, business, event, cwd):
 
 
 def reminder(outcome, tool):
-    review_route = ('Research leaf: verify the assigned source and deliver the requested report and raw expected/observed commentary '
-                    'before close bookkeeping. Then use the documented review --native-self route; '
+    review_route = ('Research leaf: confirm the concrete contract before evidence; then verify the assigned source and deliver the requested report '
+                    'and raw expected/observed commentary before close bookkeeping. Use the documented review --native-self route; '
                     'level self-check, not independent parent product acceptance. '
-                    "Use each command's --help, not research into the helper implementation unless that is the assigned subject. "
-                    'On a real close rejection, make the smallest supported correction/reread or hand off the delivered finding '
-                    'with pending state and the exact error; do not widen the assignment into helper debugging. '
+                    "Use each command's --help; no helper implementation research unless assigned. "
+                    'FEEDBACK alone is not a visible assistant assessment. Respect no-code limits: no scratch scripts. '
+                    'On rejection, one supported reread or pending exact-error handoff; no helper debugging or session-storage inspection. '
                     if outcome['task_class'] == 'research' else
                     'Own bounded assignment: finish actual tests/CLI or assigned coverage and native transcript self-check '
                     '(review --native-self; Herder export_transcript → review --manifest also available). '

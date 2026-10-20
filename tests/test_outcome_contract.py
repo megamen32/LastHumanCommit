@@ -1361,3 +1361,16 @@ def test_quoted_research_prompt_does_not_leak_wrapper_into_expected_result(tmp_p
     assert outcome['canary']['expected'] == expected
     observations = [({'name': 'exec_command', 'arguments': json.dumps({'cmd': 'cat settings.txt'})}, 'encoding=UTF-8\n')]
     assert reviews.own_assessment(outcome, f'Expected: {expected}\nObserved: settings.txt contains encoding=UTF-8.', observations, tmp_path)
+
+
+def test_empty_research_assessment_gives_bounded_visible_report_recovery(tmp_path):
+    import lhc_outcome_review as reviews
+    import lhc_outcome as outcomes
+    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
+    invoke(tmp_path, 'UserPromptSubmit', prompt='RESEARCH ONLY: Read settings.txt and save results in FEEDBACK.md. Do not delegate.')
+    outcome = state(tmp_path)['business']['outcome']
+    with pytest.raises(ValueError, match='visible assistant message'):
+        reviews.raw_review(outcome, '', [], tmp_path)
+    notice = outcomes.reminder(outcome, tmp_path/'lhc_outcome.py')
+    assert notice.index('confirm the concrete contract') < notice.index('verify the assigned source')
+    assert 'FEEDBACK alone' in notice and 'scratch scripts' in notice

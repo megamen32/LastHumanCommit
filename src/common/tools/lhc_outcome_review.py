@@ -467,6 +467,8 @@ def raw_review(outcome, final, observations, cwd):
     """
     canary = outcome['canary']
     defect, positive = report_result(final)
+    if not final.strip() and outcome['task_class'] == 'research':
+        raise ValueError('no native assessment yet: send the actual source finding and expected/observed as a separate visible assistant message before review; FEEDBACK alone is not that message. Do not debug helper/session storage; preserve pending if unavailable')
     if not final.strip() or not (positive or defect or outcome['task_class'] == 'research'):
         raise ValueError('raw review must state its actual result; retain the original report')
     stages = {}
