@@ -492,6 +492,7 @@ def main():
     route = review.add_mutually_exclusive_group(required=True)
     route.add_argument('--manifest', type=Path)
     route.add_argument('--native-self', action='store_true', help='read this own native Codex/OpenCode source without depending on Herder export CWD')
+    review.add_argument('--comparison-quote', help='bind an unchanged own research source-finding passage to the confirmed expectation; source filename/readback required, self-check only')
     question = sub.add_parser('question')
     question.add_argument('--message', required=True)
     sub.add_parser('status')
@@ -574,7 +575,7 @@ def main():
         elif args.command == 'review':
             from lhc_outcome_review import accept_review, native_self_manifest
             manifest = native_self_manifest(outcome, cwd, args.runtime, args.session_id) if args.native_self else args.manifest
-            accept_review(outcome, state, manifest, cwd, args.session_id)
+            accept_review(outcome, state, manifest, cwd, args.session_id, args.comparison_quote)
         elif args.command == 'question':
             result = question_plan(outcome, args.message)
         outcome['finish_verdict'] = verdict(outcome, state)

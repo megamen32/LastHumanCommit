@@ -1392,3 +1392,137 @@ def test_unattributed_interrupt_does_not_claim_a_human_stop_or_resume(tmp_path):
     assert after['business']['outcome']['used_continuations'] == before['business']['outcome']['used_continuations']
     assert after['business']['started_at'] == before['business']['started_at']
     assert after['due_at'] == before['due_at']
+
+
+def semantic_research_fixture(tmp_path):
+    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
+    (tmp_path/'settings.txt').write_text('encoding=UTF-8\n')
+    invoke(tmp_path, 'UserPromptSubmit', prompt='RESEARCH ONLY: Read settings.txt, identify the export encoding and explain whether this file proves implementation/tests, deploy and merge. Save results in FEEDBACK.md. Do not delegate.')
+    outcome = cli(tmp_path, 'contract', '--scenario', 'Read encoding and assess evidence limits',
+                  '--target', 'project:' + str(tmp_path), '--expected',
+                  'FEEDBACK.md quotes the actual export encoding and explains that settings alone cannot prove implementation/tests, deployment or merge completion')
+    raw = ('FEEDBACK.md сохранён и прочитан обратно. Повторное чтение settings.txt подтвердило `encoding=UTF-8`, '
+           'контрольная сумма не изменилась. Результат соответствует поручению: кодировка установлена, '
+           'а завершение implementation/tests → deploy → merge этим файлом не подтверждается.')
+    manifest = review_export(tmp_path, outcome, sid='leader', stage_names=('consumer',), command='cat settings.txt', raw_final=raw)
+    source = tmp_path/'native-home/.codex/sessions/leader.jsonl'
+    rows = [json.loads(line) for line in source.read_text().splitlines()]
+    feedback = 'settings.txt contains encoding=UTF-8.\nThis file does not prove that implementation/tests → deploy → merge have completed.\n'
+    (tmp_path/'FEEDBACK.md').write_text(feedback)
+    actual_feedback = subprocess.check_output(['cat', 'FEEDBACK.md'], cwd=tmp_path, text=True)
+    stamp = rows[-1]['timestamp']
+    rows[-1:-1] = [{'type': 'response_item', 'timestamp': stamp, 'payload': {'type': 'function_call',
+                   'name': 'exec_command', 'call_id': 'call-feedback', 'arguments': json.dumps({'cmd': 'cat FEEDBACK.md'})}},
+                  {'type': 'response_item', 'timestamp': stamp, 'payload': {'type': 'function_call_output',
+                   'call_id': 'call-feedback', 'output': actual_feedback}}]
+    # Actual Codex session exists just before its prompt hook creates outcome.
+    # Assessment/calls/assignment remain current; do not freshen old calls.
+    rows[0]['payload']['timestamp'] = (datetime.fromisoformat(outcome['started_at']) - timedelta(seconds=2)).isoformat()
+    rows[-1]['payload']['phase'] = 'commentary'
+    write_semantic_source(tmp_path, rows)
+    return outcome, manifest, raw, rows
+
+
+def write_semantic_source(root, rows):
+    data = '\n'.join(json.dumps(row) for row in rows) + '\n'
+    (root/'native-home/.codex/sessions/leader.jsonl').write_text(data)
+    (root/'leader-export.jsonl').write_text(data)
+
+
+def test_current_research_raw_finding_is_not_stale_for_a_semantic_expected_result(tmp_path):
+    from lhc_outcome import digest
+    outcome, manifest, raw, rows = semantic_research_fixture(tmp_path)
+    before = state(tmp_path)
+    error = cli(tmp_path, 'review', '--manifest', str(manifest), ok=False)
+    assert '--comparison-quote' in error and 'stale reviewer' not in error
+    result = cli(tmp_path, 'review', '--manifest', str(manifest), '--comparison-quote', raw)
+    assert result['finish_verdict'] == 'complete'
+    assert result['verification_level'] == 'self-check'
+    assert result['comparison_binding']['quote'] == raw
+    assert result['comparison_binding']['original_index'] == len(rows) - 1
+    assert result['comparison_binding']['original_at'] == rows[-1]['timestamp']
+
+    claims = result['comparison_binding']['claims']
+    assert claims['canary_hash'] == digest({key: outcome['canary'][key] for key in ('scenario', 'target', 'expected')})
+    assert claims['source_calls'] == ['call-0'] and claims['report_calls'] == ['call-feedback']
+    after = state(tmp_path)
+    for key in ('started_at', 'evidence_after', 'original_goal', 'scenario', 'revision'):
+        assert result.get(key) == outcome.get(key)
+    assert after['due_at'] == before['due_at']
+    assert after['business']['started_at'] == before['business']['started_at']
+
+
+@pytest.mark.parametrize('fault', [
+    'before-feedback', 'no-feedback-read', 'wrong-feedback-file', 'wrong-source-file',
+    'wrong-cwd', 'echo', 'outer-compound', 'stale-source', 'source-after-report',
+    'wrong-feedback-value', 'missing-feedback-limits', 'positive-feedback-limits',
+    'non-original-quote', 'newer-negative', 'changed-product',
+])
+def test_research_semantic_binding_retains_native_claim_boundaries(tmp_path, fault):
+    outcome, manifest, raw, rows = semantic_research_fixture(tmp_path)
+    if fault == 'before-feedback':
+        raw = ('В settings.txt прочитано: encoding=UTF-8. Сохраню это в FEEDBACK.md. '
+               'Завершение implementation/tests → deploy → merge этим файлом не подтверждается.')
+        rows[-1]['payload']['content'][0]['text'] = raw
+        rows.insert(4, rows.pop())  # Source read exists, requested report not yet read.
+    elif fault == 'no-feedback-read':
+        del rows[4:6]
+    elif fault == 'wrong-feedback-file':
+        rows[4]['payload']['arguments'] = json.dumps({'cmd': 'cat other.md'})
+    elif fault == 'wrong-source-file':
+        rows[2]['payload']['arguments'] = json.dumps({'cmd': 'cat other.txt'})
+    elif fault == 'wrong-cwd':
+        rows[2]['payload']['arguments'] = json.dumps({'cmd': 'cat settings.txt', 'workdir': str(tmp_path/'foreign')})
+    elif fault == 'echo':
+        rows[2]['payload']['arguments'] = json.dumps({'cmd': 'echo encoding=UTF-8'})
+    elif fault == 'outer-compound':
+        rows[2]['payload']['arguments'] = json.dumps({'cmd': "bash -lc 'cat settings.txt'; echo encoding=UTF-8"})
+    elif fault == 'stale-source':
+        rows[2]['timestamp'] = (datetime.fromisoformat(outcome['evidence_after']) - timedelta(seconds=1)).isoformat()
+    elif fault == 'source-after-report':
+        rows = rows[:2] + rows[4:] + rows[2:4]
+    elif fault == 'wrong-feedback-value':
+        rows[5]['payload']['output'] = rows[5]['payload']['output'].replace('UTF-8', 'ASCII')
+    elif fault == 'missing-feedback-limits':
+        rows[5]['payload']['output'] = 'settings.txt contains encoding=UTF-8.'
+    elif fault == 'positive-feedback-limits':
+        rows[5]['payload']['output'] = 'settings.txt contains encoding=UTF-8. This proves implementation/tests → deploy → merge have completed.'
+    elif fault == 'non-original-quote':
+        raw += ' Added author claim.'
+    elif fault == 'newer-negative':
+        rows.append({'type': 'response_item', 'timestamp': rows[-1]['timestamp'], 'payload': {
+            'type': 'message', 'role': 'assistant', 'phase': 'commentary',
+            'content': [{'text': 'settings.txt has a defect: observed encoding is wrong. FEEDBACK.md needs correction.'}]}})
+    elif fault == 'changed-product':
+        (tmp_path/'settings.txt').write_text('encoding=ASCII\n')
+    write_semantic_source(tmp_path, rows)
+    before = state(tmp_path)
+    cli(tmp_path, 'review', '--manifest', str(manifest), '--comparison-quote', raw, ok=False)
+    assert state(tmp_path) == before
+
+
+def test_research_comparison_quote_never_closes_fullcycle_or_independent_parent(tmp_path):
+    _, manifest, raw, _ = semantic_research_fixture(tmp_path)
+    invoke(tmp_path, 'UserPromptSubmit', prompt='Implement the complete checkout and deploy it, then publish and merge the PR.')
+    before = state(tmp_path)
+    cli(tmp_path, 'review', '--manifest', str(manifest), '--comparison-quote', raw, ok=False)
+    assert state(tmp_path) == before
+
+
+def test_research_comparison_quote_does_not_alias_a_literal_expected_value(tmp_path, monkeypatch):
+    import lhc_outcome_review as reviews
+    outcome, manifest, raw, _ = semantic_research_fixture(tmp_path)
+    monkeypatch.setenv('CODEX_HOME', str(tmp_path/'native-home/.codex'))
+    _, _, calls = reviews.load_review(manifest)
+    outcome['canary']['expected'] += '; encoding must be ASCII'
+    assert reviews.research_comparison_binding(outcome, raw, calls, tmp_path, raw) is None
+
+
+def test_research_comparison_quote_cannot_claim_another_reviewers_independence(tmp_path, monkeypatch):
+    import lhc_outcome_review as reviews
+    outcome, manifest, raw, _ = semantic_research_fixture(tmp_path)
+    monkeypatch.setenv('CODEX_HOME', str(tmp_path/'native-home/.codex'))
+    before = json.loads(json.dumps(outcome))
+    with pytest.raises(ValueError, match='own bounded research'):
+        reviews.accept_review(outcome, state(tmp_path), manifest, tmp_path, 'another-owner', raw)
+    assert outcome == before

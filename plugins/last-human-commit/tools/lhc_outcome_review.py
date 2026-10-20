@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 from urllib.parse import unquote, urlsplit
 
 import lhc_milestone as native
-from lhc_outcome import ENGINEERING, STAGES, scope_revision, remote_binding, product_paths
+from lhc_outcome import ENGINEERING, STAGES, scope_revision, remote_binding, product_paths, digest
 
 MARKER = 'LHC_OUTCOME_REVIEW '
 
@@ -458,7 +458,66 @@ def report_result(text):
     return defect, positive
 
 
-def raw_review(outcome, final, observations, cwd):
+def source_finding_quote(outcome, text, observations, cwd, quote):
+    """Explicit own-research semantic binding, never an independent verdict.
+
+    Keep the report unchanged; the quoted passage must name the exact source
+    and contain its actual native readback. Meaning is the researcher's stated
+    comparison, not an automatic prose/translation parser.
+    """
+    if outcome['task_class'] != 'research' or not quote or quote not in text:
+        return False
+    try:
+        target = consumer_target(outcome, observations, cwd)
+        words = shlex.split(target)
+        if not source_read_path(words, cwd) or Path(words[-1]).name.casefold() not in quote.casefold():
+            return False
+        normalize = lambda value: ' '.join(value.split())
+        return any(real_observation(call, output, target, 'consumer', 'research', cwd)
+                   and normalize(output) in normalize(quote) for call, output in observations)
+    except (ValueError, IndexError):
+        return False
+
+
+def research_comparison_binding(outcome, final, observations, cwd, quote):
+    """Typed encoding/report/non-proof claim, not an arbitrary prose alias."""
+    if not source_finding_quote(outcome, final, observations, cwd, quote):
+        return None
+    pipeline = r'implementation\s*/\s*tests\s*(?:→|->|,)\s*deploy(?:ment)?\s*(?:→|->|,|or)\s*merge'
+    negative = r'(?:cannot\s+(?:prove|establish|confirm)|does\s+not\s+(?:prove|establish|confirm)|не\s+(?:подтвержд\w*|доказыва\w*))'
+    def limits(text):
+        return any(not re.search(r'\b(?:but|however|зато|однако|но)\b', line, re.I) and re.search(
+            negative + r'[^;\n]{0,80}' + pipeline + '|' + pipeline + r'[^;\n]{0,80}' + negative, line, re.I)
+            for line in text.splitlines())
+    expected = outcome['canary']['expected']
+    if ('feedback.md' not in expected.casefold() or not re.search(r'encoding|кодировк', expected, re.I)
+            or re.search(r'\b(?:UTF-?\d+|ASCII|ISO-\d+|CP\d+)\b', expected, re.I) or not limits(expected)
+            or 'feedback.md' not in quote.casefold() or not limits(quote)):
+        return None
+    target = consumer_target(outcome, observations, cwd)
+    reads = [(call['call_id'], output.strip()) for call, output in observations if call.get('call_id')
+             and real_observation(call, output, target, 'consumer', 'research', cwd)
+             and re.fullmatch(r'encoding=[A-Za-z0-9_.+-]+', output.strip())]
+    if len({value for _, value in reads}) != 1:
+        return None
+    value = reads[0][1]
+    source = source_read_path(shlex.split(target), cwd)
+    if source.stat().st_size > native.MAX_BYTES or source.read_text().strip() != value:
+        return None
+    report = cwd / 'FEEDBACK.md'
+    if product_paths({**outcome, 'owned_paths': ['FEEDBACK.md']}, cwd):
+        return None  # A product document is not the requested observation report.
+    report_calls = [call['call_id'] for call, output in observations if call.get('call_id')
+                    and real_observation(call, output, 'cat ' + shlex.quote(str(report)), 'consumer', 'research', cwd)
+                    and value in output and Path(shlex.split(target)[-1]).name in output and limits(output)]
+    if not report_calls:
+        return None
+    return {'kind': 'encoding-report-delivery-limits', 'source': target, 'value': value,
+            'source_calls': [ref for ref, _ in reads], 'report': str(report), 'report_calls': report_calls,
+            'canary_hash': digest({k: outcome['canary'][k] for k in ('scenario', 'target', 'expected')})}
+
+
+def raw_review(outcome, final, observations, cwd, comparison_quote=None):
     """Small ordinary-report route; keep original prose as semantic assessment.
 
     No author PASS/map file and no rewriting the review. Complex unsupported
@@ -504,7 +563,12 @@ def raw_review(outcome, final, observations, cwd):
             # Ordinary prose must actually cover this expected consumer result,
             # not a generic all-PASS sentence over unrelated calls.
             short_target = Path(shlex.split(observed_target)[-1]).name
-            compared = expected_compared(expected, final, [by_call[ref] for ref in refs], defect)
+            binding = research_comparison_binding(outcome, final, observations, cwd, comparison_quote) if comparison_quote else None
+            if comparison_quote and not binding:
+                raise ValueError('research binding needs the actual current source, requested FEEDBACK readback and explicit negative delivery-limit claim before the original assessment')
+            compared = expected_compared(expected, final, [by_call[ref] for ref in refs], defect) or bool(binding)
+            if binding:
+                refs += binding['report_calls']
             named = any(t.casefold() in final.casefold() for t in (target, short_target))
             if not compared or not (named or (refs and re.search(r'\bCLI\b', final, re.I))):
                 refs = []
@@ -527,7 +591,7 @@ def raw_review(outcome, final, observations, cwd):
             'comparison': final, 'stages': stages, 'coverage': coverage, 'format': 'original-native-prose'}
 
 
-def own_assessment(outcome, text, observations, cwd):
+def own_assessment(outcome, text, observations, cwd, comparison_quote=None):
     if MARKER in text:
         return True
     defect, positive = report_result(text)
@@ -542,20 +606,37 @@ def own_assessment(outcome, text, observations, cwd):
         return False
     short_target = Path(shlex.split(target)[-1]).name
     names_consumer = any(name.casefold() in text.casefold() for name in (target, short_target)) or re.search(r'\bCLI\b', text, re.I)
-    return bool(names_consumer and expected_compared(outcome['canary']['expected'], text, observations, False))
+    return bool(names_consumer and (expected_compared(outcome['canary']['expected'], text, observations, False)
+                or source_finding_quote(outcome, text, observations, cwd, comparison_quote)))
 
 
-def accept_review(outcome, state, path, cwd, owner):
+def accept_review(outcome, state, path, cwd, owner, comparison_quote=None):
     from lhc_outcome import bounded_self_check
     meta, messages, observations = load_review(path)
     sid = meta.get('id') or meta.get('session_id')
     own_attempt = sid == owner and (outcome['task_class'] in {'testing', 'research'} or bounded_self_check(outcome))
     if (sid == owner and not own_attempt) or Path(meta.get('cwd', '/unknown')).resolve() != cwd:
         raise ValueError('review must be independent and for this exact project')
+    if comparison_quote and not (own_attempt and outcome['task_class'] == 'research' and all(
+            outcome['stages'][stage]['status'] == 'not-applicable' for stage in STAGES if stage != 'consumer')):
+        raise ValueError('comparison quote binds only an own bounded research finding, never parent/independent acceptance')
     # A later progress remark/tool message is not a replacement assessment.
     # Keep the actual report's own source index/time: no freshness extension.
+    def selected_assessment(report):
+        text = report['text']
+        # A bound old passage must not hide a later explicit source correction.
+        negative_binding = comparison_quote and outcome['task_class'] == 'research' and re.search(
+            r'\b(?:defect|wrong|needs? correction)\b|ошибк|не соответствует', text, re.I)
+        return negative_binding or own_assessment(outcome, text, observations, cwd, comparison_quote)
     own_report = next((report for report in reversed(meta.get('own_reports', []))
-                       if own_assessment(outcome, report['text'], observations, cwd)), None) if own_attempt else None
+                       if selected_assessment(report)), None) if own_attempt else None
+    if comparison_quote and (not own_report or not source_finding_quote(outcome, own_report['text'], observations, cwd, comparison_quote)):
+        raise ValueError('comparison quote must bind the current unchanged native source finding; never skip a newer negative assessment')
+    if not own_report and own_attempt and outcome['task_class'] == 'research' and any(
+            native.timestamp(report['at']) >= native.timestamp(outcome['started_at'])
+            and source_finding_quote(outcome, report['text'], observations, cwd, report['text'])
+            for report in meta.get('own_reports', [])):
+        raise ValueError('fresh source finding needs a semantic comparison binding, not a reread: retain the report and use review --native-self --comparison-quote with its unchanged source-finding passage; self-check only')
     if own_report:
         # Own commentary is available before the final response; source call
         # order still ends at that actual report, never at a later export call.
@@ -587,9 +668,11 @@ def accept_review(outcome, state, path, cwd, owner):
     if scope_revision(outcome, cwd) != outcome['revision']:
         raise ValueError('owned revision changed; refresh the contract and actual evidence before review')
     lines = [line[len(MARKER):] for line in final.splitlines() if line.startswith(MARKER)]
+    if comparison_quote and lines:
+        raise ValueError('comparison quote binds original research prose, not a structured certificate')
     if len(lines) > 1:
         raise ValueError('ambiguous independent review summaries')
-    report = json.loads(lines[0]) if lines else raw_review(outcome, final, observations, cwd)
+    report = json.loads(lines[0]) if lines else raw_review(outcome, final, observations, cwd, comparison_quote)
     canary = outcome['canary']
     revision = scope_revision(outcome, cwd)
     for key, expected in {'outcome_id': outcome['id'], 'revision': revision,
@@ -700,6 +783,10 @@ def accept_review(outcome, state, path, cwd, owner):
         }])
     if staging:
         outcome['staging_push'] = {**staging, 'manifest': str(path.resolve()), 'reviewer': sid}
+    if comparison_quote:
+        outcome['comparison_binding'] = {'quote': comparison_quote, 'reviewer': sid, 'original_index': own_report['index'],
+                                         'original_at': own_report['at'], 'verification_level': 'self-check',
+                                         'claims': research_comparison_binding(outcome, final, observations, cwd, comparison_quote)}
     outcome.update(product_verdict=product, revision=revision, coverage_evidence=report.get('coverage', {}))
     outcome['verification_level'] = 'self-check' if own_attempt else 'independent-review'
     if outcome.get('release_handoff') and outcome['stages']['integration']['status'] == 'complete':
