@@ -11,6 +11,10 @@ with one bounded correction route; no semantic reinterpretation or evidence rewr
 Confirmed contracts stop receiving setup instructions on every model boundary;
 they retain scope and show the exact existing close command. A direct scope
 correction still requires confirmation; helper/state investigation is not leaf work.
+OpenCode's existing before-tool hook rejects recognized file writes/literal shell
+redirects outside an unambiguous native-user directory restriction. Tool output
+cannot supply an exception. Other named locations/ambiguous scope leave existing
+harness policy in charge; this bounded preflight is not an OS sandbox or shell parser.
 Native adherence and rollout remain separate acceptance claims.
 
 # 1.5.2 — bounded research and planning scope

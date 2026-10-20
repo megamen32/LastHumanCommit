@@ -58,7 +58,7 @@ def test_generated_instruction_projections_retain_english_policy():
         assert not re.search('[А-Яа-яЁё]', (root/'AGENTS.md').read_text())
         assert (root/'common/templates/project-router.md').read_bytes() == (ROOT/'src/common/templates/project-router.md').read_bytes()
         for directory in [root/'tools', root/'common/tools']:
-            for name in ['lhc_entry.py', 'lhc_outcome.py', 'lhc_outcome_review.py', 'lhc_milestone.py', 'lhc_time_guard.py']:
+            for name in ['lhc_entry.py', 'lhc_outcome.py', 'lhc_outcome_review.py', 'lhc_milestone.py', 'lhc_time_guard.py', 'lhc_task_scope.py']:
                 assert (directory/name).read_bytes() == (ROOT/'src/common/tools'/name).read_bytes()
 
 

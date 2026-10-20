@@ -273,6 +273,12 @@ def handle(event, name, runtime, root):
             output = {"hookSpecificOutput": {"hookEventName": name, "additionalContext": "\n\n".join(contexts)}}
             delivery["last_context_event"] = name
             delivery["last_context_at"] = now.isoformat()
+        if runtime == 'opencode' and name == 'PreToolUse' and outcome and event.get('tool_name'):
+            from lhc_task_scope import write_denial
+            sources = [outcomes.semantic_scope(outcome['original_goal']), *outcome.get('corrections', [])]
+            denial = write_denial(sources, cwd, event['tool_name'], event.get('tool_input'))
+            if denial:
+                output.update(tool_denial={'reason': denial}, systemMessage=denial)
         guard.write_state(path, state)
     return output
 

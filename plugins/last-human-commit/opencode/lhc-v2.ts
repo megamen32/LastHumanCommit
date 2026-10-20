@@ -73,7 +73,16 @@ export default {
    if(handoff)event.system.push({type:"text",text:handoff})
    pending.delete(event.sessionID)
   }))
-  await ctx.tool.hook("execute.before",safe(async event=>{await invoke(event.sessionID,"PreToolUse",undefined,{tool_name:event.tool,tool_input:event.input})}))
+  await ctx.tool.hook("execute.before",async event=>{
+   const result=await invoke(event.sessionID,"PreToolUse",undefined,{tool_name:event.tool,tool_input:event.input})
+   const reason=result?.tool_denial?.reason
+   if(typeof reason==="string"){
+    retain(event.sessionID,result)
+    // execute.before supports Tool.Error; propagate this explicit native-user
+    // boundary instead of swallowing it with the context/lifecycle fallback.
+    throw Object.assign(new Error(reason),{_tag:"Tool.Error"})
+   }
+  })
   await ctx.tool.hook("execute.after",safe(async event=>{
    retain(event.sessionID,await invoke(event.sessionID,event.status==="error"?"ToolFailure":"PostToolUse",undefined,
     {tool_name:event.tool,tool_input:event.input,tool_response:event.result,error:event.error}))

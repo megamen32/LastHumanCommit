@@ -30,7 +30,7 @@ for harness in ("codex","opencode","claude-code","hermes","zcode"):
     for field in ("role_source","optional_instructions","subagent_instructions_template"):
         match=re.search(rf"^{field}:\s*(.+)$",manifest,re.MULTILINE)
         require(bool(match and (folder/match.group(1).strip()).exists()),f"{harness} has invalid {field}")
-for tool in ("lhc_chat.py","lhc_entry.py","lhc_worktree.py","lhc_time_guard.py","lhc_active_time.py","lhc_task_budget.py","lhc_milestone.py","lhc_outcome.py","lhc_outcome_review.py"):
+for tool in ("lhc_chat.py","lhc_entry.py","lhc_worktree.py","lhc_time_guard.py","lhc_active_time.py","lhc_task_budget.py","lhc_milestone.py","lhc_outcome.py","lhc_outcome_review.py","lhc_task_scope.py"):
     path=ROOT/"src/common/tools"/tool
     ast.parse(path.read_text())
     require(path.read_bytes()==(PACKAGE/"tools"/tool).read_bytes(),f"tool projection differs: {tool}")
