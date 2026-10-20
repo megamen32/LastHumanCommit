@@ -1347,3 +1347,17 @@ def test_research_shell_wrapper_cannot_hide_outer_compound_evidence(tmp_path, ex
         assert result['finish_verdict'] == 'complete'
     else:
         assert state(tmp_path)['business']['outcome']['finish_verdict'] == 'pending'
+
+
+def test_quoted_research_prompt_does_not_leak_wrapper_into_expected_result(tmp_path):
+    import lhc_outcome_review as reviews
+    goal = ('RESEARCH ONLY: Проверь, какая кодировка экспорта задана в settings.txt. '
+            'Сохрани результат в FEEDBACK.md. Ничего не деплой и не делегируй.\n')
+    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
+    invoke(tmp_path, 'UserPromptSubmit', prompt='"' + goal + '"')
+    outcome = state(tmp_path)['business']['outcome']
+    expected = ', какая кодировка экспорта задана в settings.txt. Сохрани результат в FEEDBACK.md. Ничего не деплой и не делегируй.'
+    assert outcome['original_goal'] == '"' + goal + '"'
+    assert outcome['canary']['expected'] == expected
+    observations = [({'name': 'exec_command', 'arguments': json.dumps({'cmd': 'cat settings.txt'})}, 'encoding=UTF-8\n')]
+    assert reviews.own_assessment(outcome, f'Expected: {expected}\nObserved: settings.txt contains encoding=UTF-8.', observations, tmp_path)

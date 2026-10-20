@@ -51,13 +51,17 @@ def positive_intent(goal):
     return re.sub(r"\b(?:do not|don't|never|no code changes)[^.?!\n]*|не (?:меняй|редактируй|создавай|деплой|исправляй)[^.?!\n]*", '', goal, flags=re.I)
 
 
-def classify(goal):
+def semantic_scope(goal):
     # OpenCode's native prompt event may enclose the whole text in quotes.
     # Interpret one such envelope without rewriting stored raw user input.
     scope = goal.strip()
     if scope.startswith('"') and scope.endswith('"'):
         scope = scope[1:-1]
-    intent = positive_intent(scope)
+    return scope.strip()
+
+
+def classify(goal):
+    intent = positive_intent(semantic_scope(goal))
     # Explicit assignment header scopes the work; engineering terms below it
     # can describe the subject being reviewed, rather than authorize execution.
     header = re.search(r'(?:^|[.!?\n])\s*RESEARCH\s+ONLY\s*:', intent, re.I)
@@ -197,7 +201,7 @@ def observe(state, event, name, cwd, session, now):
     if not outcome and goal:
         kind = classify(goal)
         target = next(iter(native.URL.findall(goal)), 'project:' + str(cwd))
-        expected = re.split(r'\b(?:verify|expected|check that)\b|проверь|ожидаем', goal, maxsplit=1, flags=re.I)[-1].strip()
+        expected = re.split(r'\b(?:verify|expected|check that)\b|проверь|ожидаем', semantic_scope(goal), maxsplit=1, flags=re.I)[-1].strip()
         outcome = business['outcome'] = {
             'id': digest([session, goal]), 'owner': {'harness': business.get('runtime'), 'session_id': session},
             'original_goal': goal, 'latest_correction': goal, 'task_class': kind,
