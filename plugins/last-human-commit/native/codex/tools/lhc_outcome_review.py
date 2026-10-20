@@ -1135,6 +1135,10 @@ def accept_review(outcome, state, path, cwd, owner, comparison_quote=None, testi
             and source_finding_quote(outcome, report['text'], observations, product_cwd, report['text'])
             for report in meta.get('own_reports', [])):
         raise ValueError('fresh source finding needs a semantic comparison binding, not a reread: retain the report and use review --native-self --comparison-quote with its unchanged source-finding passage; self-check only')
+    if not own_report and own_attempt and outcome['task_class'] == 'testing':
+        if not outcome.get('coverage'):
+            raise ValueError('no current native testing assessment was selected: first confirm the testing contract with explicit --coverage, then report expected/observed for that assigned coverage and its exact native consumer call')
+        raise ValueError('no current native testing assessment was selected: write a fresh expected/observed comparison naming the assigned coverage and exact native consumer call, then use review --native-self')
     if testing_reuse is not None:
         matches = [row for row in meta.get('own_reports', []) if row['index'] == testing_reuse.get('assessment_index')]
         if len(matches) != 1:

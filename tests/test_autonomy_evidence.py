@@ -474,3 +474,44 @@ def test_quick_child_native_self_without_parent_capture_stays_pending(tmp_path, 
     guard.write_state(guard.learning_path(tmp_path, 'codex', PARENT), {'business': {'native_dispatches': []}})
     with pytest.raises(ValueError, match='verified parent dispatch'):
         reviews.native_self_manifest(outcome, tmp_path, 'codex', logical_id)
+
+
+def test_testing_contract_requires_coverage_before_it_changes_evidence_floor(tmp_path):
+    import subprocess
+    from copy import deepcopy
+    from test_native_milestone_gate import invoke
+    from test_outcome_contract import cli, state
+
+    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
+    invoke(tmp_path, 'UserPromptSubmit', prompt=(
+        'You are a testing leaf. Do not edit code. Test the empty basket CLI and report its total.'))
+    before = deepcopy(state(tmp_path)['business']['outcome'])
+    error = cli(tmp_path, 'contract', '--task-class', 'testing',
+                '--scenario', 'Empty basket total', '--target', 'python3 total.py',
+                '--expected', '0', ok=False)
+    assert 'testing contract requires at least one explicit --coverage' in error
+    assert state(tmp_path)['business']['outcome'] == before
+
+    fixed = cli(tmp_path, 'contract', '--task-class', 'testing',
+                '--scenario', 'Empty basket total', '--target', 'python3 total.py',
+                '--expected', '0', '--coverage', 'empty basket total')
+    assert fixed['contract_confirmed'] is True
+    assert fixed['coverage'] == ['empty basket total']
+
+    source = state(tmp_path)['business']['outcome']['scope_sources'][0]['source']
+    corrected = cli(tmp_path, 'contract', '--task-class', 'quickfix', '--scope-source', source,
+                    '--scenario', 'Empty basket total', '--target', 'python3 total.py',
+                    '--expected', '0', '--owned-path', 'total.py')
+    assert corrected['task_class'] == 'quickfix'
+    assert corrected['coverage'] == []
+
+
+def test_testing_without_selected_native_assessment_gets_actionable_error(tmp_path):
+    from test_outcome_contract import anchored, cli, review_export
+
+    outcome = anchored(tmp_path, 'You are a testing leaf. Do not edit code. Test empty basket total.',
+                       ('empty basket total',))
+    review_export(tmp_path, outcome, sid='leader', raw_final='I am still checking the assigned CLI.')
+    error = cli(tmp_path, 'review', '--native-self', ok=False)
+    assert 'no current native testing assessment was selected' in error
+    assert 'stale reviewer' not in error

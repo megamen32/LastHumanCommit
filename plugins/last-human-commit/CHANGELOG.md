@@ -114,6 +114,11 @@ Native candidate acceptance and installation are separate release gates.
   work or duplicating a live build. Partial demo success leaves excluded work
   pending.
 
+## 1.5.14
+
+- Reject missing assigned testing coverage before confirming the contract or running the consumer check; preserve prior state on rejection.
+- Report a missing current assessment directly instead of mistaking the session start timestamp for a stale review.
+
 ## 1.4.8 — existing Herder model selection in OpenCode
 
 The standard native LHC entry now routes multi-model delegation to the already

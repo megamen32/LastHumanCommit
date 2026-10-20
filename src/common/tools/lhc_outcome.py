@@ -1813,6 +1813,8 @@ def main():
         if expected_session_root != cwd:
             raise ValueError(f'LHC state for native session {args.session_id} is bound to session root {expected_session_root}; --cwd {cwd} is not that root')
         if args.command == 'contract':
+            if (args.task_class or outcome.get('task_class')) == 'testing' and not args.coverage:
+                raise ValueError('testing contract requires at least one explicit --coverage claim before confirming the consumer task; add the assigned scenario coverage now (no contract or evidence floor was changed)')
             previous_stage_fingerprints = outcome.get('stage_fingerprints')
             outcome.pop('contract_rejection', None)
             scope_source_id = args.scope_source or outcome.get('product_root_source')

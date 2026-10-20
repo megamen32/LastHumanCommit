@@ -205,7 +205,11 @@ remove no-code, ownership, or scope restrictions. The historical H32 research
 outcome and reviews that lack its exact assignment binding remain pending; a fresh
 task cannot retroactively accept H32.
 
-For testing add repeated `--coverage '<assigned scenario>'` and omit owned paths.
+Before the first testing consumer call, confirm repeated `--coverage '<assigned scenario>'`;
+name the exact expected/observed result and each assigned scenario in the native report.
+Use owned paths only when they bind the product bytes under review; they grant no write permission.
+Keep previous receipts as history. One fresh harmless read-only check may verify
+corrected setup; never repeat deployments, sends or UNKNOWN operations merely to refresh a timestamp.
 For fullcycle, the applicable sequence is implementation/tests → authorized deploy
 → hands-on/applicable independent acceptance → publication/integration into the
 configured permitted dev branch → integrated smoke. PR per worker is optional;
