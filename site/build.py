@@ -33,7 +33,13 @@ def plain(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
-def first_paragraph(body: str, limit: int = 420, *, skip_policy: bool = False) -> str:
+def first_paragraph(
+    body: str,
+    limit: int = 420,
+    *,
+    skip_policy: bool = False,
+    skip_compatibility_note: bool = False,
+) -> str:
     """Pick a useful prose paragraph; headings, lists and inherited boilerplate are ignored."""
     for block in re.split(r"\n\s*\n", body):
         lines = [line.strip() for line in block.splitlines()]
@@ -46,6 +52,12 @@ def first_paragraph(body: str, limit: int = 420, *, skip_policy: bool = False) -
             continue
         if skip_policy and re.match(
             r"^(Inherit the current router language policy|Optional method reference\.)",
+            paragraph,
+            re.IGNORECASE,
+        ):
+            continue
+        if skip_compatibility_note and re.match(
+            r"^(Existing adapters may dispatch this name|This is a compatibility alias)\b",
             paragraph,
             re.IGNORECASE,
         ):
@@ -83,7 +95,11 @@ def source_url(commit: str, path: str) -> str:
 def role_summary(content: str, role_name: str) -> str:
     heading = re.search(r"(?m)^# .+$", content)
     body = content[heading.end():].strip() if heading else content
-    summary = first_paragraph(body, skip_policy=True)
+    summary = first_paragraph(
+        body,
+        skip_policy=True,
+        skip_compatibility_note=role_kind(content) == "compatibility-alias",
+    )
     if not summary:
         raise ValueError(f"Missing meaningful role description in {role_name}.md")
     return summary
