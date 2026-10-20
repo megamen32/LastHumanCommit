@@ -71,13 +71,22 @@
         const number = make("span", "full-depth-number", step.number);
         number.setAttribute("aria-hidden", "true");
         const title = make("h4", "", t(step.titleKey));
+        if (state.language === "ru") {
+          const summary = make("p", "full-depth-excerpt full-depth-summary", t(step.summaryKey));
+          summary.lang = "ru";
+          item.append(number, title, summary);
+        } else {
+          item.append(number, title);
+        }
+        const excerptLabel = make("p", "excerpt-label full-depth-source-label", t("gitExcerptLabel"));
+        excerptLabel.setAttribute("aria-label", t("gitExcerptLabel"));
         const excerpt = make("p", "full-depth-excerpt", step.sourceExcerpt);
         excerpt.lang = sourceLanguage(step.sourceExcerpt);
         const source = make("a", "full-depth-source", t("fullDepth.sourceLink"));
         source.href = step.source;
         source.target = "_blank";
         source.rel = "noopener noreferrer";
-        item.append(number, title, excerpt, source);
+        item.append(excerptLabel, excerpt, source);
         fullDepthSteps.append(item);
       });
     }
@@ -85,7 +94,8 @@
     byId("decision-depth").hidden = mode !== "full";
     if (mode === "full" && decision) {
       byId("decision-title").textContent = t(decision.titleKey);
-      byId("decision-copy").textContent = t(decision.noteKey);
+      byId("decision-copy").textContent = t(state.language === "ru" ? decision.summaryKey : decision.noteKey);
+      byId("decision-copy").lang = state.language;
       byId("decision-source").textContent = decision.sourceExcerpt;
       byId("decision-source").lang = sourceLanguage(decision.sourceExcerpt);
       byId("decision-link").href = decision.source;
@@ -232,18 +242,18 @@
     });
   }
   function validSnapshot(data) {
-    if (!data || data.schemaVersion !== 3 || !data.modes || !Array.isArray(data.roles) || !data.roles.length) return false;
+    if (!data || data.schemaVersion !== 4 || !data.modes || !Array.isArray(data.roles) || !data.roles.length) return false;
     if (!["revision", "shortRevision", "productVersion", "generatedAt", "repository"].every((key) => typeof data[key] === "string" && data[key])) return false;
     const modes = [data.modes.quick, data.modes.full];
     if (!modes.every((mode) => mode && typeof mode.taglineKey === "string" && typeof mode.noteKey === "string" && Array.isArray(mode.steps) && mode.steps.length)) return false;
     if (!Array.isArray(data.modes.full.depthTrack) || !data.modes.full.depthTrack.length ||
-        !data.modes.full.depthTrack.every((step) => step && ["id", "number", "titleKey", "sourceExcerpt", "source"].every((key) => typeof step[key] === "string" && step[key]))) return false;
+        !data.modes.full.depthTrack.every((step) => step && ["id", "number", "titleKey", "summaryKey", "sourceExcerpt", "source"].every((key) => typeof step[key] === "string" && step[key]))) return false;
     const quickSteps = data.modes.quick.steps;
     const fullSteps = data.modes.full.steps;
     const validStep = (step) => step && ["id", "number", "titleKey", "descriptionKey", "sourceExcerpt", "source"].every((key) => typeof step[key] === "string" && step[key]);
     if (quickSteps.length !== fullSteps.length || !quickSteps.every((step, i) => validStep(step) && validStep(fullSteps[i]) && step.id === fullSteps[i].id)) return false;
     const decision = data.decisionDepth;
-    if (!decision || !["titleKey", "noteKey", "sourceExcerpt", "source"].every((key) => typeof decision[key] === "string" && decision[key])) return false;
+    if (!decision || !["titleKey", "noteKey", "summaryKey", "sourceExcerpt", "source"].every((key) => typeof decision[key] === "string" && decision[key])) return false;
     const roleKinds = new Set(["role", "method-reference", "compatibility-alias"]);
     return data.roles.every((role) => role && typeof role.name === "string" && role.name && roleKinds.has(role.kind) &&
       ["summary", "details", "source"].every((key) => typeof role[key] === "string" && role[key]));
