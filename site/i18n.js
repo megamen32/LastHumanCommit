@@ -26,7 +26,7 @@
     [".strip span:nth-child(4)", "<i>04</i> INTEGRATED DELIVERY", "<i>04</i> ОБЩИЙ ГОТОВЫЙ РЕЗУЛЬТАТ"],
     ["#workflow .section-number", "01 / HOW IT WORKS", "01 / КАК ЭТО РАБОТАЕТ"],
     ["#workflow-title", "One path.<br><em>Quick or Full.</em>", "Один путь.<br><em>Quick или Full.</em>"],
-    ["#workflow .section-heading > p", "Both depths follow the same lifecycle. Full adds deeper decision work only when a material choice remains.", "Обе глубины следуют одному жизненному циклу. Full добавляет углублённую проработку только при наличии существенного нерешённого выбора."],
+    ["#workflow .section-heading > p", "Both depths follow the same lifecycle. Full adds deeper research, planning and coordination when the work is large or uncertain; material-decision analysis is a separate conditional depth.", "Обе глубины следуют одному жизненному циклу. Full добавляет исследование, планирование и координацию для масштабной или неопределённой работы; разбор существенного решения — отдельная условная глубина."],
     ["#quick-tab", "<span class='tab-key'>01</span> Quick <span class='tab-arrow' aria-hidden='true'>↗</span>", "<span class='tab-key'>01</span> Краткий путь <span class='tab-arrow' aria-hidden='true'>↗</span>"],
     ["#full-tab", "<span class='tab-key'>02</span> Full <span class='tab-arrow' aria-hidden='true'>↗</span>", "<span class='tab-key'>02</span> Полный путь <span class='tab-arrow' aria-hidden='true'>↗</span>"],
     [".mode-aside", "ROUTE / NOT RITUAL", "ПУТЬ / НЕ РИТУАЛ"],

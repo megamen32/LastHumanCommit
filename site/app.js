@@ -211,6 +211,21 @@
       button.addEventListener("click", () => selectLanguage(button.dataset.lang, true));
     });
   }
+  function validSnapshot(data) {
+    if (!data || data.schemaVersion !== 2 || !data.modes || !Array.isArray(data.roles) || !data.roles.length) return false;
+    if (!["revision", "shortRevision", "productVersion", "generatedAt", "repository"].every((key) => typeof data[key] === "string" && data[key])) return false;
+    const modes = [data.modes.quick, data.modes.full];
+    if (!modes.every((mode) => mode && typeof mode.taglineKey === "string" && typeof mode.noteKey === "string" && Array.isArray(mode.steps) && mode.steps.length)) return false;
+    const quickSteps = data.modes.quick.steps;
+    const fullSteps = data.modes.full.steps;
+    const validStep = (step) => step && ["id", "number", "titleKey", "descriptionKey", "sourceExcerpt", "source"].every((key) => typeof step[key] === "string" && step[key]);
+    if (quickSteps.length !== fullSteps.length || !quickSteps.every((step, i) => validStep(step) && validStep(fullSteps[i]) && step.id === fullSteps[i].id)) return false;
+    const decision = data.decisionDepth;
+    if (!decision || !["titleKey", "noteKey", "sourceExcerpt", "source"].every((key) => typeof decision[key] === "string" && decision[key])) return false;
+    const roleKinds = new Set(["role", "method-reference", "compatibility-alias"]);
+    return data.roles.every((role) => role && typeof role.name === "string" && role.name && roleKinds.has(role.kind) &&
+      ["summary", "details", "source"].every((key) => typeof role[key] === "string" && role[key]));
+  }
   async function initialize() {
     prepareControls();
     selectLanguage(state.language);
@@ -218,9 +233,7 @@
       const response = await fetch("./data.json", { cache: "no-store" });
       if (!response.ok) throw { key: "fetchHTTP", values: { status: response.status } };
       const data = await response.json();
-      if (!data || !data.modes || !Array.isArray(data.roles) || !data.roles.length ||
-          !["quick", "full"].every((mode) => Array.isArray(data.modes[mode]?.steps) && data.modes[mode].steps.length) ||
-          !data.modes.quick.steps.every((step, i) => step.id === data.modes.full.steps[i]?.id)) {
+      if (!validSnapshot(data)) {
         throw { key: "fetchInvalid" };
       }
       state.data = data;
