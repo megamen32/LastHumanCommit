@@ -68,6 +68,7 @@
     [".strip", "aria-label", "Principles in brief", "Основные принципы"],
     [".mode-controls", "aria-label", "Workflow to explore", "Выбор рабочего цикла"],
     ["#cycle-nodes", "aria-label", "Click a stage to inspect its source", "Выберите этап, чтобы прочитать его описание"],
+    ["#full-depth-steps", "aria-label", "Adaptive Full depth stages", "Адаптивные этапы углублённого цикла Full"],
     ["#prev-step", "aria-label", "Previous stage", "Предыдущий этап"],
     ["#next-step", "aria-label", "Next stage", "Следующий этап"],
     ["meta[name='description']", "content", "Last Human Commit: a work method from human intent to a verified change in shared project history, sourced from Git.", "Last Human Commit: путь от замысла человека до проверенного изменения в общей истории проекта. Источник — Git."]
@@ -113,6 +114,7 @@
     "fullDepth.working-solution.title": ["Build a working solution", "Соберите рабочее решение"],
     "fullDepth.ideal-version.title": ["Consider the ideal version", "Продумайте идеальную версию"],
     "fullDepth.yagni-minimum.title": ["Choose the useful minimum with YAGNI", "Выберите полезный минимум по YAGNI"],
+    "fullDepth.frontier-council.title": ["Challenge unresolved choices", "Проверьте нерешённые решения независимой критикой"],
     "fullDepth.small-pieces.title": ["Split useful work into small pieces", "Разбейте работу на полезные небольшие части"],
     "fullDepth.worker-dispatch.title": ["Dispatch bounded Worker tasks", "Поручите Worker-ам ограниченные задачи"],
     "fullDepth.review-manual-test.title": ["Review and manually test", "Проведите ревью и ручную проверку"],

@@ -85,6 +85,13 @@ matters to the person using the result.
 Keep the essential value of the ideal version and defer additions that do not
 help prove or deliver this task's result.
 
+<!-- lhc-full-depth-step:frontier-council -->
+### Challenge unresolved choices
+
+When materially different routes remain, use independent challenge or a
+quota-aware council to surface trade-offs and stronger alternatives. Skip this
+step when current evidence already makes the responsible route clear.
+
 <!-- lhc-full-depth-step:small-pieces -->
 ### Split useful work into small pieces
 
