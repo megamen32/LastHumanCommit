@@ -5,9 +5,32 @@ completion can use `send_message` with a short Russian title/body and
 `expect_reply=false`. Automated incidents use Notice Place, not direct Telegram.
 No new notification infrastructure or routine approval of reversible work.
 
+## Optional Notice Place / UserIO integration
+
+When Notice Place/UserIO are installed and configured, Notice Place API/MCP is the
+entry point for agent/operator notifications, questions and escalation policy;
+UserIO performs account-scoped delivery. UserIO is the universal gateway for
+messages/chats/files/history AND calls/meetings, including Telegram,
+Matrix/MatrixRTC, Telemost and cellular/SIM; it is not Android-only.
+UserIO Voice/AgentCall is internal implementation. Asterisk/GSM2SIP is cellular
+transport only, not a prerequisite for every channel.
+Use one Notice Place request: retain its identity, delivery receipt, canonical
+confirmed answer and quiet-hours/recipient policy. Accepted != answered. Herder
+resumes only the exact bound session after that confirmed answer, subject to Stop
+and harness policy. Do not invent direct bot/ADB/socket/SIP fallbacks or retry an
+uncertain delivery under another identity; reconcile the existing request.
+Follow declared provider/account capabilities. This optional ownership rule does
+not prove legacy Android-only calls migrated or interactive questions work; it
+creates no permanent dependency on this stack. Other configured compatible
+providers remain valid within their declared safeguards; absent capabilities stay
+pending, without installing a replacement service.
+See the [canonical project communications contract](https://github.com/megamen32/universal-userio/blob/main/docs/COMMUNICATIONS-ARCHITECTURE.md);
+keep instance host paths, credentials and private recipients out of this package.
+
 ## Durable decision, not an unbound message
 
-When a real human decision blocks the accepted canary:
+For the configured Notice Place/Herder integration, when a real human decision
+blocks the accepted canary (use live declared methods, not guessed capabilities):
 
 1. In existing outcome state run `lhc_outcome.py ... question --message '<Russian
    question>'`. It reserves one stable question identity before any attempt;

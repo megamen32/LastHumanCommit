@@ -180,6 +180,13 @@ Human stop, permission, accepted/UNKNOWN external work and job IDs remain protec
 OpenCode currently observes completion and reinjects context/compaction; do not
 claim an unimplemented pre-final veto. No new daemon, cron or schedule.
 
+For optional Notice Place/UserIO ownership, follow `COORDINATION.md` and
+`commands/askhuman.md`: one policy request, account-scoped universal transport,
+canonical confirmed answer and exact-session resume. The existing delivery/answer
+source floors below describe supported receipt forms, not migration or interactive
+voice/question support across every provider. Quiet hours and declared account/channel
+capabilities remain; agents must not invent direct bot/ADB/socket/SIP fallbacks.
+
 A real unresolved human decision uses `lhc_outcome.py ... question --message '...'`:
 this persists one question identity and selects existing Herder binding → bound
 Notice question → actual sent receipt → canonical answer in the same native
