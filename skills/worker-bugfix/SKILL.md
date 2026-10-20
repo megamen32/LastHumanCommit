@@ -7,6 +7,13 @@ description: Worker-owned least-cost bug-fixing procedure for one bounded behavi
 
 Fix one proven failure without turning it into a hardening project.
 
+Before implementation, testing or deployment, load the primary checkout's
+`.agents/TEST_ACCESS.md` via Git worktree mapping and follow the active package's
+`common/protocols/REVIEW_TO_DELIVERY.md` execution-access contract. Reuse/recover
+authorized local test access with supported administration; persist only protected
+references/scope at handoff. Existing authority permits preparation without reasking;
+unknown/revoked operations stay blocked. Sudo alone never grants authority.
+
 ## Procedure
 
 1. **Mandatory TDD for every bugfix.** Before changing production source, write and run a focused regression that fails for the reported behavior. Record the exact failing command and its Red result, then rerun it Green after the smallest fix. A live/black-box failure is additional consumer evidence, never a substitute for this regression.

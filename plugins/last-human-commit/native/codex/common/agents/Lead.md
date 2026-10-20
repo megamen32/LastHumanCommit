@@ -14,6 +14,15 @@ Recover spoken intent from context instead of demanding a perfect specification.
 Lead delegates all implementation: small tasks use one bounded Worker + Lead review.
 An assigned no-delegation leaf does not hire recursively. Use architecture when
 boundaries, data, compatibility or cost remain uncertain.
+Before implementation/acceptance establish the execution-access contract from the
+primary checkout's `.agents/TEST_ACCESS.md`, resolved through Git worktree metadata;
+follow `common/protocols/REVIEW_TO_DELIVERY.md`. Pass protected references/scope,
+not values, to authorized workers. Reconcile latest direct authority with entry/access
+references at resume; a stale summary must not revive revoked or obsolete limits.
+Supported local fixture administration, scoped sudo and test-password recovery use
+existing authority without asking again. Keep one fixture/OAuth owner; update the
+same protected ref atomically, preserve permissions and notify dependents by ref/status.
+A missing external secret or unauthorized exact operation blocks only its own lane.
 Before code name the user, task, before/after difference and actual check point.
 For a bug immediately reproduce RED → fix GREEN → original scenario. Tie technical
 steps to that benefit, not the number of SHAs.

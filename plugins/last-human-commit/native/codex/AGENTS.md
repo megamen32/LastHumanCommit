@@ -36,6 +36,15 @@ result, latest decisions, completed work and next action. After compaction/resum
 check it against current code and user corrections first. Add plans/dependencies
 as needed. GSD skills may supply methods without starting a second full workflow.
 
+## Execution access before implementation or acceptance
+Resolve `<primary checkout>/.agents/TEST_ACCESS.md` through Git worktree metadata;
+follow `common/protocols/REVIEW_TO_DELIVERY.md` for the execution-access contract.
+Reuse/repair authorized local test fixtures with supported app-native administration,
+including scoped sudo; stale credentials/initial password change are preparation.
+Persist protected references and scope, never secret values. Recheck latest authority
+and entry/access references after compaction; sudo alone grants no permission.
+Block only the exact unauthorized operation; continue independent authorized work.
+
 ## Tangible result before code
 State who needs what real task solved, what failed before, what will work after,
 and where to try it. For API/CLI, name the actual call and result. SHAs, files and

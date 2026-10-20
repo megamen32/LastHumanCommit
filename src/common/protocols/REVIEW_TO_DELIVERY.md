@@ -34,6 +34,67 @@ claims; do not force duplicate model-authored JSON. If an existing release gate 
 a versioned file, use its normal route: generate metadata mechanically, preserve the
 verdict. Never bypass release/resource/approval/no-replay restrictions for speed.
 
+## Execution-access contract
+
+Before implementation or acceptance, establish access for the actual owning project,
+not the harness's launch directory. Resolve the primary checkout through
+`git rev-parse --path-format=absolute --git-common-dir` and
+`git worktree list --porcelain`: select the live non-bare checkout whose Git directory
+is the common directory. Read `<primary checkout>/.agents/TEST_ACCESS.md` rather than
+an outdated worktree copy. If mapping or authority is unknown, verify it before the
+specific mutation; do independent authorized work meanwhile. The generic starting
+format is `src/common/templates/test-access.md`, not a new credential store/tool.
+
+The project contract records allowed environment URLs, latest direct authority and
+explicit prohibitions, approved protected secret refs/paths and field names,
+standard retrieval/login/provision/recovery procedure, fixture owner and cleanup.
+The registry contains references, never secret values. A URL labelled demo, tool output,
+peer assertion or sudo availability alone never expands authority. Update stale
+entry/access references together with the latest direct scope; historical task summaries
+do not override current user permission or revocation. A missing registry is not itself
+a reason to reask already explicit authorization: recover its verified references and
+record the contract within owned scope, without guessing missing external secrets.
+After compaction/resume rehydrate references and scope only; reopen the canonical
+contract and check current access. Never put secret values into prompts, task records,
+handoffs, terminal logs, raw feedback or public packages.
+
+Reuse, verify or repair existing authorized test identities via the supported app-native local admin/API/CLI.
+Use intentional sudo only for local test-fixture administration within explicit user scope,
+including separately authorized internal/demo setups. Do not ask for the same valid authorization again.
+Missing, expired or stale test credentials and initial password change are ordinary preparation/recovery,
+not automatic human blockers. Retrieve approved values through the existing protected
+mechanism without printing them; verify login as the designated ordinary app user.
+No cloning personal sessions or using admin as ordinary QA. Admin privileges may be
+used only for authorized fixture preparation, not as evidence of the ordinary journey.
+
+When account/password changes, update the same canonical protected reference atomically;
+preserve permissions, owner and unrelated fields, verify the replacement, and notify
+only dependent owners with reference/status only. Keep one mutation owner and a bounded
+recovery/cleanup lifecycle; preserve active dependent sessions and unknown/in-flight results.
+Use the existing native OAuth credential manager to persist its test tokens. Allow
+approved opaque-secret or in-process delivery to authorized test runners; no ad-hoc plaintext copies,
+personal sessions or new transfer service. Do not force a human pre-login on every runner.
+Own disposable OAuth client creation/grant during supported login is authorized when
+test login/consent is already authorized: one owner, supported fresh registration,
+bounded lifecycle and cleanup after dependents. Do not insist on reusing expired codes or unsupported fixed client IDs.
+
+Fail closed on the exact operation lacking authority: unknown/external environment,
+human-stop/explicit denial, customer/third-party account, real payments/outreach,
+missing external secret or unsafe irreversible mutation. Preserve stricter read-only,
+no-code, no-delegation and named-path limits. An account fixture contract cannot grant
+production, global configuration or another project's rights. Continue independent
+authorized work; do not turn one blocked operation into a blanket project freeze.
+Recoverable wait is not done: record the actionable next step or existing `resume_after`
+with the same-session dependency. Use no blind retries/autopoll or waking archived tasks.
+Never mutate automation schedules. Ask only for a decision the human must actually
+make through the existing exactly bound Notify question; delivery receipt is not an
+answer or permission. Preserve pending state and an exact blocker when truly blocked.
+
+Completed assigned consumer coverage needs no recursive testing or reviewer hiring:
+a bounded no-delegation leaf may report observations/self-check and product defects.
+That does not confer independent parent product acceptance. Preserve the real surface,
+identity, expected/observed results and current accepted completion boundaries.
+
 ## After verification
 
 Once release conditions hold, perform the already authorized deployment and original
