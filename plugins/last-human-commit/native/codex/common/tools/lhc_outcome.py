@@ -14,7 +14,7 @@ import re
 import sys
 import shlex
 import os
-from urllib.parse import urlsplit
+from urllib.parse import unquote, urlsplit
 
 if str(Path(__file__).resolve().parent) not in sys.path:
     sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -153,8 +153,159 @@ def applicable(kind, goal):
     return stages
 
 
+def product_root_path(outcome, cwd):
+    """Resolve product files separately from the immutable native session root."""
+    return Path(outcome.get('product_root') or cwd).resolve()
+
+
+def _brief_path(prompt):
+    paths = re.findall(r'(?<![\w./-])/(?:[^\s`"\'<>]+/)?\.agents/tasks/briefs/[^\s`"\'<>]+\.md', prompt)
+    return paths[0] if len(paths) == 1 else None
+
+
+def _brief_read_assignment(outcome, source, root, paths):
+    """Bind one standalone brief read to the exact native assignment."""
+    sid = outcome.get('owner', {}).get('session_id')
+    source_id = source.get('source', '')
+    prefix = 'native-user-prompt:' + str(sid) + ':'
+    prompt = source.get('scope_prompt') or source.get('prompt', '')
+    brief = _brief_path(prompt)
+    if not sid or not brief or not source_id.startswith(prefix) or not outcome.get('native_source'):
+        return False
+    location = Path(outcome['native_source']).resolve()
+    sessions = (Path(os.environ.get('CODEX_HOME') or Path.home() / '.codex') / 'sessions').resolve()
+    try:
+        location.relative_to(sessions)
+    except ValueError:
+        return False
+    wanted = source_id[len(prefix):]
+    session_root = Path(outcome.get('cwd', '/unknown')).resolve()
+    source_index = None
+    source_matches = 0
+    candidate = None
+    meta_seen = False
+    try:
+        with location.open('rb') as stream:
+            for index, raw in enumerate(stream):
+                if len(raw) > native.MAX_BYTES or not raw.endswith(b'\n'):
+                    return False
+                row = json.loads(raw)
+                payload = row.get('payload') or {}
+                if row.get('type') == 'session_meta':
+                    if (payload.get('id') != sid or
+                            Path(payload.get('cwd', '/unknown')).resolve() != session_root):
+                        return False
+                    meta_seen = True
+                elif row.get('type') == 'response_item' and payload.get('type') == 'message' and payload.get('role') == 'user':
+                    text = native.content(payload.get('content'))
+                    metadata = payload.get('internal_chat_message_metadata_passthrough') or {}
+                    turn = payload.get('turn_id') or payload.get('turnId') or metadata.get('turn_id') or 'current'
+                    digest = hashlib.sha256(text.strip().encode()).hexdigest()[:12]
+                    if (wanted == f'{turn}:{digest}' and text.strip()[:2048] == source.get('prompt', '').strip()
+                            and semantic_scope(text) == prompt.strip()):
+                        source_index = index
+                        source_matches += 1
+                elif source_index is not None and row.get('type') == 'event_msg' and payload.get('type') == 'item_completed':
+                    item = payload.get('item') or {}
+                    if (item.get('type') != 'CommandExecution' or
+                            Path(brief).name not in str(item.get('command') or '')):
+                        continue
+                    if item.get('exit_code') != 0:
+                        return False
+                    command = item.get('command') or []
+                    if (len(command) != 3 or Path(command[0]).name not in {'bash', 'sh'} or
+                            command[1] not in {'-c', '-lc'}):
+                        return False
+                    try:
+                        words = shlex.split(command[2])
+                        if len(words) == 2 and words[0] == 'cat':
+                            file_arg = words[1]
+                        elif (len(words) == 4 and words[:2] == ['sed', '-n'] and
+                              re.fullmatch(r'1,[1-9][0-9]*p', words[2])):
+                            file_arg = words[3]
+                        else:
+                            return False
+                        if not re.fullmatch(r'[A-Za-z0-9_./-]+', file_arg) or file_arg.startswith('-'):
+                            return False
+                        uri = urlsplit(item.get('cwd') or '')
+                        workdir = unquote(uri.path) if uri.scheme == 'file' and uri.netloc in {'', 'localhost'} else str(item.get('cwd') or '')
+                        directory = Path(workdir)
+                        if not directory.is_absolute():
+                            directory = session_root / directory
+                        if directory.resolve() != session_root or (directory.resolve() / file_arg).resolve() != Path(brief).resolve():
+                            return False
+                    except (ValueError, IndexError, TypeError):
+                        return False
+                    output = item.get('aggregated_output') or ''
+                    if not output:
+                        return False
+                    candidate = output
+                    break
+    except (OSError, ValueError, TypeError, json.JSONDecodeError):
+        return False
+    if not meta_seen or source_index is None or source_matches != 1 or candidate is None:
+        return False
+    task = re.search(r'parallel-([a-z0-9]+)\.md$', Path(brief).name, re.I)
+    if not task:
+        return False
+    lines = candidate.splitlines()
+    if (not lines or not lines[0].startswith('# ') or
+            not re.search(r'(?<!\w)' + re.escape(task.group(1)) + r'(?!\w)', lines[0][2:], re.I)):
+        return False
+    root_rows = [line for line in lines if line.strip().startswith('Canonical checkout:')]
+    if len(root_rows) != 1 or root_rows[0].strip() != 'Canonical checkout: ' + str(root):
+        return False
+    path_headers = [i for i, line in enumerate(lines) if line.strip() == 'Exclusive writable paths:']
+    if len(path_headers) != 1:
+        return False
+    assigned = []
+    for line in lines[path_headers[0] + 1:]:
+        if not line.strip():
+            break
+        match = re.fullmatch(r'\s*-\s+(.+?)\s*', line)
+        if not match:
+            break
+        assigned.append(match.group(1))
+    normalized_assigned = set()
+    try:
+        for path in assigned:
+            try:
+                normalized_assigned.add((root / path).resolve().relative_to(root).as_posix())
+            except ValueError:
+                continue
+        normalized_requested = {(root / path).resolve().relative_to(root).as_posix() for path in paths}
+    except (OSError, ValueError):
+        return False
+    return bool(normalized_assigned and normalized_requested.issubset(normalized_assigned))
+
+
+def product_root_scope_allowed(outcome, source, root, paths):
+    if not source or not isinstance(root, Path) or not root.is_absolute() or not paths:
+        return False
+    try:
+        root = root.resolve(strict=True)
+        if not root.is_dir():
+            return False
+        for path in paths:
+            (root / path).resolve().relative_to(root)
+    except (OSError, ValueError):
+        return False
+    prompt = source.get('scope_prompt') or source.get('prompt', '')
+    def names_path(value):
+        return bool(re.search(r'(?<![\w./-])' + re.escape(str(value)) + r'(?![\w./-])', prompt))
+    relative = [(root / path).resolve().relative_to(root).as_posix() for path in paths]
+    return (names_path(root) and all(names_path(path) or names_path(rel) for path, rel in zip(paths, relative))) or _brief_read_assignment(
+        outcome, source, root, paths)
+
+
 def product_paths(outcome, cwd):
+    root = product_root_path(outcome, cwd)
     paths = outcome.get('owned_paths', [])
+    for path in paths:
+        try:
+            (root / Path(path)).resolve().relative_to(root)
+        except ValueError as exc:
+            raise ValueError('owned path resolves outside product root') from exc
     scope = '\n'.join([outcome['original_goal'], *outcome.get('corrections', [])])
     mentions = list(re.finditer(r'\bFEEDBACK\.md\b', scope, re.I))
     report = bool(mentions)
@@ -171,14 +322,15 @@ def product_paths(outcome, cwd):
     # revision. Keep ownership, but writing feedback must not invalidate the
     # very native observations it records. A product edit retains its barrier.
     if report:
-        paths = [p for p in paths if (cwd / p).resolve() != (cwd / 'FEEDBACK.md').resolve()]
+        paths = [p for p in paths if (root / p).resolve() != (root / 'FEEDBACK.md').resolve()]
     return paths
 
 
 def scope_revision(outcome, cwd):
     # Explicit owned product only; clocks/receipts cannot manufacture progress.
     paths = product_paths(outcome, cwd)
-    return digest([(p, native.file_hash(cwd, p)) for p in paths])
+    root = product_root_path(outcome, cwd)
+    return digest([(p, native.file_hash(root, p)) for p in paths])
 
 
 def remote_binding(cwd, remote):
@@ -227,7 +379,7 @@ def verdict(outcome, state):
         return 'pending'  # Unknown target/ownership never defaults to main.
     policy = outcome.get('integration_policy')
     if policy and outcome['stages']['integration']['status'] != 'not-applicable':
-        if not policy.get('target_scope_confirmed') or not policy.get('repository') or remote_binding(Path(outcome['cwd']), policy['remote']) != policy['repository']:
+        if not policy.get('target_scope_confirmed') or not policy.get('repository') or remote_binding(product_root_path(outcome, Path(outcome['cwd'])), policy['remote']) != policy['repository']:
             return 'pending'
         if policy['branch'] in {'main', 'master'} and not policy.get('main_permission_confirmed'):
             return 'pending'
@@ -437,7 +589,8 @@ def observe_job_progress(outcome, business, event, cwd):
     operations = {'technical': {'build', 'build-start', 'test', 'verify'},
                   'deploy': {'deploy', 'deployment', 'rollout'}}.get(next_stage(outcome), set())
     args = event.get('tool_input') or {}
-    same_cwd = not isinstance(args, dict) or not args.get('workdir') or Path(args['workdir']).resolve() == cwd
+    allowed_roots = {Path(cwd).resolve(), product_root_path(outcome, cwd)}
+    same_cwd = not isinstance(args, dict) or not args.get('workdir') or Path(args['workdir']).resolve() in allowed_roots
     if same_cwd:
         for job_id, job in business.get('running_jobs', {}).items():
             if job.get('operation') in operations:
@@ -644,6 +797,7 @@ def main():
         contract.add_argument('--' + field, required=True)
     contract.add_argument('--task-class', choices=('quickfix', 'fullcycle', 'testing', 'research', 'status'))
     contract.add_argument('--scope-source', help='exact native user source reference for a semantic class correction')
+    contract.add_argument('--product-root', type=Path, help='explicit product checkout; --cwd remains the native session-state root')
     contract.add_argument('--require-stage', action='append', choices=STAGES, default=[])
     contract.add_argument('--not-applicable', action='append', choices=STAGES, default=[])
     contract.add_argument('--owned-path', action='append', default=[])
@@ -659,7 +813,7 @@ def main():
     route = review.add_mutually_exclusive_group(required=True)
     route.add_argument('--manifest', type=Path)
     route.add_argument('--native-self', action='store_true', help='read this own native Codex/OpenCode source without depending on Herder export CWD')
-    route.add_argument('--native-reviewer', metavar='CODEX_SESSION_ID', help='read an existing independent Codex research reviewer via a byte-verified native assignment window; never create/resume it')
+    route.add_argument('--native-reviewer', metavar='CODEX_SESSION_ID', help='read an existing independent bounded Codex engineering/research reviewer via its native assignment window; never create/resume it')
     review.add_argument('--testing-reuse-bindings', type=Path, help='explicit original native contract/user/report/per-coverage source bindings for own historical testing; never a PASS receipt')
     review.add_argument('--comparison-quote', help='bind an unchanged own research source-finding passage to the confirmed expectation; source filename/readback required, self-check only')
     question = sub.add_parser('question')
@@ -668,13 +822,29 @@ def main():
     args = parser.parse_args()
     cwd = args.cwd.resolve()
     path = guard.learning_path(cwd, args.runtime, args.session_id)
+    if not path.is_file():
+        raise ValueError(f'no LHC session state for {args.runtime}/{args.session_id} from session root {cwd}; no state was created')
     with path.with_suffix('.lock').open('a') as lock:
         fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
         state = guard.load_state(path)
-        outcome = state['business']['outcome']
+        outcome = (state.get('business') or {}).get('outcome')
+        if not isinstance(outcome, dict):
+            raise ValueError(f'no LHC outcome for native session {args.session_id} at {path}; session root is {cwd}')
+        expected_session_root = Path(outcome.get('cwd', '/unknown')).resolve()
+        if expected_session_root != cwd:
+            raise ValueError(f'LHC state for native session {args.session_id} is bound to session root {expected_session_root}; --cwd {cwd} is not that root')
         if args.command == 'contract':
             outcome.pop('contract_rejection', None)
-            source = next((r for r in outcome.get('scope_sources', []) if r.get('source') == args.scope_source), None)
+            scope_source_id = args.scope_source or outcome.get('product_root_source')
+            source = next((r for r in outcome.get('scope_sources', []) if r.get('source') == scope_source_id), None)
+            source_scope = (source.get('scope_prompt') or semantic_scope(source.get('prompt', ''))) if source else ''
+            semantic_source = {**source, 'prompt': source_scope} if source else None
+            prior_product_root = product_root_path(outcome, cwd)
+            product_root = (args.product_root or prior_product_root).resolve()
+            if product_root != cwd and not product_root_scope_allowed(outcome, source, product_root, args.owned_path):
+                raise ValueError('external product root needs the exact native assignment and its original successful brief read, with every owned path inside that root')
+            candidate_outcome = {**outcome, 'product_root': str(product_root), 'owned_paths': args.owned_path}
+            product_paths(candidate_outcome, cwd)
             policy = outcome.get('integration_policy')
             if any((args.integration_branch, args.integration_remote, args.integration_ownership, args.release_owner, args.integration_permission_quote)):
                 if not source or not all((args.integration_branch, args.integration_remote, args.integration_ownership)):
@@ -686,29 +856,27 @@ def main():
                 if args.release_owner and args.integration_branch in {'main', 'master'}:
                     raise ValueError('release handoff needs a separate permitted dev target')
                 policy = {'branch': args.integration_branch, 'remote': args.integration_remote,
-                          'ownership': args.integration_ownership, 'source': args.scope_source,
+                          'ownership': args.integration_ownership, 'source': scope_source_id,
                           'release_owner': args.release_owner,
-                          'repository': remote_binding(cwd, args.integration_remote),
+                          'repository': remote_binding(product_root, args.integration_remote),
                           'permission_quote': args.integration_permission_quote}
-                policy['main_permission_confirmed'] = main_permission(source, args.integration_permission_quote, policy['repository'], policy['branch'])
-                policy['target_scope_confirmed'] = args.integration_branch in source['prompt'] or policy['main_permission_confirmed']
+                policy['main_permission_confirmed'] = main_permission(semantic_source, args.integration_permission_quote, policy['repository'], policy['branch'])
+                policy['target_scope_confirmed'] = args.integration_branch in source_scope or policy['main_permission_confirmed']
             if args.task_class and args.task_class != outcome['task_class']:
                 if not source:
                     raise ValueError('class correction requires an exact original/latest native user source')
                 if outcome.get('class_confirmed') and outcome['task_class'] in ENGINEERING and args.task_class not in ENGINEERING:
                     raise ValueError('status/read-only cannot cancel confirmed repair; an explicit new assignment needs its own lineage')
-                outcome.setdefault('class_history', []).append({'class': outcome['task_class'], 'source': args.scope_source})
+                outcome.setdefault('class_history', []).append({'class': outcome['task_class'], 'source': scope_source_id})
                 outcome['task_class'] = args.task_class
-                outcome['stages'] = applicable(args.task_class, source['prompt'])
+                outcome['stages'] = applicable(args.task_class, source_scope)
             for stage in args.not_applicable:
-                if not source or stage not in EXCLUSIONS or not re.search(EXCLUSIONS[stage], source['prompt'], re.I):
+                if not source or stage not in EXCLUSIONS or not re.search(EXCLUSIONS[stage], source_scope, re.I):
                     raise ValueError('N/A needs explicit original/latest scope, not missing access')
-                outcome['stages'][stage] = {'status': 'not-applicable', 'basis': args.scope_source, 'evidence': []}
+                outcome['stages'][stage] = {'status': 'not-applicable', 'basis': scope_source_id, 'evidence': []}
             for stage in args.require_stage:
                 outcome['stages'][stage] = {'status': 'pending', 'basis': 'confirmed-applicability', 'evidence': []}
             outcome['class_confirmed'] = True
-            for item in args.owned_path:
-                (cwd / item).resolve().relative_to(cwd)
             if outcome['task_class'] in ENGINEERING and not args.owned_path:
                 raise ValueError('engineering contract requires explicit owned paths')
             if any(not str(getattr(args, field)).strip() for field in ('scenario', 'target', 'expected')):
@@ -726,12 +894,20 @@ def main():
             from lhc_outcome_review import equivalent_target
             previous = outcome['canary']
             same_canary = (all(canary[k] == previous[k] for k in ('scenario', 'expected')) and
-                           equivalent_target(previous['target'], canary['target'], cwd,
+                           equivalent_target(previous['target'], canary['target'], product_root,
                                              '\n'.join([outcome['original_goal'], *outcome.get('corrections', [])])))
-            changed = not same_canary or args.owned_path != outcome['owned_paths'] or args.coverage != outcome.get('coverage', []) or claims != outcome.get('stage_claims', {}) or policy != outcome.get('integration_policy')
+            changed = (not same_canary or args.owned_path != outcome['owned_paths'] or
+                       args.coverage != outcome.get('coverage', []) or claims != outcome.get('stage_claims', {}) or
+                       policy != outcome.get('integration_policy') or product_root != prior_product_root)
             if not changed:
                 canary['status'] = previous['status']
             outcome.update(canary=canary, owned_paths=args.owned_path, coverage=args.coverage, contract_confirmed=True, stage_claims=claims)
+            if product_root != cwd:
+                outcome['product_root'] = str(product_root)
+                outcome['product_root_source'] = scope_source_id
+            else:
+                outcome.pop('product_root', None)
+                outcome.pop('product_root_source', None)
             if policy:
                 outcome['integration_policy'] = policy
                 if policy['branch'] not in {'main', 'master'}:

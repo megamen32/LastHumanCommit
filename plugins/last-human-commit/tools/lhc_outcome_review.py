@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 from urllib.parse import unquote, urlsplit
 
 import lhc_milestone as native
-from lhc_outcome import ENGINEERING, STAGES, scope_revision, remote_binding, product_paths, digest
+from lhc_outcome import ENGINEERING, STAGES, scope_revision, remote_binding, product_paths, product_root_path, digest
 
 # The package entrypoints keep their primary tool directory first. Append the
 # canonical shared tools directory so review-only helpers resolve in both
@@ -127,8 +127,8 @@ def codex_window(source):
 
 def native_reviewer_manifest(outcome, cwd, reviewer):
     """Read one EXISTING Codex reviewer; never create, resume or impersonate it."""
-    if outcome['task_class'] != 'research' or reviewer == outcome['owner']['session_id']:
-        raise ValueError('native reviewer route is independent bounded research only')
+    if outcome['task_class'] not in ENGINEERING | {'research'} or reviewer == outcome['owner']['session_id']:
+        raise ValueError('native reviewer route is independent bounded engineering/research only')
     home = Path(os.environ.get('CODEX_HOME') or Path.home() / '.codex')
     candidates = list((home / 'sessions').rglob('*' + reviewer + '*.jsonl'))
     if len(candidates) != 1:
@@ -735,6 +735,7 @@ def own_assessment(outcome, text, observations, cwd, comparison_quote=None):
 def accept_review(outcome, state, path, cwd, owner, comparison_quote=None, testing_reuse=None):
     from lhc_outcome import bounded_self_check
     meta, messages, observations = load_review(path)
+    product_cwd = product_root_path(outcome, cwd)
     reuse_original = reuse_report = None
     if testing_reuse is not None:
         from lhc_testing_reuse import prepare
@@ -745,7 +746,10 @@ def accept_review(outcome, state, path, cwd, owner, comparison_quote=None, testi
     own_attempt = sid == owner and (outcome['task_class'] in {'testing', 'research'} or bounded_self_check(outcome))
     native_cwd = Path(meta.get('cwd', '/unknown'))
     cross_cwd_research = sid != owner and outcome['task_class'] == 'research' and native_cwd.resolve() != cwd
-    if (sid == owner and not own_attempt) or not native_cwd.is_absolute() or (native_cwd.resolve() != cwd and not cross_cwd_research):
+    cross_cwd_product = (sid != owner and outcome['task_class'] in ENGINEERING
+                         and product_cwd != cwd and native_cwd.resolve() == product_cwd)
+    if (sid == owner and not own_attempt) or not native_cwd.is_absolute() or (
+            native_cwd.resolve() != cwd and not cross_cwd_research and not cross_cwd_product):
         raise ValueError('review must be independent and for this exact project')
     # The existing reviewer can deliberately inspect a bounded case from its
     # original project. Missing tool cwd remains that native original cwd,
@@ -761,17 +765,17 @@ def accept_review(outcome, state, path, cwd, owner, comparison_quote=None, testi
         # A bound old passage must not hide a later explicit source correction.
         negative_binding = comparison_quote and outcome['task_class'] == 'research' and re.search(
             r'\b(?:defect|wrong|needs? correction)\b|ошибк|не соответствует', text, re.I)
-        return negative_binding or own_assessment(outcome, text, observations, cwd, comparison_quote)
+        return negative_binding or own_assessment(outcome, text, observations, product_cwd, comparison_quote)
     independent_engineering_review = sid != owner and outcome['task_class'] in ENGINEERING
     own_report = next((report for report in reversed(meta.get('own_reports', []))
                        if selected_assessment(report)), None) if (
                            own_attempt or outcome['task_class'] == 'research' or independent_engineering_review
                        ) else None
-    if comparison_quote and (not own_report or not source_finding_quote(outcome, own_report['text'], observations, cwd, comparison_quote)):
+    if comparison_quote and (not own_report or not source_finding_quote(outcome, own_report['text'], observations, product_cwd, comparison_quote)):
         raise ValueError('comparison quote must bind the current unchanged native source finding; never skip a newer negative assessment')
     if not own_report and own_attempt and outcome['task_class'] == 'research' and any(
             native.timestamp(report['at']) >= native.timestamp(outcome['started_at'])
-            and source_finding_quote(outcome, report['text'], observations, cwd, report['text'])
+            and source_finding_quote(outcome, report['text'], observations, product_cwd, report['text'])
             for report in meta.get('own_reports', [])):
         raise ValueError('fresh source finding needs a semantic comparison binding, not a reread: retain the report and use review --native-self --comparison-quote with its unchanged source-finding passage; self-check only')
     if testing_reuse is not None:
@@ -780,7 +784,7 @@ def accept_review(outcome, state, path, cwd, owner, comparison_quote=None, testi
             raise ValueError('testing reuse requires original native assessment')
         own_report = matches[0]
         from lhc_testing_reuse import browser_sources
-        source_ops = browser_sources(observations, cwd)
+        source_ops = browser_sources(observations, product_cwd)
         if any(report_result(row['text'])[0] and any(
                 call.get('_browser_ops') and output.strip()
                 and own_report['index'] < call.get('_source_index', -1) < row['index']
@@ -809,6 +813,14 @@ def accept_review(outcome, state, path, cwd, owner, comparison_quote=None, testi
     if not assignments:
         raise ValueError('native source has no current scope-bound assignment window')
     assignment = max(assignments, key=lambda row: row['index'])
+    if cross_cwd_product:
+        product_token = re.compile(r'(?<![\w./-])' + re.escape(str(product_cwd)) + r'(?![\w./-])')
+        exact_product_assignments = [row for row in assignments
+                                     if all(value in row['text'] for value in outcome.get('corrections', []))
+                                     and product_token.search(row['text'])]
+        if not exact_product_assignments:
+            raise ValueError('product-root native reviewer needs the exact assigned product root in its native assignment')
+        assignment = max(exact_product_assignments, key=lambda row: row['index'])
     if cross_cwd_research:
         declared = []
         for literal in re.findall(r'(?:^|[;\n])\s*Target CWD:\s*([^;\n]+)', assignment['text'], re.I):
@@ -816,7 +828,7 @@ def accept_review(outcome, state, path, cwd, owner, comparison_quote=None, testi
             if not path.is_absolute():
                 raise ValueError('research Target CWD must be absolute')
             declared.append(path.resolve())
-        if set(declared) != {cwd}:
+        if set(declared) != {product_cwd}:
             raise ValueError('independent research assignment needs exact normalized Target CWD; tool output or a neighboring path is not assignment')
     after = max(native.timestamp(reuse_original['evidence_after'] if reuse_original else outcome.get('evidence_after') or outcome['started_at']),
                 native.timestamp(assignment['at'] or outcome['started_at']))
@@ -828,14 +840,14 @@ def accept_review(outcome, state, path, cwd, owner, comparison_quote=None, testi
         raise ValueError('owned revision changed; refresh the contract and actual evidence before review')
     if testing_reuse is not None:
         from lhc_testing_reuse import browser_sources, assessment
-        observations = browser_sources(observations, cwd)
-        reuse_report, _ = assessment(outcome, meta, observations, testing_reuse, reuse_original, cwd)
+        observations = browser_sources(observations, product_cwd)
+        reuse_report, _ = assessment(outcome, meta, observations, testing_reuse, reuse_original, product_cwd)
     lines = [line[len(MARKER):] for line in final.splitlines() if line.startswith(MARKER)]
     if comparison_quote and lines:
         raise ValueError('comparison quote binds original research prose, not a structured certificate')
     if len(lines) > 1:
         raise ValueError('ambiguous independent review summaries')
-    report = reuse_report if reuse_report is not None else json.loads(lines[0]) if lines else raw_review(outcome, final, observations, cwd, comparison_quote)
+    report = reuse_report if reuse_report is not None else json.loads(lines[0]) if lines else raw_review(outcome, final, observations, product_cwd, comparison_quote)
     canary = outcome['canary']
     revision = scope_revision(outcome, cwd)
     for key, expected in {'outcome_id': outcome['id'], 'revision': revision,
@@ -851,7 +863,7 @@ def accept_review(outcome, state, path, cwd, owner, comparison_quote=None, testi
     if outcome['task_class'] == 'testing' and not coverage:
         raise ValueError('testing needs explicit assigned coverage')
     by_call = {call.get('call_id'): (call, output) for call, output in observations if call.get('call_id')}
-    resolved = consumer_target(outcome, observations, cwd)
+    resolved = consumer_target(outcome, observations, product_cwd)
     for item in coverage:
         claim = report.get('coverage', {}).get(item)
         if (not isinstance(claim, dict) or claim.get('verdict') not in {'passed', 'defect'}
@@ -859,7 +871,7 @@ def accept_review(outcome, state, path, cwd, owner, comparison_quote=None, testi
             raise ValueError('each assigned coverage claim needs expected/observed comparison')
         refs = claim.get('evidence_calls') or []
         if not refs or not all(ref in by_call for ref in refs) or not any(
-                real_observation(*by_call[ref], resolved, 'consumer', outcome['task_class'], cwd) for ref in refs):
+                real_observation(*by_call[ref], resolved, 'consumer', outcome['task_class'], product_cwd) for ref in refs):
             raise ValueError('assigned coverage needs its actual native consumer observations')
         if not browser_journey(refs, by_call, canary['target']):
             raise ValueError('each browser coverage claim needs its action/result observations')
@@ -909,7 +921,7 @@ def accept_review(outcome, state, path, cwd, owner, comparison_quote=None, testi
             if not policy:
                 raise ValueError('integration target/ownership unresolved; never default to main')
             branch = policy['branch']
-            if not policy.get('target_scope_confirmed') or not policy.get('repository') or remote_binding(cwd, policy['remote']) != policy['repository']:
+            if not policy.get('target_scope_confirmed') or not policy.get('repository') or remote_binding(product_cwd, policy['remote']) != policy['repository']:
                 raise ValueError('integration remote is unresolved or changed; preserve pending')
             if branch in {'main', 'master'} and policy['ownership'] != 'owned':
                 raise ValueError('shared/external upstream main is owner-only')
@@ -924,16 +936,16 @@ def accept_review(outcome, state, path, cwd, owner, comparison_quote=None, testi
                     return json.loads(output).get('baseRefName') == branch
                 except (ValueError, AttributeError):
                     return False
-            reads = [ref for ref in refs if target_readback(ref) and real_observation(*by_call[ref], claim['target'], stage, outcome['task_class'], cwd, claim['expected'])]
+            reads = [ref for ref in refs if target_readback(ref) and real_observation(*by_call[ref], claim['target'], stage, outcome['task_class'], product_cwd, claim['expected'])]
             if not reads:
                 raise ValueError('integration readback must prove the configured branch/head')
             if stage == 'integration' and branch not in {'main', 'master'}:
-                smoke = [ref for ref in refs if real_observation(*by_call[ref], resolved, 'consumer', outcome['task_class'], cwd)
+                smoke = [ref for ref in refs if real_observation(*by_call[ref], resolved, 'consumer', outcome['task_class'], product_cwd)
                          and call_order[ref] > max(call_order[r] for r in reads)]
                 if not smoke or not browser_journey(smoke, by_call, canary['target']):
                     raise ValueError('dev integration needs actual integrated smoke after branch readback')
         observed_target = resolved if stage == 'consumer' else claim['target']
-        if not any(real_observation(*by_call[ref], observed_target, stage, outcome['task_class'], cwd, claim['expected']) for ref in refs):
+        if not any(real_observation(*by_call[ref], observed_target, stage, outcome['task_class'], product_cwd, claim['expected']) for ref in refs):
             raise ValueError('echo/health/test-only/wrong-target receipt is not the assigned consumer operation')
         completed.add(stage)
     if reuse_original:
@@ -959,7 +971,7 @@ def accept_review(outcome, state, path, cwd, owner, comparison_quote=None, testi
     if comparison_quote:
         outcome['comparison_binding'] = {'quote': comparison_quote, 'reviewer': sid, 'original_index': own_report['index'],
                                          'original_at': own_report['at'], 'verification_level': 'self-check',
-                                         'claims': research_comparison_binding(outcome, final, observations, cwd, comparison_quote)}
+                                         'claims': research_comparison_binding(outcome, final, observations, product_cwd, comparison_quote)}
     if outcome['task_class'] == 'research' and own_report:
         outcome['review_assessment'] = {'reviewer': sid, 'index': own_report['index'], 'at': own_report['at']}
     outcome.update(product_verdict=product, revision=revision, coverage_evidence=report.get('coverage', {}))

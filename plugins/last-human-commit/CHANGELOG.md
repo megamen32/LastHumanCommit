@@ -1,3 +1,7 @@
+# 1.5.9 — bind independent review to its assignment
+
+The native independent-review export route extends only when exact assignment gates remain. Resolve owned source, revision and Git remote against the explicitly assigned product root while keeping native session identity/state at its original root; report missing session state with an actionable error. Preserve actual external-tool working-directory, ownership, and provenance gates. This release does not synthesize historical evidence or imply C2 PASS.
+
 # 1.5.8 — preserve the independent assessment
 
 Independent engineering review selects the original assessment over later bookkeeping. Preserve its original timestamp, source-call cutoff, and negative findings. Recognize the documented

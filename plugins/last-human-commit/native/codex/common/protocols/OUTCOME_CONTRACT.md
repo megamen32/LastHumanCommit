@@ -37,7 +37,7 @@ the case. Omitted or relative workdirs resolve against its actual native cwd,
 never the target cwd; neighboring/ambiguous directory declarations do not match.
 This is independent review of the bounded finding, not parent product acceptance
 or permission to resume a held session.
-For an existing Codex research reviewer whose full native journal exceeds the
+For an existing Codex research or engineering reviewer whose full native journal exceeds the
 bounded reader, use `review --native-reviewer CODEX_SESSION_ID`. This reads the
 original native header and contiguous current-assignment tail through actual EOF;
 the same size cap, source identity, original line indexes/times and later negative
@@ -60,6 +60,23 @@ this record. Explicit `--require-stage` adds an applicable obligation;
 `--not-applicable` requires an explicit original/latest exclusion, not lack of
 access. Direct repair corrections add stages/target while keeping owner/lineage
 and clocks; a status/read-only question cannot erase confirmed repair.
+
+For an assigned product in another checkout, keep `--cwd` at the native session
+root and add `contract --product-root <canonical-product-checkout>
+--scope-source <original-native-assignment-ref> --owned-path <product-relative-file>`.
+The original assignment must bind that root and the exact owned files. An archived
+brief explicitly named by the assignment may supply those files through its
+original, successful, attributable native read; its current mutable content is
+not a substitute. The execution report in the parent checkout is metadata, not
+product ownership. One product root is supported per bounded outcome.
+
+Owned-source hashes, target resolution and Git remote checks use the product root;
+session state and native transcript identity stay at the original `--cwd`.
+Actual tool workdirs must identify the product checkout. An omitted workdir keeps
+the reviewer's actual native cwd and is never silently rebased to the product.
+Changing roots invalidates prior acceptance normally; this does not backdate
+evidence, supply missing reviewer provenance or accept a parent consumer canary.
+Missing session state is an explicit error; changing `--cwd` does not move a task.
 
 For testing add repeated `--coverage '<assigned scenario>'` and omit owned paths.
 For fullcycle, the applicable sequence is implementation/tests → authorized deploy

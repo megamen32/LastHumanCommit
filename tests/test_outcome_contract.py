@@ -1062,6 +1062,7 @@ def test_native_self_fallback_does_not_accept_fullcycle(tmp_path):
 
 
 def test_real_russian_testing_prompt_with_excluded_repair_is_testing(tmp_path):
+    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
     goal = 'Только протестируй существующий checkout CLI в двух случаях: пустая корзина и корзина two из двух товаров. Пользователь ожидает успешный ответ и сумму 0 для пустой корзины, сумму 20 для two. Выполни реальные команды, сравни наблюдения и сохрани полный отзыв в FEEDBACK.md. Не меняй код, не создавай новые тесты, не деплой и не делегируй. Найденный дефект нужно честно описать; исправление продукта в эту задачу не входит.'
     invoke(tmp_path, 'UserPromptSubmit', prompt=goal)
     assert cli(tmp_path, 'status')['task_class'] == 'testing'

@@ -84,6 +84,10 @@ executors. Default to zero-knowledge dispatch: fresh context with a self-contain
 contract and only the required inputs, not the parent conversation or unrelated
 history. Lead keeps the global context and controls dependencies, concurrency and
 acceptance. Use the adapter's real role/model delivery and event/receipt mechanisms.
+When source lives outside the worker's native cwd, put its canonical product root
+and exact product-relative owned paths in the native assignment itself, alongside
+the task/outcome identity. A brief pointer or combined file-read output alone does
+not bind those files. Keep session-state cwd and product root distinct.
 Reuse research context within the same bounded task when it avoids rework. Independent
 Reviewer/Tester/challenger runs remain fresh; task resumption does not remove them.
 
