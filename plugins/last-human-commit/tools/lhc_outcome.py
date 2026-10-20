@@ -316,7 +316,7 @@ def reminder(outcome, tool):
                ' --runtime ' + outcome['owner']['harness'] + ' --session-id ' + shlex.quote(outcome['owner']['session_id']))
     contract_route = ('Contract confirmed; preserve scenario/target/expected and owned paths unless the accepted scope changes. Perform the actual task. '
                       if outcome.get('contract_confirmed') else
-                      'Specify scenario/target/expected and owned paths using ' + command + ' contract --help; then perform actual work. ')
+                      'First confirm the concrete contract: specify scenario/target/expected and owned paths using ' + command + ' contract --help; then perform actual work. ')
     review_route = ('Research leaf: verify the assigned source and deliver the requested report '
                     'and raw expected/observed commentary before close bookkeeping. Use the documented ' + command + ' review --native-self route; '
                     'level self-check, not independent parent product acceptance. '
