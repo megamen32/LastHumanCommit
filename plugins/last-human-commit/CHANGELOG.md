@@ -1,3 +1,10 @@
+# 1.5.7 — quiet, accurate completion hooks
+
+Limit overdue Stop reminders to one per unchanged obligation and progress; name the
+actual due checkpoint, and avoid treating Russian "установить факт" resolution
+questions as software installation. Run the independent Overseer only on a concrete
+anomaly with bounded, read-only session evidence.
+
 # 1.5.6 — hook feedback and task-scope continuity
 
 Prevent repeated unchanged reminders and keep coordination metadata out of task

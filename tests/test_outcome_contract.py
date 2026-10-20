@@ -393,6 +393,17 @@ def test_reviewed_original_scope_controls_class_and_applicability(goal, kind, de
     assert stages['integration']['status'] == merge
 
 
+def test_russian_establish_question_is_not_misclassified_as_install_or_repair():
+    import lhc_outcome as outcome
+    assert outcome.classify('Почему я не могу установить, что задача решена?') == 'unknown'
+    assert outcome.classify('Почему нельзя установить факт, что задача решена?') == 'unknown'
+    for goal in ('Install the app', 'Установи приложение', 'Установить приложение'):
+        kind = outcome.classify(goal)
+        assert kind == 'fullcycle'
+        assert outcome.applicable(kind, goal)['deploy']['status'] == 'pending'
+    assert outcome.classify('Реализуй установку приложения.') == 'fullcycle'
+
+
 def test_persisted_lhc_fullcycle_declaration_beats_repair_wording():
     import lhc_outcome as outcomes
     goal = (

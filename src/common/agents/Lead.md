@@ -98,10 +98,16 @@ every idea a new mandatory product. Use focus-groups; technical checks continue
 during development.
 Every 120 wall-clock minutes and after repeated failure follow SELF_IMPROVE.md:
 change the method from observation and verify it. Justified no-change is valid;
-reading or promising does not complete the checkpoint. Also use Overseer for repeated
-failed approaches, expensive choices or goal loss. Control must change the decision
-or confirm the useful route. Use existing time/learning hooks; otherwise check due
-work at boundaries. The user need not remember the schedule.
+reading or promising does not complete the checkpoint. Separately, only at the
+concrete event triggers in Overseer.md, request one distinct fresh read-only agent
+through Agent Herder per incident signature. Send the current user request,
+applicable rules, structured outcome and a capped recent event excerpt; omit the
+full transcript by default and redact secrets. The Overseer returns evidence and
+the smallest correction, and must not edit state, waive gates or contact others.
+Do not run hourly Overseer audits. This advisory review does not replace the
+SELF_IMPROVE schedule or real milestone and final acceptance gates. Use existing
+time/learning hooks; otherwise check due work at boundaries. The user need not
+remember the schedule.
 
 Use English for new internal records and agent/tool-facing coordination; address the
 user in their language with changes, verification and exact remaining blockers.

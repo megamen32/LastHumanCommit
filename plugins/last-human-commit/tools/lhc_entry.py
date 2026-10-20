@@ -252,13 +252,15 @@ def handle(event, name, runtime, root):
         outcome_due = bool(outcome and (outcome['task_class'] in outcomes.ENGINEERING | {'testing', 'research'} or
                            (outcome['task_class'] == 'unknown' and outcome.get('actionable'))) and outcome['finish_verdict'] != 'complete')
         if runtime in {"codex", "zcode"} and name == "Stop" and not held and (business["due"] or learning["due"] or acceptance_due or outcome_due):
-            identity = [event.get("turn_id") or event.get("turnId"), business.get("review_id"), learning["due_at"] if learning["due"] else None]
             progress = outcomes.fingerprint(outcome, milestone) if outcome else milestone.get('surface_key')
+            identity = [business.get("review_id") if business["due"] else None,
+                        learning["due_at"] if learning["due"] else None, progress]
             used = delivery.setdefault('used_progress_continuations', [])
             fresh_acceptance = (acceptance_due or outcome_due) and progress not in used
             deadline_due = (business["due"] or learning["due"]) and delivery.get("stop_continuation") != identity
             if not event.get("stop_hook_active") and (fresh_acceptance or deadline_due):
                 delivery["stop_continuation"] = identity
+                delivery["stop_pending_notice"] = identity
                 if fresh_acceptance:
                     used.append(progress)
                 if acceptance_due:
@@ -271,10 +273,22 @@ def handle(event, name, runtime, root):
                     obligations.append(f"python3 {shlex.quote(str(tool))} business-review {flags} --review-id {business['review_id']} --source-ref '<original assignment>' --business-result '<actual result>' --scope-decision '<decision>' --next-action '<next action>'")
                 if learning["due"]:
                     obligations.append(f"{base} checkpoint {flags} --due-at {shlex.quote(learning['due_at'])} --observation '<observation>' --method-change '<method correction>' --verification '<effect verification>' --accepted-result '<accepted result>' --remaining-critical-path '<remaining work>' --scope-review '<scope review>' --rework-review '<rework review>'")
-                reason = ("LHC: direction/method review is overdue before ordinary completion. "
-                          "Do it now with actual observations; do not start development for a report or call it milestone acceptance. "
-                          "improve-workflow permits justified --no-change-reason instead of --method-change. Instructions: "
-                          f"{method_root(root)/'protocols/BUSINESS_CHECKPOINT.md'} and {method_root(root)/'protocols/SELF_IMPROVE.md'}.\n"
+                if business["due"] and learning["due"]:
+                    overdue = "direction/method review and 120-minute learning checkpoint are overdue"
+                elif business["due"]:
+                    overdue = "direction/method review is overdue"
+                else:
+                    overdue = "120-minute learning checkpoint is overdue"
+                instruction_paths = []
+                if business["due"]:
+                    instruction_paths.append(str(method_root(root)/"protocols/BUSINESS_CHECKPOINT.md"))
+                if learning["due"]:
+                    instruction_paths.append(str(method_root(root)/"protocols/SELF_IMPROVE.md"))
+                reason = (f"LHC: {overdue} before ordinary completion. "
+                          "Complete the due obligation(s) with actual observations; do not start development for a report or call it milestone acceptance. "
+                          + ("The learning checkpoint permits an evidence-backed --no-change-reason instead of --method-change. "
+                             if learning["due"] else "")
+                          + "Instructions: " + " and ".join(instruction_paths) + ".\n"
                           + "\n".join(obligations) + "\n" + rehydrate(state, path))
                 if not obligations:
                     reason = ""
@@ -298,7 +312,9 @@ def handle(event, name, runtime, root):
             else:
                 # Native continuation is bounded. Unavailable work remains pending;
                 # never loop indefinitely or fake a successful review to finish.
-                output = {"systemMessage": "LHC: pending review preserved; no repeated automatic continuation for this finish. Do not call it completed."}
+                if delivery.get("stop_pending_notice") != identity:
+                    delivery["stop_pending_notice"] = identity
+                    output = {"systemMessage": "LHC: pending review preserved; no repeated automatic continuation for this finish. Do not call it completed."}
         elif contexts and supported and name not in QUIET_EVENTS | {"Stop"}:
             output = {"hookSpecificOutput": {"hookEventName": name, "additionalContext": "\n\n".join(contexts)}}
             delivery["last_context_event"] = name

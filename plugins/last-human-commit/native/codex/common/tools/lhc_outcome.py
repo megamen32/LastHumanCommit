@@ -22,7 +22,8 @@ import lhc_milestone as native
 
 STAGES = ('technical', 'deploy', 'consumer', 'publication', 'integration')
 ENGINEERING = {'quickfix', 'fullcycle'}
-REPAIR = re.compile(r'\b(?:fix|repair|implement|build|create|write|add|make|configure|deploy|install|update|change)\b|исправ|почин|реализ|созда|сделай|обнов|установ|развер', re.I)
+RU_INSTALL = r'установ(?:и|ить)\s+(?!(?:что|факт\w*|статус\w*|причин\w*)\b)\w+'
+REPAIR = re.compile(r'\b(?:fix|repair|implement|build|create|write|add|make|configure|deploy|install|update|change)\b|исправ|почин|реализ|созда|сделай|обнов|' + RU_INSTALL + r'|развер', re.I)
 TEST = re.compile(r'\b(?:test|tester|testing|try|verify)\b|тестиров|проверь|протестир', re.I)
 RESEARCH = re.compile(r'\b(?:research|review|audit|inspect|explain|investigate|read.only)\b|исслед|ревью|аудит|объясни|прочитай', re.I)
 ACTIONABLE_UNKNOWN = re.compile(r'^\s*(?:please\s+)?(?:ensure|resolve|refactor|optimize|migrate|обеспечь|перенеси|проведи)\b', re.I)
@@ -138,7 +139,7 @@ def applicable(kind, goal):
     intent = positive_intent(goal)
     needed = list(STAGES) if kind == 'fullcycle' else (['technical', 'consumer'] if kind == 'quickfix' else ['consumer'] if kind in {'testing', 'research', 'unknown'} else [])
     if kind in ENGINEERING:
-        if re.search(r'\b(?:deploy|install|rollout)\b|развер|выкат|установ', intent, re.I):
+        if re.search(r'\b(?:deploy|install|rollout)\b|развер|выкат|' + RU_INSTALL, intent, re.I):
             needed += ['deploy']
         if re.search(r'\b(?:push|publish|PR|commit|merge)\b|опублику|коммит|слия', intent, re.I):
             needed += ['publication']
