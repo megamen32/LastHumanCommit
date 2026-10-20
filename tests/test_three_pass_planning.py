@@ -45,3 +45,15 @@ def test_large_fullcycle_routes_research_before_plan_and_final_council_before_di
         assert positions == sorted(positions), path
         for invariant in ('alternatives', 'crosschallenge', 'business cost', 'dissent', 'Quickfix/testing/assigned leaf'):
             assert invariant in text, (path, invariant)
+
+
+def test_native_fullcycle_route_honors_planning_only_execution_bounds():
+    import sys
+    sys.path.insert(0, str(ROOT/'src/common/tools'))
+    from lhc_entry import context_for
+    context = context_for({}, ROOT)
+    assert 'If execution/tools forbidden, describe that route without inspection/tools/recruitment.' in context
+    assert 'User limits override workflow.' in context
+    assert 'quota-aware frontier council' in context
+    assert 'Quickfix/testing/leaf excluded' in context
+    assert len(context) < 2200
