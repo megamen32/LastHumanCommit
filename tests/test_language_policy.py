@@ -60,3 +60,29 @@ def test_generated_instruction_projections_retain_english_policy():
         for directory in [root/'tools', root/'common/tools']:
             for name in ['lhc_entry.py', 'lhc_outcome.py', 'lhc_outcome_review.py', 'lhc_milestone.py', 'lhc_time_guard.py']:
                 assert (directory/name).read_bytes() == (ROOT/'src/common/tools'/name).read_bytes()
+
+
+def test_opencode_rebuilt_model_context_keeps_policy_without_resetting_goal_clock(tmp_path):
+    for runtime in ('opencode', 'codex'):
+        project = tmp_path/runtime
+        project.mkdir()
+        subprocess.run(['git', 'init', '-q', str(project)], check=True)
+        prompt = 'Исследуй кодировку в settings.txt. Не меняй код.'
+        def emit(event, **fields):
+            result = subprocess.run([sys.executable, str(ROOT/'src/common/tools/lhc_entry.py'),
+                '--root', str(ROOT), '--runtime', runtime, '--event', event],
+                input=json.dumps({'cwd': str(project), 'session_id': 'rebuilt-context', **fields}, ensure_ascii=False),
+                text=True, capture_output=True, check=True)
+            return json.loads(result.stdout)['hookSpecificOutput']['additionalContext']
+        emit('UserPromptSubmit', prompt=prompt)
+        state_path = next((project/'.agents/shared-session/learning').glob('*.json'))
+        before = json.loads(state_path.read_text())
+        emit('PreToolUse', model_boundary=True)
+        second = emit('PreToolUse', model_boundary=True)
+        assert ('LHC contract:' in second) == (runtime == 'opencode')
+        if runtime == 'opencode':
+            assert 'Large fullcycle MUST:' in second
+            assert 'English internal planning/new records/tools/agent messages' in second
+        after = json.loads(state_path.read_text())
+        assert after['business']['original_prompt'] == prompt
+        assert after['business']['started_at'] == before['business']['started_at']

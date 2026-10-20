@@ -180,6 +180,10 @@ def handle(event, name, runtime, root):
         if bootstrap:
             contexts.extend((context_for(event, root), rehydrate(state, path)))
             delivery.update(loaded=signature, version=version, root=str(root), rehydrate_needed=False)
+        elif runtime == 'opencode' and event.get('model_boundary'):
+            # V2 rebuilds system parts for every model request; loaded state
+            # does not carry operating instructions into the next request.
+            contexts.append(context_for(event, root))
         outcome_notice = outcomes.reminder(outcome, method_root(root)/'tools/lhc_outcome.py') if outcome and outcome['finish_verdict'] != 'complete' else ''
         if outcome_notice and (bootstrap or event.get('model_boundary')):
             contexts.append(outcome_notice)
