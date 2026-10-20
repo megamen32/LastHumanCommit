@@ -490,8 +490,12 @@ def research_comparison_binding(outcome, final, observations, cwd, quote):
             negative + r'[^;\n]{0,80}' + pipeline + '|' + pipeline + r'[^;\n]{0,80}' + negative, line, re.I)
             for line in text.splitlines())
     expected = outcome['canary']['expected']
-    if ('feedback.md' not in expected.casefold() or not re.search(r'encoding|кодировк', expected, re.I)
-            or re.search(r'\b(?:UTF-?\d+|ASCII|ISO-\d+|CP\d+)\b', expected, re.I) or not limits(expected)
+    # Consume the entire supported predicate, rather than blacklisting charset
+    # names. Any extra requirement needs its own comparison; never drop it.
+    typed_expected = (r'FEEDBACK\.md\s+(?:quotes|records)\s+the\s+actual\s+(?:export\s+)?encoding\s+'
+                      r'and\s+(?:explains|states)\s+that\s+(?:settings(?:\.txt)?|(?:this|the)\s+file)\s+'
+                      r'alone\s+cannot\s+(?:prove|establish|confirm)\s+' + pipeline + r'\s+completion\.?')
+    if (not re.fullmatch(typed_expected, expected.strip(), re.I)
             or 'feedback.md' not in quote.casefold() or not limits(quote)):
         return None
     target = consumer_target(outcome, observations, cwd)
@@ -565,7 +569,7 @@ def raw_review(outcome, final, observations, cwd, comparison_quote=None):
             short_target = Path(shlex.split(observed_target)[-1]).name
             binding = research_comparison_binding(outcome, final, observations, cwd, comparison_quote) if comparison_quote else None
             if comparison_quote and not binding:
-                raise ValueError('research binding needs the actual current source, requested FEEDBACK readback and explicit negative delivery-limit claim before the original assessment')
+                raise ValueError('research binding needs the fully supported expectation, actual current source, requested FEEDBACK readback and explicit negative delivery-limit claim before the original assessment; unsupported extra predicates stay pending, do not repeat unchanged reads')
             compared = expected_compared(expected, final, [by_call[ref] for ref in refs], defect) or bool(binding)
             if binding:
                 refs += binding['report_calls']

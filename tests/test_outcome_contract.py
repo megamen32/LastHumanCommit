@@ -1394,13 +1394,13 @@ def test_unattributed_interrupt_does_not_claim_a_human_stop_or_resume(tmp_path):
     assert after['due_at'] == before['due_at']
 
 
-def semantic_research_fixture(tmp_path):
+def semantic_research_fixture(tmp_path, expected_extra=''):
     subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
     (tmp_path/'settings.txt').write_text('encoding=UTF-8\n')
     invoke(tmp_path, 'UserPromptSubmit', prompt='RESEARCH ONLY: Read settings.txt, identify the export encoding and explain whether this file proves implementation/tests, deploy and merge. Save results in FEEDBACK.md. Do not delegate.')
     outcome = cli(tmp_path, 'contract', '--scenario', 'Read encoding and assess evidence limits',
                   '--target', 'project:' + str(tmp_path), '--expected',
-                  'FEEDBACK.md quotes the actual export encoding and explains that settings alone cannot prove implementation/tests, deployment or merge completion')
+                  'FEEDBACK.md quotes the actual export encoding and explains that settings alone cannot prove implementation/tests, deployment or merge completion' + expected_extra)
     raw = ('FEEDBACK.md сохранён и прочитан обратно. Повторное чтение settings.txt подтвердило `encoding=UTF-8`, '
            'контрольная сумма не изменилась. Результат соответствует поручению: кодировка установлена, '
            'а завершение implementation/tests → deploy → merge этим файлом не подтверждается.')
@@ -1526,3 +1526,12 @@ def test_research_comparison_quote_cannot_claim_another_reviewers_independence(t
     with pytest.raises(ValueError, match='own bounded research'):
         reviews.accept_review(outcome, state(tmp_path), manifest, tmp_path, 'another-owner', raw)
     assert outcome == before
+
+
+@pytest.mark.parametrize('extra', ['; encoding must be KOI8-R', '; encoding must be Windows-1251',
+                                  '; also prove the exporter really consumes settings.txt'])
+def test_research_typed_binding_never_drops_an_extra_expected_predicate(tmp_path, extra):
+    _, manifest, raw, _ = semantic_research_fixture(tmp_path, expected_extra=extra)
+    before = state(tmp_path)
+    cli(tmp_path, 'review', '--manifest', str(manifest), '--comparison-quote', raw, ok=False)
+    assert state(tmp_path) == before

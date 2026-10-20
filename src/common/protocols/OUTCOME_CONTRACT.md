@@ -27,6 +27,8 @@ negative proof limits; current native source and FEEDBACK reads must precede it.
 The original canary hash, report index/time and call references are recorded.
 This is self-check, never independent parent acceptance or a general translation
 parser. Source/revision gates remain; a newer negative finding cannot be skipped.
+Unsupported or additional expected predicates stay pending; no charset blacklist
+or repeated unchanged read can replace their actual comparison.
 
 The existing native entry stores `business.outcome` in the existing learning JSON.
 It survives compaction and keeps original/latest corrections, owner and clocks.
