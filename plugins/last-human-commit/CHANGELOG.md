@@ -6,6 +6,7 @@ One whole-prompt native quote envelope is interpreted without rewriting raw inpu
 Automatic context clarifies describe-only behavior when execution/tools are forbidden.
 OpenCode reapplies canonical operating instructions to each rebuilt model context.
 Research reminders prioritize the assigned finding/report over close-helper investigation.
+Research project canaries bind a direct cat read to one explicitly named in-project source file.
 Planning-only replies explicitly retain the research/council sequence.
 No permission, evidence, lifecycle or human-stop gate changes. Native planning route
 selection and global activation remain separate acceptance claims.

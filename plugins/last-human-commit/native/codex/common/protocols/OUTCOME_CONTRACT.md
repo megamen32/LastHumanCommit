@@ -10,6 +10,16 @@ deploy or another tester. Research needs its verified finding, status only its
 answer. A later read-only/status question never cancels earlier repair obligations.
 Only an explicit direct replacement changes scope; preserve its source/lineage.
 
+For a research `project:<cwd>` canary, the source floor supports one direct `cat`
+read of a file explicitly named in the accepted scope. Relative and absolute forms
+resolve to the same source without changing clocks or evidence freshness. Foreign
+cwd/files, bare stems, ambiguous files, echo and compound commands do not qualify.
+An unsupported read format may use one actual direct reread; research does not
+need Python execution, tests or delivery merely to close its finding.
+The requested FEEDBACK output is not that source; an explicitly researched
+FEEDBACK product document remains eligible. Later helper progress is not a new
+assessment: preserve the actual finding's original time and evidence window.
+
 The existing native entry stores `business.outcome` in the existing learning JSON.
 It survives compaction and keeps original/latest corrections, owner and clocks.
 Before work, concretize the automatically captured contract (not a mode interview):

@@ -1251,3 +1251,70 @@ def test_research_reminder_prioritizes_assigned_finding_before_close_bookkeeping
     assert outcome['stages']['consumer']['status'] == 'pending'
     assert all(outcome['stages'][s]['status'] == 'not-applicable'
                for s in ('technical', 'deploy', 'publication', 'integration'))
+
+
+@pytest.mark.parametrize('absolute', [False, True])
+@pytest.mark.parametrize('relative', ['settings.txt', 'data/settings.txt', 'FEEDBACK.md'])
+def test_project_research_closes_from_direct_scope_named_source_read(tmp_path, absolute, relative):
+    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
+    source = tmp_path/relative; source.parent.mkdir(exist_ok=True)
+    source.write_text('encoding=UTF-8\n')
+    invoke(tmp_path, 'UserPromptSubmit', prompt=f'RESEARCH ONLY: Read {relative} and report the configured encoding. Do not delegate.')
+    outcome = cli(tmp_path, 'contract', '--scenario', 'Read configured encoding',
+                  '--target', 'project:' + str(tmp_path), '--expected', 'UTF-8')
+    command = 'cat ' + (str(source) if absolute else relative)
+    manifest = review_export(tmp_path, outcome, sid='leader', stage_names=('consumer',), command=command,
+                             raw_final=f'Expected {relative} UTF-8; observed encoding=UTF-8 from the actual source read. Self-check only.')
+    result = cli(tmp_path, 'review', '--manifest', str(manifest))
+    assert result['finish_verdict'] == 'complete'
+    assert result['verification_level'] == 'self-check'
+    assert result['stages']['consumer']['evidence'][0]['consumer_target'] == 'cat ' + str(source)
+
+
+@pytest.mark.parametrize('case', ['foreign-file', 'foreign-cwd', 'wrong-file', 'echo', 'compound', 'bare-stem', 'feedback-only'])
+def test_project_research_rejects_unassigned_or_nonread_sources(tmp_path, case):
+    import lhc_outcome_review as reviews
+    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
+    (tmp_path/'settings.txt').write_text('encoding=UTF-8\n')
+    (tmp_path/'other.txt').write_text('encoding=UTF-8\n')
+    (tmp_path/'FEEDBACK.md').write_text('Author report: encoding=UTF-8\n')
+    foreign = tmp_path/'foreign'; foreign.mkdir(); (foreign/'settings.txt').write_text('encoding=UTF-8\n')
+    goal = 'RESEARCH ONLY: Read settings.txt and save results in FEEDBACK.md.' if case != 'bare-stem' else 'RESEARCH ONLY: Inspect the settings CLI.'
+    invoke(tmp_path, 'UserPromptSubmit', prompt=goal)
+    outcome = state(tmp_path)['business']['outcome']
+    cmd = {'foreign-file': 'cat foreign/settings.txt', 'foreign-cwd': 'cat settings.txt',
+           'wrong-file': 'cat other.txt', 'echo': 'echo encoding=UTF-8',
+           'compound': 'cat settings.txt; echo complete', 'bare-stem': 'cat settings.txt',
+           'feedback-only': 'cat FEEDBACK.md'}[case]
+    call = {'name': 'exec_command', 'call_id': 'actual-read', 'arguments': json.dumps(
+        {'cmd': cmd, 'workdir': str(foreign if case == 'foreign-cwd' else tmp_path)})}
+    with pytest.raises(ValueError):
+        reviews.consumer_target(outcome, [(call, 'encoding=UTF-8\n')], tmp_path)
+
+
+def test_project_research_aliases_keep_one_source_and_reject_ambiguous_sources(tmp_path):
+    import copy
+    import lhc_outcome_review as reviews
+    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
+    invoke(tmp_path, 'UserPromptSubmit', prompt='RESEARCH ONLY: Read settings.txt and other.txt.')
+    outcome = state(tmp_path)['business']['outcome']; before = copy.deepcopy(outcome)
+    def observation(name):
+        return ({'name': 'exec_command', 'arguments': json.dumps({'cmd': 'cat ' + name})}, 'encoding=UTF-8\n')
+    aliases = [observation('settings.txt'), observation(str(tmp_path/'settings.txt'))]
+    assert reviews.consumer_target(outcome, aliases, tmp_path) == 'cat ' + str(tmp_path/'settings.txt')
+    assert outcome == before
+    with pytest.raises(ValueError):
+        reviews.consumer_target(outcome, aliases + [observation('other.txt')], tmp_path)
+    for kind in ('quickfix', 'testing', 'fullcycle'):
+        assert not reviews.real_observation(*aliases[0], 'cat settings.txt', 'consumer', kind, tmp_path)
+
+
+def test_research_assessment_keeps_finding_instead_of_later_close_metadata(tmp_path):
+    import lhc_outcome_review as reviews
+    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
+    invoke(tmp_path, 'UserPromptSubmit', prompt='RESEARCH ONLY: Read settings.txt.')
+    outcome = state(tmp_path)['business']['outcome']; outcome['canary']['expected'] = 'UTF-8'
+    observations = [({'name': 'exec_command', 'arguments': json.dumps({'cmd': 'cat settings.txt'})}, 'encoding=UTF-8\n')]
+    assert not reviews.own_assessment(outcome, 'The self-review was rejected: project target needs a native CLI. Making that direct reread now.', observations, tmp_path)
+    assert reviews.own_assessment(outcome, 'Expected settings.txt UTF-8; observed encoding=UTF-8 in the actual source.', observations, tmp_path)
+    assert reviews.own_assessment(outcome, 'FAILURE: a newer source read found a defect in settings.txt.', observations, tmp_path)

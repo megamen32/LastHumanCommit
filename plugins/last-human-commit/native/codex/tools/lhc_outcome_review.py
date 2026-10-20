@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 from urllib.parse import unquote, urlsplit
 
 import lhc_milestone as native
-from lhc_outcome import ENGINEERING, STAGES, scope_revision, remote_binding
+from lhc_outcome import ENGINEERING, STAGES, scope_revision, remote_binding, product_paths
 
 MARKER = 'LHC_OUTCOME_REVIEW '
 
@@ -177,7 +177,7 @@ def load_review(path):
     return result
 
 
-def command(call):
+def command(call, allow_source_read=False):
     args = call.get('arguments') or call.get('input') or '{}'
     try:
         args = json.loads(args) if isinstance(args, str) else args
@@ -188,7 +188,7 @@ def command(call):
         words = shlex.split(text)
         if words and Path(words[0]).name in {'bash', 'sh', 'zsh'}:
             index = next((i for i, w in enumerate(words) if w in {'-c', '-lc'}), None)
-            return command(dict(arguments=json.dumps({'cmd': words[index + 1]}))) if index is not None else ('', [])
+            return command(dict(arguments=json.dumps({'cmd': words[index + 1]})), allow_source_read) if index is not None else ('', [])
         lexer = shlex.shlex(text, posix=True, punctuation_chars=';&|<>')
         lexer.whitespace_split = True
         if any(token and set(token) <= set(';&|<>') for token in lexer):
@@ -198,7 +198,7 @@ def command(call):
     # Quoted commands, echo+receipt and compound shell output are not real
     # consumer observations. Unknown tool formats need review of a supported
     # native source, never an invented receipt.
-    if words and Path(words[0]).name in {'echo', 'printf', 'cat', 'pwd', 'ls', 'rg', 'grep', 'true'}:
+    if words and Path(words[0]).name in {'echo', 'printf', 'cat', 'pwd', 'ls', 'rg', 'grep', 'true'} and not (allow_source_read and words[0] in {'cat', '/bin/cat', '/usr/bin/cat'}):
         return '', []
     if any(w in {';', '&&', '||', '|'} for w in words):
         return '', []
@@ -245,13 +245,13 @@ def cli_matches(words, target, cwd):
     return bool(wanted and actual[:len(wanted)] == wanted)
 
 
-def scope_names_script(scope, script, cwd):
+def scope_names_script(scope, script, cwd, allow_stem=True):
     # A basename in the goal means the root script, not a nested namesake.
     names = [str(script), script.as_uri()]
     if script.is_relative_to(cwd):
         relative = script.relative_to(cwd).as_posix()
         names += [relative, './' + relative]
-        if script.parent == cwd and re.search(r'\bCLI\b|command.line|командн.{0,15}строк|скрипт', scope, re.I):
+        if allow_stem and script.parent == cwd and re.search(r'\bCLI\b|command.line|командн.{0,15}строк|скрипт', scope, re.I):
             names.append(script.stem)
     return bool(re.search(r'(?<![\w./-])(?:' + '|'.join(re.escape(n) for n in names) + r')(?![\w-]|\.[\w/-])', scope, re.I))
 
@@ -279,6 +279,12 @@ def equivalent_target(old, new, cwd, scope):
     return bool(target_identity(old, cwd) and target_identity(old, cwd) == target_identity(new, cwd))
 
 
+def source_read_path(words, cwd):
+    if len(words) == 2 and words[0] in {'cat', '/bin/cat', '/usr/bin/cat'} and not words[1].startswith('-'):
+        return (cwd / words[1]).resolve()
+    return None
+
+
 def consumer_target(outcome, observations, cwd):
     target = outcome['canary']['target']
     if not target.startswith('project:'):
@@ -288,7 +294,16 @@ def consumer_target(outcome, observations, cwd):
     scope = '\n'.join([outcome['original_goal'], *outcome.get('corrections', [])])
     scripts = set()
     for call, output in observations:
-        _, words = command(call)
+        _, words = command(call, allow_source_read=outcome['task_class'] == 'research')
+        if outcome['task_class'] == 'research':
+            source = source_read_path(words, cwd)
+            if source and source.is_relative_to(cwd) and scope_names_script(scope, source, cwd, allow_stem=False):
+                if not product_paths({**outcome, 'owned_paths': [source.relative_to(cwd).as_posix()]}, cwd):
+                    continue  # Requested FEEDBACK output is not the researched source.
+                target = 'cat ' + shlex.quote(str(source))
+                if real_observation(call, output, target, 'consumer', 'research', cwd):
+                    scripts.add(target)
+            continue
         identity = cli_identity(words, cwd)
         if len(identity) < 2 or identity[0] != 'python' or identity[1].startswith('-'):
             continue
@@ -298,10 +313,11 @@ def consumer_target(outcome, observations, cwd):
         if real_observation(call, output, str(script), 'consumer', outcome['task_class'], cwd):
             scripts.add(str(script))
     if len(scripts) != 1:
+        if outcome['task_class'] == 'research':
+            raise ValueError('project research needs one explicitly named in-project source file; use one direct cat read and report its actual expected/observed afterward; not echo/compound or a review loop')
         raise ValueError('project target needs one scope-named native CLI; unsupported/ambiguous source: one direct CLI reread, no echo/compound or review loop')
     selected = scripts.pop()
     if outcome['task_class'] in ENGINEERING:
-        from lhc_outcome import product_paths
         if Path(selected) not in {(cwd / p).resolve() for p in product_paths(outcome, cwd)}:
             raise ValueError('project CLI is not the scoped owned product')
     return selected
@@ -320,7 +336,7 @@ def real_observation(call, output, target, stage, task_class=None, cwd=None, exp
             return False
     except (ValueError, TypeError, AttributeError):
         return False
-    text, words = command(call)
+    text, words = command(call, allow_source_read=stage == 'consumer' and task_class == 'research')
     name = str(call.get('name', '')).casefold()
     if not output.strip():
         return False
@@ -330,6 +346,9 @@ def real_observation(call, output, target, stage, task_class=None, cwd=None, exp
     if stage == 'consumer':
         if task_class == 'research':
             try:
+                selected = source_read_path(shlex.split(target), cwd)
+                if selected:
+                    return source_read_path(words, cwd) == selected
                 args = json.loads(call.get('arguments') or '{}')
                 cmd = args.get('cmd') or args.get('command') or ''
                 return shlex.split(cmd)[:len(shlex.split(target))] == shlex.split(target) and bool(shlex.split(target)) and not re.match(r'^(?:echo|printf)\b', cmd)
@@ -504,13 +523,13 @@ def raw_review(outcome, final, observations, cwd):
 
 
 def own_assessment(outcome, text, observations, cwd):
-    if MARKER in text or outcome['task_class'] == 'research':
+    if MARKER in text:
         return True
     defect, positive = report_result(text)
     # Never fall back over newer negative findings, even if unsupported/partial.
     if defect:
         return True
-    if not positive:
+    if not positive and outcome['task_class'] != 'research':
         return False
     try:
         target = consumer_target(outcome, observations, cwd)
