@@ -291,6 +291,14 @@ def source_read_path(words, cwd):
 def consumer_target(outcome, observations, cwd):
     target = outcome['canary']['target']
     if not target.startswith('project:'):
+        if outcome['task_class'] == 'research' and len(shlex.split(target)) == 1:
+            source = (cwd / local_native_path(shlex.split(target)[0])).resolve()
+            scope = '\n'.join([outcome['original_goal'], *outcome.get('corrections', [])])
+            if (source.is_relative_to(cwd) and source.is_file()
+                    and scope_names_script(scope, source, cwd, allow_stem=False)
+                    and product_paths({**outcome, 'owned_paths': [source.relative_to(cwd).as_posix()]}, cwd)):
+                return 'cat ' + shlex.quote(str(source))
+            raise ValueError('research file target must name the scoped in-project source, not the requested report output')
         return target
     if not project_matches(target, cwd):
         raise ValueError('project canary belongs to another native cwd')

@@ -1394,12 +1394,14 @@ def test_unattributed_interrupt_does_not_claim_a_human_stop_or_resume(tmp_path):
     assert after['due_at'] == before['due_at']
 
 
-def semantic_research_fixture(tmp_path, expected_extra=''):
+def semantic_research_fixture(tmp_path, expected_extra='', target_alias=None):
     subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
     (tmp_path/'settings.txt').write_text('encoding=UTF-8\n')
     invoke(tmp_path, 'UserPromptSubmit', prompt='RESEARCH ONLY: Read settings.txt, identify the export encoding and explain whether this file proves implementation/tests, deploy and merge. Save results in FEEDBACK.md. Do not delegate.')
+    source = tmp_path/'settings.txt'
+    target = str(source) if target_alias == 'absolute' else source.as_uri() if target_alias == 'file-uri' else 'settings.txt' if target_alias == 'relative' else 'project:' + str(tmp_path)
     outcome = cli(tmp_path, 'contract', '--scenario', 'Read encoding and assess evidence limits',
-                  '--target', 'project:' + str(tmp_path), '--expected',
+                  '--target', target, '--expected',
                   'FEEDBACK.md quotes the actual export encoding and explains that settings alone cannot prove implementation/tests, deployment or merge completion' + expected_extra)
     raw = ('FEEDBACK.md сохранён и прочитан обратно. Повторное чтение settings.txt подтвердило `encoding=UTF-8`, '
            'контрольная сумма не изменилась. Результат соответствует поручению: кодировка установлена, '
@@ -1535,3 +1537,35 @@ def test_research_typed_binding_never_drops_an_extra_expected_predicate(tmp_path
     before = state(tmp_path)
     cli(tmp_path, 'review', '--manifest', str(manifest), '--comparison-quote', raw, ok=False)
     assert state(tmp_path) == before
+
+
+@pytest.mark.parametrize('alias', ['absolute', 'relative', 'file-uri'])
+def test_research_explicit_source_path_matches_its_actual_cat_read(tmp_path, alias):
+    import lhc_outcome_review as reviews
+    outcome, manifest, raw, _ = semantic_research_fixture(tmp_path, target_alias=alias)
+    target = tmp_path/'settings.txt'
+    outcome['canary']['target'] = str(target) if alias == 'absolute' else 'settings.txt' if alias == 'relative' else target.as_uri()
+    call = {'name': 'exec_command', 'call_id': 'source', 'arguments': json.dumps({'cmd': 'cat settings.txt'})}
+    actual = [(call, subprocess.check_output(['cat','settings.txt'],cwd=tmp_path,text=True))]
+    assert reviews.consumer_target(outcome, actual, tmp_path) == 'cat ' + str(target)
+    assert reviews.source_finding_quote(outcome, raw, actual, tmp_path, raw)
+    result = cli(tmp_path, 'review', '--manifest', str(manifest), '--comparison-quote', raw)
+    assert result['finish_verdict'] == 'complete' and result['verification_level'] == 'self-check'
+    assert result['canary']['target'] == outcome['canary']['target']
+    assert result['evidence_after'] == outcome['evidence_after']
+
+
+@pytest.mark.parametrize('fault', ['foreign-target', 'report-output', 'echo', 'wrong-file', 'wrong-cwd'])
+def test_research_explicit_source_alias_retains_scope_and_operation(tmp_path, fault):
+    import lhc_outcome_review as reviews
+    outcome, _, raw, _ = semantic_research_fixture(tmp_path)
+    target = tmp_path/'settings.txt'
+    outcome['canary']['target'] = str(target)
+    args = {'cmd':'cat settings.txt'}
+    if fault == 'foreign-target':outcome['canary']['target'] = str(tmp_path.parent/'settings.txt')
+    elif fault == 'report-output':outcome['canary']['target'] = str(tmp_path/'FEEDBACK.md');args['cmd']='cat FEEDBACK.md'
+    elif fault == 'echo':args['cmd']='echo encoding=UTF-8'
+    elif fault == 'wrong-file':args['cmd']='cat other.txt'
+    elif fault == 'wrong-cwd':args['workdir']=str(tmp_path/'foreign')
+    calls=[({'name':'exec_command','call_id':'source','arguments':json.dumps(args)},'encoding=UTF-8\n')]
+    assert not reviews.source_finding_quote(outcome, raw, calls, tmp_path, raw)
