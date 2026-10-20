@@ -22,3 +22,12 @@
 - Site scope: derive both modes from the one lifecycle source; show conditional material-decision depth; preserve verbatim Git role files and exact revision links; summarize beyond inherited policy boilerplate; label compatibility aliases/method references accurately; keep English/Russian UI and original-language excerpts; use dynamic workflow counts and generated snapshot provenance.
 - Verification restriction: do not run automated test commands. `python3 site/build.py` is permitted to generate the static artifact. Independent user acceptance and any publication remain with Lead.
 - Current state: implementation changes are complete in the assigned worktree. The Worker will inspect owned paths, generate `site/dist` with the permitted build command and make one scoped local commit. Automated tests, consumer acceptance, deployment and integration remain with Lead.
+
+
+## Final delivery — 2026-10-20
+
+- PR #15 merged to `main` at `ecf2196ef30578a46d93369648b919fc43934c7e` after the preview deploy, source review, and public consumer checks passed.
+- GitHub Pages accepted the PR preview at `89e8f857`; the public page showed the same five lifecycle stages for Quick and Full, plus an adaptive nine-step Full depth track and a separate conditional material-choice panel.
+- Browser checks confirmed the EN/RU switch, Full/Quick stage interactions, seven current Git roles, and the Critic purpose summary. A fresh Zero Knowledge observer passed the visible user goal.
+- The merge push triggered the `main` Pages workflow, which passed build validation and deploy. A fresh browser read showed page/data revision `ecf2196e`, schema version 3, five shared stage IDs and nine Full depth stages.
+- The GitHub Pages deployment allowlist is restored to `main` only. PR #15 is merged; no task-owned preview branch is needed for future main deployments.
