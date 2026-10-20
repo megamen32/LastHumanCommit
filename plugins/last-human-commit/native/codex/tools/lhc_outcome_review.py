@@ -86,6 +86,80 @@ def native_self_manifest(outcome, cwd, runtime, owner):
     return manifest
 
 
+def codex_window(source):
+    """Verify a bounded, contiguous native tail; retain physical source indexes."""
+    location = Path(source['location'])
+    start, end, first = (source.get(key) for key in ('start_byte', 'end_byte', 'start_line'))
+    if any(type(value) is not int for value in (start, end, first)) or not 0 < start < end:
+        raise ValueError('invalid native source window')
+    with location.open('rb') as stream:
+        header = stream.readline(native.MAX_BYTES + 1)
+        if len(header) + end - start > native.MAX_BYTES or end != os.fstat(stream.fileno()).st_size:
+            raise ValueError('native window oversized or source advanced; refresh its snapshot, not its assessment')
+        stream.seek(start - 1)
+        if stream.read(1) != b'\n' or start < len(header):
+            raise ValueError('native window must begin on an original line boundary')
+        stream.seek(0); remaining, lines = start, 0
+        while remaining:
+            chunk = stream.read(min(remaining, 65536))
+            if not chunk:
+                raise ValueError('native source changed during snapshot')
+            lines += chunk.count(b'\n'); remaining -= len(chunk)
+        if lines != first:
+            raise ValueError('native original line index mismatch')
+        body = stream.read(end - start)
+        if not body.endswith(b'\n') or end != location.stat().st_size:
+            raise ValueError('native source is incomplete/advanced; preserve pending')
+    indexes = [0] + [first + i for i, line in enumerate(body.splitlines()) if line.strip()]
+    return header + body, indexes
+
+
+def native_reviewer_manifest(outcome, cwd, reviewer):
+    """Read one EXISTING Codex reviewer; never create, resume or impersonate it."""
+    if outcome['task_class'] != 'research' or reviewer == outcome['owner']['session_id']:
+        raise ValueError('native reviewer route is independent bounded research only')
+    home = Path(os.environ.get('CODEX_HOME') or Path.home() / '.codex')
+    candidates = list((home / 'sessions').rglob('*' + reviewer + '*.jsonl'))
+    if len(candidates) != 1:
+        raise ValueError('existing native reviewer unavailable/ambiguous')
+    location = candidates[0].resolve(); start = None; context = None
+    with location.open('rb') as stream:
+        header = stream.readline(native.MAX_BYTES + 1)
+        if json.loads(header).get('payload', {}).get('id') != reviewer:
+            raise ValueError('native reviewer identity mismatch')
+        index = 1
+        while True:
+            offset = stream.tell(); line = stream.readline(native.MAX_BYTES + 1)
+            if not line:
+                end = offset; break
+            if len(line) > native.MAX_BYTES or not line.endswith(b'\n'):
+                raise ValueError('native reviewer has an oversized/incomplete record')
+            row = json.loads(line); payload = row.get('payload', {})
+            if row.get('type') == 'turn_context':
+                context = (offset, index)
+            if row.get('type') == 'response_item' and payload.get('role') == 'user':
+                text = native.content(payload.get('content'))
+                if outcome['id'] in text and outcome['original_goal'] in text:
+                    start = context or (offset, index)
+            index += 1
+    if not start:
+        raise ValueError('existing reviewer has no native assignment for this outcome')
+    source = {'kind': 'native-file-window', 'location': str(location),
+              'start_byte': start[0], 'end_byte': end, 'start_line': start[1]}
+    raw, _ = codex_window(source)
+    archive = cwd / '.tmp/lhc-native-review'; archive.mkdir(parents=True, exist_ok=True, mode=0o700)
+    stem = 'codex-' + reviewer + '-' + digest(source)
+    snapshot = archive / (stem + '.jsonl')
+    if snapshot.exists() and snapshot.read_bytes() != raw:
+        raise ValueError('native snapshot changed; never overwrite original evidence')
+    snapshot.write_bytes(raw); snapshot.chmod(0o600)
+    manifest = archive / (stem + '.manifest.json')
+    manifest.write_text(json.dumps({'format': 'agent-herder-transcript-manifest-v1', 'exporter': 'existing-native-review-route',
+        'target': {'path': str(snapshot), 'harness': 'codex', 'sessionId': reviewer, 'complete': True, 'source': source}}))
+    manifest.chmod(0o600)
+    return manifest
+
+
 def load_review(path):
     manifest = json.loads(native.read(path))
     if manifest.get('format') != 'agent-herder-transcript-manifest-v1':
@@ -95,14 +169,20 @@ def load_review(path):
     if target.get('harness') == 'codex' and target.get('complete'):
         location = Path(target['source']['location']).resolve()
         location.relative_to((Path(os.environ.get('CODEX_HOME') or Path.home() / '.codex') / 'sessions').resolve())
-        if target['source'].get('kind') != 'native-file' or not native.read(location).startswith(raw):
+        indexes = None
+        if target['source'].get('kind') == 'native-file-window':
+            actual, indexes = codex_window(target['source'])
+            if actual != raw:
+                raise ValueError('review window differs from original native bytes')
+        elif target['source'].get('kind') != 'native-file' or not native.read(location).startswith(raw):
             raise ValueError('review export differs from native source')
         result = native.native_transcript(raw)
         rows = [json.loads(line) for line in raw.decode().splitlines() if line.strip()]
+        indexes = indexes if indexes is not None else list(range(len(rows)))
         result[0]['model'] = list(dict.fromkeys(row['payload']['model'] for row in rows
                                                if row.get('type') == 'turn_context' and row.get('payload', {}).get('model')))
         assignments, call_meta = [], {}
-        for index, row in enumerate(rows):
+        for index, row in zip(indexes, rows):
             p = row.get('payload', {})
             if row.get('type') == 'response_item' and p.get('role') == 'user':
                 assignments.append({'index': index, 'at': row.get('timestamp'), 'text': native.content(p.get('content'))})
@@ -113,9 +193,9 @@ def load_review(path):
                 call_meta.setdefault(item.get('id'), (index, row.get('timestamp')))
         result[0]['assignments'] = assignments
         result[0]['own_reports'] = [{'index': i, 'at': row.get('timestamp'), 'text': native.content(row['payload'].get('content'))}
-                                    for i, row in enumerate(rows) if row.get('payload', {}).get('role') == 'assistant'
+                                    for i, row in zip(indexes, rows) if row.get('payload', {}).get('role') == 'assistant'
                                     and native.content(row['payload'].get('content'))]
-        result[0]['review_end_index'] = max((i for i, row in enumerate(rows) if row.get('payload', {}).get('role') == 'assistant'
+        result[0]['review_end_index'] = max((i for i, row in zip(indexes, rows) if row.get('payload', {}).get('role') == 'assistant'
                                             and row['payload'].get('phase') != 'commentary'), default=-1)
         for call, _ in result[2]:
             call['_source_index'], call['_source_time'] = call_meta.get(call.get('call_id'), (None, None))
@@ -339,7 +419,8 @@ def real_observation(call, output, target, stage, task_class=None, cwd=None, exp
     try:
         args = json.loads(args) if isinstance(args, str) else args
         directory = local_native_path(args.get('workdir') or args.get('cwd') or call.get('_native_cwd') or cwd)
-        directory = (cwd / directory).resolve() if not directory.is_absolute() else directory.resolve()
+        native_cwd = Path(call.get('_native_cwd') or cwd)
+        directory = (native_cwd / directory).resolve() if not directory.is_absolute() else directory.resolve()
         directory.relative_to(cwd)
         # Relative CLI targets are bound to the canary project root. A second
         # checkout with the same filename is not the assigned product.
@@ -647,7 +728,7 @@ def accept_review(outcome, state, path, cwd, owner, comparison_quote=None):
             r'\b(?:defect|wrong|needs? correction)\b|ошибк|не соответствует', text, re.I)
         return negative_binding or own_assessment(outcome, text, observations, cwd, comparison_quote)
     own_report = next((report for report in reversed(meta.get('own_reports', []))
-                       if selected_assessment(report)), None) if own_attempt else None
+                       if selected_assessment(report)), None) if own_attempt or outcome['task_class'] == 'research' else None
     if comparison_quote and (not own_report or not source_finding_quote(outcome, own_report['text'], observations, cwd, comparison_quote)):
         raise ValueError('comparison quote must bind the current unchanged native source finding; never skip a newer negative assessment')
     if not own_report and own_attempt and outcome['task_class'] == 'research' and any(
@@ -656,8 +737,8 @@ def accept_review(outcome, state, path, cwd, owner, comparison_quote=None):
             for report in meta.get('own_reports', [])):
         raise ValueError('fresh source finding needs a semantic comparison binding, not a reread: retain the report and use review --native-self --comparison-quote with its unchanged source-finding passage; self-check only')
     if own_report:
-        # Own commentary is available before the final response; source call
-        # order still ends at that actual report, never at a later export call.
+        # Preserve the actual assessment before later bookkeeping, including
+        # an independent research report; never extend its source-call window.
         meta['review_end_index'] = own_report['index']
         meta['reviewed_at'] = own_report['at']
     if native.timestamp(meta.get('reviewed_at') or meta['timestamp']) < native.timestamp(outcome['started_at']):
@@ -677,8 +758,15 @@ def accept_review(outcome, state, path, cwd, owner, comparison_quote=None):
     if not assignments:
         raise ValueError('native source has no current scope-bound assignment window')
     assignment = max(assignments, key=lambda row: row['index'])
-    if cross_cwd_research and str(cwd) not in assignment['text']:
-        raise ValueError('independent research assignment must identify the exact target cwd; tool output is not assignment')
+    if cross_cwd_research:
+        declared = []
+        for literal in re.findall(r'(?:^|[;\n])\s*Target CWD:\s*([^;\n]+)', assignment['text'], re.I):
+            path = local_native_path(literal.strip(' `\"\''))
+            if not path.is_absolute():
+                raise ValueError('research Target CWD must be absolute')
+            declared.append(path.resolve())
+        if set(declared) != {cwd}:
+            raise ValueError('independent research assignment needs exact normalized Target CWD; tool output or a neighboring path is not assignment')
     after = max(native.timestamp(outcome.get('evidence_after') or outcome['started_at']),
                 native.timestamp(assignment['at'] or outcome['started_at']))
     observations = [(call, output) for call, output in observations
@@ -807,6 +895,8 @@ def accept_review(outcome, state, path, cwd, owner, comparison_quote=None):
         outcome['comparison_binding'] = {'quote': comparison_quote, 'reviewer': sid, 'original_index': own_report['index'],
                                          'original_at': own_report['at'], 'verification_level': 'self-check',
                                          'claims': research_comparison_binding(outcome, final, observations, cwd, comparison_quote)}
+    if outcome['task_class'] == 'research' and own_report:
+        outcome['review_assessment'] = {'reviewer': sid, 'index': own_report['index'], 'at': own_report['at']}
     outcome.update(product_verdict=product, revision=revision, coverage_evidence=report.get('coverage', {}))
     outcome['verification_level'] = 'self-check' if own_attempt else 'independent-review'
     if outcome.get('release_handoff') and outcome['stages']['integration']['status'] == 'complete':

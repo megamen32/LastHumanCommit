@@ -1571,7 +1571,8 @@ def test_research_explicit_source_alias_retains_scope_and_operation(tmp_path, fa
     assert not reviews.source_finding_quote(outcome, raw, calls, tmp_path, raw)
 
 
-@pytest.mark.parametrize('binding', ['explicit', 'implicit-cwd', 'missing-native-target', 'own-session'])
+@pytest.mark.parametrize('binding', ['explicit', 'explicit-with-metadata', 'explicit-newer-negative', 'relative-target-cwd', 'implicit-cwd',
+    'relative-foreign-cwd', 'missing-native-target', 'neighbor-native-target', 'own-session'])
 def test_independent_research_review_can_read_exact_target_from_existing_session(tmp_path, binding):
     _, _, _, _ = semantic_research_fixture(tmp_path)
     outcome = cli(tmp_path, 'status')
@@ -1593,15 +1594,80 @@ def test_independent_research_review_can_read_exact_target_from_existing_session
         {'type':'response_item','timestamp':stamp,'payload':{'type':'function_call_output','call_id':'reviewer-feedback','output':feedback}}]
     rows[0]['payload']['cwd']=str(tmp_path.parent)
     if binding != 'missing-native-target':
-        rows[1]['payload']['content'][0]['text'] += '\nTarget CWD: '+str(tmp_path)
+        declared=str(tmp_path)+('-other' if binding=='neighbor-native-target' else '')
+        rows[1]['payload']['content'][0]['text'] += '\nTarget CWD: '+declared
     if binding == 'implicit-cwd':
         args=json.loads(rows[2]['payload']['arguments']);args.pop('workdir');rows[2]['payload']['arguments']=json.dumps(args)
+    elif binding in {'relative-target-cwd','relative-foreign-cwd'}:
+        args=json.loads(rows[2]['payload']['arguments']);args['workdir']=tmp_path.name if binding=='relative-target-cwd' else '.';rows[2]['payload']['arguments']=json.dumps(args)
+    assessment_index=len(rows)-1
+    assessment_at=rows[-1]['timestamp']
+    if binding in {'explicit-with-metadata','explicit-newer-negative'}:
+        note='Source guard tests passed; metadata check complete.' if binding=='explicit-with-metadata' else 'settings.txt failed the requested comparison; report incomplete.'
+        rows.append({'type':'response_item','timestamp':(datetime.fromisoformat(assessment_at)+timedelta(seconds=1)).isoformat(),
+                     'payload':{'type':'message','role':'assistant','phase':'final','content':[{'text':note}]}})
     raw_source='\n'.join(json.dumps(row) for row in rows)+'\n'
     source.write_text(raw_source);Path(data['target']['path']).write_text(raw_source)
     before=state(tmp_path)
-    result=cli(tmp_path,'review','--manifest',str(manifest),ok=binding=='explicit')
-    if binding=='explicit':
+    valid=binding in {'explicit','explicit-with-metadata','relative-target-cwd'}
+    result=cli(tmp_path,'review','--manifest',str(manifest),ok=valid)
+    if valid:
         assert result['finish_verdict']=='complete' and result['verification_level']=='independent-review'
         assert result['canary']=={**outcome['canary'],'status':'complete'}
+        assert result['review_assessment']=={'reviewer':sid,'index':assessment_index,'at':assessment_at}
     else:
         assert state(tmp_path)==before
+
+
+def large_native_reviewer_fixture(root):
+    outcome, _, _, _ = semantic_research_fixture(root)
+    final='Expected: '+outcome['canary']['expected']+'. Observed: cat settings.txt returned encoding=UTF-8; FEEDBACK.md quotes it and does not establish implementation/tests → deploy → merge completion. No defects found.'
+    manifest=review_export(root,outcome,sid='reviewer',stage_names=('consumer',),command='cat settings.txt',consumer_workdir=root,raw_final=final)
+    data=json.loads(manifest.read_text());source=Path(data['target']['source']['location'])
+    rows=[json.loads(line) for line in source.read_text().splitlines()]
+    rows[0]['payload']['cwd']=str(root.parent)
+    rows[1]['payload']['content'][0]['text']+='\nTarget CWD: '+str(root)
+    padding=[{'type':'event_msg','payload':{'type':'opaque_test_padding','data':'x'*(1024*1024)}} for _ in range(9)]
+    rows=rows[:1]+padding+[{'type':'turn_context','payload':{'model':'gpt-6.1-sol','cwd':str(root.parent)}}]+rows[1:]
+    raw='\n'.join(json.dumps(row) for row in rows)+'\n';source.write_text(raw);Path(data['target']['path']).write_text(raw)
+    return outcome,manifest,source,rows
+
+
+def test_existing_large_native_reviewer_closes_without_new_session_or_rewritten_report(tmp_path):
+    import hashlib
+    outcome,manifest,source,rows=large_native_reviewer_fixture(tmp_path)
+    original=hashlib.sha256(source.read_bytes()).hexdigest()
+    assert 'bounded native window' in cli(tmp_path,'review','--manifest',str(manifest),ok=False)
+    result=cli(tmp_path,'review','--native-reviewer','reviewer')
+    assert result['finish_verdict']=='complete' and result['verification_level']=='independent-review'
+    assert result['review_assessment']=={'reviewer':'reviewer','index':len(rows)-1,'at':rows[-1]['timestamp']}
+    assert result['canary']=={**outcome['canary'],'status':'complete'}
+    assert result['evidence_after']==outcome['evidence_after']
+    assert hashlib.sha256(source.read_bytes()).hexdigest()==original
+    snapshot=next((tmp_path/'.tmp/lhc-native-review').glob('*.jsonl'))
+    assert snapshot.stat().st_size<8192 and source.stat().st_size>8*1024*1024
+
+
+@pytest.mark.parametrize('fault',['raw-tamper','line-index','non-boundary','later-negative','oversized-window','foreign-native-location'])
+def test_native_reviewer_window_retains_exact_source_and_later_negatives(tmp_path,monkeypatch,fault):
+    import lhc_outcome_review as reviews
+    outcome,_,source,rows=large_native_reviewer_fixture(tmp_path)
+    monkeypatch.setenv('CODEX_HOME',str(tmp_path/'native-home/.codex'))
+    manifest=reviews.native_reviewer_manifest(outcome,tmp_path,'reviewer');data=json.loads(manifest.read_text())
+    snapshot=Path(data['target']['path'])
+    if fault=='raw-tamper':snapshot.write_bytes(snapshot.read_bytes().replace(b'encoding=UTF-8',b'encoding=ASCII'))
+    elif fault=='line-index':data['target']['source']['start_line']+=1
+    elif fault=='non-boundary':data['target']['source']['start_byte']+=1
+    elif fault=='oversized-window':
+        with source.open('rb') as f:header=f.readline()
+        data['target']['source'].update(start_byte=len(header),start_line=1)
+    elif fault=='foreign-native-location':data['target']['source']['location']=str(tmp_path/'not-native.jsonl')
+    elif fault=='later-negative':
+        row={'type':'response_item','timestamp':rows[-1]['timestamp'],'payload':{'type':'message','role':'assistant','phase':'final',
+             'content':[{'text':'settings.txt failed the requested comparison; FEEDBACK.md incomplete.'}]}}
+        with source.open('a') as f:f.write(json.dumps(row)+'\n')
+    manifest.write_text(json.dumps(data))
+    before=state(tmp_path)
+    cli(tmp_path,'review','--manifest',str(manifest),ok=False)
+    if fault=='later-negative':cli(tmp_path,'review','--native-reviewer','reviewer',ok=False)
+    assert state(tmp_path)==before

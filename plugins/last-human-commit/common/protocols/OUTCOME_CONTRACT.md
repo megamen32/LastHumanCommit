@@ -30,11 +30,19 @@ parser. Source/revision gates remain; a newer negative finding cannot be skipped
 Unsupported or additional expected predicates stay pending; no charset blacklist
 or repeated unchanged read can replace their actual comparison.
 Use the existing independent reviewer for unsupported prose: its native assignment
-must identify this outcome, original scope and exact case directory. A reviewer
+must identify this outcome, original scope and exact case directory as
+`Target CWD: <absolute path>` (line or semicolon-delimited field). A reviewer
 starting in the canonical project may use explicit native tool workdirs to read
-the case. An omitted workdir remains its actual native cwd, never the target cwd.
+the case. Omitted or relative workdirs resolve against its actual native cwd,
+never the target cwd; neighboring/ambiguous directory declarations do not match.
 This is independent review of the bounded finding, not parent product acceptance
 or permission to resume a held session.
+For an existing Codex research reviewer whose full native journal exceeds the
+bounded reader, use `review --native-reviewer CODEX_SESSION_ID`. This reads the
+original native header and contiguous current-assignment tail through actual EOF;
+the same size cap, source identity, original line indexes/times and later negative
+findings still apply. It never creates/resumes a session or rewrites its assessment.
+If the journal advances, refresh the snapshot, not the report or evidence clocks.
 
 The existing native entry stores `business.outcome` in the existing learning JSON.
 It survives compaction and keeps original/latest corrections, owner and clocks.
