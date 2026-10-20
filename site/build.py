@@ -187,7 +187,7 @@ def build() -> dict:
         })
 
     data = {
-        "schemaVersion": 2,
+        "schemaVersion": 3,
         "revision": sha,
         "shortRevision": sha[:8],
         "productVersion": plugin["version"],

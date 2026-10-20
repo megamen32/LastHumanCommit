@@ -232,7 +232,7 @@
     });
   }
   function validSnapshot(data) {
-    if (!data || data.schemaVersion !== 2 || !data.modes || !Array.isArray(data.roles) || !data.roles.length) return false;
+    if (!data || data.schemaVersion !== 3 || !data.modes || !Array.isArray(data.roles) || !data.roles.length) return false;
     if (!["revision", "shortRevision", "productVersion", "generatedAt", "repository"].every((key) => typeof data[key] === "string" && data[key])) return false;
     const modes = [data.modes.quick, data.modes.full];
     if (!modes.every((mode) => mode && typeof mode.taglineKey === "string" && typeof mode.noteKey === "string" && Array.isArray(mode.steps) && mode.steps.length)) return false;
