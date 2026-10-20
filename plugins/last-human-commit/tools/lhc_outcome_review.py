@@ -764,8 +764,11 @@ def accept_review(outcome, state, path, cwd, owner, comparison_quote=None, testi
     own_attempt = sid == owner and (outcome['task_class'] in {'testing', 'research'} or bounded_self_check(outcome))
     native_cwd = Path(meta.get('cwd', '/unknown'))
     cross_cwd_research = sid != owner and outcome['task_class'] == 'research' and native_cwd.resolve() != cwd
+    # Native cwd identifies where the independent reviewer runs, not which
+    # product it reviewed. For engineering reviews in a separate native cwd,
+    # prove product identity from the exact current native assignment below.
     cross_cwd_product = (sid != owner and outcome['task_class'] in ENGINEERING
-                         and product_cwd != cwd and native_cwd.resolve() == product_cwd)
+                         and native_cwd.resolve() != cwd)
     if (sid == owner and not own_attempt) or not native_cwd.is_absolute() or (
             native_cwd.resolve() != cwd and not cross_cwd_research and not cross_cwd_product):
         raise ValueError('review must be independent and for this exact project')

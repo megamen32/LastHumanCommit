@@ -1,3 +1,7 @@
+# 1.5.11 — bind reviews across native project directories
+
+Allow an independent engineering reviewer in a different native directory to bind the currently assigned product when the publisher works directly in that product. Require the exact current outcome, full goal, assigned product root and actual product-bound observations. Preserve native directories, evidence times, revisions and independent-review gates.
+
 # 1.5.10 — preserve exact reviewer assignment lineage
 
 Keep native reviewers bound to the exact outcome ID and full goal in their current task assignment. A genuine reassignment uses a new native worker session under the existing mandate and a fresh review assignment; old reports stay historical and cannot be remapped. This source-only route does not replay product/provider/deploy work or accept historical H32/C2.
