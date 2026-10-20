@@ -1232,3 +1232,22 @@ def test_later_research_only_does_not_erase_existing_repair(tmp_path):
     outcome = state(tmp_path)['business']['outcome']
     assert outcome['task_class'] == 'quickfix'
     assert outcome['stages']['technical']['status'] == outcome['stages']['consumer']['status'] == 'pending'
+
+
+def test_research_reminder_prioritizes_assigned_finding_before_close_bookkeeping(tmp_path):
+    import lhc_outcome as outcomes
+    goal = ('RESEARCH ONLY: Проверь кодировку в settings.txt и сохрани результат в FEEDBACK.md. '
+            'Не меняй исходник, не создавай тесты, ничего не деплой и не делегируй.')
+    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
+    (tmp_path/'settings.txt').write_text('encoding=UTF-8\n')
+    invoke(tmp_path, 'UserPromptSubmit', prompt=goal)
+    outcome = state(tmp_path)['business']['outcome']
+    notice = outcomes.reminder(outcome, tmp_path/'lhc_outcome.py')
+    assert 'finish actual tests/CLI' not in notice
+    assert notice.index('requested report') < notice.index('review --native-self')
+    assert 'helper implementation' in notice and '--help' in notice
+    assert 'self-check, not independent parent product acceptance' in notice
+    assert 'do not create, launch or resume reviewer/tester sessions' in notice
+    assert outcome['stages']['consumer']['status'] == 'pending'
+    assert all(outcome['stages'][s]['status'] == 'not-applicable'
+               for s in ('technical', 'deploy', 'publication', 'integration'))

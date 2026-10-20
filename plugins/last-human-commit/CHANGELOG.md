@@ -5,6 +5,7 @@ engineering terms in its subject. Later research does not erase an existing repa
 One whole-prompt native quote envelope is interpreted without rewriting raw input.
 Automatic context clarifies describe-only behavior when execution/tools are forbidden.
 OpenCode reapplies canonical operating instructions to each rebuilt model context.
+Research reminders prioritize the assigned finding/report over close-helper investigation.
 Planning-only replies explicitly retain the research/council sequence.
 No permission, evidence, lifecycle or human-stop gate changes. Native planning route
 selection and global activation remain separate acceptance claims.
