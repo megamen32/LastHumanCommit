@@ -98,7 +98,7 @@ def test_zcode_stop_holds_an_overdue_workflow_check_once(tmp_path):
     assert after["business"]["pending"] and after["business"]["last_review"] is None
 
 
-def test_zcode_stop_rechecks_due_work_on_a_new_camelcase_turn(tmp_path):
+def test_zcode_stop_suppresses_unchanged_due_work_across_new_camelcase_turn(tmp_path):
     invoke(tmp_path, "UserPromptSubmit", prompt="Ship the actual report")
     path = state_file(tmp_path)
     state = json.loads(path.read_text())
@@ -111,7 +111,10 @@ def test_zcode_stop_rechecks_due_work_on_a_new_camelcase_turn(tmp_path):
     repeated_same_turn = invoke(tmp_path, "Stop", turn_id=None, turnId="turn-one", stop_hook_active=False)
     assert repeated_same_turn.get("decision") != "block"
     next_turn = invoke(tmp_path, "Stop", turn_id=None, turnId="turn-two", stop_hook_active=False)
-    assert next_turn.get("decision") == "block"
+    assert next_turn.get("decision") != "block"
+    assert "systemMessage" not in next_turn
+    after = json.loads(path.read_text())
+    assert after["business"]["pending"] and after["business"]["last_review"] is None
 
 
 def test_zcode_persists_long_prompt_instead_of_referencing_temporary_transcript(tmp_path):

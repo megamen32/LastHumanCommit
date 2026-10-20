@@ -73,7 +73,8 @@ def test_opencode_rebuilt_model_context_keeps_policy_without_resetting_goal_cloc
                 '--root', str(ROOT), '--runtime', runtime, '--event', event],
                 input=json.dumps({'cwd': str(project), 'session_id': 'rebuilt-context', **fields}, ensure_ascii=False),
                 text=True, capture_output=True, check=True)
-            return json.loads(result.stdout)['hookSpecificOutput']['additionalContext']
+            output = json.loads(result.stdout or '{}')
+            return output.get('hookSpecificOutput', {}).get('additionalContext', '')
         emit('UserPromptSubmit', prompt=prompt)
         state_path = next((project/'.agents/shared-session/learning').glob('*.json'))
         before = json.loads(state_path.read_text())

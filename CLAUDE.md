@@ -3,19 +3,12 @@
 
 ## Product concept
 
-`docs/PRODUCT_CONCEPT.md` is the canonical product concept and lifecycle. LHC
-defines the work method from human intent through real-result verification into
-the project's configured shared development history. It does not own backlog
-priority or harness/session launching. Quick and Full are depths of that same
-path; use the conditional decision method in `templates/FULL_CYCLE.md` only
-when a material choice remains.
+`docs/PRODUCT_CONCEPT.md` is canonical; LHC owns method, not backlog or harness routing.
 
 ## Language policy
-Use English for operating instructions, internal reasoning/planning, new task records,
-tool-facing instructions and agent coordination; delegated roles inherit this policy.
-Address the user in their language (Russian for a Russian-speaking user). Preserve
-verbatim user text, source quotations, localized UI/test data and raw observations.
-Do not rewrite historical transcripts/feedback or claim to audit hidden reasoning.
+Use English for internal reasoning/planning, new task records and agent coordination;
+delegated roles inherit this. Answer Russian-speaking users in their language. Preserve
+raw observations/source/user/test data; Do not rewrite historical transcripts/feedback.
 
 Take ordinary requests through to a verified result. Engineering activates LHC
 automatically; the user need not choose a mode, role or slash command.

@@ -415,6 +415,12 @@ def consumer_target(outcome, observations, cwd):
 
 
 def real_observation(call, output, target, stage, task_class=None, cwd=None, expected=None):
+    if stage == 'consumer' and task_class == 'testing' and '_browser_ops' in call:
+        from lhc_testing_reuse import url_matches
+        return bool(output.strip() and any(
+            op['argv'][:1] == ['open'] and len(op['argv']) == 2 and url_matches(op['argv'][1], target)
+            or op['argv'][:2] == ['get', 'url'] and any(url_matches(u, target) for u in re.findall(r'https?://[^\s\"<>\\]+', output))
+            for op in call['_browser_ops']))
     args = call.get('arguments') or call.get('input') or '{}'
     try:
         args = json.loads(args) if isinstance(args, str) else args
@@ -486,6 +492,9 @@ def real_observation(call, output, target, stage, task_class=None, cwd=None, exp
 
 
 def browser_journey(refs, by_call, target):
+    if any('_browser_ops' in call for call, _ in by_call.values()):
+        from lhc_testing_reuse import browser_journey as source_journey
+        return source_journey(refs, by_call, target)
     browser = [(call, output) for ref, (call, output) in by_call.items() if ref in refs
                if 'browser' in str(call.get('name', '')).casefold() or 'agent-browser' in command(call)[0]]
     if not browser:
@@ -703,9 +712,15 @@ def own_assessment(outcome, text, observations, cwd, comparison_quote=None):
                 or source_finding_quote(outcome, text, observations, cwd, comparison_quote)))
 
 
-def accept_review(outcome, state, path, cwd, owner, comparison_quote=None):
+def accept_review(outcome, state, path, cwd, owner, comparison_quote=None, testing_reuse=None):
     from lhc_outcome import bounded_self_check
     meta, messages, observations = load_review(path)
+    reuse_original = reuse_report = None
+    if testing_reuse is not None:
+        from lhc_testing_reuse import prepare
+        reuse_original = prepare(outcome, meta, observations, owner, testing_reuse, cwd)
+        if comparison_quote:
+            raise ValueError('testing reuse cannot bind research comparison')
     sid = meta.get('id') or meta.get('session_id')
     own_attempt = sid == owner and (outcome['task_class'] in {'testing', 'research'} or bounded_self_check(outcome))
     native_cwd = Path(meta.get('cwd', '/unknown'))
@@ -736,6 +751,19 @@ def accept_review(outcome, state, path, cwd, owner, comparison_quote=None):
             and source_finding_quote(outcome, report['text'], observations, cwd, report['text'])
             for report in meta.get('own_reports', [])):
         raise ValueError('fresh source finding needs a semantic comparison binding, not a reread: retain the report and use review --native-self --comparison-quote with its unchanged source-finding passage; self-check only')
+    if testing_reuse is not None:
+        matches = [row for row in meta.get('own_reports', []) if row['index'] == testing_reuse.get('assessment_index')]
+        if len(matches) != 1:
+            raise ValueError('testing reuse requires original native assessment')
+        own_report = matches[0]
+        from lhc_testing_reuse import browser_sources
+        source_ops = browser_sources(observations, cwd)
+        if any(report_result(row['text'])[0] and any(
+                call.get('_browser_ops') and output.strip()
+                and own_report['index'] < call.get('_source_index', -1) < row['index']
+                for call, output in source_ops)
+                for row in meta.get('own_reports', []) if row['index'] > own_report['index']):
+            raise ValueError('testing reuse cannot skip a later negative product assessment with new consumer observations')
     if own_report:
         # Preserve the actual assessment before later bookkeeping, including
         # an independent research report; never extend its source-call window.
@@ -767,7 +795,7 @@ def accept_review(outcome, state, path, cwd, owner, comparison_quote=None):
             declared.append(path.resolve())
         if set(declared) != {cwd}:
             raise ValueError('independent research assignment needs exact normalized Target CWD; tool output or a neighboring path is not assignment')
-    after = max(native.timestamp(outcome.get('evidence_after') or outcome['started_at']),
+    after = max(native.timestamp(reuse_original['evidence_after'] if reuse_original else outcome.get('evidence_after') or outcome['started_at']),
                 native.timestamp(assignment['at'] or outcome['started_at']))
     observations = [(call, output) for call, output in observations
                     if call.get('_source_index') is not None and call['_source_index'] > assignment['index']
@@ -775,12 +803,16 @@ def accept_review(outcome, state, path, cwd, owner, comparison_quote=None):
                     and call.get('_source_time') and after <= native.timestamp(call['_source_time']) <= native.timestamp(meta.get('reviewed_at') or meta['timestamp'])]
     if scope_revision(outcome, cwd) != outcome['revision']:
         raise ValueError('owned revision changed; refresh the contract and actual evidence before review')
+    if testing_reuse is not None:
+        from lhc_testing_reuse import browser_sources, assessment
+        observations = browser_sources(observations, cwd)
+        reuse_report, _ = assessment(outcome, meta, observations, testing_reuse, reuse_original, cwd)
     lines = [line[len(MARKER):] for line in final.splitlines() if line.startswith(MARKER)]
     if comparison_quote and lines:
         raise ValueError('comparison quote binds original research prose, not a structured certificate')
     if len(lines) > 1:
         raise ValueError('ambiguous independent review summaries')
-    report = json.loads(lines[0]) if lines else raw_review(outcome, final, observations, cwd, comparison_quote)
+    report = reuse_report if reuse_report is not None else json.loads(lines[0]) if lines else raw_review(outcome, final, observations, cwd, comparison_quote)
     canary = outcome['canary']
     revision = scope_revision(outcome, cwd)
     for key, expected in {'outcome_id': outcome['id'], 'revision': revision,
@@ -881,9 +913,19 @@ def accept_review(outcome, state, path, cwd, owner, comparison_quote=None):
         if not any(real_observation(*by_call[ref], observed_target, stage, outcome['task_class'], cwd, claim['expected']) for ref in refs):
             raise ValueError('echo/health/test-only/wrong-target receipt is not the assigned consumer operation')
         completed.add(stage)
+    if reuse_original:
+        outcome['testing_reuse_binding'] = {
+            'contract_call': testing_reuse['contract_call'],
+            'authorization_index': testing_reuse['authorization_index'],
+            'assessment_index': testing_reuse['assessment_index'],
+            'original_evidence_after': reuse_original['evidence_after'],
+            'historical_revision': reuse_original['revision'],
+            'current_product_acceptance': False,
+            'calls': {ref: {'at': by_call[ref][0]['_source_time'], 'index': by_call[ref][0]['_source_index']}
+                      for ref in report['stages']['consumer']['evidence_calls']}}
     for stage, row in updates.items():
         outcome['stages'][stage].update(status='complete', evidence=[{
-            'manifest': str(path.resolve()), 'reviewer': sid, 'revision': revision,
+            'manifest': str(path.resolve()), 'reviewer': sid, 'revision': reuse_original['revision'] if reuse_original else revision,
             'native_model': meta.get('model'),
             'consumer_target': resolved if stage == 'consumer' else None,
             'verification_level': 'self-check' if own_attempt else 'independent-review',

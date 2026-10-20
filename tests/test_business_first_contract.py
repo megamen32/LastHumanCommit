@@ -221,7 +221,7 @@ def test_overseer_time_truth_requires_start_anchor() -> None:
     overseer = compact(read("src/common/agents/Overseer.md"))
     time_control = compact(read("src/common/protocols/TIME_CONTROL.md"))
 
-    for phrase in ("supreme route controller", "Started at"):
+    for phrase in ("independent, read-only reviewer", "Started at"):
         assert phrase in overseer, phrase
     for phrase in ("Start anchor", "manual clock", "not measured"):
         assert phrase in time_control, phrase
@@ -231,7 +231,7 @@ def test_self_improve_is_an_evolution_loop() -> None:
     method = compact(read("src/common/protocols/SELF_IMPROVE.md"))
     assert "minimal proposed patch" in method and "verification canary" in method
     assert "every120" not in read("AGENTS.md")
-    assert "Control must change the decision" in compact(read("src/common/agents/Lead.md"))
+    assert "request one distinct fresh read-only agent" in compact(read("src/common/agents/Lead.md"))
 
 
 

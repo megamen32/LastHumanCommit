@@ -660,6 +660,7 @@ def main():
     route.add_argument('--manifest', type=Path)
     route.add_argument('--native-self', action='store_true', help='read this own native Codex/OpenCode source without depending on Herder export CWD')
     route.add_argument('--native-reviewer', metavar='CODEX_SESSION_ID', help='read an existing independent Codex research reviewer via a byte-verified native assignment window; never create/resume it')
+    review.add_argument('--testing-reuse-bindings', type=Path, help='explicit original native contract/user/report/per-coverage source bindings for own historical testing; never a PASS receipt')
     review.add_argument('--comparison-quote', help='bind an unchanged own research source-finding passage to the confirmed expectation; source filename/readback required, self-check only')
     question = sub.add_parser('question')
     question.add_argument('--message', required=True)
@@ -745,7 +746,8 @@ def main():
             from lhc_outcome_review import accept_review, native_self_manifest, native_reviewer_manifest
             manifest = (native_self_manifest(outcome, cwd, args.runtime, args.session_id) if args.native_self else
                         native_reviewer_manifest(outcome, cwd, args.native_reviewer) if args.native_reviewer else args.manifest)
-            accept_review(outcome, state, manifest, cwd, args.session_id, args.comparison_quote)
+            accept_review(outcome, state, manifest, cwd, args.session_id, args.comparison_quote,
+                          json.loads(native.read(args.testing_reuse_bindings)) if args.testing_reuse_bindings else None)
         elif args.command == 'question':
             result = question_plan(outcome, args.message)
         outcome['finish_verdict'] = verdict(outcome, state)
