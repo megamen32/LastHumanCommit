@@ -129,6 +129,12 @@
       const title = make("h3", "", role.name);
       title.lang = "en"; // Canonical identifiers (Lead, Adviser, etc.) remain unchanged.
       card.append(top, make("div", "role-monogram", role.name.slice(0, 1)), title);
+      if (state.language === "ru") {
+        card.append(make("p", "role-source-label", t("role.summaryLabel")));
+        const localizedSummary = make("p", "role-summary", t("role." + role.name + ".summary"));
+        localizedSummary.lang = "ru";
+        card.append(localizedSummary);
+      }
       card.append(make("p", "role-source-label", t("original")));
       const summaryText = role.summary;
       const summary = make("p", "role-summary", summaryText);

@@ -46,6 +46,13 @@ for (const key of [data.decisionDepth.titleKey, data.decisionDepth.noteKey]) {
   assert.ok(i18n.messages[key], 'Missing translation: ' + key);
   assert.match(i18n.t(key, 'ru'), /[А-Яа-яЁё]/);
 }
+for (const role of data.roles) {
+  const key = `role.${role.name}.summary`;
+  assert.ok(i18n.messages[key], 'Missing Russian role summary: ' + key);
+  assert.match(i18n.t(key, 'ru'), /[А-Яа-яЁё]/, 'Role summary is not Russian: ' + key);
+}
+assert.match(i18n.t('original', 'ru'), /ОРИГИНАЛ/);
+assert.match(i18n.t('verbatim', 'ru'), /ОРИГИНАЛ.*БЕЗ ПЕРЕВОДА/);
 for (const entry of Object.values(i18n.messages)) {
   assert.equal(entry.length, 2);
   assert.equal(typeof entry[0], 'string');
