@@ -281,6 +281,13 @@ def command(call, allow_source_read=False):
         lexer.whitespace_split = True
         if any(token and set(token) <= set(';&|<>') for token in lexer):
             return '', []
+        # The headless browser invocation clears its auto-connect switch
+        # explicitly. Normalize only that exact env form for executable checks;
+        # `text` remains the unmodified native command for evidence/reporting.
+        if (len(words) >= 4 and words[0] in {'env', '/usr/bin/env'}
+                and words[1:3] == ['-u', 'AGENT_BROWSER_AUTO_CONNECT']
+                and Path(words[3]).name == 'agent-browser'):
+            words = words[3:]
         if words and Path(words[0]).name in {'bash', 'sh', 'zsh'}:
             if len(words) != 3 or words[1] not in {'-c', '-lc'}:
                 return '', []
@@ -467,7 +474,9 @@ def real_observation(call, output, target, stage, task_class=None, cwd=None, exp
             return False
         if target.startswith(('http://', 'https://')):
             # Full URL token, not a host substring in echo, another host or log.
-            return target in words and (bool(words and Path(words[0]).name in {'curl', 'wget', 'agent-browser'}) or 'browser' in name)
+            executable = Path(words[0]).name if words else ''
+            native_browser_call = 'browser' in name and executable not in {'env', 'bash', 'sh', 'zsh'}
+            return target in words and (executable in {'curl', 'wget', 'agent-browser'} or native_browser_call)
         return (not target.startswith('project:') and cli_matches(words, target, cwd)
                 and not re.search(r'pytest|\btest\b', text)
                 and (task_class not in ENGINEERING or call.get('_exit_code', 0) == 0))
@@ -753,8 +762,11 @@ def accept_review(outcome, state, path, cwd, owner, comparison_quote=None, testi
         negative_binding = comparison_quote and outcome['task_class'] == 'research' and re.search(
             r'\b(?:defect|wrong|needs? correction)\b|ошибк|не соответствует', text, re.I)
         return negative_binding or own_assessment(outcome, text, observations, cwd, comparison_quote)
+    independent_engineering_review = sid != owner and outcome['task_class'] in ENGINEERING
     own_report = next((report for report in reversed(meta.get('own_reports', []))
-                       if selected_assessment(report)), None) if own_attempt or outcome['task_class'] == 'research' else None
+                       if selected_assessment(report)), None) if (
+                           own_attempt or outcome['task_class'] == 'research' or independent_engineering_review
+                       ) else None
     if comparison_quote and (not own_report or not source_finding_quote(outcome, own_report['text'], observations, cwd, comparison_quote)):
         raise ValueError('comparison quote must bind the current unchanged native source finding; never skip a newer negative assessment')
     if not own_report and own_attempt and outcome['task_class'] == 'research' and any(

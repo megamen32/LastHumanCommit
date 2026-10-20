@@ -1,3 +1,9 @@
+# 1.5.8 — preserve the independent assessment
+
+Independent engineering review selects the original assessment over later bookkeeping. Preserve its original timestamp, source-call cutoff, and negative findings. Recognize the documented
+`env -u AGENT_BROWSER_AUTO_CONNECT agent-browser` launch prefix without accepting
+arbitrary environment wrappers.
+
 # 1.5.7 — quiet, accurate completion hooks
 
 Limit overdue Stop reminders to one per unchanged obligation and progress; name the
