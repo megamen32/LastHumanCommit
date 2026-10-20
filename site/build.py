@@ -182,12 +182,13 @@ def build() -> dict:
         full_depth_steps.append({
             "id": item["id"], "number": f"{number:02d}",
             "titleKey": f"fullDepth.{item['id']}.title",
+            "summaryKey": f"fullDepth.{item['id']}.summary",
             "sourceExcerpt": excerpt,
             "source": source_url(sha, concept_path),
         })
 
     data = {
-        "schemaVersion": 3,
+        "schemaVersion": 4,
         "revision": sha,
         "shortRevision": sha[:8],
         "productVersion": plugin["version"],
@@ -201,6 +202,7 @@ def build() -> dict:
             "id": material_depth["id"],
             "titleKey": f"decision.{material_depth['id']}.title",
             "noteKey": f"decision.{material_depth['id']}.note",
+            "summaryKey": f"decision.{material_depth['id']}.summary",
             "sourceExcerpt": first_paragraph(material_depth["body"]),
             "source": source_url(sha, full_path),
         },
