@@ -7,10 +7,15 @@ def test_native_entry_points_to_existing_herder_before_subagent_selection():
     spec=importlib.util.spec_from_file_location('entry_model_routing', ROOT/'src/common/tools/lhc_entry.py')
     entry=importlib.util.module_from_spec(spec);spec.loader.exec_module(entry)
     text=entry.context_for({},ROOT)
-    assert 'Agent Herder' in text and 'new_or_resume' in text and 'model' in text
-    assert str(ROOT/'src/common/skills/model-routing/SKILL.md') in text
+    # The entry points at the router; the routing route is written down once,
+    # in the router and in the model-routing method.
+    assert str(ROOT/'AGENTS.md') in text
     assert 'lhc_delegate' not in text
     assert len(text)<2200
+    router=(ROOT/'AGENTS.md').read_text()
+    assert 'Agent Herder' in router
+    assert 'allowed model tiers' in router
+    assert 'src/common/skills/' in router
 
 def test_model_routing_separates_role_route_and_real_model():
     text=(ROOT/'src/common/skills/model-routing/SKILL.md').read_text()

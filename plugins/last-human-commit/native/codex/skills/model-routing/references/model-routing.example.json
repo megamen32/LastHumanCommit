@@ -1,41 +1,34 @@
 {
   "schema_version": 1,
   "purpose": "Routing examples, not a provider catalog or verified capability ranking.",
+  "note": "model_classes is the flat list the offline task-graph checker accepts as model_class; tiers group those models by cost and capability.",
   "tier_order": [
     "frontier",
-    "fable",
-    "sonnet",
-    "haiku"
+    "fast"
+  ],
+  "model_classes": [
+    "glm-5.3-flash",
+    "minimax-3.1-flash",
+    "gpt-6-luna",
+    "glm-5.3",
+    "gpt-6.1-sol"
   ],
   "tiers": {
     "frontier": {
-      "label": "Frontier (provisional fourth tier)",
+      "label": "Frontier",
       "use": "Strongest suitable available model for Lead, hard decisions, decomposition, difficult oversight and council.",
-      "user_examples": []
-    },
-    "fable": {
-      "label": "Fable",
-      "use": "Strong complex execution, reasoning and review when appropriate.",
       "user_examples": [
-        "GPT-6A",
-        "Star",
-        "GLM 5.3"
+        "gpt-6-luna",
+        "glm-5.3",
+        "gpt-6.1-sol"
       ]
     },
-    "sonnet": {
-      "label": "Sonnet",
-      "use": "Medium-complexity coherent execution where verified capability suffices.",
-      "user_examples": [
-        "5.3 Flash",
-        "Panthera"
-      ]
-    },
-    "haiku": {
-      "label": "Haiku",
+    "fast": {
+      "label": "Fast",
       "use": "Well-specified routine execution and checks where verified capability suffices.",
       "user_examples": [
-        "GLM 4.7",
-        "MiniMax M3"
+        "glm-5.3-flash",
+        "minimax-3.1-flash"
       ]
     }
   },

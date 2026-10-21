@@ -2,6 +2,7 @@
 import json
 import hashlib
 import os
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 import subprocess
 import sys
@@ -24,8 +25,10 @@ NATIVE_EVENTS = {
 
 def invoke(cwd, event, *, runtime="zcode", **fields):
     payload = {"cwd": str(cwd), "session_id": "zcode-native-test", "turn_id": "turn-one", **fields}
+    # --session is the explicit agent command that advances the stateful
+    # lifecycle. The native hook templates stay time-only and never block.
     result = subprocess.run(
-        [sys.executable, str(ENTRY), "--root", str(ROOT), "--runtime", runtime, "--event", event],
+        [sys.executable, str(ENTRY), "--root", str(ROOT), "--runtime", runtime, "--event", event, "--session"],
         input=json.dumps(payload), capture_output=True, text=True, timeout=8,
     )
     assert result.returncode == 0, result.stderr or result.stdout
@@ -44,9 +47,13 @@ def state_file(cwd):
 def test_ordinary_zcode_prompt_gets_complete_lhc_context_and_state(tmp_path):
     output = invoke(tmp_path, "UserPromptSubmit", prompt="Fix the empty account label")
     context = output.get("hookSpecificOutput", {}).get("additionalContext", "")
+    # The session command points at the router; the method text stays in the
+    # router file and is never inlined into the delivered context.
     assert str(ROOT / "AGENTS.md") in context
+    assert "LHC: read" in context
+    router = (ROOT / "AGENTS.md").read_text()
     for term in ("before", "after", "RED", "80%", "120-minute", "Zero Knowledge"):
-        assert term in context
+        assert term in router, term
     state = json.loads(state_file(tmp_path).read_text())
     assert state["business"]["original_prompt"] == "Fix the empty account label"
     assert state["native_entry"]["last_context_event"] == "UserPromptSubmit"
@@ -148,16 +155,73 @@ def test_zcode_short_context_points_to_original_between_excerpt_and_full_prompt_
 def test_zcode_hook_bundle_declares_its_supported_native_events():
     hooks = json.loads((PLUGIN / "hooks/hooks.json").read_text())["hooks"]
     zcode_hooks = json.loads((PLUGIN / "hooks/zcode-hooks.json").read_text())["hooks"]
-    assert (NATIVE_EVENTS - {"PostToolUseFailure"}) <= hooks.keys()
-    assert set(zcode_hooks) == {"PostToolUseFailure"}
+    # The hook bundle is time-only: it activates the instructions and tracks
+    # the clock. It never observes a stateful lifecycle event and never blocks.
+    assert set(hooks) == {"SessionStart", "PostCompact", "PostToolUse"}
+    assert set(zcode_hooks) == {"SessionStart", "PostCompact", "PostToolUse"}
+    assert not (set(hooks) & {"UserPromptSubmit", "PreToolUse", "PostToolUseFailure",
+                               "PermissionRequest", "Stop"})
+    for command in (entry["hooks"][0]["command"] for hook in hooks.values() for entry in hook):
+        assert "--instructions-only" in command or "--heartbeat-only" in command, command
+        assert "--session" not in command, command
+        # A hook may not open a review obligation either.
+        assert "business-review" not in command, command
+        assert "checkpoint" not in command, command
+    for command in (entry["hooks"][0]["command"] for hook in zcode_hooks.values() for entry in hook):
+        assert "--instructions-only" in command or "--heartbeat-only" in command, command
+        assert "--session" not in command, command
+        assert "business-review" not in command, command
     manifest = json.loads((PLUGIN / ".zcode-plugin/plugin.json").read_text())
     assert manifest["hooks"] == "./hooks/zcode-hooks.json"
+
+
+def heartbeat(cwd, session="zcode-heartbeat"):
+    """Run the installed time-only PostToolUse hook exactly as ZCode does."""
+    payload = {"cwd": str(cwd), "session_id": session}
+    result = subprocess.run(
+        [sys.executable, str(ENTRY), "--root", str(ROOT), "--runtime", "zcode",
+         "--event", "PostToolUse", "--heartbeat-only"],
+        input=json.dumps(payload), capture_output=True, text=True, timeout=8,
+    )
+    assert result.returncode == 0, result.stderr or result.stdout
+    return result.stdout
+
+
+def test_zcode_heartbeat_keeps_the_learning_clock_and_the_heartbeat_timer(tmp_path):
+    # Regression: the learning checkpoint has to run before the heartbeat,
+    # otherwise the state carries no "last_observed_at", the checkpoint dies on
+    # a KeyError and every time reminder is swallowed for every harness.
+    assert heartbeat(tmp_path).strip() == ""
+    saved = json.loads(state_file(tmp_path).read_text())
+    assert "last_observed_at" in saved
+    assert "native_heartbeat" in saved
+    assert saved["native_heartbeat"]["runtime"] == "zcode"
+    # A time-only hook creates no semantic state and blocks nothing.
+    assert "business" not in saved
+    assert "milestone" not in saved
+    assert "native_entry" not in saved
+
+
+def test_zcode_heartbeat_delivers_the_due_time_reminder_after_elapsed_time(tmp_path):
+    heartbeat(tmp_path)
+    path = state_file(tmp_path)
+    saved = json.loads(path.read_text())
+    past = (datetime.now(timezone.utc) - timedelta(minutes=31)).isoformat()
+    saved["native_heartbeat"]["started_at"] = past
+    saved["native_heartbeat"]["last_seen_at"] = past
+    path.write_text(json.dumps(saved))
+    output = json.loads(heartbeat(tmp_path))
+    context = output.get("hookSpecificOutput", {}).get("additionalContext", "")
+    assert "LHC 30-minute plan report" in context
+    saved = json.loads(path.read_text())
+    assert saved["native_heartbeat"]["last_plan_bucket"] == 1
+    assert "last_observed_at" in saved
 
 
 def test_entry_infers_zcode_from_native_plugin_environment(tmp_path):
     payload = json.dumps({"cwd": str(tmp_path), "session_id": "zcode-env-test", "prompt": "Add a label"})
     result = subprocess.run(
-        [sys.executable, str(ENTRY), "--root", str(ROOT), "--event", "UserPromptSubmit"],
+        [sys.executable, str(ENTRY), "--root", str(ROOT), "--event", "UserPromptSubmit", "--session"],
         input=payload, capture_output=True, text=True, timeout=8,
         env={**os.environ, "ZCODE_PLUGIN_ROOT": str(PLUGIN)},
     )

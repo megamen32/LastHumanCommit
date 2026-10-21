@@ -8,11 +8,14 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
+import pytest
 
 
 ROOT = Path(__file__).resolve().parent.parent
 TOOL = ROOT / 'src' / 'common' / 'tools' / 'lhc_grid.py'
+VALIDATOR = ROOT / 'scripts' / 'lhc_validate_graph.py'
 
 
 def load_tool():
@@ -24,7 +27,29 @@ def load_tool():
     return module
 
 
+def load_validator():
+    spec = importlib.util.spec_from_file_location('lhc_validate_graph', VALIDATOR)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def run_tool(*args):
+    return subprocess.run(
+        [sys.executable, str(TOOL), *args], capture_output=True, text=True,
+    )
+
+
+def run_validator(*args):
+    return subprocess.run(
+        [sys.executable, str(VALIDATOR), *args], capture_output=True, text=True,
+    )
+
+
 lhc = load_tool()
+validator = load_validator()
 
 
 REPORT = """Цель: закрыть интеграцию источника
@@ -158,6 +183,62 @@ class GraphJsonTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             lhc.parse_graph_json({'schema_version': 9, 'tasks': [{'id': 'a'}]})
 
+    def test_unknown_estimate_reason_round_trips_without_zero_duration(self):
+        graph = lhc.parse_graph_json({
+            'schema_version': 2,
+            'tasks': [
+                {'id': 'done', 'label': 'Done', 'status': 'done', 'depends_on': [],
+                 'estimate_minutes': {'minimum': 5, 'maximum': 5}},
+                {'id': 'wait', 'label': 'External wait', 'status': 'blocked', 'depends_on': ['done'],
+                 'estimate_unknown_reason': 'Owner has not confirmed access.'},
+            ],
+        })
+        with patch.object(lhc, 'now_clock', return_value=17 * 60):
+            metrics = lhc.build_metrics(graph)
+        self.assertEqual(metrics['unknown_estimate_pending'], 1)
+        self.assertEqual(metrics['eta_clock_max'], '')
+        self.assertEqual(graph.leaves[1].duration_label, 'Срок неизвестен')
+        self.assertEqual(lhc.parse_graph_json(lhc.export_graph(graph)).leaves[1].estimate_unknown_reason,
+                         'Owner has not confirmed access.')
+        html = lhc.render_html(graph, metrics)
+        self.assertIn('Срок неизвестен', html)
+
+    def test_old_activity_cannot_make_forecast_start_in_the_past(self):
+        graph = lhc.parse_graph_json({
+            'schema_version': 2,
+            'tasks': [{'id': 'next', 'label': 'Next', 'status': 'queued', 'depends_on': [],
+                       'estimate_minutes': {'minimum': 5, 'maximum': 5}, 'started_at': '15:19'}],
+        })
+        with patch.object(lhc, 'now_clock', return_value=17 * 60):
+            metrics = lhc.build_metrics(graph)
+        self.assertEqual(metrics['eta_clock_min'], '17:05')
+        self.assertEqual(metrics['eta_clock_max'], '17:05')
+
+    def test_external_wait_withholds_clock_eta_and_round_trips(self):
+        graph = lhc.parse_graph_json({
+            'schema_version': 2,
+            'external_waits': 'Ждём подтверждения владельца; срок неизвестен.',
+            'tasks': [{'id': 'next', 'label': 'Next', 'status': 'queued', 'depends_on': [],
+                       'estimate_minutes': {'minimum': 5, 'maximum': 5}}],
+        })
+        with patch.object(lhc, 'now_clock', return_value=17 * 60):
+            metrics = lhc.build_metrics(graph)
+        self.assertEqual(metrics['eta_clock_max'], '')
+        self.assertTrue(metrics['external_wait_unknown'])
+        self.assertIn('неизвестен из-за внешнего ожидания', lhc.render_text(graph, metrics).lower())
+        self.assertEqual(lhc.parse_graph_json(lhc.export_graph(graph)).external_waits,
+                         'Ждём подтверждения владельца; срок неизвестен.')
+
+    def test_declared_model_class_survives_the_round_trip(self):
+        graph = lhc.parse_graph_json({
+            'schema_version': 2,
+            'tasks': [{'id': 'a', 'label': 'a', 'status': 'queued', 'depends_on': [],
+                       'model': 'gpt-6-luna', 'model_class': 'gpt-6-luna'}],
+        })
+        exported = lhc.export_graph(graph)
+        self.assertEqual(exported['tasks'][0]['model_class'], 'gpt-6-luna')
+        self.assertEqual(lhc.parse_graph_json(exported).leaves[0].model_class, 'gpt-6-luna')
+
 
 class ScheduleTests(unittest.TestCase):
     def _graph(self):
@@ -213,6 +294,15 @@ class RenderTests(unittest.TestCase):
         html = lhc.render_html(graph, lhc.build_metrics(graph))
         self.assertNotIn('<script>alert(1)</script>', html)
         self.assertIn('&lt;script&gt;', html)
+
+    def test_text_view_lists_the_leaves_and_the_waves(self):
+        graph = lhc.parse_plan_report(REPORT)
+        metrics = lhc.build_metrics(graph)
+        text = lhc.render_text(graph, metrics)
+        self.assertIn('Листья плана (4):', text)
+        self.assertIn('волна 1', text)
+        self.assertIn('волн:', text)
+        self.assertIn('L01', text)
 
     def test_business_outcome_and_technical_details_have_separate_hierarchy(self):
         graph = lhc.parse_graph_json({
@@ -272,17 +362,221 @@ class RenderTests(unittest.TestCase):
         self.assertIn('.table-leaves { min-width: 920px; width: 100%; table-layout: fixed; }', html)
         self.assertIn('.table-leaves th:nth-child(5) { width: 120px; }', html)
         self.assertIn('.task-details-host { position: static; width: 100%; margin-top: 12px; }', html)
+        self.assertIn('padding: 0 5px; min-width: 0; white-space: normal; overflow-wrap: anywhere; }', html)
         self.assertIn('.task-details { display: grid; grid-template-columns: minmax(110px, auto) minmax(0, 1fr);', html)
         self.assertIn('.task-details dd { margin: 0; min-width: 0; width: 100%; overflow-wrap: anywhere; word-break: break-word; }', html)
         self.assertIn('.status { color: var(--c); font-weight: 600; white-space: nowrap; }', html)
 
+    def test_blocker_details_are_structured_and_dependencies_are_human_readable(self):
+        graph = lhc.parse_graph_json({
+            'schema_version': 2,
+            'tasks': [
+                {'id': 'qa_scope', 'label': 'Выдать доступ к тестовому проекту',
+                 'status': 'blocked', 'depends_on': [],
+                 'blocker': 'Текущий project grant отсутствует.',
+                 'blocker_details': {
+                     'reason': 'Для тестовой команды ещё не выдано разрешение на проект.',
+                     'responsible': 'Владелец QA-проекта',
+                     'next_action': 'Выдать доступ через штатный интерфейс проекта.',
+                     'human_required': 'yes',
+                     'human_action': 'Нужно подтвердить участника и проект.',
+                 },
+                 'acceptance': 'Тестовый участник видит точный проект.'},
+                {'id': 'canary', 'label': 'Запустить проверку полного цикла',
+                 'status': 'queued', 'depends_on': ['qa_scope'],
+                 'acceptance': 'Поручение доходит до ручной приёмки.'},
+            ],
+        })
+        html = lhc.render_html(graph, lhc.build_metrics(graph))
+        status_text = lhc.render_text(graph, lhc.build_metrics(graph))
+        exported = lhc.export_graph(graph)
+        self.assertIn('<b>Почему ждём:</b> Для тестовой команды ещё не выдано разрешение на проект.', html)
+        self.assertIn('<b>Кто делает:</b> Владелец QA-проекта', html)
+        self.assertIn('<b>Следующий шаг:</b> Выдать доступ через штатный интерфейс проекта.', html)
+        self.assertIn('<b>Нужен ли человек:</b> Да. Нужно подтвердить участника и проект.', html)
+        self.assertIn('<dt>Зависит от</dt><dd>Выдать доступ к тестовому проекту</dd>', html)
+        self.assertIn('<dt>Ожидаемый результат</dt><dd>Поручение доходит до ручной приёмки.</dd>', html)
+        self.assertNotIn('лист qa_scope', html)
+        self.assertIn('Почему ждём: Для тестовой команды ещё не выдано разрешение на проект.', status_text)
+        self.assertIn('Кто делает: Владелец QA-проекта', status_text)
+        self.assertNotIn('qa_scope:', status_text)
+        self.assertEqual(exported['tasks'][0]['blocker_details']['human_required'], 'yes')
+        self.assertEqual(exported['tasks'][1]['acceptance'], 'Поручение доходит до ручной приёмки.')
+
+    def test_legacy_graph_without_blocker_details_still_renders(self):
+        graph = lhc.parse_graph_json({
+            'schema_version': 1,
+            'tasks': [{'id': 'legacy', 'label': 'Старый блокер', 'status': 'blocked',
+                       'depends_on': [], 'blocker': 'Ждём прежний маршрут.'}],
+        })
+        html = lhc.render_html(graph, lhc.build_metrics(graph))
+        self.assertIn('Ждём прежний маршрут.', html)
+        self.assertIn('<b>Нужен ли человек:</b> Пока неизвестно.', html)
+
+
+class CanonicalContractTests(unittest.TestCase):
+    """The renderer and the offline checker accept one contract: TASK_GRAPH.md."""
+
+    @staticmethod
+    def published_example():
+        text = (ROOT / 'src/common/protocols/TASK_GRAPH.md').read_text(encoding='utf-8')
+        return text.split('```json\n', 1)[1].split('\n```', 1)[0]
+
+    def test_published_example_validates(self):
+        with tempfile.TemporaryDirectory() as directory:
+            graph = Path(directory) / 'plan.graph.json'
+            graph.write_text(self.published_example(), encoding='utf-8')
+            result = run_validator(str(graph))
+            self.assertEqual(result.returncode, 0, result.stdout)
+            self.assertTrue(json.loads(result.stdout)['valid'])
+
+    def test_exported_plan_validates(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            plan = base / 'plan.md'
+            plan.write_text(REPORT, encoding='utf-8')
+            graph = base / 'plan.graph.json'
+            exported = run_tool('export', str(plan), '-o', str(graph))
+            self.assertEqual(exported.returncode, 0, exported.stderr)
+            result = run_validator(str(graph))
+            self.assertEqual(result.returncode, 0, result.stdout)
+            self.assertTrue(json.loads(result.stdout)['valid'])
+
+    def test_minimum_task_set_is_enough(self):
+        document = {'schema_version': 2, 'tasks': [
+            {'id': 'a', 'label': 'first', 'status': 'queued', 'depends_on': []},
+        ]}
+        result = validator.validate_graph(document)
+        self.assertTrue(result['valid'], result['errors'])
+
+    def test_canonical_required_fields_are_checked(self):
+        for missing in ('label', 'status', 'depends_on'):
+            task = {'id': 'a', 'label': 'first', 'status': 'queued', 'depends_on': []}
+            task.pop(missing)
+            result = validator.validate_graph({'schema_version': 2, 'tasks': [task]})
+            self.assertFalse(result['valid'])
+            self.assertIn(missing, ' '.join(result['errors']))
+
+    def test_declared_paths_still_conflict(self):
+        document = {'schema_version': 2, 'tasks': [
+            {'id': 'a', 'label': 'a', 'status': 'queued', 'depends_on': [],
+             'write_paths': ['src']},
+            {'id': 'b', 'label': 'b', 'status': 'queued', 'depends_on': [],
+             'read_paths': ['src/a']},
+        ]}
+        result = validator.validate_graph(document)
+        self.assertFalse(result['valid'])
+        self.assertIn('conflict', ' '.join(result['errors']))
+
+    def test_model_class_is_checked_against_the_allowed_names(self):
+        for name in ('glm-5.3-flash', 'minimax-3.1-flash', 'gpt-6-luna',
+                     'glm-5.3', 'gpt-6.1-sol'):
+            document = {'schema_version': 2, 'tasks': [
+                {'id': 'a', 'label': 'a', 'status': 'queued', 'depends_on': [],
+                 'model_class': name},
+            ]}
+            self.assertTrue(validator.validate_graph(document)['valid'], name)
+        document = {'schema_version': 2, 'tasks': [
+            {'id': 'a', 'label': 'a', 'status': 'queued', 'depends_on': [],
+             'model_class': 'sonnet'},
+        ]}
+        self.assertFalse(validator.validate_graph(document)['valid'])
+
+    def test_partial_estimates_do_not_fail(self):
+        document = {'schema_version': 2, 'tasks': [
+            {'id': 'a', 'label': 'a', 'status': 'done', 'depends_on': [],
+             'estimate_minutes': {'minimum': 5, 'maximum': 10}},
+            {'id': 'b', 'label': 'b', 'status': 'queued', 'depends_on': ['a']},
+        ]}
+        result = validator.validate_graph(document)
+        self.assertTrue(result['valid'], result['errors'])
+        self.assertEqual(result['estimate']['effort_minutes'], {'minimum': 5, 'maximum': 10})
+
+    def test_declared_optional_fields_are_checked_when_present(self):
+        document = {'schema_version': 2, 'tasks': [
+            {'id': 'a', 'label': 'a', 'status': 'queued', 'depends_on': [],
+             'acceptance': '   ',
+             'blocker_details': {'human_required': 'maybe'}},
+        ]}
+        result = validator.validate_graph(document)
+        self.assertFalse(result['valid'])
+        joined = ' '.join(result['errors'])
+        self.assertIn('acceptance', joined)
+        self.assertIn('human_required', joined)
+
+
+class PlanReconciliationTests(unittest.TestCase):
+    """The report's tasks and the graph's leaves are one set."""
+
+    def test_matching_report_and_graph_reconcile(self):
+        graph = lhc.parse_graph_json({
+            'schema_version': 2,
+            'tasks': [
+                {'id': 'L01', 'label': 'контракт источника', 'status': 'done', 'depends_on': []},
+                {'id': 'L02', 'label': 'сборка и push', 'status': 'queued', 'depends_on': ['L01']},
+            ],
+        })
+        report = lhc.parse_plan_report(
+            'Цель: собрать\n'
+            'Декомпозиция: 2 листа · 1 параллельно · 1 волны · слотов: 1\n'
+            '\n'
+            '✅ (контракт источника) начата 14:02 закончена 14:09, оценка 15 минут\n'
+            '⏳ (сборка и push) начнём после листа 1, оценка 10 минут\n'
+        )
+        result = lhc.compare_plan_with_graph(report, graph)
+        self.assertTrue(result.ok, result.extra_in_report or result.missing_in_report)
+        self.assertEqual(len(result.matched), 2)
+
+    def test_divergence_is_reported(self):
+        graph = lhc.parse_graph_json({
+            'schema_version': 2,
+            'tasks': [
+                {'id': 'L01', 'label': 'контракт источника', 'status': 'done', 'depends_on': []},
+                {'id': 'L09', 'label': 'лишний лист', 'status': 'queued', 'depends_on': []},
+            ],
+        })
+        report = lhc.parse_plan_report(
+            'Цель: собрать\n'
+            'Декомпозиция: 2 листа · 1 параллельно · 1 волны · слотов: 1\n'
+            '\n'
+            '⏳ (контракт источника) начнём после листа 1, оценка 15 минут\n'
+            '⏳ (сборка и push) начнём после листа 1, оценка 10 минут\n'
+        )
+        result = lhc.compare_plan_with_graph(report, graph)
+        self.assertFalse(result.ok)
+        self.assertEqual(len(result.extra_in_report), 1)
+        self.assertEqual(len(result.missing_in_report), 1)
+        self.assertEqual(len(result.status_mismatch), 1)
+
+
+class UnrecognizedReportTests(unittest.TestCase):
+    """An unread report is an error, never an empty dashboard."""
+
+    @pytest.mark.nightly
+    def test_commands_fail_with_a_diagnostic(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            plan = base / 'plan.md'
+            plan.write_text('просто текст без структуры отчёта\n', encoding='utf-8')
+            for command in ('render', 'status', 'export'):
+                args = [command, str(plan)]
+                if command == 'export':
+                    args += ['-o', str(base / 'graph.json')]
+                elif command == 'render':
+                    args += ['-o', str(base / 'plan.html')]
+                result = run_tool(*args)
+                self.assertEqual(result.returncode, 2, result.stdout)
+                self.assertIn('отчёт не распознан', result.stderr)
+                self.assertIn('Цель:', result.stderr)
+            self.assertFalse((base / 'graph.json').exists())
+            self.assertFalse((base / 'plan.html').exists())
+
 
 class CommandTests(unittest.TestCase):
     def _run(self, *args):
-        return subprocess.run(
-            [sys.executable, str(TOOL), *args], capture_output=True, text=True,
-        )
+        return run_tool(*args)
 
+    @pytest.mark.nightly
     def test_render_status_export_validate(self):
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory)
@@ -313,6 +607,29 @@ class CommandTests(unittest.TestCase):
         result = self._run('status', '/a/nonexistent/plan.md')
         self.assertEqual(result.returncode, 2)
         self.assertIn('lhc_grid', result.stderr)
+
+    @pytest.mark.nightly
+    def test_check_plan_accepts_matching_files_and_reports_divergence(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            report = base / 'plan.report.md'
+            report.write_text(REPORT, encoding='utf-8')
+            graph = base / 'plan.graph.json'
+            exported = self._run('export', str(report), '-o', str(graph))
+            self.assertEqual(exported.returncode, 0, exported.stderr)
+
+            matching = self._run('check-plan', str(report), str(graph))
+            self.assertEqual(matching.returncode, 0, matching.stdout + matching.stderr)
+            self.assertIn('OK:', matching.stdout)
+
+            document = json.loads(graph.read_text(encoding='utf-8'))
+            document['tasks'].append({
+                'id': 'L05', 'label': 'лишний лист', 'status': 'queued', 'depends_on': [],
+            })
+            graph.write_text(json.dumps(document, ensure_ascii=False, indent=2), encoding='utf-8')
+            diverging = self._run('check-plan', str(report), str(graph))
+            self.assertEqual(diverging.returncode, 1, diverging.stdout + diverging.stderr)
+            self.assertIn('РАСХОЖДЕНИЕ', diverging.stdout)
 
 
 if __name__ == '__main__':

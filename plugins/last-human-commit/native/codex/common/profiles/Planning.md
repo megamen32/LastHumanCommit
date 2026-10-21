@@ -15,7 +15,8 @@ not override new instructions. For architecture, use
 3. Name the shortest safe business canary and cheapest sufficient proof.
 4. Use `../skills/model-routing/SKILL.md` and
    `../skills/decompose-and-dispatch/SKILL.md` to assign every task to an allowed
-   Worker: gpt6luna, glm53flash or minimax3.1flash, resolved to an exact live
+   Worker: fast tier glm-5.3-flash or minimax-3.1-flash, frontier tier gpt-6-luna,
+   glm-5.3 or gpt-6.1-sol, resolved to an exact live
    catalog ID. The Lead coordinates only and never executes. No silent fallback.
 5. Consult the Overseer when a concrete blocker or route uncertainty would benefit
    from independent advice. Add technical review and fresh independent testing when
@@ -66,8 +67,10 @@ tokens, handoff/context cost, process maintenance, retries, human interruption,
 and wrong-path risk.
 
 The Lead never executes directly. Assign every inspection, edit, check and delivery
-step to a Worker, even when small. Use only gpt6luna, glm53flash and minimax3.1flash
-families, resolved to exact live catalog IDs before dispatch; do not silently substitute.
+step to a Worker, even when small. Use only the allowed tiers — fast tier
+glm-5.3-flash or minimax-3.1-flash, frontier tier gpt-6-luna, glm-5.3 or
+gpt-6.1-sol — resolved to exact live catalog IDs before dispatch; do not silently
+substitute.
 Resume the same Worker when its context remains valuable. An assigned leaf does not
 recursively hire.
 Decompose only at real ownership, dependency, or acceptance boundaries. A

@@ -3,7 +3,9 @@
 This control is mandatory every hour of observed active work, including with green
 tests and a confident implementer. The original assignment, attached document and
 latest direct user corrections define the goal; your plan, summary or new task card
-cannot replace them.
+cannot replace them. A fresh zero-knowledge Overseer may read this checkpoint against
+the original request to guide the Lead; it does not own the result and never gates
+delivery.
 
 ## Decision, not a reading receipt
 
@@ -38,9 +40,25 @@ runtime is unavailable, Lead continues independent work without invented tester 
 
 ## Trigger and recording
 
-`lhc_entry.py` connects native SessionStart/UserPromptSubmit/PreToolUse/PostToolUse,
-compaction and stopping to existing `lhc_time_guard.py`; no daemon, cron, background
-chat or timer. Monotonic intervals close on Stop, Interrupt and permission requests;
+`hooks.json` registers exactly three native events, and `lhc_entry.py` routes them to
+existing `lhc_time_guard.py`; no daemon, cron, background chat or timer.
+
+| Event | Mode | What it does |
+| --- | --- | --- |
+| `SessionStart` | `--instructions-only` | Injects LHC instructions and the session plan context. |
+| `PostCompact` | `--instructions-only` | Re-injects instructions after compaction, carrying the plan as text. |
+| `PostToolUse` | `--heartbeat-only` | Time-only reminder: elapsed time and which command to call. |
+
+`lhc_entry.py --session` is an explicit agent command, not a hook event. `UserPromptSubmit`,
+`PreToolUse` and stopping are not registered; a runtime that offers them is not wired to
+LHC, and no protocol promise may claim otherwise.
+Every hook is **time-only**: it reports elapsed time and names the command to run. It
+never reviews work, never scores it, never renders a verdict and never blocks the
+message flow — a failing hook prints one line to stderr and the turn continues.
+State, verification and verdicts live behind explicit CLI commands
+(`lhc_time_guard.py hook`, `lhc_outcome.py contract|review|route|question|status`,
+`lhc_entry.py --session`), never inside a hook.
+Monotonic intervals close on Stop, Interrupt and permission requests;
 human waiting is not active work. Unknown intervals after reconnect/reboot are not
 reconstructed. With incomplete lifecycle, hourly wall-clock is an explicitly labeled
 fallback signal, never measured active work.

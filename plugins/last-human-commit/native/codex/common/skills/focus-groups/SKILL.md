@@ -23,7 +23,8 @@ the work, not spend another round on hashes and waiting for unrelated sessions.
 
 Apply `../model-availability/SKILL.md` before model allocation. Catalog/quotas
 and real computer-use capabilities are independent. Prefer multiple eligible
-allowed gpt6luna, glm53flash or minimax3.1flash models for meaningful diversity; do not claim multimodel evidence from
+allowed model tiers — fast tier glm-5.3-flash or minimax-3.1-flash, frontier tier
+gpt-6-luna, glm-5.3 or gpt-6.1-sol — for meaningful diversity; do not claim multimodel evidence from
 one model or a model name in a prompt. Already assigned testers do not hire.
 When a group is warranted, use at least two audience-relevant profiles;
 small fixes retain their narrow real canary without a mandatory focus group.

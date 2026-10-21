@@ -96,8 +96,10 @@ def test_native_handoff_preserves_russian_goal_and_only_secret_reference(tmp_pat
     prompt = 'Проверь локальный тестовый вход по .agents/TEST_ACCESS.md. Не выводи пароль. Не делегируй.'
     outputs = []
     for event in ('UserPromptSubmit', 'PreCompact'):
+        # The live path is the explicit session command; the native hooks stay
+        # time-only and never capture or replay the business goal.
         r = subprocess.run([sys.executable, str(ROOT/'src/common/tools/lhc_entry.py'),
-            '--root', str(ROOT), '--runtime', 'codex', '--event', event],
+            '--root', str(ROOT), '--runtime', 'codex', '--event', event, '--session'],
             input=json.dumps({'cwd': str(tmp_path), 'session_id': 'access-reference', 'prompt': prompt},
                              ensure_ascii=False), text=True, capture_output=True, check=True)
         outputs.append(r.stdout)

@@ -273,6 +273,7 @@ def test_s42_bounded_sed_standalone_brief_read_binds_its_assignment(tmp_path, mo
     assert outcome.product_root_scope_allowed(contract, source, product_root, owned)
 
 
+@pytest.mark.nightly
 def test_contract_cli_binds_external_root_without_moving_session_state(tmp_path):
     session_root, product_root, source, state_path = stored_assignment(tmp_path)
     command = ["contract", "--scenario", "Run owned CLI", "--target", "project:" + str(product_root),
@@ -302,6 +303,7 @@ def test_contract_cli_binds_external_root_without_moving_session_state(tmp_path)
     assert json.loads(status.stdout)["revision"] == before
 
 
+@pytest.mark.nightly
 def test_missing_session_root_has_precise_error_and_creates_no_new_state(tmp_path):
     session_root, product_root, _, state_path = stored_assignment(tmp_path)
     wrong_root = cli(tmp_path, product_root, "status")

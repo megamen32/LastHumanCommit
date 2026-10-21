@@ -38,16 +38,19 @@ def assert_order(value: str, first: str, second: str, source: str) -> None:
 def test_lead_routes_business_value_before_process() -> None:
     lead = compact(read("src/common/agents/Lead.md"))
     assert_order(lead, "Start from the original request", "Before writing inspect project sessions", "Lead.md")
-    for phrase in ("Lead delegates all implementation", "actual product path", "Match verification to the claim", "instead of demanding a perfect specification"):
+    for phrase in ("Workers perform all source inspection, edits, checks and delivery operations",
+                   "actual product path", "Match verification to the claim",
+                   "instead of demanding a perfect specification"):
         assert phrase in lead
 
 
 
 def test_factory_routes_decisions_and_preserves_independent_full_acceptance() -> None:
     router = compact(read("AGENTS.md"))
-    for phrase in ("Strong models", "cheaper models handle clear work", "independent testing and review", "not a mandatory ceremony queue"):
+    for phrase in ("explicitly allowed model tiers", "Never silently substitute another model",
+                   "independent Reviewer or Tester", "not a mandatory ceremony queue"):
         assert phrase in router
-    assert "Full requires a fresh independent Tester" in compact(read("src/common/agents/Tester.md"))
+    assert "independent Zero Knowledge Tester at major milestone or final acceptance" in compact(read("src/common/agents/Tester.md"))
     assert "REDECOMPOSE" in read("src/common/protocols/STOP_RETHINK.md")
 
 
@@ -137,7 +140,7 @@ def test_minimal_path_is_mandatory() -> None:
     # The shortest path remains; the mandatory three-line form is retired.
     router = compact(read("AGENTS.md"))
     assert "shortest working route" in router
-    assert "small work uses one bounded Worker + Lead review" in router
+    assert "Every task is assigned to a Worker" in compact(read("src/common/agents/Lead.md"))
     assert "An assigned no-delegation leaf" in router
     assert "three-line minimal path" not in router
 
@@ -149,7 +152,7 @@ def test_optional_governance_keeps_independent_real_testing() -> None:
     # Check the actual current policy rather than restoring mandatory rituals.
     router = compact(read("AGENTS.md"))
     assert "Roles are tools, not a mandatory ceremony queue" in router
-    assert "independent testing and review" in router
+    assert "independent Reviewer or Tester" in router
     assert "actual consumer path for a user result" in router
     for role in ("Overseer", "Tester", "Reviewer"):
         assert read(f"src/common/agents/{role}.md").strip()
@@ -221,7 +224,7 @@ def test_overseer_time_truth_requires_start_anchor() -> None:
     overseer = compact(read("src/common/agents/Overseer.md"))
     time_control = compact(read("src/common/protocols/TIME_CONTROL.md"))
 
-    for phrase in ("independent, read-only reviewer", "Started at"):
+    for phrase in ("independent, read-only adviser", "Started at"):
         assert phrase in overseer, phrase
     for phrase in ("Start anchor", "manual clock", "not measured"):
         assert phrase in time_control, phrase
@@ -232,8 +235,8 @@ def test_self_improve_is_an_evolution_loop() -> None:
     assert "minimal proposed patch" in method and "verification canary" in method
     assert "every120" not in read("AGENTS.md")
     assert "request one distinct fresh" in compact(read("src/common/agents/Lead.md"))
-    assert "frontier-model" in compact(read("src/common/agents/Lead.md"))
-    assert "its verdict binds this session" in compact(read("src/common/agents/Lead.md"))
+    assert "allowed frontier-capable Worker" in compact(read("src/common/agents/Lead.md"))
+    assert "it is not binding and does not grant authority" in compact(read("src/common/agents/Lead.md"))
 
 
 
@@ -371,7 +374,7 @@ def test_every_bugfix_requires_a_recorded_red_green_tdd_cycle() -> None:
 def test_unified_history_is_mandatory() -> None:
     router = compact(read("AGENTS.md"))
     workspace = compact(read("src/common/protocols/SHARED_WORKTREE.md"))
-    for phrase in ("unified published dev history", "PR per worker is optional", "Airlock megamen32-dev", "GitHub-hosted runners, not ARC", "fetch", "rerun affected checks", "nested repositories", "participants' worktrees are clean"):
+    for phrase in ("published dev history", "PR per worker is optional", "Airlock megamen32-dev", "GitHub-hosted runners, not ARC", "fetch", "rerun affected checks", "nested repositories", "participants' worktrees are clean"):
         assert phrase in router
     assert "last active session" in workspace
     assert "Publish ready parts before waiting" in workspace

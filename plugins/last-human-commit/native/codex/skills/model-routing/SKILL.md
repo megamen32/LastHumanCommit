@@ -49,12 +49,12 @@ and actual-model evidence. Its preferred direct subscription routes supersede
 historical OmniRoute hints. No automatic paid/weak fallback; pass an explicit
 allowed fallback policy, never change parent/global models or credentials.
 
-These historical routing notes do not expand the explicit model allowlist above.
-Resolve allowed family labels to exact live catalog IDs and attest the actual model
-before dispatch. Never substitute another family, Sol/Astra, or an Auto route when
-an allowed route is missing. On an unknown accepted outcome query the same session
-or receipt; never duplicate the job. OpenAI API availability does not prove
-subscription access and does not authorize a billing-route change.
+These historical routing notes do not expand the explicit tier allowlist above.
+Resolve an allowed tier to exact live catalog IDs and attest the actual model
+before dispatch. Never substitute a model outside the allowed tiers, or an Auto
+route, when an allowed route is missing. On an unknown accepted outcome query the
+same session or receipt; never duplicate the job. OpenAI API availability does
+not prove subscription access and does not authorize a billing-route change.
 
 OpenChamber Auto is a separate per-message classifier for messages sent through
 OpenChamber. It does not choose this task's Herder model and does not govern
@@ -67,17 +67,20 @@ accept permissions while configuring model routing.
 
 Start from the active harness's available model catalog, recent verified results,
 quota/rate limits and required capabilities (tools, vision, context, structured
-output, latency). `references/model-routing.example.json` supplies historical illustrative
-classes: frontier, fable, sonnet, haiku. Its examples are aliases,
-not verified API names or fixed benchmark rankings.
+output, latency). `references/model-routing.example.json` supplies the allowed
+tiers: `fast` (glm-5.3-flash, minimax-3.1-flash) and `frontier` (gpt-6-luna,
+glm-5.3, gpt-6.1-sol). Its examples are aliases, not verified API names or
+fixed benchmark rankings.
 
 The human-selected Lead session coordinates only; it does not execute source, shell,
-checks or delivery actions. Workers, Advisers, Reviewers and Testers may use only the
-gpt6luna, glm53flash or minimax3.1flash model families. Resolve each family to the
-exact currently available catalog ID and verify attested model/capability before
-dispatch. No silent fallback to Sol, Astra, another provider/model, or an Auto route.
-If no allowed route is available, report the blocker. Historical labels and catalog
-rankings cannot override this explicit allowlist.
+checks or delivery actions. Workers, Advisers, Reviewers and Testers may use only
+the allowed tiers: `fast` (glm-5.3-flash, minimax-3.1-flash) and `frontier`
+(gpt-6-luna, glm-5.3, gpt-6.1-sol). Resolve the chosen model to the exact
+currently available catalog ID and verify attested model/capability before
+dispatch. No silent fallback to a model outside the allowed tiers, to another
+provider/model, or to an Auto route. If no allowed route is available, report the
+blocker. Historical labels and catalog rankings cannot override this explicit
+allowlist.
 
 ## Allocate an assignment, not a role stereotype
 
@@ -106,9 +109,10 @@ review and user testing. If prices or usage are unavailable, use an explicit
 qualitative comparison rather than invented currency figures. Quota, latency and
 cash price can favor different choices.
 
-Assign hard tasks, advisers, Reviewers and Testers only within the allowlist, selecting
-by required capability. Never run sacrificial attempts or silently substitute. Preserve
-checks needed to support the claim, even when they are the largest task cost.
+Assign hard tasks, advisers, Reviewers and Testers only within the allowed tiers,
+selecting by required capability. Never run sacrificial attempts or silently
+substitute. Preserve checks needed to support the claim, even when they are the
+largest task cost.
 
 ## Confirm and adapt
 

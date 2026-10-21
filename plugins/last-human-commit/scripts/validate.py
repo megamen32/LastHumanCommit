@@ -194,6 +194,23 @@ def discover_skills(root: Path) -> set[str]:
     return discovered
 
 
+def check_canonical_skills(root: Path) -> str:
+    """The canonical source tree must carry every skill exactly once."""
+    canonical = root.parent.parent / "src" / "common" / "skills"
+    if not canonical.is_dir():
+        return "SKIP (canonical source tree unavailable)"
+    discovered = {
+        path.name
+        for path in canonical.iterdir()
+        if path.is_dir() and not path.is_symlink() and SKILL_NAME.fullmatch(path.name)
+    }
+    if discovered != EXPECTED_SKILLS:
+        raise ValidationError(
+            f"canonical skills: expected {sorted(EXPECTED_SKILLS)}, got {sorted(discovered)}"
+        )
+    return f"PASS ({len(discovered)})"
+
+
 def check_parity(root: Path, source_root: Path | None) -> str:
     if source_root is None or not source_root.is_dir():
         return "SKIP (source tree unavailable)"
@@ -250,9 +267,10 @@ def main() -> int:
         discovered = discover_skills(root)
         if codex_skills != root / "skills" or claude_skills != root / "skills" or zcode_skills != root / "skills":
             raise ValidationError("native manifests do not point to the package skills directory")
+        canonical = check_canonical_skills(root)
         parity = check_parity(root, source_root if source_root.is_dir() else None)
         check_opencode_helper(root)
-        print(f"plugin validation: PASS skills={len(discovered)} parity={parity}")
+        print(f"plugin validation: PASS skills={len(discovered)} canonical={canonical} parity={parity}")
         return 0
     except (OSError, ValidationError, ValueError) as exc:
         print(f"plugin validation: FAIL: {exc}", file=sys.stderr)

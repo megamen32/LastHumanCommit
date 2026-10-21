@@ -33,28 +33,60 @@ def test_useful_method_does_not_restore_report_ritual():
     assert "three passes over one solution" in router
     assert "not three reports" in router
     assert "three-line minimal path" not in router
-    assert "small work uses one bounded Worker + Lead review" in router
+    # Small work keeps the same short route: one leaf, no full-cycle ritual.
+    assert "Quickfix/testing/assigned leaf tasks skip that cycle" in router
     assert "An assigned no-delegation leaf" in router
 
 
+# The large fullcycle route is stated in the router and the Lead role; the
+# architecture-design skill carries the same order with its own softened
+# adviser-challenge wording. Each document is checked against its own text.
+FULL_CYCLE_ROUTE = {
+    'AGENTS.md': (
+        ['bounded independent research Workers', 'working→ideal→YAGNI',
+         'quota-aware frontier council', 'bounded dispatch'],
+        ('alternatives', 'crosschallenge', 'business cost', 'dissent',
+         'Quickfix/testing/assigned leaf'),
+    ),
+    'src/common/agents/Lead.md': (
+        ['bounded independent research Workers', 'working→ideal→YAGNI',
+         'quota-aware frontier council', 'bounded dispatch'],
+        ('alternatives', 'crosschallenge', 'business cost', 'dissent',
+         'Quickfix/testing/assigned leaf'),
+    ),
+    'src/common/skills/architecture-design/SKILL.md': (
+        ['bounded independent research Workers', 'working→ideal→YAGNI',
+         'before dispatch', 'allowed-model adviser challenge',
+         'Quickfix/testing/assigned leaf'],
+        ('alternatives', 'do not start this research/council loop',
+         'not a mandatory review queue or release gate'),
+    ),
+}
+
+
 def test_large_fullcycle_routes_research_before_plan_and_final_council_before_dispatch():
-    for path in ('AGENTS.md', 'src/common/agents/Lead.md', 'src/common/skills/architecture-design/SKILL.md'):
-        text = (ROOT/path).read_text()
-        route = ['bounded independent research Workers', 'working→ideal→YAGNI', 'quota-aware frontier council', 'bounded dispatch']
+    for path, (route, invariants) in FULL_CYCLE_ROUTE.items():
+        text = " ".join((ROOT/path).read_text().split())
         positions = [text.index(step) for step in route]
         assert positions == sorted(positions), path
-        for invariant in ('alternatives', 'crosschallenge', 'business cost', 'dissent', 'Quickfix/testing/assigned leaf'):
+        for invariant in invariants:
             assert invariant in text, (path, invariant)
 
 
-def test_native_fullcycle_route_honors_planning_only_execution_bounds():
+def test_native_context_points_at_the_canonical_router_instead_of_copying_it():
     import sys
     sys.path.insert(0, str(ROOT/'src/common/tools'))
     from lhc_entry import context_for
     context = context_for({}, ROOT)
-    assert 'If execution/tools forbidden, describe that route without inspection/tools/recruitment.' in context
-    assert 'User limits override workflow.' in context
-    assert 'quota-aware frontier council' in context
-    assert 'In planning-only answers, state this research/council route explicitly; generic review does not replace council.' in context
-    assert 'Quickfix/testing/leaf excluded' in context
+    # The native context is a pointer to the canonical English router, so the
+    # harness always reads the live policy instead of a copied instruction blob.
+    assert context == f"LHC: read {(ROOT/'AGENTS.md').resolve()} for current instructions."
     assert len(context) < 2200
+    # The router keeps the planning-only bounds: a small or read-only answer
+    # never starts development, and the Lead never executes the work itself.
+    router = (ROOT/'AGENTS.md').read_text()
+    assert "Simple questions, translations and status requests do not start development" in router
+    assert "Lead only orchestrates: decompose the objective" in router
+    assert "Every inspection, edit, check, deployment, commit, push or install is performed by a Worker" in router
+    assert "Never bypass HumanStop or required permission" in router
+    assert "Choose the shortest working route and check the real scenario" in router

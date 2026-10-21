@@ -15,9 +15,13 @@ def test_tangible_outcome_precedes_design_and_code():
 @pytest.mark.parametrize("name", ["src/common/agents/Tester.md", "src/common/skills/user-testing/SKILL.md", "src/common/skills/focus-groups/SKILL.md"])
 def test_blind_testing_is_milestone_not_tool_or_hour(name):
     text=read(name)
-    assert "milestone" in text and "3 hours" in text
-    assert "not every hour" in text
+    assert "milestone" in text
     assert "fresh" in text and "feedback" in text
+    # Blind testing is a milestone-scale decision, not a per-hour ritual.
+    assert "not every hour" in text \
+        or "not a queue for every Full task, edit, hour or commit" in text \
+        or "not a mandatory schedule" in text
+    assert "Zero Knowledge" in text or "Independently attempt a user goal" in text
 
 
 def test_personas_and_full_feedback_are_preserved_without_fake_customers():
@@ -32,7 +36,11 @@ def test_hourly_protocol_cannot_claim_milestone_acceptance():
     assert "Direction check is not acceptance" in text
     assert "--zk-session" not in text
     assert "--business-result" in text and "--source-ref" in text
-    assert "~3 hours" in text
+    # The hourly control checks direction; the milestone scale is a separate,
+    # explicitly chosen acceptance event.
+    assert "do not launch a group every hour" in text
+    assert "milestone_acceptance=not_evaluated" in text
+    assert "not an elapsed-time gate" in text
 
 
 def test_tester_sees_goal_not_desired_verdict_or_solution_recipe():

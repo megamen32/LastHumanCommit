@@ -9,6 +9,8 @@ import time
 import unittest
 from unittest.mock import patch
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[1]
 TOOL = ROOT / "src/common/tools/lhc_active_time.py"
 spec = importlib.util.spec_from_file_location("active_time", TOOL)
@@ -114,6 +116,7 @@ class ActiveTimeTest(unittest.TestCase):
             self.assertEqual(path.read_bytes(), before)
             self.assertEqual(list(Path(folder).iterdir()), [path])
 
+    @pytest.mark.nightly
     def test_real_cli_canary(self):
         ROOT.joinpath(".tmp").mkdir(exist_ok=True)
         with tempfile.TemporaryDirectory(dir=ROOT / ".tmp") as folder:

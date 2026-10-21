@@ -314,7 +314,7 @@ commit` и `result file после 10 минут`.
 
 ## 13. Ошибки валидаторов и текстовой архитектуры
 
-191. `validate.py` требовал presence старых process phrases.
+191. `tests/validate.py` требовал presence старых process phrases.
 192. Validator закреплял `Overseer is mandatory for every task`.
 193. Validator закреплял `maximum <=20` как admission gate.
 194. Validator закреплял ровно три plan headings.

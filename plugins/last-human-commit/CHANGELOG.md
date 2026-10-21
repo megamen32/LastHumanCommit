@@ -1,3 +1,24 @@
+# 1.5.21 — one plan, one graph, one honest dashboard
+
+The plan report and the task graph are now one unit with one validator. `lhc_grid.py`
+gained `check-plan <report> <graph>` (exit 0/1/2) so a report whose tasks differ from
+the graph leaves is caught instead of quietly rendering an empty dashboard; an
+unreadable report is reported as a diagnostic, not as silence. Model classes are the
+fleet's own (`glm-5.3-flash`, `minimax-3.1-flash`, `gpt-6-luna`, `glm-5.3`,
+`gpt-6.1-sol`) and `⛔ blocked` is a first-class plan group.
+
+A new tool, `lhc_parallel.py`, answers "which lines can run in parallel right now", and
+the 30-minute checkpoint reminds the agent to refresh the map through the CLI, rebuild
+the view and compare it against the plan. After compaction the agent receives the plan
+as text; the JSON stays in the file.
+
+`src/common/skills/` is the single canon of the 24 skills; `skills/` is a generated
+projection. `CLAUDE.md` is generated from `AGENTS.md`, so the two routers can never
+drift. Hooks are time-only by contract: `hooks.json` registers exactly `SessionStart`,
+`PostCompact` and `PostToolUse`, and `BUSINESS_CHECKPOINT.md` now states that fact
+instead of promising events that were never wired. The OpenCode V2 adapter is a real
+plugin, not a stub.
+
 # 1.5.20 — native manifest parity
 
 All root, native harness and marketplace manifests now report version 1.5.20,

@@ -18,11 +18,11 @@ what you did instead of where the plan stands.
 
 ## Format
 
-Three header lines, then the leaves: finished first, running second, queued last.
-Drop an empty group. Use the user's local time on a 24-hour clock. Write the report in
-the user's own language — the field wording below is the Russian rendering, canonical
-for a Russian-speaking user. The order, the fields and the emoji do not change with
-the language.
+Three header lines, then the leaves: finished first, running second, blocked
+third, queued last. Drop an empty group. Use the user's local time on a
+24-hour clock. Write the report in the user's own language — the field wording
+below is the Russian rendering, canonical for a Russian-speaking user. The
+order, the fields and the emoji do not change with the language.
 
 ```text
 Цель: <одна строка — чего хочет пользователь>
@@ -35,10 +35,21 @@ the language.
 🔄 работаем (описание листа) начата 14:12, оценка 15 минут, прошло 22 минут, отстаём потому что: <причина>
 🔄 работаем (описание листа) начата 14:12, оценка 20 минут, прошло 8 минут, ∥ параллельно с листом 3
 
+⛔ (описание листа) начата 14:05, оценка 20 минут, блокер: <внешнее препятствие>
+
 ⏳ (описание листа) начнём после листа 3, потому что <почему нельзя параллельно>, примерно в 14:30, оценка 10 минут, закончим в 14:40
 ```
 
-- `✅` finished · `🔄` running · `⏳` queued and not started.
+- `✅` finished · `🔄` running · `⛔` blocked · `⏳` queued and not started.
+- The groups stand in that order: finished, running, blocked, queued. An empty
+  group is dropped, a non-empty one is never merged into another.
+- `⛔` is a leaf that cannot move because of a concrete external obstacle. It
+  names that obstacle in `блокер: <текст>` — the fact that blocks it: no
+  access, a rejected request, an unanswered question, a missing external
+  decision. The blocker text is required. `waiting` or `later` is not a blocker;
+  a leaf whose blocker is not named yet is not blocked yet.
+- `waiting` is not a blocker. A leaf that waits for another leaf is `⏳`
+  queued and names the leaf it waits for; only `⛔` carries `блокер:`.
 - «Декомпозиция» is the shape of the work: how many leaves it was split into, how many
   of them run at the same time, how many waves that takes, and how many slots exist.
   A quick task says so honestly — «1 лист · параллельно нет · 1 волна · слотов: 1» —
@@ -80,6 +91,20 @@ python3 <LHC>/common/tools/lhc_grid.py render <objective>/plan.graph.json -o <ob
 The dashboard shows what is done, what runs now, what is blocked, the rough
 finish time and how much of the work runs in parallel. A decomposition without a
 graph is not finished.
+
+The task list in the report and the leaf list in `plan.graph.json` are one set:
+the same ids, the same statuses, no task without a leaf and no leaf without a
+task. A difference is a defect, not "roughly the same".
+
+Check it with one command:
+
+```sh
+python3 <LHC>/common/tools/lhc_grid.py check-plan <objective>/plan.report.md <objective>/plan.graph.json
+```
+
+It prints every divergence — a task without a leaf, a leaf without a task, a
+different status — and exits non-zero when the two disagree. Reconcile the
+divergence in the same boundary; do not carry it to the next one.
 
 ## What the report is for
 

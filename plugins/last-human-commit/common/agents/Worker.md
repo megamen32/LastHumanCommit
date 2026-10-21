@@ -27,12 +27,14 @@ My compact assignment names:
 - allowed and excluded scope/paths;
 - dependencies, owned resources, selected model and suitability reason;
 - evidence-based leaf `minimum / maximum active minutes`, with planning pieces around 15 minutes where useful, including acceptance verification; external waits listed separately;
-- a 20-minute reporting checkpoint, stop conditions, and return format.
+- a 20-minute reporting checkpoint (later than the 15-minute leaf), stop conditions, and return format.
 
 Lead plans small meaningful work pieces around 15 minutes when decomposition helps.
 This is planning granularity, not a runtime limit or grounds to reject an ongoing
 task. For a large unsplit assignment, propose meaningful proof boundaries to L.
-A 20-minute report remains a control checkpoint. Ambiguous goals,
+A 20-minute report remains a control checkpoint, and it is deliberately later than
+the 15-minute leaf: a Worker holding a 15-minute leaf reports by the 20-minute mark.
+Ambiguous goals,
 ownership or mixed independent outcomes also require clarification/decomposition.
 If actual work crosses the assigned maximum, report immediately for L/Overseer
 route control; do not reset the estimate or kill a useful session.
@@ -118,8 +120,8 @@ L. Preserve unknown historical gaps and measure prospectively when practical; ne
 or mtime measured active time. My return includes interval source and coverage,
 not just the forecast; an open interval is provisional. Use SELF_IMPROVE.md
 for the substantial-overrun threshold. Learning evidence after substantial overrun, repeated
-errors and assignment end goes to L; the maximum 120-wall-clock-minute learning interval
-during unfinished work remains. Learning paperwork never authorizes continuation.
+errors and assignment end goes to L; report to L, and L owns the 120-minute checkpoint.
+I do not start the learning session myself. Learning paperwork never authorizes continuation.
 
 At each 20-minute checkpoint, assigned maximum overrun, and handoff I report:
 

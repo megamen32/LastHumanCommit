@@ -7,7 +7,8 @@ description: Update the shared LHC sources, generate and validate the native plu
 
 Own the change in `LastHumanCommit`, not in an installed cache or a copy in
 another project. Preserve foreign work; use a worktree when another writer is
-present. The source is `src/common/`, `adapters/` and `skills/`; the delivery
+present. The source is `src/common/` and `adapters/`; the repo-root `skills/` tree
+is a generated projection of `src/common/skills/`, not a second source. The delivery
 package is `plugins/last-human-commit`.
 
 Generate with `python3 plugins/last-human-commit/scripts/sync_skills.py`, check

@@ -331,6 +331,7 @@ def test_affirmative_continuation_of_paused_task_still_resumes_manual_hold():
         "Продолжай текущую задачу сейчас.", [HUMAN_ORIGINAL, HUMAN_CURRENT], hold="Interrupt")
 
 
+@pytest.mark.nightly
 def test_entry_finish_hold_requires_substantive_unmarked_prompt_and_preserves_permission_event(tmp_path):
     subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
     root = Path(__file__).resolve().parents[1]

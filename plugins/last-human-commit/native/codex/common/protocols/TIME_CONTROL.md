@@ -24,21 +24,34 @@ Every 30 minutes, write the live plan report (`../protocols/PLAN_REPORT.md`): th
 goal, the current business result, and every leaf as finished, running or queued
 with its start/finish time, original estimate, actual minutes and the reason it
 is behind or blocked. Keep it under `## Plan` in the canonical task note so it
-survives compaction, and show it to the user. Every 60 minutes, reread the
-original direct user goal and check useful business progress. Native PostToolUse
-reminders track only time and deduplicate each due interval; without tool
-activity, a reminder arrives at the next work boundary. They never classify text,
-mutate task/evidence/holds or block completion.
+survives compaction. The 30-minute report is an internal checkpoint: show the user
+material progress, blockers and decisions, not every timer reminder. Every 60
+minutes, reread the original direct user goal and check useful business progress.
+Native PostToolUse reminders track only time and deduplicate each due interval;
+without tool activity, a reminder arrives at the next work boundary. They never
+classify text, mutate task/evidence/holds or block completion.
+
+Every 30 minutes the report and the task graph are brought into one unit, in
+this order: refresh the map from the report through the CLI
+(`lhc_grid.py export <plan.report.md> -o <objective>/plan.graph.json`), build the
+unambiguous view on that refreshed map (`lhc_grid.py render
+<objective>/plan.graph.json -o <objective>/plan.html`, and `lhc_grid.py status`
+for the text view), then reconcile the report's tasks with the map's leaves
+(`lhc_grid.py check-plan <plan.report.md> <objective>/plan.graph.json`) and fix
+the divergence instead of leaving it. The map comes first and the view second:
+the view is built on the refreshed map, so nothing can be folded away or
+forgotten.
 
 ## Timers and what each one is for
 
 | Timer | Cadence | What it protects | What it must not become |
 |---|---|---|---|
+| Leaf size | 15 min | The unit of decomposition: a piece small enough to finish, verify and report inside one estimate | A runtime cap, a kill switch, or a reason to reject or abort a long task |
 | Plan report | 30 min | The plan stays in the model's head and in the record; the Overseer reads it against the original request and the canary | A second task-card format, a file list, or a progress theatre report |
 | Goal direction check | 60 min | The original request is still the goal after an hour of work | A mandatory hourly ritual, a tester dispatch, or an empty status message to the user |
-| Learning checkpoint | 120 min unfinished work | The method is examined instead of repeated; an allowed-model adviser may identify a useful correction | A seven-field form, binding verdict, or acknowledgement loop |
+| Learning checkpoint | 120 min unfinished work | The Lead opens a separate session with the reviewed transcript and receives a verified method correction | A seven-field form, binding verdict, acknowledgement loop, or a learning run started by a non-Lead role |
 | Estimate overrun | On event | Crossing the original maximum forces a route decision instead of grinding | A scolding, a forced estimate rewrite, or more governance that costs more than the overrun |
-| Worker checkpoint | 20 min | A delegated worker reports delta, blocker and next action so it cannot hang silently | A separate report format, or content that must be re-merged into the 30-minute plan report |
+| Worker checkpoint | 20 min | Later than the 15-minute leaf, so a Worker holding a 15-minute leaf must report by the 20-minute mark: delta, blocker, next action | A separate report format, a second leaf size, or content that must be re-merged into the 30-minute plan report |
 | Independent milestone evidence | When the accepted claim warrants it (often around 3 h of coherent work) | A fresh allowed-model tester may try the real consumer surface without implementation history | A standing reviewer queue or a gate on every edit, commit, or elapsed-time threshold |
 | Active-time ledger | Per interval | Real work time is separated from waiting, so overrun means something | Mandatory accounting where the harness does not manage it; `not measured` stays honest |
 
@@ -46,8 +59,13 @@ One clock serves the whole objective. New phases, cards, workers and compactions
 never reset it.
 
 Every 120 wall-clock minutes of unfinished work, the Lead follows SELF_IMPROVE.md
-at the next observable boundary. This is a Lead responsibility without a native
-hook veto. Wall time is a trigger, not active effort; do not wake idle sessions.
+at the next observable boundary: it opens a separate fresh session, hands it the full
+transcript of the reviewed session and the skill or instruction that owns that work,
+and receives a method correction — skill, instruction or MCP — with evidence and
+verification, or an evidence-backed no-change. Sending the finding back to the original
+analyzed session is the allowed alternative. This is a Lead responsibility without a
+native hook veto; no other role starts this checkpoint. Wall time is a trigger, not
+active effort; do not wake idle sessions.
 
 Every declared work cycle has its own immutable `minimum / maximum active
 minutes` estimate before execution. A cycle is one coherent route to one
@@ -55,11 +73,43 @@ business proof: one Worker lane, one real canary, any warranted review,
 one rollout, or another named operation. Tiny atomic commands may share the
 estimate of their enclosing cycle; do not create an estimate per shell command.
 
+## Ready parallel lines
+
+A *ready parallel line* is a leaf of the canonical task graph that can start
+right now: its status is `queued`, it carries no blocker, every id in
+`depends_on` is `done`, and a free slot exists (`slots` minus the number of
+running lines). The graph decides this. Nobody judges it: the answer is a
+reading of the plan, not an opinion about the work.
+
+The agent gets that answer in two ways.
+
+- The tool answers it directly and offline from the canonical graph:
+  `../tools/lhc_parallel.py <objective>/plan.graph.json`, with `--json` for a
+  machine caller and `--slot` to assign each ready line to a concrete slot.
+  The readable output is in Russian and names every lane: what runs now, what
+  is ready with its estimate and what it unblocks, what waits on which
+  dependency, what is blocked and why, the free slots, the critical path and
+  the next step.
+- The 30-minute native checkpoint repeats the same answer in its reminder. It
+  reads the same canonical graph, names the running lanes, names the ready
+  lanes with their ids and labels, and says plainly that the ready parallel
+  lines should be started instead of working one line only. The reminder is
+  time-only: it names the lanes, it does not assess them.
+
+This is not a gate. It never estimates, reviews, judges or blocks, it never
+holds a leaf, and it never rules that a lane may not start. The graph is the
+schedule and the slots are the capacity; the tool and the reminder only read
+them and repeat what the plan already says. A missing graph is reported as
+missing, and no lane is invented in its place.
+
 ## Start anchor
 
 Before setting an anchor, construct the estimate from the work. Thirty minutes
 is the plan-update interval; decompose work into subtasks estimated at about 15
 minutes. This is planning granularity, not a maximum actual task duration.
+Fifteen minutes sizes the leaf; the 20-minute Worker checkpoint is a later reporting
+point that is deliberately larger than the leaf, so a Worker holding a 15-minute leaf
+must report by the 20-minute mark.
 Split large work into independently verifiable results before dispatch;
 an estimate materially larger than 15 minutes means the next steps are not yet
 understood well enough: clarify and decompose further. First sum all subtask
@@ -174,5 +224,10 @@ creating a new context-growth problem.
 The handoff includes the current task contract, accepted result/canary, timing
 truth, blockers, next action, and bounded workspace/changed-path evidence. It
 must say unknown when active time or historical pre-install compaction count is
-not known. Codex restores it through SessionStart after PreCompact/PostCompact;
-OpenCode injects it directly through `experimental.session.compacting`.
+not known. It also carries the current plan and task graph as readable text
+rendered from the canonical `plan.graph.json`, so the plan survives compaction;
+the JSON stays the machine artifact in the file, and a missing map is reported
+as missing instead of being silently skipped. Codex restores it through
+SessionStart after PreCompact/PostCompact; OpenCode injects a pointer to it and
+to the current AGENTS.md through `experimental.session.compacting`. The plugin
+points at the handoff; the session writes it.

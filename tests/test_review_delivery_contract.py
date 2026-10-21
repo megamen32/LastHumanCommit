@@ -13,27 +13,35 @@ ENTRY=ROOT/"src/common/tools/lhc_entry.py"
 
 def invoke(root,event,**payload):
     value={"cwd":str(root),"session_id":"review-delivery-test",**payload}
-    result=subprocess.run([sys.executable,str(ENTRY),"--root",str(ROOT),"--runtime","codex","--event",event],input=json.dumps(value),text=True,capture_output=True,check=True,timeout=8)
+    # --session is the explicit agent command that advances the stateful
+    # lifecycle. The native hook templates stay time-only and never block.
+    result=subprocess.run([sys.executable,str(ENTRY),"--root",str(ROOT),"--runtime","codex","--event",event,"--session"],input=json.dumps(value),text=True,capture_output=True,check=True,timeout=8)
     data=json.loads(result.stdout) if result.stdout.strip() else {}
     return data, data.get("hookSpecificOutput",{}).get("additionalContext","")
 
 def prepare(root):
     subprocess.run(["git","init","-q",str(root)],check=True)
 
+def delivery_protocol():
+    return (ROOT/"src/common/protocols/REVIEW_TO_DELIVERY.md").read_text()
+
 def test_native_entry_distinguishes_receipt_error_from_material_change(tmp_path):
     prepare(tmp_path)
     result,text=invoke(tmp_path,"UserPromptSubmit",prompt="Tests passed; the reviewer typed a wrong SHA in its receipt. Deliver the fix.")
-    assert "receipt SHA/name/JSON correction" in text
-    assert "no new review" in text
-    assert "code/environment delta" in text
-    assert "Tests≠consumer result" in text
+    # The delivered context points at the router and keeps the saved goal; the
+    # delivery rule itself is written down once, in the protocol.
+    assert str(ROOT/"AGENTS.md") in text
+    assert "Deliver the fix." in text
     assert "decision" not in result
-    assert "RED" in text and "Zero Knowledge" in text
+    protocol=delivery_protocol()
+    assert "SHA typo, filename, JSON formatting" in protocol
+    assert "No new LLM review, second JSON or receipt-review" in protocol
+    assert "Real delta." in protocol and "Metadata error over known checked code." in protocol
 
 def test_old_session_first_tool_gets_delivery_rule_without_new_gate(tmp_path):
     prepare(tmp_path)
     first,text=invoke(tmp_path,"PreToolUse",tool_name="exec_command",tool_input={"cmd":"git status --short"})
-    assert "receipt SHA/name/JSON correction" in text
+    assert str(ROOT/"AGENTS.md") in text
     assert first.get("decision")!="block"
     second,text=invoke(tmp_path,"PostToolUse")
     assert not text, "Do not start a per-tool ritual or rereview every tool result"
@@ -68,3 +76,28 @@ def test_source_only_requests_do_not_acquire_a_deployment_requirement():
     text=(ROOT/"src/common/protocols/REVIEW_TO_DELIVERY.md").read_text()
     assert "If installation was requested" in text
     assert "otherwise close within agreed boundaries" in text
+
+def test_review_obligation_is_recorded_by_the_explicit_cli_not_by_a_hook():
+    # The review loop is a CLI-driven ritual. The hook bundle may only point at
+    # the method and track elapsed time, so it may never open the review
+    # itself, and it may never advance the stateful lifecycle.
+    hooks=json.loads((ROOT/"plugins/last-human-commit/hooks/hooks.json").read_text())["hooks"]
+    assert set(hooks)=={"SessionStart","PostCompact","PostToolUse"}
+    for group in hooks.values():
+        for entry in group:
+            command=entry["hooks"][0]["command"]
+            assert "--instructions-only" in command or "--heartbeat-only" in command, command
+            assert "--session" not in command, command
+            assert "business-review" not in command, command
+            assert "checkpoint" not in command, command
+    # The review itself is recorded by the explicit time-guard CLI.
+    guard=ROOT/"src/common/tools/lhc_time_guard.py"
+    spec=importlib.util.spec_from_file_location("review_delivery_guard",guard)
+    module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+    args=module.parser().parse_args(["business-review","--cwd",str(ROOT),"--runtime","codex",
+        "--session-id","review-delivery-test","--review-id","business-1",
+        "--source-ref","original request","--business-result","Report opens",
+        "--scope-decision","Keep the report","--next-action","Implement the filter"])
+    assert args.command=="business-review"
+    assert args.review_id=="business-1"
+    assert args.source_ref==["original request"]

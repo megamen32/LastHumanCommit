@@ -29,18 +29,19 @@ Agent messages are not human prohibitions. Status, duplicates and review routing
 Repair evidence bindings without replaying accepted actions; preserve native stops, permissions, revocations, negative findings and unknown operations.
 Lead only orchestrates: decompose the objective, assign exclusive paths/resources and dependencies, resolve decisions, and collect/summarize results. Every inspection, edit, check, deployment, commit, push or install is performed by a Worker; Lead does not execute these actions.
 An assigned no-delegation leaf uses native self-check, never parent product PASS or recursive hiring.
-Large fullcycle: bounded allowed-model research Workers → one working→ideal→YAGNI plan → optional allowed-model adviser challenge → bounded Worker dispatch.
+Large fullcycle: bounded independent research Workers → one working→ideal→YAGNI plan → optional quota-aware frontier council → bounded dispatch.
 Council checks alternatives/crosschallenge/business cost/dissent; do not repeat a completed council without a real delta.
 Quickfix/testing/assigned leaf tasks skip that cycle; preserve independent review for ambiguous changes.
-For each new genuine blocker, assign an adviser from gpt6luna, glm53flash or minimax3.1flash to identify permitted routes; resolve the family to an exact live catalog ID and never silently substitute.
+For each new genuine blocker, assign an allowed adviser — fast tier glm-5.3-flash or minimax-3.1-flash, frontier tier gpt-6-luna, glm-5.3 or gpt-6.1-sol — to identify permitted routes; resolve the tier to an exact live catalog ID and never silently substitute.
 If none is executable, ask a fresh-context Overseer for route advice. The Lead only coordinates the viable Worker route; deduplicate unchanged blockers. Never bypass HumanStop or required permission.
 Roles are tools, not a mandatory ceremony queue. Load a role or a skill because this task needs it,
-not because a schedule says so. Use Workers only from the explicitly allowed gpt6luna, glm53flash, and minimax3.1flash model families. Before dispatch, match the selected family to its exact currently available model-catalog ID and verify capability. Never silently substitute another model; if no allowed route is available, report the blocker. Use an independent Reviewer or Tester from the same allowed families when the claim and risk warrant it. An assigned Worker owns its leaf through result and does not recursively hire.
+not because a schedule says so. Use Workers only from the explicitly allowed model tiers: fast = glm-5.3-flash, minimax-3.1-flash; frontier = gpt-6-luna, glm-5.3, gpt-6.1-sol. Before dispatch, match the selected tier to its exact currently available model-catalog ID and verify capability. Never silently substitute another model or step outside the allowed tier; if no allowed route is available, report the blocker. Use an independent Reviewer or Tester from the same allowed tiers when the claim and risk warrant it. An assigned Worker owns its leaf through result and does not recursively hire.
+Decomposition leaves are sized at about 15 minutes of work, not runtime caps, and a delegated Worker checkpoints at 20 minutes — later than the leaf, so a Worker holding a 15-minute leaf reports by the 20-minute mark.
 For work over 15 minutes, a canonical `.agents/tasks/` note records original
 request/result, initial estimate, active/wall-clock time separately, the live plan
 report, decisions/completed/next action. No elapsed-time threshold by itself requires
-a file or Git commit. Update at 30/60 reminders; user updates are material
-progress only. After resume, check code/corrections; no second GSD workflow.
+a file or Git commit. Update at 30/60 reminders; a timer reminder is an internal
+checkpoint, and the user sees material progress only. After resume, check code/corrections; no second GSD workflow.
 ## Execution access before implementation or acceptance
 Resolve `<primary checkout>/.agents/TEST_ACCESS.md` through Git worktree metadata;
 follow `common/protocols/REVIEW_TO_DELIVERY.md` for the execution-access contract.
@@ -97,11 +98,10 @@ boundary. Render it with one command:
 <objective>/plan.html` — what is done, what runs now, what is blocked, the rough
 finish and the parallelism, in one file the user can open without asking for status.
 
-A fresh-context Overseer reads that report against the original request and the accepted
-business canary and returns the smallest correction. It is a reader, not a gate: it never
-blocks delivery, never rewrites the plan, never waives anything. At 60 minutes, reread
-original goal/corrections and check the business result. This is goal control, not another
-tester launch.
+A fresh-context, zero-knowledge Overseer reads that report against the original request and the accepted business canary and returns the smallest correction. It guides the Lead: it keeps the route on the business result, flags spurious blockers and drift from the original plan specification, and never rewrites the plan or waives anything.
+It is a reader, not a gate: it never blocks delivery. The Lead owns the decision. At 60
+minutes, reread original goal/corrections and check the business result. This is goal
+control, not another tester launch.
 
 At major milestones (~3 hours of coherent work) or final acceptance, use fresh
 Zero Knowledge testers with varied personas when the accepted claim needs independent
@@ -115,13 +115,16 @@ a reminder or reading the file does not complete it.
 The Lead also owns the 120-minute unfinished-work review and the review after repeated
 failure or user correction: reread the original request, check it against current code,
 then follow `common/protocols/SELF_IMPROVE.md` — observation, method correction, and
-verification against the failure and available reuse. When the session is slow, stuck or
-drifting, request one distinct fresh adviser from the allowed model families: it diagnoses why the session is slow and may recommend a change to the owning
-instruction, skill or tool. The Lead weighs the advice and owns the route decision.
+verification against the failure and available reuse. At 120 minutes of unfinished work
+the Lead opens a separate fresh session and hands it the full transcript of the reviewed
+session plus the skill or instruction that owns that work; that session analyzes what was
+slow and returns a method correction — skill, instruction or MCP — with evidence and
+verification, or an evidence-backed no-change. Sending the finding back to the original
+analyzed session is the allowed alternative; no other role runs this checkpoint.
+When the session is slow, stuck or drifting, request one distinct fresh adviser from the allowed model tiers: it diagnoses why the session is slow and may recommend a change to the owning instruction, skill or tool.
+The Lead weighs the advice and owns the route decision.
 Verification is mandatory; justified no-change is allowed, an invented patch is not. The
-existing time-guard CLI may record these reviews, but hooks do not enforce deadlines or
-veto platform lifecycle decisions. Pauses are not active work; stopped sessions are not
-awakened.
+existing time-guard CLI may record these reviews, but hooks do not enforce deadlines or veto platform lifecycle decisions. Pauses are not active work; stopped sessions are not awakened.
 
 ## Parallel work
 Before writing, inspect this project's sessions through Agent Herder. If another
@@ -149,7 +152,7 @@ and `waiting` state; writing a file does not prove delivery or awakening.
 Use claim-critical checks → permitted deploy → real consumer verification; add
 independent milestone acceptance when the accepted claim warrants it, then complete
 the applicable published dev history and integrated smoke.
-Before a PR into a repository you do not own, when its contribution policy requires it, a fresh Reviewer from an allowed model family plays that project's maintainer: it reads the project's own rules, conventions, tests and CI, then the diff,
+Before a PR into a repository you do not own, when its contribution policy requires it, a fresh Reviewer from an allowed model tier plays that project's maintainer: it reads the project's own rules, conventions, tests and CI, then the diff,
 and returns a mountain of findings. Fix or answer every supported finding, then review
 the changed diff again when review is required by that repository's policy. An LHC receipt or bookkeeping status alone is not a release veto.
 PR per worker is optional. Local checkpoint commits may precede this. If CI needs an

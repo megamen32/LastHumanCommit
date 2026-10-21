@@ -35,12 +35,27 @@ Ask Lead non-blockingly instead of guessing when product intent, accepted
 fallback, data migration, blast radius, or proof strength changes the fix.
 Continue only answer-independent work while waiting.
 
+## Test length
+
+Keep the regression fast. It is unit level: no external service, no network, no
+long-running integration, seconds to run. It belongs to the ordinary test run.
+
+Long proofs — integration, end-to-end, real services — belong to the nightly
+suite. Write them when the defect needs that coverage, but never let a slow test
+stand in for the fast regression.
+
+Reuse an existing regression or a real canary only when it already proves the
+same behavior and is itself fast and repeatable. Otherwise write the new unit
+test.
+
 ## Do not
 
 - Do not widen the fix into cleanup, abstraction, security hardening, logging,
   compatibility, or exhaustive edge cases.
-- Do not create a fake-contract test when a real consumer probe is cheaper and
-  stronger.
+- Do not write a fake-contract test that asserts the mock instead of the
+  reported behavior.
+- Do not skip the fast RED regression because a real consumer probe looks
+  cheaper; the probe is additional evidence, never a substitute.
 - Do not claim production or UI recovery from source tests alone.
 - Do not keep retrying after two failed hypotheses; report evidence and the
   shortest changed route to Lead.

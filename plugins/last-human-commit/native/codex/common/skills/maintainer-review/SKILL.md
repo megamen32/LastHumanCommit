@@ -12,8 +12,8 @@ preferences; only concrete defects or required checks block the affected action.
 
 ## Who reviews
 
-Request one fresh Reviewer from an allowed gpt6luna, glm53flash or minimax3.1flash
-family, resolving it to an exact live model-catalog ID and verifying actual identity,
+Request one fresh Reviewer from an allowed model tier — fast tier glm-5.3-flash or
+minimax-3.1-flash, frontier tier gpt-6-luna, glm-5.3 or gpt-6.1-sol — resolving it to an exact live model-catalog ID and verifying actual identity,
 that plays the target project's maintainer: a senior engineer who has been in that codebase for years, loves
 it, and has no patience for changes that ignore how it works. Give it the
 target repository path, the branch or diff under review, and the accepted

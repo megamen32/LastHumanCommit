@@ -6,7 +6,7 @@ description: Let the human-selected Lead coordinate a goal into coherent model-a
 # Decompose, allocate, execute, learn
 
 Use before substantial dispatch and whenever execution reveals a bad boundary.
-The Lead only coordinates; assign every execution step to a Worker, even when small. Use independent review only when the claim and risk justify it. Allowed Worker, Adviser, Reviewer and Tester families are gpt6luna, glm53flash and minimax3.1flash; resolve exact live catalog IDs before dispatch, with no silent fallback. An assigned leaf does not recursively hire.
+The Lead only coordinates; assign every execution step to a Worker, even when small. Use independent review only when the claim and risk justify it. Allowed Worker, Adviser, Reviewer and Tester models come from the allowed tiers: fast tier glm-5.3-flash or minimax-3.1-flash, frontier tier gpt-6-luna, glm-5.3 or gpt-6.1-sol; resolve exact live catalog IDs before dispatch, with no silent fallback. An assigned leaf does not recursively hire.
 Keep its graph compact. An already delegated leaf with no-delegation does not hire recursively.
 
 ## Resolve uncertainty before distributing it

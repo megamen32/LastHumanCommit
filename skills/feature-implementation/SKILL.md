@@ -6,7 +6,9 @@ description: Compatibility alias for older LHC assignments that request feature 
 # Feature Implementation
 
 For new assignments, load `worker-code`; it supersedes this compact alias with
-reusable research-map and `rg` guidance.
+reusable research-map and `rg` guidance. `worker-code` is canonical for
+implementation work, including its defect rule: a defect repair needs the fast
+RED regression from `worker-bugfix` before production code changes.
 
 Use for a coherent vertical feature contribution assigned to a Worker. The Lead
 coordinates and does not execute the implementation.

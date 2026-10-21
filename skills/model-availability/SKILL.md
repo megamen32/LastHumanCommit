@@ -1,6 +1,6 @@
 ---
 name: model-availability
-description: Check existing model catalogs, read-only subscription quotas and assignment capabilities before council, delegation or focus acceptance; never infer availability from a model name or telemetry status.
+description: Check existing model catalogs, read-only subscription quotas and assignment capabilities before council, delegation or focus acceptance; the allowed tier list governs those assignments while the route table is installation-specific evidence; never infer availability from a model name or telemetry status.
 ---
 
 # Available routes, not guessed capacity
@@ -15,13 +15,23 @@ required tools/vision/context, requested model and actual native execution model
 `reported` means telemetry arrived, not eligible. Unknown is not available. A
 catalog entry or a model name in a prompt does not attest successful execution.
 
-User-approved frontier routes for this installation (recheck live catalog):
+The allowed tiers govern every assignment: tier `fast` is `glm-5.3-flash` and
+`minimax-3.1-flash`, tier `frontier` is `gpt-6-luna`, `glm-5.3` and
+`gpt-6.1-sol`. This list applies wherever a model is chosen for council,
+delegation or focus acceptance.
 
-| Harness | Exact subscription route |
-| --- | --- |
-| codex | `gpt-6.1-sol` |
-| opencode | `zai-coding-plan/glm-5.3` |
-| opencode | `minimax-coding-plan/MiniMax-M3.1-Flash` |
+User-approved routes for this installation (recheck live catalog):
+
+| Tier | Harness | Exact subscription route |
+| --- | --- | --- |
+| frontier | codex | `gpt-6.1-sol` |
+| frontier | opencode | `zai-coding-plan/glm-5.3` |
+| fast | opencode | `minimax-coding-plan/MiniMax-M3.1-Flash` |
+
+The table is this installation's historical route evidence for reaching those
+models; it is not the authority on which models are allowed. A route that is
+missing today is a blocker to report, never a licence to pick a model outside
+the allowed tiers.
 
 Do not silently substitute OmniRoute, PAYG, a cheaper model, a credit pack or an
 unapproved fallback. Set explicit route/fallback policy in the existing dispatch.

@@ -23,13 +23,13 @@ Lead определяет его из разговора и файлов; исх
 
 Источник1efe47b добавил независимый от карточек session checkpoint каждые120
 минут незавершённой работы;7f1cb0f исправил native вход Codex.23 CLI-регрессии,
-полный validator и parity22 skills прошли. Это тесты управляемого времени,
+полный validator и parity 22 skills прошли. Это тесты управляемого времени,
 а не наблюдение двухчасового рабочего сеанса.
 
 В текущем Codex native `plugin/read` возвращал0 hooks для переносимого входа,
 но5 для `native/codex`. Этот generated вход находится внутри того же пакета,
 строится из тех же common/skills/tools/hooks и не содержит затеняющий native
-manifest файл `plugin.json`. Наружный Agent Plugins1.0 manifest сохранён.
+manifest файл пакета `plugin.json`. Наружный Agent Plugins1.0 manifest сохранён.
 Не распространяйте отдельные навыки вручную и не редактируйте cache.
 
 Codex1.2.1 установлен native на100/88/Mac. Через штатные `hooks/list` и

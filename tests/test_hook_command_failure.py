@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE = ROOT / 'plugins/last-human-commit'
@@ -17,6 +18,7 @@ def run_hook(command, root):
                           capture_output=True, env=env, cwd=ROOT, timeout=10)
 
 
+@pytest.mark.nightly
 def test_missing_package_does_not_block_message():
     config = json.loads((PACKAGE / 'hooks/hooks.json').read_text())
     missing = ROOT / '.tmp/nonexistent-cache-version-for-hook-test'
@@ -29,7 +31,7 @@ def test_missing_package_does_not_block_message():
 
 def test_existing_observer_executes_without_fallback():
     config = json.loads((PACKAGE / 'hooks/hooks.json').read_text())
-    command = config['hooks']['UserPromptSubmit'][0]['hooks'][0]['command']
+    command = config['hooks']['SessionStart'][0]['hooks'][0]['command']
     result = run_hook(command, PACKAGE)
     assert result.returncode == 0, result.stderr
     assert 'entry unavailable' not in result.stderr

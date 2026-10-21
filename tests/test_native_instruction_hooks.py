@@ -303,8 +303,37 @@ def test_post_tool_heartbeat_cli_creates_only_validated_timer_state(tmp_path: Pa
     states = list((tmp_path / ".agents/shared-session/learning").glob("*.json"))
     assert len(states) == 1
     state = json.loads(states[0].read_text(encoding="utf-8"))
-    assert set(state) == {"native_heartbeat"}
+    # The learning checkpoint owns the shared clock and runs first; the
+    # heartbeat then adds its own sibling key. Both keys must survive, or the
+    # time reminder is swallowed for every harness.
+    assert "native_heartbeat" in state
+    assert "last_observed_at" in state
     assert state["native_heartbeat"]["session_id"] == "native-sid"
+
+
+def test_post_tool_heartbeat_reports_the_due_reminder_after_elapsed_time(tmp_path: Path) -> None:
+    import subprocess
+    from datetime import datetime, timedelta, timezone
+
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    command = [sys.executable, str(ENTRY), "--root", str(tmp_path), "--event", "PostToolUse", "--heartbeat-only"]
+    payload = json.dumps({"cwd": str(tmp_path), "session_id": "native-sid"})
+    subprocess.run(command, input=payload, text=True, capture_output=True, check=True)
+
+    state_path = next((tmp_path / ".agents/shared-session/learning").glob("*.json"))
+    state = json.loads(state_path.read_text(encoding="utf-8"))
+    past = (datetime.now(timezone.utc) - timedelta(minutes=31)).isoformat()
+    state["native_heartbeat"]["started_at"] = past
+    state["native_heartbeat"]["last_seen_at"] = past
+    state_path.write_text(json.dumps(state), encoding="utf-8")
+
+    completed = subprocess.run(command, input=payload, text=True, capture_output=True, check=True)
+    result = json.loads(completed.stdout)
+    context = result["hookSpecificOutput"]["additionalContext"]
+    assert "LHC 30-minute plan report" in context
+    state = json.loads(state_path.read_text(encoding="utf-8"))
+    assert state["native_heartbeat"]["last_plan_bucket"] == 1
+    assert "last_observed_at" in state
 
 
 @pytest.mark.parametrize("event", ["UserPromptSubmit", "PreToolUse", "PostToolUse", "Stop", "Interrupt", "SessionEnd"])

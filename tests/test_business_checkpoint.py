@@ -259,24 +259,36 @@ def test_only_direct_user_prompt_is_preserved_as_scope_source(tmp_path,clock):
 
 def test_default_manifest_reaches_entry_and_periodic_guard():
     hooks=json.loads((ROOT/"plugins/last-human-commit/hooks/hooks.json").read_text())["hooks"]
-    assert {"SessionStart","UserPromptSubmit","PostToolUse","Stop"} <= set(hooks)
-    for event in ("UserPromptSubmit","PostToolUse","Stop"):
+    # The declared hook bundle is time-only: instructions plus the heartbeat.
+    assert set(hooks) == {"SessionStart","PostCompact","PostToolUse"}
+    for event in ("SessionStart","PostToolUse"):
         assert any("lhc_entry.py" in h["command"] for group in hooks[event] for h in group["hooks"])
+    # A hook may not advance the stateful lifecycle and may not open the
+    # review obligation either: the review is recorded by an explicit CLI.
+    for group in hooks.values():
+        for entry in group:
+            command=entry["hooks"][0]["command"]
+            assert "--instructions-only" in command or "--heartbeat-only" in command, command
+            assert "--session" not in command, command
+            assert "business-review" not in command, command
+            assert "checkpoint" not in command, command
 
 def test_blind_review_is_not_fed_the_implementers_answer():
     method=(ROOT/"src/common/protocols/BUSINESS_CHECKPOINT.md").read_text()
-    for term in ("original", "Zero Knowledge", "~3 hours", "decision", "Direction check is not acceptance"):
+    for term in ("original", "Zero Knowledge", "do not launch a group every hour", "decision", "Direction check is not acceptance"):
         assert term in method
     assert "SHA" in method and "not" in method
 
 
-def test_native_hook_executes_hourly_and_learning_without_task_card(tmp_path):
+def test_native_session_command_reports_hourly_and_learning_without_task_card(tmp_path):
     subprocess.run(["git","init","-q",str(tmp_path)],check=True)
     package=ROOT/"plugins/last-human-commit"
     entry=package/"tools/lhc_entry.py"
     payload={"cwd":str(tmp_path),"session_id":"native-cli","prompt":"Use existing report"}
     def run(event):
-        result=subprocess.run([sys.executable,str(entry),"--event",event,"--runtime","codex"],
+        # The session command is the explicit path that advances the stateful
+        # lifecycle; the hook templates stay time-only.
+        result=subprocess.run([sys.executable,str(entry),"--event",event,"--runtime","codex","--session"],
             input=json.dumps(payload),capture_output=True,text=True,check=True)
         return result.stdout
     run("UserPromptSubmit")

@@ -26,6 +26,8 @@ calls inside a long slice, when any trigger occurs:
 - 120 wall-clock minutes have elapsed during unfinished work since the previous
   completed checkpoint (or objective/session start). New cycles and compaction
   never restart this timer. An idle agent checks on resumption; do not wake it.
+  This is the Lead's trigger; other roles report their learning evidence to the
+  Lead instead of running the checkpoint themselves.
 
 - the user corrected LHC's behavior or instruction interpretation;
 - the route materially failed, substantially exceeded its maximum, or required RETHINK;
@@ -51,7 +53,8 @@ hook alone does not prove learning occurred.
 ## When the session is slow
 
 A session that is slow, stuck or visibly drifting may benefit from an independent
-adviser. Use only gpt6luna, glm53flash or minimax3.1flash, resolved to an exact
+adviser. Use only the allowed model tiers — fast: glm-5.3-flash, minimax-3.1-flash;
+frontier: gpt-6-luna, glm-5.3, gpt-6.1-sol — resolved to an exact
 currently available catalog ID with actual model identity verified; never silently
 substitute. Give the adviser the current user request, plan report, applicable rules,
 structured outcome and a capped recent event excerpt. Omit the full transcript by
@@ -67,7 +70,8 @@ It gains no authority it did not have: no new publication, deployment,
 destructive-action or memory permission, and no bypass of HumanStop or the user's
 constraints.
 
-Do this at the 120-minute learning checkpoint and after repeated failure. A newly
+Do this at the 120-minute learning checkpoint and after repeated failure. The Lead
+runs that checkpoint by opening a separate fresh session; a newly
 discovered genuine blocker also gets an allowed-model adviser; consult the Overseer
 for route advice if that adviser finds no executable route. No extra review queue is created.
 
@@ -79,6 +83,14 @@ Every maximum overrun still requires an immediate route decision; substantial
 overrun means that decision's bounded continuation also misses its limit or the
 accepted delivery forecast is no longer credible. Do not wait two hours after
 an earlier trigger.
+
+The checkpoint is the Lead's. At 120 minutes of unfinished work the Lead opens a
+separate fresh session and hands it the full transcript of the reviewed session plus
+the skill or instruction that owns that work. That separate session analyzes what was
+slow and returns a method correction — skill, instruction or MCP — with evidence and
+verification. Sending the finding back to the original analyzed session is the
+allowed alternative. Other roles report their learning evidence to the Lead; they do
+not start this session themselves.
 
 First reread the original user request/documents and latest direct corrections,
 not just the agent-authored plan or summary. Compare the original accepted outcome, cumulative elapsed time and total
@@ -95,8 +107,11 @@ and evidence in the existing task or session guard (a task card is optional).
 Delegate a larger unrelated repair as Proposed
 with an owner and next check; it must not consume the product task indefinitely.
 If there is no useful correction, record a short evidence-backed no-change
-decision. A timer mandates inspection, not fabricated learning or unnecessary
-edits. Repeated no-change despite the same failure is a failed checkpoint.
+decision that names the cause: changing nothing is a valid outcome of the checkpoint
+when nothing was proven. A timer mandates inspection, not fabricated learning or
+unnecessary edits, and not an immediate method rewrite: an unproven edit is worse
+than a recorded cause. Repeated no-change despite the same failure is a failed
+checkpoint.
 
 The guard's explicit acknowledgement records observation, method change or
 justified no-change, verification and next route. Emitting a notification,

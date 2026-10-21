@@ -1,4 +1,10 @@
-"""Real CLI interval ledger -> native UserPromptSubmit hook integration.
+"""Real CLI interval ledger -> explicit time-guard CLI integration.
+
+The installed hook surface is time-only: it tracks elapsed wall time and points
+at the method. The interval ledger and the active-time accounting are driven by
+the explicit CLI (``lhc_time_guard.py hook``) that the agent calls by the
+method; ``--event UserPromptSubmit`` is the legacy adapter label of that CLI
+call, not an installed native hook event.
 
 No patched clocks, subprocesses or services: only the legacy persisted counter
 is seeded deliberately to prove that partial intervals never reset total time.
@@ -107,7 +113,7 @@ class TimeGuardActiveIntegrationTest(unittest.TestCase):
         self.assertIn("open interval provisional=False", repeated)
         self.assertIn("777 active minutes", repeated)
         self.assertNotIn("999 active minutes", repeated)
-        self.assertNotIn("Lead must start or repair", repeated)
+        self.assertNotIn("Active interval accounting is missing or unavailable", repeated)
         self.assertEqual(self.card.read_text().count("Active minutes: 777"), 1)
         self.assertIn(f"source=interval-ledger: {paused['measured_active_seconds']} seconds", repeated)
         self.assertEqual(json.loads(self.guard_state.read_text())["last_active_minutes"], 777)
@@ -143,7 +149,7 @@ class TimeGuardActiveIntegrationTest(unittest.TestCase):
         self.assertIn("Did you track it? Answer: unknown.", prompt)
 
     def assert_repair(self, prompt):
-        self.assertIn("Lead must start or repair", prompt)
+        self.assertIn("Active interval accounting is missing or unavailable", prompt)
         self.assertNotIn("Separate measurement source=interval-ledger:", prompt)
         self.assertIn("active source=hook-observed", prompt)
 
@@ -155,7 +161,7 @@ class TimeGuardActiveIntegrationTest(unittest.TestCase):
         self.assertEqual(resumed["finalized_active_seconds"], stopped["measured_active_seconds"])
         prompt = self.hook()
         self.assertIn("Separate measurement source=interval-ledger:", prompt)
-        self.assertNotIn("Lead must start or repair", prompt)
+        self.assertNotIn("Active interval accounting is missing or unavailable", prompt)
 
     def test_foreign_actor_requires_repair(self):
         self.ledger_command("start", actor="another-session")
@@ -170,7 +176,10 @@ class TimeGuardActiveIntegrationTest(unittest.TestCase):
         other_session = "another-real-session"
         prompt = self.hook(session_id=other_session)
         self.assert_repair(prompt)
-        self.assertIn(str(self.ledger_path(other_session)), prompt)
+        # The asking session owns no interval of its own and never consumes the
+        # other session's measured time.
+        self.assertNotIn("source=interval-ledger", prompt)
+        self.assertFalse(self.ledger_path(other_session).exists())
 
     def test_unknown_session_cannot_establish_ownership(self):
         self.session_id = "unknown-session"
@@ -180,10 +189,9 @@ class TimeGuardActiveIntegrationTest(unittest.TestCase):
 
     def test_missing_ledger_demands_repair_and_labels_estimate(self):
         prompt = self.hook()
-        self.assertIn("Lead must start or repair", prompt)
-        self.assertIn(str(self.ledger), prompt)
-        self.assertIn("before new work", prompt)
-        self.assertIn("pause for idle/user waits", prompt)
+        self.assertIn("Active interval accounting is missing or unavailable", prompt)
+        self.assertIn("begin measuring forward with lhc_active_time.py", prompt)
+        self.assertIn("pause during idle waits", prompt)
         self.assertIn("Historical unknown time stays unknown", prompt)
         self.assertIn("active source=hook-observed", prompt)
         self.assertIn("estimated 0 active minutes", prompt)

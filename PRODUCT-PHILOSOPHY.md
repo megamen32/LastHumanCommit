@@ -34,7 +34,7 @@
         │   тестирование   → сценарии и персоны фокус-группы
         │
         ▼
-[4] декомпозиция: листья ≤ 20 минут, больше — дробить дальше
+[4] декомпозиция: листья ≤ 15 минут, больше — дробить дальше
         │
         ▼
 [5] параллелизация: что идёт одновременно, что строго последовательно
@@ -136,12 +136,17 @@
 
 ## 5. Декомпозиция
 
-План превращается в листья. **Один лист — не больше 20 минут.** Если задача больше —
-она декомпозируется дополнительно, пока каждый лист не станет умещаться в 20 минут.
+План превращается в листья. **Один лист — не больше 15 минут.** Если задача больше —
+она декомпозируется дополнительно, пока каждый лист не станет умещаться в 15 минут.
 
-Это не про «успеть за 20 минут». Это про размер владения: за 20 минут лист можно
+Это не про «успеть за 15 минут». Это про размер владения: за 15 минут лист можно
 довести до конца, проверить и закрыть. Лист длиннее — это несколько задач, смешанных
 в одну, и его невозможно довести до конца.
+
+**15 минут — это размер листа, 20 минут — это контрольная точка воркера.** Это разные
+числа: воркер, взявший 15-минутный лист, обязан отчитаться о дельте, блокере и
+следующем действии не позже 20-й минуты. Отчёт — не новый размер листа и не формат
+вместо план-отчёта.
 
 ---
 
@@ -215,7 +220,7 @@
 
 1. Свежая сильная сессия играет роль хозяина проекта — строгий сеньор, который
    годами в этом коде и любит его.
-2. Сначала читает **проект**: `AGENTS.md`/`CLAUDE.md`/`CONTRIBUTING.md`/`README.md`,
+2. Сначала читает **проект**: его `AGENTS.md`/`CLAUDE.md`/`CONTRIBUTING.md`/`README.md`,
    архитектурные записки, конфиги линтера/сборки/типов, раскладку тестов, CI и
    branch protection, `CODEOWNERS`, историю затронутых мест, конвенции, которые видно
    по коду.
@@ -259,26 +264,31 @@
 
 ## 14. Где это реализовано в репозитории
 
+Навыки указаны через корневой каталог `skills/` (например `skills/worker-code/`).
+Это единственная точка входа, которая одинаково работает в исходном дереве и в
+собранном пакете, и не меняется при переносе навыков между `src/common/skills/`
+и корнем.
+
 | Этап философии | Реализация |
 |---|---|
 | [1] восстановление замысла | `AGENTS.md` («Understand and deliver»), `src/common/agents/Lead.md` |
-| [2] дешёвое исследование | `src/common/protocols/WORKER_RESEARCH.md`, `src/common/skills/worker-research/`, `src/common/skills/model-routing/`, `src/common/skills/model-availability/` |
+| [2] дешёвое исследование | `src/common/protocols/WORKER_RESEARCH.md`, `skills/worker-research/`, `skills/model-routing/`, `skills/model-availability/` |
 | [3] выбор режима | `AGENTS.md` (quickfix / fullcycle / testing / research / status), `src/common/FACTORY.md` |
-| [4.1] план быстрого цикла | `src/common/skills/task-decomposition/`, `src/common/skills/decompose-and-dispatch/` |
-| [4.2] 2-3 решения → критика → идеальный план → парето | `src/common/skills/architecture-design/`, `src/common/skills/council/`, `src/common/skills/challenge-decision/`, `src/common/agents/Critic.md`, `src/common/agents/Adviser.md` |
-| [4.3] план фокус-группы | `src/common/skills/focus-groups/`, `src/common/skills/user-testing/` |
-| [5] декомпозиция ≤ 20 мин | `src/common/agents/Worker.md`, `src/common/protocols/STOP_RETHINK.md`, `src/common/templates/.agents/tasks/task_template.md` |
-| [6] параллелизация | `src/common/skills/decompose-and-dispatch/`, `src/common/protocols/TIME_CONTROL.md` |
+| [4.1] план быстрого цикла | `skills/task-decomposition/`, `skills/decompose-and-dispatch/` |
+| [4.2] 2-3 решения → критика → идеальный план → парето | `skills/architecture-design/`, `skills/council/`, `skills/challenge-decision/`, `src/common/agents/Critic.md`, `src/common/agents/Adviser.md` |
+| [4.3] план фокус-группы | `skills/focus-groups/`, `skills/user-testing/` |
+| [5] декомпозиция ≤ 15 мин | `src/common/agents/Worker.md`, `src/common/protocols/STOP_RETHINK.md`, `src/common/templates/.agents/tasks/task_template.md` |
+| [6] параллелизация | `skills/decompose-and-dispatch/`, `src/common/protocols/TIME_CONTROL.md` |
 | [7] оценка срока | `src/common/tools/lhc_task_budget.py`, `src/common/protocols/TIME_CONTROL.md` |
-| [8] исполнение | `src/common/agents/Worker.md`, `src/common/protocols/WORKER_IMPLEMENT.md`, `src/common/skills/worker-code/`, `src/common/skills/worker-bugfix/` |
-| [9] деплой | `src/common/protocols/REVIEW_TO_DELIVERY.md`, `src/common/skills/release/` |
-| [10] zero knowledge руками | `src/common/agents/Tester.md` (interaction tool ladder), `src/common/skills/real-use-testing/`, `src/common/tools/lhc_milestone.py` |
+| [8] исполнение | `src/common/agents/Worker.md`, `src/common/protocols/WORKER_IMPLEMENT.md`, `skills/worker-code/`, `skills/worker-bugfix/` |
+| [9] деплой | `src/common/protocols/REVIEW_TO_DELIVERY.md`, `skills/release/` |
+| [10] zero knowledge руками | `src/common/agents/Tester.md` (interaction tool ladder), `skills/real-use-testing/`, `src/common/tools/lhc_milestone.py` |
 | [11] чинить или push | `src/common/protocols/REVIEW_TO_DELIVERY.md`, `src/common/protocols/OUTCOME_CONTRACT.md` |
-| [12a] ревью хозяина перед PR в чужой проект | `src/common/skills/maintainer-review/`, `src/common/agents/Maintainer.md` |
+| [12a] ревью хозяина перед PR в чужой проект | `skills/maintainer-review/`, `src/common/agents/Maintainer.md` |
 | [12] PR и мердж | `src/common/protocols/SHARED_WORKTREE.md`, `src/common/protocols/REVIEW_TO_DELIVERY.md` |
 | план-отчёт каждые 30 минут | `src/common/protocols/PLAN_REPORT.md`, `src/common/tools/lhc_time_guard.py` |
 | Overseer читает план | `src/common/agents/Overseer.md` |
-| фронтир-агент чинит метод | `src/common/protocols/SELF_IMPROVE.md`, `src/common/skills/improve-workflow/` |
+| фронтир-агент чинит метод | `src/common/protocols/SELF_IMPROVE.md`, `skills/improve-workflow/` |
 
 ---
 
@@ -286,10 +296,11 @@
 
 Это список того, что **ещё не доведено**. Не список ошибок автора — список долгов.
 
-1. **Гранулярность листьев разъехалась.** Философия говорит 20 минут. В репозитории
-   одновременно живут 15 (`AGENTS.md`, `TIME_CONTROL.md`), 20 (`Worker.md`,
-   `STOP_RETHINK.md`, `WORKER_IMPLEMENT.md`) и 30 (`task_template.md`) минут. Нужно
-   выбрать одно число — 20.
+1. **Размер листа и контрольная точка воркера — два разных числа, их легко
+   перепутать в новых правках.** Лист — 15 минут (`AGENTS.md`, `TIME_CONTROL.md`,
+   `Worker.md`, `task_template.md`), контрольная точка воркера — 20 минут
+   (`Worker.md`, `STOP_RETHINK.md`, `WORKER_IMPLEMENT.md`, `TIME_CONTROL.md`).
+   В новых правках легко написать «20 минут» про лист или «15 минут» про отчёт.
 2. **«Выбросить лишние проверки» не доведено до конца.** Текстовый слой вычищен, но
    инструментальный — нет: по-прежнему требуются SHA-сверки публикации, рецепт-квитанция
    ревью с `stages`/`coverage`/`evidence_calls`, два Zero Knowledge-тестера на milestone,
@@ -306,10 +317,15 @@
    инструкцию.
 5. **Два Zero Knowledge-тестера на milestone** — «возможно несколько», но не «сколько
    нужно». Сейчас число фиксировано и не зависит от ширины blast radius.
-6. **120-минутный чекпоинт требует 7 полей** — самый тяжёлый из оставшихся ритуалов.
+6. **120-минутный чекпоинт — самый тяжёлый из оставшихся ритуалов.** Запись в нём
+   компактная: 6 пунктов в `SELF_IMPROVE.md`, без отдельной карточки, и семипольная
+   форма прямо запрещена (`TIME_CONTROL.md`).
 7. **Правило «хозяин ревьюит до PR» пока только в инструкциях.** Оно зафиксировано в
    `REVIEW_TO_DELIVERY.md`, `Lead.md` и роутере, но не enforced инструментом: никакой
    гейт не помешает открыть PR без этого ревью. Следующий шаг — сделать его
    проверяемым, как и остальные гейты.
-8. **Часть тестов репозитория красная** (около 170) — они проверяют путь, удалённый в
-   1.5.15 (разговорные хуки). Это не долг философии, а незаконченный рефакторинг.
+8. **Часть тестов репозитория красная** — они проверяют путь, удалённый в 1.5.15
+   (разговорные хуки), и должны быть приведены к текущему дизайну. Это не долг
+   философии, а незаконченный рефакторинг; зелёный статус — единственное допустимое
+   состояние. Проверка схемы и паритета автоматизирована в `validate.py` и
+   `sync_skills.py --check`.

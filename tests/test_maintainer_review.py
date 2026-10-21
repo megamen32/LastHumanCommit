@@ -24,23 +24,29 @@ def test_the_skill_exists_in_the_factory_and_the_authored_set():
     assert factory.read_bytes() == authored.read_bytes()
 
 
-def test_the_skill_describes_the_gate_in_full():
-    skill = read("src/common/skills/maintainer-review/SKILL.md")
+def test_the_skill_describes_the_full_maintainer_contract():
+    skill = compact(read("src/common/skills/maintainer-review/SKILL.md"))
     for phrase in (
-        "repositories we do not own",
-        "before the PR is opened",
+        "Before a PR into a repository you do not own",
+        "let that project's strict maintainer read the project and the diff",
         "maintainer: a senior engineer",
         "The project, before the diff",
         "AGENTS.md",
         "CONTRIBUTING.md",
         "CODEOWNERS",
         "CI workflow files",
-        "A mountain of specific, actionable findings",
+        "Specific, actionable findings",
         "Do not invent findings to look thorough",
         "CLEAN",
-        "the review is redone, not assumed",
+        "the maintainer's own reaction to a foreign PR",
     ):
         assert phrase in skill, phrase
+    # The current contract: the review is conditional on policy or real risk,
+    # and it never turns into an automatic LHC gate or an invented clean claim.
+    assert "Ownership alone does not create an LHC gate" in skill
+    assert "Do not invent `CLEAN` or `PASS` claims" in skill
+    assert "A reviewer response, LHC receipt or non-blocking preference is not a release veto" in skill
+    assert "Preserve unresolved material defects as blockers" in skill
 
 
 def test_the_role_is_the_projects_own_strict_maintainer():
@@ -52,25 +58,29 @@ def test_the_role_is_the_projects_own_strict_maintainer():
     assert "never a rubber stamp" in role
 
 
-def test_the_delivery_protocol_makes_it_a_gate_before_the_pr():
+def test_the_delivery_protocol_binds_external_review_to_the_target_policy():
     protocol = compact(read("src/common/protocols/REVIEW_TO_DELIVERY.md"))
-    assert "Before a PR into a project you do not own" in protocol
-    assert "before the PR is opened" in protocol
-    assert "maintainer-review/SKILL.md" in protocol
-    assert "Only a clean or explicitly answered review lets the PR be opened" in protocol
+    assert "## Review for external repositories" in protocol
+    assert "Follow the target repository's actual contribution policy" in protocol
+    assert "assign a Reviewer from the allowed model families" in protocol
+    assert "Fix concrete defects that affect the accepted claim or required policy" in protocol
+    assert "never claim a clean result without evidence" in protocol
+    assert "Preferences and LHC ledger, manifest or identity-registration state are not delivery vetoes" in protocol
+    assert "Preserve actual negative findings and required project checks" in protocol
 
 
-def test_the_lead_owns_running_it():
+def test_the_lead_owns_the_external_repository_review():
     lead = compact(read("src/common/agents/Lead.md"))
-    assert "Before opening a PR into a repository you do not own" in lead
-    assert "maintainer-review/SKILL.md" in lead
-    assert "Our own repositories do not need it" in lead
+    assert "Before a PR into another repository, follow that repository's actual contribution policy" in lead
+    assert "Use an allowed-model Reviewer when it can identify concrete defects or material risk" in lead
+    assert "Fix findings that affect the accepted claim or required policy" in lead
+    assert "preferences and LHC bookkeeping alone are not delivery vetoes" in lead
 
 
 def test_the_router_carries_the_rule_and_stays_english():
     router = read("AGENTS.md")
-    assert "a fresh strong session plays that project's" in router
-    assert "Only a clean or explicitly answered review lets the PR open" in router
+    assert "a fresh Reviewer from an allowed model tier plays that project's maintainer" in router
+    assert "An LHC receipt or bookkeeping status alone is not a release veto" in router
     assert not re.search("[А-Яа-яЁё]", router)
     assert (ROOT / "CLAUDE.md").read_text(encoding="utf-8") == router
 

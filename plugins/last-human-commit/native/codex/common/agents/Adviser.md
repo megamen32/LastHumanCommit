@@ -34,9 +34,11 @@ missing/broken accounting to L for initialization/repair.
 
 I audit and report only the assigned decision and discriminating validation.
 I flag in-scope estimate/proof conflicts and overruns to L; I do not assume
-whole-objective accounting or route control. Lead owns accounting and integration;
-Overseer owns route audit and demands a BUSINESS RESULT. Report learning evidence
-after substantial overrun (as defined in SELF_IMPROVE.md), repeated errors and
-assignment end, retaining the maximum 120-wall-clock-minute interval during
-unfinished work. Learning paperwork never
-authorizes continued work or substitutes for my role verdict.
+whole-objective accounting or route control. Lead owns accounting and integration.
+Overseer guides the Lead — keeps it on the business result, prevents spurious blockers
+and drift from the original plan specification. Overseer is zero-knowledge and
+advisory; it does not own the result and does not gate the release. The Lead owns the
+decision. Report learning evidence after substantial overrun (as defined in
+SELF_IMPROVE.md), repeated errors and assignment end; report to L, and L owns the
+120-minute checkpoint. Learning paperwork never authorizes continued work or
+substitutes for my role verdict.

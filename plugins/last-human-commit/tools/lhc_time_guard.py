@@ -21,6 +21,7 @@ from typing import Any
 BUSINESS_FIRST_HEADER = "Less process overhead, more business results."
 MAX_HANDOFF_TASK_CHARS = 16_000
 MAX_NATIVE_HANDOFF_CHARS = 16_000
+MAX_HANDOFF_PLAN_CHARS = 8_000
 STARTED_AT = re.compile(
     r"^\s*(?:-\s*)?Started at(?:\s*\(UTC\+3\))?:\s*([^\s(]+)",
     re.MULTILINE | re.IGNORECASE,
@@ -596,6 +597,177 @@ def compaction_paths(agents_root: Path, payload: dict[str, Any]) -> tuple[Path, 
     return root / "state.json", root / "current-handoff.md", root / "state.lock"
 
 
+_GRID_TOOL = None
+
+
+def _grid_tool():
+    """Load the sibling task-graph tool; it owns the one text rendering of a graph."""
+
+    global _GRID_TOOL
+    if _GRID_TOOL is None:
+        import importlib.util
+
+        source = Path(__file__).with_name("lhc_grid.py")
+        spec = importlib.util.spec_from_file_location("lhc_grid_handoff", source)
+        if spec is None or spec.loader is None:
+            raise OSError(f"task-graph tool not found next to the guard: {source}")
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = module
+        spec.loader.exec_module(module)
+        _GRID_TOOL = module
+    return _GRID_TOOL
+
+
+def find_plan_graph(cwd: Path) -> Path | None:
+    """Find the session's canonical task graph next to the project's task records."""
+
+    for root in (cwd, *cwd.parents):
+        tasks = root / ".agents" / "tasks"
+        if not tasks.is_dir():
+            continue
+        candidates = [path for path in tasks.glob("*/plan.graph.json") if path.is_file()]
+        candidates += [path for path in tasks.glob("plan.graph.json") if path.is_file()]
+        if candidates:
+            return max(candidates, key=lambda path: path.stat().st_mtime)
+    return None
+
+
+_PARALLEL_TOOL = None
+
+
+def _parallel_tool():
+    """Load the sibling parallel-lane tool; it owns the reading of a graph."""
+
+    global _PARALLEL_TOOL
+    if _PARALLEL_TOOL is None:
+        import importlib.util
+
+        source = Path(__file__).with_name("lhc_parallel.py")
+        spec = importlib.util.spec_from_file_location("lhc_parallel_reminder", source)
+        if spec is None or spec.loader is None:
+            raise OSError(f"parallel-lane tool not found next to the guard: {source}")
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = module
+        spec.loader.exec_module(module)
+        _PARALLEL_TOOL = module
+    return _PARALLEL_TOOL
+
+
+def render_parallel_lines(cwd: Path) -> str:
+    """Name the parallel lanes that can start right now, read from the plan graph.
+
+    This reads the canonical graph and lists the lanes: what runs now, what is
+    ready to start, what waits and what is blocked. It never estimates,
+    reviews, judges or blocks, and a missing graph is reported as missing
+    instead of being filled in from anything else. The function is total: a
+    reminder must never break the heartbeat that carries it.
+    """
+
+    try:
+        return _render_parallel_lines(cwd)
+    except (OSError, ImportError, ValueError, TypeError, KeyError, AttributeError) as error:
+        return (
+            f"LHC параллельные линии: план-граф прочитать не удалось ({error}). "
+            "Параллельные линии не определены."
+        )
+
+
+def _render_parallel_lines(cwd: Path) -> str:
+    """Build the parallel-lines reminder text from the canonical graph."""
+
+    path = find_plan_graph(cwd)
+    if path is None:
+        return (
+            "LHC параллельные линии: план-граф не найден — нет plan.graph.json в "
+            "<project>/.agents/tasks/, поэтому параллельные линии не определены. "
+            "Постройте план-граф и прочитайте линии из него; здесь ничего не "
+            "выдумывается."
+        )
+    try:
+        parallel = _parallel_tool()
+    except (OSError, ImportError) as error:
+        return (
+            f"LHC параллельные линии: план-граф {path}. Инструмент параллельных "
+            f"линий недоступен ({error})."
+        )
+    try:
+        summary = parallel.summarize(path)
+    except (OSError, ValueError) as error:
+        return (
+            f"LHC параллельные линии: план-граф {path} прочитать как граф задач "
+            f"не удалось ({error}). Параллельные линии не определены."
+        )
+
+    free = summary.free_slots
+    free_text = str(free) if free is not None else "без ограничения"
+    running = ", ".join(f"{task.id} «{task.label}»" for task in summary.running) or "нет"
+    lines = [
+        f"LHC параллельные линии (план-граф {path}):",
+        f"Сейчас в работе: {running}. Свободно слотов: {free_text}.",
+    ]
+    if summary.ready:
+        ready = "; ".join(
+            f"{task.id} «{task.label}» ({task.estimate_label})" for task in summary.ready
+        )
+        lines.append(f"Готовы к запуску: {ready}.")
+    else:
+        lines.append("Готовы к запуску: нет.")
+    if summary.waiting:
+        waiting = "; ".join(
+            f"{task.id} «{task.label}» ждёт {', '.join(unmet)}"
+            for task, unmet in summary.waiting
+        )
+        lines.append(f"Ждут: {waiting}.")
+    if summary.blocked:
+        blocked = "; ".join(
+            f"{task.id} «{task.label}» — {reason}" for task, reason in summary.blocked
+        )
+        lines.append(f"Заблокированы: {blocked}.")
+    next_task = summary.next_step()
+    if next_task is not None:
+        lines.append(f"Следующий шаг: запустить {next_task.id} «{next_task.label}».")
+    lines.append(
+        "Запусти параллельные линии, которые готовы, а не работай только над одной. "
+        "This reminder names the lanes that can start now; it never estimates, "
+        "reviews, judges or blocks."
+    )
+    return "\n".join(lines)
+
+
+def render_plan_section(cwd: Path) -> str:
+    """Return the human-readable plan/graph text for the compaction handoff.
+
+    The text comes from the canonical graph file, never from a JSON dump: the
+    graph stays the machine artifact, the handoff carries the readable view.
+    """
+
+    path = find_plan_graph(cwd)
+    if path is None:
+        return (
+            "Plan graph not found: no plan.graph.json under <project>/.agents/tasks/. "
+            "The plan state after compaction is unknown; rebuild it from the `## Plan` "
+            "section of the canonical task record."
+        )
+    try:
+        grid = _grid_tool()
+    except (OSError, ImportError) as error:
+        return f"Plan graph: {path}. The graph renderer is unavailable ({error})."
+    try:
+        graph = grid.load_graph(path)
+        metrics = grid.build_metrics(graph)
+        text = grid.render_text(graph, metrics)
+    except (OSError, ValueError) as error:
+        return (
+            f"Plan graph: {path}. It could not be read as a task graph ({error}). "
+            "The plan state after compaction is unknown."
+        )
+    body = f"Plan graph: {path}\n\n{text}"
+    if len(body) > MAX_HANDOFF_PLAN_CHARS:
+        head = MAX_HANDOFF_PLAN_CHARS * 2 // 3
+        body = body[:head] + "\n[... plan text truncated; the full graph stays in plan.graph.json ...]"
+    return body
+
+
 def render_handoff(
     *,
     count: int,
@@ -606,6 +778,7 @@ def render_handoff(
     recent: list[dict[str, Any]],
     cwd: Path,
     native_handoff: str = "",
+    plan_text: str = "",
 ) -> str:
     """Build one decision-complete, bounded current handoff."""
 
@@ -641,6 +814,16 @@ def render_handoff(
         if native_handoff
         else []
     )
+    plan_section = (
+        [
+            "## Current plan and task graph (text view; the JSON stays in plan.graph.json)",
+            "",
+            plan_text.strip(),
+            "",
+        ]
+        if plan_text.strip()
+        else []
+    )
     return "\n".join(
         [
             "# LHC Current Handoff",
@@ -662,6 +845,7 @@ def render_handoff(
             "",
             bounded_task_text,
             "",
+            *plan_section,
             *native_section,
             "## Workspace snapshot",
             "",
@@ -743,6 +927,7 @@ def compaction_hook(
                 recent=recent,
                 cwd=cwd,
                 native_handoff=str(payload.get("native_handoff") or ""),
+                plan_text=render_plan_section(cwd),
             )
             write_text(handoff_path, handoff)
         elif event == "postcompact":
@@ -771,6 +956,7 @@ def compaction_hook(
                 recent=recent,
                 cwd=cwd,
                 native_handoff=str(payload.get("native_handoff") or ""),
+                plan_text=render_plan_section(cwd),
             )
             write_text(handoff_path, handoff)
         else:
@@ -952,8 +1138,24 @@ def native_heartbeat(cwd: Path, runtime: str, session_id: str,
             "estimate. Show the report to the user and keep the same content under "
             "`## Plan` in the canonical task record. The Overseer reads this report "
             "against the original request and the business canary; it is not "
-            "completion of any gate."
+            "completion of any gate. Then make the report and the task graph one "
+            "unit, in this order: (1) refresh the map from the report through the "
+            "CLI — `python3 <tools>/lhc_grid.py export <plan.report.md> -o "
+            "<objective>/plan.graph.json`; (2) build the unambiguous view on that "
+            "refreshed map — `python3 <tools>/lhc_grid.py render "
+            "<objective>/plan.graph.json -o <objective>/plan.html`, and the text "
+            "view — `python3 <tools>/lhc_grid.py status <objective>/plan.graph.json`; "
+            "(3) reconcile the report's tasks with the map's leaves — `python3 "
+            "<tools>/lhc_grid.py check-plan <plan.report.md> "
+            "<objective>/plan.graph.json` — and fix every divergence instead of "
+            "leaving it. The map comes first and the view second: the view is built "
+            "on the refreshed map, never on the report alone, so nothing can be "
+            "folded away or forgotten. This reminder tracks time and names the "
+            "calls only; it never estimates, reviews, judges or blocks."
         )
+        # The same checkpoint names the lanes that can start right now. It reads
+        # the canonical graph and lists them; it never estimates or judges.
+        reminders.append(render_parallel_lines(native_cwd))
     if any(item.startswith("goal:") for item in due):
         reminders.append(
             "LHC 60-minute direction check: reread the original direct user goal and compare useful "
@@ -1018,8 +1220,9 @@ def learning_checkpoint(args: argparse.Namespace, cwd: Path, session_id: str,
             "LHC session checkpoint: this session has run 120 wall-clock minutes of "
             "unfinished work. Run the improve-workflow procedure now "
             "(common/skills/improve-workflow/SKILL.md). If the session is slow, stuck "
-            "or drifting, assign a fresh adviser using an allowed gpt6luna, glm53flash or "
-            "minimax3.1flash model ID resolved from the live catalog. Verify actual "
+            "or drifting, assign a fresh adviser using an allowed model ID resolved from "
+            "the live catalog: fast tier glm-5.3-flash or minimax-3.1-flash, frontier "
+            "tier gpt-6-luna, glm-5.3 or gpt-6.1-sol. Verify actual "
             "model identity and never silently substitute. The adviser diagnoses the "
             "delay and recommends a route; the Lead owns the decision. Give it the "
             "current user request, the current plan report, the applicable rules, the "

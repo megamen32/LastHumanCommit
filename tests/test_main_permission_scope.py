@@ -32,7 +32,9 @@ PROJECT_PROMPT = (
 @pytest.fixture
 def isolated_tmp_path():
     with tempfile.TemporaryDirectory(prefix="lhc-permission-test-") as directory:
-        yield Path(directory)
+        # Resolve the temporary root: the live tooling compares the product root
+        # and the native session root as resolved paths.
+        yield Path(directory).resolve()
 
 
 def _source(prompt, turn):
@@ -141,6 +143,7 @@ def test_long_exact_permission_quote_resolves_from_separate_native_source(isolat
     assert PERMISSION not in permission_source["prompt"]  # Stored scope keeps only a prefix.
 
 
+@pytest.mark.nightly
 def test_contract_keeps_project_source_separate_from_permission_source(isolated_tmp_path, monkeypatch):
     workspace, repo, current, permission_source, project_source, state_path, _ = setup_contract(isolated_tmp_path, monkeypatch)
     result = run_contract((workspace, repo, current, permission_source, project_source, None, None))
@@ -186,6 +189,7 @@ def test_quoted_and_negated_scope_is_not_permission(isolated_tmp_path):
     assert not outcome.main_permission({"prompt": negated}, PERMISSION, REPOSITORY, "main")
 
 
+@pytest.mark.nightly
 def test_resolver_rejects_ambiguous_relay_revoked_and_held_permission(isolated_tmp_path, monkeypatch):
     assert resolve(setup_contract(isolated_tmp_path / "ambiguous", monkeypatch, duplicate=True)) is None
     assert resolve(setup_contract(isolated_tmp_path / "relay", monkeypatch, permission_origin="agent-relay")) is None
@@ -287,6 +291,7 @@ def test_permission_revalidation_rejects_changed_source_bytes_and_manual_hold(is
     assert not outcome._permission_binding_valid(current, state)
 
 
+@pytest.mark.nightly
 def test_wrong_current_repository_and_nonowned_merge_remain_blocked(isolated_tmp_path, monkeypatch):
     env = setup_contract(isolated_tmp_path, monkeypatch, remote_url="https://github.com/other/WrongProject.git")
     evidence = resolve(env)
@@ -299,6 +304,7 @@ def test_wrong_current_repository_and_nonowned_merge_remain_blocked(isolated_tmp
     assert "external product root" in result.stderr
 
 
+@pytest.mark.nightly
 def test_universal_main_permission_rejects_shared_ownership(isolated_tmp_path, monkeypatch):
     env = setup_contract(isolated_tmp_path, monkeypatch)
     result = run_contract(env, ownership="shared")

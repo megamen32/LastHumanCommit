@@ -33,6 +33,15 @@ unknown/revoked operations stay blocked. Sudo alone never grants authority.
    the affected key. Do not record ordinary task progress.
 7. Stop when the assigned claim is proven.
 
+## Defects and test length
+
+When the assignment turns out to repair a defect, load `worker-bugfix`: its fast
+RED regression is mandatory before production code changes.
+
+Keep ordinary tests fast — unit level, no external service, seconds to run, part
+of the normal test run. Long integration and end-to-end proofs belong to the
+nightly run only.
+
 ## Lead interaction
 
 Ask Lead whenever its broader user context can change behavior, product choice,

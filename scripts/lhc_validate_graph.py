@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
-"""Offline checks for a declared LHC task graph; NOT a scheduler or LLM evaluator."""
+"""Offline checks for a declared LHC task graph; NOT a scheduler or LLM evaluator.
+
+The accepted contract is the canonical task graph published in
+``src/common/protocols/TASK_GRAPH.md``: ``schema_version: 2`` with ``id``,
+``label``, ``status`` and ``depends_on`` required per task. Every other field is
+optional and is checked only when it is present, so the published example and a
+graph exported by ``lhc_grid.py export`` validate without extra ceremony.
+"""
 from __future__ import annotations
 
 import argparse
@@ -10,10 +17,13 @@ import re
 import sys
 from typing import Any
 
-DEFAULT_CLASSES = ('frontier', 'fable', 'sonnet', 'haiku')
+DEFAULT_CLASSES = ('glm-5.3-flash', 'minimax-3.1-flash', 'gpt-6-luna', 'glm-5.3', 'gpt-6.1-sol')
 SCHEMA_VERSIONS = (1, 2)
 LIVE_STATUSES = ('done', 'running', 'blocked', 'waiting', 'queued')
+REQUIRED_TASK_FIELDS = {1: ('id',), 2: ('id', 'label', 'status', 'depends_on')}
 CLOCK_RE = re.compile(r'^([01]\d|2[0-3]):[0-5]\d$')
+BLOCKER_DETAIL_KEYS = ('reason', 'responsible', 'next_action', 'human_required', 'human_action')
+HUMAN_REQUIRED_VALUES = ('yes', 'no', 'unknown')
 
 
 def path_parts(value: Any) -> tuple[str, ...]:
@@ -39,26 +49,63 @@ def finite_minutes(value: Any) -> bool:
     )
 
 
+def estimate_bounds(task: dict[str, Any]) -> tuple[Any, Any]:
+    """Return the declared estimate bounds of a task as (minimum, maximum)."""
+    estimate = task.get('estimate_minutes')
+    if not isinstance(estimate, dict):
+        return None, None
+    return estimate.get('minimum'), estimate.get('maximum')
+
+
 def estimate_summary(by_id: dict[str, dict[str, Any]], layers: list[list[str]]) -> dict[str, Any]:
-    if not any('estimate_minutes' in task for task in by_id.values()):
+    """Aggregate the estimates that are actually declared.
+
+    Only leaves that carry an estimate take part: a graph may estimate some leaves
+    and not others, and an unestimated leaf must not become a false error or a
+    silent zero inside the total.
+
+    A leaf that declares ``estimate_unknown_reason`` says out loud that its
+    effort cannot be bounded. Then no total is inferred at all: the unknown leaf
+    ids are reported instead of a number that would be a fiction.
+    """
+    unknown = sorted(tid for tid, task in by_id.items() if task.get('estimate_unknown_reason'))
+    if unknown:
+        return {
+            'available': False,
+            'reason': 'No total or finish time is inferred while estimates are unknown.',
+            'unknown_task_ids': unknown,
+        }
+    estimated = {tid: task for tid, task in by_id.items()
+                 if any(bound is not None for bound in estimate_bounds(task))}
+    if not estimated:
         return {'available': False, 'reason': 'No per-node estimates supplied; no total is inferred.'}
+
+    def bound_value(task: dict[str, Any], bound: str) -> Any:
+        low, high = estimate_bounds(task)
+        if bound == 'minimum':
+            return low if low is not None else high
+        return high if high is not None else low
+
     effort: dict[str, int | float] = {}
     duration: dict[str, int | float] = {}
     paths: dict[str, list[str]] = {}
-    predecessors = {dep for task in by_id.values() for dep in task['depends_on']}
-    sinks = sorted(set(by_id) - predecessors)
     for bound in ('minimum', 'maximum'):
-        effort[bound] = sum(task['estimate_minutes'][bound] for task in by_id.values())
+        effort[bound] = sum(bound_value(task, bound) for task in estimated.values())
         totals: dict[str, int | float] = {}
         routes: dict[str, list[str]] = {}
         for layer in layers:
             for tid in layer:
-                deps = by_id[tid]['depends_on']
+                if tid not in estimated:
+                    continue
+                deps = [dep for dep in by_id[tid].get('depends_on') or [] if dep in estimated]
                 prior = max(sorted(deps), key=lambda dep: totals[dep]) if deps else None
-                totals[tid] = by_id[tid]['estimate_minutes'][bound] + (totals[prior] if prior else 0)
+                totals[tid] = bound_value(by_id[tid], bound) + (totals[prior] if prior else 0)
                 routes[tid] = (routes[prior] if prior else []) + [tid]
-        last = max(sinks, key=lambda tid: totals[tid])
-        duration[bound], paths[bound] = totals[last], routes[last]
+        predecessors = {dep for tid in estimated
+                        for dep in by_id[tid].get('depends_on') or [] if dep in estimated}
+        sinks = sorted(set(estimated) - predecessors)
+        last = max(sinks, key=lambda tid: totals[tid]) if sinks else None
+        duration[bound], paths[bound] = (totals[last], routes[last]) if last else (0, [])
         if not finite_minutes(effort[bound]) or not finite_minutes(duration[bound]):
             raise ValueError('estimate_minutes aggregate exceeds finite numeric range')
     return {
@@ -68,13 +115,91 @@ def estimate_summary(by_id: dict[str, dict[str, Any]], layers: list[list[str]]) 
         'critical_paths': paths,
         'limits': 'Estimated dependency path is a lower bound without capacity, resource or queue costs. '
                   'It assumes ready independent work can run concurrently; actual parallelism must be '
-                  'verified in the harness. These are estimates, not elapsed or measured active time.',
+                  'verified in the harness. These are estimates, not elapsed or measured active time. '
+                  'Only leaves that declare an estimate take part in the total.',
     }
 
 
-def live_field_errors(tid: str, task: dict[str, Any]) -> list[str]:
-    """Check the optional live state of a schema version 2 task graph."""
+def estimate_field_errors(tid: str, estimate: Any) -> list[str]:
+    """Check a declared estimate object; a missing object is not an error."""
+    if not isinstance(estimate, dict):
+        return [f'{tid}: estimate_minutes must be an object']
     errors: list[str] = []
+    if 'minimum' not in estimate and 'maximum' not in estimate:
+        errors.append(f'{tid}: estimate_minutes needs a minimum or a maximum bound')
+    for bound in ('minimum', 'maximum'):
+        if bound in estimate and not finite_minutes(estimate[bound]):
+            errors.append(f'{tid}: estimate_minutes {bound} must be a finite nonnegative number, not a boolean')
+    minimum, maximum = estimate.get('minimum'), estimate.get('maximum')
+    if finite_minutes(minimum) and finite_minutes(maximum) and maximum < minimum:
+        errors.append(f'{tid}: estimate_minutes maximum must be at least minimum')
+    for key in ('uncertainty', 'basis'):
+        if key in estimate:
+            value = estimate[key]
+            if not isinstance(value, str) or not value.strip():
+                errors.append(f'{tid}: estimate_minutes {key} must explain the estimate')
+    return errors
+
+
+def unknown_reason_errors(tid: str, task: dict[str, Any]) -> list[str]:
+    """Check a declared unknown-estimate reason and its relation to a numeric estimate."""
+    reason = task.get('estimate_unknown_reason')
+    if reason is None:
+        return []
+    errors: list[str] = []
+    if not isinstance(reason, str) or not reason.strip():
+        errors.append(f'{tid}: estimate_unknown_reason must explain why the estimate is unknown')
+    if 'estimate_minutes' in task:
+        errors.append(f'{tid}: provide either estimate_minutes or estimate_unknown_reason, not both')
+    return errors
+
+
+def blocker_details_errors(tid: str, details: Any) -> list[str]:
+    """Check a declared blocker_details object; an absent object is not an error."""
+    if not isinstance(details, dict):
+        return [f'{tid}: blocker_details must be an object']
+    errors: list[str] = []
+    for key in details:
+        if key not in BLOCKER_DETAIL_KEYS:
+            errors.append(f'{tid}: unknown blocker_details key {key!r}')
+            continue
+        value = details[key]
+        if not isinstance(value, str) or not value.strip():
+            errors.append(f'{tid}: blocker_details {key} must be a nonempty string')
+    required = details.get('human_required')
+    if required is not None and required.strip().lower() not in HUMAN_REQUIRED_VALUES:
+        errors.append(f'{tid}: blocker_details human_required must be one of {", ".join(HUMAN_REQUIRED_VALUES)}')
+    return errors
+
+
+def task_field_errors(tid: str, task: dict[str, Any], model_classes: tuple[str, ...]) -> list[str]:
+    """Check the optional fields of one task; an absent field is never an error."""
+    errors: list[str] = []
+    for key in ('role', 'acceptance'):
+        value = task.get(key)
+        if value is not None and (not isinstance(value, str) or not value.strip()):
+            errors.append(f'{tid}: {key} must be a nonempty string')
+    if 'model_class' in task and task['model_class'] not in model_classes:
+        errors.append(f'{tid}: unknown model_class {task["model_class"]!r}')
+    for key in ('owner', 'session', 'harness', 'model', 'blocker', 'note'):
+        value = task.get(key)
+        if value is not None and not isinstance(value, str):
+            errors.append(f'{tid}: {key} must be a string')
+    for key in ('depends_on', 'parallel_with', 'read_paths', 'write_paths'):
+        if key not in task:
+            continue
+        vals = task[key]
+        if not isinstance(vals, list) or not all(isinstance(v, str) for v in vals):
+            errors.append(f'{tid}: {key} must be a list of strings')
+            continue
+        if len(vals) != len(set(vals)):
+            errors.append(f'{tid}: duplicate value in {key}')
+        if key.endswith('_paths'):
+            for val in vals:
+                try:
+                    path_parts(val)
+                except ValueError as exc:
+                    errors.append(f'{tid}: {exc}')
     status = task.get('status')
     if status is not None:
         if not isinstance(status, str) or status.strip().lower() not in LIVE_STATUSES:
@@ -86,14 +211,37 @@ def live_field_errors(tid: str, task: dict[str, Any]) -> list[str]:
     actual = task.get('actual_minutes')
     if actual is not None and not finite_minutes(actual):
         errors.append(f'{tid}: actual_minutes must be a finite nonnegative number')
-    blocker = task.get('blocker')
-    if blocker is not None and not isinstance(blocker, str):
-        errors.append(f'{tid}: blocker must be a string')
+    wave = task.get('wave')
+    if wave is not None and type(wave) is not int:
+        errors.append(f'{tid}: wave must be an integer')
+    if 'blocker_details' in task:
+        errors.extend(blocker_details_errors(tid, task['blocker_details']))
+    errors.extend(unknown_reason_errors(tid, task))
+    return errors
+
+
+def document_field_errors(document: dict[str, Any]) -> list[str]:
+    """Check the optional document-level fields; an absent field is never an error."""
+    errors: list[str] = []
+    for key in ('title', 'goal', 'business_result', 'current_progress', 'external_waits'):
+        if key not in document:
+            continue
+        value = document[key]
+        if not isinstance(value, str):
+            errors.append(f'{key} must be a string')
+        elif value.strip() and key == 'external_waits' and value != value.strip():
+            errors.append(f'{key} must be a trimmed string')
     return errors
 
 
 def validate_graph(document: Any, model_classes: tuple[str, ...] = DEFAULT_CLASSES) -> dict[str, Any]:
     """Return structural errors and dependency layers for declared live-path access.
+
+    The accepted shape is the canonical task graph from ``TASK_GRAPH.md``: for
+    ``schema_version: 2`` every task needs ``id``, ``label``, ``status`` and
+    ``depends_on``. Everything else is optional and is checked only when it is
+    present, so declaring paths, a model class, an acceptance line or an unknown
+    estimate is a choice, never a demand.
 
     Path reads refer to mutable live inputs. Immutable snapshot reads need not be
     declared as live reads. Resource/account/semantic conflicts require Lead review.
@@ -105,11 +253,12 @@ def validate_graph(document: Any, model_classes: tuple[str, ...] = DEFAULT_CLASS
             or document['schema_version'] not in SCHEMA_VERSIONS):
         return {'valid': False, 'errors': [
             'expected an object with integer schema_version: 1 or 2']}
+    version = document['schema_version']
+    errors.extend(document_field_errors(document))
     tasks = document.get('tasks')
     if not isinstance(tasks, list) or not tasks:
         return {'valid': False, 'errors': ['tasks must be a nonempty list']}
     by_id: dict[str, dict[str, Any]] = {}
-    has_estimates = any(isinstance(task, dict) and 'estimate_minutes' in task for task in tasks)
     for i, task in enumerate(tasks):
         if not isinstance(task, dict):
             errors.append(f'tasks[{i}] must be an object')
@@ -122,45 +271,19 @@ def validate_graph(document: Any, model_classes: tuple[str, ...] = DEFAULT_CLASS
             errors.append(f'duplicate task id: {tid}')
             continue
         by_id[tid] = task
-        if has_estimates:
-            estimate = task.get('estimate_minutes')
-            if not isinstance(estimate, dict):
-                errors.append(f'{tid}: estimate_minutes must be an object on all nodes when any estimate is supplied')
-            else:
-                minimum, maximum = estimate.get('minimum'), estimate.get('maximum')
-                if not finite_minutes(minimum) or not finite_minutes(maximum):
-                    errors.append(f'{tid}: estimate_minutes bounds must be finite nonnegative numbers, not booleans')
-                elif maximum < minimum:
-                    errors.append(f'{tid}: estimate_minutes maximum must be at least minimum')
-                elif maximum > minimum and (
-                    not isinstance(estimate.get('uncertainty'), str) or not estimate['uncertainty'].strip()
-                ):
-                    errors.append(f'{tid}: estimate_minutes uncertainty must explain the range')
-                if not isinstance(estimate.get('basis'), str) or not estimate['basis'].strip():
-                    errors.append(f'{tid}: estimate_minutes basis must explain the work and acceptance proof')
-        for key in ('role', 'acceptance'):
-            if not isinstance(task.get(key), str) or not task[key].strip():
+        for key in REQUIRED_TASK_FIELDS[version]:
+            if key not in task:
                 errors.append(f'{tid}: missing {key}')
-        if task.get('model_class') not in model_classes:
-            errors.append(f'{tid}: unknown model_class {task.get("model_class")!r}')
-        errors.extend(live_field_errors(tid, task))
-        for key in ('depends_on', 'read_paths', 'write_paths'):
-            vals = task.get(key)
-            if not isinstance(vals, list) or not all(isinstance(v, str) for v in vals):
-                errors.append(f'{tid}: {key} must be a list of strings')
-                continue
-            if len(vals) != len(set(vals)):
-                errors.append(f'{tid}: duplicate value in {key}')
-            if key.endswith('_paths'):
-                for val in vals:
-                    try:
-                        path_parts(val)
-                    except ValueError as exc:
-                        errors.append(f'{tid}: {exc}')
+        label = task.get('label')
+        if 'label' in task and (not isinstance(label, str) or not label.strip()):
+            errors.append(f'{tid}: label must be a nonempty string')
+        if 'estimate_minutes' in task:
+            errors.extend(estimate_field_errors(tid, task['estimate_minutes']))
+        errors.extend(task_field_errors(tid, task, model_classes))
     if errors:
         return {'valid': False, 'errors': errors}
     for tid, task in by_id.items():
-        for dep in task['depends_on']:
+        for dep in task.get('depends_on') or []:
             if dep not in by_id:
                 errors.append(f'{tid}: missing dependency {dep}')
             elif dep == tid:
@@ -173,12 +296,12 @@ def validate_graph(document: Any, model_classes: tuple[str, ...] = DEFAULT_CLASS
     layers: list[list[str]] = []
     ancestors: dict[str, set[str]] = {}
     while remaining:
-        ready = sorted(t for t in remaining if set(by_id[t]['depends_on']) <= complete)
+        ready = sorted(t for t in remaining if set(by_id[t].get('depends_on') or []) <= complete)
         if not ready:
             return {'valid': False, 'errors': ['dependency cycle involving: ' + ', '.join(sorted(remaining))]}
         for tid in ready:
-            ancestors[tid] = set(by_id[tid]['depends_on'])
-            for dep in by_id[tid]['depends_on']:
+            ancestors[tid] = set(by_id[tid].get('depends_on') or [])
+            for dep in by_id[tid].get('depends_on') or []:
                 ancestors[tid].update(ancestors[dep])
         layers.append(ready)
         remaining.difference_update(ready)
@@ -190,8 +313,12 @@ def validate_graph(document: Any, model_classes: tuple[str, ...] = DEFAULT_CLASS
             if left_id in ancestors[right_id] or right_id in ancestors[left_id]:
                 continue
             left, right = by_id[left_id], by_id[right_id]
-            pairs = [(w, p) for w in left['write_paths'] for p in right['write_paths'] + right['read_paths']]
-            pairs += [(p, w) for w in right['write_paths'] for p in left['read_paths']]
+            left_writes = left.get('write_paths') or []
+            left_reads = left.get('read_paths') or []
+            right_writes = right.get('write_paths') or []
+            right_reads = right.get('read_paths') or []
+            pairs = [(w, p) for w in left_writes for p in right_writes + right_reads]
+            pairs += [(p, w) for w in right_writes for p in left_reads]
             collisions = [(a, b) for a, b in pairs if overlaps(a, b)]
             if collisions:
                 a, b = collisions[0]
@@ -211,19 +338,36 @@ def validate_graph(document: Any, model_classes: tuple[str, ...] = DEFAULT_CLASS
     }
 
 
+def model_classes_from_config(config: Any) -> tuple[str, ...]:
+    """Return the model classes a routing config allows.
+
+    ``model_classes`` is the explicit flat list. Older configs declare
+    ``tier_order`` instead; that list names the allowed tiers.
+    """
+    if not isinstance(config, dict):
+        raise ValueError('config must be a JSON object')
+    declared = config.get('model_classes')
+    if declared is not None:
+        if not isinstance(declared, list) or not all(isinstance(t, str) and t for t in declared):
+            raise ValueError('config model_classes must be a list of nonempty strings')
+        return tuple(declared)
+    order = config.get('tier_order')
+    if not isinstance(order, list) or not all(isinstance(t, str) and t for t in order):
+        raise ValueError('config tier_order must be a list of nonempty strings')
+    return tuple(order)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('graph', type=Path)
-    parser.add_argument('--config', type=Path, help='Optional routing JSON with a tier_order list')
+    parser.add_argument('--config', type=Path,
+                        help='Optional routing JSON with a model_classes or tier_order list')
     args = parser.parse_args()
     try:
         classes = DEFAULT_CLASSES
         if args.config:
-            cfg = json.loads(args.config.read_text(encoding='utf-8'))
-            order = cfg.get('tier_order') if isinstance(cfg, dict) else None
-            if not isinstance(order, list) or not all(isinstance(t, str) and t for t in order):
-                raise ValueError('config tier_order must be a list of nonempty strings')
-            classes = tuple(order)
+            classes = model_classes_from_config(
+                json.loads(args.config.read_text(encoding='utf-8')))
         result = validate_graph(json.loads(args.graph.read_text(encoding='utf-8')), classes)
     except (OSError, ValueError) as exc:
         result = {'valid': False, 'errors': [str(exc)]}

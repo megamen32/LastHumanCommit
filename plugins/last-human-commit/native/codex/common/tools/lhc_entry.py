@@ -477,10 +477,40 @@ def main():
                         help="emit the source AGENTS.md pointer without reading or changing session state")
     parser.add_argument("--heartbeat-only", action="store_true",
                         help="record only an isolated wall-time reminder at PostToolUse")
+    parser.add_argument("--session", action="store_true",
+                        help="explicit agent command: observe one stateful session event "
+                             "(business anchor, outcome and milestone state). Never used by "
+                             "the hook templates; hooks stay time-only")
     default_runtime = ("zcode" if os.environ.get("ZCODE_PLUGIN_ROOT") else
                        "claude" if os.environ.get("CLAUDE_PROJECT_DIR") else "codex")
     parser.add_argument("--runtime", choices=("codex", "claude", "opencode", "zcode"), default=default_runtime)
     args = parser.parse_args()
+    if args.session:
+        # Explicit session command, not a hook. The agent calls it when it wants
+        # the stateful lifecycle (business anchor, outcome contract, milestone
+        # debt) to advance. Hook templates never pass --session: they only
+        # point at the instructions and track wall time.
+        try:
+            raw = sys.stdin.read(8 * 1024 * 1024 + 1)
+            if len(raw) > 8 * 1024 * 1024:
+                return
+            event = json.loads(raw or "{}")
+            if not isinstance(event, dict):
+                raise ValueError("the native event payload must be a JSON object")
+            cwd_value = event.get("cwd")
+            session_id = event.get("session_id") or event.get("sessionID")
+            if not isinstance(cwd_value, str) or not isinstance(session_id, str):
+                raise ValueError("the native event payload needs cwd and session_id")
+            root = (args.root or Path(__file__).resolve().parents[1]).resolve()
+            output = handle(event, args.event, args.runtime, root)
+        except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
+            # A malformed native payload is reported, never recorded as a session.
+            print(json.dumps({"systemMessage":
+                              f"LHC session command rejected the native event: {exc}"},
+                             ensure_ascii=False))
+            return
+        print(json.dumps(output, ensure_ascii=False))
+        return
     if args.heartbeat_only:
         if args.event != "PostToolUse":
             return
@@ -499,11 +529,16 @@ def main():
                 session_id += ":subagent:" + str(event["agent_id"])
             import lhc_time_guard
             project = Path(cwd_value).expanduser()
-            result = lhc_time_guard.native_heartbeat(project, args.runtime, session_id)
-            # The 120-minute learning checkpoint is time-only as well: it observes a
-            # wall deadline and never reads, classifies or vetoes anything.
+            # The 120-minute learning checkpoint runs first: it creates the shared
+            # learning state (including "last_observed_at") that the heartbeat reads
+            # and then preserves as a sibling key. Running the heartbeat first left
+            # the state without that field, so the checkpoint raised KeyError and
+            # every time reminder was swallowed for every harness.
+            # The checkpoint is time-only as well: it observes a wall deadline and
+            # never reads, classifies or vetoes anything.
             learning = lhc_time_guard.learning_checkpoint(
                 argparse.Namespace(runtime=args.runtime, now=None), project, session_id)
+            result = lhc_time_guard.native_heartbeat(project, args.runtime, session_id)
         except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError):
             return
         prompts = []

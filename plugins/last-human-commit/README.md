@@ -49,12 +49,13 @@ review and 120-minute workflow improvement are mandatory. Fresh Zero Knowledge
 groups accept ready major milestones, not every hour.
 Architecture, decomposition, independent review/testing and learning tools remain
 available; scheduled inspection is required even when the current plan looks correct. The complete default workflow is in
-[AGENTS.md](AGENTS.md). Details: [1.4 changes](docs/V1.4.md).
+[AGENTS.md](AGENTS.md). Details: docs/V1.4.md in the source repository.
 
 ## Package and installation
 
-The native Agent Plugin is `plugins/last-human-commit`, version 1.5.20, with 23 optional
-skills, instruction-only startup hooks and time-only reminders. Use the harness's native plugin manager.
+The native Agent Plugin is `plugins/last-human-commit`, version 1.5.21, with the full
+optional skill set (validated by `scripts/validate.py`), instruction-only startup hooks
+and time-only reminders. Use the harness's native plugin manager.
 For clients whose plugin hooks are unavailable or still await trust, the package
 provides a supported user-instruction bootstrap:
 
@@ -67,7 +68,8 @@ python3 <installed-package>/scripts/install_runtime.py \
 are replaced; unrelated instructions are preserved and backed up. Existing GSD
 skills are not deleted. Reload/start a new session to load changed instructions.
 
-Source updates: edit the source, run `sync_skills.py`, then `python3 tests/validate.py`.
+Source updates: edit the source, run `scripts/sync_skills.py`, then `python3 tests/validate.py`
+in the source repository.
 The validator runs package/source parity and all executable regressions. Runtime
 installation and actual use must be verified separately from source tests.
 
@@ -80,8 +82,12 @@ every hour or edit. Varied realistic personas leave detailed positive/negative
 feedback. Preserve raw feedback, fix actual obstacles and keep preferences
 without automatically expanding scope. See docs/V1.4.3.md in the source repository.
 
-OpenCode uses its normal AGENTS.md and skill discovery; the old LHC event adapters
-are inert compatibility exports and are no longer registered. Hermes retains only
+OpenCode loads its normal AGENTS.md and skill discovery, and the native LHC plugin
+(`opencode/lhc-v2.ts`, registered by `scripts/install_runtime.py` into the OpenCode
+plugin directory) injects the current installed AGENTS.md into the system context,
+reports the time-only 30/60-minute reminders at tool and idle boundaries, and
+re-injects the AGENTS.md and bounded current-handoff.md pointers after compaction.
+It does not review, gate, approve or evaluate a diff. Hermes retains only
 explicit role-selection middleware, without a recurring lifecycle observer.
 Codex/Claude/ZCode load concise instructions and time-only 30/60-minute reminders.
 The reminders run at the next tool boundary, not through a background scheduler.

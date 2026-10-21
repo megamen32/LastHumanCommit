@@ -7,6 +7,7 @@ import json
 import subprocess
 import sys
 from pathlib import Path
+import pytest
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -47,6 +48,7 @@ def upsert(root: Path, summary: str = "web -> resume.py::resume") -> dict[str, o
     return json.loads(completed.stdout)
 
 
+@pytest.mark.nightly
 def test_upsert_search_and_same_key_replacement(tmp_path: Path) -> None:
     root = project(tmp_path)
 
@@ -88,6 +90,7 @@ def test_check_reports_content_drift_without_deleting_knowledge(tmp_path: Path) 
     assert (root / ".agents/shared-session/knowledge/code-map.json").is_file()
 
 
+@pytest.mark.nightly
 def test_remove_drops_invalid_key(tmp_path: Path) -> None:
     root = project(tmp_path)
     upsert(root)

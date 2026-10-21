@@ -173,6 +173,7 @@ def test_direct_project_name_uses_unique_accepted_source_publication_mapping(tmp
     assert repo.parent == workspace
 
 
+@pytest.mark.nightly
 def test_original_native_receipts_bind_identity_after_mutable_stages_become_pending(tmp_path, monkeypatch):
     workspace, repo, current_outcome, source = setup_mapping(tmp_path, monkeypatch)
     state_path = repo / ".agents/shared-session/learning/accepted-source-publication.json"
@@ -256,6 +257,7 @@ def test_historical_source_identity_rejects_forged_or_mismatched_receipt(tmp_pat
     assert outcome._verified_historical_source_publication(saved, repo) is None
 
 
+@pytest.mark.nightly
 def test_existing_exact_product_root_mapping_reuses_only_its_owned_relative_paths(tmp_path, monkeypatch):
     workspace, repo, current_outcome, source = setup_mapping(tmp_path, monkeypatch)
     current_outcome.update({
@@ -301,6 +303,7 @@ def test_project_mapping_requires_owned_paths_from_current_task_scope(tmp_path, 
     assert not outcome.product_root_scope_allowed(current_outcome, source, repo, ["../neighbor/file.py"])
 
 
+@pytest.mark.nightly
 def test_project_mapping_deduplicates_equivalent_accepted_publication_receipts(tmp_path, monkeypatch):
     workspace, repo, current_outcome, source = setup_mapping(tmp_path, monkeypatch)
     learning = repo / ".agents/shared-session/learning"

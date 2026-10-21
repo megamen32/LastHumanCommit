@@ -59,6 +59,7 @@ def ack(root, runtime="codex", **overrides):
     return args
 
 
+@pytest.mark.nightly
 @pytest.mark.parametrize("runtime", ["codex", "opencode", "hermes"])
 def test_unmatched_cards_due_repeats_until_evidenced_ack(tmp_path, runtime):
     tasks = tmp_path / ".agents/tasks"
@@ -77,6 +78,7 @@ def test_unmatched_cards_due_repeats_until_evidenced_ack(tmp_path, runtime):
     assert "improve-workflow" in message(tick(tmp_path, "2026-09-09T16:05:00+03:00", runtime))
 
 
+@pytest.mark.nightly
 def test_no_agents_directory_or_card_and_new_cycle_cannot_reset(tmp_path):
     tick(tmp_path, "2026-09-09T12:00:00+03:00")
     tasks = tmp_path / ".agents/tasks"
@@ -95,6 +97,7 @@ def test_no_agents_directory_or_card_and_new_cycle_cannot_reset(tmp_path):
     assert "improve-workflow" in message(tick(tmp_path, "2026-09-09T13:00:00+03:00"))
 
 
+@pytest.mark.nightly
 def test_ack_requires_existing_due_and_matching_deadline(tmp_path):
     (tmp_path / ".agents").mkdir()
     cli(*ack(tmp_path), ok=False)
@@ -105,6 +108,7 @@ def test_ack_requires_existing_due_and_matching_deadline(tmp_path):
     cli(*ack(tmp_path), ok=False)
 
 
+@pytest.mark.nightly
 def test_sessions_are_independent_and_state_is_bounded(tmp_path):
     (tmp_path / ".agents").mkdir()
     tick(tmp_path, "2026-09-09T12:00:00+03:00", session="parent/a")
@@ -145,6 +149,7 @@ def test_missing_identity_discloses_shared_fallback(tmp_path):
     assert "isolation is NOT established" in message(result)
 
 
+@pytest.mark.nightly
 def test_same_project_worktree_reuses_clock(tmp_path):
     subprocess.run(["git", "-C", str(tmp_path), "-c", "user.name=Test",
                     "-c", "user.email=test@invalid", "commit", "--allow-empty", "-qm", "fixture"], check=True)

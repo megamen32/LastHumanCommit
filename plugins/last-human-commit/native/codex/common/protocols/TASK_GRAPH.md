@@ -31,6 +31,20 @@ message and needs no server, no network and no dependencies.
 plan report or a free-form replan into the standard graph, and `validate` checks
 the graph structure.
 
+`check-plan` reconciles the report with the graph:
+
+```sh
+python3 <LHC>/common/tools/lhc_grid.py check-plan <objective>/plan.report.md <objective>/plan.graph.json
+```
+
+The report's task list and the graph's leaf list are one set: the same ids, the
+same statuses, no task without a leaf and no leaf without a task. The command
+prints every divergence and exits non-zero when the two disagree.
+
+The graph is the canonical artifact. The dashboard, the text view and the plan
+section of a compaction handoff are all rendered from this file, so a stale
+report never becomes the plan of record.
+
 ## Format
 
 `schema_version: 2`. Version 1 (the planning graph) stays readable: the live
@@ -42,6 +56,8 @@ fields are optional there.
   "title": "ExManager → Board integration",
   "goal": "one accepted business outcome",
   "business_result": "what the user can already use now",
+  "current_progress": "what is already proven, not what is planned",
+  "external_waits": "pending human or platform waits, outside the active work",
   "slots": 4,
   "updated_at": "2026-10-21T06:16:00",
   "tasks": [
@@ -58,8 +74,17 @@ fields are optional there.
       "owner": "A",
       "session": "codex:948b",
       "harness": "codex",
-      "model": "frontier",
+      "model_class": "gpt-6-luna",
+      "model": "gpt-6-luna",
       "blocker": "",
+      "acceptance": "what a person can verify when this task is done",
+      "blocker_details": {
+        "reason": "the concrete reason this task cannot continue",
+        "responsible": "the named person or active owner who handles it",
+        "next_action": "the smallest specific next step",
+        "human_required": "yes",
+        "human_action": "the exact decision or access the person must provide"
+      },
       "note": "",
       "wave": 1
     }
@@ -68,7 +93,9 @@ fields are optional there.
 ```
 
 Required per task: `id`, `label`, `status`, `depends_on`. Everything else is
-optional but expected for a live objective.
+optional but expected for a live objective. An optional field is checked only
+when it is present: declaring a path, a model class, an acceptance line or an
+unknown estimate is a choice, never a demand.
 
 - `status` is `done`, `running`, `blocked`, `waiting` or `queued`. It is the
   state of the work, not the state of the paperwork.
@@ -78,13 +105,49 @@ optional but expected for a live objective.
 - `parallel_with` records that two leaves actually ran together. It documents
   parallelism; it never creates a dependency.
 - `estimate_minutes.minimum` / `.maximum` are the original bounds. They are
-  never rewritten to fit reality; the revision goes into `note`.
+  never rewritten to fit reality; the revision goes into `note`. A graph may
+  estimate only some of its leaves; the total is then aggregated over the
+  leaves that declare a bound, and an unestimated leaf never becomes a silent
+  zero.
+- `estimate_minutes.basis` and `estimate_minutes.uncertainty` name the work the
+  bound came from and what could widen it. They are optional; when they are
+  present they must say something.
+- `estimate_unknown_reason` is an optional, nonempty explanation for a task
+  whose active effort cannot yet be estimated. It is a deliberate statement, not
+  a substitute for a missing field: when a task declares it, the validator
+  reports no total at all and the renderer labels the deadline unknown instead
+  of treating the task as zero minutes. A task that declares neither an
+  estimate nor a reason simply stays outside the total.
+- Top-level `external_waits` records pending human/platform waits separately
+  from active work. If it is nonempty, the renderer withholds a clock ETA and
+  labels the finish time unknown; it still shows the bounded active-work
+  subtotal.
+- Top-level `current_progress` states what is already proven, apart from the
+  planned `business_result`. The dashboard keeps the two apart: the expected
+  outcome is not the confirmed progress.
 - `actual_minutes` is measured active time. If it was not measured, leave it out
   instead of inventing a number.
 - `owner`, `session`, `harness` and `model` say who works on the leaf now. The
   dashboard shows them so the user can see which session owns what.
+- `role`, `acceptance`, `read_paths` and `write_paths` declare who owns the
+  leaf, how it is accepted and which mutable paths it touches. They are
+  optional; when they are present the offline checker validates them.
+- `acceptance` states the result a person can verify. It is shown in the task
+  details of the dashboard.
+- `model_class` is the declared worker class of the leaf, one of the allowed
+  model names (`glm-5.3-flash`, `minimax-3.1-flash`, `gpt-6-luna`, `glm-5.3`,
+  `gpt-6.1-sol`). `model` is the model actually in use on that leaf. Both are
+  optional: add `model_class` only when the worker class is known and
+  intentionally assigned, and do not fill an unknown assignment with a default.
 - `blocker` names the concrete external obstacle. `waiting` is not a blocker: a
   leaf waiting for a dependency is `queued`.
+- `blocker_details` is an optional, additive object for blocked tasks. Its
+  optional keys are `reason`, `responsible`, `next_action`,
+  `human_required` (`yes`, `no`, or `unknown`), and `human_action`. Existing
+  graphs that contain only `blocker` continue to render; the renderer supplies
+  honest unknown/unspecified fallbacks instead of inventing an owner or action.
+  Keep technical task IDs in the task detail panel, while dependencies and
+  blocker cards show human-readable task names.
 - `wave` is optional. When absent, the renderer derives the wave from the
   dependency layers.
 
@@ -94,12 +157,17 @@ optional but expected for a live objective.
    decomposition without a graph is not finished.
 2. Update the graph and the report together at every plan boundary. A graph that
    says `queued` while the report says `done` is wrong in both directions.
-3. Estimate from the work and its proof, in minutes, with the named uncertainty.
+   The order is fixed: refresh the graph from the report, then build the view
+   on the refreshed graph, then reconcile the two with `check-plan`.
+3. The report's tasks and the graph's leaves are one set. No task without a
+   leaf, no leaf without a task, no two places claiming a different status for
+   the same task. `check-plan` prints the divergence and exits non-zero.
+4. Estimate from the work and its proof, in minutes, with the named uncertainty.
    An unknown estimate is honest; a padded one is not.
-4. Record the real blocker text, not "waiting" or "later".
-5. A blocked leaf keeps its estimate and dependency; the forecast then shows the
+5. Record the real blocker text, not "waiting" or "later".
+6. A blocked leaf keeps its estimate and dependency; the forecast then shows the
    blocked work separately instead of hiding it inside a total.
-6. The forecast is a plan, not a promise: capacity, resource conflicts and
+7. The forecast is a plan, not a promise: capacity, resource conflicts and
    external waits stay visible in the report next to the graph.
 
 ## Checking it
@@ -109,6 +177,11 @@ The offline checker validates declared path and dependency conflicts:
 ```sh
 python3 scripts/lhc_validate_graph.py <plan.graph.json>
 ```
+
+It accepts exactly the format above: `id`, `label`, `status` and `depends_on`
+are required, every other field is checked only when it is present. A graph
+exported by `lhc_grid.py export` passes it unchanged, as does the published
+example above. A declared `model_class` must be one of the allowed model names.
 
 It checks only declared paths and dependencies. It does not run a scheduler and
 does not judge whether two leaves are conceptually independent.

@@ -185,6 +185,7 @@ def test_hourly_report_is_stateful_and_idempotent(tmp_path: Path) -> None:
     assert duplicate["prompt"] == ""
 
 
+@pytest.mark.nightly
 def test_overrun_emits_full_business_first_diagnostic_once(tmp_path: Path) -> None:
     state = tmp_path / "time-guard.json"
     run_guard(state, "2026-08-12T11:05:00+03:00", 55)
@@ -261,6 +262,7 @@ def test_estimate_mutation_is_reported_and_original_maximum_is_retained(tmp_path
     assert "Do not legitimize the old route by replacing the estimate" in result["prompt"]
 
 
+@pytest.mark.nightly
 def test_compaction_handoff_is_replaced_counted_and_restored(tmp_path: Path) -> None:
     task = make_active_project(tmp_path)
 

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Worker Bugfix"
+  short_description: "Fix one proven failure by least-cost red-green"
+  default_prompt: "Use $worker-bugfix to reproduce and fix one bounded failure with the cheapest decisive proof."

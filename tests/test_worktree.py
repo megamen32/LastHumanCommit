@@ -38,6 +38,7 @@ def run(repo, action="plan", task="lane-one", base=None, ok=True):
     return result.stderr
 
 
+@pytest.mark.nightly
 def test_plan_read_only_and_auxiliary_identity(repo):
     before = git(repo, "status", "--porcelain")
     plan = run(repo)
@@ -52,6 +53,7 @@ def test_plan_read_only_and_auxiliary_identity(repo):
     assert git(repo, "status", "--porcelain") == before
 
 
+@pytest.mark.nightly
 def test_create_reuse_after_commits_preserves_dirty_primary(repo):
     base = git(repo, "rev-parse", "HEAD")
     (repo / "foreign.txt").write_text("unrelated")
@@ -74,6 +76,7 @@ def test_invalid_slug(repo, task):
     assert "slug" in run(repo, task=task, ok=False)
 
 
+@pytest.mark.nightly
 def test_conflicting_path_or_branch(repo):
     target = repo / ".worktrees/lane-one"
     target.mkdir(parents=True)
@@ -83,6 +86,7 @@ def test_conflicting_path_or_branch(repo):
     assert "branch" in run(repo, "create", base="HEAD", ok=False)
 
 
+@pytest.mark.nightly
 def test_requires_base_and_ignore_and_rejects_symlink(repo, tmp_path):
     assert "--base" in run(repo, "create", ok=False)
     (repo / ".gitignore").write_text("")
@@ -97,6 +101,7 @@ def test_does_not_adopt_foreign_worktree(repo):
     assert "assignment" in run(repo, "create", base="HEAD", ok=False)
 
 
+@pytest.mark.nightly
 def test_primary_path_with_spaces_and_unicode(repo):
     moved = repo.with_name("primary space русский")
     repo.rename(moved)

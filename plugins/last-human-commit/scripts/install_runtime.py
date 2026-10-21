@@ -12,12 +12,58 @@ import uuid
 
 BEGIN="<!-- lhc-autoentry:begin -->"
 END="<!-- lhc-autoentry:end -->"
+OPENCODE_PLUGIN_FILES=("lhc-v2.ts",)
 
-def configure(home:Path,root:Path,runtime:str,replace_gsd:bool=False)->dict:
+def backup_dir(home:Path)->Path:
+    return home/".local/state/last-human-commit/backups"
+
+def backup_path(home:Path,runtime:str,suffix:str="")->Path:
+    stamp=datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ-")+uuid.uuid4().hex[:8]
+    return backup_dir(home)/(f"{stamp}-{runtime}{suffix}.md")
+
+def register_opencode_plugin(home:Path,root:Path,plugin_dir:Path)->dict:
+    """Install the LHC OpenCode plugin so OpenCode auto-discovers it.
+
+    OpenCode scans `<config>/plugin/*.ts` and `<config>/plugins/*.ts` and
+    instantiates every export of each file, so only the plugin entry file is
+    installed here. The package root is recorded next to the LHC state so the
+    installed plugin can find the current AGENTS.md and the Python guard.
+    """
+    source=root/"opencode"
+    if not source.is_dir():
+        raise ValueError("The installed package has no opencode plugin directory")
+    plugin_dir=plugin_dir.expanduser().resolve()
+    plugin_dir.mkdir(parents=True,exist_ok=True)
+    installed={}
+    for name in OPENCODE_PLUGIN_FILES:
+        src=source/name
+        if not src.is_file():
+            raise ValueError(f"The installed package is missing the OpenCode plugin file: {name}")
+        target=plugin_dir/name
+        payload=src.read_text(encoding="utf-8")
+        if not target.exists() or target.read_text(encoding="utf-8")!=payload:
+            if target.exists():
+                backup=backup_path(home,"opencode","-"+name)
+                backup.parent.mkdir(parents=True,exist_ok=True)
+                backup.write_text(target.read_text(encoding="utf-8"),encoding="utf-8")
+            target.write_text(payload,encoding="utf-8")
+        installed[name]=str(target)
+    state=home/".local/state/last-human-commit/opencode.json"
+    state.parent.mkdir(parents=True,exist_ok=True)
+    state.write_text(json.dumps({
+        "packageRoot":str(root),
+        "pluginDir":str(plugin_dir),
+        "pluginFiles":installed,
+        "registeredAt":datetime.now(timezone.utc).isoformat(),
+    },ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+    return {"dir":str(plugin_dir),"files":installed,"state":str(state)}
+
+def configure(home:Path,root:Path,runtime:str,replace_gsd:bool=False,opencode_plugin_dir:Path|None=None)->dict:
     home=home.expanduser().resolve();root=root.expanduser().resolve()
     if not (root/"AGENTS.md").is_file() or not (root/"skills/last-human-commit/SKILL.md").is_file():
         raise ValueError("Select an installed package with its router and skills")
     destinations={"codex":".codex/AGENTS.md","claude":".claude/CLAUDE.md","opencode":".config/opencode/AGENTS.md"}
+    plugin_dir=(opencode_plugin_dir or home/".config/opencode/plugin").expanduser().resolve()
     file=home/destinations[runtime]
     before=file.read_text() if file.exists() else ""
     text=before
@@ -37,29 +83,42 @@ def configure(home:Path,root:Path,runtime:str,replace_gsd:bool=False)->dict:
             "report the missing runtime rather than treating an AGENTS read as activation. Use English for new internal records/coordination; answer the user in their language, preserving original user data.\n"
             f"{END}\n")
     elif runtime == "opencode":
-        # OpenCode 2 V2 hooks provide the current installed root at dispatch;
-        # a global pointer to a versioned cache makes old threads drift.
+        # The native OpenCode plugin injects the current installed AGENTS.md and
+        # reports time-only reminders. It does not review, gate or approve work.
+        # No package path is written here: the plugin resolves the current
+        # installed root at dispatch, and a pinned path would drift.
         pointer = (f"{BEGIN}\n"
-            "LHC is automatically active in native OpenCode 2 engineering sessions. "
-            "The native V2 adapter injects the current installed AGENTS.md, original human goal, "
-            "TDD RED/GREEN, working→ideal→useful-80% and review→delivery: fix known receipt "
-            "metadata from Git/CI instead of hiring a new reviewer. Keep hourly direction and "
-            "120-minute learning checks; independent Zero Knowledge only at major milestones. "
-            "The adapter, not a stale versioned file path, owns bootstrapping and compaction. "
-            "If its native context is missing, say activation is unverified. Use English for internal records/coordination and the user's language for answers; preserve original user data.\n"
+            "LHC is active in native OpenCode engineering sessions through the installed "
+            "LHC plugin. The plugin injects the current installed AGENTS.md into the system "
+            "context and reports time-only reminders at tool and idle boundaries; after "
+            "compaction it re-injects the AGENTS.md pointer and the bounded current-handoff.md "
+            "pointer. The plugin does not review, gate, approve or evaluate a diff. "
+            "The core workflow stays yours: TDD RED/GREEN, working→ideal→useful-80%, "
+            "review→delivery that fixes known receipt metadata from Git/CI instead of hiring "
+            "a new reviewer, hourly direction and 120-minute learning checks, and independent "
+            "Zero Knowledge only at major milestones. If the plugin context is missing, say "
+            "activation is unverified. Use English for internal records/coordination and the "
+            "user's language for answers; preserve original user data.\n"
             f"{END}\n")
     after=text.rstrip()+"\n\n"+pointer
-    if before==after:return {"path":str(file),"changed":False,"root":str(root)}
-    backup=home/".local/state/last-human-commit/backups"/(datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ-")+uuid.uuid4().hex[:8]+"-"+runtime+".md")
-    backup.parent.mkdir(parents=True,exist_ok=True)
-    if file.exists():backup.write_text(before)
-    file.parent.mkdir(parents=True,exist_ok=True)
-    temporary=file.with_name(file.name+".lhc-"+uuid.uuid4().hex)
-    try:
-        temporary.write_text(after)
-        os.replace(temporary,file)
-    finally:temporary.unlink(missing_ok=True)
-    return {"path":str(file),"changed":True,"root":str(root),"backup":str(backup) if before else None}
+    result={"path":str(file),"root":str(root)}
+    if before==after:
+        result["changed"]=False
+    else:
+        backup=backup_path(home,runtime)
+        backup.parent.mkdir(parents=True,exist_ok=True)
+        if file.exists():backup.write_text(before,encoding="utf-8")
+        file.parent.mkdir(parents=True,exist_ok=True)
+        temporary=file.with_name(file.name+".lhc-"+uuid.uuid4().hex)
+        try:
+            temporary.write_text(after,encoding="utf-8")
+            os.replace(temporary,file)
+        finally:temporary.unlink(missing_ok=True)
+        result["changed"]=True
+        result["backup"]=str(backup) if before else None
+    if runtime=="opencode":
+        result["plugin"]=register_opencode_plugin(home,root,plugin_dir)
+    return result
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
@@ -67,7 +126,10 @@ def main():
     parser.add_argument('--plugin-root',type=Path,required=True)
     parser.add_argument('--home',type=Path,default=Path.home())
     parser.add_argument('--replace-gsd-entry',action='store_true')
+    parser.add_argument('--opencode-plugin-dir',type=Path,default=None,
+        help="OpenCode plugin directory; defaults to <home>/.config/opencode/plugin. "
+             "Use <project>/.opencode/plugin for a project-local install.")
     args=parser.parse_args()
-    try:print(json.dumps(configure(args.home,args.plugin_root,args.runtime,args.replace_gsd_entry),ensure_ascii=False))
+    try:print(json.dumps(configure(args.home,args.plugin_root,args.runtime,args.replace_gsd_entry,args.opencode_plugin_dir),ensure_ascii=False))
     except (OSError,ValueError) as error:parser.exit(2,str(error)+'\n')
 if __name__=='__main__':main()

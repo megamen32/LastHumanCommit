@@ -1,9 +1,10 @@
 schema_version: 1
 harness: opencode
-kind: external-adapter
+kind: native-plugin
 role_source: ../../src/common/agents
 optional_instructions: instructions.md
 subagent_instructions_template: templates/subagent.md
+plugin: ../../plugins/last-human-commit/opencode
 delivery: native-markdown-agent-profile
 self_improve: event-triggered-core-protocol
 capabilities:
@@ -12,4 +13,4 @@ capabilities:
   model_override: adapter-dependent
   resume_transport: adapter-dependent
   nonblocking_parent_transport: adapter-dependent
-  lifecycle_time_guard_hook: adapter-dependent
+  lifecycle_time_guard_hook: proven

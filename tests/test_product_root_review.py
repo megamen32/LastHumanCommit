@@ -9,6 +9,8 @@ import pytest
 from test_outcome_contract import review_export, state
 from test_outcome_product_root import cli, review, stored_assignment
 
+pytestmark = pytest.mark.nightly
+
 
 def bound_quickfix(tmp_path):
     session_root, product_root, source, state_path = stored_assignment(tmp_path)

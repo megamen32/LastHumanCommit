@@ -10,7 +10,7 @@
       "id": "contract",
       "label": "Checked source path, author rights and catalog contract",
       "role": "Lead",
-      "model_class": "frontier",
+      "model_class": "gpt-6-luna",
       "status": "done",
       "depends_on": [],
       "read_paths": [],
@@ -35,7 +35,7 @@
       "id": "backend",
       "label": "One bounded backend behavior behind the agreed interface",
       "role": "Worker",
-      "model_class": "sonnet",
+      "model_class": "glm-5.3",
       "status": "running",
       "depends_on": [
         "contract"
@@ -64,7 +64,7 @@
       "id": "frontend",
       "label": "Frontend handles the three visible operation states",
       "role": "Worker",
-      "model_class": "sonnet",
+      "model_class": "glm-5.3",
       "status": "done",
       "depends_on": [
         "contract"
@@ -96,7 +96,7 @@
       "id": "join",
       "label": "Combined user path across both lanes",
       "role": "Worker",
-      "model_class": "fable",
+      "model_class": "glm-5.3",
       "status": "queued",
       "depends_on": [
         "backend",
@@ -122,7 +122,7 @@
       "id": "review",
       "label": "Independent technical evidence for the coherent change",
       "role": "Reviewer",
-      "model_class": "fable",
+      "model_class": "gpt-6-luna",
       "status": "queued",
       "depends_on": [
         "join"
@@ -144,7 +144,7 @@
       "id": "real-use",
       "label": "Fresh user attempt on the real surface",
       "role": "Tester",
-      "model_class": "sonnet",
+      "model_class": "glm-5.3-flash",
       "status": "queued",
       "depends_on": [
         "review"

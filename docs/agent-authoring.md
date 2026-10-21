@@ -1,9 +1,9 @@
 # Authoring agent instructions
 
 `AGENTS.md` and `CLAUDE.md` are byte-identical marker-delimited routers.
-`Lead.md` owns business routing. Overseer is the supreme route controller,
-Tester is the mandatory real-surface final gate, and Reviewer reviews a coherent
-Full diff or is otherwise risk-triggered. Adviser is optional independent
+`src/common/agents/Lead.md` owns business routing. Overseer is the supreme route
+controller, Tester is the mandatory real-surface final gate, and Reviewer reviews a
+coherent Full diff or is otherwise risk-triggered. Adviser is optional independent
 reasoning; Critic is its compatibility alias, not another gate.
 
 ## Non-negotiable ordering
@@ -69,9 +69,10 @@ admission, perfect atomicity, broad hardening, portability, or visual polish.
 ## Harness extensions and plugin delivery
 
 For every future harness integration or change, package reusable behavior using
-[Agent Plugins](https://agent-plugins.org/specification/): root `plugin.json`,
-`skills/`, and optional `mcp.json`. Keep native hooks and other client-specific
-behavior in supported client extensions; do not assume identical capabilities.
+[Agent Plugins](https://agent-plugins.org/specification/): the spec's root
+`plugin.json`, `skills/`, and optional `mcp.json`. Keep native hooks and other
+client-specific behavior in supported client extensions; do not assume identical
+capabilities.
 LHC's canonical package is `plugins/last-human-commit`, generated from source.
 Install and update the versioned package through the harness's native plugin
 marketplace/manager. Never use individual skill copies, installed-source edits,

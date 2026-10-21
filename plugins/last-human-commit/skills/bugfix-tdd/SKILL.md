@@ -6,7 +6,8 @@ description: Compatibility alias for older LHC assignments that request bugfix T
 # Bugfix red/green
 
 For new assignments, load `worker-bugfix`; it supersedes this compact alias with
-reusable failure-shield and `rg` guidance.
+reusable failure-shield and `rg` guidance. `worker-bugfix` is the canonical
+procedure for a defect.
 
 Use for a bounded behavior failure where a discriminating failing proof is worth
 its setup cost.
@@ -14,8 +15,11 @@ its setup cost.
 ## Procedure
 
 1. Trace the real failing consumer path.
-2. Capture the smallest safe failing regression, existing check, or black-box
-   canary that distinguishes the symptom.
+2. Write and run the smallest safe failing regression for the reported behavior
+   before production code changes. It is mandatory: write a new fast unit test
+   unless an existing regression or a real canary already proves the same
+   behavior. Keep it unit level and fast; long integration and end-to-end
+   proofs belong to the nightly run.
 3. Implement the smallest coherent fix on that path.
 4. Re-run the same proof and proportional direct-regression checks.
 5. Stop when the accepted claim is proven.
@@ -25,7 +29,7 @@ its setup cost.
 
 ## Do not
 
-- Do not write a new unit test when an existing or real canary is cheaper and
-  stronger.
+- Do not skip the RED regression because a real consumer probe looks cheaper;
+  the probe is additional evidence, never a substitute.
 - Do not widen the fix into hardening, cleanup, abstraction, or edge-case work.
 - Do not claim a user-facing result from a build alone.

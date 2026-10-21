@@ -12,18 +12,27 @@ from pathlib import Path
 
 SKILL_NAME = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 EXCLUDED_PARTS = {"__pycache__"}
+EXCLUDED_NAMES = {".DS_Store"}
 
 
 def plugin_root() -> Path:
     return Path(__file__).resolve().parents[1]
 
 
+def is_ignored(relative: Path) -> bool:
+    """Build and platform artifacts never belong to a generated projection."""
+    return (
+        bool(set(relative.parts) & EXCLUDED_PARTS)
+        or relative.suffix == ".pyc"
+        or relative.name in EXCLUDED_NAMES
+    )
+
+
 def package_files(root: Path) -> dict[Path, bytes]:
     return {
         path.relative_to(root): path.read_bytes()
         for path in root.rglob("*")
-        if path.is_file() and not (set(path.relative_to(root).parts) & EXCLUDED_PARTS)
-        and path.suffix != ".pyc"
+        if path.is_file() and not is_ignored(path.relative_to(root))
     }
 
 
@@ -72,18 +81,21 @@ def source_skill_dirs(source_root: Path) -> list[Path]:
     return result
 
 
-def project_common_skills(common_root: Path, native_root: Path, check: bool) -> list[str]:
-    """Make factory skills self-contained without changing existing native skills.
+def project_common_skills(common_root: Path, native_root: Path, check: bool,
+                          overwrite: bool = False) -> list[str]:
+    """Project the canonical factory skills into a native skills directory.
 
-    Canonical factory content lives in common/skills. Native packages carry the
-    routing example beside its skill, since they have no surrounding common tree.
+    `src/common/skills/` is the single canonical source for every skill. The
+    repo-root `skills/` tree and every package copy are generated projections of
+    it and are never edited by hand.
+
+    `overwrite=False` keeps the seeding semantic: an existing native file is
+    left alone, so a native package can keep files this projection does not
+    own. `overwrite=True` regenerates the tree so drift is repaired.
     """
     errors: list[str] = []
     for source_dir in source_skill_dirs(common_root / "skills"):
-        files = {
-            path.relative_to(source_dir): path.read_bytes()
-            for path in source_dir.rglob("*") if path.is_file()
-        }
+        files = package_files(source_dir)
         if source_dir.name == "model-routing":
             files[Path("SKILL.md")] = files[Path("SKILL.md")].replace(
                 b"../../config/model-routing.example.json",
@@ -93,7 +105,8 @@ def project_common_skills(common_root: Path, native_root: Path, check: bool) -> 
                 common_root / "config/model-routing.example.json"
             ).read_bytes()
         target = native_root / source_dir.name
-        actual = {path.relative_to(target) for path in target.rglob("*") if path.is_file()}
+        present = {path.relative_to(target) for path in target.rglob("*") if path.is_file()}
+        actual = {relative for relative in present if not is_ignored(relative)}
         for relative in sorted(actual - set(files)):
             errors.append(f"unexpected native factory file: {source_dir.name}/{relative}")
         for relative, content in files.items():
@@ -101,9 +114,15 @@ def project_common_skills(common_root: Path, native_root: Path, check: bool) -> 
             if check:
                 if output.is_symlink() or not output.is_file() or output.read_bytes() != content:
                     errors.append(f"native factory skill differs: {source_dir.name}/{relative}")
-            else:
+            elif overwrite or not output.exists():
                 output.parent.mkdir(parents=True, exist_ok=True)
                 output.write_bytes(content)
+        if overwrite:
+            for relative in sorted(present - set(files)):
+                (target / relative).unlink(missing_ok=True)
+            for path in sorted(target.rglob("*"), reverse=True):
+                if path.is_dir() and not any(path.iterdir()):
+                    path.rmdir()
     return errors
 
 
@@ -123,12 +142,12 @@ def compare(source_root: Path, output_root: Path) -> list[str]:
         source_files = {
             path.relative_to(source_dir).as_posix(): path
             for path in source_dir.rglob("*")
-            if path.is_file() and path.suffix != ".pyc" and "__pycache__" not in path.parts
+            if path.is_file() and not is_ignored(path.relative_to(source_dir))
         }
         target_files = {
             path.relative_to(target_dir).as_posix(): path
             for path in target_dir.rglob("*")
-            if path.is_file() and path.suffix != ".pyc" and "__pycache__" not in path.parts
+            if path.is_file() and not is_ignored(path.relative_to(target_dir))
         } if target_dir.is_dir() else {}
         missing = sorted(set(source_files) - set(target_files))
         unexpected = sorted(set(target_files) - set(source_files))
@@ -174,6 +193,21 @@ def sync_tool(source: Path, output: Path, check: bool) -> list[str]:
     return []
 
 
+def sync_router_copy(source: Path, target: Path, check: bool) -> list[str]:
+    """Keep the Claude router a byte copy of the shared agent router.
+
+    AGENTS.md is the only router source. CLAUDE.md is generated from it so the
+    two can never drift apart again.
+    """
+    if check:
+        if not target.is_file() or target.read_bytes() != source.read_bytes():
+            return [f"router copy differs from source: {target}"]
+        return []
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_bytes(source.read_bytes())
+    return []
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source-root", type=Path, default=default_source_root())
@@ -186,13 +220,14 @@ def main() -> int:
         if source_root == default_source_root().resolve():
             projection_errors = project_common_skills(
                 plugin_root().parent.parent / "src/common", source_root, args.check,
+                overwrite=True,
             )
             if projection_errors:
                 for error in projection_errors:
                     print(f"projection error: {error}", file=sys.stderr)
                 return 1
         tool_errors = []
-        for tool_name in ("lhc_time_guard.py", "lhc_active_time.py", "lhc_task_budget.py", "lhc_worktree.py", "lhc_chat.py", "lhc_entry.py", "lhc_milestone.py", "lhc_outcome.py", "lhc_outcome_review.py", "lhc_testing_reuse.py", "lhc_source_publication.py", "lhc_native_identity.py", "lhc_grid.py"):
+        for tool_name in ("lhc_time_guard.py", "lhc_active_time.py", "lhc_task_budget.py", "lhc_worktree.py", "lhc_chat.py", "lhc_entry.py", "lhc_milestone.py", "lhc_outcome.py", "lhc_outcome_review.py", "lhc_testing_reuse.py", "lhc_source_publication.py", "lhc_native_identity.py", "lhc_grid.py", "lhc_parallel.py"):
             tool_errors += sync_tool(
                 plugin_root().parent.parent / "src" / "common" / "tools" / tool_name,
                 plugin_root() / "tools" / tool_name,
@@ -211,7 +246,14 @@ def main() -> int:
         common_root = plugin_root().parent.parent / "src" / "common"
         bundle_errors = sync_tree(common_root, plugin_root() / "common", args.check,
                                   {b"src/common/": b"common/"})
+        bundle_errors += sync_router_copy(
+            plugin_root().parent.parent / "AGENTS.md",
+            plugin_root().parent.parent / "CLAUDE.md",
+            args.check,
+        )
         bundle_errors += sync_tree(plugin_root().parent.parent / "AGENTS.md", plugin_root() / "AGENTS.md", args.check,
+                                   {b"src/common/": b"common/"})
+        bundle_errors += sync_tree(plugin_root().parent.parent / "CLAUDE.md", plugin_root() / "CLAUDE.md", args.check,
                                    {b"src/common/": b"common/"})
         bundle_errors += sync_tree(plugin_root().parent.parent / "PRODUCT-PHILOSOPHY.md",
                                    plugin_root() / "PRODUCT-PHILOSOPHY.md", args.check,
@@ -246,7 +288,7 @@ def sync_codex_facet(check: bool) -> list[str]:
     native = root / "native" / "codex"
     errors = []
     for name in (".codex-plugin", "skills", "common", "tools", "hooks", "AGENTS.md",
-                 "PRODUCT-PHILOSOPHY.md"):
+                 "CLAUDE.md", "PRODUCT-PHILOSOPHY.md"):
         errors += sync_tree(root / name, native / name, check)
     if (native / "plugin.json").exists():
         errors.append("native Codex entrypoint must not shadow its native manifest")

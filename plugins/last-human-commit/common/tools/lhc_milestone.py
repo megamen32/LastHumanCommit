@@ -2,8 +2,19 @@
 
 Intent comes from human messages, change from Git, feedback from adapter-owned
 raw transcripts exported by the existing Herder. Leader prose cannot accept work.
+
+The module also exposes an explicit command line for the agent:
+
+    lhc_milestone.py --cwd <root> --runtime <rt> --session-id <sid> observe --event <ev>
+    lhc_milestone.py --cwd <root> --runtime <rt> --session-id <sid> gate
+    lhc_milestone.py --cwd <root> --runtime <rt> --session-id <sid> status
+
+These are agent-invoked commands, never hooks. A hook only tracks time; the
+blocking acceptance check lives in ``gate`` so the agent asks for it explicitly.
 """
+import argparse
 from datetime import datetime
+import fcntl
 import hashlib
 import json
 import os
@@ -11,6 +22,7 @@ from pathlib import Path
 import re
 import shlex
 import subprocess
+import sys
 from urllib.parse import urlparse
 from urllib.request import build_opener, HTTPRedirectHandler, ProxyHandler
 from time import monotonic
@@ -611,3 +623,128 @@ def reminder(milestone):
         "Findings require repairs and fresh attempts; login-only means blocked/not-tested. If access is truly "
         "blocked, finish with its exact reason and incomplete acceptance; no repeated automatic launches. "
         "Continue independent permitted work. Changed surface: " + ", ".join(milestone["surface"]) + ".")
+
+
+# ---------------------------------------------------------------------------
+# Explicit command line. The agent calls these; a hook never does.
+# ---------------------------------------------------------------------------
+
+RUNTIMES = ("codex", "opencode", "zcode", "claude", "hermes")
+
+
+def acceptance_gate(state):
+    """Decide the milestone user-acceptance gate for an observed session.
+
+    This is the blocking check that used to live inside the native hook. It is
+    an explicit command now: the hook stays time-only and never blocks.
+    """
+    milestone = state.get("milestone") or {}
+    if not isinstance(milestone, dict):
+        milestone = {}
+    delivery = state.get("native_entry") or {}
+    if not isinstance(delivery, dict):
+        delivery = {}
+    if delivery.get("finish_hold") or milestone.get("hold"):
+        return {"decision": "allow",
+                "reason": "LHC: milestone acceptance is held for this session "
+                          "(recorded hold, not a verdict)."}
+    if pending(milestone) and milestone.get("status") != "accepted":
+        return {"decision": "block", "reason": reminder(milestone)}
+    return {"decision": "allow",
+            "reason": "LHC: no pending milestone user acceptance. This gate never accepts "
+                      "work by itself; it only reports an outstanding acceptance debt."}
+
+
+def _state_path(cwd, runtime, session_id):
+    import lhc_time_guard as guard
+    return guard.learning_path(cwd, runtime, session_id)
+
+
+def _load_state(path, runtime, session_id, cwd):
+    import lhc_time_guard as guard
+    state = guard.load_state(path)
+    if state is None:
+        raise SystemExit(
+            f"LHC milestone: no session state for {runtime}/{session_id} from session root "
+            f"{cwd}; observe the session first")
+    return state
+
+
+def _observe(cwd, runtime, session_id, name, payload):
+    import lhc_time_guard as guard
+    path = _state_path(cwd, runtime, session_id)
+    state = _load_state(path, runtime, session_id, cwd)
+    event = dict(payload)
+    business = state.get("business", {})
+    prior_milestone = state.get("milestone", {})
+    event.setdefault("_lhc_previous_active_prompts", [
+        business.get("latest_prompt_full") or business.get("latest_prompt") or "",
+        business.get("original_prompt_full") or business.get("original_prompt") or "",
+        prior_milestone.get("goal") or "",
+    ])
+    now = datetime.now().astimezone()
+    with path.with_suffix(".lock").open("a", encoding="utf-8") as lock:
+        fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+        state = guard.load_state(path) or state
+        milestone = observe(state, event, name, cwd, session_id, now)
+        guard.write_state(path, state)
+    return milestone
+
+
+def _gate(cwd, runtime, session_id):
+    path = _state_path(cwd, runtime, session_id)
+    state = _load_state(path, runtime, session_id, cwd)
+    return acceptance_gate(state)
+
+
+def _status(cwd, runtime, session_id):
+    path = _state_path(cwd, runtime, session_id)
+    state = _load_state(path, runtime, session_id, cwd)
+    milestone = state.get("milestone") or {}
+    if not isinstance(milestone, dict):
+        milestone = {}
+    return {
+        "session": session_id,
+        "runtime": runtime,
+        "state": str(path),
+        "status": milestone.get("status", "not-observed"),
+        "task": milestone.get("task"),
+        "surface_key": milestone.get("surface_key"),
+        "read_only": milestone.get("read_only"),
+        "hold": milestone.get("hold"),
+        "pending": pending(milestone),
+        "feedback_count": len(milestone.get("feedback") or []),
+    }
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--cwd", type=Path, default=Path.cwd())
+    parser.add_argument("--runtime", choices=RUNTIMES, required=True)
+    parser.add_argument("--session-id", required=True)
+    sub = parser.add_subparsers(dest="command", required=True)
+    observe_parser = sub.add_parser("observe", help="observe one native event into the milestone state")
+    observe_parser.add_argument("--event", required=True)
+    sub.add_parser("gate", help="report the milestone user-acceptance gate for this session")
+    sub.add_parser("status", help="report the observed milestone state")
+    args = parser.parse_args()
+    cwd = args.cwd.resolve()
+    if args.command == "observe":
+        raw = sys.stdin.read(8 * 1024 * 1024 + 1)
+        if len(raw) > 8 * 1024 * 1024:
+            raise SystemExit("LHC milestone: event payload exceeds the bounded native window")
+        payload = json.loads(raw or "{}")
+        if not isinstance(payload, dict):
+            raise SystemExit("LHC milestone: event payload must be a JSON object")
+        milestone = _observe(cwd, args.runtime, args.session_id, args.event, payload)
+        result = {"milestone": milestone}
+    elif args.command == "gate":
+        result = _gate(cwd, args.runtime, args.session_id)
+    else:
+        result = _status(cwd, args.runtime, args.session_id)
+    print(json.dumps(result, ensure_ascii=False, sort_keys=True))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

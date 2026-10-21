@@ -57,8 +57,9 @@ available; scheduled inspection is required even when the current plan looks cor
 
 ## Package and installation
 
-The native Agent Plugin is `plugins/last-human-commit`, version 1.5.20, with 23 optional
-skills, instruction-only startup hooks and time-only reminders. Use the harness's native plugin manager.
+The native Agent Plugin is `plugins/last-human-commit`, version 1.5.21, with the full
+optional skill set (validated by `plugins/last-human-commit/scripts/validate.py`),
+instruction-only startup hooks and time-only reminders. Use the harness's native plugin manager.
 For clients whose plugin hooks are unavailable or still await trust, the package
 provides a supported user-instruction bootstrap:
 
@@ -71,7 +72,8 @@ python3 <installed-package>/scripts/install_runtime.py \
 are replaced; unrelated instructions are preserved and backed up. Existing GSD
 skills are not deleted. Reload/start a new session to load changed instructions.
 
-Source updates: edit the source, run `sync_skills.py`, then `python3 tests/validate.py`.
+Source updates: edit the source, run `plugins/last-human-commit/scripts/sync_skills.py`,
+then `python3 tests/validate.py`.
 The validator runs package/source parity and all executable regressions. Runtime
 installation and actual use must be verified separately from source tests.
 

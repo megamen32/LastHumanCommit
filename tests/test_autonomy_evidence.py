@@ -52,8 +52,11 @@ def test_review_subject_is_stable_for_admin_metadata_but_binds_current_scope():
 def test_short_subject_carries_current_corrections_without_literal_duplication():
     outcome = sample_outcome()
     outcome['corrections'] = ['The export result must be 3 rather than 2.']
+    # The assignment carries the resolved product root, exactly as the live
+    # reviewer compares it.
+    root = str(outcomes.product_root_path(outcome, Path(outcome['cwd'])))
     short = ('Outcome ' + outcome['id'] + ' ' + outcomes.review_subject(outcome) + ' ' +
-             outcome['product_root'] + ' ' + outcome['canary']['scenario'] + ' ' + outcome['canary']['expected'])
+             root + ' ' + outcome['canary']['scenario'] + ' ' + outcome['canary']['expected'])
     assert outcomes.review_assignment_kind(outcome, short) == 'digest'
     assert outcomes.review_assignment_kind(outcome, 'Outcome ' + outcome['id'] + ' ' + outcome['original_goal']) is None
 

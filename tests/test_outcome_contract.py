@@ -73,14 +73,15 @@ def cli(root, *args, ok=True):
     return json.loads(result.stdout) if result.returncode == 0 else result.stderr
 
 
-def anchored(root, goal='Fix the small total CLI. Verify the empty basket returns 0.', coverage=()):
+def anchored(root, goal='Fix the small total CLI. Verify the empty basket returns 0.', coverage=(), canary=None):
     subprocess.run(['git', 'init', '-q', str(root)], check=True)
     (root / 'total.py').write_text('print(0)\n')
     (root / 'test_total.py').write_text(
         "import unittest, subprocess, sys\nclass TotalTest(unittest.TestCase):\n"
         " def test_empty(self): self.assertEqual(subprocess.check_output([sys.executable, 'total.py']).strip(), b'0')\n")
     invoke(root, 'UserPromptSubmit', prompt=goal)
-    args = ['contract', '--scenario', 'Empty basket total', '--target', 'python3 total.py', '--expected', '0']
+    scenario, target, expected = canary or ('Empty basket total', 'python3 total.py', '0')
+    args = ['contract', '--scenario', scenario, '--target', target, '--expected', expected]
     if state(root)['business']['outcome']['task_class'] in {'quickfix', 'fullcycle'}:
         args += ['--owned-path', 'total.py']
     if state(root)['business']['outcome']['task_class'] == 'fullcycle':
@@ -1922,6 +1923,7 @@ def large_native_reviewer_fixture(root):
     return outcome,manifest,source,rows
 
 
+@pytest.mark.nightly
 def test_existing_large_native_reviewer_closes_without_new_session_or_rewritten_report(tmp_path):
     import hashlib
     outcome,manifest,source,rows=large_native_reviewer_fixture(tmp_path)
@@ -1937,6 +1939,7 @@ def test_existing_large_native_reviewer_closes_without_new_session_or_rewritten_
     assert snapshot.stat().st_size<8192 and source.stat().st_size>8*1024*1024
 
 
+@pytest.mark.nightly
 @pytest.mark.parametrize('fault',['raw-tamper','line-index','non-boundary','later-negative','oversized-window','foreign-native-location'])
 def test_native_reviewer_window_retains_exact_source_and_later_negatives(tmp_path,monkeypatch,fault):
     import lhc_outcome_review as reviews

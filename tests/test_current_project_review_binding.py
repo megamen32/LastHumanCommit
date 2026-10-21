@@ -4,9 +4,15 @@ from pathlib import Path
 
 from test_product_root_review import bound_quickfix, cli, native_review, state
 from test_outcome_product_root import guard, review
+import pytest
+
+pytestmark = pytest.mark.nightly
 
 
 def _reverse_layout(tmp_path, *, workdir="product", assigned_root=None):
+    # The live tooling compares resolved roots, so the fixture keeps one
+    # canonical path for the session, the product and the assignment.
+    tmp_path = Path(tmp_path).resolve()
     session_root, external_root, outcome = bound_quickfix(tmp_path)
     # Recreate the reported reverse layout: the current product is the review
     # command's root, while the independent native reviewer lives in ExManager.
@@ -27,7 +33,12 @@ def _reverse_layout(tmp_path, *, workdir="product", assigned_root=None):
     )
     assignment_root = assigned_root or external_root
     user_text = rows[1]["payload"]["content"][0]["text"]
-    rows[1]["payload"]["content"][0]["text"] = user_text + "\nAssigned product root: " + str(assignment_root)
+    # The native assignment declares exactly one product root. A wrong declared
+    # root replaces the real one instead of being appended next to it, so the
+    # assignment genuinely stops naming the exact product root under review.
+    rows[1]["payload"]["content"][0]["text"] = (
+        user_text.replace(str(external_root), str(assignment_root))
+        + "\nAssigned product root: " + str(assignment_root))
     raw = "".join(json.dumps(row) + "\n" for row in rows)
     source.write_text(raw)
     (tmp_path / ".codex/sessions/reviewer.jsonl").write_text(raw)
@@ -35,6 +46,7 @@ def _reverse_layout(tmp_path, *, workdir="product", assigned_root=None):
 
 
 def test_independent_reviewer_in_other_native_cwd_can_review_exact_current_product(tmp_path):
+    tmp_path = tmp_path.resolve()
     product_root, _, outcome, _ = _reverse_layout(tmp_path)
 
     result = cli(tmp_path, product_root, "review", "--native-reviewer", "reviewer")
@@ -47,6 +59,7 @@ def test_independent_reviewer_in_other_native_cwd_can_review_exact_current_produ
 
 
 def test_reverse_layout_still_requires_exact_product_assignment_and_product_workdir(tmp_path):
+    tmp_path = tmp_path.resolve()
     product_root, _, _, _ = _reverse_layout(tmp_path, assigned_root=tmp_path / "neighbor")
     before = state(product_root)
 

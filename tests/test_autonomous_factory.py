@@ -8,6 +8,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location('lhc_graph', ROOT / 'scripts/lhc_validate_graph.py')
@@ -16,13 +17,22 @@ mod = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(mod)
 
 
-def task(tid='a', deps=None, writes=None, reads=None, model='sonnet'):
-    return {'id': tid, 'role': 'Worker', 'model_class': model, 'depends_on': deps or [],
-            'read_paths': reads or [], 'write_paths': writes or [], 'acceptance': 'Observed behavior is verified.'}
+def task(tid='a', deps=None, writes=None, reads=None, model=None):
+    """One task in the canonical schema_version 2 graph.
+
+    ``model_class`` is optional: a task declares it only when the routing
+    decision is already known. The same is true for ``role``, ``acceptance``,
+    ``read_paths`` and ``write_paths``.
+    """
+    node = {'id': tid, 'label': 'task ' + tid, 'role': 'Worker', 'status': 'queued',
+            'depends_on': deps or [], 'read_paths': reads or [], 'write_paths': writes or []}
+    if model is not None:
+        node['model_class'] = model
+    return node
 
 
 def graph(*tasks):
-    return {'schema_version': 1, 'tasks': list(tasks)}
+    return {'schema_version': 2, 'tasks': list(tasks)}
 
 
 def estimated(tid, minimum, maximum, deps=None):
@@ -68,8 +78,14 @@ class GraphTests(unittest.TestCase):
         self.assertEqual(result['dependency_critical_path_minutes']['minimum'], 10)
         self.assertEqual(result['critical_paths']['minimum'], ['a', 'c'])
 
-    def test_partial_estimates_rejected(self):
-        self.invalid(graph(estimated('a', 1, 2), task('b')), 'all nodes')
+    def test_partial_estimates_are_allowed(self):
+        # A partial estimate is honest: the estimated leaf counts, the leaf
+        # without an estimate is not counted as zero and does not fail the graph.
+        result = self.valid(graph(estimated('a', 1, 2), task('b')))
+        self.assertTrue(result.get('valid'), result)
+        self.assertEqual(result['estimate']['effort_minutes'], {'minimum': 1, 'maximum': 2})
+        self.assertEqual(result['estimate']['dependency_critical_path_minutes'],
+                         {'minimum': 1, 'maximum': 2})
 
     def test_invalid_estimate_bounds(self):
         for minimum, maximum in ((True, 2), (1, False), (-1, 2), (3, 2),
@@ -118,8 +134,27 @@ class GraphTests(unittest.TestCase):
     def test_schema_errors(self):
         for data in (None, [], {}, {'schema_version':True,'tasks':[task()]}, graph(), graph(None)):
             with self.subTest(data=data): self.assertFalse(mod.validate_graph(data)['valid'])
-    def test_missing_acceptance(self):
-        t = task(); t.pop('acceptance'); self.invalid(graph(t), 'acceptance')
+    def test_missing_acceptance_is_allowed(self):
+        # acceptance is optional: a leaf without it is still a valid leaf.
+        t = task(); t.pop('acceptance', None)
+        result = self.valid(graph(t))
+        self.assertTrue(result.get('valid'), result)
+    def test_acceptance_is_checked_when_present(self):
+        t = task(); t['acceptance'] = 'Observed behavior is verified.'
+        self.assertTrue(self.valid(graph(t)).get('valid'))
+        t['acceptance'] = 7
+        self.assertFalse(mod.validate_graph(graph(t))['valid'])
+    def test_role_is_checked_when_present(self):
+        t = task(); t['role'] = 'Reviewer'
+        self.assertTrue(self.valid(graph(t)).get('valid'))
+        t['role'] = 7
+        self.assertFalse(mod.validate_graph(graph(t))['valid'])
+    def test_required_fields_are_always_present(self):
+        for missing in ('id', 'label', 'status', 'depends_on'):
+            t = task(); t.pop(missing)
+            result = mod.validate_graph(graph(t))
+            self.assertFalse(result.get('valid'), missing)
+            self.assertTrue(any(missing in error for error in result.get('errors', [])), (missing, result))
     def test_malformed_list(self):
         t = task(); t['depends_on'] = 'a'; self.invalid(graph(t), 'list of strings')
     def test_duplicate_dependency(self): self.invalid(graph(task('a'), task('b', ['a', 'a'])), 'duplicate value')
@@ -143,6 +178,7 @@ class GraphTests(unittest.TestCase):
         self.assertEqual(p.returncode, 2)
         self.assertFalse(json.loads(p.stdout)['valid'])
 
+    @pytest.mark.nightly
     def test_cli_uses_configured_classes_and_rejects_invalid_config(self):
         (ROOT / '.tmp').mkdir(exist_ok=True)
         with tempfile.TemporaryDirectory(dir=ROOT / '.tmp') as d:
@@ -192,10 +228,14 @@ class ArtifactStructureTests(unittest.TestCase):
             self.assertTrue((index.parent/target).is_file(),target)
     def test_model_examples_are_configuration(self):
         cfg=json.loads((ROOT/'src/common/config/model-routing.example.json').read_text())
-        self.assertEqual(cfg['tier_order'], ['frontier','fable','sonnet','haiku'])
-        self.assertEqual(cfg['tiers']['fable']['user_examples'], ['GPT-6A','Star','GLM 5.3'])
-        self.assertEqual(cfg['tiers']['sonnet']['user_examples'], ['5.3 Flash','Panthera'])
-        self.assertEqual(cfg['tiers']['haiku']['user_examples'], ['GLM 4.7','MiniMax M3'])
+        # The allowed model classes are the declared classes of the routing
+        # configuration; the tiers group them for the owner.
+        self.assertEqual(list(mod.DEFAULT_CLASSES),
+                         ['glm-5.3-flash', 'minimax-3.1-flash', 'gpt-6-luna', 'glm-5.3', 'gpt-6.1-sol'])
+        self.assertEqual(cfg['model_classes'], list(mod.DEFAULT_CLASSES))
+        self.assertEqual(cfg['tier_order'], ['frontier', 'fast'])
+        self.assertEqual(cfg['tiers']['frontier']['user_examples'], ['gpt-6-luna', 'glm-5.3', 'gpt-6.1-sol'])
+        self.assertEqual(cfg['tiers']['fast']['user_examples'], ['glm-5.3-flash', 'minimax-3.1-flash'])
         self.assertIsNone(cfg['selection']['fixed_cheap_token_quota'])
     def test_relative_skill_and_template_links(self):
         for base in (ROOT/'src/common/skills',):

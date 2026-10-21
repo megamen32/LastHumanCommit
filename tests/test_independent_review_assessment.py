@@ -10,9 +10,12 @@ URL = 'https://new.auto-gram.ru/chat/2122?cabinet=6'
 AGENT_BROWSER = '/home/roomhacker/.npm-global/bin/agent-browser'
 
 
+NATIVE_CWD = str(Path('/tmp').resolve())
+
+
 def _browser_call(command, *, name='exec_command'):
     return {'name': name, 'arguments': json.dumps({'cmd': command}),
-            '_native_cwd': '/tmp', '_exit_code': 0}
+            '_native_cwd': NATIVE_CWD, '_exit_code': 0}
 
 
 def _append_bookkeeping(manifest, text):
@@ -84,10 +87,10 @@ def test_documented_env_prefix_binds_exact_browser_target_and_native_journey():
     opened = _browser_call(f'{prefix} --session lhc-proof open {URL}')
     clicked = _browser_call(f'{prefix} --session lhc-proof click @return-link')
     snapshot = _browser_call(f'{prefix} --session lhc-proof snapshot -i')
-    assert real_observation(opened, 'Opened page ' + URL, URL, 'consumer', 'fullcycle', cwd=Path('/tmp'))
+    assert real_observation(opened, 'Opened page ' + URL, URL, 'consumer', 'fullcycle', cwd=Path(NATIVE_CWD))
     pathless = _browser_call(f'env -u AGENT_BROWSER_AUTO_CONNECT agent-browser --session lhc-proof open {URL}')
-    assert real_observation(pathless, 'Opened page ' + URL, URL, 'consumer', 'fullcycle', cwd=Path('/tmp'))
-    assert not real_observation(opened, 'Opened page ' + URL, 'https://other.example/chat', 'consumer', 'fullcycle', cwd=Path('/tmp'))
+    assert real_observation(pathless, 'Opened page ' + URL, URL, 'consumer', 'fullcycle', cwd=Path(NATIVE_CWD))
+    assert not real_observation(opened, 'Opened page ' + URL, 'https://other.example/chat', 'consumer', 'fullcycle', cwd=Path(NATIVE_CWD))
     journey = {'open': (opened, 'Opened page ' + URL),
                'click': (clicked, 'Clicked return link'),
                'snapshot': (snapshot, 'Returned to dialogs page')}
@@ -97,10 +100,10 @@ def test_documented_env_prefix_binds_exact_browser_target_and_native_journey():
 def test_env_normalization_rejects_other_mutations_and_non_browser():
     browser = f'{AGENT_BROWSER} --session lhc-proof open {URL}'
     wrong_env = _browser_call(f'env -u PATH {browser}')
-    assert not real_observation(wrong_env, 'Opened page ' + URL, URL, 'consumer', 'fullcycle', cwd=Path('/tmp'))
+    assert not real_observation(wrong_env, 'Opened page ' + URL, URL, 'consumer', 'fullcycle', cwd=Path(NATIVE_CWD))
     mislabeled_browser = _browser_call(f'env -u PATH {browser}', name='browser.open')
-    assert not real_observation(mislabeled_browser, 'Opened page ' + URL, URL, 'consumer', 'fullcycle', cwd=Path('/tmp'))
+    assert not real_observation(mislabeled_browser, 'Opened page ' + URL, URL, 'consumer', 'fullcycle', cwd=Path(NATIVE_CWD))
     echo = _browser_call(f'env -u AGENT_BROWSER_AUTO_CONNECT /bin/echo {URL}')
-    assert not real_observation(echo, URL, URL, 'consumer', 'fullcycle', cwd=Path('/tmp'))
+    assert not real_observation(echo, URL, URL, 'consumer', 'fullcycle', cwd=Path(NATIVE_CWD))
     compound = _browser_call(f'env -u AGENT_BROWSER_AUTO_CONNECT {browser} && /bin/echo done')
-    assert not real_observation(compound, 'Opened page ' + URL, URL, 'consumer', 'fullcycle', cwd=Path('/tmp'))
+    assert not real_observation(compound, 'Opened page ' + URL, URL, 'consumer', 'fullcycle', cwd=Path(NATIVE_CWD))

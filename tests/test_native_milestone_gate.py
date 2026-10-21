@@ -12,6 +12,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 ENTRY = ROOT / "src/common/tools/lhc_entry.py"
+MILESTONE = ROOT / "src/common/tools/lhc_milestone.py"
 GOAL = "Build a complete customer dashboard with search, import and mobile navigation at https://demo.test/dashboard"
 
 def invoke(root, event, **fields):
@@ -30,10 +31,27 @@ def invoke(root, event, **fields):
                                       "turn_id": fields.get("turn_id", "one")}}}
         with native_session.open("a", encoding="utf-8") as stream:
             stream.write(json.dumps(native_row, ensure_ascii=False) + "\n")
-    result = subprocess.run([sys.executable, str(ENTRY), "--root", str(ROOT), "--runtime", "codex", "--event", event],
+    # --session is the explicit agent command that advances the stateful
+    # lifecycle. The native hook templates stay time-only and never block.
+    result = subprocess.run([sys.executable, str(ENTRY), "--root", str(ROOT), "--runtime", "codex", "--event", event, "--session"],
         input=json.dumps({"cwd": str(root), "session_id": "leader", "turn_id": "one",
                           "transcript_path": str(native_session), **fields}),
         capture_output=True, text=True, check=True, timeout=8, env={**os.environ, "HOME": str(root / "native-home"), "CODEX_HOME": str(root / "native-home/.codex")})
+    return json.loads(result.stdout) if result.stdout.strip() else {}
+
+def acceptance_gate(root, session_id="leader"):
+    """Run the explicit milestone acceptance gate command."""
+    result = subprocess.run([sys.executable, str(MILESTONE), "--cwd", str(root), "--runtime", "codex",
+                             "--session-id", session_id, "gate"],
+        capture_output=True, text=True, check=True, timeout=8)
+    return json.loads(result.stdout)
+
+def heartbeat(root, session_id="leader", event="PostToolUse"):
+    """Run the time-only native hook exactly as the hook template does."""
+    result = subprocess.run([sys.executable, str(ENTRY), "--root", str(ROOT), "--runtime", "codex",
+                             "--event", event, "--heartbeat-only"],
+        input=json.dumps({"cwd": str(root), "session_id": session_id}),
+        capture_output=True, text=True, check=True, timeout=8)
     return json.loads(result.stdout) if result.stdout.strip() else {}
 
 def state(root):
@@ -44,6 +62,66 @@ def setup(root, prompt=GOAL):
     invoke(root, "UserPromptSubmit", prompt=prompt)
     (root / "dashboard.html").write_text("<main><input type=search><button>Import</button><nav>Reports</nav></main>")
     invoke(root, "PostToolUse", tool_name="exec_command", tool_input={"cmd": "write dashboard"}, tool_response={"exit_code": 0})
+
+
+def test_hook_heartbeat_keeps_the_learning_clock_and_the_wall_timer_in_one_state(tmp_path):
+    """Regression: the checkpoint must create the clock before the heartbeat reads it.
+
+    Running native_heartbeat first left the shared state without
+    "last_observed_at", so learning_checkpoint raised KeyError and the whole
+    time reminder was swallowed for every harness.
+    """
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    heartbeat(tmp_path)
+    observed = state(tmp_path)
+    assert "last_observed_at" in observed
+    assert observed["last_observed_at"] >= observed["started_at"]
+    timer = observed["native_heartbeat"]
+    assert timer["schema"] == "lhc.native-heartbeat.v1"
+    assert timer["session_id"] == "leader"
+    assert timer["runtime"] == "codex"
+    assert timer["cwd"] == os.fspath(tmp_path.resolve())
+    assert timer["last_seen_at"] >= observed["last_observed_at"]
+
+
+def test_hook_heartbeat_reminds_once_the_wall_clock_passed_the_plan_bucket(tmp_path):
+    """Regression: an elapsed wall clock still produces its time reminder."""
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    heartbeat(tmp_path)
+    path = next((tmp_path / ".agents/shared-session/learning").glob("*.json"))
+    observed = json.loads(path.read_text())
+    past = (datetime.now().astimezone() - timedelta(minutes=31)).isoformat()
+    observed["native_heartbeat"]["started_at"] = past
+    observed["native_heartbeat"]["last_seen_at"] = past
+    path.write_text(json.dumps(observed))
+    result = heartbeat(tmp_path)
+    assert result["hookSpecificOutput"]["hookEventName"] == "PostToolUse"
+    assert "LHC 30-minute plan report" in result["hookSpecificOutput"]["additionalContext"]
+    assert "60-minute direction check" not in result["hookSpecificOutput"]["additionalContext"]
+
+
+def test_plain_native_hook_invocation_is_inert_and_never_observes_the_session(tmp_path):
+    """Hooks only track time; state creation belongs to the explicit commands."""
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    result = subprocess.run([sys.executable, str(ENTRY), "--root", str(ROOT), "--runtime", "codex", "--event", "Stop"],
+        input=json.dumps({"cwd": str(tmp_path), "session_id": "leader"}),
+        capture_output=True, text=True, check=True, timeout=8)
+    assert result.stdout.strip() == ""
+    assert not (tmp_path / ".agents/shared-session/learning").exists()
+
+
+def test_hook_never_blocks_and_the_blocking_check_lives_in_the_explicit_gate(tmp_path):
+    """The hook is time-only: it issues no verdict and never blocks a finish."""
+    setup(tmp_path)
+    result = heartbeat(tmp_path)
+    assert "decision" not in result
+    assert "reason" not in result
+    # The blocking acceptance check is an explicit command, not a hook effect.
+    gate = acceptance_gate(tmp_path)
+    assert gate["decision"] == "block"
+    assert "Zero Knowledge" in gate["reason"]
+    assert state(tmp_path)["milestone"]["status"] == "pending"
+
 
 def test_normal_major_ui_finish_requires_real_independent_attempts(tmp_path):
     setup(tmp_path)
@@ -335,6 +413,7 @@ def test_generic_or_partial_incidental_pass_is_not_goal_acceptance(tmp_path, rep
     invoke(tmp_path, "Stop")
     assert state(tmp_path)["milestone"]["status"] != "accepted"
 
+@pytest.mark.nightly
 @pytest.mark.parametrize("fresh", [True, False])
 def test_existing_herder_opencode_partial_export_is_checked_against_native_api(tmp_path, fresh):
     setup(tmp_path)

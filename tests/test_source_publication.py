@@ -133,6 +133,7 @@ def test_contract_binds_exact_scope_ref_and_candidate_bytes(tmp_path):
         source_pub.source_readiness(metadata, [], root)
 
 
+@pytest.mark.nightly
 def test_publication_needs_native_push_then_current_ref_and_exact_blobs(tmp_path):
     root, bare = repository(tmp_path)
     (root / "owned.py").write_text("print('candidate')\n")
@@ -305,6 +306,7 @@ def test_same_clause_publication_hold_cancels_publish_permission(tmp_path, endin
         capture(root, bare, prompt=prompt)
 
 
+@pytest.mark.nightly
 def test_publication_rejects_extra_unowned_commit_path(tmp_path):
     root, bare = repository(tmp_path)
     (root / "owned.py").write_text("print('candidate')\n")
@@ -329,6 +331,7 @@ def test_publication_rejects_extra_unowned_commit_path(tmp_path):
                                         "2026-10-20T20:00:00+00:00")
 
 
+@pytest.mark.nightly
 def test_public_cli_contract_review_keeps_publication_pending_then_completes(tmp_path, monkeypatch, capsys):
     session_root = tmp_path / "session"
     session_root.mkdir()

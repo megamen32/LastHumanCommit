@@ -1,4 +1,17 @@
-"""Regression: automatic native lifecycle, not mere reading of a skill file."""
+"""Regression: the native lifecycle is delivered, not merely written in a file.
+
+Two live surfaces exist, and this file keeps both honest:
+
+* the installed native hook bundle is time-only — it points at the method and
+  tracks elapsed wall time, and it never observes the stateful lifecycle,
+  never mutates outcome state and never blocks the harness;
+* the explicit session command (``lhc_entry.py --session``) is the stateful
+  surface the agent calls by the method, and the explicit time-guard CLI
+  records the reviews it owes.
+
+A retired hook event (UserPromptSubmit, PreToolUse, Stop, Interrupt,
+PermissionRequest) is inert: it delivers nothing and creates no state.
+"""
 import argparse
 import importlib.util
 import json
@@ -10,6 +23,8 @@ import pytest
 
 ROOT=Path(__file__).resolve().parents[1]
 ENTRY=ROOT/"src/common/tools/lhc_entry.py"
+PLUGIN=ROOT/"plugins/last-human-commit"
+HARNESS_RUNTIMES=("codex","claude","opencode","zcode")
 
 @pytest.fixture(autouse=True)
 def isolated_git_root(tmp_path):
@@ -17,9 +32,19 @@ def isolated_git_root(tmp_path):
 
 def invoke(root,event,**fields):
     payload={"cwd":str(root),"session_id":"existing-thread","turn_id":"turn-one",**fields}
-    result=subprocess.run([sys.executable,str(ENTRY),"--root",str(ROOT),"--runtime","codex","--event",event],
+    # --session is the explicit agent command that advances the stateful
+    # lifecycle. The native hook templates stay time-only and never block.
+    result=subprocess.run([sys.executable,str(ENTRY),"--root",str(ROOT),"--runtime","codex","--event",event,"--session"],
         input=json.dumps(payload),capture_output=True,text=True,check=True,timeout=8)
     return json.loads(result.stdout) if result.stdout.strip() else {}
+
+def heartbeat(root,runtime="codex",session="heartbeat-thread"):
+    """Run the installed time-only PostToolUse hook exactly as the harness does."""
+    payload={"cwd":str(root),"session_id":session}
+    result=subprocess.run([sys.executable,str(ENTRY),"--root",str(ROOT),"--runtime",runtime,
+                           "--event","PostToolUse","--heartbeat-only"],
+        input=json.dumps(payload),capture_output=True,text=True,check=True,timeout=8)
+    return result.stdout
 
 def state_file(root):return next((root/".agents/shared-session/learning").glob("*.json"))
 def due(root):
@@ -29,16 +54,96 @@ def due(root):
     p.write_text(json.dumps(d))
 def context(output):return output.get("hookSpecificOutput",{}).get("additionalContext","")
 
-def test_existing_thread_bootstraps_on_first_tool_without_sessionstart(tmp_path):
+def test_session_command_bootstraps_once_and_never_repeats_the_entry_on_every_tool(tmp_path):
+    # The explicit session command is the stateful surface. The installed hook
+    # bundle has no PreToolUse event at all: it only points at the method and
+    # tracks elapsed time, so the first tool no longer carries the entry.
+    hooks=json.loads((PLUGIN/"hooks/hooks.json").read_text())["hooks"]
+    assert "PreToolUse" not in hooks
     text=context(invoke(tmp_path,"PreToolUse",tool_name="exec_command",tool_input={"cmd":"true"}))
+    # The session command points at the router. It never inlines the method
+    # text into the context any more.
     assert str(ROOT/"AGENTS.md") in text
-    assert "RED" in text and "80%" in text and "consumer result" in text
+    assert "LHC: read" in text
     assert not context(invoke(tmp_path,"PostToolUse")), "do not repeat the entry on every tool"
 
-def test_plain_prompt_gets_outcome_design_tdd_and_milestone_contract(tmp_path):
+def test_native_hook_bundle_is_time_only_and_never_observes_the_stateful_lifecycle():
+    hooks=json.loads((PLUGIN/"hooks/hooks.json").read_text())["hooks"]
+    # The owner's contract: a hook tracks time and points at the method. It
+    # never observes the stateful lifecycle and never blocks the harness.
+    assert set(hooks)=={"SessionStart","PostCompact","PostToolUse"}
+    assert not (set(hooks)&{"UserPromptSubmit","PreToolUse","PostToolUseFailure",
+                             "PermissionRequest","Stop","Interrupt","SessionEnd","PreCompact"})
+    for event in ("SessionStart","PostCompact","PostToolUse"):
+        commands=[entry["hooks"][0]["command"] for entry in hooks[event]]
+        assert commands, event
+        for command in commands:
+            assert "--instructions-only" in command or "--heartbeat-only" in command, command
+            # No hook may advance the stateful lifecycle or open a review.
+            assert "--session" not in command, command
+            assert "business-review" not in command, command
+            assert "checkpoint" not in command, command
+
+@pytest.mark.parametrize("event",["UserPromptSubmit","PreToolUse","Stop","Interrupt","PermissionRequest"])
+def test_retired_hook_events_are_inert_and_create_no_state(tmp_path,event):
+    # A retired hook event delivers nothing and leaves no trace on disk.
+    payload={"cwd":str(tmp_path),"session_id":"legacy-thread","prompt":"Build and deploy the report"}
+    result=subprocess.run([sys.executable,str(ENTRY),"--root",str(ROOT),"--runtime","codex","--event",event],
+        input=json.dumps(payload),capture_output=True,text=True,check=True,timeout=8)
+    assert result.stdout.strip()=="", "a retired hook event must not observe the lifecycle"
+    assert not (tmp_path/".agents").exists()
+    assert sorted(p.name for p in tmp_path.iterdir())==[".git"]
+
+@pytest.mark.parametrize("runtime",HARNESS_RUNTIMES)
+def test_heartbeat_keeps_the_learning_clock_and_the_heartbeat_timer(tmp_path,runtime):
+    # Regression: the learning checkpoint has to run first, otherwise the
+    # heartbeat creates the state without "last_observed_at" and the learning
+    # checkpoint dies on a KeyError, which swallows the whole time reminder.
+    heartbeat(tmp_path,runtime=runtime,session=f"heartbeat-{runtime}")
+    saved=json.loads(state_file(tmp_path).read_text())
+    assert "last_observed_at" in saved
+    assert "native_heartbeat" in saved
+    assert saved["native_heartbeat"]["runtime"]==runtime
+    assert saved["native_heartbeat"]["session_id"]==f"heartbeat-{runtime}"
+    # A time-only hook creates no semantic state and blocks nothing.
+    assert "business" not in saved
+    assert "milestone" not in saved
+    assert "native_entry" not in saved
+
+def test_heartbeat_emits_the_due_time_reminder_after_elapsed_time(tmp_path):
+    heartbeat(tmp_path)
+    path=state_file(tmp_path)
+    saved=json.loads(path.read_text())
+    past=(datetime.now(timezone.utc)-timedelta(minutes=31)).isoformat()
+    saved["native_heartbeat"]["started_at"]=past
+    saved["native_heartbeat"]["last_seen_at"]=past
+    path.write_text(json.dumps(saved))
+    output=heartbeat(tmp_path)
+    assert "LHC 30-minute plan report" in context(json.loads(output))
+    saved=json.loads(path.read_text())
+    assert saved["native_heartbeat"]["last_plan_bucket"]==1
+    # The clock key survives the reminder, so the next heartbeat is not reset.
+    assert "last_observed_at" in saved
+
+def test_heartbeat_before_the_due_time_delivers_nothing(tmp_path):
+    assert heartbeat(tmp_path).strip()==""
+    saved=json.loads(state_file(tmp_path).read_text())
+    assert saved["native_heartbeat"]["last_plan_bucket"]==0
+    assert saved["native_heartbeat"]["last_goal_bucket"]==0
+
+def test_router_file_carries_the_method_the_context_points_at():
+    router=(ROOT/"AGENTS.md").read_text()
+    for term in ("before", "after", "RED", "GREEN", "80%", "milestone", "consumer verification"):
+        assert term in router, term
+
+def test_plain_prompt_gets_router_pointer_and_the_saved_outcome_contract(tmp_path):
     text=context(invoke(tmp_path,"UserPromptSubmit",prompt="поправь отображение пустого отчёта"))
-    for term in ("before", "after", "RED", "GREEN", "80%", "milestone"):
-        assert term in text
+    assert str(ROOT/"AGENTS.md") in text
+    assert "Saved task data" in text
+    assert "поправь отображение пустого отчёта" in text
+    assert "outcome_contract" in text
+    # The contract is confirmed with an explicit command, never by the hook.
+    assert "lhc_outcome.py" in text
 
 def test_unchanged_in_progress_outcome_feedback_is_not_repeated_on_each_prompt(tmp_path):
     prompt="Fix the small total CLI. Verify the empty basket returns 0."
@@ -222,7 +327,7 @@ def test_large_native_tool_result_keeps_exact_session_clock(tmp_path):
 
 
 def test_bad_native_input_is_reported_not_recorded_as_an_unknown_session(tmp_path):
-    result=subprocess.run([sys.executable,str(ENTRY),"--root",str(ROOT),"--runtime","codex","--event","PostToolUse"],
+    result=subprocess.run([sys.executable,str(ENTRY),"--root",str(ROOT),"--runtime","codex","--event","PostToolUse","--session"],
         cwd=tmp_path,input='{"session_id":',capture_output=True,text=True,check=True)
     output=json.loads(result.stdout)
     assert "systemMessage" in output

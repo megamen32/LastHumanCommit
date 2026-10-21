@@ -1,0 +1,4 @@
+interface:
+  display_name: "Worker Research"
+  short_description: "Trace code once and preserve verified findings"
+  default_prompt: "Use $worker-research to trace the real code path and save reusable verified findings."

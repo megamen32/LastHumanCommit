@@ -92,25 +92,46 @@ def test_literal_wrapper_requires_original_creation(tmp_path):
     assert not review.real_observation(*browser_sources([operation],tmp_path)[0], 'https://example.test','consumer','testing',tmp_path)
 
 
-def reuse_fixture(root, monkeypatch):
-    """Small own-native source, with a report preceding coverage registration."""
+def reuse_fixture(root, monkeypatch, live=False):
+    """Small own-native source, with a report preceding coverage registration.
+
+    ``live`` contracts the outcome through the real CLI, so the saved session
+    state and the native transcript describe one and the same contract and the
+    reuse binding can be driven by the explicit review command.
+    """
     import test_outcome_contract as fixtures
     from datetime import datetime, timedelta, timezone
     import lhc_outcome as outcomes
-    outcome = fixtures.anchored(root, goal='Read-only testing: test cabinet switching on https://example.test; report actual defects.')
-    outcome['canary'].update(target='https://example.test', scenario='Switch cabinets', expected='Cabinet switches and failures are reported')
-    outcome['coverage'] = ['cabinet switching']
-    outcome['owned_paths'] = []
-    outcome['revision'] = outcomes.scope_revision(outcome, root)
-    original = json.loads(json.dumps(outcome)); original['coverage'] = []
-    start = datetime.now(timezone.utc)
-    original['evidence_after'] = (start-timedelta(minutes=5)).isoformat()
-    outcome['evidence_after'] = start.isoformat()
-    outcome['started_at'] = (start-timedelta(minutes=6)).isoformat()
-    original['started_at'] = outcome['started_at']
+    goal = ('Read-only testing: test cabinet switching on https://example.test; '
+            'report actual defects.')
+    if live:
+        outcome = fixtures.anchored(root, goal=goal, coverage=('cabinet switching',),
+                                    canary=('Switch cabinets', 'https://example.test',
+                                            'Cabinet switches and failures are reported'))
+        # The saved contract time is the floor for the original native source
+        # calls, so the transcript is stamped after the real CLI contract.
+        base = datetime.fromisoformat(outcome['evidence_after'])
+        original = json.loads(json.dumps(outcome)); original['coverage'] = []
+        original['evidence_after'] = base.isoformat()
+        report_at = (base + timedelta(seconds=3)).isoformat()
+        authorization_at = (base + timedelta(seconds=4)).isoformat()
+    else:
+        outcome = fixtures.anchored(root, goal=goal, coverage=('cabinet switching',))
+        outcome['canary'].update(target='https://example.test', scenario='Switch cabinets', expected='Cabinet switches and failures are reported')
+        outcome['coverage'] = ['cabinet switching']
+        outcome['owned_paths'] = []
+        outcome['revision'] = outcomes.scope_revision(outcome, root)
+        original = json.loads(json.dumps(outcome)); original['coverage'] = []
+        start = datetime.now(timezone.utc)
+        original['evidence_after'] = (start-timedelta(minutes=5)).isoformat()
+        outcome['evidence_after'] = start.isoformat()
+        outcome['started_at'] = (start-timedelta(minutes=6)).isoformat()
+        original['started_at'] = outcome['started_at']
+        report_at = (start-timedelta(minutes=3)).isoformat()
+        authorization_at = (start+timedelta(seconds=1)).isoformat()
     rows = []
     def add(payload, stamp=None, kind='response_item'):
-        rows.append({'type':kind,'timestamp':stamp or (start-timedelta(minutes=3)).isoformat(),'payload':payload})
+        rows.append({'type':kind,'timestamp':stamp or report_at,'payload':payload})
     add({'id':'leader','cwd':str(root)},kind='session_meta')
     add({'type':'message','role':'user','content':[{'text':outcome['original_goal']}]})
     def operation(ident, cmd, output):
@@ -121,10 +142,10 @@ def reuse_fixture(root, monkeypatch):
     operation('action','agent-browser --session own click @e1\nagent-browser --session own snapshot -i','✓ Done\nCabinet demo2')
     operation('defect','agent-browser --session own open https://example.test/chat','https://example.test/chat\nLead not found')
     report_index=len(rows)
-    add({'type':'message','role':'assistant','phase':'final','content':[{'text':'Cabinet switching works. Product defect: Lead not found.'}]})
+    add({'type':'message','role':'assistant','phase':'final','content':[{'text':'Cabinet switching works. Product defect found: Lead not found.'}]})
     auth_index=len(rows)
     authorization='Reuse already performed testing checks for LHC self-check without replay or fictitious PASS.'
-    add({'type':'message','role':'user','content':[{'text':authorization}]},(start+timedelta(seconds=1)).isoformat())
+    add({'type':'message','role':'user','content':[{'text':authorization}]},authorization_at)
     native = root/'native-home/.codex/sessions/leader.jsonl';native.parent.mkdir(parents=True,exist_ok=True)
     native.write_text('\n'.join(json.dumps(row) for row in rows)+'\n')
     manifest=root/'reuse.manifest.json'
@@ -279,3 +300,27 @@ def test_reuse_authorization_must_follow_original_assessment(tmp_path,monkeypatc
     source.write_text('\n'.join(json.dumps(row) for row in rows)+'\n')
     with pytest.raises(ValueError,match='authorization predates'):
         review.accept_review(outcome,{},manifest,tmp_path,'leader',testing_reuse=binding)
+
+
+def test_explicit_review_command_routes_the_reuse_binding_into_the_live_outcome(tmp_path,monkeypatch):
+    """The reuse binding is reachable by the agent through the explicit command.
+
+    The in-process tests call accept_review directly; this proves the CLI
+    actually reads --testing-reuse-bindings and that the reuse is what closes
+    the consumer stage.
+    """
+    import test_outcome_contract as fixtures
+    outcome,manifest,binding,source=reuse_fixture(tmp_path,monkeypatch,live=True)
+    bindings=tmp_path/'reuse-bindings.json'
+    bindings.write_text(json.dumps(binding))
+    # Without the explicit binding the same own-native source cannot close:
+    # the reuse grant is the only route to the original consumer evidence.
+    rejected=fixtures.cli(tmp_path,'review','--manifest',str(manifest),ok=False)
+    assert 'assigned coverage needs its actual native consumer observations' in rejected, rejected
+    result=fixtures.cli(tmp_path,'review','--manifest',str(manifest),
+                         '--testing-reuse-bindings',str(bindings))
+    assert result['finish_verdict']=='complete'
+    assert result['verification_level']=='self-check'
+    assert result['product_verdict']=='changes-required'
+    assert result['testing_reuse_binding']['current_product_acceptance'] is False
+    assert result['testing_reuse_binding']['contract_call']=='contract'
