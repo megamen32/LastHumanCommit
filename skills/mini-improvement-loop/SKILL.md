@@ -11,28 +11,27 @@ design work — that is Full. Not for a single obvious bug — fix it directly.
 
 ## The loop
 
-1. **Fix via workers in parallel.** Give each worker one bounded slice with a
-   self-contained contract: absolute paths, the exact findings, invariants that
-   must survive, and required test evidence (scenarios with expected exit codes
-   and filesystem effects). Forbid git operations in the worker contract —
-   parallel workers fight over one index; the Lead integrates.
-2. **Lead integrates.** Review every diff personally, add only cross-cutting
-   glue, commit small and correct (each logical fix its own commit), push.
-3. **Critique round.** Two independent subagents in parallel: an adversarial
-   Reviewer that must verify every claimed fix is real AND hunt for new bugs
-   the fixes introduced, plus a Tester that re-derives scenarios in a sandbox
-   without trusting prior test results or prior test drivers.
+1. **Assign fixes.** Give each Worker one bounded slice with a self-contained
+   contract: absolute paths, findings, invariants, and evidence needed for the
+   affected claim. Assign every fix to an allowed model family and verify the
+   exact live catalog ID. A Worker owns its leaf through result and does not hire.
+2. **Coordinate integration.** The Lead resolves path/resource ownership and
+   dependencies, collects results, and assigns any cross-cutting glue or delivery
+   operation to an allowed Worker. The Lead does not inspect/edit code, run checks,
+   commit, push or deploy.
+3. **Independent review/testing.** Assign a Reviewer or Tester from an allowed
+   model family when a concrete risk or the accepted claim warrants it. It checks
+   the actual changed behavior and real consumer path; LHC review metadata is not
+   a release gate.
 4. **Triage the findings.** CRITICAL/HIGH → fix now. MEDIUM → fix if each is
    under ~10 minutes. LOW → fix the one-liners in the same pass, consciously
-   drop the rest. Small fixes are the Lead's direct work; only a slice needing
-   its own investigation goes back to a worker.
-5. **Re-critique only the delta.** One focused reviewer confirming
-   finding→fix mapping and scanning the delta for regressions is enough.
-   Repeat until a round returns no CRITICAL/HIGH. Default cap: three critique
-   rounds; the third is a delta confirmation, not a full re-audit.
-6. **Close on the real surface.** One real run or deployment of the changed
-   thing with its output in the final report (exit code, state files created,
-   canary log lines). The loop ends on that proof, not on "fixes committed".
+   drop the rest. Assign every fix to an allowed Worker; use parallel Workers only for independent
+   slices. An assigned Worker does not recursively hire.
+5. **Recheck affected delta.** Re-run only the checks needed to confirm fixes
+   and resolve concrete findings. Do not repeat a full audit to close bookkeeping.
+6. **Close on the real surface.** Assign an allowed Worker to perform any required
+   real run/deployment and report observable evidence. The loop ends on the
+   accepted claim, not on a receipt or commit.
 
 ## Convergence rules
 
@@ -41,8 +40,7 @@ design work — that is Full. Not for a single obvious bug — fix it directly.
 - A finding that survives two fix attempts is a design decision, not a bug:
   stop fixing, present two compressed variants to the user (AskHuman when away).
 - Sandbox discipline: workers and testers never touch real user-data paths —
-  sed-copied scripts, env-overridden homes, temp trees. The Lead's single real
-  run at the end is the only live fire.
+  sed-copied scripts, env-overridden homes, temp trees. Only an explicitly scoped Worker performs an authorized live run.
 - A reviewer or tester that could not execute (no shell, no write) must say so
   in the report; their verdict is then code-read only and cannot replace the
   real-surface step.

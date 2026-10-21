@@ -5,7 +5,7 @@
 The factory takes responsibility for a finished, independently verified outcome,
 not a proposal awaiting repeated human coordination. Autonomy is the default
 within the requested objective and the environment's granted permissions.
-The user is not the routine planner, model router, integration engineer or QA gate.
+The Lead coordinates as planner, model router, integration owner and evidence synthesizer. Workers perform the execution.
 
 ## Five feedback loops
 
@@ -25,11 +25,11 @@ next cycle's inputs. Use architecture-design when structural uncertainty matters
 5. Execution allocation: strongest-model decomposition -> dependency graph ->
    suitable model assignments -> parallel execution -> acceptance -> routing update.
 
-Overseer manages all five loops: is this still the right way to achieve the goal?
-It can redirect a route, reshape a task, change a model, request a fresh session,
-activate a council, or return insufficient evidence for repair. It is not a
-ceremonial rule checker and does not automatically escalate engineering choices
-to the user.
+The Overseer advises the Lead on concrete blockers, material drift and route
+uncertainty. It helps shorten the path to the business result; it does not own or
+gate release. The Lead arranges needed review and testing without waiting for a
+human appointment, and asks the human only for an actual business decision or
+missing authority.
 
 ## Firm responsibility, flexible methods
 
@@ -43,14 +43,12 @@ coherent work and its uncertainty, show actual parallel waves and distinguish
 summed effort from capacity-respecting critical-path duration and external waits.
 Twenty-minute reporting checkpoints are not a task-size rule.
 
-## Model classes
+## Model selection
 
-Use four configurable classes, in descending intended decision capability:
-`frontier`, `fable`, `sonnet`, `haiku`. `frontier` is a provisional name for the
-fourth, strongest decision tier, which the user did not name. It is not a new
-provider model or a verified benchmark ranking. A catalog can map the best
-available model to both a decision duty and an executor duty where appropriate.
-The user's Fable/Sonnet/Haiku examples are routing aliases, not API identifiers.
+Workers are restricted to gpt6luna, glm53flash and minimax3.1flash families. These
+labels are not provider IDs: match each to the exact live model-catalog ID and verify
+capability before assignment. If unavailable, stop that lane and report the blocker;
+never substitute another model silently.
 
 Optimize total cost per accepted outcome: decisions, context, execution, tools,
 independent testing, retries and rework. Track latency and quota separately when
@@ -60,7 +58,7 @@ that repeatedly needs rescue is not necessarily economical.
 ## What this repository can and cannot guarantee
 
 These are agent instructions, reusable skills, templates and offline checks.
-They do not themselves create an agent runtime. Dispatch, exact model selection,
-resumption, fresh sessions, independent supervisor events and browser control
-must be attested by the actual harness. Record unsupported capabilities honestly.
-Do not invent timers, background continuation or a multi-model run.
+They do not themselves create an agent runtime. The Lead coordinates through the
+actual harness; assigned Workers execute. Dispatch, exact model selection, resumption,
+fresh sessions, independent review and browser control must be attested by the actual
+harness. Record unsupported capabilities honestly. Do not invent timers or fallback.

@@ -1,6 +1,7 @@
 # Worker implementation protocol
 
-Use only for `Worker(mode=implement)`. Load `../profiles/Code.md` for code and
+Use only for `Worker(mode=implement)`. The Lead coordinates and assigns; this Worker
+executes the scoped work without recursively hiring. Load `../profiles/Code.md` for code and
 `../profiles/Test.md` when tests add claim-relevant value.
 
 Prefer the installed `worker-code` skill for feature/code work and
@@ -41,6 +42,7 @@ default, parallel-safe work, and the exact action that must wait. Continue only
 work valid under every plausible answer until L decides.
 
 Respect dependency contracts and test integration joins, not only isolated
-helpers. Technical checks do not replace the Full real-use Tester. When blocked,
+helpers. Use an independent Tester when the claim and risk warrant real-user-path evidence;
+review or outcome-ledger bookkeeping is not a universal release gate. When blocked,
 use `STOP_RETHINK.md` to distinguish model, context, tooling and decomposition
 failures before repeating the same approach.

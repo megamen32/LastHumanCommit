@@ -50,30 +50,31 @@ hook alone does not prove learning occurred.
 
 ## When the session is slow
 
-A session that is slow, stuck or visibly drifting gets a strong independent agent,
-not more self-review. Request one **frontier model** through Agent Herder — the best
-reasoner available, in a fresh context — and give it the current user request, the
-current plan report, the applicable rules, the structured outcome and a capped recent
-event excerpt. Omit the full transcript by default and redact secrets.
+A session that is slow, stuck or visibly drifting may benefit from an independent
+adviser. Use only gpt6luna, glm53flash or minimax3.1flash, resolved to an exact
+currently available catalog ID with actual model identity verified; never silently
+substitute. Give the adviser the current user request, plan report, applicable rules,
+structured outcome and a capped recent event excerpt. Omit the full transcript by
+default and redact secrets.
 
-It is not a reader. It decides why this session is taking so long and what must
-change, and it **may change the owning instruction, skill or tool** that caused the
-drift — that is the whole point of this loop. Its verdict **binds the session**: the
-Lead follows it, adapts the current route and stops repeating the way of working that
-failed. The change is then verified against the original failure and recorded as a
-retrievable method change per `../skills/improve-workflow/SKILL.md`.
+The adviser diagnoses the delay and may recommend a method change. The Lead weighs
+the advice against the user request and evidence, chooses the route, and verifies any
+adopted change against the original failure. Record useful method changes per
+`../skills/improve-workflow/SKILL.md`. The adviser has no binding verdict and creates
+no new review queue.
 
 It gains no authority it did not have: no new publication, deployment,
 destructive-action or memory permission, and no bypass of HumanStop or the user's
 constraints.
 
-Do this on the 120-minute trigger, after a repeated failure, and whenever the
-plan report itself shows leaves that are behind with no user-visible delta.
+Do this at the 120-minute learning checkpoint and after repeated failure. A newly
+discovered genuine blocker also gets an allowed-model adviser; consult the Overseer
+for route advice if that adviser finds no executable route. No extra review queue is created.
 
 ## Mandatory checkpoint, bounded to useful work
 
-The Overseer demands business results. Learning is a corrective tool, never a
-deliverable substituted for the accepted outcome or justification for CONTINUE.
+The Overseer advises toward business results. Learning is a corrective tool, never
+a deliverable substituted for the accepted outcome or justification for continuing.
 Every maximum overrun still requires an immediate route decision; substantial
 overrun means that decision's bounded continuation also misses its limit or the
 accepted delivery forecast is no longer credible. Do not wait two hours after

@@ -27,18 +27,15 @@ Recover spoken intent from context. Preserve the original goal and latest correc
 Lead owns applicable delivery and observed Quick Loop/Full Cycle results; a child source receipt proves only that scope.
 Agent messages are not human prohibitions. Status, duplicates and review routing preserve valid progress; resolve conflicts against actual user authority.
 Repair evidence bindings without replaying accepted actions; preserve native stops, permissions, revocations, negative findings and unknown operations.
-Lead delegates every implementation task: small work uses one bounded Worker + Lead review.
+Lead only orchestrates: decompose the objective, assign exclusive paths/resources and dependencies, resolve decisions, and collect/summarize results. Every inspection, edit, check, deployment, commit, push or install is performed by a Worker; Lead does not execute these actions.
 An assigned no-delegation leaf uses native self-check, never parent product PASS or recursive hiring.
-Large fullcycle: bounded independent research Workers → one working→ideal→YAGNI plan → quota-aware frontier council → bounded dispatch.
+Large fullcycle: bounded allowed-model research Workers → one working→ideal→YAGNI plan → optional allowed-model adviser challenge → bounded Worker dispatch.
 Council checks alternatives/crosschallenge/business cost/dissent; do not repeat a completed council without a real delta.
 Quickfix/testing/assigned leaf tasks skip that cycle; preserve independent review for ambiguous changes.
-For each new blocker, the Lead must ask a frontier-model adviser for several permitted ways forward.
-If none is executable, ask a fresh-context Overseer for the most useful next action toward the business result.
-Act on the viable route; deduplicate unchanged blockers. Never bypass HumanStop or required permission.
+For each new genuine blocker, assign an adviser from gpt6luna, glm53flash or minimax3.1flash to identify permitted routes; resolve the family to an exact live catalog ID and never silently substitute.
+If none is executable, ask a fresh-context Overseer for route advice. The Lead only coordinates the viable Worker route; deduplicate unchanged blockers. Never bypass HumanStop or required permission.
 Roles are tools, not a mandatory ceremony queue. Load a role or a skill because this task needs it,
-not because a schedule says so. Strong models handle architecture, research and hard diagnosis;
-cheaper models handle clear work. Keep independent testing and review available for the claims
-that need them.
+not because a schedule says so. Use Workers only from the explicitly allowed gpt6luna, glm53flash, and minimax3.1flash model families. Before dispatch, match the selected family to its exact currently available model-catalog ID and verify capability. Never silently substitute another model; if no allowed route is available, report the blocker. Use an independent Reviewer or Tester from the same allowed families when the claim and risk warrant it. An assigned Worker owns its leaf through result and does not recursively hire.
 For work over 15 minutes, a canonical `.agents/tasks/` note records original
 request/result, initial estimate, active/wall-clock time separately, the live plan
 report, decisions/completed/next action. No elapsed-time threshold by itself requires
@@ -106,10 +103,10 @@ blocks delivery, never rewrites the plan, never waives anything. At 60 minutes, 
 original goal/corrections and check the business result. This is goal control, not another
 tester launch.
 
-Major milestones (~3 hours of coherent work) and final acceptance require fresh
-Zero Knowledge testers with varied realistic personas, ages and goals. They try the
-result without your history and provide detailed feedback: what worked/helped, what
-obstructed them and why. This is not every edit/hour; ~3 hours measures a coherent
+At major milestones (~3 hours of coherent work) or final acceptance, use fresh
+Zero Knowledge testers with varied personas when the accepted claim needs independent
+user-path evidence. They try the result without implementation history and report observed obstacles.
+A tester is not an LHC receipt gate. This is not every edit/hour; ~3 hours measures a coherent
 outcome, not an idle timer or permission to fragment acceptance. See
 `common/skills/focus-groups/SKILL.md` and
 `common/protocols/BUSINESS_CHECKPOINT.md`. Green tests do not waive this check;
@@ -119,10 +116,8 @@ The Lead also owns the 120-minute unfinished-work review and the review after re
 failure or user correction: reread the original request, check it against current code,
 then follow `common/protocols/SELF_IMPROVE.md` — observation, method correction, and
 verification against the failure and available reuse. When the session is slow, stuck or
-drifting, request one distinct fresh frontier-model agent: it decides why this
-session is taking so long, it may change the owning instruction, skill or tool that
-caused the drift, and its verdict binds this session — follow it and adapt the route
-instead of repeating the way of working that failed.
+drifting, request one distinct fresh adviser from the allowed model families: it diagnoses why the session is slow and may recommend a change to the owning
+instruction, skill or tool. The Lead weighs the advice and owns the route decision.
 Verification is mandatory; justified no-change is allowed, an invented patch is not. The
 existing time-guard CLI may record these reviews, but hooks do not enforce deadlines or
 veto platform lifecycle decisions. Pauses are not active work; stopped sessions are not
@@ -151,12 +146,12 @@ Herder resumes the same session once. If unavailable, leave a targeted file mess
 and `waiting` state; writing a file does not prove delivery or awakening.
 
 ## One green history
-Applicable order: implementation/tests → permitted deploy → real consumer and
-independent milestone acceptance → unified published dev history → integrated smoke.
-Before a PR into a repository you do not own, a fresh strong session plays that project's
-maintainer: it reads the project's own rules, conventions, tests and CI, then the diff,
+Use claim-critical checks → permitted deploy → real consumer verification; add
+independent milestone acceptance when the accepted claim warrants it, then complete
+the applicable published dev history and integrated smoke.
+Before a PR into a repository you do not own, when its contribution policy requires it, a fresh Reviewer from an allowed model family plays that project's maintainer: it reads the project's own rules, conventions, tests and CI, then the diff,
 and returns a mountain of findings. Fix or answer every supported finding, then review
-the changed diff again. Only a clean or explicitly answered review lets the PR open.
+the changed diff again when review is required by that repository's policy. An LHC receipt or bookkeeping status alone is not a release veto.
 PR per worker is optional. Local checkpoint commits may precede this. If CI needs an
 early branch push, record a staging exception with reason/native refs; it is neither
 final acceptance nor main merge. Testing completes its coverage/raw observations,
@@ -181,7 +176,7 @@ inclusion in the confirmed primary branch. See `common/protocols/SHARED_WORKTREE
 Verify the claim: regression for a fix, actual consumer path for a user result.
 Fix failures and recheck; one successful rerun does not resolve flaky behavior.
 Report a result, material decision or precise problem in the user's language.
-After sufficient checks, perform authorized delivery and the real scenario. SHA/name/
+After sufficient checks, assign authorized delivery and the real scenario to a Worker. SHA/name/
 receipt-JSON errors over known checked code are local corrections, not new review.
 Read metadata from Git/CI; unknown coverage is not PASS. Check real code/environment
 deltas and current release gates; do not create a receipt service. Existing authority,

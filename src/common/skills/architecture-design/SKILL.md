@@ -10,9 +10,10 @@ make implementation expensive to redo. A clear bounded change can proceed throug
 the existing implementation route. Scale design effort to the uncertainty that
 could change the solution; do not fill out stages merely because this skill exists.
 
-For a large fullcycle, the mandatory route is bounded independent research Workers → working→ideal→YAGNI → quota-aware frontier council → bounded dispatch.
-Research precedes the plan; the final selected YAGNI goes through the existing council skill
-with alternatives/crosschallenge/business cost/dissent and verified live model availability.
+For a large fullcycle, use bounded independent research Workers and a working→ideal→YAGNI
+plan before dispatch. Add an allowed-model adviser challenge when material uncertainty
+remains and independent reasoning can change the route; it is not a mandatory review
+queue or release gate. Research may clarify the plan, and no Worker recursively hires.
 Quickfix/testing/assigned leaf do not start this research/council loop or hire recursively.
 Reuse the completed council; no new round without a substantive changed decision.
 

@@ -18,7 +18,7 @@ tool order is normative:
    ownership questions; verify decisive edges with current source and do not
    build a graph for a simple lookup.
 5. Find the existing mechanism, first real blocker, and cheapest discriminating
-   probe. Stop once L can implement directly or assign a coherent lane.
+   probe. Stop when L can assign the coherent implementation lane to a Worker.
 
 Upsert verified, likely-to-recur production paths, ownership, configuration,
 test paths, decisions, and failure shields into
@@ -50,7 +50,8 @@ the cheapest next action. Do not write code, mutate configuration, deploy, or
 produce an unrelated architecture essay.
 
 The implementation handoff names dependencies, owned paths, frozen interfaces,
-acceptance and model-suitability needs. Flag unresolved architecture for Lead or
+acceptance and model-suitability needs. A Worker owns its assigned leaf and does not
+recursively hire. Flag unresolved architecture for Lead or
 Adviser. Continue into implementation in the same useful session when assigned;
 an inconclusive investigation returns the next discriminating step rather than
 another broad search.

@@ -9,8 +9,10 @@ Use when a user-facing claim needs real-surface proof. This is the final gate
 before "done"; test files never substitute for it. The journey executed is the
 minimal path's shortest real canary, not an invented broader tour.
 
-Full requires a fresh independent Tester after coherent technical review.
-Lead's own canary cannot replace that gate. Use `$user-testing` for standalone
+The real user journey and its claim-critical observations are required. Add a fresh
+independent Tester after technical review when the accepted claim and risk need that
+independent evidence; a tester role is not a universal gate. A direct canary by an
+assigned Worker is valid consumer evidence when it fully covers the claim. Use `$user-testing` for standalone
 goal-driven attempts and `$focus-groups` when varied goals add value. Repair
 observed in-scope failures and repeat the affected real journey until accepted.
 

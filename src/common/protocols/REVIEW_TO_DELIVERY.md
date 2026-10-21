@@ -115,8 +115,8 @@ Zero Knowledge remains independent use at a major milestone (~3 hours of coheren
 work), varied realistic personas and full feedback. Technical review, receipt fixes
 and hourly direction checks do not replace acceptance. After a real finding, retest
 the affected user path; do not repeat the entire investigation identically.
-One user goal has one end-to-end delivery owner. Ready technical gates lead to explicit
-permitted test/demo deployment, real consumer check and independent milestone acceptance.
+One user goal has one end-to-end delivery owner. Claim-critical checks lead to explicit permitted test/demo deployment and real consumer
+verification; use independent milestone acceptance when the scope warrants it.
 Direction review records a decision without executing it. Native receipts prove only
 the observed call/response, not deployment, consumer result or original goal completion.
 Shared chat/peer reports are not whole-project PASS.
@@ -134,26 +134,19 @@ exceptions and pending/complete use OUTCOME_CONTRACT.md in existing state, not a
 release service. Merge only owned scope; ready review/permitted deploy does not grant
 main merge in external repositories.
 
-## Before a PR into a project you do not own
+## Review for external repositories
 
-A repository whose owner is not the requester will read the diff against the
-rules of *their* project, and they will read it once. Make that read happen
-first: run `../skills/maintainer-review/SKILL.md` with a fresh strong session
-that plays that project's maintainer, **before the PR is opened**.
-
-The maintainer reads the project's own instructions, conventions, tests, CI and
-history, then the diff, and returns a mountain of specific findings. Fix every
-supported finding or answer it in writing, then run the review again on the
-changed diff — the same session may be reused, but the review is redone, not
-assumed. Only a clean or explicitly answered review lets the PR be opened.
-
-This covers external and shared repositories, and the upstream handoff of an
-owned project where upstream main belongs to someone else. Our own repositories
-do not need it: there the Lead's own review and the normal checks are the gate.
+Follow the target repository's actual contribution policy. When a maintainer review
+is required or materially reduces risk, assign a Reviewer from the allowed model
+families and resolve the family to an exact live catalog ID. Fix concrete defects
+that affect the accepted claim or required policy. Preferences and LHC ledger,
+manifest or identity-registration state are not delivery vetoes. Preserve actual
+negative findings and required project checks; never claim a clean result without
+evidence.
 
 ## Permitted dev integration and upstream handoff
 
-Lead delegates even small implementation: one bounded Worker + Lead review.
+Lead only coordinates; Workers perform every inspection, edit, check and delivery action, even for small tasks. Use an independent Reviewer only when the claim and risk justify it.
 Assigned no-delegation leaves do not recursively hire reviewers. Before Git mutations
 resolve ownership, remote and permitted integration branch; unknown is not main.
 Airlock feature worktrees branch from megamen32-dev; one integrator converges ready

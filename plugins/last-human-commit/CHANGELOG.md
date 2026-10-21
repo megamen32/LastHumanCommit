@@ -1,3 +1,16 @@
+# 1.5.19 — business-first review and delivery
+
+Overseer and review guidance now keeps the Lead in charge of the original business
+result. Reviewers are arranged autonomously when risk warrants them; real defects and
+claim-critical proof still block the affected release. LHC ledger/manifest and
+identity-registration failures are bookkeeping, not delivery vetoes. Ordinary native
+reviewer responses remain useful evidence without transcript-export ceremony.
+
+Historical active-time gaps remain explicit but no longer prevent useful authorized
+work. Frontier advisers and Overseer provide recommendations; the Lead owns route
+choices. User stops, revocations, authorization boundaries, negative findings and
+UNKNOWN external operations remain protected.
+
 # 1.5.18 — the task graph and the plan dashboard
 
 Every decomposed objective now keeps a machine-readable task graph next to its task

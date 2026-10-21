@@ -155,7 +155,7 @@
       "estimate_minutes": {
         "minimum": 3,
         "maximum": 6,
-        "basis": "A fresh Tester opens the real surface, attempts the goal and verifies resulting state.",
+        "basis": "If independent user-path evidence is part of the claim, a fresh allowed-model Tester attempts the goal and verifies resulting state.",
         "uncertainty": "A recoverable tool problem may require evidence capture and one retry; a product defect triggers re-estimation."
       }
     }

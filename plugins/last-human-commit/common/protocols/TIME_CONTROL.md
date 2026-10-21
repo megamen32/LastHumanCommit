@@ -16,10 +16,9 @@ against the original total. Classify new discoveries as required blocker,
 authorized remaining scope, or Proposed; discovery alone does not select work.
 
 At an overrun or two equivalent failed routes, stop adding work. Choose one
-bounded continuation justified by evidence or change approach. An Overseer
-CONTINUE receipt must name the achieved user result, concrete remaining blocker,
-next proof and time bound; approving another phase without the cumulative cost
-is not control. Never weaken accepted scope silently to make a budget green.
+bounded continuation justified by evidence or change approach. Make a concise evidence-based route decision with the achieved user result,
+concrete remaining blocker, next proof and time bound. The Overseer may advise;
+its response is not a permission or continuation receipt. Never weaken accepted scope silently to make a budget green.
 
 Every 30 minutes, write the live plan report (`../protocols/PLAN_REPORT.md`): the
 goal, the current business result, and every leaf as finished, running or queued
@@ -37,10 +36,10 @@ mutate task/evidence/holds or block completion.
 |---|---|---|---|
 | Plan report | 30 min | The plan stays in the model's head and in the record; the Overseer reads it against the original request and the canary | A second task-card format, a file list, or a progress theatre report |
 | Goal direction check | 60 min | The original request is still the goal after an hour of work | A mandatory hourly ritual, a tester dispatch, or an empty status message to the user |
-| Learning checkpoint | 120 min unfinished work | The method is examined instead of repeated; a slow or drifting session gets a frontier-model agent that may change the owning instruction, and its verdict binds the session | A seven-field form to fill, an endless acknowledgement loop, or a self-improvement that may not remove the ceremony it maintains |
+| Learning checkpoint | 120 min unfinished work | The method is examined instead of repeated; an allowed-model adviser may identify a useful correction | A seven-field form, binding verdict, or acknowledgement loop |
 | Estimate overrun | On event | Crossing the original maximum forces a route decision instead of grinding | A scolding, a forced estimate rewrite, or more governance that costs more than the overrun |
 | Worker checkpoint | 20 min | A delegated worker reports delta, blocker and next action so it cannot hang silently | A separate report format, or content that must be re-merged into the 30-minute plan report |
-| Milestone acceptance | ~3 h of coherent work | A fresh agent-tester with a persona, with no history of the implementation, tries the real consumer surface | A gate on every edit, every commit, or every hour. These are simulated participants, not real customers — the repo says so in Tester.md and focus-groups, and the report must not claim a human verdict |
+| Independent milestone evidence | When the accepted claim warrants it (often around 3 h of coherent work) | A fresh allowed-model tester may try the real consumer surface without implementation history | A standing reviewer queue or a gate on every edit, commit, or elapsed-time threshold |
 | Active-time ledger | Per interval | Real work time is separated from waiting, so overrun means something | Mandatory accounting where the harness does not manage it; `not measured` stays honest |
 
 One clock serves the whole objective. New phases, cards, workers and compactions
@@ -52,7 +51,7 @@ hook veto. Wall time is a trigger, not active effort; do not wake idle sessions.
 
 Every declared work cycle has its own immutable `minimum / maximum active
 minutes` estimate before execution. A cycle is one coherent route to one
-business proof: direct Lead work, one Worker lane, one real canary, one review,
+business proof: one Worker lane, one real canary, any warranted review,
 one rollout, or another named operation. Tiny atomic commands may share the
 estimate of their enclosing cycle; do not create an estimate per shell command.
 
@@ -107,9 +106,9 @@ as delivery time. Use `../tools/lhc_active_time.py` with state under the existin
 `.agents/shared-session/time/` directory. Pause when yielding to the user or
 waiting without doing work; resume before execution. Record missing lifecycle
 coverage or interrupted intervals as gaps, not measured work.
-Historical `not measured` stays honest, but L must repair missing accounting
-before new execution. Overseer enforces that repair and checks the resulting
-measurement evidence; a disclaimer alone never closes the finding.
+Historical `not measured` stays honest. When practical, begin measuring forward;
+missing historical accounting is a disclosed gap, not a pre-execution block. The
+Lead uses the available evidence to make an honest route decision.
 
 For a native guard's discovered work card, use the exact state path and actor/task
 identity printed by its repair prompt: `<card-stem>-<session-sha256-prefix>.active.json`.
@@ -132,10 +131,10 @@ task state.
 Follow BUSINESS_CHECKPOINT.md every 60 measured native active minutes: reread the
 original user source and latest corrections, compare the usable result, decide the
 next route. This hourly direction review is not milestone acceptance: do not launch
-Zero Knowledge on every hour. Fresh goal-driven testers with varied personas and
-full feedback accept major milestones (roughly 3 hours of coherent work), when a
-usable result is ready. Generated plans and green technical checks cannot replace
-the original acceptance.
+Zero Knowledge on every hour. When independent user-path evidence is part of the
+accepted claim, assign a fresh goal-driven tester with a relevant persona and record
+observed behavior. Generated plans and green technical checks cannot replace the
+actual evidence required by the claim.
 The default native hook does not require a formatted task-card. It reuses the
 persistent session state and the existing monotonic interval tool. Idle/permission
 waits are paused; incomplete lifecycle coverage uses an explicit wall fallback,

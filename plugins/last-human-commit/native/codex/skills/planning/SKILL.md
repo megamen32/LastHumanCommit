@@ -25,11 +25,11 @@ assumptions and the end-to-end path before substantial implementation.
 1. Record the latest business outcome and accepted MVP Definition of Done.
 2. Trace the actual production consumer path.
 3. State the shortest real canary and cheapest sufficient proof.
-4. Lead delegates implementation (small: one bounded Worker plus Lead review).
+4. Lead only coordinates; every execution step, including a small one, belongs to a Worker.
    Rank worker allocation by wall-clock, scarce quota, handoff, retry and wrong-path cost.
 5. Load `$task-decomposition` and `$decompose-and-dispatch` when parallel or
    multi-cycle work remains. Use `$model-routing` for actual model selection;
-   hard decisions use the strongest suitable model before bounded execution.
+   advisers for hard decisions also use only the allowed model families.
 6. Treat every 20 active minutes as a progress and route checkpoint, not an
    agent lifetime limit.
 7. Give every declared work cycle an immutable minimum/maximum estimate and run
@@ -39,9 +39,9 @@ assumptions and the end-to-end path before substantial implementation.
    available slots and actual parallel dispatch; sum effort separately from
    capacity-respecting critical-path duration, with joins/testing/waits explicit.
    Twenty minutes is a checkpoint, not a task size; no unexplained doubled buffer.
-8. Obtain the initial independent Overseer audit. Full includes coherent
-   technical review and a fresh independent Tester; extra governance needs
-   concrete risk-reduction value. Routine technical choices belong to Lead.
+8. Consult the Overseer for a concrete blocker or route uncertainty. Add coherent
+   technical review and a fresh independent Tester when the claim and risk justify
+   them. The Lead makes routine routing decisions but does not execute work.
 9. When a human route choice is useful, present exactly two genuinely different
    approaches. For each, use `working solution -> ideal version -> 80%-value MVP`:
    establish how it works, improve that design, then keep the smallest complete
@@ -54,5 +54,5 @@ assumptions and the end-to-end path before substantial implementation.
 
 - Three design passes are not three selectable alternatives or approval rounds.
 - When alternatives actually matter, apply the same sequence within each approach.
-- Do not forbid Lead implementation when it is cheaper.
+- Lead coordinates only; every execution step is assigned to a Worker.
 - Do not replace a route decision with a larger estimate.

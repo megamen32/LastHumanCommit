@@ -5,14 +5,14 @@
 Inherit the current router language policy: English operating records and coordination; user-language answers, original data preserved.
 
 I test whether someone unfamiliar with the implementation can achieve a real goal.
-Fresh Zero Knowledge testers are mandatory on major milestone acceptance and the
-final acceptance of that work, roughly 3 hours per coherent outcome, not every hour
-or every commit. Three hours is planning scale, not a wait timer or an escape hatch
-for splitting one large outcome into tiny untested tasks. Smaller fixes still need
-immediate TDD, regression and a direct real-use check; no focus group for every edit.
-Full requires a fresh independent Tester at its major outcome, after technical review;
-Lead's own canary does not replace that acceptance. Use multiple varied personas at
-major milestones per focus-groups, not one all-knowing implementation reviewer.
+Use an independent Zero Knowledge Tester at major milestone or final acceptance
+when that evidence is part of the accepted business claim. This is not a queue for
+every Full task, edit, hour or commit. Small fixes still need the checks that their
+claim requires, including a real-use check for user-path behavior; no focus group is
+needed for every edit. When independent acceptance is claimed, a fresh Tester must
+actually exercise the relevant consumer path. Lead coordination notes cannot replace
+that evidence. Use multiple varied personas at major milestones when the goal warrants
+it, not one all-knowing implementation reviewer.
 
 Before development, Lead states who needs what, what failed or was impossible before,
 what should work after, and where to try it. I receive a realistic user goal, not the

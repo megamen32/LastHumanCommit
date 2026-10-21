@@ -49,14 +49,12 @@ and actual-model evidence. Its preferred direct subscription routes supersede
 historical OmniRoute hints. No automatic paid/weak fallback; pass an explicit
 allowed fallback policy, never change parent/global models or credentials.
 
-These are installation routing hints, not fixed role assignments or quality
-rankings. Resolve current availability/limits. The previous direct Codex Sol
-canary succeeded while `omniroute/cx/gpt-6.1-sol` returned a provider error;
-check before reusing that failed route. The catalog alone is not execution proof.
-On a known pre-submission failure choose an available route explicitly; on an
-unknown accepted outcome query the same session/receipt, never duplicate the job.
-Do not silently replace Sol with a cheaper model. `openai/*` API availability is
-not proof of ChatGPT subscription access; do not switch billing routes silently.
+These historical routing notes do not expand the explicit model allowlist above.
+Resolve allowed family labels to exact live catalog IDs and attest the actual model
+before dispatch. Never substitute another family, Sol/Astra, or an Auto route when
+an allowed route is missing. On an unknown accepted outcome query the same session
+or receipt; never duplicate the job. OpenAI API availability does not prove
+subscription access and does not authorize a billing-route change.
 
 OpenChamber Auto is a separate per-message classifier for messages sent through
 OpenChamber. It does not choose this task's Herder model and does not govern
@@ -73,17 +71,20 @@ output, latency). `../../config/model-routing.example.json` supplies historical 
 classes: frontier, fable, sonnet, haiku. Its examples are aliases,
 not verified API names or fixed benchmark rankings.
 
-Lead and difficult decision/decomposition work use the strongest suitable
-available model. A weak orchestrator supervising strong workers is not the default.
-Do not equate frontier with a price, a brand or an unattested model ID.
+The human-selected Lead session coordinates only; it does not execute source, shell,
+checks or delivery actions. Workers, Advisers, Reviewers and Testers may use only the
+gpt6luna, glm53flash or minimax3.1flash model families. Resolve each family to the
+exact currently available catalog ID and verify attested model/capability before
+dispatch. No silent fallback to Sol, Astra, another provider/model, or an Auto route.
+If no allowed route is available, report the blocker. Historical labels and catalog
+rankings cannot override this explicit allowlist.
 
 ## Allocate an assignment, not a role stereotype
 
-For a delegated bounded assignment, select the least capable available model
-that reliably completes it, preferring fast inexpensive executors. Decompose difficult
-work until routine pieces can be assigned economically; do not default every
-child to Lead's model or a frontier tier. Lead retains global understanding,
-resolves uncertainty, schedules dependencies/parallelism, and verifies results.
+The Lead decomposes and routes every execution step, including small tasks. Select
+within the allowed families by current capability; do not substitute an unlisted model.
+The Lead retains global understanding, resolves decisions, schedules dependencies and
+parallelism, and collects results. A Worker owns its assigned leaf and never recruits.
 
 Prefer zero-knowledge executors: a fresh context for each independent subtask,
 with only its self-contained contract, necessary inputs, file locations,
@@ -96,8 +97,8 @@ benefit, not habit. Treat smaller prompts as an economy preference, not a verifi
 price saving without actual usage evidence.
 
 Understand the node's uncertainty, context, tool requirements, error consequences,
-acceptance check and likely rework. Resolve architectural choices with the strong
-Lead/Adviser before sending a bounded implementation to an economical model.
+acceptance check and likely rework. Resolve architectural choices through allowed-model advisers before assigning a
+bounded implementation Worker.
 
 Choose the least expected total-cost model that can reliably meet this assignment.
 Total cost includes decision-making, context transfer, tools, retries, repairs,
@@ -105,10 +106,9 @@ review and user testing. If prices or usage are unavailable, use an explicit
 qualitative comparison rather than invented currency figures. Quota, latency and
 cash price can favor different choices.
 
-Start a genuinely hard task on a strong model; do not require a sacrificial cheap
-attempt. Conversely, do not copy the Lead's model into every child. Tester and
-Reviewer are assigned by needed capability, not a blanket economy tier. Preserve
-adequate testing even if it is the largest cost in the task.
+Assign hard tasks, advisers, Reviewers and Testers only within the allowlist, selecting
+by required capability. Never run sacrificial attempts or silently substitute. Preserve
+checks needed to support the claim, even when they are the largest task cost.
 
 ## Confirm and adapt
 

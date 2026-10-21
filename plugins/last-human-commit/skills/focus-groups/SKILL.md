@@ -13,9 +13,9 @@ not blanket blockers. Keep protected references, never values, in context/handof
 Do not use admin as ordinary QA or exceed direct limits. Completed assigned coverage
 needs no recursive testing; product defects and parent acceptance remain separate.
 
-Use fresh Zero Knowledge groups for major milestone acceptance and the final
-acceptance of that work, roughly 3 hours of coherent implementation per tangible
-outcome, not every hour or small change. Normal TDD and technical checks remain
+Use fresh Zero Knowledge groups for a major milestone or final acceptance when
+the business claim benefits from independent user-path attempts. Roughly 3 hours of
+coherent implementation is a useful milestone cue, not a mandatory schedule. Normal TDD and technical checks remain
 continuous. Three hours is a planning scale, not a forced delay or a rigid timer.
 A milestone must already name a user, a realistic goal, a before/after difference
 and a result that can actually be tried. No observable outcome means re-anchor
@@ -23,9 +23,9 @@ the work, not spend another round on hashes and waiting for unrelated sessions.
 
 Apply `../model-availability/SKILL.md` before model allocation. Catalog/quotas
 and real computer-use capabilities are independent. Prefer multiple eligible
-frontier models for meaningful diversity; do not claim multimodel evidence from
+allowed gpt6luna, glm53flash or minimax3.1flash models for meaningful diversity; do not claim multimodel evidence from
 one model or a model name in a prompt. Already assigned testers do not hire.
-For an applicable major milestone use at least two audience-relevant profiles;
+When a group is warranted, use at least two audience-relevant profiles;
 small fixes retain their narrow real canary without a mandatory focus group.
 
 ## Form a useful group

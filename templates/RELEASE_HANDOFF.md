@@ -13,9 +13,10 @@ Reversibility / existing rollback reference:
 
 ## Proportional gates
 
-For each gate or check actually used, record the concrete risk it reduced and
-why its value exceeded cost. Overseer, Tester, and Reviewer are the only gates;
-do not require more by default.
+For each check actually used, record the concrete risk it reduced and its result.
+The Overseer advises on route; it does not gate release. Independent review or
+testing is added when risk and claim warrant it. A concrete defect or missing
+claim-critical proof blocks only the affected release action.
 
 - Gate / risk / evidence / decision:
 

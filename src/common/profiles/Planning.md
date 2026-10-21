@@ -14,11 +14,12 @@ not override new instructions. For architecture, use
 2. Trace the actual production consumer path enough to identify the next change.
 3. Name the shortest safe business canary and cheapest sufficient proof.
 4. Use `../skills/model-routing/SKILL.md` and
-   `../skills/decompose-and-dispatch/SKILL.md` to choose executors by total
-   accepted-result cost. Lead uses the strongest suitable decision model for
-   difficult decisions; cheaper executors receive coherent resolved work.
-5. Obtain the initial independent Overseer audit. Full includes technical review
-   and a fresh independent Tester; additional governance needs concrete value.
+   `../skills/decompose-and-dispatch/SKILL.md` to assign every task to an allowed
+   Worker: gpt6luna, glm53flash or minimax3.1flash, resolved to an exact live
+   catalog ID. The Lead coordinates only and never executes. No silent fallback.
+5. Consult the Overseer when a concrete blocker or route uncertainty would benefit
+   from independent advice. Add technical review and fresh independent testing when
+   the change’s risk and claim justify their cost.
 
 Do not plan a horizontal layer before the first vertical user path. A plan is
 successful when it reduces wrong-path risk or coordinates useful parallel work;
@@ -40,7 +41,7 @@ shortest next route.
 Every 20 active minutes is a control checkpoint, not a Worker lifetime limit.
 The Worker reports progress, business delta, blocker, and the shortest next
 action. The expected total range may exceed 20 minutes. L may continue, redirect
-or resume the same Worker, ask Overseer for a genuinely valuable route verdict,
+or resume the same Worker, ask the Overseer for useful route advice,
 or exceptionally cancel for active harm/conflict/stuck state.
 
 A task maximum overrun requires an evidence-based route decision. Do not merely
@@ -64,12 +65,11 @@ Rank actions by expected real canary movement against wall-clock, scarce-model
 tokens, handoff/context cost, process maintenance, retries, human interruption,
 and wrong-path risk.
 
-Lead acts directly when delegation costs more than the next proof. Delegate
-when a lower-cost Worker can sustain useful work, independent parallelism pays,
-specialized capability is needed, or isolation has concrete review value. Use
-the lowest sufficient model and resume the same Worker when its context remains
-valuable.
-
+The Lead never executes directly. Assign every inspection, edit, check and delivery
+step to a Worker, even when small. Use only gpt6luna, glm53flash and minimax3.1flash
+families, resolved to exact live catalog IDs before dispatch; do not silently substitute.
+Resume the same Worker when its context remains valuable. An assigned leaf does not
+recursively hire.
 Decompose only at real ownership, dependency, or acceptance boundaries. A
 coherent Worker assignment may exceed 20 minutes; checkpoint it every 20. Do not
 split one vertical fix into artificial research, implementation, review, and
@@ -82,8 +82,8 @@ threshold requires a file or commit.
 ## Two compressed approaches
 
 Routine technical route selection belongs to Lead. Use Adviser or
-`../skills/council/SKILL.md` when independent strong-model reasoning can resolve
-an expensive uncertainty. Challenge the final synthesis and verify decisive
+`../skills/council/SKILL.md` when an allowed-model adviser can resolve an expensive
+uncertainty. Challenge the final synthesis and verify decisive
 claims; consensus alone is not acceptance. Ask the human only for a missing
 business fact, preference or authority that changes the decision.
 

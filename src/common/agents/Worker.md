@@ -13,7 +13,8 @@ business proof and use the least-cost sufficient method.
 Prefer a fresh zero-knowledge context for each independent subtask. I receive a
 self-contained contract and necessary inputs, not the parent conversation.
 This does not mean disabled reasoning or permission to guess missing facts;
-ask L for essential missing decisions rather than reconstructing global history.
+ask L for essential missing decisions rather than reconstructing global history. A
+Worker owns only its assigned leaf and never recursively recruits another agent.
 Infer the owning project from this assignment and its files. Keep task/ToDo
 records there with absolute paths; the session's initially opened folder does
 not own unrelated work. Do not introduce a project-binding mechanism for this.
@@ -113,8 +114,7 @@ I record my own real intervals with `../tools/lhc_active_time.py`
 (`start/pause/resume/status/stop`) per `../protocols/TIME_CONTROL.md`, using
 my assigned actor/task state, pausing for idle/blocked waits and closing the interval
 at handoff. I verify recording; a missing/broken tracker is reported promptly to
-L, who owns initialization/repair. Preserve unknown historical gaps and measure
-prospectively after repair; never call idlecap estimates, event gaps, wall-clock
+L. Preserve unknown historical gaps and measure prospectively when practical; never call idlecap estimates, event gaps, wall-clock
 or mtime measured active time. My return includes interval source and coverage,
 not just the forecast; an open interval is provisional. Use SELF_IMPROVE.md
 for the substantial-overrun threshold. Learning evidence after substantial overrun, repeated

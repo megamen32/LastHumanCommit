@@ -1,19 +1,19 @@
 ---
 name: decompose-and-dispatch
-description: Let the strongest suitable Lead turn a goal into coherent model-assigned tasks, dependency-aware parallel lanes and verified integration joins.
+description: Let the human-selected Lead coordinate a goal into coherent model-assigned tasks, dependency-aware parallel lanes and verified integration joins.
 ---
 
 # Decompose, allocate, execute, learn
 
 Use before substantial dispatch and whenever execution reveals a bad boundary.
-Lead delegates implementation even for a small task: one bounded Worker plus Lead review.
+The Lead only coordinates; assign every execution step to a Worker, even when small. Use independent review only when the claim and risk justify it. Allowed Worker, Adviser, Reviewer and Tester families are gpt6luna, glm53flash and minimax3.1flash; resolve exact live catalog IDs before dispatch, with no silent fallback. An assigned leaf does not recursively hire.
 Keep its graph compact. An already delegated leaf with no-delegation does not hire recursively.
 
 ## Resolve uncertainty before distributing it
 
 Specify the complete user outcome and its observable acceptance. Identify facts,
 unknowns, shared contracts and existing work. Lead/Adviser decides difficult
-architecture; use council where independent strong-model reasoning is valuable.
+architecture; use the optional allowed-model adviser challenge when independent reasoning can change the decision.
 Research can itself be parallelized when its questions are independent.
 
 Create coherent nodes, not line-count or token-sized fragments. Each node has a
@@ -27,7 +27,7 @@ known steps or comparable evidence, and the specific uncertainty widening the
 range. Plan small, independently useful pieces around 15 minutes, including verification;
 this is planning granularity, never an actual execution cutoff or rejection rule.
 Split larger work at meaningful proof boundaries before dispatch, including
-direct Lead, review and testing work. Twenty minutes remains a checkpoint, not
+Worker-owned execution, review and testing work. Twenty minutes remains a checkpoint, not
 a duration target. Do not manufacture arbitrary time boxes or an overall range.
 
 ## Parallelism with joins
@@ -71,7 +71,7 @@ Show which ready lanes will actually dispatch together and the available slots.
 Explain each serialization by a dependency, shared mutable resource or capacity
 limit. Quote total effort separately from delivery duration: effort sums nodes;
 delivery bounds come from a feasible schedule respecting dependencies, capacity
-(including Lead work) and shared resources. Each concurrent wave contributes its
+and shared resources. Each concurrent wave contributes its
 longest lane plus required sequential joins/review/testing. Include external waits
 separately; do not mistake a dependency-only longest path for scheduled elapsed.
 Show the arithmetic and each uncertainty rather than doubling a global buffer.
@@ -104,7 +104,7 @@ Reviewer/Tester/challenger runs remain fresh; task resumption does not remove th
 
 At joins, verify the accepted result of each predecessor and test the combined
 behavior. A set of independent PASS receipts is not an integration test. New
-uncertainty returns to the strong decision layer instead of cascading guesses.
+uncertainty returns to the Lead/adviser decision layer instead of cascading guesses.
 
 Use Overseer for material drift, repeated failure, overrun or inefficient model
 allocation. Overseer demands a BUSINESS RESULT; re-decompose rather than defending

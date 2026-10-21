@@ -7,7 +7,7 @@ path is known. Full is not a synonym for long, important, polished, or
 release-bound work.
 
 For large Full work, retain the router's bounded independent research, working
-→ ideal → YAGNI plan, quota-aware frontier council, then bounded dispatch.
+→ ideal → YAGNI plan, quota-aware adviser challenge using only allowed model families, then bounded dispatch.
 This template supplies the material-choice method within that route.
 
 ## Business claim
@@ -31,7 +31,7 @@ Time-guard state:
 ## Least-cost route
 
 Smallest reversible change that moves the canary:
-Why direct Lead work or delegation is cheaper:
+Worker assignment, ownership and why any parallelism is useful:
 Chosen model/agent and why it is sufficient:
 First 20-minute reporting checkpoint:
 Stop when:
@@ -59,7 +59,7 @@ For each option:
 - exact proof and smallest execution route.
 
 Overseer consult trigger, if any:
-Initial independent Overseer audit / operational decision:
+Overseer advice / operational decision, if useful:
 Decision under active-harness policy:
 Dependency lanes / owned resources / integration joins:
 Canonical branch / worktree / immutable base / owner for isolated lanes:
@@ -77,25 +77,27 @@ dependency and capacity plan, not a broad global buffer.
 1. Trace the actual consumer call chain.
    For architecture, use architecture-design: review inputs, probe pivotal risks,
    verify early end-to-end integration and challenge the improved synthesis.
-2. Obtain the initial independent Overseer audit, then implement the thinnest
-   working vertical on that path.
+2. Consult the Overseer when a concrete blocker or route uncertainty benefits from
+   independent advice; then implement the thinnest working vertical on that path.
 3. Run the real canary as early as safely possible.
 4. Fix only the first claim-blocking failure.
 5. Run proportional direct-regression checks.
-6. At a ready major milestone, run coherent technical review and fresh independent
-   Zero Knowledge testers with varied realistic personas. They pursue the goal
-   without implementation context and leave detailed positive/negative feedback.
-   Repair in-scope obstacles, keep preferences, and repeat affected real use.
-   Lead's own canary and unit tests do not replace major-outcome acceptance.
-7. Use focus-groups for this major milestone (roughly 3 hours of coherent work)
-   and the final result, not every hour or small edit. Preserve raw feedback;
+6. At a major milestone, use coherent technical review and fresh independent
+   testers with varied realistic personas when the scope and risk justify them. They
+   pursue the goal without implementation context and report observed obstacles.
+   Repair in-scope defects and repeat affected real use. Match acceptance evidence
+   to the claim; do not turn this into a gate for every task or an LHC bookkeeping rule.
+7. Use focus-groups at a major milestone (roughly 3 hours of coherent work) or
+   the final result only when varied independent goals materially add evidence.
+   Preserve raw feedback;
    do not turn every suggestion into new mandatory scope. Technical tests and
    immediate bug TDD continue between milestones.
 
 Assign one owner for the end-to-end user outcome. Ready technical gates lead to
 an explicitly authorized test/demo deployment, a real consumer check, then
-independent milestone acceptance. A direction review is a decision, and a native
-tool receipt proves only the observed call/result; neither proves delivery.
+independent milestone acceptance when the risk and claim require it. A direction
+review is advice, and a native tool receipt proves only its observed call/result;
+neither alone proves delivery.
 Private access blocks only its own surface. Preserve direct user demo scope and
 exceptions through compaction/handoff, honor newer revocation immediately, and
 keep excluded OAuth/files/app work pending after partial demo success. Never take

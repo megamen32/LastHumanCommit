@@ -1018,11 +1018,10 @@ def learning_checkpoint(args: argparse.Namespace, cwd: Path, session_id: str,
             "LHC session checkpoint: this session has run 120 wall-clock minutes of "
             "unfinished work. Run the improve-workflow procedure now "
             "(common/skills/improve-workflow/SKILL.md). If the session is slow, stuck "
-            "or drifting, request one distinct fresh frontier-model agent through "
-            "Agent Herder. It is not a reader: it decides why this session is taking "
-            "so long, it may change the owning instruction, skill or tool that caused "
-            "the drift, and its verdict binds this session — follow it and adapt the "
-            "route instead of repeating the way of working that failed. Give it the "
+            "or drifting, assign a fresh adviser using an allowed gpt6luna, glm53flash or "
+            "minimax3.1flash model ID resolved from the live catalog. Verify actual "
+            "model identity and never silently substitute. The adviser diagnoses the "
+            "delay and recommends a route; the Lead owns the decision. Give it the "
             "current user request, the current plan report, the applicable rules, the "
             "structured outcome and a capped recent event excerpt, and redact "
             "secrets; it gains no authority the session does not already have. Record "
@@ -1590,12 +1589,11 @@ def cycle_hook(args: argparse.Namespace, payload: dict[str, Any],
             pass
     if interval_report is None:
         measurement_note = (
-            "Active interval accounting is missing or unavailable. Lead must start or repair "
-            f"lhc_active_time.py with --state {interval_state}, --actor {actor}, "
-            f"--task {card.stem} on start before new work; "
-            "resume an existing stopped/paused ledger explicitly without resetting its total; "
-            "pause for idle/user waits and resume for execution. Historical unknown time stays "
-            "unknown. Overseer must require repair, not accept a recurring disclaimer."
+            "Active interval accounting is missing or unavailable. Historical unknown time "
+            "stays unknown. When practical, begin measuring forward with lhc_active_time.py; "
+            "resume an existing ledger without resetting its total and pause during idle waits. "
+            "Missing historical accounting is disclosed, not a prerequisite or veto for "
+            "authorized work."
         )
     with lock.open("a", encoding="utf-8") as handle:
         fcntl.flock(handle.fileno(), fcntl.LOCK_EX)

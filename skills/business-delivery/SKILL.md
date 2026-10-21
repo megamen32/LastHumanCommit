@@ -19,7 +19,7 @@ unknown/revoked operations stay blocked. Sudo alone never grants authority.
 
 1. Confirm the current business claim, accepted MVP Definition of Done, actual
    production consumer path, and shortest real canary.
-2. Choose direct Lead work or delegation by total expected cost.
+2. Assign every execution step to a Worker, even when small; the Lead only coordinates.
 3. Use the cheapest evidence sufficient for the exact business claim.
 4. Add Reviewer, Tester, Overseer, Critic, or hardening only when concrete risk
    makes their expected value exceed their cost.

@@ -8,8 +8,8 @@ description: Compatibility alias for older LHC assignments that request feature 
 For new assignments, load `worker-code`; it supersedes this compact alias with
 reusable research-map and `rg` guidance.
 
-Use when one coherent vertical feature contribution is cheaper to delegate than
-to execute directly.
+Use for a coherent vertical feature contribution assigned to a Worker. The Lead
+coordinates and does not execute the implementation.
 
 ## Procedure
 

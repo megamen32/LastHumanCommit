@@ -18,18 +18,19 @@ not next hour. See REVIEW_TO_DELIVERY.md; required tests and existing gates rema
 Check new mandatory conditions/extensions: who requested them, whether the result
 needs them, whether a local problem blocks independent work unnecessarily.
 Decide to continue the necessary path, remove invented scope, change approach or do
-an available part of the assignment. Record and execute that decision in existing
+an available part of the assignment. Record the decision and assign any execution to a Worker in existing
 state. Promising more attention without changing the next action does not fix goal
 loss. For design reconsideration use working → ideal → minimum working ~80% value.
 
 ## Direction check is not acceptance
 
 Lead checks alignment with the original goal and chooses the next useful step;
-do not launch a group every hour. Fresh Zero Knowledge testers belong at major
-milestones (~3 hours of coherent work) and final acceptance: ready user result,
-varied realistic personas/goals, independent attempts and detailed positive/negative
-feedback. This is an outcome boundary, not a strict timer or every-commit check.
-Methods: `../skills/user-testing/SKILL.md`, `../skills/focus-groups/SKILL.md`.
+do not launch a group every hour. Use a fresh Zero Knowledge tester at a major
+milestone or final acceptance when the accepted business claim needs independent
+user-path evidence. Give a ready user result and a realistic persona/goal; preserve
+observed positive and negative feedback. This is an evidence choice, not an elapsed-time gate.
+When useful, methods are documented in `../skills/user-testing/SKILL.md` and
+`../skills/focus-groups/SKILL.md`.
 Before code the goal already identifies the user, task, before/after difference and
 check point. Bugs immediately use TDD RED → fix → GREEN → original scenario.
 Continuous technical verification does not wait for major acceptance. If the test
@@ -60,7 +61,7 @@ python3 <LHC>/tools/lhc_time_guard.py business-review \
 No independent tester is required for this record. `direction_reviewed` means only
 a direction check; `milestone_acceptance=not_evaluated` does not accept the product.
 Legacy optional tester fields may retain observations but cannot replace separate
-actual milestone acceptance results. The command checks record completeness, not
-free-text truth; Lead owns the source references and execution of the selected action.
+actual milestone evidence when the claim requires it. The command checks record
+completeness, not free-text truth; Lead owns references and assigns the selected action to a Worker.
 Use English for new internal records. Tell the user only a material result, problem
 or needed decision; mandatory internal checks do not require empty hourly reports.

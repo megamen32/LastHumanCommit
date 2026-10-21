@@ -1595,7 +1595,7 @@ def reminder(outcome, tool):
                     'First write raw expected/observed as a separate commentary message and preserve FEEDBACK; '
                     'level self-check, not independent parent product acceptance. '
                     if bounded_self_check(outcome) or outcome['task_class'] in {'testing', 'research'} else
-                    'Engineering milestones require existing independent source-backed review via review --manifest. ')
+                    'Optional outcome-ledger review import: review --manifest may record provenance; missing ledger/manifest is not a delivery veto. Preserve actual findings and verify any concrete defect. ')
     if outcome.get('delegation_prohibited'):
         review_route += ('Explicit no-delegation: do not create, launch or resume reviewer/tester sessions. '
                          'If independent acceptance remains required, hand ready results to the assigned coordinator; '
