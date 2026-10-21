@@ -26,6 +26,7 @@ with inline CSS/JS, safe to attach to a message or open from a phone.
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import math
 import re
@@ -65,7 +66,7 @@ STATUS_GLYPHS = {
 STATUS_COLORS = {
     STATUS_DONE: "#2ecc71",
     STATUS_RUNNING: "#4f9cf9",
-    STATUS_BLOCKED: "#ef4d64",
+    STATUS_BLOCKED: "#f25f74",
     STATUS_WAITING: "#f0a742",
     STATUS_QUEUED: "#7c8aa3",
 }
@@ -1031,6 +1032,259 @@ def _plan_anchor(graph: Graph) -> Optional[int]:
 
 
 # --------------------------------------------------------------------------
+# what to do now: the parallel planner's own answer
+# --------------------------------------------------------------------------
+
+
+def _load_sibling(name: str) -> Optional[Any]:
+    """Load a sibling tool module by path, if it sits next to this file.
+
+    The renderer stays one self-contained file, so a sibling is never
+    imported by package name: it is loaded by path, and a missing or broken
+    sibling is not an error — the caller falls back to its own port.
+    """
+
+    path = Path(__file__).resolve().parent / f"{name}.py"
+    if not path.exists():
+        return None
+    module_name = f"lhc_{name}_sibling"
+    try:
+        spec = importlib.util.spec_from_file_location(module_name, path)
+        if spec is None or spec.loader is None:
+            return None
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[module_name] = module
+        spec.loader.exec_module(module)
+        return module
+    except Exception:
+        sys.modules.pop(module_name, None)
+        return None
+
+
+def _parallel_graph(module: Any, graph: Graph) -> Any:
+    """Build the parallel planner's own graph out of this grid's leaves."""
+
+    tasks = [
+        module.Task(
+            id=leaf.id,
+            label=leaf.label,
+            status=leaf.status,
+            depends_on=list(leaf.depends_on),
+            parallel_with=list(leaf.parallel_with),
+            estimate_min=leaf.estimate_min,
+            estimate_max=leaf.estimate_max,
+            actual_minutes=leaf.actual_minutes,
+            blocker=leaf.blocker,
+            blocker_details=dict(leaf.blocker_details),
+            note=leaf.note,
+            owner=leaf.owner,
+            session=leaf.session,
+            started_at=leaf.started_at,
+            finished_at=leaf.finished_at,
+            wave=leaf.wave,
+            order=leaf.order,
+        )
+        for leaf in graph.leaves
+    ]
+    return module.Graph(
+        title=graph.title,
+        goal=graph.goal,
+        business_result=graph.business_result,
+        slots=graph.slots or None,
+        updated_at=graph.updated_at,
+        tasks=tasks,
+    )
+
+
+def _plan_from_summary(summary: Any, source: str) -> dict[str, Any]:
+    """Turn the planner's summary into the flat shape the dashboard draws."""
+
+    labels = {task.id: (task.label or task.id) for task in summary.graph.tasks}
+
+    def line(task: Any, **extra: Any) -> dict[str, Any]:
+        data: dict[str, Any] = {
+            "id": task.id,
+            "label": task.label or task.id,
+            "estimate": task.estimate_label,
+            "unblocks": [labels.get(other, other) for other in summary.unblocks(task)],
+        }
+        data.update(extra)
+        return data
+
+    return {
+        "source": source,
+        "slots": summary.slots,
+        "free_slots": summary.free_slots,
+        "running": [line(task, since=task.started_at) for task in summary.running],
+        "ready": [line(task) for task in summary.ready],
+        "deferred": [line(task) for task in summary.deferred],
+        "blocked": [line(task, reason=reason) for task, reason in summary.blocked],
+        "waiting": [
+            line(task, unmet=[labels.get(item, item) for item in unmet], unmet_ids=list(unmet))
+            for task, unmet in summary.waiting
+        ],
+    }
+
+
+def _port_estimate(leaf: Leaf) -> str:
+    """The estimate as the parallel planner words it."""
+
+    low, high = leaf.estimate_min, leaf.estimate_max
+    if low is None and high is None:
+        return "оценка не указана"
+    if low is None:
+        low = high
+    if high is None:
+        high = low
+    if low == high:
+        return f"оценка {fmt_minutes(low)}"
+    return f"оценка {fmt_minutes(low)}–{fmt_minutes(high)}"
+
+
+def _port_reason(leaf: Leaf) -> str:
+    """Why a leaf is blocked, in the planner's own words."""
+
+    if leaf.blocker:
+        return leaf.blocker
+    detail = (leaf.blocker_details or {}).get("reason")
+    if isinstance(detail, str) and detail.strip():
+        return detail.strip()
+    if leaf.note:
+        return leaf.note
+    return "причина не указана"
+
+
+def _port_layers(tasks: dict[str, Leaf], order: list[str]) -> dict[str, int]:
+    """Derive the wave of every leaf from its dependencies."""
+
+    layers: dict[str, int] = {}
+
+    def layer_of(task_id: str, seen: frozenset[str]) -> int:
+        if task_id in layers:
+            return layers[task_id]
+        leaf = tasks.get(task_id)
+        if leaf is None or task_id in seen:
+            return 0
+        best = 0
+        for dep in leaf.depends_on:
+            if dep in tasks:
+                best = max(best, layer_of(dep, seen | {task_id}) + 1)
+        layers[task_id] = best
+        return best
+
+    for task_id in order:
+        layer_of(task_id, frozenset())
+    return layers
+
+
+def _plan_now_port(graph: Graph) -> dict[str, Any]:
+    """The planner's answer, ported for a checkout without ``lhc_parallel``.
+
+    The rules are the planner's own: a queued line whose dependencies are all
+    done and that still fits into a free slot is ready to launch. This is a
+    port of ``lhc_parallel.analyze()``, not a second opinion about it.
+    """
+
+    tasks = {leaf.id: leaf for leaf in graph.leaves}
+    order = [leaf.id for leaf in graph.leaves]
+    layers = _port_layers(tasks, order)
+
+    running: list[Leaf] = []
+    blocked: list[tuple[Leaf, str]] = []
+    waiting: list[tuple[Leaf, list[str]]] = []
+    ready: list[Leaf] = []
+
+    for leaf in graph.leaves:
+        if leaf.status == STATUS_RUNNING:
+            running.append(leaf)
+        elif leaf.status == STATUS_BLOCKED:
+            blocked.append((leaf, _port_reason(leaf)))
+        elif leaf.status == STATUS_WAITING:
+            waiting.append((leaf, []))
+        elif leaf.status not in STATUSES:
+            continue
+
+    for leaf in graph.leaves:
+        if leaf.status != STATUS_QUEUED:
+            continue
+        if leaf.blocker or (leaf.blocker_details or {}).get("reason"):
+            blocked.append((leaf, _port_reason(leaf)))
+            continue
+        unmet = [
+            dep for dep in leaf.depends_on
+            if dep not in tasks or tasks[dep].status != STATUS_DONE
+        ]
+        if unmet:
+            waiting.append((leaf, unmet))
+        else:
+            ready.append(leaf)
+
+    def sort_key(leaf: Leaf) -> tuple[int, int]:
+        wave = leaf.wave if leaf.wave is not None else layers.get(leaf.id, 0)
+        return (wave, leaf.order)
+
+    ready.sort(key=sort_key)
+    waiting.sort(key=lambda item: sort_key(item[0]))
+    blocked.sort(key=lambda item: sort_key(item[0]))
+
+    slots = graph.slots or None
+    free = None if slots is None else max(0, slots - len(running))
+    deferred: list[Leaf] = []
+    if free is not None:
+        deferred = ready[free:]
+        ready = ready[:free]
+
+    labels = {leaf.id: (leaf.label or leaf.id) for leaf in graph.leaves}
+
+    def line(leaf: Leaf, **extra: Any) -> dict[str, Any]:
+        data: dict[str, Any] = {
+            "id": leaf.id,
+            "label": leaf.label or leaf.id,
+            "estimate": _port_estimate(leaf),
+            "unblocks": [
+                labels.get(other.id, other.id)
+                for other in graph.leaves if leaf.id in other.depends_on
+            ],
+        }
+        data.update(extra)
+        return data
+
+    return {
+        "source": "порядок lhc_parallel (перенос)",
+        "slots": slots,
+        "free_slots": free,
+        "running": [line(leaf, since=leaf.started_at) for leaf in running],
+        "ready": [line(leaf) for leaf in ready],
+        "deferred": [line(leaf) for leaf in deferred],
+        "blocked": [line(leaf, reason=reason) for leaf, reason in blocked],
+        "waiting": [
+            line(leaf, unmet=[labels.get(item, item) for item in unmet], unmet_ids=list(unmet))
+            for leaf, unmet in waiting
+        ],
+    }
+
+
+def plan_now(graph: Graph) -> dict[str, Any]:
+    """What can start right now, according to the parallel planner.
+
+    The planner's own module answers when it is next to this file; otherwise
+    the same rules are applied by the port above. Either way the dashboard
+    never invents a launch decision.
+    """
+
+    module = _load_sibling("lhc_parallel")
+    if module is not None:
+        try:
+            summary = module.analyze(_parallel_graph(module, graph))
+            return _plan_from_summary(summary, "lhc_parallel")
+        except Exception:
+            # A sibling that is missing or half-written must not take the
+            # dashboard down: the port below answers with the same rules.
+            pass
+    return _plan_now_port(graph)
+
+
+# --------------------------------------------------------------------------
 # rendering
 # --------------------------------------------------------------------------
 
@@ -1045,62 +1299,63 @@ def escape(text: str) -> str:
     )
 
 
+def _short(text: str, limit: int) -> str:
+    """Shorten a long name for a dense list, keeping it readable."""
+
+    value = (text or "").strip()
+    if len(value) <= limit:
+        return value
+    return value[: max(1, limit - 1)].rstrip() + "…"
+
+
 def render_html(graph: Graph, metrics: dict[str, Any]) -> str:
     schedule: Schedule = metrics["schedule"]
     leaves = sorted(graph.leaves, key=lambda leaf: (schedule.waves.get(leaf.id, 0), leaf.order))
     label_by_id = {leaf.id: leaf.label or leaf.id for leaf in graph.leaves}
     total = metrics["total"]
-    now = now_clock()
 
-    # ----- KPI cards -----------------------------------------------------
+    # ----- KPI tiles ------------------------------------------------------
+    # The number is the headline; the label and the hint are secondary.
     headline_total = metrics["headline_total"]
+    progress_note = "по журналу волны" if metrics["use_live"] else "листьев"
+    if metrics["unknown_estimate_pending"] or metrics["external_wait_unknown"]:
+        remaining_label = "Известная часть работы"
+        remaining_hint = "без неизвестных оценок и ожиданий"
+    else:
+        remaining_label = "Осталось по плану"
+        remaining_hint = f"минимум {fmt_minutes(metrics['remaining_minutes_min'])}"
+    if metrics["external_wait_unknown"]:
+        eta_hint = "Есть внешние ожидания без подтверждённого срока"
+    elif metrics["unknown_estimate_pending"]:
+        eta_hint = f"{metrics['unknown_estimate_pending']} листьев без оценки"
+    else:
+        eta_hint = f"если остаток стартует сейчас · мин. {metrics['eta_clock_min']}"
     cards = [
-        (
-            "Готово",
-            f"{metrics['done']} / {headline_total}",
-            f"{metrics['progress_pct']}%"
-            + (" по журналу волны" if metrics["use_live"] else " листьев"),
-            STATUS_DONE,
-        ),
-        ("В работе", str(metrics["running"]), "сейчас выполняется", STATUS_RUNNING),
-        ("Заблокировано", str(metrics["blocked"]), "нужен внешний ход", STATUS_BLOCKED),
-        ("Осталось", str(metrics["queued"] + metrics["waiting"]), "в очереди и ожидании", STATUS_QUEUED),
-        (
-            "Параллельность",
-            f"{metrics['current_parallel']} / {metrics['slots']}",
-            f"пик по плану {metrics['planned_peak_parallel']}",
-            STATUS_RUNNING,
-        ),
-        (
-            ("Известная часть работы" if metrics["unknown_estimate_pending"] or metrics["external_wait_unknown"]
-             else "Осталось по плану"),
-            fmt_minutes(metrics["remaining_minutes_max"]),
-            ("без неизвестных оценок и ожиданий" if metrics["unknown_estimate_pending"] or metrics["external_wait_unknown"]
-             else f"минимум {fmt_minutes(metrics['remaining_minutes_min'])}"),
-            STATUS_WAITING,
-        ),
-        (
-            "Прогноз финиша",
-            metrics["eta_clock_max"] or "Срок неизвестен",
-            ("Есть внешние ожидания без подтверждённого срока" if metrics["external_wait_unknown"] else
-             f"{metrics['unknown_estimate_pending']} листьев без оценки" if metrics["unknown_estimate_pending"]
-             else f"если остаток стартует сейчас · мин. {metrics['eta_clock_min']}"),
-            STATUS_DONE,
-        ),
-        (
-            "Усилие",
-            fmt_minutes(metrics["effort_minutes"]),
-            f"критический путь {fmt_minutes(metrics['critical_minutes'])}",
-            STATUS_QUEUED,
-        ),
+        ("Готово", f"{metrics['done']} / {headline_total}",
+         f"{metrics['progress_pct']}% {progress_note}", STATUS_DONE, True),
+        ("В работе", str(metrics["running"]), "сейчас выполняется", STATUS_RUNNING, True),
+        ("Заблокировано", str(metrics["blocked"]), "нужен внешний ход", STATUS_BLOCKED, True),
+        ("В очереди", str(metrics["queued"]), "ждут своего слота", STATUS_QUEUED, True),
+        ("Осталось", str(metrics["queued"] + metrics["waiting"]),
+         "в очереди и ожидании", STATUS_QUEUED, True),
+        ("Параллельность", f"{metrics['current_parallel']} / {metrics['slots']}",
+         f"пик по плану {metrics['planned_peak_parallel']}", STATUS_RUNNING, False),
+        (remaining_label, fmt_minutes(metrics["remaining_minutes_max"]),
+         remaining_hint, STATUS_WAITING, False),
+        ("Прогноз финиша", metrics["eta_clock_max"] or "Срок неизвестен",
+         eta_hint, STATUS_DONE, False),
+        ("Усилие", fmt_minutes(metrics["effort_minutes"]),
+         f"критический путь {fmt_minutes(metrics['critical_minutes'])}", STATUS_QUEUED, False),
     ]
     card_html = "".join(
         f'<div class="kpi" style="--accent:{STATUS_COLORS.get(tone, "#6ea8fe")}">'
-        f'<div class="kpi-label">{escape(label)}</div>'
+        f'<div class="kpi-label" title="{escape(label)}">'
+        + (f"{STATUS_GLYPHS.get(tone, '')} " if is_status else "")
+        + f"{escape(label)}</div>"
         f'<div class="kpi-value">{escape(value)}</div>'
         f'<div class="kpi-hint">{escape(hint)}</div>'
         "</div>"
-        for label, value, hint, tone in cards
+        for label, value, hint, tone, is_status in cards
     )
 
     # ----- progress bar --------------------------------------------------
@@ -1119,6 +1374,120 @@ def render_html(graph: Graph, metrics: dict[str, Any]) -> str:
         f"{STATUS_LABELS[status]} · {headline.get(status, 0)}</span>"
         for status in STATUSES
         if headline.get(status, 0)
+    )
+
+    # ----- what to do now -------------------------------------------------
+    # The launch decision is the parallel planner's: this only draws it.
+    plan = plan_now(graph)
+    slots = plan.get("slots")
+    free_slots = plan.get("free_slots")
+    if slots is None:
+        slots_text = "неизвестно"
+    elif free_slots is None:
+        slots_text = f"{slots}"
+    else:
+        slots_text = f"{free_slots} из {slots}"
+
+    def now_item(item: dict[str, Any], detail: str, extra_class: str = "") -> str:
+        classes = "now-item" + (f" {extra_class}" if extra_class else "")
+        return (
+            f'<li class="{classes}">'
+            f'<div class="now-head"><span class="now-id">{escape(item["id"])}</span>'
+            f'<span class="now-name">{escape(item["label"])}</span></div>'
+            f'<div class="now-meta">{escape(detail)}</div></li>'
+        )
+
+    running_html = ""
+    if plan["running"]:
+        running_html = "<ul class=\"now-list\">" + "".join(
+            now_item(
+                item,
+                (f"идёт {fmt_minutes(item['actual'])}" if item.get("actual") is not None
+                 else (f"начато в {item['since']}" if item.get("since") else "длительность не измерена")),
+            )
+            for item in plan["running"]
+        ) + "</ul>"
+    else:
+        running_html = '<div class="now-empty">Сейчас не идёт ни одна линия.</div>'
+
+    ready_html = ""
+    if plan["ready"]:
+        items = []
+        for item in plan["ready"]:
+            unblocks = item.get("unblocks") or []
+            if unblocks:
+                shown = ", ".join(_short(name, 34) for name in unblocks[:5])
+                if len(unblocks) > 5:
+                    shown += f" и ещё {len(unblocks) - 5}"
+                detail = f"{item['estimate']} · разблокирует: {shown}"
+            else:
+                detail = f"{item['estimate']} · никого не разблокирует"
+            items.append(now_item(item, detail))
+        ready_html = "<ul class=\"now-list\">" + "".join(items) + "</ul>"
+    else:
+        ready_html = '<div class="now-empty">Ни одна линия не готова к запуску.</div>'
+
+    deferred_html = ""
+    if plan["deferred"]:
+        items = []
+        for item in plan["deferred"]:
+            items.append(
+                now_item(item, f"{item['estimate']} · ждёт свободного слота", "deferred")
+            )
+        deferred_html = (
+            f'<div class="now-subtitle">Отложено — свободных слотов нет ({len(plan["deferred"])})</div>'
+            "<ul class=\"now-list\">" + "".join(items) + "</ul>"
+        )
+
+    blocked_html = ""
+    if plan["blocked"]:
+        blocked_html = "<ul class=\"now-list\">" + "".join(
+            now_item(item, item.get("reason") or "причина не указана", "blocked")
+            for item in plan["blocked"]
+        ) + "</ul>"
+    else:
+        blocked_html = '<div class="now-empty">Активных блокеров нет.</div>'
+
+    # The lines that wait for others are not blocked: they are a separate,
+    # compact list below the three groups, so no column pretends to be empty
+    # while the other one carries the whole graph.
+    waiting_html = ""
+    if plan["waiting"]:
+        shown = plan["waiting"][:14]
+        chips = []
+        for item in shown:
+            unmet = item.get("unmet_ids") or []
+            arrow = f' ← {escape(", ".join(unmet[:2]))}' if unmet else ""
+            chips.append(
+                f'<span class="wait-chip" title="{escape(item["label"])}">'
+                f'{escape(item["id"])}{arrow}</span>'
+            )
+        rest = len(plan["waiting"]) - len(shown)
+        waiting_html = (
+            f'<div class="now-subtitle">Ждут зависимостей ({len(plan["waiting"])})</div>'
+            f'<div class="wait-list">{"".join(chips)}'
+            + (f'<span class="wait-more">и ещё {rest} — полный список в таблице листьев</span>' if rest > 0 else "")
+            + "</div>"
+        )
+
+    now_html = (
+        '<div class="panel-head">'
+        "<h2>Что делать сейчас</h2>"
+        f'<div class="slots-badge">Свободных слотов: <b>{escape(slots_text)}</b></div>'
+        "</div>"
+        '<div class="now-grid">'
+        '<section class="now-col">'
+        f'<h3><span class="now-glyph">🔄</span> В работе <span class="now-count">'
+        f'{len(plan["running"])}</span></h3>{running_html}</section>'
+        '<section class="now-col">'
+        f'<h3><span class="now-glyph">🚀</span> Готовы к запуску <span class="now-count">'
+        f'{len(plan["ready"])}</span></h3>{ready_html}{deferred_html}</section>'
+        '<section class="now-col">'
+        f'<h3><span class="now-glyph">⛔</span> Заблокированы <span class="now-count">'
+        f'{len(plan["blocked"])}</span></h3>{blocked_html}</section>'
+        "</div>"
+        f"{waiting_html}"
+        f'<div class="hint">Источник расчёта: {escape(plan["source"])}.</div>'
     )
 
     # ----- gantt ---------------------------------------------------------
@@ -1149,7 +1518,7 @@ def render_html(graph: Graph, metrics: dict[str, Any]) -> str:
         color = STATUS_COLORS[leaf.status]
         critical = leaf.id in metrics["critical_path"]
         tooltip = (
-            f"{leaf.label}\n"
+            f"{leaf.id} · {leaf.label}\n"
             f"статус: {STATUS_LABELS[leaf.status]}\n"
             f"оценка: {leaf.duration_label}"
             + (f"\nфакт: {fmt_minutes(leaf.actual_minutes)}" if leaf.actual_minutes is not None else "")
@@ -1161,13 +1530,20 @@ def render_html(graph: Graph, metrics: dict[str, Any]) -> str:
             + ("\nна критическом пути" if critical else "")
         )
         title = escape(tooltip)
-        critical_mark = '<span class="crit" title="критический путь">◆</span>' if critical else ""
+        critical_mark = '<span class="crit" title="критический путь">◆ критический путь</span>' if critical else ""
         gantt_rows.append(
             f'<div class="gantt-row" data-status="{leaf.status}" data-leaf="{escape(leaf.id)}">'
             f'<div class="gantt-label" title="{escape(leaf.label)}">'
+            f'<span class="gantt-line">'
             f'<span class="dot" style="background:{color}"></span>'
+            f'<span class="gantt-id" title="{escape(leaf.id)}">{escape(leaf.id)}</span>'
             f'<span class="gantt-text">{escape(leaf.label)}</span>'
-            f"{critical_mark}</div>"
+            f"</span>"
+            f'<span class="gantt-line gantt-meta">'
+            f'<span class="gantt-status">{STATUS_GLYPHS[leaf.status]} {STATUS_LABELS[leaf.status]}</span>'
+            f"{critical_mark}"
+            f"</span>"
+            f'</div>'
             f'<div class="gantt-track">'
             f'<div class="bar" style="left:{left:.4f}%;width:{width:.4f}%;background:{color}" title="{title}">'
             f"</div></div></div>"
@@ -1255,13 +1631,14 @@ def render_html(graph: Graph, metrics: dict[str, Any]) -> str:
         )
         table_rows.append(
             f'<tr data-status="{leaf.status}" data-text="{escape((leaf.id + " " + leaf.label).lower())}">'
-            f"<td class='task-title'>{escape(leaf.label)}</td>"
+            f"<td class='task-title'><span class='row-id'>{escape(leaf.id)}</span>"
+            f"<span class='row-name'>{escape(leaf.label)}</span></td>"
             f'<td><span class="status" style="--c:{STATUS_COLORS[leaf.status]}">'
             f"{STATUS_GLYPHS[leaf.status]} {STATUS_LABELS[leaf.status]}</span></td>"
             f"<td>{escape(leaf.duration_label)}</td>"
             f'<td class="{over.strip()}">{escape(actual)}</td>'
             f"<td><button type='button' class='task-details-trigger' data-details-id='{details_index}' "
-            "aria-expanded='false'>Подробности</button></td>"
+            "aria-expanded='false'>Подробнее</button></td>"
             "</tr>"
         )
     leaves_table = (
@@ -1350,19 +1727,30 @@ def render_html(graph: Graph, metrics: dict[str, Any]) -> str:
             f'<div class="hint">граф: {metrics["total"]} листьев · слотов: {metrics["slots"]} · '
             f"пик параллельности {metrics['planned_peak_parallel']}</div>"
         )
-    goal_block = ""
-    if graph.goal or graph.business_result or graph.current_progress:
-        goal_block = (
-            "<div class='goal'>"
-            + (f"<div><span>Цель</span>{escape(graph.goal)}</div>" if graph.goal else "")
-            + (f"<div><span>Ожидаемый бизнес-результат</span>{escape(graph.business_result)}</div>"
-               if graph.business_result else "")
-            + (f"<div><span>Подтверждённый прогресс</span>{escape(graph.current_progress)}</div>"
-               if graph.current_progress else "")
-            + (f"<div><span>Внешние ожидания</span>{escape(graph.external_waits)}</div>"
-               if graph.external_waits else "")
-            + "</div>"
+
+    # ----- brief: what the work is for ------------------------------------
+    brief_cards = []
+    if graph.goal:
+        brief_cards.append(
+            f'<article class="brief-card brief-goal"><h2>Цель</h2>'
+            f"<p>{escape(graph.goal)}</p></article>"
         )
+    if graph.business_result:
+        brief_cards.append(
+            f'<article class="brief-card brief-result"><h2>Ожидаемый бизнес-результат</h2>'
+            f"<p>{escape(graph.business_result)}</p></article>"
+        )
+    if graph.current_progress:
+        brief_cards.append(
+            f'<article class="brief-card"><h2>Подтверждённый прогресс</h2>'
+            f"<p>{escape(graph.current_progress)}</p></article>"
+        )
+    if graph.external_waits:
+        brief_cards.append(
+            f'<article class="brief-card brief-wait"><h2>Внешние ожидания</h2>'
+            f"<p>{escape(graph.external_waits)}</p></article>"
+        )
+    brief_html = f'<div class="brief">{"".join(brief_cards)}</div>' if brief_cards else ""
 
     return HTML_TEMPLATE.format(
         title=escape(graph.title),
@@ -1372,7 +1760,8 @@ def render_html(graph: Graph, metrics: dict[str, Any]) -> str:
         cards=card_html,
         segments="".join(segments),
         legend=legend,
-        goal_block=goal_block,
+        brief=brief_html,
+        now=now_html,
         axis=axis,
         gantt=gantt_html,
         blockers=blocker_html,
@@ -1385,7 +1774,6 @@ def render_html(graph: Graph, metrics: dict[str, Any]) -> str:
         notes=notes_html,
         total=total,
     )
-
 
 
 HTML_TEMPLATE = """<!DOCTYPE html>
@@ -1401,47 +1789,111 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     --panel-2: #1b2331;
     --line: #26303f;
     --text: #e6edf6;
-    --muted: #93a1b5;
+    --muted: #9fb0c6;
     --accent: #6ea8fe;
+    --ok: #2ecc71;
+    --warn: #f0a742;
+    --bad: #f25f74;
   }}
   * {{ box-sizing: border-box; }}
+  /* The page background lives on the canvas itself. No overlay element is
+     painted over the content, so nothing can ever hide a block of the
+     dashboard behind an opaque layer. */
+  html {{ background: var(--bg); }}
   body {{
     margin: 0; background: var(--bg);
+    background-image: radial-gradient(1500px 760px at 12% -12%, #1b2b45 0%, rgba(13,17,23,0) 62%);
+    background-repeat: no-repeat;
     color: var(--text);
-    font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, "Helvetica Neue", Arial, sans-serif;
-    padding: 24px clamp(12px, 3vw, 40px) 64px;
+    font: 14px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, "Helvetica Neue", Arial, sans-serif;
+    padding: 22px clamp(12px, 3vw, 40px) 56px;
     min-height: 100%;
     overflow-x: hidden;
   }}
-  body::before {{
-    content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
-    background: radial-gradient(1200px 600px at 10% -10%, #16233a 0%, #0d1117 55%);
-  }}
   a {{ color: var(--accent); }}
-  header {{ display: flex; flex-wrap: wrap; gap: 12px; align-items: baseline; justify-content: space-between;
-    margin-bottom: 18px; }}
-  h1 {{ font-size: 22px; margin: 0; letter-spacing: -0.2px; overflow-wrap: anywhere; }}
+  .page {{ max-width: 2200px; margin: 0 auto; }}
+
+  /* ---- header ---- */
+  header {{ display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between;
+    margin-bottom: 16px; }}
+  h1 {{ font-size: 23px; margin: 0; letter-spacing: -0.3px; overflow-wrap: anywhere; }}
   header > div {{ min-width: 0; max-width: 100%; }}
-  .sub {{ color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }}
+  .sub {{ color: var(--muted); font-size: 12.5px; overflow-wrap: anywhere; }}
+  .head-count {{ display: flex; align-items: baseline; gap: 8px; background: var(--panel);
+    border: 1px solid var(--line); border-radius: 12px; padding: 8px 14px; }}
+  .head-count b {{ font-size: 22px; font-weight: 650; letter-spacing: -0.4px; }}
+  .head-count span {{ color: var(--muted); font-size: 12px; }}
+
+  /* ---- panels ---- */
   .panel {{ background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
     border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; margin-bottom: 16px; min-width: 0; }}
-  .panel h2 {{ font-size: 14px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted);
+  .panel h2 {{ font-size: 13px; text-transform: uppercase; letter-spacing: .09em; color: var(--muted);
     margin: 0 0 12px; font-weight: 600; }}
-  .kpis {{ display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin-bottom: 16px; }}
+  .panel-head {{ display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }}
+  .panel-head h2 {{ margin: 0; }}
+
+  /* ---- brief: goal and business result ---- */
+  .brief {{ display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-bottom: 16px; }}
+  .brief-card {{ background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
+    border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 12px; padding: 14px 16px;
+    min-width: 0; }}
+  .brief-card h2 {{ font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted);
+    margin: 0 0 6px; font-weight: 600; }}
+  .brief-card p {{ margin: 0; overflow-wrap: anywhere; }}
+  .brief-goal {{ border-left-color: var(--accent); }}
+  .brief-result {{ border-left-color: var(--ok); }}
+  .brief-wait {{ border-left-color: var(--warn); }}
+
+  /* ---- KPI strip ---- */
+  .kpis {{ display: grid; gap: 10px; grid-template-columns: repeat(9, minmax(0, 1fr)); margin-bottom: 14px; }}
   .kpi {{ background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
-    border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 12px; padding: 12px 14px; }}
-  .kpi-label {{ color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .07em; }}
-  .kpi-value {{ font-size: 22px; font-weight: 650; margin: 4px 0 2px; letter-spacing: -0.4px; }}
-  .kpi-hint {{ color: var(--muted); font-size: 11.5px; }}
+    border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 12px; padding: 11px 13px;
+    min-width: 0; }}
+  .kpi-label {{ color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .07em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }}
+  .kpi-value {{ font-size: 25px; font-weight: 650; margin: 3px 0 2px; letter-spacing: -0.6px; line-height: 1.15;
+    overflow-wrap: anywhere; }}
+  .kpi-hint {{ color: var(--muted); font-size: 11.5px; overflow-wrap: anywhere; }}
+
+  /* ---- progress and legend ---- */
   .progress {{ display: flex; height: 12px; border-radius: 999px; overflow: hidden; background: #0b1018;
     border: 1px solid var(--line); }}
   .seg {{ height: 100%; }}
-  .legend {{ display: flex; flex-wrap: wrap; gap: 14px; margin-top: 10px; color: var(--muted); font-size: 12px; }}
+  .legend {{ display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 10px; color: var(--muted); font-size: 12px; }}
   .legend-item i {{ display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-right: 6px; }}
-  .goal {{ display: grid; gap: 10px; margin-bottom: 14px; }}
-  .goal div {{ background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }}
-  .goal span {{ display: block; color: var(--muted); font-size: 11px; text-transform: uppercase;
-    letter-spacing: .07em; margin-bottom: 3px; }}
+
+  /* ---- what to do now ---- */
+  .slots-badge {{ font-size: 12.5px; color: var(--muted); background: var(--panel-2);
+    border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px; }}
+  .slots-badge b {{ color: var(--text); font-size: 14px; }}
+  .now-grid {{ display: grid; gap: 14px; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 14px;
+    align-items: start; }}
+  .now-col {{ background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px;
+    min-width: 0; }}
+  .now-col h3 {{ font-size: 12px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted);
+    margin: 0 0 10px; font-weight: 600; display: flex; align-items: center; gap: 6px; }}
+  .now-count {{ margin-left: auto; background: #0e141d; border: 1px solid var(--line); border-radius: 999px;
+    padding: 0 8px; color: var(--text); font-size: 11.5px; }}
+  .now-subtitle {{ color: var(--muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: .06em;
+    margin: 12px 0 6px; }}
+  .now-list {{ list-style: none; margin: 0; padding: 0; }}
+  .now-item {{ padding: 8px 0; border-bottom: 1px solid #232c3a; }}
+  .now-item:last-child {{ border-bottom: 0; }}
+  .now-head {{ display: flex; gap: 8px; align-items: baseline; min-width: 0; }}
+  .now-id {{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11.5px;
+    color: var(--accent); flex: none; max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }}
+  .now-name {{ min-width: 0; overflow-wrap: anywhere; }}
+  .now-meta {{ color: var(--muted); font-size: 11.5px; margin-top: 2px; overflow-wrap: anywhere; }}
+  .now-item.deferred {{ opacity: .75; }}
+  .now-item.blocked .now-id {{ color: var(--bad); }}
+  .now-empty {{ color: var(--muted); font-style: italic; font-size: 12.5px; }}
+  .wait-list {{ display: flex; flex-wrap: wrap; gap: 6px; }}
+  .wait-chip {{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11.5px;
+    color: var(--muted); background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px;
+    padding: 2px 7px; white-space: nowrap; }}
+  .wait-more {{ color: var(--muted); font-size: 11.5px; align-self: center; }}
+
+  /* ---- gantt ---- */
   .gantt {{ overflow-x: auto; max-width: 100%; }}
   .gantt-inner {{ min-width: 760px; }}
   .gantt-axis-row, .gantt-row {{ display: grid; grid-template-columns: minmax(240px, 320px) minmax(360px, 1fr);
@@ -1454,34 +1906,41 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   .tick-6 {{ transform: translateX(-100%); }}
   .gantt-row {{ align-items: center; border-bottom: 1px solid #1e2632; }}
   .gantt-row:hover {{ background: #18202d; }}
-  .gantt-label {{ display: flex; align-items: center; gap: 8px; padding: 5px 0; min-width: 0; overflow: hidden; }}
-  .gantt-text {{ min-width: 0; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
-    overflow: hidden; overflow-wrap: anywhere; }}
+  .gantt-label {{ display: flex; flex-direction: column; gap: 1px; padding: 5px 0; min-width: 0; overflow: hidden; }}
+  .gantt-line {{ display: flex; align-items: center; gap: 7px; min-width: 0; }}
+  .gantt-id {{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11px;
+    color: var(--muted); flex: none; max-width: 34%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }}
+  .gantt-text {{ min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }}
+  .gantt-meta {{ gap: 8px; }}
+  .gantt-status {{ font-size: 11px; color: var(--muted); white-space: nowrap; }}
   .dot {{ width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex: none; }}
-  .crit {{ color: #f0a742; font-size: 10px; }}
+  .crit {{ color: #f0a742; font-size: 10.5px; white-space: nowrap; }}
   .gantt-track {{ position: relative; height: 26px; min-width: 0; }}
   .bar {{ position: absolute; top: 6px; height: 15px; border-radius: 5px; min-width: 3px;
     box-shadow: 0 0 0 1px rgba(0,0,0,.25) inset; }}
-  .wave-row {{ display: flex; justify-content: space-between; padding: 12px 0 6px; color: var(--muted);
-    font-size: 12px; text-transform: uppercase; letter-spacing: .06em; border-bottom: 1px solid var(--line);
-    margin-top: 6px; }}
+  .wave-row {{ display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    margin-top: 14px; padding: 8px 12px; background: var(--panel-2); border: 1px solid var(--line);
+    border-left: 3px solid var(--accent); border-radius: 10px; color: var(--muted);
+    font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }}
   .wave-count {{ text-transform: none; letter-spacing: 0; }}
+
+  /* ---- two column work area ---- */
   .grid {{ display: grid; gap: 16px; grid-template-columns: minmax(0, 1.35fr) minmax(0, .65fr);
     align-items: start; }}
   .grid > * {{ min-width: 0; }}
   @media (max-width: 1000px) {{ .grid {{ grid-template-columns: minmax(0, 1fr); }} }}
-  @media (max-width: 640px) {{
-    body {{ padding: 14px 10px 36px; }}
-    .panel {{ padding: 12px; border-radius: 11px; }}
-    h1 {{ font-size: 19px; }}
-    .kpis {{ grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }}
-    .kpi {{ padding: 9px 10px; }}
-    .kpi-value {{ font-size: 19px; }}
-    .toolbar input {{ min-width: 0; width: 100%; }}
-    .task-details {{ grid-template-columns: minmax(0, 1fr); gap: 0; }}
-    .task-details dd {{ margin-bottom: 8px; }}
+  @media (min-width: 1700px) {{
+    .gantt-axis-row, .gantt-row {{ grid-template-columns: minmax(340px, 460px) minmax(360px, 1fr); }}
   }}
-  .blocker {{ background: var(--panel-2); border: 1px solid #3a2530; border-left: 3px solid #ef4d64;
+  @media (max-width: 1800px) {{ .kpis {{ grid-template-columns: repeat(5, minmax(0, 1fr)); }} }}
+  @media (max-width: 1100px) {{
+    .now-grid {{ grid-template-columns: minmax(0, 1fr); }}
+  }}
+  @media (max-width: 900px) {{
+    .brief {{ grid-template-columns: minmax(0, 1fr); }}
+    .kpis {{ grid-template-columns: repeat(3, minmax(0, 1fr)); }}
+  }}
+  .blocker {{ background: var(--panel-2); border: 1px solid #3a2530; border-left: 3px solid var(--bad);
     border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; }}
   .blocker-head {{ display: flex; gap: 8px; align-items: center; margin-bottom: 4px; }}
   .blocker-reason {{ color: #d7e0ec; }}
@@ -1507,6 +1966,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   .table-leaves th:nth-child(3), .table-leaves th:nth-child(4) {{ width: 86px; }}
   .table-leaves th:nth-child(5) {{ width: 120px; }}
   .task-title {{ font-weight: 550; overflow-wrap: anywhere; }}
+  .row-id {{ display: inline-block; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 11px; color: var(--muted); margin-right: 7px; vertical-align: 1px; }}
   .table-leaves .status {{ white-space: nowrap; }}
   .task-details-trigger, .task-details-close {{ color: var(--accent); background: transparent; border: 1px solid var(--line);
     border-radius: 6px; cursor: pointer; font: inherit; padding: 3px 7px; }}
@@ -1524,7 +1985,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   .over {{ color: #f0a742; }}
   .empty {{ color: var(--muted); font-style: italic; }}
   .notes {{ color: var(--muted); margin: 0; padding-left: 18px; }}
-  .hint {{ color: var(--muted); font-size: 12px; margin: -6px 0 10px; }}
+  .hint {{ color: var(--muted); font-size: 12px; margin: 10px 0 0; }}
   .toolbar {{ display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }}
   .toolbar input {{ background: #0e141d; border: 1px solid var(--line); color: var(--text); border-radius: 8px;
     padding: 6px 10px; min-width: 200px; font: inherit; }}
@@ -1533,24 +1994,47 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   .chip.active {{ background: var(--accent); color: #0d1117; border-color: var(--accent); font-weight: 600; }}
   footer {{ color: var(--muted); font-size: 11.5px; margin-top: 22px; border-top: 1px solid var(--line);
     padding-top: 12px; }}
+  /* The phone layout comes last, so it wins over every base rule above. */
+  @media (max-width: 640px) {{
+    body {{ padding: 14px 10px 36px; }}
+    .panel {{ padding: 12px; border-radius: 11px; }}
+    h1 {{ font-size: 19px; }}
+    .kpis {{ grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }}
+    .kpi {{ padding: 9px 10px; }}
+    .kpi-value {{ font-size: 21px; }}
+    .toolbar input {{ min-width: 0; width: 100%; }}
+    .task-details {{ grid-template-columns: minmax(0, 1fr); gap: 0; }}
+    .task-details dd {{ margin-bottom: 8px; }}
+    .table-leaves {{ min-width: 560px; }}
+    .table-leaves th:nth-child(1) {{ width: auto; }}
+    .table-leaves th:nth-child(2) {{ width: 104px; }}
+    .table-leaves th:nth-child(3), .table-leaves th:nth-child(4) {{ width: 74px; }}
+    .table-leaves th:nth-child(5) {{ width: 92px; }}
+  }}
 </style>
 </head>
 <body>
+<div class="page">
 <header>
   <div>
     <h1>{title}</h1>
     <div class="sub">LHC · {kind} · обновлено {generated}</div>
   </div>
-  <div class="sub">{total} задач в графе</div>
+  <div class="head-count"><b>{total}</b><span>задач в графе</span></div>
 </header>
 
+{brief}
+
 <div class="panel">
-  {goal_block}
   <div class="progress">{segments}</div>
   <div class="legend">{legend}</div>
 </div>
 
 <div class="kpis">{cards}</div>
+
+<div class="panel">
+  {now}
+</div>
 
 <div class="panel">
   <h2>Гант · листья и параллельные волны</h2>
@@ -1596,6 +2080,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       {live}
     </div>
   </div>
+</div>
 </div>
 
 <footer>

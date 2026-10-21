@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import re
 import subprocess
 import sys
 import tempfile
@@ -412,6 +413,149 @@ class RenderTests(unittest.TestCase):
         html = lhc.render_html(graph, lhc.build_metrics(graph))
         self.assertIn('Ждём прежний маршрут.', html)
         self.assertIn('<b>Нужен ли человек:</b> Пока неизвестно.', html)
+
+
+class DashboardLayoutTests(unittest.TestCase):
+    """The dashboard must stay readable: nothing may cover a block of it."""
+
+    def _graph(self):
+        return lhc.parse_graph_json({
+            'schema_version': 2,
+            'slots': 2,
+            'goal': 'Довести поручение до результата.',
+            'business_result': 'Участники принимают общий результат.',
+            'tasks': [
+                {'id': 'a', 'label': 'Готовая работа', 'status': 'done', 'depends_on': [],
+                 'estimate_minutes': {'minimum': 5, 'maximum': 5}},
+                {'id': 'b', 'label': 'Можно запускать', 'status': 'queued', 'depends_on': ['a'],
+                 'estimate_minutes': {'minimum': 5, 'maximum': 5}},
+                {'id': 'c', 'label': 'Ждёт b', 'status': 'queued', 'depends_on': ['b'],
+                 'estimate_minutes': {'minimum': 5, 'maximum': 5}},
+                {'id': 'd', 'label': 'Идёт сейчас', 'status': 'running', 'depends_on': [],
+                 'estimate_minutes': {'minimum': 5, 'maximum': 5}},
+                {'id': 'e', 'label': 'Ждёт внешнего хода', 'status': 'blocked', 'depends_on': [],
+                 'blocker': 'Нужен доступ к стенду.',
+                 'estimate_minutes': {'minimum': 5, 'maximum': 5}},
+            ],
+        })
+
+    def test_no_overlay_element_can_cover_a_block_of_the_dashboard(self):
+        """A fixed or sticky opaque layer is what hid the KPI strip before.
+
+        The dashboard paints its background on the canvas instead, so there is
+        no element left that could cover the content while still occupying
+        space.
+        """
+
+        graph = self._graph()
+        html = lhc.render_html(graph, lhc.build_metrics(graph))
+        self.assertNotIn('position: fixed', html)
+        self.assertNotIn('position: sticky', html)
+        self.assertNotIn('body::before', html)
+        self.assertNotIn('body::after', html)
+
+    def test_kpi_strip_has_a_bounded_column_count(self):
+        """An implicit auto-fit grid may silently collapse into one tall column."""
+
+        graph = self._graph()
+        html = lhc.render_html(graph, lhc.build_metrics(graph))
+        self.assertIn(
+            '.kpis { display: grid; gap: 10px; grid-template-columns: repeat(9, minmax(0, 1fr));',
+            html,
+        )
+        for columns in ('repeat(5,', 'repeat(3,', 'repeat(2,'):
+            self.assertIn(columns, html)
+
+    def test_the_page_is_read_in_the_declared_order(self):
+        graph = self._graph()
+        html = lhc.render_html(graph, lhc.build_metrics(graph))
+        markers = [
+            'class="brief"',
+            'class="kpis"',
+            'Что делать сейчас',
+            'Гант · листья и параллельные волны',
+            "table table-leaves",
+        ]
+        positions = [html.index(marker) for marker in markers]
+        self.assertEqual(positions, sorted(positions))
+
+    def test_kpi_strip_carries_nine_metrics_with_a_big_number(self):
+        graph = self._graph()
+        html = lhc.render_html(graph, lhc.build_metrics(graph))
+        self.assertEqual(html.count('class="kpi"'), 9)
+        for label in ('Готово', 'В работе', 'Заблокировано', 'В очереди', 'Осталось',
+                      'Параллельность', 'Осталось по плану', 'Прогноз финиша', 'Усилие'):
+            self.assertRegex(html, r'kpi-label"[^>]*>[^<]*' + re.escape(label))
+
+    def test_status_is_never_carried_by_colour_alone(self):
+        graph = self._graph()
+        html = lhc.render_html(graph, lhc.build_metrics(graph))
+        # every gantt row states its status in words, not only as a coloured bar
+        self.assertEqual(html.count('class="gantt-status"'), len(graph.leaves))
+        self.assertIn('class="legend"', html)
+        self.assertIn('Готово', html)
+
+    def test_now_panel_shows_running_ready_and_blocked_lines(self):
+        graph = self._graph()
+        html = lhc.render_html(graph, lhc.build_metrics(graph))
+        self.assertIn('Что делать сейчас', html)
+        self.assertIn('В работе', html)
+        self.assertIn('Готовы к запуску', html)
+        self.assertIn('Заблокированы', html)
+        self.assertIn('Свободных слотов:', html)
+        self.assertIn('Идёт сейчас', html)
+        self.assertIn('Можно запускать', html)
+        self.assertIn('Нужен доступ к стенду.', html)
+
+    def test_now_panel_agrees_with_the_parallel_planner(self):
+        graph = self._graph()
+        plan = lhc.plan_now(graph)
+        self.assertEqual(plan['slots'], 2)
+        self.assertEqual(plan['free_slots'], 1)
+        self.assertEqual([item['id'] for item in plan['running']], ['d'])
+        self.assertEqual([item['id'] for item in plan['ready']], ['b'])
+        self.assertEqual([item['id'] for item in plan['waiting']], ['c'])
+        self.assertEqual([item['id'] for item in plan['blocked']], ['e'])
+
+    def test_the_port_answers_exactly_like_the_planner_module(self):
+        graph = self._graph()
+        plan = lhc.plan_now(graph)
+        port = lhc._plan_now_port(graph)
+        for group in ('running', 'ready', 'deferred', 'blocked', 'waiting'):
+            self.assertEqual(
+                [item['id'] for item in plan[group]],
+                [item['id'] for item in port[group]],
+                group,
+            )
+        self.assertEqual(plan['free_slots'], port['free_slots'])
+
+    def test_no_line_is_ready_when_every_slot_is_taken(self):
+        graph = lhc.parse_graph_json({
+            'schema_version': 2,
+            'slots': 1,
+            'tasks': [
+                {'id': 'busy', 'label': 'Занятый слот', 'status': 'running', 'depends_on': [],
+                 'estimate_minutes': {'minimum': 5, 'maximum': 5}},
+                {'id': 'next', 'label': 'Ждёт слот', 'status': 'queued', 'depends_on': [],
+                 'estimate_minutes': {'minimum': 5, 'maximum': 5}},
+            ],
+        })
+        plan = lhc.plan_now(graph)
+        self.assertEqual(plan['free_slots'], 0)
+        self.assertEqual(plan['ready'], [])
+        self.assertEqual([item['id'] for item in plan['deferred']], ['next'])
+
+    def test_the_dashboard_is_one_self_contained_file(self):
+        graph = self._graph()
+        html = lhc.render_html(graph, lhc.build_metrics(graph))
+        head = html.split('</head>')[0]
+        self.assertNotIn('http://', head)
+        self.assertNotIn('https://', head)
+        self.assertNotIn('//cdn', head)
+        self.assertNotIn('<link', head)
+        self.assertNotIn('<img', head)
+        self.assertIn('<style>', html)
+        self.assertIn('<script>', html)
 
 
 class CanonicalContractTests(unittest.TestCase):

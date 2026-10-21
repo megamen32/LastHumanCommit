@@ -1,3 +1,18 @@
+# 1.5.22 — the dashboard you can actually read
+
+The HTML dashboard is rebuilt around the order a person reads a plan: the goal and the
+expected business result, the progress and the status legend, the KPI strip, what to do
+right now, the Gantt by waves, the leaves, and the task details. The KPI strip carries
+nine metrics and no longer collapses into a tall empty column: the column count is
+bounded at every width. The only element that could cover a block of the page is gone,
+so the background lives on the canvas and nothing can paint over the content.
+
+A new "Что делать сейчас" panel answers with the same logic as `lhc_parallel.py`: what
+runs now, what is ready to launch, what is blocked, how many slots are free, and which
+lines are still waiting for a dependency. Every row carries a text status next to its
+colour, the status colours pass WCAG AA, and the phone view keeps its table inside a
+local scroll instead of dragging the page sideways.
+
 # 1.5.21 — one plan, one graph, one honest dashboard
 
 The plan report and the task graph are now one unit with one validator. `lhc_grid.py`
