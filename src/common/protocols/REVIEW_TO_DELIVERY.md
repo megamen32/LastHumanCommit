@@ -134,6 +134,23 @@ exceptions and pending/complete use OUTCOME_CONTRACT.md in existing state, not a
 release service. Merge only owned scope; ready review/permitted deploy does not grant
 main merge in external repositories.
 
+## Before a PR into a project you do not own
+
+A repository whose owner is not the requester will read the diff against the
+rules of *their* project, and they will read it once. Make that read happen
+first: run `../skills/maintainer-review/SKILL.md` with a fresh strong session
+that plays that project's maintainer, **before the PR is opened**.
+
+The maintainer reads the project's own instructions, conventions, tests, CI and
+history, then the diff, and returns a mountain of specific findings. Fix every
+supported finding or answer it in writing, then run the review again on the
+changed diff — the same session may be reused, but the review is redone, not
+assumed. Only a clean or explicitly answered review lets the PR be opened.
+
+This covers external and shared repositories, and the upstream handoff of an
+owned project where upstream main belongs to someone else. Our own repositories
+do not need it: there the Lead's own review and the normal checks are the gate.
+
 ## Permitted dev integration and upstream handoff
 
 Lead delegates even small implementation: one bounded Worker + Lead review.

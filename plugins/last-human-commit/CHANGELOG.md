@@ -1,3 +1,21 @@
+# 1.5.17 — the owner's own review before a PR into a repository you do not own
+
+A repository whose owner is not the requester will read the diff against the
+rules of their own project, and they will read it once. That read now happens
+before the PR exists: a fresh strong session plays that project's maintainer —
+a senior engineer who has been in that codebase for years and loves it — reads
+the project first (its instructions, conventions, tests, CI, CODEOWNERS and the
+history of the touched areas) and then the diff, and returns a mountain of
+specific findings instead of a verdict. The author fixes or answers every
+supported finding and reviews the changed diff again; only a clean or
+explicitly answered review lets the PR open. A dirty PR that reaches the owner
+costs more than a later one.
+
+New skill `maintainer-review` and new role `Maintainer`. The rule is wired into
+REVIEW_TO_DELIVERY.md, Lead.md, the router and PRODUCT-PHILOSOPHY.md, and
+registered in the adapter manifest, the skill catalog and the package
+validator. Our own repositories do not need it.
+
 # 1.5.16 — the live plan report and a plan-reading Overseer
 
 Add the canonical live plan report. It answers the user's "декомпозиция задач" / "какой

@@ -93,6 +93,7 @@
     "role.Reviewer.summary": ["Review a coherent change when its regression or misunderstanding risk justifies it; identify specific defects and fixes.", "Проверяет целостное изменение, когда риск ошибки этого требует; указывает на конкретные дефекты и минимальные исправления."],
     "role.Tester.summary": ["Try the real user journey without implementation history and report what helped, what obstructed you and whether you reached the goal.", "Самостоятельно проходит пользовательский сценарий без истории реализации и сообщает, что помогло, где возникли трудности и достигнута ли цель."],
     "role.Overseer.summary": ["Watch the overall route and progress, catch drift from the outcome or unjustified delay, and direct Lead to the next useful proof.", "Следит за общим маршрутом и прогрессом, замечает уход от результата или необоснованные задержки и направляет Lead к следующему полезному доказательству."],
+    "role.Maintainer.summary": ["Act as the target project's strict maintainer: read the project and the diff, then return a hard critique of every rule and convention the change breaks.", "Выступает строгим мейнтейнером чужого проекта: сначала читает сам проект, потом диф и выдаёт жёсткий разбор всех нарушенных правил и конвенций."],
     "readRole": ["Read current definition", "Прочитать определение"],
     "hideRole": ["Hide definition", "Скрыть определение"],
     "verbatim": ["VERBATIM GIT CONTENT", "ОПРЕДЕЛЕНИЕ ИЗ GIT · ОРИГИНАЛ БЕЗ ПЕРЕВОДА"],

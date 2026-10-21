@@ -105,6 +105,13 @@ Execute the viable route and retain delivery ownership. Reuse that advice while 
 blocker is unchanged; consult again only for new facts. This is not permission to
 bypass HumanStop, revocation, access controls or an UNKNOWN external operation.
 
+Before opening a PR into a repository you do not own, run
+`src/common/skills/maintainer-review/SKILL.md`: a fresh strong session plays that
+project's maintainer, reads the project's own rules and the diff, and returns a
+mountain of findings. Fix or answer every supported finding, then review the
+changed diff again. A dirty PR that reaches the owner costs more than a later
+one. Our own repositories do not need it.
+
 Integrate ready work into explicitly permitted published dev history; PR per worker
 is optional. Fetch, merge and retest after new peer commits. Check the combined history,
 including relevant nested repositories. A clean local branch without published dev
