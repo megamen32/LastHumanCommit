@@ -213,6 +213,9 @@ def main() -> int:
                                   {b"src/common/": b"common/"})
         bundle_errors += sync_tree(plugin_root().parent.parent / "AGENTS.md", plugin_root() / "AGENTS.md", args.check,
                                    {b"src/common/": b"common/"})
+        bundle_errors += sync_tree(plugin_root().parent.parent / "PRODUCT-PHILOSOPHY.md",
+                                   plugin_root() / "PRODUCT-PHILOSOPHY.md", args.check,
+                                   {b"src/common/": b"common/"})
         bundle_errors += sync_tree(plugin_root().parent.parent / "adapters" / "hermes" / "plugin",
                                    plugin_root() / "com.nousresearch.hermes", args.check)
         if bundle_errors:
@@ -242,7 +245,8 @@ def sync_codex_facet(check: bool) -> list[str]:
     root = plugin_root()
     native = root / "native" / "codex"
     errors = []
-    for name in (".codex-plugin", "skills", "common", "tools", "hooks", "AGENTS.md"):
+    for name in (".codex-plugin", "skills", "common", "tools", "hooks", "AGENTS.md",
+                 "PRODUCT-PHILOSOPHY.md"):
         errors += sync_tree(root / name, native / name, check)
     if (native / "plugin.json").exists():
         errors.append("native Codex entrypoint must not shadow its native manifest")
