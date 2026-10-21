@@ -92,6 +92,14 @@ measured active time — write "not measured" when it was not measured. The repo
 where the plan stands; it is not a task-card dump, a file list, or a story about what
 you did.
 
+The same leaves live in a machine-readable task graph next to the task record as
+`plan.graph.json` (`common/protocols/TASK_GRAPH.md`). Every decomposed objective
+keeps one, writes it when it decomposes and updates it with the report at every plan
+boundary. Render it with one command:
+`python3 common/tools/lhc_grid.py render <objective>/plan.graph.json -o
+<objective>/plan.html` — what is done, what runs now, what is blocked, the rough
+finish and the parallelism, in one file the user can open without asking for status.
+
 A fresh-context Overseer reads that report against the original request and the accepted
 business canary and returns the smallest correction. It is a reader, not a gate: it never
 blocks delivery, never rewrites the plan, never waives anything. At 60 minutes, reread

@@ -5,7 +5,10 @@ description: Automatically handle normal engineering requests, including rough v
 
 # Last Human Commit
 
-Read `../../AGENTS.md` once and follow the current user's task. The package's
+Read `../../AGENTS.md` once and follow the current user's task. Every decomposed
+objective keeps its machine-readable task graph and renders the plan dashboard
+(`common/protocols/TASK_GRAPH.md`): the user sees what is done, what runs now,
+what is blocked, the rough finish and the parallelism without asking. The package's
 router is the workflow; load other skills only when the task needs that method.
 Lead delegates implementation: small work uses one bounded Worker plus Lead review.
 Already delegated no-delegation leaf work uses native tools without recursive hiring.

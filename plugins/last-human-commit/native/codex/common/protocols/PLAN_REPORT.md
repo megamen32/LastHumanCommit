@@ -64,6 +64,23 @@ Keep the current report under `## Plan` in the canonical task record, so it
 survives compaction and the Overseer can read it. The report in chat and the report
 in the record are the same content; the record is not a second format.
 
+## The report and the task graph are one unit
+
+Every decomposed objective also keeps a machine-readable task graph next to its
+task record as `plan.graph.json`, written and updated with this report:
+`TASK_GRAPH.md`. The report is the same content for a person; the graph is the same
+content for the schedule, the forecast and the next session.
+
+Render it with one command:
+
+```sh
+python3 <LHC>/common/tools/lhc_grid.py render <objective>/plan.graph.json -o <objective>/plan.html
+```
+
+The dashboard shows what is done, what runs now, what is blocked, the rough
+finish time and how much of the work runs in parallel. A decomposition without a
+graph is not finished.
+
 ## What the report is for
 
 The Overseer reads this report against the original request and the accepted

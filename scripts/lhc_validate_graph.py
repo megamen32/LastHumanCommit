@@ -11,6 +11,9 @@ import sys
 from typing import Any
 
 DEFAULT_CLASSES = ('frontier', 'fable', 'sonnet', 'haiku')
+SCHEMA_VERSIONS = (1, 2)
+LIVE_STATUSES = ('done', 'running', 'blocked', 'waiting', 'queued')
+CLOCK_RE = re.compile(r'^([01]\d|2[0-3]):[0-5]\d$')
 
 
 def path_parts(value: Any) -> tuple[str, ...]:
@@ -69,6 +72,26 @@ def estimate_summary(by_id: dict[str, dict[str, Any]], layers: list[list[str]]) 
     }
 
 
+def live_field_errors(tid: str, task: dict[str, Any]) -> list[str]:
+    """Check the optional live state of a schema version 2 task graph."""
+    errors: list[str] = []
+    status = task.get('status')
+    if status is not None:
+        if not isinstance(status, str) or status.strip().lower() not in LIVE_STATUSES:
+            errors.append(f'{tid}: status must be one of {", ".join(LIVE_STATUSES)}')
+    for key in ('started_at', 'finished_at'):
+        value = task.get(key)
+        if value is not None and (not isinstance(value, str) or not CLOCK_RE.match(value.strip())):
+            errors.append(f'{tid}: {key} must be a local HH:MM time')
+    actual = task.get('actual_minutes')
+    if actual is not None and not finite_minutes(actual):
+        errors.append(f'{tid}: actual_minutes must be a finite nonnegative number')
+    blocker = task.get('blocker')
+    if blocker is not None and not isinstance(blocker, str):
+        errors.append(f'{tid}: blocker must be a string')
+    return errors
+
+
 def validate_graph(document: Any, model_classes: tuple[str, ...] = DEFAULT_CLASSES) -> dict[str, Any]:
     """Return structural errors and dependency layers for declared live-path access.
 
@@ -78,8 +101,10 @@ def validate_graph(document: Any, model_classes: tuple[str, ...] = DEFAULT_CLASS
     errors: list[str] = []
     if not model_classes or len(set(model_classes)) != len(model_classes):
         return {'valid': False, 'errors': ['model_classes must be nonempty and unique']}
-    if not isinstance(document, dict) or type(document.get('schema_version')) is not int or document['schema_version'] != 1:
-        return {'valid': False, 'errors': ['expected an object with integer schema_version: 1']}
+    if (not isinstance(document, dict) or type(document.get('schema_version')) is not int
+            or document['schema_version'] not in SCHEMA_VERSIONS):
+        return {'valid': False, 'errors': [
+            'expected an object with integer schema_version: 1 or 2']}
     tasks = document.get('tasks')
     if not isinstance(tasks, list) or not tasks:
         return {'valid': False, 'errors': ['tasks must be a nonempty list']}
@@ -118,6 +143,7 @@ def validate_graph(document: Any, model_classes: tuple[str, ...] = DEFAULT_CLASS
                 errors.append(f'{tid}: missing {key}')
         if task.get('model_class') not in model_classes:
             errors.append(f'{tid}: unknown model_class {task.get("model_class")!r}')
+        errors.extend(live_field_errors(tid, task))
         for key in ('depends_on', 'read_paths', 'write_paths'):
             vals = task.get(key)
             if not isinstance(vals, list) or not all(isinstance(v, str) for v in vals):

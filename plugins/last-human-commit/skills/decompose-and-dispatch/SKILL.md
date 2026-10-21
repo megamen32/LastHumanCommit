@@ -38,6 +38,17 @@ lane, shared test-account state and resource limits can make otherwise separate
 files dependent. Freeze interfaces, isolate mutable fixtures, designate one owner,
 or sequence the conflicting work. Do not parallelize dependent steps for appearance.
 
+Every decomposed objective also keeps its machine-readable task graph next to the
+task record as `plan.graph.json`, written when the graph is decomposed and updated
+with the live plan report at every plan boundary. The canonical format is the
+TASK_GRAPH protocol of the common bundle, `common/protocols/TASK_GRAPH.md`.
+Render it with one command so the user sees what is done, what runs now, what is
+blocked, the rough finish and the parallelism without asking for a status:
+
+```sh
+python3 ../../tools/lhc_grid.py render <objective>/plan.graph.json -o <objective>/plan.html
+```
+
 When a graph is useful, run the optional offline checker from the LastHumanCommit
 repository: `python3 scripts/lhc_validate_graph.py <graph.json>`. See
 `references/execution-graph.json`. The checker is repository tooling; installed

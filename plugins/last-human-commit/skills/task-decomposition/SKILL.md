@@ -42,6 +42,13 @@ Separate three quantities:
 - External waits: queue, approval, build service or unavailable environment,
   listed separately with their evidence or marked unknown.
 
+Keep the same leaves in a machine-readable task graph next to the task record as
+`plan.graph.json` (`common/protocols/TASK_GRAPH.md`) and render it with
+`python3 ../../tools/lhc_grid.py render <objective>/plan.graph.json -o
+<objective>/plan.html`. The graph carries the schedule, the parallelism and the
+forecast; the report carries the same content for a person. A decomposition
+without a graph is not finished.
+
 Use the TIME_CONTROL protocol's `lhc_task_budget.py` to validate leaf bounds and
 sum effort. Its dependency-only duration bounds exclude capacity/resources/waits;
 Lead must supply the actual feasible schedule before quoting elapsed delivery.

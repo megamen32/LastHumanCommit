@@ -107,6 +107,14 @@ every 30-minute plan boundary and whenever the user asks for the plan. The
 Overseer reads it against the original request and the business canary; it never
 blocks delivery.
 
+## Task graph — machine-readable plan
+
+Canonical format: `common/protocols/TASK_GRAPH.md`. The graph holds the same
+leaves as the report above and is updated with it at every plan boundary.
+
+Graph file: plan.graph.json
+Render: python3 <LHC>/common/tools/lhc_grid.py render plan.graph.json -o plan.html
+
 Цель:
 Бизнес-результат:
 Декомпозиция: N листьев · P параллельно · W волн(а) · слотов: S

@@ -23,7 +23,8 @@
       "CLAUDE.md": "CLAUDE.md"
     },
     "copies": {
-      "hermes": "adapters/hermes/plugin"
+      "hermes": "adapters/hermes/plugin",
+      "minimax": "plugins/last-human-commit"
     }
   },
   "install": {
@@ -42,7 +43,6 @@
       "name": "100",
       "transport": "ssh",
       "sshTarget": "100",
-      "port": 22104,
       "python": "python3",
       "home": "/home/roomhacker",
       "projectRoot": "ServersAdministartion",
@@ -129,6 +129,10 @@
         {
           "source": "hermes",
           "path": ".hermes/plugins/last-human-commit"
+        },
+        {
+          "source": "minimax",
+          "path": ".minimax/plugins/last-human-commit"
         }
       ]
     },
@@ -244,6 +248,10 @@
         {
           "source": "hermes",
           "path": ".hermes/plugins/last-human-commit"
+        },
+        {
+          "source": "minimax",
+          "path": ".minimax/plugins/last-human-commit"
         }
       ]
     },
@@ -254,7 +262,7 @@
       "port": 2222,
       "python": "/opt/homebrew/bin/python3",
       "home": "/Users/user",
-      "projectRoot": "Documents/ServerAdministartion/.worktrees/opencodex-fleet-resilience",
+      "projectRoot": "Documents/ServerAdministartion",
       "routers": [
         {
           "path": ".codex/AGENTS.md",
@@ -309,6 +317,10 @@
         {
           "source": "hermes",
           "path": ".hermes/plugins/last-human-commit"
+        },
+        {
+          "source": "minimax",
+          "path": ".minimax/plugins/last-human-commit"
         }
       ]
     }

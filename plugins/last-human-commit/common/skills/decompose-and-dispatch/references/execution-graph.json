@@ -1,17 +1,29 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
+  "title": "ExManager → Board: end-to-end task path",
+  "goal": "One real message becomes one accepted Board card in the shared project.",
+  "business_result": "The user can post a message and receive a card in the shared board.",
+  "slots": 2,
   "note": "Illustrative graph, not a dispatch record. Model classes must be resolved by the live harness.",
   "tasks": [
     {
       "id": "contract",
+      "label": "Checked source path, author rights and catalog contract",
       "role": "Lead",
       "model_class": "frontier",
+      "status": "done",
       "depends_on": [],
       "read_paths": [],
       "write_paths": [
         "docs/interface.md"
       ],
       "acceptance": "Selected interface and observable acceptance are explicit.",
+      "owner": "Lead",
+      "session": "codex:948b",
+      "harness": "codex",
+      "started_at": "14:02",
+      "finished_at": "14:09",
+      "actual_minutes": 7,
       "estimate_minutes": {
         "minimum": 3,
         "maximum": 5,
@@ -21,8 +33,10 @@
     },
     {
       "id": "backend",
+      "label": "One bounded backend behavior behind the agreed interface",
       "role": "Worker",
       "model_class": "sonnet",
+      "status": "running",
       "depends_on": [
         "contract"
       ],
@@ -33,6 +47,12 @@
         "src/backend"
       ],
       "acceptance": "Backend contract tests and changed behavior pass.",
+      "owner": "A",
+      "session": "codex:948b-a",
+      "harness": "codex",
+      "started_at": "14:12",
+      "actual_minutes": 22,
+      "note": "behind the estimate: the consumer replay test needs a second fixture",
       "estimate_minutes": {
         "minimum": 6,
         "maximum": 10,
@@ -42,10 +62,15 @@
     },
     {
       "id": "frontend",
+      "label": "Frontend handles the three visible operation states",
       "role": "Worker",
       "model_class": "sonnet",
+      "status": "done",
       "depends_on": [
         "contract"
+      ],
+      "parallel_with": [
+        "backend"
       ],
       "read_paths": [
         "docs/interface.md"
@@ -54,6 +79,12 @@
         "src/frontend"
       ],
       "acceptance": "Frontend handles success, pending and failed operations.",
+      "owner": "B",
+      "session": "opencode:frontend",
+      "harness": "opencode",
+      "started_at": "14:02",
+      "finished_at": "14:11",
+      "actual_minutes": 9,
       "estimate_minutes": {
         "minimum": 5,
         "maximum": 9,
@@ -63,8 +94,10 @@
     },
     {
       "id": "join",
+      "label": "Combined user path across both lanes",
       "role": "Worker",
       "model_class": "fable",
+      "status": "queued",
       "depends_on": [
         "backend",
         "frontend"
@@ -77,6 +110,7 @@
         "tests/integration"
       ],
       "acceptance": "Combined user path is verified across both lanes.",
+      "blocker": "",
       "estimate_minutes": {
         "minimum": 2,
         "maximum": 4,
@@ -86,8 +120,10 @@
     },
     {
       "id": "review",
+      "label": "Independent technical evidence for the coherent change",
       "role": "Reviewer",
       "model_class": "fable",
+      "status": "queued",
       "depends_on": [
         "join"
       ],
@@ -106,8 +142,10 @@
     },
     {
       "id": "real-use",
+      "label": "Fresh user attempt on the real surface",
       "role": "Tester",
       "model_class": "sonnet",
+      "status": "queued",
       "depends_on": [
         "review"
       ],

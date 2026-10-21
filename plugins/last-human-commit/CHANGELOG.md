@@ -1,3 +1,22 @@
+# 1.5.17 — the task graph and the plan dashboard
+
+Every decomposed objective now keeps a machine-readable task graph next to its task
+record as `plan.graph.json` and renders it with one command:
+
+    python3 <LHC>/common/tools/lhc_grid.py render <objective>/plan.graph.json -o <objective>/plan.html
+
+The dashboard is one self-contained HTML file: what is done, what runs now, what is
+blocked, the rough finish time and how much of the work runs in parallel, plus the
+owner and the session behind every leaf. It reads a task graph (schema version 2),
+the canonical plan report or a free-form business-first replan with a decomposition
+table, so an existing plan becomes a dashboard without being rewritten first.
+
+The graph is now part of the method instead of an extra artifact: the plan report and
+the graph are one unit, written when the objective decomposes and updated together at
+every plan boundary. The plan report protocol, the task-decomposition contract, the
+decompose-and-dispatch skill and the task record template all require it. The offline
+graph checker accepts schema version 2 and validates the live state of a leaf.
+
 # 1.5.16 — the live plan report and a plan-reading Overseer
 
 Add the canonical live plan report. It answers the user's "декомпозиция задач" / "какой
