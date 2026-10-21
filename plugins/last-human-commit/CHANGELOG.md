@@ -1,3 +1,12 @@
+# 1.5.23 — the task template ships what the method says
+
+The task template still asked for 30-minute leaves and described the Overseer as
+a reader that only returns a correction. The method it belongs to says a leaf is
+about 15 minutes, that the 20-minute mark is the worker's reporting checkpoint, and
+that the Overseer is the Lead's guide while the Lead owns the decision. The template
+now says the same thing, so a new task card is written against the real contract
+instead of the old one.
+
 # 1.5.22 — the dashboard you can actually read
 
 The HTML dashboard is rebuilt around the order a person reads a plan: the goal and the

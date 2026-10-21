@@ -64,10 +64,12 @@ before new work; each executor owns its intervals. Name pause/resume evidence.
 - Delivery duration (capacity-respecting critical path, show formula):
 - External waits / evidence or unknown:
 
-Decompose into meaningful subtasks estimated at about 30 minutes, not runtime caps.
-Twenty minutes remains a reporting checkpoint. A wide range needs
-an identified uncertainty and a narrowing probe, not a doubled global buffer.
-Keep the original estimate alongside any evidence-based remaining-work forecast.
+Decompose into meaningful subtasks estimated at about 15 minutes, not runtime caps.
+Fifteen minutes sizes the leaf; twenty minutes remains a reporting checkpoint that is
+later than the leaf, so a Worker holding a 15-minute leaf reports by the 20-minute mark.
+A wide range needs an identified uncertainty and a narrowing probe, not a doubled
+global buffer. Keep the original estimate alongside any evidence-based remaining-work
+forecast.
 
 Use the smallest independent business-verifiable leaves and parallelize only
 non-conflicting work. Load `$task-decomposition` for the complete contract.
@@ -135,9 +137,10 @@ in both places.
 
 ## Gates
 
-Overseer is the plan reader: it reads the 30-minute plan report against the original
-request and the accepted business canary and returns the smallest correction; it
-never blocks delivery and never waives a gate. Tester is the mandatory
+Overseer is the plan reader and the Lead's guide: it reads the 30-minute plan report
+against the original request and the accepted business canary and returns the smallest
+correction; it never blocks delivery and never waives a gate, and it does not own the
+result — the Lead owns the decision. Tester is the mandatory
 real-surface final gate for user-facing results; Full requires a fresh independent
 Tester after coherent technical review. Outside Full, Reviewer is optional and
 strictly risk-triggered (release, broad refactor, agent-executed instructions).
