@@ -214,6 +214,68 @@ class RenderTests(unittest.TestCase):
         self.assertNotIn('<script>alert(1)</script>', html)
         self.assertIn('&lt;script&gt;', html)
 
+    def test_business_outcome_and_technical_details_have_separate_hierarchy(self):
+        graph = lhc.parse_graph_json({
+            'schema_version': 2,
+            'goal': 'Поручение запускается и завершается общим результатом',
+            'business_result': 'Участники продолжают одну историю и принимают результат',
+            'current_progress': 'Пока подтверждён только исследовательский canary',
+            'tasks': [{
+                'id': 'T1', 'label': 'Проверить исследовательский результат',
+                'status': 'running', 'owner': 'Luna', 'session': 'opaque-session',
+                'model': 'gpt-6-luna', 'depends_on': [],
+            }],
+        })
+        self.assertEqual(
+            lhc.parse_graph_json(lhc.export_graph(graph)).current_progress,
+            graph.current_progress,
+        )
+        html = lhc.render_html(graph, lhc.build_metrics(graph))
+        self.assertIn('Ожидаемый бизнес-результат', html)
+        self.assertIn('Подтверждённый прогресс', html)
+        self.assertIn("class='task-details-trigger'", html)
+        self.assertIn("id='task-details-host'", html)
+        self.assertIn('<details class="technical">', html)
+        self.assertIn('.table-scroll { max-width: 100%; overflow-x: auto;', html)
+        self.assertIn('@media (max-width: 640px)', html)
+        self.assertEqual(html.count('.grid { display: grid'), 1)
+        self.assertIn('@media (max-width: 1000px) { .grid { grid-template-columns: minmax(0, 1fr); } }', html)
+        self.assertNotIn('position: sticky; top: 0;', html)
+        self.assertLess(html.index('Цель'), html.index('class="progress"'))
+
+    def test_long_task_ids_do_not_compete_with_gantt_or_table_titles(self):
+        long_id = 'integrator-source-subject-39e04120-97e5-4302-9756-5072de10c84c'
+        graph = lhc.parse_graph_json({
+            'schema_version': 2,
+            'tasks': [{
+                'id': long_id,
+                'label': 'Сверить официальный сайт и публичный деловой контакт',
+                'status': 'running',
+                'depends_on': [],
+                'estimate_minutes': {'minimum': 5, 'maximum': 10},
+            }],
+        })
+        html = lhc.render_html(graph, lhc.build_metrics(graph))
+        self.assertIn('class="gantt-axis-row"', html)
+        self.assertIn('class="tick tick-0"', html)
+        self.assertIn('class="tick tick-6"', html)
+        self.assertIn('class="gantt-label"', html)
+        self.assertIn('class="gantt-track"', html)
+        self.assertIn("class='task-title'", html)
+        self.assertIn(f'<dt>Код</dt><dd>{long_id}</dd>', html)
+        self.assertIn("data-details-id='0'", html)
+        self.assertIn("id='task-details-template-0'", html)
+        self.assertIn("class='task-details-close'", html)
+        self.assertIn("detailsHost.scrollIntoView({ block: 'nearest' });", html)
+        self.assertNotIn('<th>ID</th>', html)
+        self.assertIn('.gantt-row { display: grid; grid-template-columns: minmax(240px, 320px) minmax(360px, 1fr);', html)
+        self.assertIn('.table-leaves { min-width: 920px; width: 100%; table-layout: fixed; }', html)
+        self.assertIn('.table-leaves th:nth-child(5) { width: 120px; }', html)
+        self.assertIn('.task-details-host { position: static; width: 100%; margin-top: 12px; }', html)
+        self.assertIn('.task-details { display: grid; grid-template-columns: minmax(110px, auto) minmax(0, 1fr);', html)
+        self.assertIn('.task-details dd { margin: 0; min-width: 0; width: 100%; overflow-wrap: anywhere; word-break: break-word; }', html)
+        self.assertIn('.status { color: var(--c); font-weight: 600; white-space: nowrap; }', html)
+
 
 class CommandTests(unittest.TestCase):
     def _run(self, *args):

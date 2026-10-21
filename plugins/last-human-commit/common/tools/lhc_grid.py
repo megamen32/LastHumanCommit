@@ -130,6 +130,7 @@ class Graph:
     title: str = "LHC · граф задач"
     goal: str = ""
     business_result: str = ""
+    current_progress: str = ""
     leaves: list[Leaf] = field(default_factory=list)
     slots: int = 1
     declared_parallel: Optional[int] = None
@@ -614,6 +615,7 @@ def parse_graph_json(document: Any) -> Graph:
     graph.title = str(document.get("title") or graph.title)
     graph.goal = str(document.get("goal") or "")
     graph.business_result = str(document.get("business_result") or "")
+    graph.current_progress = str(document.get("current_progress") or "")
     graph.updated_at = str(document.get("updated_at") or "")
     graph.slots = int(document.get("slots") or 1)
     graph.declared_parallel = document.get("parallel")
@@ -1067,7 +1069,7 @@ def render_html(graph: Graph, metrics: dict[str, Any]) -> str:
     horizon = max(schedule.makespan, metrics["delivery_minutes_max"], 1.0)
     ticks = 6
     axis = "".join(
-        f'<div class="tick" style="left:{100.0 * index / ticks:.4f}%">'
+        f'<div class="tick tick-{index}" style="left:{100.0 * index / ticks:.4f}%">'
         f"{fmt_minutes(horizon * index / ticks)}</div>"
         for index in range(ticks + 1)
     )
@@ -1106,14 +1108,12 @@ def render_html(graph: Graph, metrics: dict[str, Any]) -> str:
         critical_mark = '<span class="crit" title="критический путь">◆</span>' if critical else ""
         gantt_rows.append(
             f'<div class="gantt-row" data-status="{leaf.status}" data-leaf="{escape(leaf.id)}">'
-            f'<div class="gantt-label" title="{escape(leaf.label)}">'
+            f'<div class="gantt-label" title="{escape(leaf.id + " · " + leaf.label)}">'
             f'<span class="dot" style="background:{color}"></span>'
-            f'<span class="gantt-id">{escape(leaf.id)}</span>'
-            f'<span class="gantt-text">{escape(leaf.label[:64])}</span>'
+            f'<span class="gantt-text">{escape(leaf.label)}</span>'
             f"{critical_mark}</div>"
             f'<div class="gantt-track">'
             f'<div class="bar" style="left:{left:.4f}%;width:{width:.4f}%;background:{color}" title="{title}">'
-            f'<span class="bar-note">{escape(leaf.duration_label)}</span>'
             f"</div></div></div>"
         )
     gantt_html = "".join(gantt_rows)
@@ -1157,43 +1157,56 @@ def render_html(graph: Graph, metrics: dict[str, Any]) -> str:
             "</tr>"
         )
     sessions_html = (
-        "<table class='table'><thead><tr><th>ID</th><th>Лист</th><th>Владелец</th>"
+        "<div class='table-scroll'><table class='table'><thead><tr><th>ID</th><th>Лист</th><th>Владелец</th>"
         "<th>Сессия</th><th>Harness</th><th>Модель</th><th>Статус</th></tr></thead><tbody>"
         + "".join(session_rows)
-        + "</tbody></table>"
+        + "</tbody></table></div>"
         if session_rows
         else '<div class="empty">Владельцы и сессии в графе не указаны.</div>'
     )
 
     # ----- leaves table --------------------------------------------------
     table_rows = []
-    for leaf in leaves:
+    detail_templates = []
+    for details_index, leaf in enumerate(leaves):
         deps = ", ".join(leaf.depends_on) or "—"
         peer = ", ".join(leaf.parallel_with) or "—"
         actual = fmt_minutes(leaf.actual_minutes) if leaf.actual_minutes is not None else "не измерено"
         over = " over" if leaf.overrun else ""
+        details = (
+            f"<dl class='task-details'><dt>Код</dt><dd>{escape(leaf.id)}</dd>"
+            f"<dt>Владелец</dt><dd>{escape(leaf.owner or '—')}</dd>"
+            f"<dt>Зависит от</dt><dd>{escape(deps)}</dd>"
+            f"<dt>Параллельно с</dt><dd>{escape(peer)}</dd>"
+            f"<dt>Блокер / примечание</dt><dd>{escape(leaf.blocker or leaf.note or '—')}</dd>"
+            f"<dt>Сессия</dt><dd>{escape(leaf.session or '—')}</dd></dl>"
+        )
+        detail_templates.append(
+            f"<template id='task-details-template-{details_index}'><div class='task-details-card'>"
+            f"<div class='task-details-head'><h3>{escape(leaf.label)}</h3>"
+            "<button type='button' class='task-details-close'>Закрыть</button></div>"
+            f"{details}</div></template>"
+        )
         table_rows.append(
             f'<tr data-status="{leaf.status}" data-text="{escape((leaf.id + " " + leaf.label).lower())}">'
-            f'<td><span class="dot" style="background:{STATUS_COLORS[leaf.status]}"></span>'
-            f"{escape(leaf.id)}</td>"
-            f"<td>{escape(leaf.label)}</td>"
+            f"<td class='task-title'>{escape(leaf.label)}</td>"
             f'<td><span class="status" style="--c:{STATUS_COLORS[leaf.status]}">'
             f"{STATUS_GLYPHS[leaf.status]} {STATUS_LABELS[leaf.status]}</span></td>"
-            f"<td>{escape(leaf.owner or '—')}</td>"
-            f"<td>{escape(leaf.session or '—')}</td>"
             f"<td>{escape(leaf.duration_label)}</td>"
             f'<td class="{over.strip()}">{escape(actual)}</td>'
-            f"<td>{escape(deps)}</td>"
-            f"<td>{escape(peer)}</td>"
-            f"<td>{escape(leaf.blocker or leaf.note or '')}</td>"
+            f"<td><button type='button' class='task-details-trigger' data-details-id='{details_index}' "
+            "aria-expanded='false'>Подробности</button></td>"
             "</tr>"
         )
     leaves_table = (
-        "<table class='table table-leaves'><thead><tr><th>ID</th><th>Лист</th><th>Статус</th>"
-        "<th>Владелец</th><th>Сессия</th><th>Оценка</th><th>Факт</th><th>Зависит</th>"
-        "<th>Параллельно</th><th>Блокер / примечание</th></tr></thead><tbody>"
+        "<div class='table-scroll'><table class='table table-leaves'><thead><tr><th>Задача</th><th>Статус</th>"
+        "<th>Оценка</th><th>Факт</th><th>Детали</th></tr></thead><tbody>"
         + "".join(table_rows)
-        + "</tbody></table>"
+        + "</tbody></table></div>"
+    )
+    leaves_details = (
+        "<div id='task-details-host' class='task-details-host' hidden></div>"
+        + "".join(detail_templates)
     )
 
     # ----- live journal --------------------------------------------------
@@ -1254,12 +1267,14 @@ def render_html(graph: Graph, metrics: dict[str, Any]) -> str:
             f"пик параллельности {metrics['planned_peak_parallel']}</div>"
         )
     goal_block = ""
-    if graph.goal or graph.business_result:
+    if graph.goal or graph.business_result or graph.current_progress:
         goal_block = (
             "<div class='goal'>"
             + (f"<div><span>Цель</span>{escape(graph.goal)}</div>" if graph.goal else "")
-            + (f"<div><span>Бизнес-результат</span>{escape(graph.business_result)}</div>"
+            + (f"<div><span>Ожидаемый бизнес-результат</span>{escape(graph.business_result)}</div>"
                if graph.business_result else "")
+            + (f"<div><span>Подтверждённый прогресс</span>{escape(graph.current_progress)}</div>"
+               if graph.current_progress else "")
             + "</div>"
         )
 
@@ -1277,6 +1292,7 @@ def render_html(graph: Graph, metrics: dict[str, Any]) -> str:
         blockers=blocker_html,
         sessions=sessions_html,
         leaves_table=leaves_table,
+        leaves_details=leaves_details,
         layer_hint=layer_hint,
         live=live_html,
         forecast=forecast_html,
@@ -1309,6 +1325,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, "Helvetica Neue", Arial, sans-serif;
     padding: 24px clamp(12px, 3vw, 40px) 64px;
     min-height: 100%;
+    overflow-x: hidden;
   }}
   body::before {{
     content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
@@ -1317,10 +1334,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   a {{ color: var(--accent); }}
   header {{ display: flex; flex-wrap: wrap; gap: 12px; align-items: baseline; justify-content: space-between;
     margin-bottom: 18px; }}
-  h1 {{ font-size: 22px; margin: 0; letter-spacing: -0.2px; }}
-  .sub {{ color: var(--muted); font-size: 12px; }}
+  h1 {{ font-size: 22px; margin: 0; letter-spacing: -0.2px; overflow-wrap: anywhere; }}
+  header > div {{ min-width: 0; max-width: 100%; }}
+  .sub {{ color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }}
   .panel {{ background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
-    border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; margin-bottom: 16px; }}
+    border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; margin-bottom: 16px; min-width: 0; }}
   .panel h2 {{ font-size: 14px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted);
     margin: 0 0 12px; font-weight: 600; }}
   .kpis {{ display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin-bottom: 16px; }}
@@ -1338,30 +1356,45 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   .goal div {{ background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }}
   .goal span {{ display: block; color: var(--muted); font-size: 11px; text-transform: uppercase;
     letter-spacing: .07em; margin-bottom: 3px; }}
-  .gantt {{ overflow-x: auto; }}
-  .gantt-axis {{ position: relative; height: 22px; margin-left: 320px; border-bottom: 1px solid var(--line); }}
+  .gantt {{ overflow-x: auto; max-width: 100%; }}
+  .gantt-inner {{ min-width: 760px; }}
+  .gantt-axis-row, .gantt-row {{ display: grid; grid-template-columns: minmax(240px, 320px) minmax(360px, 1fr);
+    gap: 10px; min-width: 680px; }}
+  .gantt-axis-spacer {{ min-width: 0; }}
+  .gantt-axis {{ position: relative; height: 22px; min-width: 0; border-bottom: 1px solid var(--line); }}
   .tick {{ position: absolute; top: 2px; transform: translateX(-50%); font-size: 11px; color: var(--muted);
     white-space: nowrap; }}
-  .gantt-row {{ display: grid; grid-template-columns: 320px 1fr; align-items: center; gap: 10px;
-    border-bottom: 1px solid #1e2632; }}
+  .tick-0 {{ transform: none; }}
+  .tick-6 {{ transform: translateX(-100%); }}
+  .gantt-row {{ align-items: center; border-bottom: 1px solid #1e2632; }}
   .gantt-row:hover {{ background: #18202d; }}
-  .gantt-label {{ display: flex; align-items: center; gap: 8px; padding: 5px 0; overflow: hidden; }}
-  .gantt-id {{ color: var(--muted); font-variant-numeric: tabular-nums; font-size: 12px; min-width: 34px; }}
-  .gantt-text {{ white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }}
+  .gantt-label {{ display: flex; align-items: center; gap: 8px; padding: 5px 0; min-width: 0; overflow: hidden; }}
+  .gantt-text {{ min-width: 0; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+    overflow: hidden; overflow-wrap: anywhere; }}
   .dot {{ width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex: none; }}
   .crit {{ color: #f0a742; font-size: 10px; }}
-  .gantt-track {{ position: relative; height: 26px; }}
+  .gantt-track {{ position: relative; height: 26px; min-width: 0; }}
   .bar {{ position: absolute; top: 6px; height: 15px; border-radius: 5px; min-width: 3px;
     box-shadow: 0 0 0 1px rgba(0,0,0,.25) inset; }}
-  .bar-note {{ position: absolute; left: 100%; top: -1px; margin-left: 8px; font-size: 11px;
-    color: #9fb0c8; white-space: nowrap; font-variant-numeric: tabular-nums; }}
   .wave-row {{ display: flex; justify-content: space-between; padding: 12px 0 6px; color: var(--muted);
     font-size: 12px; text-transform: uppercase; letter-spacing: .06em; border-bottom: 1px solid var(--line);
     margin-top: 6px; }}
   .wave-count {{ text-transform: none; letter-spacing: 0; }}
-  .grid {{ display: grid; gap: 16px; grid-template-columns: minmax(0, 1.35fr) minmax(280px, .65fr);
+  .grid {{ display: grid; gap: 16px; grid-template-columns: minmax(0, 1.35fr) minmax(0, .65fr);
     align-items: start; }}
-  @media (max-width: 1000px) {{ .grid {{ grid-template-columns: 1fr; }} }}
+  .grid > * {{ min-width: 0; }}
+  @media (max-width: 1000px) {{ .grid {{ grid-template-columns: minmax(0, 1fr); }} }}
+  @media (max-width: 640px) {{
+    body {{ padding: 14px 10px 36px; }}
+    .panel {{ padding: 12px; border-radius: 11px; }}
+    h1 {{ font-size: 19px; }}
+    .kpis {{ grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }}
+    .kpi {{ padding: 9px 10px; }}
+    .kpi-value {{ font-size: 19px; }}
+    .toolbar input {{ min-width: 0; width: 100%; }}
+    .task-details {{ grid-template-columns: minmax(0, 1fr); gap: 0; }}
+    .task-details dd {{ margin-bottom: 8px; }}
+  }}
   .blocker {{ background: var(--panel-2); border: 1px solid #3a2530; border-left: 3px solid #ef4d64;
     border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; }}
   .blocker-head {{ display: flex; gap: 8px; align-items: center; margin-bottom: 4px; }}
@@ -1379,11 +1412,28 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   .table {{ width: 100%; border-collapse: collapse; font-size: 13px; }}
   .table th {{ text-align: left; color: var(--muted); font-weight: 600; font-size: 11px;
     text-transform: uppercase; letter-spacing: .05em; padding: 6px 8px; border-bottom: 1px solid var(--line);
-    position: sticky; top: 0; background: var(--panel); }}
+    background: var(--panel); }}
   .table td {{ padding: 6px 8px; border-bottom: 1px solid #1c2431; vertical-align: top; }}
-  .table-leaves {{ width: 100%; }}
-  .grid {{ display: grid; gap: 16px; grid-template-columns: minmax(0, 1.35fr) minmax(280px, .65fr);
-    align-items: start; }}
+  .table-leaves {{ min-width: 920px; width: 100%; table-layout: fixed; }}
+  .table-scroll {{ max-width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; }}
+  .table-leaves th:nth-child(1) {{ width: 42%; }}
+  .table-leaves th:nth-child(2) {{ width: 120px; }}
+  .table-leaves th:nth-child(3), .table-leaves th:nth-child(4) {{ width: 86px; }}
+  .table-leaves th:nth-child(5) {{ width: 120px; }}
+  .task-title {{ font-weight: 550; overflow-wrap: anywhere; }}
+  .table-leaves .status {{ white-space: nowrap; }}
+  .task-details-trigger, .task-details-close {{ color: var(--accent); background: transparent; border: 1px solid var(--line);
+    border-radius: 6px; cursor: pointer; font: inherit; padding: 3px 7px; }}
+  .task-details-host {{ position: static; width: 100%; margin-top: 12px; }}
+  .task-details-card {{ width: 100%; min-width: 0; background: var(--panel-2); border: 1px solid var(--line);
+    border-radius: 10px; padding: 12px; }}
+  .task-details-head {{ display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 8px; }}
+  .task-details-head h3 {{ min-width: 0; margin: 0; font-size: 14px; overflow-wrap: anywhere; }}
+  .task-details {{ display: grid; grid-template-columns: minmax(110px, auto) minmax(0, 1fr); gap: 3px 12px; margin: 8px 0 2px; }}
+  .task-details dt {{ color: var(--muted); }}
+  .task-details dd {{ margin: 0; min-width: 0; width: 100%; overflow-wrap: anywhere; word-break: break-word; }}
+  details > summary {{ color: var(--accent); cursor: pointer; }}
+  .technical {{ font-size: 12px; }}
   .status {{ color: var(--c); font-weight: 600; white-space: nowrap; }}
   .over {{ color: #f0a742; }}
   .empty {{ color: var(--muted); font-style: italic; }}
@@ -1403,25 +1453,25 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <header>
   <div>
     <h1>{title}</h1>
-    <div class="sub">LHC · {kind} · источник: {source} · собрано {generated}</div>
+    <div class="sub">LHC · {kind} · обновлено {generated}</div>
   </div>
-  <div class="sub">{total} листьев в графе</div>
+  <div class="sub">{total} задач в графе</div>
 </header>
+
+<div class="panel">
+  {goal_block}
+  <div class="progress">{segments}</div>
+  <div class="legend">{legend}</div>
+</div>
 
 <div class="kpis">{cards}</div>
 
 <div class="panel">
-  <div class="progress">{segments}</div>
-  <div class="legend">{legend}</div>
-  {goal_block}
-</div>
-
-<div class="panel">
   <h2>Гант · листья и параллельные волны</h2>
-  <div class="gantt">
-    <div class="gantt-axis">{axis}</div>
+  <div class="gantt"><div class="gantt-inner">
+    <div class="gantt-axis-row"><div class="gantt-axis-spacer"></div><div class="gantt-axis">{axis}</div></div>
     {gantt}
-  </div>
+  </div></div>
 </div>
 
 <div class="grid">
@@ -1437,6 +1487,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       <button class="chip" data-filter="queued">в очереди</button>
     </div>
     {leaves_table}
+    {leaves_details}
   </div>
   <div>
     <div class="panel">
@@ -1444,8 +1495,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       {blockers}
     </div>
     <div class="panel">
-      <h2>Сессии и владельцы</h2>
-      {sessions}
+      <h2>Технические привязки</h2>
+      <details class="technical"><summary>Владельцы, сессии, harness и модели</summary>
+        {sessions}
+      </details>
     </div>
     <div class="panel">
       <h2>Прогноз</h2>
@@ -1461,6 +1514,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
 <footer>
   LHC task graph · один файл, без внешних зависимостей · собран {generated}
+  <details class="technical"><summary>Путь исходного плана</summary><code>{source}</code></details>
 </footer>
 
 <script>
@@ -1468,6 +1522,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   var chips = Array.prototype.slice.call(document.querySelectorAll('.chip'));
   var rows = Array.prototype.slice.call(document.querySelectorAll('.table-leaves tbody tr'));
   var input = document.getElementById('search');
+  var detailsHost = document.getElementById('task-details-host');
+  var activeDetailsButton = null;
   var filter = 'all';
   function apply() {{
     var query = (input && input.value || '').trim().toLowerCase();
@@ -1486,6 +1542,25 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     }});
   }});
   if (input) {{ input.addEventListener('input', apply); }}
+  document.querySelectorAll('.task-details-trigger').forEach(function (button) {{
+    button.addEventListener('click', function () {{
+      if (activeDetailsButton) {{ activeDetailsButton.setAttribute('aria-expanded', 'false'); }}
+      var template = document.getElementById('task-details-template-' + button.dataset.detailsId);
+      if (!template || !detailsHost) {{ return; }}
+      detailsHost.replaceChildren(template.content.cloneNode(true));
+      detailsHost.hidden = false;
+      button.setAttribute('aria-expanded', 'true');
+      activeDetailsButton = button;
+      detailsHost.scrollIntoView({{ block: 'nearest' }});
+      detailsHost.querySelector('.task-details-close').addEventListener('click', function () {{
+        detailsHost.hidden = true;
+        detailsHost.replaceChildren();
+        button.setAttribute('aria-expanded', 'false');
+        activeDetailsButton = null;
+        button.focus();
+      }});
+    }});
+  }});
   apply();
 }})();
 </script>
@@ -1590,6 +1665,7 @@ def export_graph(graph: Graph) -> dict[str, Any]:
         "title": graph.title,
         "goal": graph.goal,
         "business_result": graph.business_result,
+        "current_progress": graph.current_progress,
         "slots": graph.slots,
         "updated_at": datetime.now().isoformat(timespec="seconds"),
         "tasks": tasks,
