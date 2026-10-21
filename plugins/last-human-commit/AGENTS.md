@@ -2,6 +2,9 @@
 # Last Human Commit 1.5
 ## Product concept
 `docs/PRODUCT_CONCEPT.md` is canonical; LHC owns method, not backlog or harness routing.
+`PRODUCT-PHILOSOPHY.md` is the canonical product philosophy in Russian: the whole pipeline
+from the user's request to the merged change, and where the implementation still lags it.
+Read it when choosing a mode, planning a full cycle, or when a check or a risk is debated.
 ## Language policy
 Use English for internal reasoning/planning, new task records and agent coordination;
 delegated roles inherit this. Answer Russian-speaking users in their language. Preserve
