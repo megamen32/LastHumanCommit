@@ -80,6 +80,7 @@ class Leaf:
 
     id: str
     label: str = ""
+    acceptance: str = ""
     status: str = STATUS_QUEUED
     owner: str = ""
     session: str = ""
@@ -89,10 +90,12 @@ class Leaf:
     parallel_with: list[str] = field(default_factory=list)
     estimate_min: Optional[float] = None
     estimate_max: Optional[float] = None
+    estimate_unknown_reason: str = ""
     actual_minutes: Optional[float] = None
     started_at: str = ""
     finished_at: str = ""
     blocker: str = ""
+    blocker_details: dict[str, str] = field(default_factory=dict)
     note: str = ""
     wave: Optional[int] = None
     order: int = 0
@@ -108,7 +111,7 @@ class Leaf:
     def duration_label(self) -> str:
         low, high = self.estimate_min, self.estimate_max
         if low is None and high is None:
-            return "—"
+            return "Срок неизвестен" if self.estimate_unknown_reason else "—"
         if low is None or high is None:
             value = high if high is not None else low
             return f"{fmt_minutes(value)}"
@@ -131,6 +134,7 @@ class Graph:
     goal: str = ""
     business_result: str = ""
     current_progress: str = ""
+    external_waits: str = ""
     leaves: list[Leaf] = field(default_factory=list)
     slots: int = 1
     declared_parallel: Optional[int] = None
@@ -616,6 +620,7 @@ def parse_graph_json(document: Any) -> Graph:
     graph.goal = str(document.get("goal") or "")
     graph.business_result = str(document.get("business_result") or "")
     graph.current_progress = str(document.get("current_progress") or "")
+    graph.external_waits = str(document.get("external_waits") or "")
     graph.updated_at = str(document.get("updated_at") or "")
     graph.slots = int(document.get("slots") or 1)
     graph.declared_parallel = document.get("parallel")
@@ -628,9 +633,13 @@ def parse_graph_json(document: Any) -> Graph:
     for index, task in enumerate(tasks):
         if not isinstance(task, dict):
             raise ValueError(f"tasks[{index}] must be an object")
+        raw_blocker_details = task.get("blocker_details")
+        if not isinstance(raw_blocker_details, dict):
+            raw_blocker_details = {}
         leaf = Leaf(
             id=str(task.get("id") or f"task-{index + 1}"),
             label=normalize(str(task.get("label") or task.get("outcome") or task.get("acceptance") or "")),
+            acceptance=normalize(str(task.get("acceptance") or task.get("description") or "")),
             status=normalize_status(task.get("status") or STATUS_QUEUED),
             owner=str(task.get("owner") or task.get("role") or ""),
             session=str(task.get("session") or ""),
@@ -641,6 +650,12 @@ def parse_graph_json(document: Any) -> Graph:
             started_at=str(task.get("started_at") or ""),
             finished_at=str(task.get("finished_at") or ""),
             blocker=normalize(str(task.get("blocker") or "")),
+            blocker_details={
+                str(key): normalize(str(value))
+                for key, value in raw_blocker_details.items()
+                if key in {"reason", "responsible", "next_action", "human_required", "human_action"}
+                and value is not None
+            },
             note=normalize(str(task.get("note") or "")),
             wave=task.get("wave") if isinstance(task.get("wave"), int) else None,
             order=index,
@@ -652,6 +667,7 @@ def parse_graph_json(document: Any) -> Graph:
             leaf.estimate_max = _number(estimate.get("maximum"))
         elif isinstance(estimate, (int, float)):
             leaf.estimate_min = leaf.estimate_max = float(estimate)
+        leaf.estimate_unknown_reason = normalize(str(task.get("estimate_unknown_reason") or ""))
         actual = task.get("actual_minutes")
         if actual is not None:
             leaf.actual_minutes = _number(actual)
@@ -913,6 +929,15 @@ def build_metrics(graph: Graph) -> dict[str, Any]:
     pending_max = schedule_graph(graph, use_max=True, only_pending=True)
     pending_min = schedule_graph(graph, use_max=False, only_pending=True)
 
+    unknown_estimate_pending = [
+        leaf for leaf in graph.leaves
+        if leaf.status != STATUS_DONE and leaf.estimate_min is None and leaf.estimate_max is None
+    ]
+    unknown_estimate_all = [
+        leaf for leaf in graph.leaves
+        if leaf.estimate_min is None and leaf.estimate_max is None
+    ]
+
     effort = sum(leaf.estimate or 0.0 for leaf in graph.leaves)
     critical = schedule_max.critical_path
     critical_minutes = sum(
@@ -933,7 +958,10 @@ def build_metrics(graph: Graph) -> dict[str, Any]:
     # last observed activity so a stale "now" does not distort the horizon.
     anchor = _plan_anchor(graph)
     if anchor is not None:
-        eta_from = max(anchor, now - 24 * 60)
+        # A historic activity timestamp must never place the forecast in the past.
+        eta_from = max(anchor, now)
+    external_wait_unknown = bool(graph.external_waits.strip())
+    eta_known = not unknown_estimate_pending and not external_wait_unknown
 
     return {
         "total": total,
@@ -961,8 +989,11 @@ def build_metrics(graph: Graph) -> dict[str, Any]:
         "planned_peak_parallel": schedule_max.peak,
         "critical_path": critical,
         "critical_minutes": critical_minutes,
-        "eta_clock_min": format_clock((eta_from + int(round(eta_max))) % (24 * 60)),
-        "eta_clock_max": format_clock((eta_from + int(round(eta_min))) % (24 * 60)),
+        "unknown_estimate_pending": len(unknown_estimate_pending),
+        "unknown_estimate_all": len(unknown_estimate_all),
+        "external_wait_unknown": external_wait_unknown,
+        "eta_clock_min": "" if not eta_known else format_clock((eta_from + int(round(eta_max))) % (24 * 60)),
+        "eta_clock_max": "" if not eta_known else format_clock((eta_from + int(round(eta_min))) % (24 * 60)),
         "schedule": schedule_max,
         "schedule_min": schedule_min,
         "pending": pending_max,
@@ -997,6 +1028,7 @@ def escape(text: str) -> str:
 def render_html(graph: Graph, metrics: dict[str, Any]) -> str:
     schedule: Schedule = metrics["schedule"]
     leaves = sorted(graph.leaves, key=lambda leaf: (schedule.waves.get(leaf.id, 0), leaf.order))
+    label_by_id = {leaf.id: leaf.label or leaf.id for leaf in graph.leaves}
     total = metrics["total"]
     now = now_clock()
 
@@ -1020,15 +1052,19 @@ def render_html(graph: Graph, metrics: dict[str, Any]) -> str:
             STATUS_RUNNING,
         ),
         (
-            "Осталось по плану",
+            ("Известная часть работы" if metrics["unknown_estimate_pending"] or metrics["external_wait_unknown"]
+             else "Осталось по плану"),
             fmt_minutes(metrics["remaining_minutes_max"]),
-            f"минимум {fmt_minutes(metrics['remaining_minutes_min'])}",
+            ("без неизвестных оценок и ожиданий" if metrics["unknown_estimate_pending"] or metrics["external_wait_unknown"]
+             else f"минимум {fmt_minutes(metrics['remaining_minutes_min'])}"),
             STATUS_WAITING,
         ),
         (
             "Прогноз финиша",
-            metrics["eta_clock_max"],
-            f"если остаток стартует сейчас · мин. {metrics['eta_clock_min']}",
+            metrics["eta_clock_max"] or "Срок неизвестен",
+            ("Есть внешние ожидания без подтверждённого срока" if metrics["external_wait_unknown"] else
+             f"{metrics['unknown_estimate_pending']} листьев без оценки" if metrics["unknown_estimate_pending"]
+             else f"если остаток стартует сейчас · мин. {metrics['eta_clock_min']}"),
             STATUS_DONE,
         ),
         (
@@ -1093,14 +1129,14 @@ def render_html(graph: Graph, metrics: dict[str, Any]) -> str:
         color = STATUS_COLORS[leaf.status]
         critical = leaf.id in metrics["critical_path"]
         tooltip = (
-            f"{leaf.id} · {leaf.label}\n"
+            f"{leaf.label}\n"
             f"статус: {STATUS_LABELS[leaf.status]}\n"
             f"оценка: {leaf.duration_label}"
             + (f"\nфакт: {fmt_minutes(leaf.actual_minutes)}" if leaf.actual_minutes is not None else "")
             + (f"\nначало: {leaf.started_at}" if leaf.started_at else "")
             + (f"\nконец: {leaf.finished_at}" if leaf.finished_at else "")
-            + (f"\nзависит: {', '.join(leaf.depends_on)}" if leaf.depends_on else "")
-            + (f"\nпараллельно: {', '.join(leaf.parallel_with)}" if leaf.parallel_with else "")
+            + (f"\nзависит: {', '.join(label_by_id.get(dep, dep) for dep in leaf.depends_on)}" if leaf.depends_on else "")
+            + (f"\nпараллельно: {', '.join(label_by_id.get(peer, peer) for peer in leaf.parallel_with)}" if leaf.parallel_with else "")
             + (f"\nблокер: {leaf.blocker}" if leaf.blocker else "")
             + ("\nна критическом пути" if critical else "")
         )
@@ -1108,7 +1144,7 @@ def render_html(graph: Graph, metrics: dict[str, Any]) -> str:
         critical_mark = '<span class="crit" title="критический путь">◆</span>' if critical else ""
         gantt_rows.append(
             f'<div class="gantt-row" data-status="{leaf.status}" data-leaf="{escape(leaf.id)}">'
-            f'<div class="gantt-label" title="{escape(leaf.id + " · " + leaf.label)}">'
+            f'<div class="gantt-label" title="{escape(leaf.label)}">'
             f'<span class="dot" style="background:{color}"></span>'
             f'<span class="gantt-text">{escape(leaf.label)}</span>'
             f"{critical_mark}</div>"
@@ -1119,20 +1155,29 @@ def render_html(graph: Graph, metrics: dict[str, Any]) -> str:
     gantt_html = "".join(gantt_rows)
 
     # ----- blockers ------------------------------------------------------
-    blockers = [leaf for leaf in leaves if leaf.status == STATUS_BLOCKED or leaf.blocker]
+    blockers = [leaf for leaf in leaves if leaf.status == STATUS_BLOCKED]
     blocker_html = ""
     if blockers:
         items = []
         for leaf in blockers:
-            reason = leaf.blocker or leaf.note or "причина не указана"
-            waits = ", ".join(leaf.depends_on) if leaf.depends_on else "внешняя зависимость"
+            details = leaf.blocker_details
+            reason = details.get("reason") or leaf.blocker or leaf.note or "Причина не указана."
+            responsible = details.get("responsible") or leaf.owner or "Исполнитель не указан."
+            next_action = details.get("next_action") or leaf.note or "Следующий шаг не указан."
+            required = details.get("human_required", "unknown").lower()
+            human_label = {"yes": "Да", "no": "Нет", "unknown": "Пока неизвестно"}.get(required, "Пока неизвестно")
+            human_action = details.get("human_action") or "Действие человека не уточнено."
+            waits = ", ".join(label_by_id.get(dep, dep) for dep in leaf.depends_on) if leaf.depends_on else "Внешнее условие"
             items.append(
                 f'<div class="blocker"><div class="blocker-head">'
                 f'<span class="badge" style="background:{STATUS_COLORS[STATUS_BLOCKED]}">'
-                f"{escape(leaf.id)}</span>"
+                "Ожидает</span>"
                 f"<b>{escape(leaf.label or leaf.id)}</b></div>"
-                f'<div class="blocker-reason">{escape(reason)}</div>'
-                f'<div class="blocker-meta">ждёт: {escape(waits)} · оценка {escape(leaf.duration_label)}</div>'
+                f'<div class="blocker-reason"><b>Почему ждём:</b> {escape(reason)}</div>'
+                f'<div class="blocker-meta"><b>Кто делает:</b> {escape(responsible)}</div>'
+                f'<div class="blocker-meta"><b>Следующий шаг:</b> {escape(next_action)}</div>'
+                f'<div class="blocker-meta"><b>Нужен ли человек:</b> {escape(human_label)}. {escape(human_action)}</div>'
+                f'<div class="blocker-meta"><b>Зависит от:</b> {escape(waits)} · оценка {escape(leaf.duration_label)}</div>'
                 "</div>"
             )
         blocker_html = "".join(items)
@@ -1169,13 +1214,14 @@ def render_html(graph: Graph, metrics: dict[str, Any]) -> str:
     table_rows = []
     detail_templates = []
     for details_index, leaf in enumerate(leaves):
-        deps = ", ".join(leaf.depends_on) or "—"
-        peer = ", ".join(leaf.parallel_with) or "—"
+        deps = ", ".join(label_by_id.get(dep, dep) for dep in leaf.depends_on) or "—"
+        peer = ", ".join(label_by_id.get(other, other) for other in leaf.parallel_with) or "—"
         actual = fmt_minutes(leaf.actual_minutes) if leaf.actual_minutes is not None else "не измерено"
         over = " over" if leaf.overrun else ""
         details = (
             f"<dl class='task-details'><dt>Код</dt><dd>{escape(leaf.id)}</dd>"
-            f"<dt>Владелец</dt><dd>{escape(leaf.owner or '—')}</dd>"
+            + (f"<dt>Ожидаемый результат</dt><dd>{escape(leaf.acceptance)}</dd>" if leaf.acceptance else "")
+            + f"<dt>Владелец</dt><dd>{escape(leaf.owner or '—')}</dd>"
             f"<dt>Зависит от</dt><dd>{escape(deps)}</dd>"
             f"<dt>Параллельно с</dt><dd>{escape(peer)}</dd>"
             f"<dt>Блокер / примечание</dt><dd>{escape(leaf.blocker or leaf.note or '—')}</dd>"
@@ -1222,7 +1268,9 @@ def render_html(graph: Graph, metrics: dict[str, Any]) -> str:
             color = STATUS_COLORS.get(status, STATUS_COLORS[STATUS_QUEUED])
             leaf_tag = ""
             if item.get("leaf"):
-                leaf_tag = f'<span class="leaf-tag">лист {escape(str(item["leaf"]))}</span>'
+                leaf_name = label_by_id.get(str(item["leaf"]))
+                if leaf_name:
+                    leaf_tag = f'<span class="leaf-tag">{escape(leaf_name)}</span>'
             items.append(
                 f'<li><span class="dot" style="background:{color}"></span>'
                 f'<span class="live-text">{escape(item.get("text", ""))}</span>{leaf_tag}</li>'
@@ -1232,11 +1280,25 @@ def render_html(graph: Graph, metrics: dict[str, Any]) -> str:
         live_html = '<div class="empty">Журнал волны пуст.</div>'
 
     # ----- forecast ------------------------------------------------------
-    critical_chain = " → ".join(metrics["critical_path"]) or "—"
+    critical_chain = " → ".join(label_by_id.get(item, item) for item in metrics["critical_path"]) or "—"
+    unknown_forecast = (
+        f"<li><b>Срок ожидания</b>: неизвестен — {metrics['unknown_estimate_pending']} незавершённых листьев без оценки</li>"
+        if metrics["unknown_estimate_pending"] else ""
+    )
+    external_forecast = (
+        "<li><b>Срок завершения</b>: неизвестен из-за ожиданий вне активной работы</li>"
+        if metrics["external_wait_unknown"] else ""
+    )
+    unknown_effort = (
+        f" · {metrics['unknown_estimate_all']} оценок неизвестны"
+        if metrics["unknown_estimate_all"] else ""
+    )
     forecast_html = (
         "<ul class='facts'>"
-        f"<li><b>Усилие</b> (сумма оценок): {escape(fmt_minutes(metrics['effort_minutes']))}</li>"
-        f"<li><b>Длительность</b> (план с {metrics['slots']} слотами): "
+        f"<li><b>Усилие</b> (сумма известных оценок): {escape(fmt_minutes(metrics['effort_minutes']))}"
+        f"{escape(unknown_effort)}</li>"
+        f"<li><b>{'Известная активная работа' if metrics['unknown_estimate_pending'] or metrics['external_wait_unknown'] else 'Длительность'}"
+        f" (план с {metrics['slots']} слотами): "
         f"{escape(fmt_minutes(metrics['delivery_minutes_max']))}</li>"
         f"<li><b>Осталось</b> (без завершённых): "
         f"{escape(fmt_minutes(metrics['remaining_minutes_max']))}</li>"
@@ -1244,6 +1306,8 @@ def render_html(graph: Graph, metrics: dict[str, Any]) -> str:
         f"из {metrics['slots']} слотов</li>"
         f"<li><b>Критический путь</b>: {escape(critical_chain)}</li>"
         f"<li><b>Заблокировано</b> работы: {escape(fmt_minutes(metrics['blocked_minutes']))}</li>"
+        f"{unknown_forecast}"
+        f"{external_forecast}"
         "</ul>"
     )
 
@@ -1275,6 +1339,8 @@ def render_html(graph: Graph, metrics: dict[str, Any]) -> str:
                if graph.business_result else "")
             + (f"<div><span>Подтверждённый прогресс</span>{escape(graph.current_progress)}</div>"
                if graph.current_progress else "")
+            + (f"<div><span>Внешние ожидания</span>{escape(graph.external_waits)}</div>"
+               if graph.external_waits else "")
             + "</div>"
         )
 
@@ -1408,7 +1474,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   .live li {{ display: flex; gap: 8px; padding: 6px 0; border-bottom: 1px solid #1e2632; align-items: baseline; }}
   .live-text {{ flex: 1; }}
   .leaf-tag {{ color: var(--muted); font-size: 11px; border: 1px solid var(--line); border-radius: 5px;
-    padding: 0 5px; white-space: nowrap; }}
+    padding: 0 5px; min-width: 0; white-space: normal; overflow-wrap: anywhere; }}
   .table {{ width: 100%; border-collapse: collapse; font-size: 13px; }}
   .table th {{ text-align: left; color: var(--muted); font-weight: 600; font-size: 11px;
     text-transform: uppercase; letter-spacing: .05em; padding: 6px 8px; border-bottom: 1px solid var(--line);
@@ -1601,19 +1667,29 @@ def render_text(graph: Graph, metrics: dict[str, Any]) -> str:
         )
     )
     lines.append(
-        "Прогноз: осталось {remaining} (мин. {minimum}), финиш ориентировочно {eta}".format(
+        "Прогноз: {work_label} {remaining} (мин. {minimum}), финиш {eta}".format(
+            work_label=("известная активная часть" if metrics["unknown_estimate_pending"] or metrics["external_wait_unknown"] else "осталось"),
             remaining=fmt_minutes(metrics["remaining_minutes_max"]),
             minimum=fmt_minutes(metrics["remaining_minutes_min"]),
-            eta=metrics["eta_clock_max"],
+            eta=("неизвестен из-за внешнего ожидания" if metrics["external_wait_unknown"] else
+                 f"неизвестен: {metrics['unknown_estimate_pending']} листьев без оценки"
+                 if metrics["unknown_estimate_pending"] else metrics["eta_clock_max"]),
         )
     )
     if metrics["critical_path"]:
-        lines.append("Критический путь: " + " → ".join(metrics["critical_path"]))
-    blockers = [leaf for leaf in graph.leaves if leaf.status == STATUS_BLOCKED or leaf.blocker]
+        labels = {leaf.id: leaf.label or leaf.id for leaf in graph.leaves}
+        lines.append("Критический путь: " + " → ".join(labels.get(item, item) for item in metrics["critical_path"]))
+    blockers = [leaf for leaf in graph.leaves if leaf.status == STATUS_BLOCKED]
     if blockers:
         lines.append("Блокеры:")
         for leaf in blockers:
-            lines.append(f"  - {leaf.id}: {leaf.blocker or leaf.note or 'причина не указана'}")
+            details = leaf.blocker_details
+            lines.append(f"  - Почему ждём: {details.get('reason') or leaf.blocker or leaf.note or 'Причина не указана.'}")
+            lines.append(f"    Кто делает: {details.get('responsible') or leaf.owner or 'Исполнитель не указан.'}")
+            lines.append(f"    Следующий шаг: {details.get('next_action') or leaf.note or 'Следующий шаг не указан.'}")
+            required = details.get("human_required", "unknown").lower()
+            human_label = {"yes": "Да", "no": "Нет", "unknown": "Пока неизвестно"}.get(required, "Пока неизвестно")
+            lines.append(f"    Нужен ли человек: {human_label}. {details.get('human_action') or 'Действие человека не уточнено.'}")
     return "\n".join(lines)
 
 
@@ -1639,6 +1715,8 @@ def export_graph(graph: Graph) -> dict[str, Any]:
                 "minimum": leaf.estimate_min,
                 "maximum": leaf.estimate_max,
             }
+        if leaf.estimate_unknown_reason:
+            task["estimate_unknown_reason"] = leaf.estimate_unknown_reason
         if leaf.actual_minutes is not None:
             task["actual_minutes"] = leaf.actual_minutes
         if leaf.started_at:
@@ -1655,6 +1733,10 @@ def export_graph(graph: Graph) -> dict[str, Any]:
             task["model"] = leaf.model
         if leaf.blocker:
             task["blocker"] = leaf.blocker
+        if leaf.acceptance:
+            task["acceptance"] = leaf.acceptance
+        if leaf.blocker_details:
+            task["blocker_details"] = leaf.blocker_details
         if leaf.note:
             task["note"] = leaf.note
         if leaf.wave is not None:
@@ -1666,6 +1748,7 @@ def export_graph(graph: Graph) -> dict[str, Any]:
         "goal": graph.goal,
         "business_result": graph.business_result,
         "current_progress": graph.current_progress,
+        "external_waits": graph.external_waits,
         "slots": graph.slots,
         "updated_at": datetime.now().isoformat(timespec="seconds"),
         "tasks": tasks,

@@ -58,8 +58,16 @@ fields are optional there.
       "owner": "A",
       "session": "codex:948b",
       "harness": "codex",
-      "model": "frontier",
+      "model": "gpt-6-luna",
       "blocker": "",
+      "acceptance": "what a person can verify when this task is done",
+      "blocker_details": {
+        "reason": "the concrete reason this task cannot continue",
+        "responsible": "the named person or active owner who handles it",
+        "next_action": "the smallest specific next step",
+        "human_required": "yes",
+        "human_action": "the exact decision or access the person must provide"
+      },
       "note": "",
       "wave": 1
     }
@@ -79,12 +87,33 @@ optional but expected for a live objective.
   parallelism; it never creates a dependency.
 - `estimate_minutes.minimum` / `.maximum` are the original bounds. They are
   never rewritten to fit reality; the revision goes into `note`.
+- `estimate_unknown_reason` is an optional, nonempty explanation for a task
+  whose active effort cannot yet be estimated. When a graph contains numeric
+  estimates, every other task must either provide this field or a numeric
+  estimate. The validator accepts the graph but reports aggregate duration as
+  unavailable; the renderer labels the deadline unknown instead of treating
+  the task as zero minutes.
+- Top-level `external_waits` records pending human/platform waits separately
+  from active work. If it is nonempty, the renderer withholds a clock ETA and
+  labels the finish time unknown; it still shows the bounded active-work
+  subtotal.
 - `actual_minutes` is measured active time. If it was not measured, leave it out
   instead of inventing a number.
 - `owner`, `session`, `harness` and `model` say who works on the leaf now. The
   dashboard shows them so the user can see which session owns what.
 - `blocker` names the concrete external obstacle. `waiting` is not a blocker: a
   leaf waiting for a dependency is `queued`.
+- `acceptance` states the result a person can verify. It is shown in task
+  details; validated live plans must include it.
+- `model_class` is optional. Add it only when the worker class is known and
+  intentionally assigned; do not fill an unknown assignment with a default.
+- `blocker_details` is an optional, additive object for blocked tasks. Its
+  optional keys are `reason`, `responsible`, `next_action`,
+  `human_required` (`yes`, `no`, or `unknown`), and `human_action`. Existing
+  graphs that contain only `blocker` continue to render; the renderer supplies
+  honest unknown/unspecified fallbacks instead of inventing an owner or action.
+  Keep technical task IDs in the task detail panel, while dependencies and
+  blocker cards show human-readable task names.
 - `wave` is optional. When absent, the renderer derives the wave from the
   dependency layers.
 

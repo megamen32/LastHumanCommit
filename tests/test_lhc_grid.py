@@ -8,6 +8,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 
@@ -158,6 +159,52 @@ class GraphJsonTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             lhc.parse_graph_json({'schema_version': 9, 'tasks': [{'id': 'a'}]})
 
+    def test_unknown_estimate_reason_round_trips_without_zero_duration(self):
+        graph = lhc.parse_graph_json({
+            'schema_version': 2,
+            'tasks': [
+                {'id': 'done', 'label': 'Done', 'status': 'done', 'depends_on': [],
+                 'estimate_minutes': {'minimum': 5, 'maximum': 5}},
+                {'id': 'wait', 'label': 'External wait', 'status': 'blocked', 'depends_on': ['done'],
+                 'estimate_unknown_reason': 'Owner has not confirmed access.'},
+            ],
+        })
+        with patch.object(lhc, 'now_clock', return_value=17 * 60):
+            metrics = lhc.build_metrics(graph)
+        self.assertEqual(metrics['unknown_estimate_pending'], 1)
+        self.assertEqual(metrics['eta_clock_max'], '')
+        self.assertEqual(graph.leaves[1].duration_label, 'Срок неизвестен')
+        self.assertEqual(lhc.parse_graph_json(lhc.export_graph(graph)).leaves[1].estimate_unknown_reason,
+                         'Owner has not confirmed access.')
+        html = lhc.render_html(graph, metrics)
+        self.assertIn('Срок неизвестен', html)
+
+    def test_old_activity_cannot_make_forecast_start_in_the_past(self):
+        graph = lhc.parse_graph_json({
+            'schema_version': 2,
+            'tasks': [{'id': 'next', 'label': 'Next', 'status': 'queued', 'depends_on': [],
+                       'estimate_minutes': {'minimum': 5, 'maximum': 5}, 'started_at': '15:19'}],
+        })
+        with patch.object(lhc, 'now_clock', return_value=17 * 60):
+            metrics = lhc.build_metrics(graph)
+        self.assertEqual(metrics['eta_clock_min'], '17:05')
+        self.assertEqual(metrics['eta_clock_max'], '17:05')
+
+    def test_external_wait_withholds_clock_eta_and_round_trips(self):
+        graph = lhc.parse_graph_json({
+            'schema_version': 2,
+            'external_waits': 'Ждём подтверждения владельца; срок неизвестен.',
+            'tasks': [{'id': 'next', 'label': 'Next', 'status': 'queued', 'depends_on': [],
+                       'estimate_minutes': {'minimum': 5, 'maximum': 5}}],
+        })
+        with patch.object(lhc, 'now_clock', return_value=17 * 60):
+            metrics = lhc.build_metrics(graph)
+        self.assertEqual(metrics['eta_clock_max'], '')
+        self.assertTrue(metrics['external_wait_unknown'])
+        self.assertIn('неизвестен из-за внешнего ожидания', lhc.render_text(graph, metrics).lower())
+        self.assertEqual(lhc.parse_graph_json(lhc.export_graph(graph)).external_waits,
+                         'Ждём подтверждения владельца; срок неизвестен.')
+
 
 class ScheduleTests(unittest.TestCase):
     def _graph(self):
@@ -272,9 +319,56 @@ class RenderTests(unittest.TestCase):
         self.assertIn('.table-leaves { min-width: 920px; width: 100%; table-layout: fixed; }', html)
         self.assertIn('.table-leaves th:nth-child(5) { width: 120px; }', html)
         self.assertIn('.task-details-host { position: static; width: 100%; margin-top: 12px; }', html)
+        self.assertIn('padding: 0 5px; min-width: 0; white-space: normal; overflow-wrap: anywhere; }', html)
         self.assertIn('.task-details { display: grid; grid-template-columns: minmax(110px, auto) minmax(0, 1fr);', html)
         self.assertIn('.task-details dd { margin: 0; min-width: 0; width: 100%; overflow-wrap: anywhere; word-break: break-word; }', html)
         self.assertIn('.status { color: var(--c); font-weight: 600; white-space: nowrap; }', html)
+
+    def test_blocker_details_are_structured_and_dependencies_are_human_readable(self):
+        graph = lhc.parse_graph_json({
+            'schema_version': 2,
+            'tasks': [
+                {'id': 'qa_scope', 'label': 'Выдать доступ к тестовому проекту',
+                 'status': 'blocked', 'depends_on': [],
+                 'blocker': 'Текущий project grant отсутствует.',
+                 'blocker_details': {
+                     'reason': 'Для тестовой команды ещё не выдано разрешение на проект.',
+                     'responsible': 'Владелец QA-проекта',
+                     'next_action': 'Выдать доступ через штатный интерфейс проекта.',
+                     'human_required': 'yes',
+                     'human_action': 'Нужно подтвердить участника и проект.',
+                 },
+                 'acceptance': 'Тестовый участник видит точный проект.'},
+                {'id': 'canary', 'label': 'Запустить проверку полного цикла',
+                 'status': 'queued', 'depends_on': ['qa_scope'],
+                 'acceptance': 'Поручение доходит до ручной приёмки.'},
+            ],
+        })
+        html = lhc.render_html(graph, lhc.build_metrics(graph))
+        status_text = lhc.render_text(graph, lhc.build_metrics(graph))
+        exported = lhc.export_graph(graph)
+        self.assertIn('<b>Почему ждём:</b> Для тестовой команды ещё не выдано разрешение на проект.', html)
+        self.assertIn('<b>Кто делает:</b> Владелец QA-проекта', html)
+        self.assertIn('<b>Следующий шаг:</b> Выдать доступ через штатный интерфейс проекта.', html)
+        self.assertIn('<b>Нужен ли человек:</b> Да. Нужно подтвердить участника и проект.', html)
+        self.assertIn('<dt>Зависит от</dt><dd>Выдать доступ к тестовому проекту</dd>', html)
+        self.assertIn('<dt>Ожидаемый результат</dt><dd>Поручение доходит до ручной приёмки.</dd>', html)
+        self.assertNotIn('лист qa_scope', html)
+        self.assertIn('Почему ждём: Для тестовой команды ещё не выдано разрешение на проект.', status_text)
+        self.assertIn('Кто делает: Владелец QA-проекта', status_text)
+        self.assertNotIn('qa_scope:', status_text)
+        self.assertEqual(exported['tasks'][0]['blocker_details']['human_required'], 'yes')
+        self.assertEqual(exported['tasks'][1]['acceptance'], 'Поручение доходит до ручной приёмки.')
+
+    def test_legacy_graph_without_blocker_details_still_renders(self):
+        graph = lhc.parse_graph_json({
+            'schema_version': 1,
+            'tasks': [{'id': 'legacy', 'label': 'Старый блокер', 'status': 'blocked',
+                       'depends_on': [], 'blocker': 'Ждём прежний маршрут.'}],
+        })
+        html = lhc.render_html(graph, lhc.build_metrics(graph))
+        self.assertIn('Ждём прежний маршрут.', html)
+        self.assertIn('<b>Нужен ли человек:</b> Пока неизвестно.', html)
 
 
 class CommandTests(unittest.TestCase):

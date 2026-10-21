@@ -40,7 +40,18 @@ def finite_minutes(value: Any) -> bool:
 
 
 def estimate_summary(by_id: dict[str, dict[str, Any]], layers: list[list[str]]) -> dict[str, Any]:
-    if not any('estimate_minutes' in task for task in by_id.values()):
+    has_estimates = any('estimate_minutes' in task for task in by_id.values())
+    unknown = sorted(
+        tid for tid, task in by_id.items()
+        if 'estimate_unknown_reason' in task or (has_estimates and 'estimate_minutes' not in task)
+    )
+    if unknown:
+        return {
+            'available': False,
+            'reason': 'No total or finish time is inferred while estimates are unknown.',
+            'unknown_task_ids': unknown,
+        }
+    if not has_estimates:
         return {'available': False, 'reason': 'No per-node estimates supplied; no total is inferred.'}
     effort: dict[str, int | float] = {}
     duration: dict[str, int | float] = {}
@@ -125,8 +136,15 @@ def validate_graph(document: Any, model_classes: tuple[str, ...] = DEFAULT_CLASS
         if has_estimates:
             estimate = task.get('estimate_minutes')
             if not isinstance(estimate, dict):
-                errors.append(f'{tid}: estimate_minutes must be an object on all nodes when any estimate is supplied')
+                reason = task.get('estimate_unknown_reason')
+                if estimate is not None:
+                    errors.append(f'{tid}: estimate_minutes must be an object')
+                elif not isinstance(reason, str) or not reason.strip():
+                    errors.append(f'{tid}: missing estimate_minutes requires a nonempty estimate_unknown_reason')
             else:
+                reason = task.get('estimate_unknown_reason')
+                if isinstance(reason, str) and reason.strip():
+                    errors.append(f'{tid}: provide either estimate_minutes or estimate_unknown_reason, not both')
                 minimum, maximum = estimate.get('minimum'), estimate.get('maximum')
                 if not finite_minutes(minimum) or not finite_minutes(maximum):
                     errors.append(f'{tid}: estimate_minutes bounds must be finite nonnegative numbers, not booleans')
@@ -141,7 +159,7 @@ def validate_graph(document: Any, model_classes: tuple[str, ...] = DEFAULT_CLASS
         for key in ('role', 'acceptance'):
             if not isinstance(task.get(key), str) or not task[key].strip():
                 errors.append(f'{tid}: missing {key}')
-        if task.get('model_class') not in model_classes:
+        if task.get('model_class') is not None and task.get('model_class') not in model_classes:
             errors.append(f'{tid}: unknown model_class {task.get("model_class")!r}')
         errors.extend(live_field_errors(tid, task))
         for key in ('depends_on', 'read_paths', 'write_paths'):
