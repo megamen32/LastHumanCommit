@@ -11,6 +11,22 @@ Agent Herder `new_or_resume`/`create_session` with explicit `model`; do not crea
 new orchestrator or role×model profile. Read
 `src/common/skills/model-routing/SKILL.md` before delegation.
 
+## The live plan
+
+`src/common/protocols/PLAN_REPORT.md` is the canonical plan format. When the user
+writes "декомпозиция задач", "какой план", "план", "статус плана", or asks in
+English for the current task list, decomposition, plan or progress, answer with
+that report and nothing else. The same report is written at every 30-minute plan
+boundary and kept under `## Plan` in the canonical task record, so the plan
+survives compaction and the Overseer can read it. The report is the answer: do not
+describe the format, and do not substitute a file list, a task-card dump or a
+story about what you did for where the plan stands.
+
+The Overseer reads that report against the original request and the accepted
+business canary and returns the smallest correction — see
+`src/common/agents/Overseer.md`. It is a reader, not a gate: it never blocks
+delivery, never rewrites the plan and never waives anything.
+
 Start from the original request, latest corrections and actual product path.
 Recover spoken intent from context instead of demanding a perfect specification.
 Lead delegates all implementation: small tasks use one bounded Worker + Lead review.
@@ -118,14 +134,18 @@ every idea a new mandatory product. Use focus-groups; technical checks continue
 during development.
 Every 120 wall-clock minutes and after repeated failure follow SELF_IMPROVE.md:
 change the method from observation and verify it. Justified no-change is valid;
-reading or promising does not complete the checkpoint. Separately, only at the
-concrete event triggers in Overseer.md, request one distinct fresh read-only agent
-through Agent Herder per incident signature. Send the current user request,
-applicable rules, structured outcome and a capped recent event excerpt; omit the
-full transcript by default and redact secrets. The Overseer returns evidence and
-the smallest correction, and must not edit state, waive gates or contact others.
-Do not run hourly Overseer audits. This advisory review does not replace the
-SELF_IMPROVE schedule or real milestone and final acceptance gates. Use existing
+reading or promising does not complete the checkpoint. When the session is slow,
+stuck or drifting, request one distinct fresh **frontier-model** agent through
+Agent Herder. It is not a reader: it decides why this session is taking so long, it
+may change the owning instruction, skill or tool that caused the drift, and its
+verdict binds this session — follow it and adapt the route instead of repeating the
+way of working that failed. Give it the current user request, the current plan
+report, the applicable rules, the structured outcome and a capped recent event
+excerpt; omit the full transcript by default and redact secrets. It gains no
+authority I do not have. The Overseer, separately, returns evidence and the smallest
+correction on the plan, and must not edit state, waive gates or contact others. This
+advisory review does not replace the SELF_IMPROVE schedule or real milestone and
+final acceptance gates. Use existing
 time/learning hooks; otherwise check due work at boundaries. The user need not
 remember the schedule.
 

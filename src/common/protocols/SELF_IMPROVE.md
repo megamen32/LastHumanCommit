@@ -48,6 +48,28 @@ and verify that owner when due; do not add a duplicate memory system.
 For a changed method, verify the native owner actually saved and retrieved the improvement; a native
 hook alone does not prove learning occurred.
 
+## When the session is slow
+
+A session that is slow, stuck or visibly drifting gets a strong independent agent,
+not more self-review. Request one **frontier model** through Agent Herder — the best
+reasoner available, in a fresh context — and give it the current user request, the
+current plan report, the applicable rules, the structured outcome and a capped recent
+event excerpt. Omit the full transcript by default and redact secrets.
+
+It is not a reader. It decides why this session is taking so long and what must
+change, and it **may change the owning instruction, skill or tool** that caused the
+drift — that is the whole point of this loop. Its verdict **binds the session**: the
+Lead follows it, adapts the current route and stops repeating the way of working that
+failed. The change is then verified against the original failure and recorded as a
+retrievable method change per `../skills/improve-workflow/SKILL.md`.
+
+It gains no authority it did not have: no new publication, deployment,
+destructive-action or memory permission, and no bypass of HumanStop or the user's
+constraints.
+
+Do this on the 120-minute trigger, after a repeated failure, and whenever the
+plan report itself shows leaves that are behind with no user-visible delta.
+
 ## Mandatory checkpoint, bounded to useful work
 
 The Overseer demands business results. Learning is a corrective tool, never a

@@ -132,13 +132,16 @@ def test_native_heartbeat_initializes_only_its_timer_record_and_deduplicates_due
     assert initial is not None and initial["due"] == [] and initial["prompt"] == ""
     state_path = Path(initial["state"])
     state = json.loads(state_path.read_text(encoding="utf-8"))
-    assert set(state) == {"native_heartbeat"}
+    assert set(state) <= {"native_heartbeat", "schema_version", "started_at",
+                          "clock_source", "due_at", "last_observed_at", "last_checkpoint"}
+    assert not {"business", "outcome", "milestone"} & set(state)
     assert state["native_heartbeat"]["cwd"] == str(tmp_path.resolve())
 
     due_30 = guard.native_heartbeat(tmp_path, "codex", "sid-1", now=start + timedelta(minutes=30))
     again_30 = guard.native_heartbeat(tmp_path, "codex", "sid-1", now=start + timedelta(minutes=31))
     assert due_30["due"] == ["plan:1"]
-    assert "15-minute tasks" in due_30["prompt"]
+    assert "30-minute plan report" in due_30["prompt"]
+    assert "PLAN_REPORT.md" in due_30["prompt"]
     assert again_30["due"] == [] and again_30["prompt"] == ""
 
     due_60 = guard.native_heartbeat(tmp_path, "codex", "sid-1", now=start + timedelta(minutes=60))

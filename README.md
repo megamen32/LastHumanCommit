@@ -3,6 +3,10 @@
 An automatic engineering workflow for ordinary requests, including rough voice transcripts.
 Understand the intended result, do the useful work, test it and integrate the shared result.
 
+`PRODUCT-PHILOSOPHY.md` is the canonical product philosophy in Russian: the whole pipeline
+from the user's request to the merged change, what each stage must and must not do, and
+where the implementation still lags behind the intent. Read it before changing the method.
+
 ## What changed
 
 Operating instructions, internal planning, new task records and agent/tool messages

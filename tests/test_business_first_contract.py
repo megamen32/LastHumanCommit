@@ -84,7 +84,7 @@ def test_cycle_inputs_retrieve_both_improvement_loops() -> None:
     router = compact(read("AGENTS.md"))
     assert "Preserve the original goal and latest corrections" in router
     assert "check it against current code" in router
-    assert "Hourly direction control and workflow improvement remain mandatory" in router
+    assert "Direction control and workflow improvement remain Lead responsibilities" in router
     assert "verification canary" in read("src/common/protocols/SELF_IMPROVE.md")
 
 
@@ -231,23 +231,37 @@ def test_self_improve_is_an_evolution_loop() -> None:
     method = compact(read("src/common/protocols/SELF_IMPROVE.md"))
     assert "minimal proposed patch" in method and "verification canary" in method
     assert "every120" not in read("AGENTS.md")
-    assert "request one distinct fresh read-only agent" in compact(read("src/common/agents/Lead.md"))
+    assert "request one distinct fresh" in compact(read("src/common/agents/Lead.md"))
+    assert "frontier-model" in compact(read("src/common/agents/Lead.md"))
+    assert "its verdict binds this session" in compact(read("src/common/agents/Lead.md"))
 
 
 
-def test_hourly_business_report_and_cycle_estimates_are_required() -> None:
+def test_plan_report_and_cycle_estimates_are_required() -> None:
     lead = compact(read("src/common/agents/Lead.md"))
     planning = compact(read("src/common/profiles/Planning.md"))
     task = compact(read("src/common/templates/.agents/tasks/task_template.md"))
+    protocol = compact(read("src/common/protocols/PLAN_REPORT.md"))
+    aggregate = lead + " " + planning + " " + task + " " + protocol
+
+    assert "is the canonical plan format" in aggregate
+    for phrase in ("декомпозиция задач", "какой план"):
+        assert phrase in aggregate, phrase
+    for phrase in (
+        "Every declared work cycle has its own immutable minimum / maximum estimate",
+        "lhc_time_guard.py",
+    ):
+        assert phrase in aggregate, phrase
 
     for phrase in (
-        "At every crossed wall-clock hour while the task remains active",
-        "Real tasks completed",
-        "Every declared work cycle has its own immutable minimum / maximum estimate",
+        "✅",
+        "🔄",
+        "⏳",
+        "отстаём потому что",
+        "начнём после листа",
+        "Бизнес-результат:",
     ):
-        assert phrase in lead + " " + planning + " " + task, phrase
-
-    assert "lhc_time_guard.py" in lead + " " + planning + " " + task
+        assert phrase in protocol, phrase
 
 
 def test_planning_has_two_compressed_approaches_and_decomposition_skill() -> None:

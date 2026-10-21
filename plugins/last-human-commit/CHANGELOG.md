@@ -1,3 +1,38 @@
+# 1.5.16 — the live plan report and a plan-reading Overseer
+
+Add the canonical live plan report. It answers the user's "декомпозиция задач" / "какой
+план" request in the user's language and is written at every 30-minute boundary, so the
+plan stays in the model's head and survives compaction. Format: the goal, the business
+result, the decomposition shape (leaves, parallel count, waves, slots), then every leaf as
+finished (✅), running (🔄) or queued (⏳) with its start/finish, original estimate, actual
+minutes, the reason it is behind and why a queued leaf cannot start in parallel.
+
+Overseer becomes the reader of that report: every 30 minutes it compares the plan against
+the original request and the accepted business canary and returns the smallest
+correction. It is a reader, not a gate — it never blocks delivery, rewrites the plan or
+waives anything.
+
+The 120-minute learning checkpoint was dead on 1.5.15: removing the conversation-driven
+hooks took the whole stateful path of lhc_entry.py with them, so the checkpoint, the
+hourly business review, the Stop gate, the milestone gate and the outcome state all
+stopped running. The checkpoint now lives in the time-only heartbeat and asks for a
+frontier-model agent that may change the owning instruction, skill or tool; its verdict
+binds the session.
+
+Finish the cleanup 1.5.15 left half-done: the validator required the removed
+UserPromptSubmit/Stop hooks, and the test suite required the phrase "Overseer is the
+supreme route controller" that the roles had already forbidden. Both now assert the
+current contract.
+
+Ship PRODUCT-PHILOSOPHY.md: the whole pipeline from the user's request to the merged
+change — cheap research subagents, the three work modes, plan-before-work, the 2-3
+options with pros and cons, the critique, the ideal super-ultra plan, dropping everything
+that does not pay for itself, the 20/80 cut, decomposition into leaves of at most 20
+minutes, parallelization, the Gantt-style estimate, execution, a real deploy, hands-on
+zero-knowledge testers inside the blast radius, and push, PR and merge into
+megamen32-dev. It lists what the philosophy excludes, maps every stage to its
+implementation, and records the seven known gaps.
+
 # 1.5.15 — remove conversation-driven control hooks
 
 Remove automatic conversation-driven prompt/tool/Stop lifecycle hooks. Startup

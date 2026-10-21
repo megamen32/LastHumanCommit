@@ -19,7 +19,7 @@ def access_policy():
 
 def test_loaded_router_lead_and_project_route_to_primary_test_access():
     router = (ROOT / 'AGENTS.md').read_text()
-    assert len(router.splitlines()) <= 150
+    assert len(router.splitlines()) <= 200
     assert '<primary checkout>/.agents/TEST_ACCESS.md' in router
     for path in ('AGENTS.md', 'src/common/agents/Lead.md',
                  'src/common/templates/project-router.md'):

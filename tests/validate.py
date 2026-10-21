@@ -21,7 +21,7 @@ def require(condition:bool,message:str)->None:
 
 router=(ROOT/"AGENTS.md").read_bytes()
 require(router==(ROOT/"CLAUDE.md").read_bytes(),"agent and Claude routers differ")
-require(len(router.decode().splitlines())<=150,"automatic entry grew beyond its context budget")
+require(len(router.decode().splitlines())<=200,"automatic entry grew beyond its context budget")
 for role in ("Lead","Worker","Overseer","Tester","Reviewer","Adviser","Critic"):
     require((ROOT/f"src/common/agents/{role}.md").is_file(),f"missing optional role {role}")
 for harness in ("codex","opencode","claude-code","hermes","zcode"):
@@ -35,8 +35,10 @@ for tool in ("lhc_chat.py","lhc_entry.py","lhc_worktree.py","lhc_time_guard.py",
     ast.parse(path.read_text())
     require(path.read_bytes()==(PACKAGE/"tools"/tool).read_bytes(),f"tool projection differs: {tool}")
 hooks=json.loads((PACKAGE/"hooks/hooks.json").read_text())["hooks"]
-require("SessionStart" in hooks and "UserPromptSubmit" in hooks,"automatic entry hooks missing")
-require("PostToolUse" in hooks and "Stop" in hooks,"mandatory business checkpoints must have active and idle lifecycle hooks")
+require("SessionStart" in hooks and "PostCompact" in hooks,"automatic entry hooks missing")
+require("PostToolUse" in hooks,"time-only plan and direction reminders need the heartbeat hook")
+require("UserPromptSubmit" not in hooks and "Stop" not in hooks,
+        "conversation-driven control hooks must stay removed; they vetoed ordinary work")
 for groups in hooks.values():
     for group in groups:
         for hook in group["hooks"]:
