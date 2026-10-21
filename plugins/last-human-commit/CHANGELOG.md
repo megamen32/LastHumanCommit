@@ -1,3 +1,8 @@
+# 1.5.20 — native manifest parity
+
+All root, native harness and marketplace manifests now report version 1.5.20,
+including the Hermes extension. The approved 1.5.19 instruction content is unchanged.
+
 # 1.5.19 — business-first review and delivery
 
 Overseer and review guidance now keeps the Lead in charge of the original business
