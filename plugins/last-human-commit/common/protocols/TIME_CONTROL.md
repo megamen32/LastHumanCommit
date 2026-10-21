@@ -21,13 +21,30 @@ CONTINUE receipt must name the achieved user result, concrete remaining blocker,
 next proof and time bound; approving another phase without the cumulative cost
 is not control. Never weaken accepted scope silently to make a budget green.
 
-Every 30 minutes, update the canonical task note: preserve the original estimate,
-compare actual effort and elapsed wall time, and plan the next approximately
-15-minute tasks with owners, dependencies and independent parallel lanes. Every
-60 minutes, reread the original direct user goal and check useful business progress.
-Native PostToolUse reminders track only time and deduplicate each due interval;
-without tool activity, a reminder arrives at the next work boundary. They never
-classify text, mutate task/evidence/holds or block completion.
+Every 30 minutes, write the live plan report (`../protocols/PLAN_REPORT.md`): the
+goal, the current business result, and every leaf as finished, running or queued
+with its start/finish time, original estimate, actual minutes and the reason it
+is behind or blocked. Keep it under `## Plan` in the canonical task note so it
+survives compaction, and show it to the user. Every 60 minutes, reread the
+original direct user goal and check useful business progress. Native PostToolUse
+reminders track only time and deduplicate each due interval; without tool
+activity, a reminder arrives at the next work boundary. They never classify text,
+mutate task/evidence/holds or block completion.
+
+## Timers and what each one is for
+
+| Timer | Cadence | What it protects | What it must not become |
+|---|---|---|---|
+| Plan report | 30 min | The plan stays in the model's head and in the record; the Overseer reads it against the original request and the canary | A second task-card format, a file list, or a progress theatre report |
+| Goal direction check | 60 min | The original request is still the goal after an hour of work | A mandatory hourly ritual, a tester dispatch, or an empty status message to the user |
+| Learning checkpoint | 120 min unfinished work | The method is examined instead of repeated; a slow or drifting session gets a frontier-model agent that may change the owning instruction, and its verdict binds the session | A seven-field form to fill, an endless acknowledgement loop, or a self-improvement that may not remove the ceremony it maintains |
+| Estimate overrun | On event | Crossing the original maximum forces a route decision instead of grinding | A scolding, a forced estimate rewrite, or more governance that costs more than the overrun |
+| Worker checkpoint | 20 min | A delegated worker reports delta, blocker and next action so it cannot hang silently | A separate report format, or content that must be re-merged into the 30-minute plan report |
+| Milestone acceptance | ~3 h of coherent work | A fresh agent-tester with a persona, with no history of the implementation, tries the real consumer surface | A gate on every edit, every commit, or every hour. These are simulated participants, not real customers — the repo says so in Tester.md and focus-groups, and the report must not claim a human verdict |
+| Active-time ledger | Per interval | Real work time is separated from waiting, so overrun means something | Mandatory accounting where the harness does not manage it; `not measured` stays honest |
+
+One clock serves the whole objective. New phases, cards, workers and compactions
+never reset it.
 
 Every 120 wall-clock minutes of unfinished work, the Lead follows SELF_IMPROVE.md
 at the next observable boundary. This is a Lead responsibility without a native
@@ -76,7 +93,8 @@ active or wall-clock time.
 A cycle does not start before its task record carries
 `Started at <UTC+3 ISO> (<source>)` taken from a real clock anchor:
 
-- Record `date --iso-8601=seconds` at the actual task/cycle start and cite it.
+- Record `date --iso-8601=seconds` at the actual task/cycle start and cite it. The
+  anchor is a real manual clock reading, never an inferred or reconstructed value.
 - A native time-only heartbeat anchors its own first tool boundary, not the task
   start. It cannot establish historical active time or reset the original estimate.
 - Preserve existing verified start receipts; do not manufacture old timestamps.

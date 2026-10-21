@@ -100,24 +100,22 @@ timeout is observational. Prefer the same Worker; cancellation is exceptional.
   Parent transport / delivery state:
   L decision:
 
-## Hourly direction review — while active beyond one hour
+## Plan — live plan report
 
-This is not milestone acceptance. Keep the original user source and latest
-corrections authoritative. Zero Knowledge groups run on ready major milestones,
-not every hour; preserve tangible result and next useful action in the review.
+Canonical format: `common/protocols/PLAN_REPORT.md`. Rewrite this block at
+every 30-minute plan boundary and whenever the user asks for the plan. The
+Overseer reads it against the original request and the business canary; it never
+blocks delivery.
 
+Цель:
+Бизнес-результат:
+Декомпозиция: N листьев · P параллельно · W волн(а) · слотов: S
 
-At every crossed wall-clock hour while the task remains active, run
-`lhc_time_guard.py` and report:
-
-- Real tasks completed:
-- Actual business delta:
-- Completed files:
-- Planned minimum/maximum active minutes:
-- Actual active / wall-clock:
-- Current blockers:
-- Gates/instructions delaying business results:
-- Time accounting and next shortest route:
+✅ (описание листа) начата ЧЧ:ММ закончена ЧЧ:ММ, оценка N минут, факт N минут
+✅ (описание листа) начата ЧЧ:ММ закончена ЧЧ:ММ, оценка N минут, факт N минут, ∥ параллельно с листом 1
+🔄 работаем (описание листа) начата ЧЧ:ММ, оценка N минут, прошло N минут, отстаём потому что: <причина>
+🔄 работаем (описание листа) начата ЧЧ:ММ, оценка N минут, прошло N минут, ∥ параллельно с листом 3
+⏳ (описание листа) начнём после листа N, потому что <почему нельзя параллельно>, примерно в ЧЧ:ММ, оценка N минут, закончим в ЧЧ:ММ
 
 ## Decisive evidence
 
@@ -129,8 +127,9 @@ in both places.
 
 ## Gates
 
-Overseer is the supreme route controller: initial independent audit, every crossed wall-clock hour, every
-overrun, repeated failure, and before the Full final. Tester is the mandatory
+Overseer is the plan reader: it reads the 30-minute plan report against the original
+request and the accepted business canary and returns the smallest correction; it
+never blocks delivery and never waives a gate. Tester is the mandatory
 real-surface final gate for user-facing results; Full requires a fresh independent
 Tester after coherent technical review. Outside Full, Reviewer is optional and
 strictly risk-triggered (release, broad refactor, agent-executed instructions).

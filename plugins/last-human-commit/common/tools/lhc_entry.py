@@ -498,13 +498,23 @@ def main():
             if event.get("agent_id"):
                 session_id += ":subagent:" + str(event["agent_id"])
             import lhc_time_guard
-            result = lhc_time_guard.native_heartbeat(Path(cwd_value).expanduser(), args.runtime, session_id)
+            project = Path(cwd_value).expanduser()
+            result = lhc_time_guard.native_heartbeat(project, args.runtime, session_id)
+            # The 120-minute learning checkpoint is time-only as well: it observes a
+            # wall deadline and never reads, classifies or vetoes anything.
+            learning = lhc_time_guard.learning_checkpoint(
+                argparse.Namespace(runtime=args.runtime, now=None), project, session_id)
         except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError):
             return
+        prompts = []
         if result and result.get("prompt"):
+            prompts.append(result["prompt"])
+        if learning and learning.get("prompt"):
+            prompts.append(learning["prompt"])
+        if prompts:
             print(json.dumps({"hookSpecificOutput": {
                 "hookEventName": "PostToolUse",
-                "additionalContext": result["prompt"],
+                "additionalContext": "\n\n".join(prompts),
             }}, ensure_ascii=False))
         return
     # Native hooks only activate the project instructions. Stateful outcome,

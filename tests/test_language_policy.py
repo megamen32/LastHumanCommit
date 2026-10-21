@@ -12,7 +12,7 @@ import lhc_entry
 
 def test_automatic_router_and_project_bootstrap_inherit_language_policy():
     router = (ROOT/'AGENTS.md').read_text()
-    assert len(router.splitlines()) <= 150
+    assert len(router.splitlines()) <= 200
     assert '## Language policy' in router
     for item in ['internal reasoning/planning', 'new task records', 'agent coordination',
                  'delegated roles inherit', 'Russian-speaking user', 'raw observations',

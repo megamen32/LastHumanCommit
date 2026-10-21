@@ -942,10 +942,17 @@ def native_heartbeat(cwd: Path, runtime: str, session_id: str,
     reminders = []
     if any(item.startswith("plan:") for item in due):
         reminders.append(
-            "LHC 30-minute time check: update the canonical task record with its original estimate, "
-            "elapsed wall time since the first native tool boundary, and the next ~15-minute tasks "
-            "with owners, dependencies and possible parallel lanes. Active time is unknown unless "
-            "measured separately; this reminder is not completion."
+            "LHC 30-minute plan report: write the canonical live plan report now "
+            "(common/protocols/PLAN_REPORT.md). Two header lines — the goal and the "
+            "current business result — then the leaves: ✅ finished with start and "
+            "finish time, original estimate and actual minutes; 🔄 running with its "
+            "start, estimate, elapsed minutes and, whenever elapsed exceeds the "
+            "estimate, the reason it is behind; ⏳ queued with what it waits for, why "
+            "it cannot run in parallel, the approximate start and finish, and the "
+            "estimate. Show the report to the user and keep the same content under "
+            "`## Plan` in the canonical task record. The Overseer reads this report "
+            "against the original request and the business canary; it is not "
+            "completion of any gate."
         )
     if any(item.startswith("goal:") for item in due):
         reminders.append(
@@ -1008,14 +1015,22 @@ def learning_checkpoint(args: argparse.Namespace, cwd: Path, session_id: str,
     prompt = ""
     if due:
         prompt = (
-            "MANDATORY LHC session/user-goal checkpoint: invoke improve-workflow now. "
-            "Review the overall accepted result, remaining critical path, scope expansion "
-            "and rework across ALL cycles; stop serial scope expansion. Record observation → "
-            "changed method → verification evidence, or an evidence-backed bounded no-change "
-            "reason. Notification, compaction, a fresh cycle or a new task card does NOT "
-            "acknowledge this checkpoint. Use lhc_time_guard.py checkpoint with --cwd, "
-            "--runtime, --session-id, --due-at and the required review/evidence fields. "
-            f"Session={session_id}; runtime={args.runtime}; due-at={state['due_at']}; "
+            "LHC session checkpoint: this session has run 120 wall-clock minutes of "
+            "unfinished work. Run the improve-workflow procedure now "
+            "(common/skills/improve-workflow/SKILL.md). If the session is slow, stuck "
+            "or drifting, request one distinct fresh frontier-model agent through "
+            "Agent Herder. It is not a reader: it decides why this session is taking "
+            "so long, it may change the owning instruction, skill or tool that caused "
+            "the drift, and its verdict binds this session — follow it and adapt the "
+            "route instead of repeating the way of working that failed. Give it the "
+            "current user request, the current plan report, the applicable rules, the "
+            "structured outcome and a capped recent event excerpt, and redact "
+            "secrets; it gains no authority the session does not already have. Record "
+            "observation → changed method → verification evidence, or an "
+            "evidence-backed bounded no-change reason. Notification, compaction, a "
+            "fresh cycle or a new task card does NOT acknowledge this checkpoint. Use lhc_time_guard.py checkpoint with "
+            "--cwd, --runtime, --session-id, --due-at and the required review/evidence "
+            f"fields. Session={session_id}; runtime={args.runtime}; due-at={state['due_at']}; "
             f"first observed={state['started_at']}; state={path}. "
             "This is wall-clock scheduling; active time: not measured."
         )
