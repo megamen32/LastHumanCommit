@@ -24,6 +24,7 @@ EXPECTED_SKILLS = {
     "decompose-and-dispatch",
     "focus-groups",
     "improve-workflow",
+    "maintainer-review",
     "model-routing",
     "model-availability",
     "user-testing",
