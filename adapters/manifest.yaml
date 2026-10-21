@@ -37,6 +37,8 @@ canonical_skills:
     owner: Adviser
   - name: improve-workflow
     owner: Lead
+  - name: maintainer-review
+    owner: Maintainer
 adapters:
   - adapters/codex/adapter.yaml
   - adapters/opencode/adapter.yaml

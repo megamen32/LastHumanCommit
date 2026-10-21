@@ -11,6 +11,7 @@
 | [council](council/SKILL.md) | Resolve a difficult choice with independent strong models | Lead + Advisers |
 | [challenge-decision](challenge-decision/SKILL.md) | Independently test the reasoning behind a proposal/synthesis | Adviser / Critic alias |
 | [improve-workflow](improve-workflow/SKILL.md) | Turn experience into a tested, retrievable, reused capability | Lead + Worker |
+| [maintainer-review](maintainer-review/SKILL.md) | Before a PR into a repository you do not own: that project's maintainer reads the project and the diff and returns a hard critique | Lead + Maintainer |
 
 These descriptions are the selection index, not mandatory steps. A role
 loads only the chosen methods and useful references. Preserve the native adapter's

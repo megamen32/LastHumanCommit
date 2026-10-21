@@ -153,6 +153,10 @@ and `waiting` state; writing a file does not prove delivery or awakening.
 ## One green history
 Applicable order: implementation/tests → permitted deploy → real consumer and
 independent milestone acceptance → unified published dev history → integrated smoke.
+Before a PR into a repository you do not own, a fresh strong session plays that project's
+maintainer: it reads the project's own rules, conventions, tests and CI, then the diff,
+and returns a mountain of findings. Fix or answer every supported finding, then review
+the changed diff again. Only a clean or explicitly answered review lets the PR open.
 PR per worker is optional. Local checkpoint commits may precede this. If CI needs an
 early branch push, record a staging exception with reason/native refs; it is neither
 final acceptance nor main merge. Testing completes its coverage/raw observations,
