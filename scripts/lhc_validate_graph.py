@@ -19,7 +19,7 @@ from typing import Any
 
 DEFAULT_CLASSES = ('glm-5.3-flash', 'minimax-3.1-flash', 'gpt-6-luna', 'glm-5.3', 'gpt-6.1-sol')
 SCHEMA_VERSIONS = (1, 2)
-LIVE_STATUSES = ('done', 'running', 'blocked', 'waiting', 'queued')
+LIVE_STATUSES = ('done', 'running', 'blocked', 'waiting', 'deferred', 'queued')
 REQUIRED_TASK_FIELDS = {1: ('id',), 2: ('id', 'label', 'status', 'depends_on')}
 CLOCK_RE = re.compile(r'^([01]\d|2[0-3]):[0-5]\d$')
 BLOCKER_DETAIL_KEYS = ('reason', 'responsible', 'next_action', 'human_required', 'human_action')

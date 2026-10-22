@@ -111,10 +111,11 @@ a field this skill does not mention. One leaf in the graph looks like this:
  "estimate_minutes": {"minimum": 10, "maximum": 15}}
 ```
 
-`status` is one of `done`, `running`, `blocked`, `waiting`, `queued` — the state of
-the work, not the state of the paperwork. `waiting` is not a blocker: a leaf that
+`status` is one of `done`, `running`, `blocked`, `waiting`, `deferred`, `queued` — the
+state of the work, not the state of the paperwork. `waiting` is not a blocker: a leaf that
 waits for another leaf is `queued`, and `blocked` names the concrete external
-obstacle. `depends_on` holds the ids that must finish first and is the only
+obstacle. `deferred` is a leaf the owner deferred: no answer is expected, it takes
+no slot and it is outside the remainder of the delivery. `depends_on` holds the ids that must finish first and is the only
 scheduling input: waves, parallelism and the critical path are derived from it.
 `estimate_minutes` keeps the original bounds and is never rewritten to fit reality;
 a leaf that estimates only part of the work also carries `estimate_unknown_reason`,

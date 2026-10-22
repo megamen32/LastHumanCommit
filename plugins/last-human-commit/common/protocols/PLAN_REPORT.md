@@ -40,6 +40,10 @@ language: the user reads the leaves, not the plan.
 ⛔ (описание листа) начата 14:05, оценка 20 минут, блокер: <внешнее препятствие>
 
 ⏳ (описание листа) начнём после листа 3, потому что <почему нельзя параллельно>, примерно в 14:30, оценка 10 минут, закончим в 14:40
+
+⌛ (описание листа) ждём ответа внешнего источника, оценка 20 минут
+
+⏸ (описание листа) владелец отложил лист, оценка 30 минут
 ```
 
 The change log is an optional section of the report. It is what the dashboard shows
@@ -53,7 +57,8 @@ again:
 - 13:40 · результат: план пересобран из одной ревизии · подтверждение: check-plan
 ```
 
-- `✅` finished · `🔄` running · `⛔` blocked · `⏳` queued and not started.
+- `✅` finished · `🔄` running · `⛔` blocked · `⌛` waiting for an answer · `⏸` deferred
+  by the owner · `⏳` queued and not started.
 - The groups stand in that order: finished, running, blocked, queued. An empty
   group is dropped, a non-empty one is never merged into another.
 - `⛔` is a leaf that cannot move because of a concrete external obstacle. It
@@ -63,6 +68,9 @@ again:
   a leaf whose blocker is not named yet is not blocked yet.
 - `waiting` is not a blocker. A leaf that waits for another leaf is `⏳`
   queued and names the leaf it waits for; only `⛔` carries `блокер:`.
+- `⌛` is a leaf that waits for an answer that may still come; `⏸` is a leaf the
+  owner deferred: no answer is expected, it takes no slot and it is not part of
+  the remainder of the delivery.
 - «Декомпозиция» is the shape of the work: how many leaves it was split into, how many
   of them run at the same time, how many waves that takes, and how many slots exist.
   A quick task says so honestly — «1 лист · параллельно нет · 1 волна · слотов: 1» —

@@ -1,3 +1,38 @@
+# 1.5.32 - the plan says two honest things: it waits, and it is deferred
+
+The dashboard answered one question twice, and the two answers contradicted each
+other: the KPI tile said "blocked: 0" while the panel below said "blocked: 2".
+A leaf that waits for an answer and a leaf the owner deferred were one and the
+same thing, so "deferred" meant both "we wait" and "nobody waits".
+
+**One rule of the count of blockers.** A leaf is blocked when its status is
+`blocked`, and nothing else counts. A queued leaf that carries a blocker text is
+queued: it is not a blocked leaf, it does not appear in the count of blockers and
+the text "блокер:" is printed only for a leaf that really is blocked.
+
+**Two honest states of a leaf.** A leaf that waits for an answer is `waiting`,
+and the report marks it with ⌛. A leaf the owner deferred is `deferred`, the
+report marks it with ⏸ and the dashboard calls it "Отложено владельцем": no
+answer is expected, it waits for nothing and it takes no slot. The plan report
+and the task graph reconcile with both of them.
+
+**The deferred leaf is outside the remainder of the delivery.** It does not count
+into "Осталось", into the remaining time, into the forecast of the finish and
+into the critical path. A deferred leaf without an estimate does not make the
+horizon unknown either - the forecast of an unknown estimate is about the work
+that is still owed.
+
+**Two meanings of "deferred" cannot be confused with each other.** The group of
+the lines that do not fit into a free slot is called "Ждут свободного слота" now;
+the deferred state of a leaf is called "Отложено владельцем" everywhere.
+
+The KPI strip carries ten tiles now, five to a row on a desktop, and the hint of
+the "Осталось" tile says how many leaves are deferred and that they are not part
+of it.
+
+The count of blockers, the two new states and the remainder of the delivery are
+covered by tests, so they cannot drift apart again.
+
 # 1.5.31 - the plan snapshot tells the truth about time, about its own horizon and about what it is
 
 The dashboard of a plan is read on a phone, in a hurry, by the person who owns the

@@ -477,7 +477,7 @@ class DashboardLayoutTests(unittest.TestCase):
         graph = self._graph()
         html = lhc.render_html(graph, lhc.build_metrics(graph))
         self.assertIn(
-            '.kpis { display: grid; gap: 10px; grid-template-columns: repeat(9, minmax(0, 1fr));',
+            '.kpis { display: grid; gap: 10px; grid-template-columns: repeat(5, minmax(0, 1fr));',
             html,
         )
         for columns in ('repeat(5,', 'repeat(3,', 'repeat(2,'):
@@ -502,12 +502,13 @@ class DashboardLayoutTests(unittest.TestCase):
         positions = [html.index(marker) for marker in markers]
         self.assertEqual(positions, sorted(positions))
 
-    def test_kpi_strip_carries_nine_metrics_with_a_big_number(self):
+    def test_kpi_strip_carries_ten_metrics_with_a_big_number(self):
         graph = self._graph()
         html = lhc.render_html(graph, lhc.build_metrics(graph))
-        self.assertEqual(html.count('class="kpi"'), 9)
-        for label in ('Готово', 'В работе', 'Заблокировано', 'В очереди', 'Осталось',
-                      'Параллельность', 'Осталось по плану', 'Прогноз финиша', 'Усилие'):
+        self.assertEqual(html.count('class="kpi"'), 10)
+        for label in ('Готово', 'В работе', 'Заблокировано', 'В очереди',
+                      'Отложено владельцем', 'Осталось', 'Параллельность',
+                      'Осталось по плану', 'Прогноз финиша', 'Усилие'):
             self.assertRegex(html, r'kpi-label"[^>]*>[^<]*' + re.escape(label))
 
     def test_status_is_never_carried_by_colour_alone(self):
@@ -714,6 +715,219 @@ class PlanReconciliationTests(unittest.TestCase):
         self.assertEqual(len(result.extra_in_report), 1)
         self.assertEqual(len(result.missing_in_report), 1)
         self.assertEqual(len(result.status_mismatch), 1)
+
+
+class HonestLeafStatesTests(unittest.TestCase):
+    """A leaf that waits and a leaf the owner deferred are two different things.
+
+    The second one is not expected to move at all: no answer is waited for, it
+    takes no slot, it is not a blocker and it is not part of the remainder of
+    the delivery.
+    """
+
+    REPORT = (
+        'Цель: довести интеграцию до результата\n'
+        'Бизнес-результат: карточка принимается\n'
+        'Декомпозиция: 4 листа · 2 параллельно · 2 волны · слотов: 2\n'
+        '\n'
+        '✅ (контракт источника) начата 14:02 закончена 14:09, оценка 15 минут\n'
+        '⌛ (ответ поставщика) ждём ответа поставщика, оценка 20 минут\n'
+        '⏸ (правка объявления) владелец отложил лист, оценка 30 минут\n'
+        '⛔ (доступ к стенду) начата 14:05, оценка 20 минут, блокер: нет ключа\n'
+    )
+
+    def _report_graph(self):
+        graph = lhc.parse_plan_report(self.REPORT)
+        self.assertIsNotNone(graph)
+        return graph
+
+    def test_the_waiting_and_the_deferred_markers_are_read_as_their_states(self):
+        graph = self._report_graph()
+        self.assertEqual(
+            [leaf.status for leaf in graph.leaves],
+            ['done', 'waiting', 'deferred', 'blocked'],
+        )
+
+    def test_the_deferred_state_is_named_for_the_owner(self):
+        self.assertEqual(lhc.STATUS_LABELS[lhc.STATUS_DEFERRED], 'Отложено владельцем')
+        self.assertEqual(lhc.STATUS_GLYPHS[lhc.STATUS_DEFERRED], '⏸')
+        self.assertEqual(lhc.STATUS_GLYPHS[lhc.STATUS_WAITING], '⌛')
+        for alias in ('deferred', 'отложено', 'отложен', 'отложено владельцем'):
+            self.assertEqual(lhc.normalize_status(alias), 'deferred', alias)
+
+    def test_the_report_and_a_graph_with_the_same_states_reconcile(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            report = base / 'plan.report.md'
+            report.write_text(self.REPORT, encoding='utf-8')
+            graph = base / 'plan.graph.json'
+            graph.write_text(json.dumps({
+                'schema_version': 2,
+                'slots': 2,
+                'tasks': [
+                    {'id': 'L01', 'label': 'контракт источника', 'status': 'done', 'depends_on': []},
+                    {'id': 'L02', 'label': 'ответ поставщика', 'status': 'waiting', 'depends_on': []},
+                    {'id': 'L03', 'label': 'правка объявления', 'status': 'deferred', 'depends_on': []},
+                    {'id': 'L04', 'label': 'доступ к стенду', 'status': 'blocked',
+                     'depends_on': [], 'blocker': 'нет ключа'},
+                ],
+            }, ensure_ascii=False), encoding='utf-8')
+            checked = run_tool('check-plan', str(report), str(graph))
+            self.assertEqual(checked.returncode, 0, checked.stdout + checked.stderr)
+            self.assertIn('OK:', checked.stdout)
+
+    def test_a_deferred_leaf_is_outside_the_remainder(self):
+        """It takes no time, no slot and no place on the critical path."""
+
+        graph = lhc.parse_graph_json({
+            'schema_version': 2,
+            'slots': 2,
+            'tasks': [
+                {'id': 'L01', 'label': 'готовая работа', 'status': 'done', 'depends_on': [],
+                 'estimate_minutes': {'minimum': 10, 'maximum': 10}},
+                {'id': 'L02', 'label': 'работа в очереди', 'status': 'queued', 'depends_on': [],
+                 'estimate_minutes': {'minimum': 20, 'maximum': 20}},
+                {'id': 'L03', 'label': 'отложено надолго', 'status': 'deferred', 'depends_on': [],
+                 'estimate_minutes': {'minimum': 999, 'maximum': 999}},
+                {'id': 'L04', 'label': 'отложено без оценки', 'status': 'deferred', 'depends_on': []},
+            ],
+        })
+        metrics = lhc.build_metrics(graph)
+
+        self.assertEqual(metrics['unfinished'], 1)
+        self.assertEqual(metrics['remaining_minutes_min'], 20)
+        self.assertEqual(metrics['remaining_minutes_max'], 20)
+        self.assertNotIn('L03', metrics['critical_path'])
+        self.assertNotIn('L04', metrics['critical_path'])
+        # A deferred leaf without an estimate must not make the horizon unknown.
+        self.assertEqual(metrics['unknown_estimate_pending'], 0)
+        self.assertNotEqual(metrics['eta_clock_max'], '')
+
+    def test_a_deferred_leaf_takes_no_slot_and_waits_for_nothing(self):
+        graph = lhc.parse_graph_json({
+            'schema_version': 2,
+            'slots': 1,
+            'tasks': [
+                {'id': 'L01', 'label': 'отложено владельцем', 'status': 'deferred', 'depends_on': []},
+                {'id': 'L02', 'label': 'первая работа', 'status': 'queued', 'depends_on': []},
+                {'id': 'L03', 'label': 'вторая работа', 'status': 'queued', 'depends_on': []},
+            ],
+        })
+        plan = lhc.plan_now(graph)
+        self.assertEqual([item['id'] for item in plan['ready']], ['L02'])
+        self.assertEqual([item['id'] for item in plan['deferred']], ['L03'])
+        self.assertEqual(plan['blocked'], [])
+        self.assertEqual(plan['waiting'], [])
+
+    def test_the_port_agrees_with_the_planner_about_a_deferred_leaf(self):
+        graph = lhc.parse_graph_json({
+            'schema_version': 2,
+            'slots': 1,
+            'tasks': [
+                {'id': 'L01', 'label': 'отложено владельцем', 'status': 'deferred', 'depends_on': []},
+                {'id': 'L02', 'label': 'первая работа', 'status': 'queued', 'depends_on': []},
+                {'id': 'L03', 'label': 'вторая работа', 'status': 'queued', 'depends_on': []},
+            ],
+        })
+        plan = lhc.plan_now(graph)
+        port = lhc._plan_now_port(graph)
+        for group in ('running', 'ready', 'deferred', 'blocked', 'waiting'):
+            self.assertEqual(
+                [item['id'] for item in plan[group]],
+                [item['id'] for item in port[group]],
+                group,
+            )
+        self.assertEqual(plan['free_slots'], port['free_slots'])
+
+    def test_only_a_blocked_leaf_is_counted_as_blocked(self):
+        """One rule: the status says it, the text does not."""
+
+        graph = lhc.parse_graph_json({
+            'schema_version': 2,
+            'slots': 2,
+            'tasks': [
+                {'id': 'L01', 'label': 'ждёт ответа', 'status': 'queued', 'depends_on': [],
+                 'blocker': 'источник не ответил',
+                 'estimate_minutes': {'minimum': 5, 'maximum': 5}},
+                {'id': 'L02', 'label': 'настоящий блокер', 'status': 'blocked', 'depends_on': [],
+                 'blocker': 'нет ключа',
+                 'estimate_minutes': {'minimum': 5, 'maximum': 5}},
+            ],
+        })
+        metrics = lhc.build_metrics(graph)
+        plan = lhc.plan_now(graph)
+        html = lhc.render_html(graph, metrics)
+
+        self.assertEqual(metrics['blocked'], 1)
+        self.assertEqual([item['id'] for item in plan['blocked']], ['L02'])
+        self.assertEqual(html.count('class="blocker"'), 1)
+        self.assertEqual(self._kpi_value(html, 'Заблокировано'), '1')
+        self.assertIn('Заблокированы', html)
+
+    def test_the_blocker_text_is_printed_only_for_a_blocked_leaf(self):
+        graph = lhc.parse_graph_json({
+            'schema_version': 2,
+            'slots': 2,
+            'tasks': [
+                {'id': 'L01', 'label': 'ждёт ответа', 'status': 'queued', 'depends_on': [],
+                 'blocker': 'источник не ответил',
+                 'estimate_minutes': {'minimum': 5, 'maximum': 5}},
+            ],
+        })
+        metrics = lhc.build_metrics(graph)
+        self.assertNotIn('блокер:', lhc.render_html(graph, metrics))
+        self.assertNotIn('блокер:', lhc.render_text(graph, metrics))
+
+    def test_the_kpi_strip_carries_the_deferred_state(self):
+        graph = lhc.parse_graph_json({
+            'schema_version': 2,
+            'slots': 2,
+            'tasks': [
+                {'id': 'L01', 'label': 'отложено владельцем', 'status': 'deferred', 'depends_on': []},
+            ],
+        })
+        metrics = lhc.build_metrics(graph)
+        html = lhc.render_html(graph, metrics)
+        self.assertEqual(self._kpi_value(html, 'Отложено владельцем'), '1')
+        # The remainder says how many leaves are outside of it.
+        hint = self._kpi_hint(html, 'Осталось')
+        self.assertIn('1', hint)
+        self.assertIn('отложено владельцем', hint)
+
+    def test_the_load_group_is_not_called_deferred(self):
+        """The group of the lines that wait for a free slot has its own name."""
+
+        graph = lhc.parse_graph_json({
+            'schema_version': 2,
+            'slots': 1,
+            'tasks': [
+                {'id': 'L01', 'label': 'первая работа', 'status': 'queued', 'depends_on': [],
+                 'estimate_minutes': {'minimum': 5, 'maximum': 5}},
+                {'id': 'L02', 'label': 'вторая работа', 'status': 'queued', 'depends_on': [],
+                 'estimate_minutes': {'minimum': 5, 'maximum': 5}},
+            ],
+        })
+        html = lhc.render_html(graph, lhc.build_metrics(graph))
+        self.assertIn('Ждут свободного слота', html)
+        self.assertNotIn('Отложено — свободных слотов нет', html)
+
+    @staticmethod
+    def _kpi_value(html, label):
+        match = re.search(
+            r'<div class="kpi-label"[^>]*>[^<]*' + re.escape(label) +
+            r'</div>\s*<div class="kpi-value">([^<]*)</div>',
+            html,
+        )
+        return match.group(1) if match else None
+
+    @staticmethod
+    def _kpi_hint(html, label):
+        match = re.search(
+            r'<div class="kpi-label"[^>]*>[^<]*' + re.escape(label) +
+            r'</div>\s*<div class="kpi-value">[^<]*</div>\s*<div class="kpi-hint">([^<]*)</div>',
+            html,
+        )
+        return match.group(1) if match else None
 
 
 class UnrecognizedReportTests(unittest.TestCase):

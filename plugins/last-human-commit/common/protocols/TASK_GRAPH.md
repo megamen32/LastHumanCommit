@@ -97,7 +97,7 @@ optional but expected for a live objective. An optional field is checked only
 when it is present: declaring a path, a model class, an acceptance line or an
 unknown estimate is a choice, never a demand.
 
-- `status` is `done`, `running`, `blocked`, `waiting` or `queued`. It is the
+- `status` is `done`, `running`, `blocked`, `waiting`, `deferred` or `queued`. It is the
   state of the work, not the state of the paperwork.
 - `depends_on` holds ids of tasks that must be finished first. It is the only
   scheduling input: the renderer derives waves, the parallel profile and the
@@ -147,7 +147,10 @@ unknown estimate is a choice, never a demand.
   optional: add `model_class` only when the worker class is known and
   intentionally assigned, and do not fill an unknown assignment with a default.
 - `blocker` names the concrete external obstacle. `waiting` is not a blocker: a
-  leaf waiting for a dependency is `queued`.
+  leaf waiting for a dependency is `queued`. A leaf is blocked when its status
+  says `blocked`; a blocker text alone does not make a queued leaf blocked.
+- `deferred` is a leaf the owner deferred: no answer is expected, it waits for
+  nothing, it takes no slot and it is not part of the remainder of the delivery.
 - `blocker_details` is an optional, additive object for blocked tasks. Its
   optional keys are `reason`, `responsible`, `next_action`,
   `human_required` (`yes`, `no`, or `unknown`), and `human_action`. Existing

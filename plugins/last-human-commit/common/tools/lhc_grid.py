@@ -44,15 +44,17 @@ STATUS_DONE = "done"
 STATUS_RUNNING = "running"
 STATUS_BLOCKED = "blocked"
 STATUS_WAITING = "waiting"
+STATUS_DEFERRED = "deferred"
 STATUS_QUEUED = "queued"
 
-STATUSES = (STATUS_DONE, STATUS_RUNNING, STATUS_BLOCKED, STATUS_WAITING, STATUS_QUEUED)
+STATUSES = (STATUS_DONE, STATUS_RUNNING, STATUS_BLOCKED, STATUS_WAITING, STATUS_DEFERRED, STATUS_QUEUED)
 
 STATUS_LABELS = {
     STATUS_DONE: "Готово",
     STATUS_RUNNING: "В работе",
     STATUS_BLOCKED: "Заблокировано",
     STATUS_WAITING: "Ожидание",
+    STATUS_DEFERRED: "Отложено владельцем",
     STATUS_QUEUED: "В очереди",
 }
 
@@ -60,7 +62,8 @@ STATUS_GLYPHS = {
     STATUS_DONE: "✅",
     STATUS_RUNNING: "🔄",
     STATUS_BLOCKED: "⛔",
-    STATUS_WAITING: "⏳",
+    STATUS_WAITING: "⌛",
+    STATUS_DEFERRED: "⏸",
     STATUS_QUEUED: "⋯",
 }
 
@@ -69,17 +72,31 @@ STATUS_COLORS = {
     STATUS_RUNNING: "#4f9cf9",
     STATUS_BLOCKED: "#f25f74",
     STATUS_WAITING: "#f0a742",
+    STATUS_DEFERRED: "#b08ce8",
     STATUS_QUEUED: "#7c8aa3",
 }
 
-# The status colors carry meaning only: done, in work, blocked, waiting, in
-# queue. They are referenced through CSS variables so one theme can change
-# them without touching a single markup line.
+# One table of the report markers: the glyph of every state and the state it
+# stands for. The plan report, the live log and the dashboard read the same
+# table, so they cannot disagree about what a marker means.
+GLYPH_STATUS = {
+    "✅": STATUS_DONE,
+    "🔄": STATUS_RUNNING,
+    "⌛": STATUS_WAITING,
+    "⏸": STATUS_DEFERRED,
+    "⏳": STATUS_QUEUED,
+    "⛔": STATUS_BLOCKED,
+}
+
+# The status colors carry meaning only: done, in work, blocked, waiting,
+# deferred by the owner, in queue. They are referenced through CSS variables so
+# one theme can change them without touching a single markup line.
 STATUS_CSS_VARS = {
     STATUS_DONE: "var(--st-done)",
     STATUS_RUNNING: "var(--st-running)",
     STATUS_BLOCKED: "var(--st-blocked)",
     STATUS_WAITING: "var(--st-waiting)",
+    STATUS_DEFERRED: "var(--st-deferred)",
     STATUS_QUEUED: "var(--st-queued)",
 }
 
@@ -102,6 +119,7 @@ THEME_PALETTE = {
         "st-running": "#4f9cf9",
         "st-blocked": "#f25f74",
         "st-waiting": "#f0a742",
+        "st-deferred": "#b08ce8",
         "st-queued": "#8fa0b8",
     },
     "light": {
@@ -119,6 +137,7 @@ THEME_PALETTE = {
         "st-running": "#1a62cc",
         "st-blocked": "#c02b38",
         "st-waiting": "#8a6100",
+        "st-deferred": "#6b4fa8",
         "st-queued": "#5a6b7f",
     },
 }
@@ -144,7 +163,7 @@ WAVE_LABELS = {}
 # error, never an empty dashboard.
 PLAN_REPORT_HINT = (
     'отчёт не распознан: нет строки "Цель:" или "Декомпозиция:" и нет ни одного листа '
-    '(ожидаются строки "✅", "🔄", "⛔" или "⏳")'
+    '(ожидаются строки "✅", "🔄", "⛔", "⌛", "⏸" или "⏳")'
 )
 
 
@@ -373,7 +392,10 @@ def now_clock() -> int:
 
 
 HEADER_RE = re.compile(r"^\s*(Цель|Бизнес-результат|Декомпозиция)\s*:\s*(.+?)\s*$")
-LEAF_LINE_RE = re.compile(r"^\s*([✅🔄⏳⛔])\s*(.*)$")
+# The markers of the states come from one table, so the report, the live log
+# and the dashboard cannot drift apart. The optional variation selector lets a
+# report carry "⏸️" as well as "⏸".
+LEAF_LINE_RE = re.compile(rf"^\s*([{''.join(GLYPH_STATUS)}])\ufe0f?\s*(.*)$")
 LABEL_RE = re.compile(r"\(([^)]*)\)")
 TIME_RE = re.compile(r"\b(\d{1,2}:\d{2})\b")
 ESTIMATE_RE = re.compile(r"оценка\s+([^,;.]+)", re.IGNORECASE)
@@ -470,12 +492,7 @@ def parse_plan_report(text: str) -> Optional[Graph]:
             continue
         seen_leaf = True
         index = len(leaves)
-        status = {
-            "✅": STATUS_DONE,
-            "🔄": STATUS_RUNNING,
-            "⏳": STATUS_QUEUED,
-            "⛔": STATUS_BLOCKED,
-        }.get(glyph, STATUS_QUEUED)
+        status = GLYPH_STATUS.get(glyph, STATUS_QUEUED)
         if rest.startswith("работаем "):
             rest = rest[len("работаем "):]
         label_match = LABEL_RE.search(rest)
@@ -546,7 +563,7 @@ def _int_or_none(match: Optional[re.Match]) -> Optional[int]:
 # --------------------------------------------------------------------------
 
 TABLE_ROW_RE = re.compile(r"^\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*$")
-LIVE_ITEM_RE = re.compile(r"^\s*[-*]\s*([✅🔄⏳⛔])\s*(.+?)\s*$")
+LIVE_ITEM_RE = re.compile(rf"^\s*[-*]\s*([{''.join(GLYPH_STATUS)}])\ufe0f?\s*(.+?)\s*$")
 WAVE_HEADER_RE = re.compile(r"^##\s*(.+?)\s*$", re.IGNORECASE)
 DEP_TOKEN_RE = re.compile(r"[0-9]+[а-яa-z]?")
 
@@ -654,12 +671,7 @@ def parse_legacy_plan(text: str) -> Optional[Graph]:
         live = LIVE_ITEM_RE.match(raw)
         if live:
             glyph, body = live.group(1), normalize(live.group(2))
-            status = {
-                "✅": STATUS_DONE,
-                "🔄": STATUS_RUNNING,
-                "⏳": STATUS_QUEUED,
-                "⛔": STATUS_BLOCKED,
-            }.get(glyph, STATUS_QUEUED)
+            status = GLYPH_STATUS.get(glyph, STATUS_QUEUED)
             live_items.append((status, body))
 
     if not table_leaves and not live_items:
@@ -871,6 +883,8 @@ def normalize_status(value: Any) -> str:
         "в_работе": STATUS_RUNNING,
         "blocked": STATUS_BLOCKED, "blocker": STATUS_BLOCKED, "заблокировано": STATUS_BLOCKED,
         "waiting": STATUS_WAITING, "wait": STATUS_WAITING, "ожидание": STATUS_WAITING,
+        "deferred": STATUS_DEFERRED, "defer": STATUS_DEFERRED, "отложено": STATUS_DEFERRED,
+        "отложен": STATUS_DEFERRED, "отложено_владельцем": STATUS_DEFERRED,
         "queued": STATUS_QUEUED, "todo": STATUS_QUEUED, "pending": STATUS_QUEUED,
         "в_очереди": STATUS_QUEUED,
     }
@@ -949,9 +963,14 @@ class Schedule:
 
 def schedule_graph(graph: Graph, use_max: bool = True, only_pending: bool = False) -> Schedule:
     """List-schedule the leaves with a hard slot limit."""
-    leaves = {leaf.id: leaf for leaf in graph.leaves}
+    # A leaf the owner deferred is not part of the delivery any more: it takes
+    # no slot, no time and no place on the critical path.
+    leaves = {
+        leaf.id: leaf for leaf in graph.leaves
+        if leaf.status != STATUS_DEFERRED
+    }
     durations: dict[str, float] = {}
-    for leaf in graph.leaves:
+    for leaf in leaves.values():
         if only_pending and leaf.status == STATUS_DONE:
             durations[leaf.id] = 0.0
             continue
@@ -1105,6 +1124,9 @@ def build_metrics(graph: Graph) -> dict[str, Any]:
     blocked = headline.get(STATUS_BLOCKED, 0)
     queued = headline.get(STATUS_QUEUED, 0)
     waiting = headline.get(STATUS_WAITING, 0)
+    # A leaf the owner deferred is not owed any more: it is not part of the
+    # remainder of the delivery.
+    deferred = headline.get(STATUS_DEFERRED, 0)
 
     schedule_max = schedule_graph(graph, use_max=True)
     schedule_min = schedule_graph(graph, use_max=False)
@@ -1113,11 +1135,14 @@ def build_metrics(graph: Graph) -> dict[str, Any]:
 
     unknown_estimate_pending = [
         leaf for leaf in graph.leaves
-        if leaf.status != STATUS_DONE and leaf.estimate_min is None and leaf.estimate_max is None
+        if leaf.status != STATUS_DONE
+        and leaf.status != STATUS_DEFERRED
+        and leaf.estimate_min is None and leaf.estimate_max is None
     ]
     unknown_estimate_all = [
         leaf for leaf in graph.leaves
-        if leaf.estimate_min is None and leaf.estimate_max is None
+        if leaf.status != STATUS_DEFERRED
+        and leaf.estimate_min is None and leaf.estimate_max is None
     ]
 
     effort = sum(leaf.estimate or 0.0 for leaf in graph.leaves)
@@ -1158,6 +1183,7 @@ def build_metrics(graph: Graph) -> dict[str, Any]:
         "blocked": blocked,
         "queued": queued,
         "waiting": waiting,
+        "deferred": deferred,
         "progress_pct": round(100.0 * done / headline_total, 1) if headline_total else 0.0,
         "graph_progress_pct": round(100.0 * counts[STATUS_DONE] / total, 1) if total else 0.0,
         "effort_minutes": effort,
@@ -1179,7 +1205,7 @@ def build_metrics(graph: Graph) -> dict[str, Any]:
         "eta_anchor_clock": "" if anchor is None else format_clock(anchor % (24 * 60)),
         "eta_anchor_idle_minutes": idle_minutes,
         "eta_overdue": bool(eta_known and eta_from + int(round(eta_max)) < now),
-        "unfinished": max(0, headline_total - done),
+        "unfinished": max(0, headline_total - done - deferred),
         "schedule": schedule_max,
         "schedule_min": schedule_min,
         "pending": pending_max,
@@ -1366,14 +1392,15 @@ def _plan_now_port(graph: Graph) -> dict[str, Any]:
             blocked.append((leaf, _port_reason(leaf)))
         elif leaf.status == STATUS_WAITING:
             waiting.append((leaf, []))
+        elif leaf.status == STATUS_DEFERRED:
+            # The owner deferred this leaf: no answer is expected, so it waits
+            # for nothing and it takes no slot.
+            continue
         elif leaf.status not in STATUSES:
             continue
 
     for leaf in graph.leaves:
         if leaf.status != STATUS_QUEUED:
-            continue
-        if leaf.blocker or (leaf.blocker_details or {}).get("reason"):
-            blocked.append((leaf, _port_reason(leaf)))
             continue
         unmet = [
             dep for dep in leaf.depends_on
@@ -1576,8 +1603,11 @@ def render_html(graph: Graph, metrics: dict[str, Any]) -> str:
         ("В работе", str(metrics["running"]), "сейчас выполняется", STATUS_RUNNING, True),
         ("Заблокировано", str(metrics["blocked"]), "нужен внешний ход", STATUS_BLOCKED, True),
         ("В очереди", str(metrics["queued"]), "ждут своего слота", STATUS_QUEUED, True),
+        ("Отложено владельцем", str(metrics["deferred"]),
+         "ответа не ждём, вне остатка", STATUS_DEFERRED, True),
         ("Осталось", str(metrics["unfinished"]),
-         "не завершено, включая работу в процессе", STATUS_QUEUED, True),
+         f"не завершено · отложено владельцем: {metrics['deferred']} (в остаток не входит)",
+         STATUS_QUEUED, True),
         ("Параллельность", f"{metrics['current_parallel']} / {metrics['slots']}",
          f"пик по плану {metrics['planned_peak_parallel']}", STATUS_RUNNING, False),
         (remaining_label, fmt_minutes(metrics["remaining_minutes_max"]),
@@ -1675,7 +1705,7 @@ def render_html(graph: Graph, metrics: dict[str, Any]) -> str:
                 now_item(item, f"{item['estimate']} · ждёт свободного слота", "deferred")
             )
         deferred_html = (
-            f'<div class="now-subtitle">Отложено — свободных слотов нет ({len(plan["deferred"])})</div>'
+            f'<div class="now-subtitle">Ждут свободного слота ({len(plan["deferred"])})</div>'
             "<ul class=\"now-list\">" + "".join(items) + "</ul>"
         )
 
@@ -1741,18 +1771,12 @@ def render_html(graph: Graph, metrics: dict[str, Any]) -> str:
     gantt_rows: list[str] = []
     current_wave: Optional[int] = None
     wave_counts: dict[int, int] = {}
-    for leaf in leaves:
-        wave_counts[schedule.waves.get(leaf.id, 0)] = wave_counts.get(schedule.waves.get(leaf.id, 0), 0) + 1
-    for leaf in leaves:
-        wave = schedule.waves.get(leaf.id, 0)
-        if wave != current_wave:
-            current_wave = wave
-            gantt_rows.append(
-                f'<div class="wave-row"><span>Волна {wave + 1}</span>'
-                f'<span class="wave-count">{wave_counts.get(wave, 0)} листьев</span></div>'
-            )
-        start = schedule.starts.get(leaf.id, 0.0)
-        finish = schedule.finishes.get(leaf.id, start)
+    # A leaf the owner deferred has no schedule: it is shown apart from the
+    # waves, because it does not take part in the delivery.
+    scheduled = [leaf for leaf in leaves if leaf.id in schedule.waves]
+    deferred_leaves = [leaf for leaf in leaves if leaf.id not in schedule.waves]
+
+    def gantt_row(leaf: Leaf, start: float, finish: float) -> str:
         left = 100.0 * start / horizon
         width = max(0.6, 100.0 * max(finish - start, 0.0) / horizon)
         color = STATUS_CSS_VARS[leaf.status]
@@ -1767,12 +1791,12 @@ def render_html(graph: Graph, metrics: dict[str, Any]) -> str:
             + (f"\nконец: {leaf.finished_at}" if leaf.finished_at else "")
             + (f"\nзависит: {', '.join(label_by_id.get(dep, dep) for dep in leaf.depends_on)}" if leaf.depends_on else "")
             + (f"\nпараллельно: {', '.join(label_by_id.get(peer, peer) for peer in leaf.parallel_with)}" if leaf.parallel_with else "")
-            + (f"\nблокер: {leaf.blocker}" if leaf.blocker else "")
+            + (f"\nблокер: {leaf.blocker}" if leaf.blocker and leaf.status == STATUS_BLOCKED else "")
             + ("\nна критическом пути" if critical else "")
         )
         title = escape(tooltip)
         critical_mark = '<span class="crit" title="критический путь">◆ критический путь</span>' if critical else ""
-        gantt_rows.append(
+        return (
             f'<div class="gantt-row" data-status="{leaf.status}" data-leaf="{escape(leaf.id)}">'
             f'<div class="gantt-label" title="{escape(leaf.label)}">'
             f'<span class="gantt-line">'
@@ -1789,6 +1813,27 @@ def render_html(graph: Graph, metrics: dict[str, Any]) -> str:
             f'<div class="bar" style="left:{left:.4f}%;width:{width:.4f}%;background:{color}" title="{title}">'
             f"</div></div></div>"
         )
+
+    for leaf in scheduled:
+        wave_counts[schedule.waves.get(leaf.id, 0)] = wave_counts.get(schedule.waves.get(leaf.id, 0), 0) + 1
+    for leaf in scheduled:
+        wave = schedule.waves.get(leaf.id, 0)
+        if wave != current_wave:
+            current_wave = wave
+            gantt_rows.append(
+                f'<div class="wave-row"><span>Волна {wave + 1}</span>'
+                f'<span class="wave-count">{wave_counts.get(wave, 0)} листьев</span></div>'
+            )
+        start = schedule.starts.get(leaf.id, 0.0)
+        finish = schedule.finishes.get(leaf.id, start)
+        gantt_rows.append(gantt_row(leaf, start, finish))
+    if deferred_leaves:
+        gantt_rows.append(
+            f'<div class="wave-row"><span>Отложено владельцем</span>'
+            f'<span class="wave-count">{len(deferred_leaves)} листьев</span></div>'
+        )
+        for leaf in deferred_leaves:
+            gantt_rows.append(gantt_row(leaf, 0.0, 0.0))
     gantt_html = "".join(gantt_rows)
 
     # ----- blockers ------------------------------------------------------
@@ -2121,7 +2166,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   .brief-wait {{ border-left-color: var(--warn); }}
 
   /* ---- KPI strip ---- */
-  .kpis {{ display: grid; gap: 10px; grid-template-columns: repeat(9, minmax(0, 1fr)); margin-bottom: 14px; }}
+  .kpis {{ display: grid; gap: 10px; grid-template-columns: repeat(5, minmax(0, 1fr)); margin-bottom: 14px; }}
   .kpi {{ background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
     border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 12px; padding: 11px 13px;
     min-width: 0; }}
@@ -2208,14 +2253,15 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   @media (min-width: 1700px) {{
     .gantt-axis-row, .gantt-row {{ grid-template-columns: minmax(340px, 460px) minmax(360px, 1fr); }}
   }}
-  @media (max-width: 1800px) {{ .kpis {{ grid-template-columns: repeat(5, minmax(0, 1fr)); }} }}
+  @media (max-width: 1800px) {{ .kpis {{ grid-template-columns: repeat(4, minmax(0, 1fr)); }} }}
+  @media (max-width: 1200px) {{ .kpis {{ grid-template-columns: repeat(3, minmax(0, 1fr)); }} }}
   @media (max-width: 1100px) {{
     .now-grid {{ grid-template-columns: minmax(0, 1fr); }}
   }}
   @media (max-width: 900px) {{
     .brief {{ grid-template-columns: minmax(0, 1fr); }}
-    .kpis {{ grid-template-columns: repeat(3, minmax(0, 1fr)); }}
   }}
+  @media (max-width: 700px) {{ .kpis {{ grid-template-columns: repeat(2, minmax(0, 1fr)); }} }}
   .blocker {{ background: var(--panel-2); border: 1px solid #3a2530; border-left: 3px solid var(--bad);
     border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; }}
   .blocker-head {{ display: flex; gap: 8px; align-items: center; margin-bottom: 4px; }}
@@ -2506,11 +2552,13 @@ def render_leaf_lines(graph: Graph, metrics: dict[str, Any]) -> list[str]:
         parts.append(f"усилие {actual}")
         if leaf.actual_span_minutes is not None:
             parts.append(f"по часам {fmt_minutes(leaf.actual_span_minutes)}")
-        parts.append(f"волна {wave}")
+        # A deferred leaf is not scheduled: it has no wave, it is outside the
+        # remainder of the delivery.
+        parts.append("вне остатка" if leaf.status == STATUS_DEFERRED else f"волна {wave}")
         parts.append("зависит: " + (", ".join(leaf.depends_on) or "—"))
         if leaf.parallel_with:
             parts.append("параллельно: " + ", ".join(leaf.parallel_with))
-        if leaf.blocker:
+        if leaf.blocker and leaf.status == STATUS_BLOCKED:
             parts.append(f"блокер: {leaf.blocker}")
         lines.append(" · ".join(parts))
     return lines

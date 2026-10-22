@@ -51,15 +51,17 @@ STATUS_DONE = "done"
 STATUS_RUNNING = "running"
 STATUS_BLOCKED = "blocked"
 STATUS_WAITING = "waiting"
+STATUS_DEFERRED = "deferred"
 STATUS_QUEUED = "queued"
 
-STATUSES = (STATUS_DONE, STATUS_RUNNING, STATUS_BLOCKED, STATUS_WAITING, STATUS_QUEUED)
+STATUSES = (STATUS_DONE, STATUS_RUNNING, STATUS_BLOCKED, STATUS_WAITING, STATUS_DEFERRED, STATUS_QUEUED)
 
 STATUS_LABELS = {
     STATUS_DONE: "Готово",
     STATUS_RUNNING: "В работе",
     STATUS_BLOCKED: "Заблокировано",
     STATUS_WAITING: "Ожидание",
+    STATUS_DEFERRED: "Отложено владельцем",
     STATUS_QUEUED: "В очереди",
 }
 
@@ -73,6 +75,8 @@ STATUS_ALIASES = {
     "в_работе": STATUS_RUNNING,
     "blocked": STATUS_BLOCKED, "blocker": STATUS_BLOCKED, "заблокировано": STATUS_BLOCKED,
     "waiting": STATUS_WAITING, "wait": STATUS_WAITING, "ожидание": STATUS_WAITING,
+    "deferred": STATUS_DEFERRED, "defer": STATUS_DEFERRED, "отложено": STATUS_DEFERRED,
+    "отложен": STATUS_DEFERRED, "отложено_владельцем": STATUS_DEFERRED,
     "queued": STATUS_QUEUED, "todo": STATUS_QUEUED, "pending": STATUS_QUEUED,
     "в_очереди": STATUS_QUEUED,
 }
@@ -452,6 +456,10 @@ def analyze(graph: Graph) -> Summary:
             summary.blocked.append((task, task.blocker_reason))
         elif task.status == STATUS_WAITING:
             summary.waiting.append((task, []))
+        elif task.status == STATUS_DEFERRED:
+            # The owner deferred this line: no answer is expected, so it waits
+            # for nothing and it takes no slot.
+            continue
         elif task.status not in STATUSES:
             summary.unknown_status.append(task)
 
@@ -461,13 +469,10 @@ def analyze(graph: Graph) -> Summary:
     else:
         summary.free_slots = max(0, graph.slots - running_count)
 
-    # A queued line with a blocker text is blocked in fact, whatever its status
-    # field says: a concrete obstacle must not be launched.
+    # One rule of the count of blockers: a line is blocked when its status says
+    # so. A blocker text alone does not change the state of a queued line.
     for task in graph.tasks:
         if task.status != STATUS_QUEUED:
-            continue
-        if task.blocker or task.blocker_details.get("reason"):
-            summary.blocked.append((task, task.blocker_reason))
             continue
         unmet: list[str] = []
         for dep in task.depends_on:
@@ -679,6 +684,15 @@ def render_text(summary: Summary, *, show_slots: bool = False) -> str:
         lines.append(f"Заблокированы ({len(summary.blocked)}):")
         for task, reason in summary.blocked:
             lines.append(f"  - {task.id} «{task.label}» — {reason}")
+
+    # A line the owner deferred is not waiting for anything and it is not
+    # blocked: it is named apart, so it does not disappear from the answer.
+    deferred_by_owner = [task for task in graph.tasks if task.status == STATUS_DEFERRED]
+    if deferred_by_owner:
+        lines.append("")
+        lines.append(f"Отложено владельцем ({len(deferred_by_owner)}):")
+        for task in deferred_by_owner:
+            lines.append(f"  - {task.id} «{task.label}» — ответа не ждём")
 
     if summary.unknown_status:
         lines.append("")

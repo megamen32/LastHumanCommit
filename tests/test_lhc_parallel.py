@@ -113,7 +113,9 @@ def test_a_dependency_that_does_not_exist_is_never_satisfied(tmp_path):
     assert "нет такой задачи в графе" in lhc.render_text(summary)
 
 
-def test_a_queued_line_with_a_blocker_is_not_ready(tmp_path):
+def test_a_queued_line_with_a_blocker_text_is_not_blocked(tmp_path):
+    """One rule of the count of blockers: the status says it, the text does not."""
+
     graph = write_graph(
         tmp_path / "plan.graph.json",
         [{"id": "L01", "label": "signed certificate", "status": "queued",
@@ -123,9 +125,47 @@ def test_a_queued_line_with_a_blocker_is_not_ready(tmp_path):
 
     summary = lhc.summarize(graph)
 
-    assert summary.ready == []
-    assert summary.blocked[0][0].id == "L01"
-    assert summary.blocked[0][1] == "the source sent no certificate"
+    assert summary.blocked == []
+    assert [task.id for task in summary.ready] == ["L01"]
+
+
+def test_a_deferred_line_is_not_unknown_and_waits_for_nothing(tmp_path):
+    """A line the owner deferred is not an unknown state and takes no slot."""
+
+    graph = write_graph(
+        tmp_path / "plan.graph.json",
+        [
+            {"id": "L01", "label": "deferred by the owner", "status": "deferred", "depends_on": []},
+            {"id": "L02", "label": "first line", "status": "queued", "depends_on": []},
+            {"id": "L03", "label": "second line", "status": "queued", "depends_on": []},
+        ],
+        slots=1,
+    )
+
+    summary = lhc.summarize(graph)
+
+    assert summary.unknown_status == []
+    assert [task.id for task in summary.ready] == ["L02"]
+    assert [task.id for task in summary.deferred] == ["L03"]
+    assert summary.blocked == []
+    assert summary.waiting == []
+
+
+def test_a_deferred_line_is_named_in_the_answer_of_the_planner(tmp_path):
+    """It is not waiting and it is not blocked: it is named apart."""
+
+    graph = write_graph(
+        tmp_path / "plan.graph.json",
+        [{"id": "L01", "label": "правка объявления", "status": "deferred", "depends_on": []}],
+        slots=1,
+    )
+
+    text = lhc.render_text(lhc.summarize(graph))
+
+    assert "Отложено владельцем" in text
+    assert "правка объявления" in text
+    assert "Ждут зависимостей" not in text
+    assert "Заблокированы" not in text
 
 
 # --------------------------------------------------------------------------
