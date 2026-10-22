@@ -48,7 +48,7 @@ def test_a_harness_without_hooks_has_an_explicit_fallback_command():
     assert '--heartbeat-only' in flat(skill)
     assert 'session_id' in flat(skill)
     # The fallback must point at the package's own tool, not a global path.
-    assert '"<package root>/tools/lhc_entry.py"' in flat(skill)
+    assert '"<tools>/lhc_entry.py"' in flat(skill)
 
 
 def test_every_projected_skill_carries_the_same_umbrella_pointer():

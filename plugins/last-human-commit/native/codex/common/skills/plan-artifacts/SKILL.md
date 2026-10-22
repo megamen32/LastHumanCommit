@@ -8,9 +8,10 @@ description: Create the LHC plan artifacts in one pass — the task record, the 
 One procedure, no discovery. Do not read `lhc_grid.py`, do not grep the parser
 regexes, do not infer the shape from an old task record: everything needed is here.
 
-`<package root>` below is the directory two levels above this `SKILL.md` (in a
-source checkout: `src/common`; in the installed package: the package root). Resolve
-it once and reuse the value; never re-derive a path per command.
+`<tools>` below is the tools directory of the active package root: `common/tools/`
+in the installed package, `common/tools/` in a source checkout and in the
+repository-root projection of this tree. Resolve it once and reuse the value; never
+re-derive a path per command.
 
 ## 1. Write the report
 
@@ -44,7 +45,7 @@ their order and their estimates, and the tool derives the rest — ids, dependen
 waves, parallelism:
 
 ```sh
-python3 "<package root>/tools/lhc_grid.py" export <record> -o <record-dir>/plan.graph.json
+python3 "<tools>/lhc_grid.py" export <record> -o <record-dir>/plan.graph.json
 ```
 
 `<record>` is the task record that holds the report under `## Plan` (a standalone
@@ -52,29 +53,29 @@ report file works too). The graph is written next to the record as
 `plan.graph.json`. The export gives every leaf an id (`L01`, `L02`, …), its status,
 its dependencies and its estimate bounds.
 
-## 3. Add what the report cannot carry
+## 3. Set the attribution once
 
-The report is a person's plan; the graph is also the machine's memory. After the
-export, set the fields the report has no place for. Per leaf: `owner`, `session`,
-`harness`, `model`, `model_class`, `role`, `acceptance`, `read_paths`,
-`write_paths`, `note`, `estimate_unknown_reason`, `blocker_details`. On the
-document: `title`, `goal`, `business_result`, `current_progress`,
-`external_waits`, `slots`.
+The report knows the work; the graph also carries who owns it. Four leaf fields and
+two document fields have no place in a report, so set them once, on the first
+export, and let `--merge` carry them through every later refresh:
 
-They are optional: a field you do not know stays absent, and an absent optional
-field is a choice, never a demand. `read_paths` and `write_paths` are how one
-owner per path is proven, so write them for every leaf that touches a file — and
-keep the mutable paths disjoint: two leaves that may run at the same time must
-not declare the same `write_paths`. A shared mutable path needs either a
-dependency between those leaves or isolated ownership, and the optional offline
-checker `scripts/lhc_validate_graph.py <graph.json>` (source checkout only) fails
-on exactly that conflict.
+- per leaf: `role`, `read_paths`, `write_paths`, `paths`;
+- on the document: `current_progress`, `external_waits`.
+
+`read_paths`, `write_paths` and `paths` are how one owner per path is proven, so
+write them for every leaf that touches a file — and keep the mutable paths
+disjoint: two leaves that may run at the same time must not declare the same
+mutable path. A shared mutable path needs either a dependency between those leaves
+or isolated ownership, and the optional offline checker
+`scripts/lhc_validate_graph.py <graph.json>` (source checkout only) fails on
+exactly that conflict. `current_progress` is what is already proven apart from the
+planned result, and `external_waits` are the pending human or platform waits.
 
 ## 4. Render and reconcile
 
 ```sh
-python3 "<package root>/tools/lhc_grid.py" render <record-dir>/plan.graph.json -o <record-dir>/plan.html
-python3 "<package root>/tools/lhc_grid.py" check-plan <record> <record-dir>/plan.graph.json
+python3 "<tools>/lhc_grid.py" render <record-dir>/plan.graph.json -o <record-dir>/plan.html
+python3 "<tools>/lhc_grid.py" check-plan <record> <record-dir>/plan.graph.json
 ```
 
 `check-plan` prints every divergence between the report and the graph and exits
@@ -85,7 +86,8 @@ a chat message.
 ## 5. The order at every plan boundary
 
 1. update the report in the record from the current state of the work;
-2. refresh the graph — export again, then re-add the attribution fields;
+2. refresh the graph — export again with `--merge <the same graph>`, and the
+   attribution survives;
 3. `render` the dashboard;
 4. `check-plan` — fix every divergence it prints.
 

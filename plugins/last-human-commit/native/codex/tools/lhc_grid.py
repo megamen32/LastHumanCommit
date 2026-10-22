@@ -139,6 +139,27 @@ class Leaf:
         return self.actual_minutes > self.estimate_max + 0.01
 
 
+DEFAULT_GRAPH_TITLE = "LHC · граф задач"
+# The attribution a plan report has no place for. The export writes it when the
+# source graph knows it, and a refresh keeps it from the earlier graph.
+ATTRIBUTION_FIELDS = (
+    "owner",
+    "session",
+    "harness",
+    "model",
+    "model_class",
+    "role",
+    "acceptance",
+    "note",
+    "blocker",
+    "blocker_details",
+    "estimate_unknown_reason",
+    "read_paths",
+    "write_paths",
+    "paths",
+)
+
+
 @dataclass
 class Graph:
     """A whole task graph plus its live state."""
@@ -2424,6 +2445,11 @@ def build_parser() -> argparse.ArgumentParser:
     export = sub.add_parser("export", help="Convert a plan into the standard graph JSON")
     export.add_argument("input", type=Path)
     export.add_argument("-o", "--output", type=Path, required=True)
+    export.add_argument(
+        "--merge",
+        type=Path,
+        help="Carry the attribution of an earlier graph into the fresh export",
+    )
 
     validate = sub.add_parser("validate", help="Check the graph structure")
     validate.add_argument("input", type=Path)
@@ -2464,9 +2490,42 @@ def command_status(args: argparse.Namespace) -> int:
     return 0
 
 
+def merge_attribution(document: dict[str, Any], previous: dict[str, Any]) -> None:
+    """Carry the attribution of an earlier graph into a fresh export.
+
+    The export writes what a plan report knows. The attribution of a leaf - the
+    paths it owns, its role - is not in the report, so a refresh would drop it
+    and force a manual edit of the JSON at every plan boundary. The earlier
+    graph is read as raw JSON because the parser drops fields it does not model.
+    """
+
+    tasks = [item for item in previous.get("tasks", []) if isinstance(item, dict)]
+    by_id = {item.get("id"): item for item in tasks if item.get("id")}
+    by_label = {item.get("label"): item for item in tasks if item.get("label")}
+    for task in document.get("tasks", []):
+        if not isinstance(task, dict):
+            continue
+        source = by_id.get(task.get("id")) or by_label.get(task.get("label"))
+        if not source:
+            continue
+        for field in ATTRIBUTION_FIELDS:
+            if not task.get(field) and source.get(field) is not None:
+                task[field] = source[field]
+    for field in ("current_progress", "external_waits"):
+        if not document.get(field) and previous.get(field):
+            document[field] = previous[field]
+    if previous.get("title") and document.get("title") == DEFAULT_GRAPH_TITLE:
+        document["title"] = previous["title"]
+
+
 def command_export(args: argparse.Namespace) -> int:
     graph = require_leaves(discover_graph(args.input))
     document = export_graph(graph)
+    if args.merge:
+        previous = json.loads(args.merge.read_text(encoding="utf-8"))
+        if not isinstance(previous, dict):
+            raise ValueError("merged graph is not a JSON object")
+        merge_attribution(document, previous)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(
         json.dumps(document, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"

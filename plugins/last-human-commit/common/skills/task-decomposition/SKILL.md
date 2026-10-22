@@ -44,9 +44,9 @@ Separate three quantities:
 
 Keep the same leaves in a machine-readable task graph next to the task record as
 `plan.graph.json` and render it with
-`python3 "<package root>/tools/lhc_grid.py" render <objective>/plan.graph.json -o
-<objective>/plan.html`, where `<package root>` is the directory two levels above
-this `SKILL.md`. The procedure — record, graph, report, render, check — is the
+`python3 "<tools>/lhc_grid.py" render <objective>/plan.graph.json -o
+<objective>/plan.html`, where `<tools>` is the tools directory of the
+active package root. The procedure — record, graph, report, render, check — is the
 `plan-artifacts` skill; the canonical format is `common/protocols/TASK_GRAPH.md`.
 The graph carries the schedule, the parallelism and the forecast; the report
 carries the same content for a person. A decomposition without a graph is not

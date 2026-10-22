@@ -24,6 +24,7 @@ but not in the repository-root projection of the skills tree.
 The model gate belongs here too: below 20% remaining allowance no council, no
 frontier model and no adviser may be convened.
 """
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -67,9 +68,9 @@ def test_the_skill_is_report_first_and_never_asks_for_hand_written_json():
     body = flat(CANON.read_text())
     # One format for a person; the graph is derived from it.
     assert 'Do not hand-write the graph' in body
-    assert '"<package root>/tools/lhc_grid.py" export' in body
-    assert '"<package root>/tools/lhc_grid.py" check-plan' in body
-    assert '"<package root>/tools/lhc_grid.py" render' in body
+    assert '"<tools>/lhc_grid.py" export' in body
+    assert '"<tools>/lhc_grid.py" check-plan' in body
+    assert '"<tools>/lhc_grid.py" render' in body
     # The report shape, in the user's language.
     assert 'Цель:' in body
     assert 'Бизнес-результат:' in body
@@ -78,8 +79,10 @@ def test_the_skill_is_report_first_and_never_asks_for_hand_written_json():
     # The gate and the boundary order.
     assert 'exits non-zero' in body
     assert 'update the report in the record' in body
-    # The attribution the report cannot carry.
-    for field in ('owner', 'session', 'harness', 'read_paths', 'write_paths', 'note'):
+    # Only the fields the export cannot carry are named as such: the export
+    # already copies owner, session, harness, model, note and the rest.
+    assert 'Set the attribution once' in body
+    for field in ('role', 'read_paths', 'write_paths', 'current_progress', 'external_waits'):
         assert f'`{field}`' in body
     # The status vocabulary and the estimate rule.
     for status in ('done', 'running', 'blocked', 'waiting', 'queued'):
@@ -94,8 +97,9 @@ def test_no_skill_points_at_a_tool_path_that_breaks_in_a_shipped_layout():
     for skill in SKILLS.glob('*/SKILL.md'):
         text = skill.read_text()
         assert '../../tools/' not in text, f"{skill.name} uses a broken tool path"
+        assert 'python3 "src/common/tools/' not in text, f"{skill.name} uses a package-only path"
     readme = flat((SKILLS / 'README.md').read_text())
-    assert '"<package root>/tools/..."' in readme
+    assert '"<tools>/..."' in readme
 
 
 def test_the_umbrella_skill_and_the_router_point_to_the_procedure():
@@ -106,6 +110,68 @@ def test_the_umbrella_skill_and_the_router_point_to_the_procedure():
     assert 'The procedure is the `plan-artifacts` skill' in router
     assert 'the graph is derived from it with `lhc_grid.py export`' in router
     assert len(ROUTER.read_text().splitlines()) <= 200
+
+
+def test_the_refresh_keeps_the_attribution_without_a_manual_edit():
+    body = flat(CANON.read_text())
+    assert '--merge' in body
+    assert 'the attribution survives' in body
+    # The merge is a real verb of the tool, not a promise in prose.
+    import re
+    tool = (ROOT / 'src/common/tools/lhc_grid.py').read_text()
+    assert '"--merge"' in tool
+    assert 'def merge_attribution' in tool
+
+
+def test_a_refresh_keeps_the_attribution_of_the_leaves(tmp_path):
+    """The refresh must not force a manual edit of the graph JSON."""
+
+    import json
+    import subprocess
+
+    tool = ROOT / 'src/common/tools/lhc_grid.py'
+    record = tmp_path / 'task.md'
+    record.write_text(
+        "# Task\n\n## Plan\n"
+        "Цель: собрать артефакты\n"
+        "Бизнес-результат: отчёт, граф и дашборд\n"
+        "Декомпозиция: 2 листа · параллельно нет · 1 волна · слотов: 1\n\n"
+        "✅ (первый лист) начата 10:00 закончена 10:05, оценка 10 минут, факт 5 минут\n"
+        "🔄 работаем (второй лист) начата 10:06, оценка 10 минут, прошло 4 минуты\n",
+        encoding='utf-8',
+    )
+    first = tmp_path / 'plan.graph.json'
+    subprocess.run(
+        [sys.executable, str(tool), 'export', str(record), '-o', str(first)],
+        check=True, capture_output=True,
+    )
+    document = json.loads(first.read_text(encoding='utf-8'))
+    document['title'] = 'Мой заголовок'
+    document['current_progress'] = 'первый лист закрыт'
+    document['tasks'][0].update({
+        'role': 'Worker',
+        'write_paths': ['src/b.ts'],
+        'owner': 'mvs_x',
+        'session': 'codex:1',
+    })
+    first.write_text(json.dumps(document, ensure_ascii=False, indent=2), encoding='utf-8')
+
+    second = tmp_path / 'plan2.graph.json'
+    subprocess.run(
+        [sys.executable, str(tool), 'export', str(record), '-o', str(second),
+         '--merge', str(first)],
+        check=True, capture_output=True,
+    )
+    refreshed = json.loads(second.read_text(encoding='utf-8'))
+    leaf = refreshed['tasks'][0]
+    assert leaf['role'] == 'Worker'
+    assert leaf['write_paths'] == ['src/b.ts']
+    assert leaf['owner'] == 'mvs_x'
+    assert leaf['session'] == 'codex:1'
+    assert refreshed['current_progress'] == 'первый лист закрыт'
+    assert refreshed['title'] == 'Мой заголовок'
+    # The report still drives the state of the work.
+    assert leaf['status'] == 'done'
 
 
 def test_the_skill_is_registered_in_the_validator_and_the_catalog():

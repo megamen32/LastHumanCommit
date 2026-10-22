@@ -1,3 +1,64 @@
+# 1.5.29 - the recheck of the council found three real defects, and they are fixed
+
+The independent recheck of the 1.5.28 synthesis attacked the combined result, not
+its parts, and it was right three times.
+
+**The export carries more than the first draft said.** 1.5.28 named owner, session,
+harness, model, note and the estimate reason as fields the agent has to add after
+the export. Measured on a real report, the export copies them. What it really does
+not carry is four leaf fields and two document fields, because a report has no
+place for them: `role`, `read_paths`, `write_paths`, `paths` per leaf, and
+`current_progress`, `external_waits` on the document. The procedure now says
+exactly that.
+
+**A refresh must not force a manual edit.** The recheck found the real leak: the
+export drops the attribution, so every plan boundary asked the agent to patch the
+graph JSON by hand - the very thing the procedure forbids. `lhc_grid.py export`
+now takes `--merge <earlier graph>`: the attribution of every leaf survives a
+refresh, matched by id and then by label, while the report still drives the
+status, the estimates and the times. The procedure refreshes with that flag
+instead of re-adding fields by hand.
+
+**One tool path that resolves in every layout.** The convention `../../tools/...`
+breaks in the repository-root projection of the skills tree, and a literal
+`src/common/tools/...` breaks in the installed package. Every skill now uses
+`<tools>` with the resolution written out: `common/tools/` in the installed
+package, `src/common/tools/` in a source checkout and in the repository-root
+projection.
+
+**The umbrella pointed at a router that is not there in a source checkout.** It
+said the package `AGENTS.md` is two directories above the skill; in the canonical
+source checkout that is `src/common/`, where no `AGENTS.md` exists. The text now
+names both layouts. The 20% allowance gate also moved into the umbrella, because
+in a harness that runs no hooks the umbrella is the only always-loaded entry, and
+a gate that names no source is a gate the agent has to go and look up.
+
+The recheck also disagreed with the council about the MCP. That dissent is
+retained in the record: the recheck argued for a thin wrapper because the export
+had no merge mode. The merge mode now exists, as one verb of the existing tool,
+so the wrapper would not remove any pain the CLI does not already remove.
+
+Tests: 1062 passed.
+
+The 1.5.28 procedure named owner, session, harness, model, note and the estimate
+reason as fields the agent has to add after the export. That was wrong: the export
+copies them, and the report parser has them. Measured on a real report, the export
+carries per leaf the id, label, status, dependencies, parallelism, the estimate
+bounds, the measured actual time, the start and finish, the owner, the session,
+the harness, the model, the acceptance, the note and the blocker; on the document
+the goal, the business result and the slot count.
+
+What the export really does not carry is three leaf fields and two document
+fields, because a report has no place for them: `role`, `read_paths`,
+`write_paths` per leaf, and `current_progress`, `external_waits` on the document.
+The procedure now says exactly that, and it also says that the mutable paths of
+two leaves that may run at the same time must stay disjoint - the offline
+checker fails on exactly that conflict, and the canary that produced this release
+hit it.
+
+Tests: 1060 passed.
+
+
 # 1.5.28 - the plan artifacts are one procedure, and the council decided about the MCP
 
 An AI session that had to produce the task record, the machine-readable graph and

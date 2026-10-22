@@ -6,8 +6,8 @@ description: Let the human-selected Lead coordinate a goal into coherent model-a
 # Decompose, allocate, execute, learn
 
 Use before substantial dispatch and whenever execution reveals a bad boundary.
-`<package root>` below is the directory two levels above this `SKILL.md` (in a
-source checkout: `src/common`; in the installed package: the package root).
+`<tools>` below is the tools directory of the active package root:
+`common/tools/` in the installed package, `src/common/tools/` in a source checkout.
 The Lead only coordinates; assign every execution step to a Worker, even when small. Use independent review only when the claim and risk justify it. Allowed Worker, Adviser, Reviewer and Tester models come from the allowed tiers: fast tier glm-5.3-flash or minimax-3.1-flash, frontier tier gpt-6-luna, glm-5.3 or gpt-6.1-sol; resolve exact live catalog IDs before dispatch, with no silent fallback. An assigned leaf does not recursively hire.
 Keep its graph compact. An already delegated leaf with no-delegation does not hire recursively.
 
@@ -49,7 +49,7 @@ Render it with one command so the user sees what is done, what runs now, what is
 blocked, the rough finish and the parallelism without asking for a status:
 
 ```sh
-python3 "<package root>/tools/lhc_grid.py" render <objective>/plan.graph.json -o <objective>/plan.html
+python3 "<tools>/lhc_grid.py" render <objective>/plan.graph.json -o <objective>/plan.html
 ```
 
 When a graph is useful, run the optional offline checker from the LastHumanCommit
@@ -81,14 +81,14 @@ Show the arithmetic and each uncertainty rather than doubling a global buffer.
 The checker can summarize declared per-node estimates, but its dependency-only
 critical path is a lower bound until capacity, resource conflicts and waits are
 accounted for. It does not measure active time or run a scheduler. Use
-`"<package root>/tools/lhc_task_budget.py"` per TIME_CONTROL to flag decomposition candidates
+`"<tools>/lhc_task_budget.py"` per TIME_CONTROL to flag decomposition candidates
 and calculate effort sums; its dependency-only bounds also exclude capacity
 and waits, so Lead still owns the feasible elapsed schedule.
 
 ## Dispatch and close
 
 Lead initializes, verifies and repairs actual active accounting through the
-existing TIME_CONTROL mechanism (`"<package root>/tools/lhc_active_time.py"`); each role
+existing TIME_CONTROL mechanism (`"<tools>/lhc_active_time.py"`); each role
 records/reports its own intervals
 and source/coverage. Unknown historical gaps stay unknown. Idlecap estimates
 are estimates, never measured active time; summed parallel effort is not elapsed.

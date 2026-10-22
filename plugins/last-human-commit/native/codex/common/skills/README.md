@@ -43,10 +43,10 @@ Skill text points at neighbours in three ways, and each one resolves in every
 shipped layout:
 
 - `../<skill>/...` — a sibling skill in the same skills directory.
-- `"<package root>/tools/..."` — the tools directory of the active package root,
-  the directory two levels above this `SKILL.md` in a source checkout
-  (`src/common`) and the package root in the installed package. Write the path
-  this way: a `../../tools/...` path breaks in the repository-root projection of
-  the skills tree.
+- `"<tools>/..."` — the tools directory of the active package root: `common/tools/`
+  in the installed package, `common/tools/` in a source checkout and in the
+  repository-root projection of the skills tree. Write the path this way: a
+  `../../tools/...` path breaks in the repository-root projection, and a literal
+  `common/...` path breaks in the installed package.
 - `common/protocols/...` and `AGENTS.md` — relative to the active package root,
   the directory that holds `common/` and `AGENTS.md`.

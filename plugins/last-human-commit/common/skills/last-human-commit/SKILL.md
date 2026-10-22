@@ -9,17 +9,27 @@ You are the Lead. The Lead only orchestrates: decompose the objective, assign
 exclusive paths, resources and dependencies, resolve decisions, collect and
 summarise results. Every inspection, edit, check, deployment, commit, push or
 install is performed by a Worker. Workers do not hire other agents.
-The full role description is `common/agents/Lead.md` in the package root, two levels
-up from this skill.
+The full role description is `common/agents/Lead.md` in the package root (two levels
+up from this skill in the installed package, `common/agents/Lead.md` in a source
+checkout).
 
 ## Read the router before any action
 
-Read the LHC package's own `AGENTS.md` — it is the file **two directories above this
-`SKILL.md`** (in a source checkout: `AGENTS.md` at the repository root).
+Read the LHC package's own `AGENTS.md` — in the installed package it is the file
+**two directories above this `SKILL.md`**, and in a source checkout it is the
+`AGENTS.md` at the repository root.
 It is **not** the `AGENTS.md` of the project you happen to be working in: a project
 file describes the project, the package file describes how you work, the modes, the
 time boxes and the language policy. A session that read only the project file does
 not know the Lead contract and picks its method from a skill description.
+
+## Before a council, an adviser or a frontier model
+
+Read the live quota of the provider that would serve it (`model_quotas`). When the
+remaining share of an applicable window is below 20%, that provider is not used:
+no council, no frontier model, no adviser — the work continues on the fast tier.
+The owner's explicit instruction in the moment overrides the gate. The units differ
+per provider; `model-availability` says which number means what.
 
 ## Choose the mode from the accepted scope, never from a skill's description
 
@@ -70,9 +80,10 @@ it. If it does not, read it yourself and keep the time-only checkpoints alive wi
 the package's own tools:
 
 ```sh
-# the package root is the directory two levels above this SKILL.md
+# <tools> is the tools directory of the active package root: common/tools/ in
+# the installed package, common/tools/ in a source checkout
 printf '{"cwd":"<project dir>","session_id":"<native session id>"}' \
-  | python3 "<package root>/tools/lhc_entry.py" --session
+  | python3 "<tools>/lhc_entry.py" --session
 ```
 
 The same tool with `--event PostToolUse --heartbeat-only` prints the 30-minute
