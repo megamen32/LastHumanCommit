@@ -11,6 +11,7 @@ projections of it; edit the skill here and regenerate, never edit a copy.
 | [model-routing](model-routing/SKILL.md) | Select/update models using capability and accepted-result cost | Lead / Overseer |
 | [decompose-and-dispatch](decompose-and-dispatch/SKILL.md) | Build coherent tasks, parallel lanes and integration joins | Lead |
 | [task-decomposition](task-decomposition/SKILL.md) | Plan the same leaves as a machine-readable task graph with a rendered dashboard | Lead |
+| [plan-artifacts](plan-artifacts/SKILL.md) | Create the task record, the machine-readable graph, the report and the dashboard in one pass, with the exact schema and the check that proves they agree | Lead / Worker |
 | [user-testing](user-testing/SKILL.md) | Attempt an actual user goal without implementation context | Tester |
 | [focus-groups](focus-groups/SKILL.md) | Diversify user goals; fix and retest observed obstacles | Lead + Testers |
 | [council](council/SKILL.md) | Resolve a difficult choice with independent strong models | Lead + Advisers |
@@ -42,6 +43,10 @@ Skill text points at neighbours in three ways, and each one resolves in every
 shipped layout:
 
 - `../<skill>/...` — a sibling skill in the same skills directory.
-- `../../tools/...` — the tools directory beside the skills directory.
+- `"<package root>/tools/..."` — the tools directory of the active package root,
+  the directory two levels above this `SKILL.md` in a source checkout
+  (`src/common`) and the package root in the installed package. Write the path
+  this way: a `../../tools/...` path breaks in the repository-root projection of
+  the skills tree.
 - `common/protocols/...` and `AGENTS.md` — relative to the active package root,
   the directory that holds `common/` and `AGENTS.md`.

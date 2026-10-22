@@ -20,6 +20,21 @@ The allowed tiers govern every assignment: tier `fast` is `glm-5.3-flash` and
 `gpt-6.1-sol`. This list applies wherever a model is chosen for council,
 delegation or focus acceptance.
 
+## The 20% allowance gate
+
+Before a council, an adviser or a frontier model is convened, read the live quota
+of the provider that would serve it. When the remaining share of an applicable
+window is below 20%, that provider is not used: no council, no frontier model, no
+adviser. The work continues on the fast tier and ordinary execution, and the gate
+is reported rather than applied silently. The owner's explicit instruction in the
+moment overrides the gate.
+
+Read the units before applying it: GLM `percentage` is used, not remaining, so 100%
+there means exhausted; MiniMax `current_interval_remaining_percent` and
+`current_weekly_remaining_percent` are remaining, and the applicable window is the
+tighter one; Codex `usedPercent` is used, so 83% used is 17% remaining and is below
+the gate.
+
 User-approved routes for this installation (recheck live catalog):
 
 | Tier | Harness | Exact subscription route |

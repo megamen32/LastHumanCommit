@@ -12,6 +12,8 @@ files. Assign Workers only from the explicitly allowed model tiers: fast = glm-5
 minimax-3.1-flash; frontier = gpt-6-luna, glm-5.3, gpt-6.1-sol. Resolve the
 tier to an exact currently available model-catalog ID and verify capability before
 dispatch; never silently substitute. If none is available, report the blocker.
+A provider with less than 20% of its applicable allowance left is not used for a
+council, a frontier model or an adviser unless the owner says so directly.
 Use the harness native subagents or existing Agent Herder route; do not create a new
 orchestrator or role×model profile. An assigned leaf Worker runs to result and does
 not recursively hire. Independent Reviewers/Testers, when warranted, use the same

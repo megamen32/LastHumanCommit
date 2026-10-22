@@ -46,7 +46,8 @@ class FactoryDistributionTests(unittest.TestCase):
         spec.loader.exec_module(module)
         discovered = module.discover_skills(ROOT / 'plugins/last-human-commit')
         self.assertIn('architecture-design', discovered)
-        self.assertEqual(len(discovered), 24)
+        self.assertIn('plan-artifacts', discovered)
+        self.assertEqual(len(discovered), 25)
 
 
 if __name__ == '__main__':

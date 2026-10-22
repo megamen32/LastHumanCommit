@@ -37,7 +37,7 @@ Quickfix/testing/assigned leaf tasks skip that cycle; preserve independent revie
 For each new genuine blocker, assign an allowed adviser — fast tier glm-5.3-flash or minimax-3.1-flash, frontier tier gpt-6-luna, glm-5.3 or gpt-6.1-sol — to identify permitted routes; resolve the tier to an exact live catalog ID and never silently substitute.
 If none is executable, ask a fresh-context Overseer for route advice. The Lead only coordinates the viable Worker route; deduplicate unchanged blockers. Never bypass HumanStop or required permission.
 Roles are tools, not a mandatory ceremony queue. Load a role or a skill because this task needs it,
-not because a schedule says so. Use Workers only from the explicitly allowed model tiers: fast = glm-5.3-flash, minimax-3.1-flash; frontier = gpt-6-luna, glm-5.3, gpt-6.1-sol. Before dispatch, match the selected tier to its exact currently available model-catalog ID and verify capability. Never silently substitute another model or step outside the allowed tier; if no allowed route is available, report the blocker. Use an independent Reviewer or Tester from the same allowed tiers when the claim and risk warrant it. An assigned Worker owns its leaf through result and does not recursively hire.
+not because a schedule says so. Use Workers only from the explicitly allowed model tiers: fast = glm-5.3-flash, minimax-3.1-flash; frontier = gpt-6-luna, glm-5.3, gpt-6.1-sol. Before dispatch, match the selected tier to its exact currently available model-catalog ID and verify capability. Never silently substitute another model or step outside the allowed tier; if no allowed route is available, report the blocker. A provider with less than 20% of its applicable allowance left is not used for a council, a frontier model or an adviser unless the owner says so directly. Use an independent Reviewer or Tester from the same allowed tiers when the claim and risk warrant it. An assigned Worker owns its leaf through result and does not recursively hire.
 Decomposition leaves are sized at about 15 minutes of work, not runtime caps, and a delegated Worker checkpoints at 20 minutes — later than the leaf, so a Worker holding a 15-minute leaf reports by the 20-minute mark.
 For work over 15 minutes, a canonical `.agents/tasks/` note records original
 request/result, initial estimate, active/wall-clock time separately, the live plan
@@ -93,12 +93,10 @@ where the plan stands; it is not a task-card dump, a file list, or a story about
 you did.
 
 The same leaves live in a machine-readable task graph next to the task record as
-`plan.graph.json` (`common/protocols/TASK_GRAPH.md`). Every decomposed objective
-keeps one, writes it when it decomposes and updates it with the report at every plan
-boundary. Render it with one command:
-`python3 common/tools/lhc_grid.py render <objective>/plan.graph.json -o
-<objective>/plan.html` — what is done, what runs now, what is blocked, the rough
-finish and the parallelism, in one file the user can open without asking for status.
+`plan.graph.json` (`common/protocols/TASK_GRAPH.md`): the report is authored
+first, the graph is derived from it with `lhc_grid.py export`, and `check-plan`
+proves that the two still agree. The procedure is the `plan-artifacts` skill. The
+dashboard is one file the user can open without asking for status.
 
 A fresh-context, zero-knowledge Overseer reads that report against the original request and the accepted business canary and returns the smallest correction. It guides the Lead: it keeps the route on the business result, flags spurious blockers and drift from the original plan specification, and never rewrites the plan or waives anything.
 It is a reader, not a gate: it never blocks delivery. The Lead owns the decision. At 60

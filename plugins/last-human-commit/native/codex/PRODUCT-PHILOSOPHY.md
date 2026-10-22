@@ -259,6 +259,9 @@
 - Процесса, который выигрывает у результата: если бюрократия не двигает бизнес-результат,
   она удаляется, а не легитимизируется.
 - Ожидания, что «потом доделаем»: план закрывает бизнес-результат целиком.
+- Собственного MCP-сервера ради удобства вызова: инструменты остаются CLI, а
+  MCP-поверхность, если она появится, — тонкая обёртка над тем же CLI, а не второй
+  источник правды.
 
 ---
 
@@ -273,8 +276,8 @@
 |---|---|
 | [1] восстановление замысла | `AGENTS.md` («Understand and deliver»), `common/agents/Lead.md` |
 | [2] дешёвое исследование | `common/protocols/WORKER_RESEARCH.md`, `skills/worker-research/`, `skills/model-routing/`, `skills/model-availability/` |
-| [3] выбор режима | `AGENTS.md` (quickfix / fullcycle / testing / research / status), `common/FACTORY.md` |
-| [4.1] план быстрого цикла | `skills/task-decomposition/`, `skills/decompose-and-dispatch/` |
+| [3] выбор режима | `AGENTS.md` (quickfix / fullcycle / testing / research / status / coordination), `common/FACTORY.md` |
+| [4.1] план быстрого цикла | `skills/task-decomposition/`, `skills/decompose-and-dispatch/`, `skills/plan-artifacts/` |
 | [4.2] 2-3 решения → критика → идеальный план → парето | `skills/architecture-design/`, `skills/council/`, `skills/challenge-decision/`, `common/agents/Critic.md`, `common/agents/Adviser.md` |
 | [4.3] план фокус-группы | `skills/focus-groups/`, `skills/user-testing/` |
 | [5] декомпозиция ≤ 15 мин | `common/agents/Worker.md`, `common/protocols/STOP_RETHINK.md`, `common/templates/.agents/tasks/task_template.md` |

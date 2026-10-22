@@ -1,3 +1,46 @@
+# 1.5.28 - the plan artifacts are one procedure, and the council decided about the MCP
+
+An AI session that had to produce the task record, the machine-readable graph and
+the dashboard did not follow a written procedure: it read `lhc_grid.py` to find the
+`check-plan` parser regexes, hunted the report regexes and the status legend, and
+inferred the shape from an old task record. The protocol existed; the trigger and
+the procedure did not.
+
+**One skill, report-first.** The new `plan-artifacts` skill is the procedure. The
+report is the only format a person reads, and the graph is derived from it: the
+tool assigns the ids, the statuses, the dependencies and the estimate bounds, so
+the agent writes one format instead of two and never hand-writes the graph JSON.
+What the report cannot carry - owner, session, harness, model, role, acceptance,
+read_paths, write_paths, note, the estimate reason, the blocker details - is added
+to the exported graph afterwards. `check-plan` stays the gate: it exits non-zero
+when the report and the graph are not one set of leaves. Verified on two live
+records: 23 and 32 leaves, export and check-plan green.
+
+**The description is the trigger.** No skill description carried "plan", "graph",
+"dashboard" or "check-plan", so nothing was selected when a task was decomposed.
+The new description carries them, and the umbrella skill and the router point at
+the skill by name.
+
+**A broken path, fixed.** The tool path convention was `../../tools/...`, which
+resolves in the package projections and breaks in the repository-root projection
+of the skills tree. Every skill now uses `<package root>/tools/...`, the same form
+the umbrella skill already used.
+
+**The council said no to the MCP, and said why.** Two independent strong models
+were asked to argue the owner's proposal of an LHC-owned MCP server against the
+skill. Both landed on the same verdict: the incident was a format-discovery
+failure, not a transport failure, and an MCP schema would carry the same field
+list in another syntax. The package therefore ships no MCP server; the CLI stays
+the source of truth, and an MCP surface, if it ever appears, is a thin wrapper
+over the same CLI. The reasoning is recorded in the product philosophy.
+
+**The 20% allowance gate.** A provider with less than 20% of its applicable
+allowance left is not used for a council, a frontier model or an adviser, unless
+the owner says so directly. The gate reads the units before it applies: GLM
+reports usage, MiniMax reports what is left, Codex reports usage.
+
+Tests: 1060 passed.
+
 # 1.5.27 - a queued message is not a result, and a supervisor decides
 
 The coordinator session that became the cluster's supervisor found the cause of a

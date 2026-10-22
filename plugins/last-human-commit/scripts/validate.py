@@ -33,6 +33,7 @@ EXPECTED_SKILLS = {
     "feature-implementation",
     "lhc-rollout",
     "lhc-update-agents",
+    "plan-artifacts",
     "planning",
     "real-use-testing",
     "release",

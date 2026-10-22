@@ -82,7 +82,8 @@ report elapsed time and point at the next command.
 ## The rest of the workflow
 
 Every decomposed objective keeps its machine-readable task graph and renders the
-plan dashboard (`common/protocols/TASK_GRAPH.md`): the user sees what is done, what
+plan dashboard: load the `plan-artifacts` skill — it is the procedure (task
+record, graph, report, render, check) and the user sees what is done, what
 runs now, what is blocked, the rough finish and the parallelism without asking. The
 package's router is the workflow; load other skills only when the task needs that
 method.

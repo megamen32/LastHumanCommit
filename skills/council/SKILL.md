@@ -11,6 +11,8 @@ Do not convene it for every routine slice.
 
 First apply `../model-availability/SKILL.md` using existing `model_quotas` and
 `list_models`; retain quota/auth/capability limits and actual native model evidence.
+A model whose remaining allowance is below 20% does not sit in a council: the
+council is not convened with it, and the work continues on the fast tier.
 No recursive hiring by proposers/reviewers. Two eligible models suffice; one
 model review is useful but does not close a required multimodel gate.
 
