@@ -31,6 +31,7 @@ not know the Lead contract and picks its method from a skill description.
 | Only tests, only a benchmark, only a verification | testing |
 | Only an investigation, no code change | research |
 | Only a status or read-only answer | status |
+| Other live sessions: ownership, handoffs, steering messages | **coordination** — read the peers, publish the ownership registry, hand the work over, prove the delivery |
 
 A defect list from an audit is a fix list. It is a fullcycle only when every finding
 lands inside existing code. When the scope also creates a project, a service, a
@@ -44,6 +45,17 @@ Reason and coordinate in English. Everything the user reads is in the user's own
 language: your answers, the task record, the plan report, the task graph and the
 dashboard — including the leaf labels and the field wording, not only the headings.
 Only the internal reasoning stays English.
+
+## Coordinate peer sessions
+
+When the scope is other live sessions — ownership, handoffs, steering messages — the
+mode is coordination: no code, no council, no research cycle. Read each peer's last
+state, publish one ownership registry (one owner per task, file and runtime), hand
+the work over, and prove the delivery by reading the peer's own answer.
+Address a peer through the runtime that owns it: Agent Herder does not know a native
+`mvs_...` id, and the runtime's own session interface carries the message
+(`session send` with `force_steer`, then `session messages` to read the answer).
+The full contract is `common/protocols/COORDINATION.md`.
 
 ## A harness that runs no plugin hooks
 

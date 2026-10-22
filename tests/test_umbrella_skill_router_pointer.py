@@ -73,7 +73,7 @@ def test_the_skill_alone_states_who_the_lead_is():
 
 def test_the_skill_alone_carries_the_mode_table_and_its_rule():
     skill = SKILL.read_text()
-    for mode in ('quickfix', 'fullcycle', 'testing', 'research', 'status'):
+    for mode in ('quickfix', 'fullcycle', 'testing', 'research', 'status', 'coordination'):
         assert mode in skill
     assert "never from a skill's description" in flat(skill)
     # Design work is Full, and the mini loop says so itself.

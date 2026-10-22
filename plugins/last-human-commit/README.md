@@ -53,7 +53,7 @@ available; scheduled inspection is required even when the current plan looks cor
 
 ## Package and installation
 
-The native Agent Plugin is `plugins/last-human-commit`, version 1.5.25, with the full
+The native Agent Plugin is `plugins/last-human-commit`, version 1.5.26, with the full
 optional skill set (validated by `scripts/validate.py`), instruction-only startup hooks
 and time-only reminders. Use the harness's native plugin manager.
 For clients whose plugin hooks are unavailable or still await trust, the package

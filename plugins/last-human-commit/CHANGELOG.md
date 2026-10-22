@@ -1,3 +1,42 @@
+# 1.5.26 — a Lead can address a peer session without discovering the channel
+
+A coordinator session was asked to steer six peer sessions, divide ownership between
+them and explain how they write back. It did the work correctly — it loaded the
+umbrella skill, read the package router, played the Lead and answered the owner in
+his own language — but it spent its discovery turns rediscovering how a peer is
+reached at all, and it had no mode that matched its own scope.
+
+**The channel is in the package now.** Agent Herder keys sessions by its own native
+ids and does not know a native `mvs_...` id, so a coordinator that trusts only Herder
+probes for a channel that cannot work. `common/protocols/COORDINATION.md` states that
+a peer is addressed through the runtime that owns it: the runtime's session interface
+carries the message (`session send` with `force_steer` to merge into a running turn,
+`session messages` to read the peer's answer). The receipt is an admission receipt —
+`status: accepted` with `mode: activated` or `mode: steered` — not delivery
+evidence. A steered message gets no separate answer, and a resend is a second message
+that runs the work twice.
+
+**Delivery is proved once, through the runtime.** The coordinator verified six
+deliveries by grepping the filesystem and then a stale runtime sqlite copy of session
+messages. The contract now says to verify with `session messages`, that the on-disk
+session directory name is an encoded id whose mapping sits in `manifest.json`, and
+that a partial sqlite store is not evidence.
+
+**The chat directory may not exist yet.** The coordinator told six peers to write to
+`.agents/shared-session/chat/` and learned afterwards that the directory had never
+been created. `lhc_chat.py send` creates it on its first publish, so an instruction
+naming it must not claim that it exists.
+
+**Coordination is a mode.** Ownership, handoffs and steering messages are not a code
+change, not research and not a read-only status answer. The mode table names that
+scope: read the peers, publish the ownership registry, hand the work over, prove the
+delivery — no research cycle and no council. One task, one file and one runtime have
+exactly one owner, the registry is published before the handoff, and a handoff is
+complete only when the receiver acknowledged it and the sender recorded it in the
+canonical task note.
+
+Tests: 1049 passed.
+
 # 1.5.25 — the skill decides the mode, the language and the Lead, not the description
 
 A session in a hook-less harness loads the umbrella skill and nothing else, so that

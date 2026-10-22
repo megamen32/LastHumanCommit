@@ -18,7 +18,7 @@ at 30/60 minutes; they read elapsed time only, never infer language/task, mutate
 outcome state or veto Stop. The Lead reads user authority and direct corrections,
 then may record class, scope and canary with the existing optional outcome CLI.
 Simple questions, translations and status requests do not start development. The
-Lead chooses quickfix/fullcycle/testing/research/status from accepted user scope and
+Lead chooses quickfix/fullcycle/testing/research/status/coordination from accepted user scope and
 records an explicit business canary when useful:
 scenario, target/host, expected result. Read-only/status does not erase repair scope.
 Use existing business.outcome and source-backed close: `common/protocols/OUTCOME_CONTRACT.md`;
@@ -63,9 +63,9 @@ RED → fix → GREEN → original scenario. Every technical step must advance t
 2. **Ideal version:** improve that solution fully and explain the benefit.
 3. **Minimum working version:** retain roughly 80% of useful value at lower cost;
    state what is deliberately deferred and how to verify the benefit.
-These are three passes over one solution, not three reports, builds or approvals.
-Implement the third; keep essential ideal components when the result needs them.
-80% means value, not incomplete delivery/permission to omit outcomes; keep small passes brief (see `common/skills/architecture-design/SKILL.md`).
+These are three passes over one solution, not three reports, builds or approvals:
+implement the third, keep essential ideal components, and treat 80% as value, not
+permission to omit outcomes (see `common/skills/architecture-design/SKILL.md`).
 
 ## Direction control and the live plan
 `common/protocols/PLAN_REPORT.md` is the canonical plan format. When the user asks
@@ -137,18 +137,18 @@ resource. If Herder is unavailable, inspect the shared file chat; unknown owners
 requires isolation and preserving others' work.
 Project chat: `<primary-checkout>/.agents/shared-session/chat/`; system chat:
 `~/.agents/shared-session/chat/`. Each message is one JSON file, atomically published
-and read with `common/tools/lhc_chat.py`. Worktrees share the primary chat; all
-harnesses use one selected channel. Send only scope, conflicts, decisions, completed
-results or dependencies that change the next action. See `common/protocols/COORDINATION.md`.
+and read with `common/tools/lhc_chat.py`, which creates that directory on first
+publish. Worktrees share the primary chat; all harnesses use one selected channel.
+Address a peer session through the runtime that owns it, not through Herder, which does not know a native `mvs_...` id; prove a delivery by reading the peer's own answer.
+Send only scope, conflicts, decisions, completed results or dependencies that change the next action. One task, one file and one runtime have exactly one owner; publish the ownership registry before handing work out. See `common/protocols/COORDINATION.md`.
 
 ## Available work first
 A dependency delays only its dependent operation. Do useful authorized work before
 returning to blockers. Foreign WIP, a busy resource, missing report or unavailable
 Herder does not stop the whole cycle. Record the real delay and next action briefly.
 If only another session remains, call Herder `resume_after` with your harness/session,
-exact dependencies and continuation. Publish ready work/PR first; avoid mutual waiting.
-Herder resumes the same session once. If unavailable, leave a targeted file message
-and `waiting` state; writing a file does not prove delivery or awakening.
+exact dependencies and continuation; publish ready work/PR first, avoid mutual waiting.
+Herder resumes the same session once; if unavailable, leave a targeted file message and `waiting` state; writing a file does not prove delivery or awakening.
 
 ## One green history
 Use claim-critical checks → permitted deploy → real consumer verification; add

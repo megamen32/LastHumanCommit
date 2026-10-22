@@ -62,11 +62,21 @@ cycle and recursive recruitment.
 Design one working solution, improve it to an ideal, then retain roughly 80% of useful
 value in the minimum working implementation. Show the chosen minimum, deliberate
 deferrals and check; do not build three versions or seek three approvals.
+Coordinating other live sessions is its own mode: read the peers, publish the
+ownership registry, hand the work over and prove the delivery — no research cycle and
+no council for it.
 One short task record supports compaction: goal, decisions, completed work, evidence
 and next action. Detailed plans help dependencies/multiple workers, not entry ceremony.
 Before writing inspect project sessions. Use a separate worktree for parallel writers
 and publish ownership in shared chat. In a new worktree fetch the current integration
 branch; never take another owner's unfinished code without them.
+Address a peer session through the runtime that owns it: Agent Herder keys sessions by
+its own native ids and does not know a native `mvs_...` id. Use the runtime's session
+interface — `session send` with `force_steer` to merge into a running turn, then
+`session messages` to read the peer's own answer — and treat that answer, not the
+receipt, as proof of delivery. Publish one ownership registry before handing work
+out: one owner per task, file and runtime, with the handoff recorded in the canonical
+task note. See `common/protocols/COORDINATION.md`.
 
 On a specific blocker do available work. If only workers remain, publish ready work
 first and record `resume_after` for the original session. A human manual stop always
