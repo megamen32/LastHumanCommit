@@ -236,3 +236,22 @@ def test_compaction_handoff_keeps_the_plan_section_inside_its_budget(
     assert len(section) <= guard.MAX_HANDOFF_PLAN_CHARS + 1_000
     assert "plan text truncated" in section
     assert len(handoff) < 60_000
+
+
+def test_a_nested_project_never_borrows_the_outer_projects_plan_graph(
+    tmp_path: Path,
+) -> None:
+    outer = tmp_path / "outer-project"
+    subprocess.run(["git", "init", "-q", str(outer)], check=True)
+    objective = outer / ".agents/tasks/objective-outer"
+    _report_path, graph_path = write_report_and_graph(objective)
+    assert graph_path.is_file()
+
+    nested = outer / "service"
+    nested.mkdir()
+    subprocess.run(["git", "init", "-q", str(nested)], check=True)
+
+    # The nested repository has its own task records and no graph of its own.
+    assert guard.find_plan_graph(nested) is None
+    # The outer project still finds its own graph.
+    assert guard.find_plan_graph(outer) == graph_path

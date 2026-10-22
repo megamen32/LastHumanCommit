@@ -5,7 +5,29 @@ description: Automatically handle normal engineering requests, including rough v
 
 # Last Human Commit
 
-Read the active package's `AGENTS.md` once and follow the current user's task.
+This skill is the router. Read the LHC package's own `AGENTS.md` once, before any
+action: it carries the Lead, Worker and Overseer contract, the routing, the time
+boxes and the language policy. That file ships at the LHC package root, two
+directories above this `SKILL.md`; in the source repository it is `AGENTS.md` at
+the repository root. It is **not** the `AGENTS.md` of the project you happen to be
+working in — a project file describes the project, the package file describes how
+you work, and a session that read only the project file does not know what a Lead
+is.
+
+Your harness may inject the package `AGENTS.md` at session start. If it does not
+— some harnesses have no plugin hooks — read it yourself, and keep the time-only
+checkpoints alive with the package's own tools:
+
+```sh
+# the package root is the directory two levels above this SKILL.md
+printf '{"cwd":"<project dir>","session_id":"<native session id>"}' \
+  | python3 "<package root>/tools/lhc_entry.py" --session
+```
+
+The same tool with `--event PostToolUse --heartbeat-only` prints the 30-minute
+time-only reminder in a harness that runs no hooks. Both are safe to call: they
+only report elapsed time and point at the next command.
+
 Every decomposed objective keeps its machine-readable task graph and renders the
 plan dashboard (`common/protocols/TASK_GRAPH.md`): the user sees what is done, what runs now,
 what is blocked, the rough finish and the parallelism without asking. The package's

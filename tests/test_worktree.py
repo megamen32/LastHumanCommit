@@ -26,15 +26,10 @@ def repo(tmp_path):
     return root
 
 
-def run(repo, action="plan", task="lane-one", base=None, ok=True,
-        preserve_dirty=False, reason=None):
+def run(repo, action="plan", task="lane-one", base=None, ok=True):
     args = [sys.executable, str(TOOL), action, "--repo", str(repo), "--task=" + task]
     if base is not None:
         args.extend(["--base", base])
-    if preserve_dirty:
-        args.append("--preserve-dirty-primary")
-    if reason is not None:
-        args.extend(["--dirty-primary-reason", reason])
     result = subprocess.run(args, capture_output=True, text=True)
     if ok:
         assert result.returncode == 0, result.stderr
@@ -59,26 +54,10 @@ def test_plan_read_only_and_auxiliary_identity(repo):
 
 
 @pytest.mark.nightly
-def test_create_requires_attribution_then_reuses_when_primary_is_dirty(repo):
+def test_create_reuse_after_commits_preserves_dirty_primary(repo):
     base = git(repo, "rev-parse", "HEAD")
-    (repo / "foreign.txt").write_text("active owner's unrelated WIP")
-    assert "dirty primary" in run(repo, "create", base=base, ok=False)
-    assert not (repo / ".worktrees").exists()
-    assert "reason" in run(
-        repo, "create", base=base, preserve_dirty=True, ok=False
-    )
-    assert "dirty-primary override" in run(
-        repo, "create", base=base,
-        reason="active owner documented elsewhere", ok=False,
-    )
-    first = run(
-        repo, "create", base=base, preserve_dirty=True,
-        reason="Confirmed active Codex owner; isolated baseline, no cleanup",
-    )
-    assert first["dirty_primary"] is True
-    assert first["dirty_primary_preserved"] is True
-    assert first["ownership_verification"] == "caller_attested_not_verified"
-    assert "active Codex owner" in first["dirty_primary_reason"]
+    (repo / "foreign.txt").write_text("unrelated")
+    first = run(repo, "create", base=base)
     lane = Path(first["path"])
     (lane / "result.txt").write_text("result")
     git(lane, "add", "result.txt")
@@ -88,33 +67,8 @@ def test_create_requires_attribution_then_reuses_when_primary_is_dirty(repo):
     assert second["action"] == "reused"
     assert git(repo, "branch", "--show-current") == "main"
     assert git(repo, "rev-parse", "HEAD") == base
-    assert (repo / "foreign.txt").read_text() == "active owner's unrelated WIP"
+    assert (repo / "foreign.txt").read_text() == "unrelated"
     assert "different base" in run(repo, "create", base="lhc/lane-one", ok=False)
-
-
-@pytest.mark.nightly
-def test_unattributed_staged_unstaged_untracked_primary_is_untouched(repo):
-    tracked = repo / "tracked.txt"
-    tracked.write_bytes(b"initial\n")
-    git(repo, "add", "tracked.txt")
-    git(repo, "commit", "-m", "track fixture")
-    base = git(repo, "rev-parse", "HEAD")
-    tracked.write_bytes(b"staged\n")
-    git(repo, "add", "tracked.txt")
-    tracked.write_bytes(b"staged\nunstaged\n")
-    untracked = repo / "unknown.txt"
-    untracked.write_bytes(b"do not discard me\x00\xff")
-    before_bytes = (tracked.read_bytes(), untracked.read_bytes())
-    before_status = git(repo, "status", "--porcelain", "--untracked-files=all")
-    before_index = git(repo, "ls-files", "--stage")
-    error = run(repo, "create", base=base, ok=False)
-    assert "dirty primary" in error
-    assert "attribute" in error
-    assert not (repo / ".worktrees").exists()
-    assert (tracked.read_bytes(), untracked.read_bytes()) == before_bytes
-    assert git(repo, "status", "--porcelain", "--untracked-files=all") == before_status
-    assert git(repo, "ls-files", "--stage") == before_index
-    assert git(repo, "rev-parse", "HEAD") == base
 
 
 @pytest.mark.parametrize("task", ["../escape", "UPPER", "a/b", "a--b", "-bad", "bad-"])

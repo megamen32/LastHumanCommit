@@ -619,16 +619,23 @@ def _grid_tool():
 
 
 def find_plan_graph(cwd: Path) -> Path | None:
-    """Find the session's canonical task graph next to the project's task records."""
+    """Find the session's canonical task graph next to the project's task records.
+
+    The search never crosses a repository boundary: a project that happens to sit
+    inside another project (a test checkout, a nested service) must not borrow the
+    outer project's task graph, or the plan of one project silently replaces the
+    plan of another.
+    """
 
     for root in (cwd, *cwd.parents):
         tasks = root / ".agents" / "tasks"
-        if not tasks.is_dir():
-            continue
-        candidates = [path for path in tasks.glob("*/plan.graph.json") if path.is_file()]
-        candidates += [path for path in tasks.glob("plan.graph.json") if path.is_file()]
-        if candidates:
-            return max(candidates, key=lambda path: path.stat().st_mtime)
+        if tasks.is_dir():
+            candidates = [path for path in tasks.glob("*/plan.graph.json") if path.is_file()]
+            candidates += [path for path in tasks.glob("plan.graph.json") if path.is_file()]
+            if candidates:
+                return max(candidates, key=lambda path: path.stat().st_mtime)
+        if (root / ".git").exists():
+            return None
     return None
 
 

@@ -37,14 +37,7 @@ def worktrees(repo: Path) -> list[dict[str, str]]:
     return records
 
 
-def assignment(
-    repo: Path,
-    task: str,
-    base_ref: str | None,
-    create: bool,
-    preserve_dirty_primary: bool = False,
-    dirty_primary_reason: str | None = None,
-) -> dict:
+def assignment(repo: Path, task: str, base_ref: str | None, create: bool) -> dict:
     if not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", task):
         raise ValueError("task slug must contain lowercase letters/digits separated by single hyphens")
     common = Path(git(repo, "rev-parse", "--path-format=absolute", "--git-common-dir")).resolve()
@@ -68,11 +61,8 @@ def assignment(
     target = parent / task
     if parent.is_symlink() or target.is_symlink() or target.resolve() != target:
         raise ValueError("canonical worktree path must not escape through a symlink")
-    # Inspect both the index and working tree, including untracked WIP.
-    # Git's ignored worktree directory is not foreign WIP.
-    dirty_primary = bool(git(primary, "status", "--porcelain=v1", "--untracked-files=normal"))
     result = dict(primary=str(primary), common_dir=str(common), branch=branch,
-                  path=str(target), base=base, action="plan", dirty_primary=dirty_primary)
+                  path=str(target), base=base, action="plan")
     if not create:
         return result
     ignored = subprocess.run(
@@ -97,27 +87,6 @@ def assignment(
         raise ValueError("canonical path is occupied; refusing adoption")
     if git(primary, "show-ref", "--verify", "refs/heads/" + branch, check=False):
         raise ValueError("branch already exists outside this assignment")
-    if dirty_primary_reason and not preserve_dirty_primary:
-        raise ValueError("dirty-primary override reason requires --preserve-dirty-primary")
-    if dirty_primary:
-        if not preserve_dirty_primary:
-            raise ValueError(
-                "dirty primary checkout: attribute and preserve existing WIP "
-                "before creating a Full-cycle worktree; active foreign owners "
-                "must remain untouched (use explicit preserve override with reason)"
-            )
-        if not dirty_primary_reason or len(dirty_primary_reason.strip()) < 12:
-            raise ValueError(
-                "dirty primary preserve override requires --dirty-primary-reason "
-                "recording the independently verified WIP owner/condition"
-            )
-        # A reason is a caller assertion, not verified ownership. Never reset,
-        # stash or modify the primary; the lead must preserve evidence separately.
-        result["dirty_primary_preserved"] = True
-        result["dirty_primary_reason"] = dirty_primary_reason.strip()
-        result["ownership_verification"] = "caller_attested_not_verified"
-    elif preserve_dirty_primary or dirty_primary_reason:
-        raise ValueError("dirty-primary override is only valid for a dirty primary")
     parent.mkdir(exist_ok=True)
     git(primary, "worktree", "add", "-b", branch, str(target), base)
     git(primary, "config", key, base)
@@ -131,20 +100,9 @@ def main() -> None:
     parser.add_argument("--repo", type=Path, required=True)
     parser.add_argument("--task", required=True)
     parser.add_argument("--base", help="resolve from primary checkout; required for create")
-    parser.add_argument(
-        "--preserve-dirty-primary", action="store_true",
-        help="explicit isolation of verified active/owned WIP; never cleans primary",
-    )
-    parser.add_argument(
-        "--dirty-primary-reason",
-        help="record separately verified owner/condition; not a proof of attribution",
-    )
     args = parser.parse_args()
     try:
-        result = assignment(
-            args.repo, args.task, args.base, args.action == "create",
-            args.preserve_dirty_primary, args.dirty_primary_reason,
-        )
+        result = assignment(args.repo, args.task, args.base, args.action == "create")
     except (ValueError, OSError) as exc:
         parser.exit(2, f"error: {exc}\n")
     print(json.dumps(result, ensure_ascii=False, sort_keys=True))

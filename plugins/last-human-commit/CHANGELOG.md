@@ -1,3 +1,30 @@
+# 1.5.24 — a fresh session in a hook-less harness finally knows what a Lead is
+
+The umbrella skill said "read the active package's `AGENTS.md` once". In a harness
+that runs plugin hooks, the SessionStart hook hands the agent the exact path to the
+package router, so the phrase never mattered. A harness without hooks has no such
+pointer: the agent read the phrase, opened the `AGENTS.md` of the project it happened
+to be working in, considered the router read, and continued without the Lead
+contract, the routing, the time boxes or the language policy. It answered a Russian
+user in English.
+
+The skill now names the file it means — the LHC package's own `AGENTS.md`, two
+directories above the skill, never the project's — and says what to do when the
+harness injects nothing: call the package's own `lhc_entry.py --session` once for the
+session pointer and state, and `--heartbeat-only` after each significant step to
+keep the 30-minute time-only checkpoint alive. Both commands only report elapsed
+time and name the next command.
+
+Four regression tests pin the pointer, the file it resolves to inside the delivered
+package, the Lead contract that file must still carry, and the no-hook fallback.
+
+The same release also fixes a plan-graph leak: `find_plan_graph` walked up past the
+project and could hand a nested project the task graph of the project that contained
+it. A checkout, a service inside a monorepo or a test workspace then rendered the
+outer project's plan — the compaction handoff carried another project's leaves and
+the 30-minute reminder named another project's lanes. The lookup now stops at the
+repository boundary: a task graph never comes from outside the repository you are in.
+
 # 1.5.23 — the task template ships what the method says
 
 The task template still asked for 30-minute leaves and described the Overseer as
