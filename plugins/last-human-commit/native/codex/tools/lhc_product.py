@@ -14,8 +14,9 @@ Public API
 ----------
 ``product_leaves(data)``
     The tasks of the audit as dashboard leaves.
-``render_product_sections(data, *, theme_palette=None)``
-    The HTML of the delivery sections.
+``render_product_sections(data, *, theme_palette=None, group="all")``
+    The HTML of the delivery sections. The ``group`` splits them into the
+    plan (the grid and the works) and the evidence behind it.
 ``product_styles()``
     The CSS of those sections.
 ``product_scripts()``
@@ -637,10 +638,191 @@ def _health_section(data: dict[str, Any]) -> str:
     )
 
 
+# The geometry of the grid. The heights are the source of truth of the
+# server-side arrow geometry; the script measures the rows and corrects the
+# arrows when the scale changes.
+GANTT_DAY_WIDTH = 64
+GANTT_ROW_HEIGHT = 68
+GANTT_BAND_HEIGHT = 48
+
+
+def _task_index(tasks: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    """The tasks of the plan by their id."""
+
+    index: dict[str, dict[str, Any]] = {}
+    for task in tasks:
+        ident = _text(task.get("id"))
+        if ident:
+            index[ident] = task
+    return index
+
+
+def _task_deps(task: dict[str, Any]) -> list[str]:
+    """The ids the task waits for."""
+
+    return [_text(dep) for dep in (task.get("deps") or []) if _text(dep)]
+
+
+def _blocks_map(tasks: list[dict[str, Any]]) -> dict[str, list[str]]:
+    """The tasks each task holds back: who waits for whom."""
+
+    blocks: dict[str, list[str]] = {}
+    for task in tasks:
+        ident = _text(task.get("id"))
+        for dep in _task_deps(task):
+            blocks.setdefault(dep, []).append(ident)
+    return blocks
+
+
+def _gantt_flags(waits: list[str], held: list[str]) -> str:
+    """The markers of a row: what it waits for and what it holds back."""
+
+    chips = []
+    if waits:
+        chips.append(
+            f'<span class="lhc-flag lhc-flag--wait">ждёт {escape(", ".join(waits))}</span>'
+        )
+    if held:
+        chips.append(
+            f'<span class="lhc-flag lhc-flag--block" data-lhc-count="{len(held)}">'
+            f'блокирует {escape(", ".join(held))}</span>'
+        )
+    if not chips:
+        return ""
+    return f'<span class="lhc-gantt-flags">{"".join(chips)}</span>'
+
+
+def _gantt_paths(
+    tasks: list[dict[str, Any]],
+    schedule: list[dict[str, Any]],
+    *,
+    band_count: int = 0,
+) -> str:
+    """One arrow per dependency of the plan.
+
+    The arrow leaves the end of the dependency and enters the start of the
+    dependent task, so the owner sees what waits for what.
+    """
+
+    placed_by_id = {item["id"]: item for item in schedule}
+    tasks_by_id = _task_index(tasks)
+    order = [_text(task.get("id")) for task in tasks]
+    row_of = {ident: index for index, ident in enumerate(order)}
+    px_per_slot = GANTT_DAY_WIDTH / float(SLOTS_PER_DAY)
+    top = band_count * GANTT_BAND_HEIGHT
+
+    def centre(ident: str) -> float:
+        return top + row_of[ident] * GANTT_ROW_HEIGHT + GANTT_ROW_HEIGHT / 2.0
+
+    parts = []
+    for ident in order:
+        task = tasks_by_id.get(ident)
+        target = placed_by_id.get(ident)
+        if not task or not target:
+            continue
+        for dep in _task_deps(task):
+            source = placed_by_id.get(dep)
+            if not source or dep not in row_of:
+                continue
+            x1 = source["end"] * px_per_slot
+            x2 = target["start"] * px_per_slot
+            elbow = min(x1 + 12, max(x1 + 5, x2 - 7))
+            parts.append(
+                f'<path class="lhc-net-edge" data-lhc-from="{escape(dep)}" '
+                f'data-lhc-to="{escape(ident)}" '
+                f'd="M {x1:.1f} {centre(dep):.1f} H {elbow:.1f} V {centre(ident):.1f} H {x2:.1f}" '
+                'marker-end="url(#lhc-gantt-arrow)"/>'
+            )
+    return "".join(parts)
+
+
+def _task_detail(
+    task: dict[str, Any],
+    *,
+    phase_name: str = "",
+    tasks: Optional[dict[str, dict[str, Any]]] = None,
+    held: Optional[list[str]] = None,
+) -> str:
+    """The card of one task: everything the plan knows about it.
+
+    The same card is opened from the grid of the Gantt and from the work
+    card, so there is one implementation and one content.
+    """
+
+    index = tasks or {}
+    ident = _text(task.get("id"))
+    priority = _text(task.get("priority"))
+    owner = _text(task.get("owner"))
+    repo = _text(task.get("repo"))
+    hours = task.get("hours") if isinstance(task.get("hours"), dict) else {}
+    low = _number(hours.get("min"))
+    base = _number(hours.get("base"))
+    high = _number(hours.get("max"))
+    locks = [_text(lock) for lock in (task.get("locks") or []) if _text(lock)]
+
+    def entry(other_id: str, planned: bool = False) -> str:
+        """One dependency: its id, its title and the state the data knows."""
+
+        other = index.get(other_id)
+        title = _text(other.get("title")) if other else "работа вне плана"
+        chip = ' <span class="lhc-chip lhc-chip--plan">план</span>' if planned else ""
+        return (f'<li><span class="lhc-mono">{escape(other_id)}</span> · '
+                f'{escape(title)}{chip}</li>')
+
+    tags = [f'<span class="lhc-chip lhc-chip--id">{escape(ident)}</span>']
+    if phase_name:
+        tags.append(f'<span class="lhc-chip">{escape(phase_name)}</span>')
+    if priority:
+        tags.append(f'<span class="lhc-chip lhc-chip--priority">{escape(priority)}</span>')
+    # The data has no executed state, so a task of the plan is a plan.
+    tags.append('<span class="lhc-chip lhc-chip--plan">план</span>')
+
+    waits = "".join(entry(dep, planned=True) for dep in _task_deps(task))
+    waits_html = waits or "<li>Можно начинать сразу: предшественников нет.</li>"
+    blocked = "".join(entry(other) for other in (held or []))
+    blocked_html = blocked or "<li>Ничего не блокирует.</li>"
+
+    head = (
+        '<div class="lhc-detail-head">'
+        f'<div class="lhc-detail-tags">{"".join(tags)}</div>'
+        f'<h4 class="lhc-detail-title">{escape(task.get("title"))}</h4>'
+        f'<p class="lhc-caption">Владелец: {escape(owner) or "—"} · '
+        f'репозиторий: {escape(repo) or "—"}</p>'
+        f'<p class="lhc-caption">Оценка: мин {_fmt_hours(low)} · база {_fmt_hours(base)} · '
+        f'макс {_fmt_hours(high)} ч</p>'
+        f'<p class="lhc-caption">Блокировки репозиториев: {escape(", ".join(locks)) or "нет"}</p>'
+        '<p class="lhc-caption lhc-detail-state">Состояние выполнения в данных не задано: '
+        "каждая работа — это план.</p>"
+        '<button type="button" class="lhc-btn lhc-detail-gantt" '
+        f'data-lhc-gantt-link="{escape(ident)}">Показать в сетке Ганта</button></div>'
+    )
+    cols = (
+        '<div class="lhc-detail-cols">'
+        '<div class="lhc-work-col"><h5 class="lhc-work-label">Изменить</h5>'
+        f"{_list(task.get('scope'))}</div>"
+        '<div class="lhc-work-col"><h5 class="lhc-work-label">Критерий приёмки</h5>'
+        f"{_list(task.get('acceptance'))}</div>"
+        '<div class="lhc-work-col"><h5 class="lhc-work-label">Уже есть и используется повторно</h5>'
+        f'<p class="lhc-cell-text">{escape(task.get("reuse"))}</p>'
+        f"{_refs(task.get('sources'))}</div>"
+        '<div class="lhc-work-col"><h5 class="lhc-work-label">Зависимости и результат</h5>'
+        f'<p class="lhc-cell-text">{escape(task.get("result"))}</p>'
+        '<p class="lhc-work-label">Ждёт</p>'
+        f'<ul class="lhc-list">{waits_html}</ul>'
+        '<p class="lhc-work-label">Блокирует</p>'
+        f'<ul class="lhc-list">{blocked_html}</ul></div>'
+        "</div>"
+    )
+    return f'<div class="lhc-detail" data-lhc-detail="{escape(ident)}">{head}{cols}</div>'
+
+
+
 def _gantt_section(data: dict[str, Any]) -> str:
     tasks = [task for task in data.get("tasks") or [] if isinstance(task, dict)]
     phases = [phase for phase in data.get("phases") or [] if isinstance(phase, dict)]
     phase_by_id = {_text(phase.get("id")): phase for phase in phases}
+    tasks_by_id = _task_index(tasks)
+    blocks = _blocks_map(tasks)
 
     schedule = compute_schedule(tasks)
     days = max(1, math.ceil(max((item["end"] for item in schedule), default=0) / SLOTS_PER_DAY))
@@ -687,8 +869,9 @@ def _gantt_section(data: dict[str, Any]) -> str:
         bands.append(
             f'<div class="lhc-gantt-band" data-lhc-phase="{escape(ident)}">'
             '<div class="lhc-gantt-band-label">'
+            '<span class="lhc-gantt-band-line">'
             f'<i class="lhc-swatch" style="background:{escape(color)}"></i>'
-            f'<strong>{escape(phase.get("name"))}</strong>'
+            f'<strong>{escape(phase.get("name"))}</strong></span>'
             f'<span class="lhc-band-meta">{len(members)} работ · {_fmt_hours(hours)} ч</span></div>'
             '<div class="lhc-gantt-track">'
             f'<span class="lhc-band" style="left:{left:.4f}%;width:{width:.4f}%;'
@@ -706,19 +889,29 @@ def _gantt_section(data: dict[str, Any]) -> str:
             _fmt_range(_number(hours.get("min")), _number(hours.get("max"))),
             _text(task.get("priority")),
         ])
+        waits = [dep for dep in _task_deps(task) if dep in tasks_by_id]
+        held = blocks.get(ident, [])
+        waits_text = ", ".join(waits)
+        held_text = ", ".join(held)
+        title = f"{ident} · {_text(task.get('title'))} · {_fmt_hours(_hours_of(task, DEFAULT_MODE))} ч"
         if placed:
             left = 100.0 * placed["start"] / span
             width = max(1.2, 100.0 * placed["slots"] / span)
-            title = f"{ident} · {_text(task.get('title'))} · {_fmt_hours(_hours_of(task, DEFAULT_MODE))} ч"
-            bar = (f'<span class="lhc-bar" style="left:{left:.4f}%;width:{width:.4f}%;'
-                   f'background:{escape(color)}" title="{escape(title)}"></span>')
+            bar = (f'<button type="button" class="lhc-bar" data-lhc-task="{escape(ident)}" '
+                   f'style="left:{left:.4f}%;width:{width:.4f}%;'
+                   f'background:{escape(color)}" title="{escape(title)}" '
+                   f'aria-label="{escape(title)}">'
+                   f'<span class="lhc-bar-id">{escape(ident)}</span></button>')
         else:
             bar = '<span class="lhc-bar lhc-bar--free" title="Нет расписания"></span>'
         rows.append(
-            f'<div class="lhc-gantt-row" data-lhc-task="{escape(ident)}">'
-            '<div class="lhc-gantt-label">'
+            f'<div class="lhc-gantt-row" data-lhc-task="{escape(ident)}"'
+            f' data-lhc-waits="{escape(waits_text)}"'
+            f' data-lhc-blocks="{escape(held_text)}">'
+            '<button type="button" class="lhc-gantt-label">'
             f"<strong>{escape(ident)} · {escape(task.get('title'))}</strong>"
-            f'<span>{escape(meta_line)}</span></div>'
+            f'<span class="lhc-gantt-row-meta">{escape(meta_line)}</span>'
+            f"{_gantt_flags(waits, held)}</button>"
             f'<div class="lhc-gantt-track">{bar}</div></div>'
         )
 
@@ -727,12 +920,20 @@ def _gantt_section(data: dict[str, Any]) -> str:
         f'{escape(_safe_color(phase.get("color")))}"></i>{escape(phase.get("name"))}</span>'
         for phase in phases
     )
+    net = (
+        '<svg class="lhc-gantt-net" id="lhc-gantt-net" aria-hidden="true" focusable="false">'
+        '<defs><marker id="lhc-gantt-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" '
+        'orient="auto" markerUnits="userSpaceOnUse">'
+        '<path class="lhc-net-arrow" d="M0,0 L8,4 L0,8 Z"/></marker></defs>'
+        + _gantt_paths(tasks, schedule, band_count=len(bands)) + "</svg>"
+    )
     gantt = (
-        f'<div class="lhc-gantt" id="lhc-gantt" style="--lhc-cols:{columns};--lhc-day:64px" '
-        'data-lhc-day-base="64"><div class="lhc-gantt-head">'
-        '<div class="lhc-gantt-corner">Работа / репозиторий</div>'
+        f'<div class="lhc-gantt" id="lhc-gantt-grid" style="--lhc-cols:{columns};'
+        f'--lhc-day:{GANTT_DAY_WIDTH}px;--lhc-row-h:{GANTT_ROW_HEIGHT}px;'
+        f'--lhc-band-h:{GANTT_BAND_HEIGHT}px" data-lhc-day-base="{GANTT_DAY_WIDTH}">'
+        '<div class="lhc-gantt-head"><div class="lhc-gantt-corner">Работа / репозиторий</div>'
         f'<div class="lhc-gantt-days">{day_cells}</div></div>'
-        f'{"".join(bands)}{"".join(rows)}</div>'
+        f'<div class="lhc-gantt-body">{"".join(bands)}{"".join(rows)}{net}</div></div>'
     )
     toolbar = (
         '<div class="lhc-toolbar"><span class="lhc-toolbar-label">Масштаб шкалы</span>'
@@ -742,26 +943,41 @@ def _gantt_section(data: dict[str, Any]) -> str:
         'value="1" aria-label="Масштаб шкалы времени">'
         '<button type="button" class="lhc-btn lhc-btn--icon" data-lhc-zoom="1" '
         'aria-label="Увеличить масштаб">+</button>'
-        '<output class="lhc-count" id="lhc-gantt-zoom-value">100%</output></div>'
+        '<output class="lhc-count" id="lhc-gantt-zoom-value">100%</output>'
+        '<label class="lhc-switch" for="lhc-gantt-deps">'
+        '<input type="checkbox" id="lhc-gantt-deps" checked>'
+        '<span>Связи работ</span></label></div>'
+    )
+    detail = (
+        '<div class="lhc-gantt-detail" id="lhc-gantt-detail" hidden>'
+        '<div class="lhc-gantt-detail-bar"><span class="lhc-gantt-detail-caption">Карточка работы</span>'
+        '<button type="button" class="lhc-btn lhc-btn--icon" id="lhc-gantt-detail-close" '
+        'aria-label="Закрыть карточку">×</button></div>'
+        '<div class="lhc-gantt-detail-body" id="lhc-gantt-detail-body"></div></div>'
     )
     body = (
         toolbar
         + '<div class="lhc-gantt-shell">' + meta
         + f'<div class="lhc-gantt-scroll">{gantt}</div>'
+        + detail
         + '<div class="lhc-gantt-foot">Шкала показывает рабочие дни, половина ячейки — 4 часа. '
-        "Работы в одном изменяемом репозитории не накладываются, выходные пропущены.</div></div>"
+        "Работы в одном изменяемом репозитории не накладываются, выходные пропущены. "
+        "Нажмите на строку или на полосу работы, чтобы открыть карточку.</div></div>"
         + f'<div class="lhc-legend">{legend}</div>'
         + f'<p class="lhc-note lhc-note--plain">{escape(data.get("estimateNote"))}</p>'
     )
     return _section(
         "lhc-gantt", "06 / ПОСЛЕДОВАТЕЛЬНОСТЬ РАБОТ", "Сетка Ганта",
-        "Расчёт учитывает зависимости, доступные потоки и пересечение репозиториев.", body,
+        "Расчёт учитывает зависимости, доступные потоки и пересечение репозиториев.",
+        body,
     )
 
 
 def _work_section(data: dict[str, Any]) -> str:
     tasks = [task for task in data.get("tasks") or [] if isinstance(task, dict)]
     phases = [phase for phase in data.get("phases") or [] if isinstance(phase, dict)]
+    tasks_by_id = _task_index(tasks)
+    held_by_id = _blocks_map(tasks)
 
     blocks = []
     for phase in phases:
@@ -774,18 +990,17 @@ def _work_section(data: dict[str, Any]) -> str:
         for task in members:
             task_id = _text(task.get("id"))
             hours = task.get("hours") if isinstance(task.get("hours"), dict) else {}
-            deps = [_text(dep) for dep in (task.get("deps") or [])]
-            locks = [_text(lock) for lock in (task.get("locks") or [])]
-            context = _join([
-                f"Фаза: {_text(phase.get('name'))}" if _text(phase.get("name")) else "",
-                f"Приоритет: {_text(task.get('priority'))}" if _text(task.get("priority")) else "",
-                f"Блокировки: {', '.join(locks)}" if locks else "",
-                f"Репозиторий: {_text(task.get('repo'))}" if _text(task.get("repo")) else "",
-            ])
+            detail = _task_detail(
+                task,
+                phase_name=_text(phase.get("name")),
+                tasks=tasks_by_id,
+                held=held_by_id.get(task_id, []),
+            )
             cards.append(
                 f'<article class="lhc-work" id="lhc-work-{escape(task_id)}" '
                 f'style="--lhc-phase:{escape(color)}">'
                 '<button type="button" class="lhc-work-head" aria-expanded="false" '
+                f'data-lhc-task="{escape(task_id)}" '
                 f'aria-controls="lhc-work-body-{escape(task_id)}">'
                 f'<span class="lhc-work-id">{escape(task_id)}</span>'
                 '<span class="lhc-work-main">'
@@ -795,20 +1010,7 @@ def _work_section(data: dict[str, Any]) -> str:
                 f'<span class="lhc-work-meta">{escape(_join([_text(task.get("owner")), _fmt_range(_number(hours.get("min")), _number(hours.get("max"))), _text(task.get("priority"))]))}</span>'
                 '<span class="lhc-work-toggle">Показать</span></span></button>'
                 f'<div class="lhc-work-body" id="lhc-work-body-{escape(task_id)}" hidden>'
-                '<div class="lhc-work-col"><h5 class="lhc-work-label">Изменить</h5>'
-                f"{_list(task.get('scope'))}</div>"
-                '<div class="lhc-work-col"><h5 class="lhc-work-label">Критерий приёмки</h5>'
-                f"{_list(task.get('acceptance'))}</div>"
-                '<div class="lhc-work-col"><h5 class="lhc-work-label">Уже есть и используется повторно</h5>'
-                f'<p class="lhc-cell-text">{escape(task.get("reuse"))}</p>'
-                f"{_refs(task.get('sources'))}</div>"
-                '<div class="lhc-work-col"><h5 class="lhc-work-label">Зависимости и результат</h5>'
-                f'<p class="lhc-cell-text">{escape(task.get("result"))}</p>'
-                f'<p class="lhc-caption">После: '
-                f'{escape(", ".join(deps)) if deps else "можно начинать сразу"}</p></div>'
-                '<div class="lhc-work-col lhc-work-col--wide">'
-                '<h5 class="lhc-work-label">Контекст</h5>'
-                f'<p class="lhc-caption">{escape(context)}</p></div></div></article>'
+                f"{detail}</div></article>"
             )
         blocks.append(
             '<div class="lhc-phase"><div class="lhc-phase-head">'
@@ -920,39 +1122,89 @@ def product_nav_items() -> tuple:
     return NAV_ITEMS
 
 
+# The sections of the delivery side, in the order of the page. The groups
+# are the two halves the page can place separately: the plan with its grid
+# and the evidence behind it.
+PRODUCT_SECTIONS: tuple[tuple[str, Any], ...] = (
+    ("lhc-summary", _summary_section),
+    ("lhc-notes", _notes_section),
+    ("lhc-metrics", _metrics_section),
+    ("lhc-requirements", _requirements_section),
+    ("lhc-health", _health_section),
+    ("lhc-gantt", _gantt_section),
+    ("lhc-work", _work_section),
+    ("lhc-rules", _rules_section),
+    ("lhc-agent", _agent_section),
+    ("lhc-sources", _sources_section),
+    ("lhc-spec", _spec_section),
+)
+
+PLAN_SECTIONS = ("lhc-gantt", "lhc-work")
+
+EVIDENCE_SECTIONS = tuple(
+    section_id for section_id, _ in PRODUCT_SECTIONS if section_id not in PLAN_SECTIONS
+)
+
+PRODUCT_GROUPS = ("all", "plan", "evidence")
+
+
 def render_product_sections(
     data: Any,
     *,
     theme_palette: Optional[dict] = None,
-    include_hero: bool = True,
-    include_nav: bool = True,
+    group: str = "all",
+    include_hero: Optional[bool] = None,
+    include_nav: Optional[bool] = None,
 ) -> str:
     """The HTML of the delivery sections.
 
     The result is a fragment: it carries no page of its own, so it can be
     dropped into the dashboard page as it is.
+
+    The ``group`` splits the sections into the two halves of the page:
+
+    ``"plan"``
+        the grid of the Gantt and the work cards, with the card of a task;
+    ``"evidence"``
+        the conclusions, the remarks, the metrics, the requirement matrix,
+        the services, the rules, the agent task, the sources and the
+        specification;
+    ``"all"``
+        everything, as one block (the default).
+
+    The groups do not share an id, so both can stand on one page: the card
+    of a task belongs to the plan group, and the evidence group refers to
+    it by its id. The headline and the navigation belong to the plan group
+    as well; ``include_hero`` and ``include_nav`` say otherwise.
     """
 
+    key = str(group or "all").strip().lower()
+    if key not in PRODUCT_GROUPS:
+        raise ValueError(f"unknown product group: {group!r}")
+    if include_hero is None:
+        include_hero = key != "evidence"
+    if include_nav is None:
+        include_nav = key != "evidence"
     payload = data if isinstance(data, dict) else {}
     palette = theme_palette if isinstance(theme_palette, dict) else dashboard_palette()
+    wanted = {
+        "all": tuple(section_id for section_id, _ in PRODUCT_SECTIONS),
+        "plan": PLAN_SECTIONS,
+        "evidence": EVIDENCE_SECTIONS,
+    }[key]
+
     parts = [
-        f'<div class="lhc-product" id="lhc-product" style="{escape(_palette_style(palette))}">',
+        f'<div class="lhc-product" id="lhc-product-{escape(key)}" '
+        f'style="{escape(_palette_style(palette))}">',
         _hero(payload, with_theme=not include_hero) if include_hero else "",
         _nav() if include_nav else "",
-        _summary_section(payload),
-        _notes_section(payload),
-        _metrics_section(payload),
-        _requirements_section(payload),
-        _health_section(payload),
-        _gantt_section(payload),
-        _work_section(payload),
-        _rules_section(payload),
-        _agent_section(payload),
-        _sources_section(payload),
-        _spec_section(payload),
     ]
-    island = json.dumps(payload, ensure_ascii=False, indent=2, default=str).replace("<", "\\u003c")
-    parts.append(f'<template id="lhc-plan-json">{island}</template>')
+    for section_id, builder in PRODUCT_SECTIONS:
+        if section_id in wanted:
+            parts.append(builder(payload))
+    if key in ("all", "plan"):
+        island = json.dumps(payload, ensure_ascii=False, indent=2, default=str).replace("<", "\\u003c")
+        parts.append(f'<template id="lhc-plan-json">{island}</template>')
     parts.append("</div>")
     return "".join(parts)
 
@@ -1082,27 +1334,55 @@ _STYLES = """
 .lhc-gantt-meta span{display:block;font-size:11.5px;color:var(--muted)}
 .lhc-gantt-meta b{display:block;font-size:19px;line-height:1.2;margin:4px 0}
 .lhc-gantt-scroll{overflow:auto;max-height:620px}
-.lhc-gantt{--lhc-day:64px;--lhc-cols:12;min-width:max-content}
+.lhc-gantt{--lhc-day:64px;--lhc-cols:12;--lhc-label:280px;--lhc-row-h:68px;--lhc-band-h:48px;min-width:max-content}
 .lhc-gantt-head{display:flex;position:sticky;top:0;z-index:5;background:var(--panel-2);border-bottom:1px solid var(--line)}
-.lhc-gantt-corner{position:sticky;left:0;z-index:6;flex:none;width:240px;min-width:240px;padding:10px 12px;background:var(--panel-2);border-right:1px solid var(--line);font-size:11px;font-weight:700}
+.lhc-gantt-corner{position:sticky;left:0;z-index:6;flex:none;width:var(--lhc-label);min-width:var(--lhc-label);padding:10px 12px;background:var(--panel-2);border-right:1px solid var(--line);font-size:11px;font-weight:700}
 .lhc-gantt-days{display:flex}
 .lhc-gantt-day{width:var(--lhc-day);flex:none;padding:8px 4px;text-align:center;border-right:1px solid var(--line);font-size:10px;color:var(--muted)}
 .lhc-gantt-day strong{display:block;font-size:12px;color:var(--text)}
-.lhc-gantt-row,.lhc-gantt-band{display:flex;border-bottom:1px solid var(--line)}
-.lhc-gantt-band{background:var(--panel-2)}
-.lhc-gantt-label{position:sticky;left:0;z-index:4;flex:none;width:240px;min-width:240px;padding:7px 12px;background:var(--panel);border-right:1px solid var(--line);overflow:hidden}
-.lhc-gantt-label strong{display:block;font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.lhc-gantt-label span{font-size:10px;color:var(--muted)}
-.lhc-gantt-band-label{position:sticky;left:0;z-index:4;flex:none;width:240px;min-width:240px;display:flex;flex-wrap:wrap;align-items:center;gap:3px 7px;padding:7px 12px;background:var(--panel-2);border-right:1px solid var(--line);font-size:11.5px;overflow:hidden}
-.lhc-gantt-band-label strong{white-space:normal;overflow:visible}
-.lhc-band-meta{font-size:10px;color:var(--muted);margin-left:auto;white-space:nowrap}
+.lhc-gantt-body{position:relative;z-index:0}.lhc-gantt-row,.lhc-gantt-band{display:flex;border-bottom:1px solid var(--line)}
+.lhc-gantt-row{height:var(--lhc-row-h);min-height:44px}
+.lhc-gantt-band{height:var(--lhc-band-h);background:var(--panel-2)}
+.lhc-gantt-label{position:sticky;left:0;z-index:4;flex:none;width:var(--lhc-label);min-width:var(--lhc-label);display:flex;flex-direction:column;justify-content:center;gap:2px;padding:7px 12px;background:var(--panel);border:0;border-right:1px solid var(--line);border-radius:0;overflow:hidden;text-align:left;font:inherit;color:inherit;cursor:pointer}
+.lhc-gantt-label:hover{background:var(--panel-2)}.lhc-gantt-label strong{display:block;font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lhc-gantt-row-meta{display:block;font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lhc-gantt-flags{display:flex;gap:5px;white-space:nowrap;overflow:hidden}.lhc-flag{display:inline-block;flex:none;padding:1px 6px;border-radius:5px;border:1px solid var(--line);font-size:9.5px;font-weight:700;letter-spacing:.01em;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.lhc-flag--wait{color:var(--warn);border-color:var(--warn)}.lhc-flag--block{color:var(--accent);border-color:var(--accent);flex:0 1 auto;min-width:0}
+.lhc-gantt-row[data-lhc-waits] .lhc-gantt-label::before,.lhc-gantt-row[data-lhc-blocks] .lhc-gantt-label::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px}
+.lhc-gantt-row[data-lhc-waits] .lhc-gantt-label::before{background:var(--warn)}
+.lhc-gantt-row[data-lhc-blocks] .lhc-gantt-label::before{background:var(--accent)}
+.lhc-gantt-row[data-lhc-waits][data-lhc-blocks] .lhc-gantt-label::before{background:linear-gradient(var(--warn) 0 50%,var(--accent) 50% 100%)}
+.lhc-gantt-band-label{position:sticky;left:0;z-index:4;flex:none;width:var(--lhc-label);min-width:var(--lhc-label);display:flex;flex-direction:column;justify-content:center;gap:2px;padding:7px 12px;background:var(--panel-2);border-right:1px solid var(--line);font-size:11.5px;overflow:hidden}
+.lhc-gantt-band-line{display:flex;align-items:center;gap:6px;min-width:0}.lhc-gantt-band-label strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lhc-band-meta{font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .lhc-gantt-track{position:relative;flex:none;width:calc(var(--lhc-cols) * var(--lhc-day));background:repeating-linear-gradient(to right,transparent 0,transparent calc(var(--lhc-day) - 1px),var(--line) calc(var(--lhc-day) - 1px),var(--line) var(--lhc-day))}
-.lhc-bar{position:absolute;top:7px;height:20px;border-radius:5px;min-width:6px;box-shadow:0 1px 2px rgba(0,0,0,.25)}
-.lhc-band{position:absolute;top:9px;height:14px;border-radius:4px;opacity:.45;min-width:4px}
+.lhc-bar{position:absolute;top:50%;transform:translateY(-50%);z-index:3;height:44px;min-width:44px;padding:0 6px;border:0;border-radius:8px;box-shadow:0 1px 2px rgba(0,0,0,.25);cursor:pointer;overflow:hidden;white-space:nowrap;display:flex;align-items:center;justify-content:center;font:inherit;font-size:10.5px;font-weight:700;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.35)}
+.lhc-bar:hover{filter:brightness(1.08)}.lhc-bar-id{overflow:hidden;text-overflow:ellipsis}
+.lhc-bar--free{background:repeating-linear-gradient(45deg,var(--line) 0 4px,transparent 4px 8px);box-shadow:none;cursor:default}
+.lhc-band{position:absolute;top:50%;transform:translateY(-50%);height:14px;border-radius:4px;opacity:.45;min-width:4px}
 .lhc-swatch{width:10px;height:10px;border-radius:3px;display:inline-block;flex:none}
+.lhc-gantt-row.is-selected .lhc-bar{outline:3px solid var(--text);outline-offset:2px}.lhc-gantt-row.is-selected .lhc-gantt-label{background:var(--panel-2)}
+.lhc-gantt-net{position:absolute;left:var(--lhc-label);top:0;width:calc(var(--lhc-cols) * var(--lhc-day));height:100%;z-index:2;pointer-events:none;overflow:visible}
+.lhc-net-edge{fill:none;stroke:var(--muted);stroke-width:1.3;opacity:.75}.lhc-net-edge.is-active{stroke:var(--accent);stroke-width:2;opacity:1}.lhc-net-arrow{fill:var(--muted);stroke:none}
+.lhc-gantt--no-deps .lhc-gantt-net{display:none}
 .lhc-gantt-foot{padding:10px 14px;background:var(--panel-2);border-top:1px solid var(--line);font-size:11.5px;color:var(--muted)}
 .lhc-legend{display:flex;flex-wrap:wrap;gap:10px 16px;margin-top:12px}
 .lhc-legend span{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+
+/* ---- the card of a task: one card, opened from the grid and from the work ---- */
+.lhc-gantt-detail{border-top:1px solid var(--line);background:var(--panel)}
+.lhc-gantt-detail-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px;border-bottom:1px solid var(--line)}.lhc-gantt-detail-caption{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+.lhc-gantt-detail-body{padding:14px}.lhc-detail-head{display:block;margin-bottom:12px}
+.lhc-detail-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+.lhc-chip--id{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--accent)}.lhc-chip--priority{color:var(--warn);border-color:var(--warn)}.lhc-chip--plan{color:var(--muted)}
+.lhc-detail-title{font-size:16px;font-weight:650;margin:0 0 6px}
+.lhc-detail-state{margin-top:4px}.lhc-detail-cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.lhc-detail-gantt{margin-top:10px}.lhc-gantt-detail .lhc-detail-gantt{display:none}
+
+/* ---- the switch of the arrows ---- */
+.lhc-switch{display:inline-flex;align-items:center;gap:8px;min-height:44px;min-width:44px;padding:0 10px 0 0;font-size:12.5px;color:var(--muted);cursor:pointer;user-select:none}
+.lhc-switch input{appearance:none;-webkit-appearance:none;width:44px;height:44px;margin:0;flex:none;border:1px solid var(--line);border-radius:10px;background:var(--panel) no-repeat center/18px 18px;cursor:pointer}
+.lhc-switch input:checked{background-color:var(--accent);border-color:var(--accent);background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><path d='M4 10.5l4 4 8-9' fill='none' stroke='%23ffffff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/></svg>")}
 
 /* ---- work cards ---- */
 .lhc-phase{margin-bottom:18px}
@@ -1122,7 +1402,7 @@ _STYLES = """
 .lhc-work-side{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
 .lhc-work-meta{font-size:11.5px;color:var(--muted);text-align:right}
 .lhc-work-toggle{font-size:11.5px;color:var(--accent);white-space:nowrap}
-.lhc-work-body{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;padding:0 14px 14px}
+.lhc-work-body{padding:0 14px 14px}
 .lhc-work-col{min-width:0}
 .lhc-work-col--wide{grid-column:1/-1}
 .lhc-work-label{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px}
@@ -1168,12 +1448,14 @@ _STYLES = """
   .lhc-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
   .lhc-metric{padding:10px 12px}
   .lhc-metric b{font-size:22px}
-  .lhc-work-body{grid-template-columns:minmax(0,1fr);gap:10px}
+  .lhc-detail-cols{grid-template-columns:minmax(0,1fr);gap:10px}
   .lhc-work-head{grid-template-columns:minmax(0,1fr);gap:4px}
   .lhc-work-side{flex-direction:row;align-items:center;justify-content:space-between;gap:10px}
   .lhc-work-meta{text-align:left}
   .lhc-gantt-meta{grid-template-columns:repeat(2,minmax(0,1fr));padding:12px}
-  .lhc-gantt-corner,.lhc-gantt-label,.lhc-gantt-band-label{width:170px;min-width:170px}
+  .lhc-gantt{--lhc-label:180px}
+  /* The column is narrow: the flag says how many it holds back. */
+  .lhc-flag--block{font-size:0}.lhc-flag--block::after{content:"блокирует " attr(data-lhc-count);font-size:9.5px}
   .lhc-toolbar{align-items:stretch}
   .lhc-toolbar-label{flex:1 0 100%}
   .lhc-input{flex:1 1 100%}
@@ -1213,8 +1495,11 @@ def product_styles() -> str:
 _SCRIPTS = """
 (function () {
   "use strict";
-  var product = document.getElementById("lhc-product");
-  if (!product) { return; }
+  function all(node, selector) {
+    return Array.prototype.slice.call(node.querySelectorAll(selector));
+  }
+  var products = all(document, ".lhc-product");
+  if (!products.length) { return; }
   var root = document.documentElement;
 
   /* ---- theme: the choice of the reader, remembered between openings ---- */
@@ -1233,68 +1518,6 @@ _SCRIPTS = """
       try { window.localStorage.setItem("lhc-theme", next); } catch (error) { /* no storage */ }
     });
   }
-
-  /* ---- gantt: the scale of the time axis ---- */
-  var gantt = document.getElementById("lhc-gantt");
-  var zoom = document.getElementById("lhc-gantt-zoom");
-  var zoomValue = document.getElementById("lhc-gantt-zoom-value");
-  var baseDay = gantt ? (parseFloat(gantt.getAttribute("data-lhc-day-base")) || 64) : 64;
-  function applyZoom(scale) {
-    if (!gantt) { return; }
-    var clamped = Math.min(2.4, Math.max(0.6, scale));
-    gantt.style.setProperty("--lhc-day", (baseDay * clamped).toFixed(1) + "px");
-    if (zoomValue) { zoomValue.textContent = Math.round(clamped * 100) + "%"; }
-    if (zoom && parseFloat(zoom.value) !== clamped) { zoom.value = String(clamped); }
-  }
-  if (zoom) { zoom.addEventListener("input", function () { applyZoom(parseFloat(zoom.value) || 1); }); }
-  Array.prototype.slice.call(product.querySelectorAll("[data-lhc-zoom]")).forEach(function (button) {
-    button.addEventListener("click", function () {
-      var step = parseFloat(button.getAttribute("data-lhc-zoom")) || 1;
-      applyZoom((zoom ? (parseFloat(zoom.value) || 1) : 1) + step * 0.2);
-    });
-  });
-  applyZoom(1);
-
-  /* ---- requirements: a filter by verdict and a search ---- */
-  var chips = Array.prototype.slice.call(product.querySelectorAll("[data-lhc-req-filter]"));
-  var rows = Array.prototype.slice.call(product.querySelectorAll(".lhc-req-table tbody tr"));
-  var search = document.getElementById("lhc-req-search");
-  var count = document.getElementById("lhc-req-count");
-  var filter = "all";
-  function applyRequirements() {
-    var query = ((search && search.value) || "").trim().toLowerCase();
-    var shown = 0;
-    rows.forEach(function (row) {
-      var okStatus = filter === "all" || row.getAttribute("data-lhc-status") === filter;
-      var okQuery = !query || (row.getAttribute("data-lhc-text") || "").indexOf(query) !== -1;
-      row.hidden = !(okStatus && okQuery);
-      if (!row.hidden) { shown += 1; }
-    });
-    if (count) { count.textContent = shown + " из " + rows.length; }
-  }
-  chips.forEach(function (chip) {
-    chip.addEventListener("click", function () {
-      chips.forEach(function (other) { other.classList.remove("is-active"); });
-      chip.classList.add("is-active");
-      filter = chip.getAttribute("data-lhc-req-filter") || "all";
-      applyRequirements();
-    });
-  });
-  if (search) { search.addEventListener("input", applyRequirements); }
-  applyRequirements();
-
-  /* ---- work cards: the card opens where the finger already is ---- */
-  Array.prototype.slice.call(product.querySelectorAll(".lhc-work-head")).forEach(function (head) {
-    head.addEventListener("click", function () {
-      var body = document.getElementById(head.getAttribute("aria-controls") || "");
-      if (!body) { return; }
-      var open = head.getAttribute("aria-expanded") === "true";
-      head.setAttribute("aria-expanded", open ? "false" : "true");
-      body.hidden = open;
-      var toggle = head.querySelector(".lhc-work-toggle");
-      if (toggle) { toggle.textContent = open ? "Показать" : "Скрыть"; }
-    });
-  });
 
   /* ---- the agent task: copy and confirm ---- */
   var copyButton = document.getElementById("lhc-copy-agent");
@@ -1366,6 +1589,163 @@ _SCRIPTS = """
       window.setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
     });
   }
+
+  /* ---- one block of the page: the grid, the requirements and the works ---- */
+  function wireProduct(product) {
+    var gantt = product.querySelector("#lhc-gantt-grid");
+    var net = gantt ? gantt.querySelector(".lhc-gantt-net") : null;
+    var area = product.querySelector("#lhc-gantt-detail");
+    var detailBody = product.querySelector("#lhc-gantt-detail-body");
+    var closeButton = product.querySelector("#lhc-gantt-detail-close");
+    var zoom = product.querySelector("#lhc-gantt-zoom");
+    var zoomValue = product.querySelector("#lhc-gantt-zoom-value");
+    var depsToggle = product.querySelector("#lhc-gantt-deps");
+    var rows = gantt ? all(gantt, ".lhc-gantt-row") : [];
+    var paths = net ? all(net, "path[data-lhc-from]") : [];
+    var bars = {};
+    var baseDay = gantt ? (parseFloat(gantt.getAttribute("data-lhc-day-base")) || 64) : 64;
+    rows.forEach(function (row) {
+      var bar = row.querySelector(".lhc-bar");
+      if (bar) { bars[row.getAttribute("data-lhc-task")] = bar; }
+    });
+
+    /* the arrows of the dependencies: measured, so they follow the scale */
+    function layoutArrows() {
+      if (!net || !gantt || gantt.classList.contains("lhc-gantt--no-deps")) { return; }
+      var box = net.getBoundingClientRect();
+      if (!box.width) { return; }
+      paths.forEach(function (path) {
+        var from = bars[path.getAttribute("data-lhc-from")];
+        var to = bars[path.getAttribute("data-lhc-to")];
+        if (!from || !to) { return; }
+        var a = from.getBoundingClientRect();
+        var b = to.getBoundingClientRect();
+        var x1 = a.right - box.left - 2, y1 = a.top + a.height / 2 - box.top;
+        var x2 = b.left - box.left + 3, y2 = b.top + b.height / 2 - box.top;
+        var elbow = Math.min(x1 + 12, Math.max(x1 + 5, x2 - 7));
+        path.setAttribute("d", "M " + x1.toFixed(1) + " " + y1.toFixed(1) + " H " +
+          elbow.toFixed(1) + " V " + y2.toFixed(1) + " H " + x2.toFixed(1));
+      });
+    }
+
+    /* the card of a task: the very card the work card opens */
+    function openTask(taskId, scroll) {
+      if (!taskId || !area || !detailBody) { return; }
+      var source = document.getElementById("lhc-work-body-" + taskId);
+      if (source) { detailBody.innerHTML = source.innerHTML; }
+      area.hidden = false;
+      rows.forEach(function (row) { row.classList.toggle("is-selected", row.getAttribute("data-lhc-task") === taskId); });
+      paths.forEach(function (path) { path.classList.toggle("is-active", path.getAttribute("data-lhc-to") === taskId); });
+      if (scroll) {
+        try { area.scrollIntoView({ behavior: "smooth", block: "nearest" }); }
+        catch (error) { area.scrollIntoView(); }
+      }
+    }
+
+    /* gantt: the scale of the time axis */
+    function applyZoom(scale) {
+      if (!gantt) { return; }
+      var clamped = Math.min(2.4, Math.max(0.6, scale));
+      gantt.style.setProperty("--lhc-day", (baseDay * clamped).toFixed(1) + "px");
+      if (zoomValue) { zoomValue.textContent = Math.round(clamped * 100) + "%"; }
+      if (zoom && parseFloat(zoom.value) !== clamped) { zoom.value = String(clamped); }
+      layoutArrows();
+    }
+    if (zoom) { zoom.addEventListener("input", function () { applyZoom(parseFloat(zoom.value) || 1); }); }
+    all(product, "[data-lhc-zoom]").forEach(function (button) {
+      button.addEventListener("click", function () {
+        var step = parseFloat(button.getAttribute("data-lhc-zoom")) || 1;
+        applyZoom((zoom ? (parseFloat(zoom.value) || 1) : 1) + step * 0.2);
+      });
+    });
+    applyZoom(1);
+
+    /* gantt: the arrows of the dependencies can be switched off */
+    if (depsToggle && gantt) {
+      depsToggle.addEventListener("change", function () {
+        gantt.classList.toggle("lhc-gantt--no-deps", !depsToggle.checked);
+        layoutArrows();
+      });
+    }
+
+    /* gantt: a click on the row, the label or the bar opens the card */
+    if (gantt) {
+      gantt.addEventListener("click", function (event) {
+        var holder = event.target && event.target.closest ? event.target.closest("[data-lhc-task]") : null;
+        if (!holder || !gantt.contains(holder)) { return; }
+        openTask(holder.getAttribute("data-lhc-task"), true);
+      });
+    }
+
+    /* gantt: the card can be closed, and the selection is dropped with it */
+    if (closeButton && area && detailBody) {
+      closeButton.addEventListener("click", function () {
+        area.hidden = true;
+        detailBody.innerHTML = "";
+        rows.forEach(function (row) { row.classList.remove("is-selected"); });
+        paths.forEach(function (path) { path.classList.remove("is-active"); });
+      });
+    }
+
+    /* the card of a task is opened from the work card of the same page */
+    product.addEventListener("click", function (event) {
+      var link = event.target && event.target.closest ? event.target.closest("[data-lhc-gantt-link]") : null;
+      if (!link) { return; }
+      event.preventDefault();
+      openTask(link.getAttribute("data-lhc-gantt-link"), true);
+    });
+
+    /* requirements: a filter by verdict and a search */
+    var chips = all(product, "[data-lhc-req-filter]");
+    var reqRows = all(product, ".lhc-req-table tbody tr");
+    var search = product.querySelector("#lhc-req-search");
+    var count = product.querySelector("#lhc-req-count");
+    var filter = "all";
+    function applyRequirements() {
+      var query = ((search && search.value) || "").trim().toLowerCase();
+      var shown = 0;
+      reqRows.forEach(function (row) {
+        var okStatus = filter === "all" || row.getAttribute("data-lhc-status") === filter;
+        var okQuery = !query || (row.getAttribute("data-lhc-text") || "").indexOf(query) !== -1;
+        row.hidden = !(okStatus && okQuery);
+        if (!row.hidden) { shown += 1; }
+      });
+      if (count) { count.textContent = shown + " из " + reqRows.length; }
+    }
+    chips.forEach(function (chip) {
+      chip.addEventListener("click", function () {
+        chips.forEach(function (other) { other.classList.remove("is-active"); });
+        chip.classList.add("is-active");
+        filter = chip.getAttribute("data-lhc-req-filter") || "all";
+        applyRequirements();
+      });
+    });
+    if (search) { search.addEventListener("input", applyRequirements); }
+    applyRequirements();
+
+    /* work cards: the card opens where the finger already is */
+    all(product, ".lhc-work-head").forEach(function (head) {
+      head.addEventListener("click", function () {
+        var body = document.getElementById(head.getAttribute("aria-controls") || "");
+        if (body) {
+          var open = head.getAttribute("aria-expanded") === "true";
+          head.setAttribute("aria-expanded", open ? "false" : "true");
+          body.hidden = open;
+              var toggle = head.querySelector(".lhc-work-toggle");
+          if (toggle) { toggle.textContent = open ? "Показать" : "Скрыть"; }
+        }
+        openTask(head.getAttribute("data-lhc-task"), false);
+      });
+    });
+
+    /* the arrows follow the scale of the time axis */
+    if (paths.length) {
+      window.addEventListener("load", layoutArrows);
+      layoutArrows();
+    }
+  }
+
+  products.forEach(function (product) { wireProduct(product); });
 })();
 """
 

@@ -749,3 +749,212 @@ def test_the_renderer_survives_an_empty_plan():
     rendered = lhc.render_product_sections({})
     assert rendered.count("<section") == rendered.count("</section>")
     assert "lhc-product" in rendered
+
+
+# --------------------------------------------------------------------------
+# the interactive grid: the card of a task, the arrows and the blocking
+# --------------------------------------------------------------------------
+
+
+def _div_block(markup: str, start: int) -> tuple[str, int]:
+    """The markup of the div that opens at ``start`` and the index behind it."""
+
+    depth = 0
+    for match in re.finditer(r"<div\b|</div>", markup[start:]):
+        depth += 1 if match.group(0) != "</div>" else -1
+        if depth == 0:
+            return markup[start:start + match.end()], start + match.end()
+    raise AssertionError("the div is never closed")
+
+
+def test_the_gantt_has_a_click_target_for_every_task():
+    """A click on the label, on the bar or on the track opens the card."""
+
+    gantt = section_html("lhc-gantt")
+    labels = re.findall(r'<button type="button" class="lhc-gantt-label">', gantt)
+    bars = re.findall(r'<button type="button" class="lhc-bar" data-lhc-task="([^"]+)"', gantt)
+    assert len(labels) == len(AUDIT["tasks"])
+    assert bars == [task["id"] for task in AUDIT["tasks"]]
+    # the row itself carries the task, so the empty track is a target too
+    for task in AUDIT["tasks"]:
+        assert f'data-lhc-task="{task["id"]}"' in gantt
+
+
+def test_the_card_of_a_task_carries_every_field_of_the_plan():
+    """The card shows the whole task, not a summary of it."""
+
+    phases = {phase["id"]: phase["name"] for phase in AUDIT["phases"]}
+    titles = {task["id"]: task["title"] for task in AUDIT["tasks"]}
+    for task in AUDIT["tasks"]:
+        start = HTML.index(f'<div class="lhc-detail" data-lhc-detail="{task["id"]}">')
+        card, _ = _div_block(HTML, start)
+        assert lhc.escape(task["id"]) in card
+        assert lhc.escape(task["title"]) in card
+        assert lhc.escape(phases.get(task["phase"], "")) in card
+        assert lhc.escape(task["priority"]) in card
+        assert lhc.escape(task["owner"]) in card
+        assert lhc.escape(task["repo"]) in card
+        for lock in task["locks"]:
+            assert lhc.escape(lock) in card, f"the lock {lock} is missing"
+        for dep in task["deps"]:
+            assert lhc.escape(dep) in card, f"the dependency {dep} is missing"
+            assert lhc.escape(titles[dep]) in card, f"the title of {dep} is missing"
+        hours = task["hours"]
+        expected = f"мин {hours['min']} · база {hours['base']} · макс {hours['max']} ч"
+        assert expected in card, f"the estimate of {task['id']} is missing"
+        for line in task["scope"]:
+            assert lhc.escape(line) in card
+        for line in task["acceptance"]:
+            assert lhc.escape(line) in card
+        assert lhc.escape(task["reuse"]) in card
+        assert lhc.escape(task["result"]) in card
+        for source in task["sources"]:
+            assert f'#lhc-source-{source}"' in card
+
+
+def test_the_card_does_not_invent_a_state_of_the_work():
+    """The data has no executed state, so the card says "план"."""
+
+    start = HTML.index('<div class="lhc-detail" data-lhc-detail="')
+    card, _ = _div_block(HTML, start)
+    assert 'lhc-chip--plan">план<' in card
+    assert '">готово<' not in card.lower()
+
+
+def test_the_card_is_one_implementation_for_the_grid_and_the_work():
+    """The grid opens the very card the work card shows."""
+
+    body = re.search(
+        r'<div class="lhc-gantt-detail-body" id="lhc-gantt-detail-body">(.*?)</div>',
+        HTML,
+        re.S,
+    )
+    assert body, "the card of the grid is missing"
+    assert not body.group(1).strip(), "the card of the grid is not filled by the script"
+    assert "detailBody.innerHTML = source.innerHTML" in lhc.product_scripts()
+    # the work card carries that card, not a second copy of it
+    work = re.search(
+        r'<div class="lhc-work-body" id="lhc-work-body-W01" hidden>(.*?)</div></article>',
+        HTML,
+        re.S,
+    )
+    assert work and 'class="lhc-detail" data-lhc-detail="W01"' in work.group(1)
+
+
+def test_the_card_sits_next_to_the_grid_and_not_inside_its_scrolling_strip():
+    """The card is reachable without scrolling the grid sideways."""
+
+    gantt = section_html("lhc-gantt")
+    start = gantt.index('<div class="lhc-gantt-scroll">')
+    strip, end = _div_block(gantt, start)
+    assert "lhc-gantt-detail" not in strip, "the card is inside the scrolling strip"
+    assert 'class="lhc-gantt-detail"' in gantt[end:end + 200], "the card is not under the grid"
+
+
+def test_the_card_can_be_closed():
+    gantt = section_html("lhc-gantt")
+    assert 'id="lhc-gantt-detail-close"' in gantt
+    assert 'id="lhc-gantt-detail" hidden' in gantt
+    assert "lhc-gantt-detail-close" in lhc.product_scripts()
+
+
+def test_the_arrows_are_drawn_for_every_dependency_of_the_plan():
+    gantt = section_html("lhc-gantt")
+    paths = re.findall(
+        r'<path class="lhc-net-edge" data-lhc-from="([^"]+)" data-lhc-to="([^"]+)"', gantt
+    )
+    expected = [(dep, task["id"]) for task in AUDIT["tasks"] for dep in task["deps"]]
+    assert sorted(paths) == sorted(expected)
+    assert len(paths) == sum(len(task["deps"]) for task in AUDIT["tasks"])
+    # every arrow has a head
+    assert gantt.count('marker-end="url(#lhc-gantt-arrow)"') == len(paths)
+    assert 'id="lhc-gantt-arrow"' in gantt
+
+
+def test_the_arrows_can_be_switched_off():
+    gantt = section_html("lhc-gantt")
+    assert '<input type="checkbox" id="lhc-gantt-deps" checked>' in gantt
+    assert "Связи работ" in gantt
+    scripts = lhc.product_scripts()
+    assert "lhc-gantt-deps" in scripts
+    assert "lhc-gantt--no-deps" in scripts
+    assert ".lhc-gantt--no-deps .lhc-gantt-net{display:none}" in lhc.product_styles()
+
+
+def test_the_selected_row_is_marked():
+    assert "is-selected" in lhc.product_scripts()
+    styles = lhc.product_styles()
+    assert ".lhc-gantt-row.is-selected .lhc-bar{outline" in styles
+
+
+def test_the_blocking_is_visible_in_the_grid_and_in_the_card():
+    """A task says what it waits for and what it holds back."""
+
+    gantt = section_html("lhc-gantt")
+    for task in AUDIT["tasks"]:
+        row = re.search(
+            rf'<div class="lhc-gantt-row" data-lhc-task="{re.escape(task["id"])}".*?</div></div>',
+            gantt,
+            re.S,
+        )
+        assert row, f"the row of {task['id']} is missing"
+        markup = row.group(0)
+        waits = re.search(r'data-lhc-waits="([^"]*)"', markup)
+        assert waits, f"the row of {task['id']} does not say what it waits for"
+        for dep in task["deps"]:
+            assert dep in waits.group(1), f"the row of {task['id']} hides {dep}"
+        held = [other["id"] for other in AUDIT["tasks"] if task["id"] in other["deps"]]
+        if held:
+            assert f'data-lhc-blocks="{", ".join(held)}"' in markup
+    assert "ждёт" in gantt and "блокирует" in gantt
+
+
+# --------------------------------------------------------------------------
+# the groups of the delivery side
+# --------------------------------------------------------------------------
+
+
+def test_every_group_renders_a_fragment_of_its_own():
+    for group in ("all", "plan", "evidence"):
+        markup = lhc.render_product_sections(AUDIT, group=group)
+        assert 'class="lhc-product"' in markup
+        assert markup.count("<section") == markup.count("</section>")
+        for tag in ("<html", "<head", "<body", "<style"):
+            assert tag not in markup, f"the group {group} carries a {tag} of its own"
+
+
+def test_the_groups_together_carry_the_sections_of_the_whole():
+    whole = lhc.render_product_sections(AUDIT)
+    plan = lhc.render_product_sections(AUDIT, group="plan")
+    evidence = lhc.render_product_sections(AUDIT, group="evidence")
+
+    def sections(markup: str) -> set:
+        return set(re.findall(r'<section id="([^"]+)"', markup))
+
+    assert sections(plan) == {"lhc-gantt", "lhc-work"}
+    assert sections(evidence)
+    assert sections(plan) | sections(evidence) == sections(whole)
+    assert not sections(plan) & sections(evidence)
+
+
+def test_the_groups_do_not_share_an_id():
+    plan = lhc.render_product_sections(AUDIT, group="plan")
+    evidence = lhc.render_product_sections(AUDIT, group="evidence")
+
+    def ids(markup: str) -> set:
+        return set(re.findall(r'\sid="([^"]+)"', markup))
+
+    plan_ids = ids(plan)
+    evidence_ids = ids(evidence)
+    assert not plan_ids & evidence_ids, "the groups collide on an id"
+    # the card of a task belongs to the plan group; the evidence refers to it
+    assert "lhc-gantt-detail" in plan_ids
+    assert "lhc-gantt-detail" not in evidence_ids
+    # the plan as a file belongs to the plan group as well
+    assert "lhc-plan-json" in plan_ids
+    assert "lhc-plan-json" not in evidence_ids
+
+
+def test_an_unknown_group_is_refused():
+    with pytest.raises(ValueError):
+        lhc.render_product_sections(AUDIT, group="nowhere")

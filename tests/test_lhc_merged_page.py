@@ -71,7 +71,7 @@ def test_the_delivery_side_is_inside_the_plan_page():
                    "lhc-work", "lhc-agent", "lhc-sources", "lhc-spec"):
         assert f'id="{anchor}"' in html, f"нет секции {anchor}"
     # The state of the plan is on the same page.
-    for anchor in ("lhc-state", "lhc-leaves", "lhc-plan-gantt", "lhc-blockers",
+    for anchor in ("lhc-state", "lhc-leaves", "lhc-plan-gantt", "lhc-blocking",
                    "lhc-forecast", "lhc-journal"):
         assert f'id="{anchor}"' in html, f"нет секции плана {anchor}"
 

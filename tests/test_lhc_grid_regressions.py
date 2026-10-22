@@ -346,8 +346,11 @@ def test_business_goal_is_visible_without_interaction():
     assert why.group(1), "блок цели должен быть открыт по умолчанию"
     goal_at = body.find("Закрыть интеграцию источника")
     result_at = body.find("Сообщение превращается в карточку у владельца")
-    assert 0 < goal_at < body.find("kpis"), "цель должна быть до плиток состояния"
-    assert 0 < result_at < body.find("kpis"), "бизнес-результат должен быть до плиток состояния"
+    assert goal_at > 0 and result_at > 0
+    # The progress comes first, the goal follows - and it is open, so the owner
+    # reads it without a tap.
+    assert body.find("progress-strip") < body.find("kpis") < goal_at
+    assert "<details class=\"panel brief-details brief-why-details\" open>" in body
 
 
 def test_technical_brief_stays_folded():
@@ -400,6 +403,7 @@ def test_the_opened_task_carries_the_whole_of_it():
         "schema_version": 2,
         "goal": "Проверить доступ",
         "business_result": "Доступ работает",
+        # the owner put the progress above the goal; the goal stays open
         "tasks": [{
             "id": "L01",
             "label": "Починить доступ",

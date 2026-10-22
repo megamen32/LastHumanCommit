@@ -1593,7 +1593,7 @@ def merged_navigation(product_items: tuple) -> str:
     plan_items = (
         ("lhc-leaves", "Листья"),
         ("lhc-plan-gantt", "Гант плана"),
-        ("lhc-blockers", "Блокеры"),
+        ("lhc-blocking", "Что блокирует"),
         ("lhc-forecast", "Прогноз"),
         ("lhc-journal", "Журнал"),
     )
@@ -1643,34 +1643,96 @@ def render_html(
     eta_range = _eta_range_text(metrics)
     cards = [
         ("Готово", f"{metrics['done']} / {headline_total}",
-         f"{metrics['progress_pct']}% {progress_note}", STATUS_DONE, True),
-        ("В работе", str(metrics["running"]), "сейчас выполняется", STATUS_RUNNING, True),
-        ("Заблокировано", str(metrics["blocked"]), "нужен внешний ход", STATUS_BLOCKED, True),
-        ("В очереди", str(metrics["queued"]), "ждут своего слота", STATUS_QUEUED, True),
+         f"{metrics['progress_pct']}% {progress_note}", STATUS_DONE, True, "done"),
+        ("В работе", str(metrics["running"]), "сейчас выполняется", STATUS_RUNNING, True, "running"),
+        ("Заблокировано", str(metrics["blocked"]), "нужен внешний ход", STATUS_BLOCKED, True, "blocked"),
+        ("В очереди", str(metrics["queued"]), "ждут своего слота", STATUS_QUEUED, True, "queued"),
         ("Отложено владельцем", str(metrics["deferred"]),
-         "ответа не ждём, вне остатка", STATUS_DEFERRED, True),
+         "ответа не ждём, вне остатка", STATUS_DEFERRED, True, "deferred"),
         ("Осталось", str(metrics["unfinished"]),
          f"не завершено · отложено владельцем: {metrics['deferred']} (в остаток не входит)",
-         STATUS_QUEUED, True),
+         STATUS_QUEUED, True, "unfinished"),
         ("Параллельность", f"{metrics['current_parallel']} / {metrics['slots']}",
-         f"пик по плану {metrics['planned_peak_parallel']}", STATUS_RUNNING, False),
+         f"пик по плану {metrics['planned_peak_parallel']}", STATUS_RUNNING, False, "parallel"),
         (remaining_label, fmt_minutes(metrics["remaining_minutes_max"]),
-         remaining_hint, STATUS_WAITING, False),
+         remaining_hint, STATUS_WAITING, False, "remaining"),
         ("Прогноз финиша", eta_range or "Срок неизвестен",
-         eta_hint, STATUS_DONE, False),
+         eta_hint, STATUS_DONE, False, "forecast"),
         ("Усилие", fmt_minutes(metrics["effort_minutes"]),
-         f"критический путь {fmt_minutes(metrics['critical_minutes'])}", STATUS_QUEUED, False),
+         f"критический путь {fmt_minutes(metrics['critical_minutes'])}", STATUS_QUEUED, False, "effort"),
     ]
+    # Every tile knows the tasks behind it: the owner clicks a number and
+    # wants to see them, without leaving the page.
+    by_status: dict[str, list[str]] = {}
+    for leaf in leaves:
+        by_status.setdefault(leaf.status, []).append(leaf.id)
+    unfinished_ids = [
+        leaf.id for leaf in leaves if leaf.status not in (STATUS_DONE, STATUS_DEFERRED)
+    ]
+    unknown_ids = [
+        leaf.id
+        for leaf in leaves
+        if leaf.estimate_min is None and leaf.status not in (STATUS_DONE, STATUS_DEFERRED)
+    ]
+    critical_ids = [leaf.id for leaf in leaves if leaf.id in metrics["critical_path"]]
+    wave_ids: list[str] = []
+    if schedule.waves:
+        current_wave = min(
+            (schedule.waves.get(leaf.id, 0) for leaf in leaves if leaf.status == STATUS_RUNNING),
+            default=0,
+        )
+        wave_ids = [leaf.id for leaf in leaves if schedule.waves.get(leaf.id, 0) == current_wave]
+    forecast_ids = list(
+        dict.fromkeys(
+            unknown_ids
+            + [leaf.id for leaf in leaves if leaf.status == STATUS_WAITING]
+            + critical_ids[-1:]
+        )
+    )
+    tile_leaves = {
+        "all": [leaf.id for leaf in leaves],
+        "done": by_status.get(STATUS_DONE, []),
+        "running": by_status.get(STATUS_RUNNING, []),
+        "blocked": by_status.get(STATUS_BLOCKED, []),
+        "queued": by_status.get(STATUS_QUEUED, []),
+        "deferred": by_status.get(STATUS_DEFERRED, []),
+        "unfinished": unfinished_ids,
+        "parallel": wave_ids or [leaf.id for leaf in leaves],
+        "remaining": [i for i in unfinished_ids if i not in unknown_ids] or unfinished_ids,
+        "forecast": forecast_ids,
+        "effort": critical_ids,
+    }
+    tile_titles = {key: label for label, _, _, _, _, key in cards}
+    tile_titles["all"] = "Все задачи плана"
     card_html = "".join(
-        f'<div class="kpi" style="--accent:{STATUS_CSS_VARS.get(tone, "var(--accent)")}">'
+        f'<div class="kpi kpi-tile" data-tile="{escape(key)}" role="button" tabindex="0" '
+        f'aria-label="{escape(label)}: {escape(value)} — показать задачи" '
+        f'style="--accent:{STATUS_CSS_VARS.get(tone, "var(--accent)")}">'
         f'<div class="kpi-label" title="{escape(label)}">'
         + (f"{STATUS_GLYPHS.get(tone, '')} " if is_status else "")
         + f"{escape(label)}</div>"
         f'<div class="kpi-value">{escape(value)}</div>'
         f'<div class="kpi-hint">{escape(hint)}</div>'
         "</div>"
-        for label, value, hint, tone, is_status in cards
+        for label, value, hint, tone, is_status, key in cards
     )
+    leaf_index = {
+        leaf.id: {
+            "id": leaf.id,
+            "template": leaves.index(leaf),
+            "label": leaf.label or leaf.id,
+            "status": leaf.status,
+            "status_label": STATUS_LABELS.get(leaf.status, leaf.status),
+            "owner": leaf.owner,
+            "estimate": leaf.duration_label,
+        }
+        for leaf in leaves
+    }
+    tile_payload = json.dumps(
+        {"tiles": tile_leaves, "titles": tile_titles, "leaves": leaf_index},
+        ensure_ascii=False,
+    ).replace("<", "\\u003c")
+    tile_island = f'<template id="lhc-tile-index">{tile_payload}</template>'
 
     # ----- progress bar --------------------------------------------------
     headline = metrics["headline_counts"]
@@ -1688,6 +1750,105 @@ def render_html(
         f"{STATUS_LABELS[status]} · {headline.get(status, 0)}</span>"
         for status in STATUSES
         if headline.get(status, 0)
+    )
+
+    # ----- what blocks, and what needs the owner ----------------------------
+    # The owner wants to know, right after the state of the work, what holds
+    # it and what he has to decide himself. Both are honest: a leaf that waits
+    # is not a leaf that is blocked, and a leaf that needs a person says which
+    # person and what exactly.
+    stuck_leaves = [leaf for leaf in leaves if leaf.status in (STATUS_BLOCKED, STATUS_WAITING)]
+    owner_leaves = [
+        leaf
+        for leaf in leaves
+        if (leaf.blocker_details.get("human_required") or "").lower() == "yes"
+    ]
+    blocking_rows = []
+    holding_rows = []
+    for leaf in stuck_leaves:
+        details = leaf.blocker_details
+        reason = details.get("reason") or leaf.blocker or leaf.note or "Причина не указана."
+        responsible = details.get("responsible") or leaf.owner or "Исполнитель не указан."
+        next_action = details.get("next_action") or leaf.note or "Следующий шаг не указан."
+        required = details.get("human_required", "unknown").lower()
+        human_label = {"yes": "Да", "no": "Нет", "unknown": "Пока неизвестно"}.get(
+            required, "Пока неизвестно")
+        human_action = details.get("human_action") or "Действие человека не уточнено."
+        waits = ", ".join(label_by_id.get(dep, dep) for dep in leaf.depends_on) or "внешнее условие"
+        item = (
+            f'<div class="blocker-head">'
+            f'<span class="badge" style="background:{STATUS_CSS_VARS[leaf.status]}">'
+            f"{escape(STATUS_LABELS[leaf.status])}</span>"
+            f"<b>{escape(leaf.label or leaf.id)}</b></div>"
+            f'<div class="blocker-reason"><b>Почему ждём:</b> {escape(reason)}</div>'
+            f'<div class="blocker-meta"><b>Ждёт:</b> {escape(waits)}</div>'
+            f'<div class="blocker-meta"><b>Кто делает:</b> {escape(responsible)}</div>'
+            f'<div class="blocker-meta"><b>Следующий шаг:</b> {escape(next_action)}</div>'
+            f'<div class="blocker-meta"><b>Нужен ли человек:</b> {escape(human_label)}. '
+            f"{escape(human_action)}</div>"
+        )
+        if leaf.status == STATUS_BLOCKED:
+            blocking_rows.append(f'<div class="blocker">{item}</div>')
+        else:
+            holding_rows.append(f'<div class="holding">{item}</div>')
+    def holder_rows_html(rows: list[str]) -> list[str]:
+        return rows
+
+    owner_rows = []
+    for leaf in owner_leaves:
+        action = leaf.blocker_details.get("human_action") or "Действие человека не уточнено."
+        owner_rows.append(
+            f'<div class="owner-item"><div class="blocker-head">'
+            f'<span class="badge" style="background:{STATUS_CSS_VARS[STATUS_WAITING]}">Нужно от меня</span>'
+            f"<b>{escape(leaf.label or leaf.id)}</b></div>"
+            f'<div class="blocker-reason">{escape(action)}</div>'
+            f'<div class="blocker-meta"><b>Код:</b> {escape(leaf.id)}'
+            + (f' · <b>сессия:</b> {escape(leaf.session)}' if leaf.session else "")
+            + "</div></div>"
+        )
+    blocking_parts = []
+    if blocking_rows or holding_rows:
+        blocking_parts.append(
+            '<div class="blocking-group"><h3>Держит работу</h3>'
+            + "".join(blocking_rows)
+            + "".join(holder_rows_html(holding_rows))
+            + "</div>"
+        )
+    if owner_rows:
+        blocking_parts.append(
+            '<div class="blocking-group"><h3>Нужно от меня</h3>'
+            + "".join(owner_rows)
+            + "</div>"
+        )
+    if not blocking_parts:
+        blocking_parts.append('<div class="empty">Ничего не блокировано и от меня ничего не нужно.</div>')
+    blocking_html = "".join(blocking_parts)
+
+    # ----- the progress, always in sight ----------------------------------
+    # The owner reads the plan on a phone and wants to see the degree of the
+    # progress at the very top, in the mobile layout and in the wide one. A
+    # slim strip carries the same numbers as the tiles, so the two can never
+    # disagree, and it sticks to the top of the window while the page scrolls.
+    done_value = f"{metrics['done']} / {headline_total}"
+    percent_value = f"{metrics['progress_pct']:g}%"
+    remaining_hint = ""
+    for label, value, hint, tone, is_status, _key in cards:
+        if label == remaining_label:
+            remaining_hint = hint
+            break
+    strip_parts = [
+        f'<span class="progress-strip-title">Степень прогресса</span>',
+        f'<span class="progress-strip-value">{escape(done_value)}</span>',
+        f'<span class="progress-strip-percent">{escape(percent_value)}</span>',
+    ]
+    if remaining_hint:
+        strip_parts.append(f'<span class="progress-strip-hint">{escape(remaining_hint)}</span>')
+    progress_strip = (
+        '<div class="progress-strip" id="lhc-progress-strip" role="button" tabindex="0" '
+        'data-tile="all" aria-label="Степень прогресса — показать все задачи">'
+        f'<div class="progress-strip-line">{"".join(strip_parts)}</div>'
+        f'<div class="progress-strip-bar">{"".join(segments)}</div>'
+        "</div>"
     )
 
     # ----- what to do now -------------------------------------------------
@@ -2169,6 +2330,9 @@ def render_html(
     # reads why the work exists, what state it is in and what it rests on.
     # One headline, one navigation, one theme switch for the whole page.
     product_sections = ""
+    product_plan = ""
+    product_evidence = ""
+    evidence_fold = ""
     product_styles = ""
     product_scripts = ""
     hero_html = ""
@@ -2176,8 +2340,29 @@ def render_html(
     if product:
         lhc_product = product_module()
 
-        product_sections = lhc_product.render_product_sections(
-            product, include_hero=False, include_nav=False
+        try:
+            product_plan = lhc_product.render_product_sections(
+                product, include_hero=False, include_nav=False, group="plan"
+            )
+            product_evidence = lhc_product.render_product_sections(
+                product, include_hero=False, include_nav=False, group="evidence"
+            )
+        except TypeError:
+            # The delivery module does not split its sections yet: everything
+            # stays together, above the evidence of the plan.
+            product_plan = lhc_product.render_product_sections(
+                product, include_hero=False, include_nav=False
+            )
+            product_evidence = ""
+        product_sections = product_plan
+        evidence_fold = (
+            '<details class="evidence-fold"><summary>'
+            "Доказательства, требования и сервисы — справочный материал"
+            "</summary>"
+            + product_evidence
+            + "</details>"
+            if product_evidence
+            else ""
         )
         product_styles = lhc_product.product_styles()
         product_scripts = lhc_product.product_scripts()
@@ -2188,6 +2373,13 @@ def render_html(
         product_styles=product_styles,
         product_scripts=product_scripts,
         product_sections=product_sections,
+        product_plan=product_plan,
+        product_evidence=product_evidence,
+        evidence_fold=evidence_fold,
+        plan_gantt_hidden=' hidden' if product else '',
+        blocking=blocking_html,
+        tile_island=tile_island,
+        progress_strip=progress_strip,
         hero=hero_html,
         nav=nav_html,
         title=escape(graph.title),
@@ -2259,6 +2451,51 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     min-height: 44px; min-width: 44px; }}
   .theme-toggle:hover {{ color: var(--text); }}
   .head-actions {{ display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }}
+  /* The progress stays in sight while the page scrolls. */
+  /* A number you can click: the tasks behind it. */
+  .kpi-tile {{ cursor: pointer; }}
+  .kpi-tile:hover {{ border-color: var(--accent); }}
+  .kpi-tile:focus-visible {{ outline: 2px solid var(--accent); outline-offset: 2px; }}
+  .progress-strip {{ cursor: pointer; }}
+  .tile-card {{ margin: 0 0 14px; padding: 10px 12px; border: 1px solid var(--line);
+    border-radius: 10px; background: var(--panel-2); }}
+  .tile-card-head {{ display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    margin-bottom: 8px; }}
+  .tile-card-list {{ list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }}
+  .tile-card-item {{ display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px;
+    padding: 6px 0; border-top: 1px solid var(--line); cursor: pointer; }}
+  .tile-card-item:hover .row-name {{ color: var(--accent); }}
+  .tile-card-close, .tile-card-back {{ min-height: 44px; padding: 4px 10px; border-radius: 8px;
+    border: 1px solid var(--line); background: transparent; color: var(--muted); cursor: pointer; }}
+  .journal-fold summary {{ cursor: pointer; list-style: none; }}
+  .journal-fold summary::-webkit-details-marker {{ display: none; }}
+  .journal-fold summary h2 {{ margin: 0; font-size: 12px; text-transform: uppercase;
+    letter-spacing: .08em; color: var(--muted); }}
+  .journal-fold[open] summary h2 {{ color: var(--text); }}
+  .evidence-fold {{ margin: 0 0 14px; border: 1px solid var(--line); border-radius: 10px;
+    background: var(--panel); }}
+  .evidence-fold > summary {{ cursor: pointer; padding: 10px 12px; color: var(--muted);
+    font-size: 12.5px; }}
+  .evidence-fold[open] > summary {{ color: var(--text); border-bottom: 1px solid var(--line); }}
+  .evidence-fold > *:not(summary) {{ margin-left: 12px; margin-right: 12px; }}
+  .blocking-group {{ display: grid; gap: 8px; }}
+  .blocking-group h3 {{ margin: 0 0 2px; font-size: 11px; text-transform: uppercase;
+    letter-spacing: .08em; color: var(--muted); }}
+  .blocker-owner {{ border-left-color: var(--warn); }}
+  /* The progress strip sticks to the top, so an anchor jump must not land
+     a section under it. */
+  section, .panel, .kpis, [id^="lhc-"] {{ scroll-margin-top: 76px; }}
+  .progress-strip {{ position: sticky; top: 0; z-index: 40; margin: 0 0 12px;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; }}
+  .progress-strip-line {{ display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; }}
+  .progress-strip-title {{ font-size: 11px; text-transform: uppercase; letter-spacing: .08em;
+    color: var(--muted); }}
+  .progress-strip-value {{ font-size: 15px; font-weight: 700; color: var(--text); }}
+  .progress-strip-percent {{ font-size: 13px; font-weight: 600; color: var(--accent); }}
+  .progress-strip-hint {{ font-size: 12px; color: var(--muted); }}
+  .progress-strip-bar {{ display: flex; height: 6px; margin-top: 7px; border-radius: 999px;
+    overflow: hidden; background: var(--panel-2); }}
+  .progress-strip-bar .seg {{ height: 100%; }}
   .snapshot-note {{ color: var(--muted); font-size: 12.5px; margin: 0 0 14px; padding: 8px 12px;
     border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 10px;
     background: var(--panel); overflow-wrap: anywhere; }}
@@ -2512,21 +2749,31 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 </head>
 <body>
 <div class="page">
+{progress_strip}
+
 {hero}
 
 {nav}
 
 <p class="snapshot-note">{snapshot}</p>
 
-{why_panel}
-
-{product_sections}
-
 <div class="kpis" id="lhc-state">{cards}</div>
+
+<div class="tile-card" id="lhc-tile-card" hidden></div>
+{tile_island}
 
 <div class="panel panel-now">
   {now}
 </div>
+
+<div class="panel panel-blocking" id="lhc-blocking">
+  <h2>Что блокирует</h2>
+  {blocking}
+</div>
+
+{why_panel}
+
+{product_plan}
 
 <div class="panel panel-progress">
   <div class="progress">{segments}</div>
@@ -2538,7 +2785,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   {brief}
 </details>
 
-<div class="panel panel-gantt" id="lhc-plan-gantt">
+{evidence_fold}
+
+<div class="panel panel-gantt" id="lhc-plan-gantt"{plan_gantt_hidden}>
   <h2>Гант · листья и параллельные волны</h2>
   <div class="gantt"><div class="gantt-inner">
     <div class="gantt-axis-row"><div class="gantt-axis-spacer"></div><div class="gantt-axis">{axis}</div></div>
@@ -2562,10 +2811,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     {leaves_details}
   </div>
   <div>
-    <div class="panel" id="lhc-blockers">
-      <h2>Блокеры</h2>
-      {blockers}
-    </div>
     <div class="panel">
       <h2>Технические привязки</h2>
       <details class="technical"><summary>Владельцы, сессии, harness и модели</summary>
@@ -2577,9 +2822,14 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       {forecast}
       {notes}
     </div>
-    <div class="panel" id="lhc-journal">
+    <div class="panel journal-fold" id="lhc-journal">
+      <details>
+        <summary><h2>Журнал изменений</h2></summary>
+
       <h2>Журнал изменений</h2>
       {live}
+
+      </details>
     </div>
   </div>
 </div>
@@ -2678,6 +2928,82 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     if (!row.dataset.detailsId) {{ return; }}
     row.addEventListener('click', function () {{
       openDetails(row, row.dataset.detailsId);
+    }});
+  }});
+  // Every number of the page can be opened: the tile shows the tasks behind
+  // it, and a task in that list opens its full card.
+  var tileIndex = null;
+  try {{
+    var island = document.getElementById('lhc-tile-index');
+    tileIndex = island ? JSON.parse(island.content.textContent) : null;
+  }} catch (error) {{ tileIndex = null; }}
+  var tileCard = document.getElementById('lhc-tile-card');
+  var currentTile = null;
+  function tileTitle(key) {{
+    return (tileIndex && tileIndex.titles && tileIndex.titles[key]) || 'Задачи';
+  }}
+  function renderTileList(key) {{
+    if (!tileIndex || !tileCard) {{ return; }}
+    var ids = (tileIndex.tiles && tileIndex.tiles[key]) || [];
+    var head = document.createElement('div');
+    head.className = 'tile-card-head';
+    var title = document.createElement('b');
+    title.textContent = tileTitle(key) + ' · ' + ids.length;
+    var close = document.createElement('button');
+    close.type = 'button'; close.className = 'tile-card-close'; close.textContent = 'Закрыть';
+    close.addEventListener('click', function () {{
+      tileCard.hidden = true; tileCard.replaceChildren(); currentTile = null;
+    }});
+    head.appendChild(title); head.appendChild(close);
+    var list = document.createElement('ul');
+    list.className = 'tile-card-list';
+    ids.forEach(function (id) {{
+      var leaf = (tileIndex.leaves && tileIndex.leaves[id]) || {{}};
+      var item = document.createElement('li');
+      item.className = 'tile-card-item';
+      var code = document.createElement('span'); code.className = 'row-id'; code.textContent = id;
+      var name = document.createElement('span'); name.className = 'row-name';
+      name.textContent = leaf.label || id;
+      var meta = document.createElement('span'); meta.className = 'row-meta';
+      meta.textContent = [leaf.status_label, leaf.owner, leaf.estimate].filter(Boolean).join(' · ');
+      item.appendChild(code); item.appendChild(name); item.appendChild(meta);
+      item.addEventListener('click', function () {{ openLeafInTile(id); }});
+      list.appendChild(item);
+    }});
+    if (!ids.length) {{
+      var empty = document.createElement('div');
+      empty.className = 'empty'; empty.textContent = 'Задач нет.';
+      list.appendChild(empty);
+    }}
+    tileCard.replaceChildren(head, list);
+    tileCard.hidden = false;
+  }}
+  function openLeafInTile(id) {{
+    if (!tileIndex || !tileCard) {{ return; }}
+    var leaf = (tileIndex.leaves && tileIndex.leaves[id]) || {{}};
+    var template = document.getElementById('task-details-template-' + leaf.template);
+    if (!template) {{ return; }}
+    var back = document.createElement('button');
+    back.type = 'button'; back.className = 'tile-card-back'; back.textContent = '← ко всем задачам';
+    back.addEventListener('click', function () {{ renderTileList(currentTile); }});
+    var card = template.content.cloneNode(true);
+    tileCard.replaceChildren(back, card);
+    tileCard.hidden = false;
+    var close = tileCard.querySelector('.task-details-close');
+    if (close) {{
+      close.addEventListener('click', function () {{ renderTileList(currentTile); }});
+    }}
+  }}
+  document.querySelectorAll('[data-tile]').forEach(function (tile) {{
+    tile.addEventListener('click', function () {{
+      currentTile = tile.dataset.tile;
+      renderTileList(currentTile);
+    }});
+    tile.addEventListener('keydown', function (event) {{
+      if (event.key === 'Enter' || event.key === ' ') {{
+        event.preventDefault();
+        tile.click();
+      }}
     }});
   }});
   apply();
@@ -3186,6 +3512,39 @@ def command_validate(args: argparse.Namespace) -> int:
     return 0 if not errors else 2
 
 
+# The plan is read by a person on a phone. The wording of the plan has a
+# budget: the goal and the business result say what the work is for, the
+# leaves say what has to happen, and the detail lives in the card of the leaf
+# and in the journal. A plan that has to be read twice is a plan that was
+# written for the writer.
+TEXT_BUDGET = {"goal": 240, "business_result": 240, "label": 120, "note": 200}
+
+
+def check_text_budget(graph: Graph) -> list[str]:
+    """What the plan says at length, and why it should not."""
+    problems: list[str] = []
+    for field in ("goal", "business_result"):
+        value = getattr(graph, field, "") or ""
+        limit = TEXT_BUDGET[field]
+        if len(value) > limit:
+            problems.append(
+                f"{field}: {len(value)} символов, максимум {limit} — "
+                f"это читается для документа, а не для протокола"
+            )
+    for leaf in graph.leaves:
+        if len(leaf.label or "") > TEXT_BUDGET["label"]:
+            problems.append(
+                f"{leaf.id}: название задачи {len(leaf.label)} символов, "
+                f"максимум {TEXT_BUDGET['label']}"
+            )
+        if len(leaf.note or "") > TEXT_BUDGET["note"]:
+            problems.append(
+                f"{leaf.id}: примечание {len(leaf.note)} символов, "
+                f"максимум {TEXT_BUDGET['note']} — детали живут в карточке задачи"
+            )
+    return problems
+
+
 def command_check_plan(args: argparse.Namespace) -> int:
     """Reconcile the report's task list with the graph's leaves."""
 
@@ -3200,6 +3559,16 @@ def command_check_plan(args: argparse.Namespace) -> int:
     )
     if result.ok:
         print("OK: задачи отчёта и листья графа совпадают — один набор, те же id и статусы.")
+        overbudget = check_text_budget(graph)
+        if overbudget:
+            print("ТЕКСТ ПЛАНА РАЗРОС:")
+            for problem in overbudget:
+                print(f"  - {problem}")
+            print(
+                "План читают на телефоне: цель и результат — по одному предложению, "
+                "название задачи — коротко, детали — в карточке задачи и в журнале."
+            )
+            return 1
         return 0
     print("РАСХОЖДЕНИЕ между отчётом и графом:")
     if result.extra_in_report:

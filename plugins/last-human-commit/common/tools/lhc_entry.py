@@ -469,6 +469,65 @@ def handle(event, name, runtime, root):
         guard.write_state(path, state)
     return output
 
+PLAN_FILES = ("plan.graph.json", "plan.report.md")
+
+
+def written_paths(event):
+    """The paths a tool has just written, as far as the event shows them."""
+    found = []
+
+    def walk(value, depth=0):
+        if depth > 4:
+            return
+        if isinstance(value, str):
+            found.append(value)
+        elif isinstance(value, list):
+            for item in value:
+                walk(item, depth + 1)
+        elif isinstance(value, dict):
+            for item in value.values():
+                walk(item, depth + 1)
+
+    if isinstance(event, dict):
+        for key in ("tool_input", "toolInput", "tool_response", "input", "arguments", "files", "paths"):
+            if key in event:
+                walk(event[key])
+    return found
+
+
+def render_written_plan(event, root):
+    """Rebuild the page of the plan that has just been written.
+
+    The agent writes the plan; the page is generated from it by this hook. The
+    agent does not have to remember a command, and the page can never describe
+    a plan that is older than the plan itself.
+    """
+    tools = Path(root) / "tools" if (Path(root) / "tools" / "lhc_grid.py").is_file() else method_root(root) / "tools"
+    tool = tools / "lhc_grid.py"
+    if not tool.is_file():
+        return None
+    base = Path(event.get("cwd") or ".").expanduser() if isinstance(event, dict) else Path(".")
+    for raw in written_paths(event):
+        if not raw.endswith(PLAN_FILES):
+            continue
+        path = Path(raw).expanduser()
+        if not path.is_absolute():
+            path = base / path
+        directory = path.parent
+        graph = directory / "plan.graph.json"
+        if not graph.is_file():
+            continue
+        try:
+            subprocess.run(
+                [sys.executable, str(tool), "render", str(graph), "--out-dir", str(directory)],
+                capture_output=True, timeout=20, check=False,
+            )
+        except (OSError, subprocess.SubprocessError, ValueError):
+            return None
+        return directory
+    return None
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--event", default="SessionStart")
@@ -527,6 +586,18 @@ def main():
                 return
             if event.get("agent_id"):
                 session_id += ":subagent:" + str(event["agent_id"])
+            # The page of the plan is rebuilt before the heartbeat: the plan is
+            # the owner's artefact, the reminder is the agent's.
+            try:
+                hook_root = (args.root or Path(__file__).resolve().parents[1]).resolve()
+                rendered = render_written_plan(event, hook_root)
+            except (OSError, ValueError, KeyError, TypeError, NameError, AttributeError,
+                    subprocess.SubprocessError):
+                rendered = None
+            if rendered is not None:
+                print(json.dumps({"systemMessage":
+                                  f"LHC: страница плана пересобрана из {rendered.name}"},
+                                 ensure_ascii=False))
             import lhc_time_guard
             project = Path(cwd_value).expanduser()
             # The 120-minute learning checkpoint runs first: it creates the shared

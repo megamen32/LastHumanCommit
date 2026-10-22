@@ -295,7 +295,7 @@ class RenderTests(unittest.TestCase):
         graph = lhc.parse_plan_report(REPORT)
         metrics = lhc.build_metrics(graph)
         html = lhc.render_html(graph, metrics)
-        for needle in ('Готово', 'Гант', 'Блокеры', 'Прогноз', 'Критический путь', 'L01'):
+        for needle in ('Готово', 'Гант', 'Что блокирует', 'Прогноз', 'Критический путь', 'L01'):
             self.assertIn(needle, html)
         self.assertNotIn('{cards}', html)
         self.assertNotIn('None', html.split('<footer>')[0].replace('Nonexistent', ''))
@@ -344,14 +344,15 @@ class RenderTests(unittest.TestCase):
         self.assertIn('@media (max-width: 640px)', html)
         self.assertEqual(html.count('.grid { display: grid'), 1)
         self.assertIn('@media (max-width: 1000px) { .grid { grid-template-columns: minmax(0, 1fr); } }', html)
-        self.assertNotIn('position: sticky; top: 0;', html)
-        # The goal and the business result are the reason the work exists, and
-        # the owner reads the page on a phone. They come first, visibly; the
-        # technical wording of the plan stays folded below the state.
-        self.assertLess(html.index('Цель'), html.index('class="kpis"'))
-        self.assertLess(html.index('Ожидаемый бизнес-результат'), html.index('class="kpis"'))
+        # The one sticky layer is the progress strip; the goal block must not
+        # be a second one.
+        self.assertEqual(html.count('position: sticky; top: 0;'), 1)
+        # The goal and the business result are the reason the work exists. The
+        # owner put the progress above them, so they come after the state -
+        # but they stay open, so nothing is hidden behind a tap.
         self.assertIn('<details class="panel brief-details brief-why-details" open>', html)
-        self.assertLess(html.index('class="kpis"'), html.index('Подтверждённый прогресс'))
+        self.assertLess(html.index('class="kpis"'), html.index('Цель'))
+        self.assertLess(html.index('Цель'), html.index('Подтверждённый прогресс'))
         self.assertIn('<details class="panel brief-details">', html)
 
     def test_long_task_ids_do_not_compete_with_gantt_or_table_titles(self):
@@ -470,9 +471,15 @@ class DashboardLayoutTests(unittest.TestCase):
         graph = self._graph()
         html = lhc.render_html(graph, lhc.build_metrics(graph))
         self.assertNotIn('position: fixed', html)
-        self.assertNotIn('position: sticky', html)
         self.assertNotIn('body::before', html)
         self.assertNotIn('body::after', html)
+        # The one sticky layer is the progress strip the owner asked for: it
+        # sticks to the top of the window so the degree of the progress is
+        # always in sight. Nothing else may stick, and an anchor jump must not
+        # land a section under the strip.
+        sticky = re.findall(r'([a-z-]+)\s*\{\s*position: sticky', html)
+        self.assertEqual(sticky, ['progress-strip'])
+        self.assertIn('scroll-margin-top', html)
 
     def test_kpi_strip_has_a_bounded_column_count(self):
         """An implicit auto-fit grid may silently collapse into one tall column."""
@@ -487,20 +494,19 @@ class DashboardLayoutTests(unittest.TestCase):
             self.assertIn(columns, html)
 
     def test_the_page_is_read_in_the_declared_order(self):
-        """Why the work exists, then the state, then the action, then the wording.
+        """The progress, then the action, then what blocks, then the wording.
 
-        The page is read on a phone by the person who owns the work. The goal
-        and the expected business result are the first things on it, because a
-        plan whose reason is hidden behind a tap is not read as a plan. The
-        state of the work and what to do now follow, and the technical wording
-        of the plan is a confirmation and stays folded away.
+        The owner reads the page on a phone and named the order himself: the
+        current progress has to be seen at once, then what to do now, then what
+        blocks the work, and only then the wording of the plan.
         """
         graph = self._graph()
         html = lhc.render_html(graph, lhc.build_metrics(graph))
         markers = [
-            'Цель',
+            'progress-strip',
             'class="kpis"',
             'Что делать сейчас',
+            'Что блокирует',
             'Подтверждённый прогресс',
             'Гант · листья и параллельные волны',
             "table table-leaves",
@@ -511,7 +517,7 @@ class DashboardLayoutTests(unittest.TestCase):
     def test_kpi_strip_carries_ten_metrics_with_a_big_number(self):
         graph = self._graph()
         html = lhc.render_html(graph, lhc.build_metrics(graph))
-        self.assertEqual(html.count('class="kpi"'), 10)
+        self.assertEqual(html.count('class="kpi kpi-tile"'), 10)
         for label in ('Готово', 'В работе', 'Заблокировано', 'В очереди',
                       'Отложено владельцем', 'Осталось', 'Параллельность',
                       'Осталось по плану', 'Прогноз финиша', 'Усилие'):

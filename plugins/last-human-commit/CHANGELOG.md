@@ -1,3 +1,47 @@
+# 1.5.35 - the progress first, every number opens, and the page builds itself
+
+The owner read the merged page on a phone and did not find the work: the first
+number about the state of the plan stood 35 032 pixels down - forty-one phone
+screens - and 87,7 % of the page was material nobody had asked for. The Gantt
+of the delivery side was a picture: the bars were not clickable, and nothing
+showed what depended on what.
+
+**The progress is the first thing and it stays in sight.** A slim strip at the
+very top of the page carries the degree of the progress - done, share, what is
+left - and it sticks to the top of the window while the page scrolls. The state
+of the work, what to do now and what blocks the work follow immediately.
+
+**Every number opens the tasks behind it.** Each tile of the state, and the
+strip itself, is a control: a tap shows the tasks of that number, and a tap on
+a task in that list opens the full card of the task - the owner, the session,
+the model, the next step. The tiles and the strip carry the same numbers as
+the plan, so they cannot disagree.
+
+**What blocks, and what needs the owner.** One block states what holds the
+work - a leaf that waits and a leaf that is blocked are told apart - and a
+second one lists the leaves that wait for a decision of the owner, with the
+decision itself.
+
+**The Gantt of the plan of work is alive.** A tap on a bar or on a row opens
+the card of the task, right under the grid. The dependencies are drawn as
+arrows, the switch turns them off, and the rows say what a task waits for and
+what it blocks. The card states that the data carries no executed state: every
+task of the plan is a plan, not a done thing.
+
+**The page is generated from the plan, by the hook.** The agent writes the
+plan; the PostToolUse hook rebuilds the page of the plan that was just written.
+Nobody has to remember a command, and the page can never be older than the
+plan.
+
+**The wording of a plan has a budget.** The goal and the business result say
+what the work is for, the leaves say what has to happen, and the detail lives
+in the card of the leaf and in the journal. The gate `check-plan` refuses a
+plan whose wording has grown into a protocol.
+
+Measured on a phone at 390 pixels in Microsoft Edge: the merged page is 10 408
+pixels tall, the first number about the state stands at 809 pixels, the page
+does not scroll sideways, and no touch target is below 44 pixels.
+
 # 1.5.34 - one page for the state of the plan and the plan of the work
 
 Two pages were read side by side: the dashboard of a task graph and the audit
