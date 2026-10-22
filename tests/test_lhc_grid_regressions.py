@@ -147,7 +147,7 @@ def test_owner_is_findable_in_the_search_data():
     graph = graph_with_owner()
     html = lhc.render_html(graph, lhc.build_metrics(graph))
     assert "mvs_03faeb0f" in html
-    row = re.search(r'<tr data-status="done" data-text="([^"]*)">', html)
+    row = re.search(r'<tr data-status="done" data-text="([^"]*)"[^>]*>', html)
     assert row, "строка листа не найдена"
     searchable = row.group(1)
     assert "mvs_03faeb0f" in searchable
@@ -308,15 +308,148 @@ def test_report_journal_section_is_parsed():
         assert probe in html
 
 
-def test_first_screen_shows_state_and_action_before_the_brief():
+def graph_with_brief():
+    """A plan that says why the work exists, and what progress is confirmed."""
+    graph = graph_with_owner()
+    graph.goal = "Закрыть интеграцию источника"
+    graph.business_result = "Сообщение превращается в карточку у владельца"
+    graph.current_progress = "Контракт принят, приёмка в доске"
+    graph.external_waits = "Ждём ключ владельца"
+    return graph
+
+
+def test_first_screen_shows_state_and_action_before_the_technical_brief():
     """The state and the action come before the technical wording."""
 
     graph = graph_with_owner()
     html = lhc.render_html(graph, lhc.build_metrics(graph))
     body = html[html.find("<body"):]
-    assert body.find("kpis") < body.find("panel-now") < body.find("brief-details")
+    assert body.find("kpis") < body.find("panel-now")
     # The technical confirmation is collapsed, not the first thing to read.
     assert "<details class=\"panel brief-details\">" in html
+
+
+def test_business_goal_is_visible_without_interaction():
+    """The owner asked for the business goal: it is on the first screen.
+
+    It used to live in a folded brief, so opening the dashboard on a phone
+    showed the counters and the action but never the reason the work exists.
+    """
+
+    graph = graph_with_brief()
+    html = lhc.render_html(graph, lhc.build_metrics(graph))
+    body = html[html.find("<body"):]
+    why = re.search(
+        r'<details class="panel brief-details brief-why-details"( open)?>', body
+    )
+    assert why, "блок цели и бизнес-результата не найден"
+    assert why.group(1), "блок цели должен быть открыт по умолчанию"
+    goal_at = body.find("Закрыть интеграцию источника")
+    result_at = body.find("Сообщение превращается в карточку у владельца")
+    assert 0 < goal_at < body.find("kpis"), "цель должна быть до плиток состояния"
+    assert 0 < result_at < body.find("kpis"), "бизнес-результат должен быть до плиток состояния"
+
+
+def test_technical_brief_stays_folded():
+    """The confirmed progress and the external waits are the folded part."""
+
+    graph = graph_with_brief()
+    html = lhc.render_html(graph, lhc.build_metrics(graph))
+    body = html[html.find("<body"):]
+    folded = re.search(
+        r'<details class="panel brief-details">\s*<summary>([^<]*)</summary>', body
+    )
+    assert folded, "свёрнутый блок технической части не найден"
+    assert "Подтверждённый прогресс" in folded.group(1)
+    assert "Подтверждённый прогресс" in body
+    assert body.find("Подтверждённый прогресс") > body.find("kpis"), (
+        "техническая часть остаётся ниже состояния"
+    )
+
+
+def test_the_task_opens_where_the_owner_taps_it():
+    """The row is the control, and the card opens under the row.
+
+    The owner taps a task on a phone. The card used to open in a host below
+    the whole table, thousands of pixels away from the finger that asked for
+    it, and the only control was a button at the far end of the row.
+    """
+
+    graph = graph_with_owner()
+    html = lhc.render_html(graph, lhc.build_metrics(graph))
+    # Every row knows which task it is.
+    assert "data-details-id='0' class='leaf-row'" in html
+    # The row itself is bound to the open action.
+    assert "rows.forEach(function (row)" in html
+    assert "openDetails(row, row.dataset.detailsId)" in html
+    # The card is placed under the row that was tapped, not in a host.
+    assert "row.after(detailsRow)" in html
+    assert "detailsHost.replaceChildren" not in html
+    assert "document.getElementById('task-details-host')" not in html
+
+
+def test_the_opened_task_carries_the_whole_of_it():
+    """A task that opens must show everything the owner needs to read it.
+
+    The description, the session and the model were not in the card: the
+    description was shown only when there was no blocker, and the model was
+    nowhere at all.
+    """
+
+    graph = lhc.parse_graph_json({
+        "schema_version": 2,
+        "goal": "Проверить доступ",
+        "business_result": "Доступ работает",
+        "tasks": [{
+            "id": "L01",
+            "label": "Починить доступ",
+            "status": "running",
+            "owner": "mavis",
+            "session": "mvs_92b7a29fcb6147ae848063c2e62bf864",
+            "model": "MiniMax-M3.1-Flash",
+            "harness": "minimax-code",
+            "note": "Интерпретатор 100 не содержит пакета mcp.",
+            "blocker": "venv без пакета mcp",
+            "blocker_details": {
+                "next_action": "Поставить пакет в venv и перезапустить проверку.",
+                "human_required": "no",
+                "human_action": "",
+            },
+            "depends_on": [],
+            "estimate_minutes": {"minimum": 20, "maximum": 40},
+        }],
+    })
+    html = lhc.render_html(graph, lhc.build_metrics(graph))
+    for probe in (
+        "Описание задачи",
+        "Интерпретатор 100 не содержит пакета mcp.",
+        "Блокер",
+        "venv без пакета mcp",
+        "Следующий шаг",
+        "Поставить пакет в venv",
+        "Сессия",
+        "mvs_92b7a29fcb6147ae848063c2e62bf864",
+        "Модель",
+        "MiniMax-M3.1-Flash",
+        "Рантайм",
+        "minimax-code",
+    ):
+        assert probe in html, f"в карточке задачи нет: {probe}"
+    # A blocker and a description are two different things; neither eats the other.
+    assert "Блокер / примечание" not in html
+    # The row names the executor, so the owner sees it without opening anything.
+    assert "row-meta" in html
+    assert "mvs_92b7a29fcb6147ae848063c2e62bf864" in html
+
+
+def test_the_task_details_stay_reachable_on_a_phone():
+    """The opened card is a block under its own row on a narrow screen."""
+
+    graph = graph_with_owner()
+    html = lhc.render_html(graph, lhc.build_metrics(graph))
+    assert ".table-leaves tr.task-details-row { display: block;" in html
+    assert ".table-leaves tr.task-details-row > td { display: block;" in html
+    assert ".leaf-row { cursor: pointer; }" in html
 
 
 def test_leaf_cell_shows_effort_and_calendar_span():

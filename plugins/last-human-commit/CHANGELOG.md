@@ -1,3 +1,43 @@
+# 1.5.33 - the task opens where the owner taps it, and says what it is
+
+The owner opened the plan on the phone and could not read a task. Three
+defects, all measured on the real dashboard of a real plan with 49 leaves.
+
+**The task opened in the wrong place.** The card with the details of a task was
+inserted into a host below the whole table. On a phone the leaves are stacked
+blocks and the host is thousands of pixels below the finger that asked for the
+task, so the tap produced nothing the owner could see. The card is now opened
+under the row that was tapped, and the page scrolls to it.
+
+**The only control was a button at the far end of the row.** The owner taps the
+task, not a button that sits after the last column. The whole row is now the
+control: it carries the identifier of its task, the pointer changes, and a tap
+anywhere on the row opens the task. The button stays as the visible hint of
+that there is more.
+
+**The card showed half of the task.** It carried the code, the owner, the
+dependencies, the effort and the session, and it showed the description of the
+task only when the task had no blocker - one field ate the other. The model was
+nowhere at all, and the next step and what the task waits from the person were
+missing too. The card now carries the description, the expected result, the
+blocker, the next step, what is needed from the person, the session, the model
+and the runtime, each on its own line, and no field replaces another.
+
+**The row says who works on it.** Under the name of the task the row carries the
+executor, the session and the model, so the owner sees who is on the task
+before opening anything.
+
+**The leaves take the whole width of the page.** The table of the leaves was
+one column of a two-column grid while it asks for 920 pixels, so on a desktop
+it was scrolled sideways inside its own panel. The panel of the leaves spans
+the grid now, and the table is read without a sideways scroll.
+
+**The business goal is on the first screen.** The goal and the expected
+business result used to sit in a folded brief below the counters, so a plan
+read on a phone showed the state of the work and never the reason for it. They
+are now in an open block at the top of the page, and the technical wording of
+the plan - the confirmed progress and the external waits - stays folded.
+
 # 1.5.32 - the plan says two honest things: it waits, and it is deferred
 
 The dashboard answered one question twice, and the two answers contradicted each

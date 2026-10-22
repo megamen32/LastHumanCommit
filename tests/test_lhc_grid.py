@@ -345,10 +345,13 @@ class RenderTests(unittest.TestCase):
         self.assertEqual(html.count('.grid { display: grid'), 1)
         self.assertIn('@media (max-width: 1000px) { .grid { grid-template-columns: minmax(0, 1fr); } }', html)
         self.assertNotIn('position: sticky; top: 0;', html)
-        # The goal is a confirmation of the plan, folded under the state of the
-        # work and the action. It is not the first thing on the page.
-        self.assertLess(html.index('class="kpis"'), html.index('Цель'))
-        self.assertLess(html.index('Что делать сейчас'), html.index('Цель'))
+        # The goal and the business result are the reason the work exists, and
+        # the owner reads the page on a phone. They come first, visibly; the
+        # technical wording of the plan stays folded below the state.
+        self.assertLess(html.index('Цель'), html.index('class="kpis"'))
+        self.assertLess(html.index('Ожидаемый бизнес-результат'), html.index('class="kpis"'))
+        self.assertIn('<details class="panel brief-details brief-why-details" open>', html)
+        self.assertLess(html.index('class="kpis"'), html.index('Подтверждённый прогресс'))
         self.assertIn('<details class="panel brief-details">', html)
 
     def test_long_task_ids_do_not_compete_with_gantt_or_table_titles(self):
@@ -374,7 +377,7 @@ class RenderTests(unittest.TestCase):
         self.assertIn("data-details-id='0'", html)
         self.assertIn("id='task-details-template-0'", html)
         self.assertIn("class='task-details-close'", html)
-        self.assertIn("detailsHost.scrollIntoView({ block: 'nearest' });", html)
+        self.assertIn("detailsRow.scrollIntoView({ block: 'nearest' });", html)
         self.assertNotIn('<th>ID</th>', html)
         self.assertIn('.gantt-row { display: grid; grid-template-columns: minmax(240px, 320px) minmax(360px, 1fr);', html)
         self.assertIn('.table-leaves { min-width: 920px; width: 100%; table-layout: fixed; }', html)
@@ -484,18 +487,21 @@ class DashboardLayoutTests(unittest.TestCase):
             self.assertIn(columns, html)
 
     def test_the_page_is_read_in_the_declared_order(self):
-        """The state and the action come first, the wording comes last.
+        """Why the work exists, then the state, then the action, then the wording.
 
-        The page is read on a phone by the person who owns the work. The
-        state of the work and what to do now are the first things on it; the
-        technical wording of the plan is a confirmation and is folded away.
+        The page is read on a phone by the person who owns the work. The goal
+        and the expected business result are the first things on it, because a
+        plan whose reason is hidden behind a tap is not read as a plan. The
+        state of the work and what to do now follow, and the technical wording
+        of the plan is a confirmation and stays folded away.
         """
         graph = self._graph()
         html = lhc.render_html(graph, lhc.build_metrics(graph))
         markers = [
+            'Цель',
             'class="kpis"',
             'Что делать сейчас',
-            'class="brief"',
+            'Подтверждённый прогресс',
             'Гант · листья и параллельные волны',
             "table table-leaves",
         ]

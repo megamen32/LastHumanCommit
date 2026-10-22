@@ -1901,20 +1901,45 @@ def render_html(graph: Graph, metrics: dict[str, Any]) -> str:
         actual = fmt_minutes(leaf.actual_minutes) if leaf.actual_minutes is not None else "не измерено"
         span = fmt_minutes(leaf.actual_span_minutes) if leaf.actual_span_minutes is not None else "—"
         over = " over" if leaf.overrun else ""
+        # The owner reads a task and needs the whole of it: what the task is,
+        # who works on it, in which session and with which model, what waits
+        # for it, and what the next step is. A field that is empty for this
+        # leaf is left out; a field that exists is never dropped in favour of
+        # another one.
+        blocker_details = leaf.blocker_details or {}
+        next_action = blocker_details.get("next_action") or ""
+        human_action = blocker_details.get("human_action") or ""
+        human_required = (blocker_details.get("human_required") or "").strip()
+        model = leaf.model or leaf.model_class or ""
         details = (
             f"<dl class='task-details'><dt>Код</dt><dd>{escape(leaf.id)}</dd>"
+            + (f"<dt>Описание задачи</dt><dd>{escape(leaf.note)}</dd>" if leaf.note else "")
             + (f"<dt>Ожидаемый результат</dt><dd>{escape(leaf.acceptance)}</dd>" if leaf.acceptance else "")
             + f"<dt>Владелец</dt><dd>{escape(leaf.owner or '—')}</dd>"
             f"<dt>Зависит от</dt><dd>{escape(deps)}</dd>"
             f"<dt>Параллельно с</dt><dd>{escape(peer)}</dd>"
-            f"<dt>Блокер / примечание</dt><dd>{escape(leaf.blocker or leaf.note or '—')}</dd>"
-            f"<dt>Сессия</dt><dd>{escape(leaf.session or '—')}</dd>"
-            f"<dt>Усилие (суммарно)</dt><dd>{escape(actual)}</dd>"
+            + (f"<dt>Блокер</dt><dd>{escape(leaf.blocker)}</dd>" if leaf.blocker else "")
+            + (f"<dt>Следующий шаг</dt><dd>{escape(next_action)}</dd>" if next_action else "")
+            + (
+                f"<dt>Что нужно от человека</dt><dd>{escape(human_action)}</dd>"
+                + (f" <span class='cell-sub'>{escape(human_required)}</span>" if human_required else "")
+                + "</dd>"
+                if human_action else ""
+            )
+            + f"<dt>Сессия</dt><dd>{escape(leaf.session or '—')}</dd>"
+            + (f"<dt>Модель</dt><dd>{escape(model)}</dd>" if model else "")
+            + (f"<dt>Рантайм</dt><dd>{escape(leaf.harness)}</dd>" if leaf.harness else "")
+            + f"<dt>Усилие (суммарно)</dt><dd>{escape(actual)}</dd>"
             f"<dt>Длительность по часам</dt><dd>{escape(span)}</dd>"
             + (
                 f"<dt>Окно работы</dt><dd>{escape(leaf.started_at)} – {escape(leaf.finished_at)}</dd>"
                 if leaf.started_at and leaf.finished_at else ""
             )
+            + (
+                f"<dt>Почему нет оценки</dt><dd>{escape(leaf.estimate_unknown_reason)}</dd>"
+                if leaf.estimate_unknown_reason else ""
+            )
+            + (f"<dt>Волна</dt><dd>{escape(str(leaf.wave))}</dd>" if leaf.wave else "")
             + "</dl>"
         )
         detail_templates.append(
@@ -1923,10 +1948,24 @@ def render_html(graph: Graph, metrics: dict[str, Any]) -> str:
             "<button type='button' class='task-details-close'>Закрыть</button></div>"
             f"{details}</div></template>"
         )
+        # The row itself opens the task: the owner taps the task, not a
+        # button that sits at the far end of the row. The meta line names who
+        # works on it, so the owner sees it without opening anything.
+        meta_parts = []
+        if leaf.owner:
+            meta_parts.append(f"владелец: {leaf.owner}")
+        if leaf.session:
+            meta_parts.append(f"сессия: {leaf.session}")
+        if leaf.model or leaf.model_class:
+            meta_parts.append(f"модель: {leaf.model or leaf.model_class}")
+        meta_html = (
+            f"<span class='row-meta'>{escape(' · '.join(meta_parts))}</span>" if meta_parts else ""
+        )
         table_rows.append(
-            f'<tr data-status="{leaf.status}" data-text="{escape(_search_text(leaf))}">'
+            f'<tr data-status="{leaf.status}" data-text="{escape(_search_text(leaf))}" '
+            f"data-details-id='{details_index}' class='leaf-row'>"
             f"<td class='task-title'><span class='row-id'>{escape(leaf.id)}</span>"
-            f"<span class='row-name'>{escape(leaf.label)}</span></td>"
+            f"<span class='row-name'>{escape(leaf.label)}</span>{meta_html}</td>"
             f'<td data-label="Статус"><span class="status" style="--c:{STATUS_CSS_VARS[leaf.status]}">'
             f"{STATUS_GLYPHS[leaf.status]} {STATUS_LABELS[leaf.status]}</span></td>"
             f"<td data-label=\"Оценка\">{escape(leaf.duration_label)}</td>"
@@ -1937,8 +1976,9 @@ def render_html(graph: Graph, metrics: dict[str, Any]) -> str:
                 else ""
             )
             + "</td>"
-            f"<td><button type='button' class='task-details-trigger' data-details-id='{details_index}' "
-            "aria-expanded='false'>Подробнее</button></td>"
+            f"<td class='details-cell'><button type='button' class='task-details-trigger' "
+            f"data-details-id='{details_index}' aria-expanded='false' "
+            f"aria-label='Подробнее: {escape(leaf.label)}'>Подробнее</button></td>"
             "</tr>"
         )
     leaves_table = (
@@ -2044,28 +2084,41 @@ def render_html(graph: Graph, metrics: dict[str, Any]) -> str:
         )
 
     # ----- brief: what the work is for ------------------------------------
-    brief_cards = []
+    # The goal and the expected business result are the reason the work
+    # exists, so they are shown on the first screen. The confirmed progress and
+    # the external waits are the technical wording of the plan and stay folded.
+    why_cards = []
+    detail_cards = []
     if graph.goal:
-        brief_cards.append(
+        why_cards.append(
             f'<article class="brief-card brief-goal"><h2>Цель</h2>'
             f"<p>{escape(graph.goal)}</p></article>"
         )
     if graph.business_result:
-        brief_cards.append(
+        why_cards.append(
             f'<article class="brief-card brief-result"><h2>Ожидаемый бизнес-результат</h2>'
             f"<p>{escape(graph.business_result)}</p></article>"
         )
     if graph.current_progress:
-        brief_cards.append(
+        detail_cards.append(
             f'<article class="brief-card"><h2>Подтверждённый прогресс</h2>'
             f"<p>{escape(graph.current_progress)}</p></article>"
         )
     if graph.external_waits:
-        brief_cards.append(
+        detail_cards.append(
             f'<article class="brief-card brief-wait"><h2>Внешние ожидания</h2>'
             f"<p>{escape(graph.external_waits)}</p></article>"
         )
-    brief_html = f'<div class="brief">{"".join(brief_cards)}</div>' if brief_cards else ""
+    why_html = f'<div class="brief brief-why">{"".join(why_cards)}</div>' if why_cards else ""
+    brief_html = f'<div class="brief">{"".join(detail_cards)}</div>' if detail_cards else ""
+    why_panel = ""
+    if why_html:
+        why_panel = (
+            '<details class="panel brief-details brief-why-details" open>\n'
+            "  <summary>Цель и ожидаемый бизнес-результат</summary>\n"
+            f"  {why_html}\n"
+            "</details>"
+        )
 
     return HTML_TEMPLATE.format(
         title=escape(graph.title),
@@ -2080,6 +2133,7 @@ def render_html(graph: Graph, metrics: dict[str, Any]) -> str:
         segments="".join(segments),
         legend=legend,
         brief=brief_html,
+        why_panel=why_panel,
         now=now_html,
         axis=axis,
         gantt=gantt_html,
@@ -2164,6 +2218,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   .brief-goal {{ border-left-color: var(--accent); }}
   .brief-result {{ border-left-color: var(--ok); }}
   .brief-wait {{ border-left-color: var(--warn); }}
+  /* The why-panel is open on the first screen; it may be folded by the owner. */
+  .brief-why-details {{ margin-bottom: 16px; }}
+  .brief-why-details > summary {{ color: var(--text); }}
+  .brief-why {{ margin-bottom: 0; }}
 
   /* ---- KPI strip ---- */
   .kpis {{ display: grid; gap: 10px; grid-template-columns: repeat(5, minmax(0, 1fr)); margin-bottom: 14px; }}
@@ -2285,6 +2343,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     text-transform: uppercase; letter-spacing: .05em; padding: 6px 8px; border-bottom: 1px solid var(--line);
     background: var(--panel); }}
   .table td {{ padding: 6px 8px; border-bottom: 1px solid #1c2431; vertical-align: top; }}
+  /* The leaves are read as a table, so the panel takes the whole width
+     of the page instead of one column of a two-column grid. */
+  .panel-leaves {{ grid-column: 1 / -1; }}
   .table-leaves {{ min-width: 920px; width: 100%; table-layout: fixed; }}
   .table-scroll {{ max-width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; }}
   .table-leaves th:nth-child(1) {{ width: 42%; }}
@@ -2298,6 +2359,16 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   .task-details-trigger, .task-details-close {{ color: var(--accent); background: transparent; border: 1px solid var(--line);
     border-radius: 6px; cursor: pointer; font: inherit; padding: 3px 7px; }}
   .task-details-host {{ position: static; width: 100%; margin-top: 12px; }}
+  /* The leaf row is the control: the owner taps the task, and the task opens
+     right under itself, where the finger already is. */
+  .leaf-row {{ cursor: pointer; }}
+  .leaf-row:hover .row-name {{ color: var(--accent); }}
+  .leaf-row:focus-within {{ outline: 2px solid var(--accent); outline-offset: -2px; }}
+  .task-details-row > td {{ padding: 0; border: none; background: transparent; }}
+  .task-details-row .task-details-card {{ margin: 0 0 10px; }}
+  .row-meta {{ display: block; margin-top: 2px; color: var(--muted); font-size: 12px;
+    overflow-wrap: anywhere; }}
+  .details-cell {{ text-align: right; }}
   .task-details-card {{ width: 100%; min-width: 0; background: var(--panel-2); border: 1px solid var(--line);
     border-radius: 10px; padding: 12px; }}
   .task-details-head {{ display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 8px; }}
@@ -2362,6 +2433,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     .table-leaves td:last-child {{ justify-content: flex-start; }}
     .table-leaves td:last-child::before {{ content: none; }}
     .table-scroll {{ overflow-x: visible; }}
+    /* The opened task is a card under its own row, not another table cell. */
+    .table-leaves tr.task-details-row {{ display: block; padding: 0; border: none; }}
+    .table-leaves tr.task-details-row > td {{ display: block; padding: 0; text-align: left; }}
+    .table-leaves tr.task-details-row > td::before {{ content: none; }}
   }}
 </style>
 </head>
@@ -2380,6 +2455,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
 <p class="snapshot-note">{snapshot}</p>
 
+{why_panel}
+
 <div class="kpis">{cards}</div>
 
 <div class="panel panel-now">
@@ -2392,7 +2469,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 </div>
 
 <details class="panel brief-details">
-  <summary>Цель, результат и подтверждённый прогресс</summary>
+  <summary>Подтверждённый прогресс и внешние ожидания</summary>
   {brief}
 </details>
 
@@ -2405,7 +2482,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 </div>
 
 <div class="grid">
-  <div class="panel">
+  <div class="panel panel-leaves">
     <h2>Листья</h2>
     {layer_hint}
     <div class="toolbar">
@@ -2473,8 +2550,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   var chips = Array.prototype.slice.call(document.querySelectorAll('.chip'));
   var rows = Array.prototype.slice.call(document.querySelectorAll('.table-leaves tbody tr'));
   var input = document.getElementById('search');
-  var detailsHost = document.getElementById('task-details-host');
-  var activeDetailsButton = null;
+  var activeDetailsRow = null;
   var filter = 'all';
   function apply() {{
     var query = (input && input.value || '').trim().toLowerCase();
@@ -2493,23 +2569,50 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     }});
   }});
   if (input) {{ input.addEventListener('input', apply); }}
+  // The task opens where the owner taps it. The card used to open in a host
+  // below the whole table, which on a phone is thousands of pixels away from
+  // the finger that asked for it.
+  function closeDetails() {{
+    if (!activeDetailsRow) {{ return; }}
+    if (activeDetailsRow.previousElementSibling) {{
+      var previousButton = activeDetailsRow.previousElementSibling.querySelector('.task-details-trigger');
+      if (previousButton) {{ previousButton.setAttribute('aria-expanded', 'false'); }}
+    }}
+    activeDetailsRow.remove();
+    activeDetailsRow = null;
+  }}
+  function openDetails(row, id) {{
+    var template = document.getElementById('task-details-template-' + id);
+    if (!template || !row) {{ return; }}
+    closeDetails();
+    var detailsRow = document.createElement('tr');
+    detailsRow.className = 'task-details-row';
+    var cell = document.createElement('td');
+    cell.colSpan = 5;
+    cell.appendChild(template.content.cloneNode(true));
+    detailsRow.appendChild(cell);
+    row.after(detailsRow);
+    activeDetailsRow = detailsRow;
+    var button = row.querySelector('.task-details-trigger');
+    if (button) {{ button.setAttribute('aria-expanded', 'true'); }}
+    var close = detailsRow.querySelector('.task-details-close');
+    if (close) {{
+      close.addEventListener('click', function () {{ closeDetails(); }});
+      close.focus({{ preventScroll: true }});
+    }}
+    detailsRow.scrollIntoView({{ block: 'nearest' }});
+  }}
   document.querySelectorAll('.task-details-trigger').forEach(function (button) {{
-    button.addEventListener('click', function () {{
-      if (activeDetailsButton) {{ activeDetailsButton.setAttribute('aria-expanded', 'false'); }}
-      var template = document.getElementById('task-details-template-' + button.dataset.detailsId);
-      if (!template || !detailsHost) {{ return; }}
-      detailsHost.replaceChildren(template.content.cloneNode(true));
-      detailsHost.hidden = false;
-      button.setAttribute('aria-expanded', 'true');
-      activeDetailsButton = button;
-      detailsHost.scrollIntoView({{ block: 'nearest' }});
-      detailsHost.querySelector('.task-details-close').addEventListener('click', function () {{
-        detailsHost.hidden = true;
-        detailsHost.replaceChildren();
-        button.setAttribute('aria-expanded', 'false');
-        activeDetailsButton = null;
-        button.focus();
-      }});
+    button.addEventListener('click', function (event) {{
+      event.stopPropagation();
+      var row = button.closest('tr');
+      openDetails(row, button.dataset.detailsId);
+    }});
+  }});
+  rows.forEach(function (row) {{
+    if (!row.dataset.detailsId) {{ return; }}
+    row.addEventListener('click', function () {{
+      openDetails(row, row.dataset.detailsId);
     }});
   }});
   apply();
