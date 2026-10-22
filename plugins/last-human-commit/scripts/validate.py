@@ -65,6 +65,20 @@ def check_no_symlinks(root: Path) -> None:
             raise ValidationError(f"symlink is not allowed in package: {path}")
 
 
+def load_flat_manifest_version(path: Path) -> str:
+    """Read the `version:` field of a flat plugin manifest.
+
+    Hermes reads the flat YAML manifest, not the JSON one. A release that bumps
+    only the JSON manifests leaves the runtime reporting an older version, so
+    the flat manifests have to be part of the same parity gate.
+    """
+    text = path.read_text(encoding="utf-8")
+    match = re.search(r"^version:\s*['\"]?([0-9]+\.[0-9]+\.[0-9]+)", text, re.MULTILINE)
+    if not match:
+        raise ValidationError(f"no version field in {path}")
+    return match.group(1)
+
+
 def check_version_parity(root: Path) -> None:
     versions = {}
     for rel in ("plugin.json", ".codex-plugin/plugin.json", ".claude-plugin/plugin.json", ".zcode-plugin/plugin.json"):
@@ -73,6 +87,13 @@ def check_version_parity(root: Path) -> None:
             versions[rel] = str(load_json(path).get("version"))
     for path in sorted(root.glob("native/*/.codex-plugin/plugin.json")):
         versions[str(path.relative_to(root))] = str(load_json(path).get("version"))
+    for rel in ("plugin.yaml", "com.nousresearch.hermes/plugin.yaml"):
+        path = root / rel
+        if path.is_file():
+            versions[rel] = load_flat_manifest_version(path)
+    source = root.parent.parent / "adapters" / "hermes" / "plugin" / "plugin.yaml"
+    if source.is_file():
+        versions[str(source.relative_to(root.parent.parent))] = load_flat_manifest_version(source)
     unique = set(versions.values())
     if len(unique) > 1:
         raise ValidationError(f"manifest versions drifted: {versions}")
