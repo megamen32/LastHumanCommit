@@ -1,26 +1,11 @@
-/* Language controls and room for Russian copy; the original visual theme is unchanged. */
-.nav-actions{display:flex;align-items:center;gap:16px}
-.lang-switch{display:flex;flex:none;padding:3px;border:1px solid #67616c;border-radius:4px;gap:2px}
-.lang-switch button{min-width:35px;min-height:33px;border:0;border-radius:2px;padding:6px 8px;background:transparent;color:#bab6c3;font-size:11px;font-weight:800;letter-spacing:.06em}
-.lang-switch button.is-active{background:var(--peach);color:#19131b}
-.lang-switch button:hover:not(.is-active){color:var(--white);background:#ffffff12}
-.role-source-label{font-size:9px;letter-spacing:.08em;color:var(--peach);line-height:1.6;margin:0 0 13px}
-.role-reference-note{font-size:12px;line-height:1.7;color:#a69aac;margin:0 0 14px}
-.loop-caption>span:first-child{min-width:0;line-height:1.7}
-.loop-status{flex:none}
-.step-foot{padding-top:18px;margin-top:22px}
-.step-details .source-link{margin-bottom:16px}
-html[lang='ru'] .hero h1{font-size:clamp(43px,5.05vw,77px);letter-spacing:-.07em;line-height:1.08}
-html[lang='ru'] .hero-art-word{font-size:clamp(29px,3vw,43px)}
-html[lang='ru'] .hero-actions{gap:18px 23px}
-html[lang='ru'] .hero-footnote{margin-top:48px}
-html[lang='ru'] .loop-center strong{font-size:clamp(19px,2.05vw,33px);letter-spacing:-.065em}
-html[lang='ru'] .loop-center-pre{font-size:8px;letter-spacing:.06em}
-html[lang='ru'] .loop-center small{font-size:9px}
-html[lang='ru'] .mode-tab{font-size:18px}
-html[lang='ru'] .section-heading h2,html[lang='ru'] .principles-title h2{font-size:clamp(42px,4.65vw,69px)}
-html[lang='ru'] .closing p{font-size:clamp(36px,5.5vw,74px);line-height:1.15}
-html[lang='ru'] .roles-meta{font-size:9px;letter-spacing:.09em}
-@media(max-width:1100px){.site-nav{gap:14px}.nav-links{gap:20px}.nav-actions{gap:10px}.brand{gap:10px}html[lang='ru'] .hero h1{font-size:clamp(40px,5.05vw,64px)}}
-@media(max-width:800px){html[lang='ru'] .hero h1{font-size:clamp(48px,8.7vw,74px)}html[lang='ru'] .loop-center strong{font-size:28px}html[lang='ru'] .hero-art-word{font-size:39px}}
-@media(max-width:540px){.brand-name{display:none}.brand-mark{font-size:26px}.nav-actions{gap:9px}.lang-switch button{min-width:31px;min-height:32px;padding:6px}.nav-repo{padding:11px 10px}.site-nav{gap:8px}html[lang='ru'] .hero h1{font-size:clamp(31px,8.9vw,48px);letter-spacing:-.055em}html[lang='ru'] .hero-art-word{font-size:29px}html[lang='ru'] .loop-center strong{font-size:18px}html[lang='ru'] .loop-center-pre{font-size:6px;letter-spacing:0}html[lang='ru'] .loop-center small{font-size:7px}html[lang='ru'] .mode-tab{font-size:13px}html[lang='ru'] .section-heading h2,html[lang='ru'] .principles-title h2{font-size:40px}html[lang='ru'] .strip{font-size:7px;letter-spacing:.03em}html[lang='ru'] .strip span{line-height:1.8}html[lang='ru'] .loop-legend{align-items:flex-start;line-height:1.7}html[lang='ru'] .legend-line{flex:none;margin-top:8px}html[lang='ru'] .loop-caption{font-size:7px;letter-spacing:.04em}html[lang='ru'] .cycle-node-label{font-size:8px}html[lang='ru'] .cycle-node{max-width:75px}html[lang='ru'] .role-kind{font-size:9px}}
+/* Cyrillic typography and narrow-screen navigation, without a second layout. */
+html[lang='ru'] .hero h1{font-size:clamp(43px,4.7vw,72px);letter-spacing:-.055em}
+html[lang='ru'] .hero-subtitle{font-size:16px}
+html[lang='ru'] .mission .outline-pill{font-size:7px}
+html[lang='ru'] .section-heading h2{font-size:clamp(37px,3.8vw,57px)}
+html[lang='ru'] .journey-stage{min-height:73px}
+html[lang='ru'] .stage-name{font-size:10px}
+html[lang='ru'] .step-detail h3{font-size:26px}
+@media(max-width:1100px){html[lang='ru'] .hero h1{font-size:48px}}
+@media(max-width:820px){html[lang='ru'] .hero h1{font-size:60px}}
+@media(max-width:540px){html[lang='ru'] .hero h1{font-size:clamp(34px,8.7vw,47px)}html[lang='ru'] .hero-subtitle{font-size:15px}html[lang='ru'] .section-heading h2{font-size:36px}html[lang='ru'] .mission .outline-pill{font-size:6px}html[lang='ru'] .journey-stage{min-height:63px}html[lang='ru'] .stage-name{font-size:10px}html[lang='ru'] .nav-actions{gap:10px}}

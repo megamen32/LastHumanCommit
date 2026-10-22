@@ -9,6 +9,7 @@ import re
 import shutil
 import subprocess
 from pathlib import Path
+from story import create_story
 
 ROOT = Path(__file__).resolve().parents[1]
 SITE = ROOT / "site"
@@ -160,7 +161,9 @@ def build() -> dict:
     roles = sorted((role_data(p, sha) for p in role_paths), key=lambda r: (role_order.get(r["name"], 99), r["name"]))
     plugin = json.loads((ROOT / "plugins/last-human-commit/plugin.json").read_text(encoding="utf-8"))
     role_text = "".join(p.read_text(encoding="utf-8") for p in role_paths)
-    source_hash = hashlib.sha256((concept + router + full + role_text).encode("utf-8")).hexdigest()[:12]
+    story = create_story(ROOT, sha, REPO_URL)
+    philosophy = story.pop("sourceText")
+    source_hash = hashlib.sha256((concept + router + full + role_text + philosophy).encode("utf-8")).hexdigest()[:12]
     steps = []
     for number, item in enumerate(workflow, start=1):
         excerpt = first_paragraph(item["body"])
@@ -189,6 +192,7 @@ def build() -> dict:
 
     data = {
         "schemaVersion": 4,
+        "story": story,
         "revision": sha,
         "shortRevision": sha[:8],
         "productVersion": plugin["version"],

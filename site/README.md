@@ -48,3 +48,29 @@ The build fingerprints CSS/JavaScript assets to avoid mixing cached versions.
 `python3 -m unittest discover -s site -p 'test_*.py' -v` includes checks for source
 preservation, language-asset packaging and every generated loop label/description
 having both translations. Dictionary validation uses Node when available.
+
+## Landing v2: the complete development cycle
+
+`site/story.py` reads `PRODUCT-PHILOSOPHY.md` at build time. Full Cycle unfolds
+into 14 source-backed stages; Quick Loop keeps a short plan, execution, real-use
+verification and integration. Each stage links to the exact commit and source
+lines. Missing canonical sections fail the build instead of publishing stale
+content. The existing five-stage lifecycle metadata remains available.
+
+The landing distinguishes intended method from implementation status and links
+to the canonical list of remaining gaps. Agent branches and task timelines are
+illustrations, not live telemetry. Role names, summaries and full definitions
+are preserved from Git in their original language; the interface is EN/RU.
+No LHC runtime or canonical product-document changes are needed.
+
+Optional interactive verification (Node 22+, Chrome; no npm dependencies):
+
+```sh
+python3 site/build.py
+node site/browser-check.mjs
+```
+
+This checks both languages and both routes across 320–1440 px, exact source
+content, keyboard controls, selected-stage and role-card preservation, stored
+language, disabled storage and honest translated data failures. Screenshots
+are written to ignored `.tmp/`, not included in the published site.
