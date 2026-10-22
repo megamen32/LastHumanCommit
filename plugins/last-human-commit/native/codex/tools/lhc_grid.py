@@ -179,6 +179,7 @@ class Graph:
     source_kind: str = ""
     live_items: list[dict[str, Any]] = field(default_factory=list)
     live_log: list[dict[str, Any]] = field(default_factory=list)
+    journal: list[dict[str, Any]] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
 
     def by_id(self) -> dict[str, Leaf]:
@@ -661,6 +662,11 @@ def parse_graph_json(document: Any) -> Graph:
     graph.declared_leaves = document.get("leaf_count")
     graph.declared_waves = document.get("wave_count")
 
+    # Optional change log: time, action, result, confirmation.
+    raw_journal = document.get("journal")
+    if isinstance(raw_journal, list):
+        graph.journal = [entry for entry in raw_journal if isinstance(entry, dict)]
+
     tasks = document.get("tasks")
     if not isinstance(tasks, list) or not tasks:
         raise ValueError("tasks must be a nonempty list")
@@ -1034,8 +1040,8 @@ def build_metrics(graph: Graph) -> dict[str, Any]:
         "unknown_estimate_pending": len(unknown_estimate_pending),
         "unknown_estimate_all": len(unknown_estimate_all),
         "external_wait_unknown": external_wait_unknown,
-        "eta_clock_min": "" if not eta_known else format_clock((eta_from + int(round(eta_max))) % (24 * 60)),
-        "eta_clock_max": "" if not eta_known else format_clock((eta_from + int(round(eta_min))) % (24 * 60)),
+        "eta_clock_min": "" if not eta_known else format_clock((eta_from + int(round(eta_min))) % (24 * 60)),
+        "eta_clock_max": "" if not eta_known else format_clock((eta_from + int(round(eta_max))) % (24 * 60)),
         "schedule": schedule_max,
         "schedule_min": schedule_min,
         "pending": pending_max,
@@ -1344,26 +1350,36 @@ def render_html(graph: Graph, metrics: dict[str, Any]) -> str:
         remaining_hint = "без неизвестных оценок и ожиданий"
     else:
         remaining_label = "Осталось по плану"
-        remaining_hint = f"минимум {fmt_minutes(metrics['remaining_minutes_min'])}"
+        remaining_hint = (
+            f"от {fmt_minutes(metrics['remaining_minutes_min'])} "
+            f"до {fmt_minutes(metrics['remaining_minutes_max'])}"
+        )
     if metrics["external_wait_unknown"]:
         eta_hint = "Есть внешние ожидания без подтверждённого срока"
     elif metrics["unknown_estimate_pending"]:
         eta_hint = f"{metrics['unknown_estimate_pending']} листьев без оценки"
     else:
-        eta_hint = f"если остаток стартует сейчас · мин. {metrics['eta_clock_min']}"
+        eta_hint = f"если остаток стартует сейчас · {metrics['eta_clock_min']}"
+    eta_range = ""
+    if metrics["eta_clock_min"] and metrics["eta_clock_max"]:
+        eta_range = (
+            metrics["eta_clock_min"]
+            if metrics["eta_clock_min"] == metrics["eta_clock_max"]
+            else f"{metrics['eta_clock_min']}–{metrics['eta_clock_max']}"
+        )
     cards = [
         ("Готово", f"{metrics['done']} / {headline_total}",
          f"{metrics['progress_pct']}% {progress_note}", STATUS_DONE, True),
         ("В работе", str(metrics["running"]), "сейчас выполняется", STATUS_RUNNING, True),
         ("Заблокировано", str(metrics["blocked"]), "нужен внешний ход", STATUS_BLOCKED, True),
         ("В очереди", str(metrics["queued"]), "ждут своего слота", STATUS_QUEUED, True),
-        ("Осталось", str(metrics["queued"] + metrics["waiting"]),
-         "в очереди и ожидании", STATUS_QUEUED, True),
+        ("Осталось", str(metrics["total"] - metrics["done"]),
+         "не завершено, включая работу в процессе", STATUS_QUEUED, True),
         ("Параллельность", f"{metrics['current_parallel']} / {metrics['slots']}",
          f"пик по плану {metrics['planned_peak_parallel']}", STATUS_RUNNING, False),
         (remaining_label, fmt_minutes(metrics["remaining_minutes_max"]),
          remaining_hint, STATUS_WAITING, False),
-        ("Прогноз финиша", metrics["eta_clock_max"] or "Срок неизвестен",
+        ("Прогноз финиша", eta_range or "Срок неизвестен",
          eta_hint, STATUS_DONE, False),
         ("Усилие", fmt_minutes(metrics["effort_minutes"]),
          f"критический путь {fmt_minutes(metrics['critical_minutes'])}", STATUS_QUEUED, False),
@@ -1651,7 +1667,7 @@ def render_html(graph: Graph, metrics: dict[str, Any]) -> str:
             f"{details}</div></template>"
         )
         table_rows.append(
-            f'<tr data-status="{leaf.status}" data-text="{escape((leaf.id + " " + leaf.label).lower())}">'
+            f'<tr data-status="{leaf.status}" data-text="{escape((leaf.id + " " + leaf.label + " " + (leaf.owner or "") + " " + (leaf.session or "")).lower())}">'
             f"<td class='task-title'><span class='row-id'>{escape(leaf.id)}</span>"
             f"<span class='row-name'>{escape(leaf.label)}</span></td>"
             f'<td><span class="status" style="--c:{STATUS_COLORS[leaf.status]}">'
@@ -1674,7 +1690,9 @@ def render_html(graph: Graph, metrics: dict[str, Any]) -> str:
     )
 
     # ----- live journal --------------------------------------------------
-    journal = graph.live_items or [
+    # A graph may carry its own change log (time, action, result, confirmation).
+    # The leaf list is not a journal: it repeats the task names.
+    journal = graph.journal or graph.live_items or [
         {"status": leaf.status, "text": leaf.label or leaf.id, "leaf": leaf.id}
         for leaf in leaves
     ]
@@ -1689,13 +1707,20 @@ def render_html(graph: Graph, metrics: dict[str, Any]) -> str:
                 leaf_name = label_by_id.get(str(item["leaf"]))
                 if leaf_name:
                     leaf_tag = f'<span class="leaf-tag">{escape(leaf_name)}</span>'
+            stamp = ""
+            if item.get("at"):
+                stamp = f'<span class="live-at">{escape(str(item["at"]))}</span>'
+            evidence = ""
+            if item.get("evidence"):
+                evidence = f'<span class="live-evidence">{escape(str(item["evidence"]))}</span>'
             items.append(
                 f'<li><span class="dot" style="background:{color}"></span>'
-                f'<span class="live-text">{escape(item.get("text", ""))}</span>{leaf_tag}</li>'
+                f'{stamp}<span class="live-text">{escape(item.get("text", ""))}</span>'
+                f'{evidence}{leaf_tag}</li>'
             )
         live_html = f'<ul class="live">{"".join(items)}</ul>'
     else:
-        live_html = '<div class="empty">Журнал волны пуст.</div>'
+        live_html = '<div class="empty">Журнал изменений пуст.</div>'
 
     # ----- forecast ------------------------------------------------------
     critical_chain = " → ".join(label_by_id.get(item, item) for item in metrics["critical_path"]) or "—"
@@ -1973,6 +1998,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   .live {{ list-style: none; margin: 0; padding: 0; }}
   .live li {{ display: flex; gap: 8px; padding: 6px 0; border-bottom: 1px solid #1e2632; align-items: baseline; }}
   .live-text {{ flex: 1; }}
+  .live-at {{ color: #8aa0b8; font-variant-numeric: tabular-nums; white-space: nowrap; }}
+  .live-evidence {{ color: #8aa0b8; font-size: 12px; white-space: nowrap; }}
   .leaf-tag {{ color: var(--muted); font-size: 11px; border: 1px solid var(--line); border-radius: 5px;
     padding: 0 5px; min-width: 0; white-space: normal; overflow-wrap: anywhere; }}
   .table {{ width: 100%; border-collapse: collapse; font-size: 13px; }}
@@ -2097,7 +2124,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       {notes}
     </div>
     <div class="panel">
-      <h2>Журнал волны</h2>
+      <h2>Журнал изменений</h2>
       {live}
     </div>
   </div>

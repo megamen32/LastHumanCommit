@@ -1,3 +1,29 @@
+# 1.5.30 - the dashboard disagreed with the plan, and the owner search had no data
+
+The generator counted two different universes at once and printed both of them.
+
+**The counters came from a different layer than the table.** The KPI row took its
+numbers from the live journal while the table below it showed the graph, so the
+headline read "ready 4 / 18" above 24 rows and "remaining 7" hid fourteen
+unfinished leaves. "Remaining" now means every unfinished leaf, total minus
+done, and the queue keeps its own separate name instead of being printed twice
+under two labels.
+
+**The finish time was computed from the wrong end of the range.** `eta_clock_min`
+was built from the maximum duration and `eta_clock_max` from the minimum, so
+the dashboard could promise a finish earlier than its own stated minimum. Both
+clocks are now built from their own bound and the forecast is shown as a range
+with the assumption spelled out.
+
+**The search box promised more than it searched.** Its placeholder said "leaf,
+id or owner" while the searchable text of a row held only the id and the label,
+so an owner id never matched anything. Owner and session id are part of the
+searchable text of every row now.
+
+**The wave journal repeated the task names.** A graph may carry its own change
+log: time, action, result, confirmation. The section renders that log and is
+titled "Change log"; a graph without one falls back to the old list.
+
 # 1.5.29 - the recheck of the council found three real defects, and they are fixed
 
 The independent recheck of the 1.5.28 synthesis attacked the combined result, not
