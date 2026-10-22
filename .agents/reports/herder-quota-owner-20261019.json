@@ -1,0 +1,12 @@
+{
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"ok\":true,\"created\":true,\"sessionId\":\"01a155c7-a3a1-7d33-817f-8e7419dd152d\",\"delivery\":\"accepted\",\"admitted\":true,\"harness\":\"codex\",\"name\":\"lhc26_quota_normalizer_20261019\",\"cwd\":\"/home/roomhacker/agents-projects/agent-herder/.worktrees/lhc-quota-readonly-20261019\",\"model\":\"gpt-6.1-sol\"}"
+      }
+    ]
+  },
+  "jsonrpc": "2.0",
+  "id": 2
+}

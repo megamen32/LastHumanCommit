@@ -204,7 +204,14 @@ class GraphJsonTests(unittest.TestCase):
         html = lhc.render_html(graph, metrics)
         self.assertIn('Срок неизвестен', html)
 
-    def test_old_activity_cannot_make_forecast_start_in_the_past(self):
+    def test_forecast_counts_from_the_last_confirmed_event(self):
+        """The forecast is anchored at the last confirmed event.
+
+        An idle plan must not push its own finish away with every minute of
+        silence. The anchor and the idle time are shown instead of being
+        hidden inside the horizon, and a horizon that already passed is
+        reported as passed.
+        """
         graph = lhc.parse_graph_json({
             'schema_version': 2,
             'tasks': [{'id': 'next', 'label': 'Next', 'status': 'queued', 'depends_on': [],
@@ -212,8 +219,14 @@ class GraphJsonTests(unittest.TestCase):
         })
         with patch.object(lhc, 'now_clock', return_value=17 * 60):
             metrics = lhc.build_metrics(graph)
-        self.assertEqual(metrics['eta_clock_min'], '17:05')
-        self.assertEqual(metrics['eta_clock_max'], '17:05')
+        self.assertEqual(metrics['eta_clock_min'], '15:24')
+        self.assertEqual(metrics['eta_clock_max'], '15:24')
+        self.assertEqual(metrics['eta_anchor_clock'], '15:19')
+        self.assertEqual(metrics['eta_anchor_idle_minutes'], 101)
+        self.assertTrue(metrics['eta_overdue'])
+        html = lhc.render_html(graph, metrics)
+        self.assertIn('отсчёт от последнего события 15:19', html)
+        self.assertIn('срок прошёл', html)
 
     def test_external_wait_withholds_clock_eta_and_round_trips(self):
         graph = lhc.parse_graph_json({
@@ -332,7 +345,11 @@ class RenderTests(unittest.TestCase):
         self.assertEqual(html.count('.grid { display: grid'), 1)
         self.assertIn('@media (max-width: 1000px) { .grid { grid-template-columns: minmax(0, 1fr); } }', html)
         self.assertNotIn('position: sticky; top: 0;', html)
-        self.assertLess(html.index('Цель'), html.index('class="progress"'))
+        # The goal is a confirmation of the plan, folded under the state of the
+        # work and the action. It is not the first thing on the page.
+        self.assertLess(html.index('class="kpis"'), html.index('Цель'))
+        self.assertLess(html.index('Что делать сейчас'), html.index('Цель'))
+        self.assertIn('<details class="panel brief-details">', html)
 
     def test_long_task_ids_do_not_compete_with_gantt_or_table_titles(self):
         long_id = 'integrator-source-subject-39e04120-97e5-4302-9756-5072de10c84c'
@@ -467,12 +484,18 @@ class DashboardLayoutTests(unittest.TestCase):
             self.assertIn(columns, html)
 
     def test_the_page_is_read_in_the_declared_order(self):
+        """The state and the action come first, the wording comes last.
+
+        The page is read on a phone by the person who owns the work. The
+        state of the work and what to do now are the first things on it; the
+        technical wording of the plan is a confirmation and is folded away.
+        """
         graph = self._graph()
         html = lhc.render_html(graph, lhc.build_metrics(graph))
         markers = [
-            'class="brief"',
             'class="kpis"',
             'Что делать сейчас',
+            'class="brief"',
             'Гант · листья и параллельные волны',
             "table table-leaves",
         ]

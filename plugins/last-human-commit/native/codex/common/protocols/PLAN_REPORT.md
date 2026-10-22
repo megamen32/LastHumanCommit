@@ -42,6 +42,17 @@ language: the user reads the leaves, not the plan.
 ⏳ (описание листа) начнём после листа 3, потому что <почему нельзя параллельно>, примерно в 14:30, оценка 10 минут, закончим в 14:40
 ```
 
+The change log is an optional section of the report. It is what the dashboard shows
+as a history, so it names an action, a result and a confirmation, not the leaves
+again:
+
+```text
+## Журнал изменений
+
+- 13:27 · L03 · выпущен 1.5.31 · результат: дефекты дашборда исправлены · подтверждение: e9838c6
+- 13:40 · результат: план пересобран из одной ревизии · подтверждение: check-plan
+```
+
 - `✅` finished · `🔄` running · `⛔` blocked · `⏳` queued and not started.
 - The groups stand in that order: finished, running, blocked, queued. An empty
   group is dropped, a non-empty one is never merged into another.

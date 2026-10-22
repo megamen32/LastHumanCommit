@@ -1,0 +1,50 @@
+[
+  {
+    "name": "lhc26_active_audit_20261019",
+    "output": "active-session-causes-20261019.md",
+    "receipt": {
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"ok\":true,\"created\":true,\"sessionId\":\"01a155b4-5105-7cb0-ab1c-9274abc05b7e\",\"delivery\":\"accepted\",\"admitted\":true,\"harness\":\"codex\",\"name\":\"lhc26_active_audit_20261019\",\"cwd\":\"/home/roomhacker/agents-projects/LastHumanCommit\",\"model\":\"gpt-6.1-sol\"}"
+          }
+        ]
+      },
+      "jsonrpc": "2.0",
+      "id": 3
+    }
+  },
+  {
+    "name": "lhc26_council_research_20261019",
+    "output": "council-quota-design-20261019.md",
+    "receipt": {
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"ok\":true,\"created\":true,\"sessionId\":\"01a155b4-56bf-70d1-adb3-d4481df5de66\",\"delivery\":\"accepted\",\"admitted\":true,\"harness\":\"codex\",\"name\":\"lhc26_council_research_20261019\",\"cwd\":\"/home/roomhacker/agents-projects/LastHumanCommit\",\"model\":\"gpt-6.1-sol\"}"
+          }
+        ]
+      },
+      "jsonrpc": "2.0",
+      "id": 4
+    }
+  },
+  {
+    "name": "lhc26_finish_gate_research_20261019",
+    "output": "finish-gate-design-20261019.md",
+    "receipt": {
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"ok\":true,\"created\":true,\"sessionId\":\"01a155b4-5e49-75b0-a292-e959f3b266d0\",\"delivery\":\"accepted\",\"admitted\":true,\"harness\":\"codex\",\"name\":\"lhc26_finish_gate_research_20261019\",\"cwd\":\"/home/roomhacker/agents-projects/LastHumanCommit\",\"model\":\"gpt-6.1-sol\"}"
+          }
+        ]
+      },
+      "jsonrpc": "2.0",
+      "id": 5
+    }
+  }
+]

@@ -1,0 +1,34 @@
+[
+  {
+    "id": "01a150e2-3e47-7360-8548-978743d539b9",
+    "inputId": "lhc-audit-nginx-goal-scope-20261019-v1",
+    "response": {
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Message sent to [codex] 01a150e2-3e47-7360-8548-978743d539b9 (steering).\nNative admission receipt: {\"admitted\":true,\"turnId\":\"01a155c1-bea7-7461-97fd-b28cec54eafe\",\"inputId\":\"lhc-audit-nginx-goal-scope-20261019-v1\"}"
+          }
+        ]
+      },
+      "jsonrpc": "2.0",
+      "id": 3
+    }
+  },
+  {
+    "id": "01a153f0-5c9d-7590-bfae-6a13f493bc24",
+    "inputId": "lhc-audit-userio-latest-outcome-20261019-v1",
+    "response": {
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Message sent to [codex] 01a153f0-5c9d-7590-bfae-6a13f493bc24 (steering).\nNative admission receipt: {\"admitted\":true,\"turnId\":\"01a155c1-7d01-7c11-9ba4-54df8c7b4e5e\",\"inputId\":\"lhc-audit-userio-latest-outcome-20261019-v1\"}"
+          }
+        ]
+      },
+      "jsonrpc": "2.0",
+      "id": 6
+    }
+  }
+]

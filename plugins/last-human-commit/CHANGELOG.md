@@ -1,3 +1,45 @@
+# 1.5.31 - the plan snapshot tells the truth about time, about its own horizon and about what it is
+
+The dashboard of a plan is read on a phone, in a hurry, by the person who owns the
+work. It has to say what it knows and what it does not.
+
+**Two numbers about time are two different questions.** `actual_minutes` is the
+summed effort of the executors; the window on the clock is `started_at` to
+`finished_at`. 22 minutes of effort inside an 11 minute window means two executors
+worked in parallel, and one number quietly meaning the other was a defect. The
+dashboard now shows "усилие" and "по часам" side by side, in the table, in the task
+details and in the text summary.
+
+**The horizon counts from the last confirmed event.** The forecast used to start at
+the moment the page was opened, so an idle plan pushed its own finish further away
+with every minute of silence. It is now anchored at the last confirmed event, and
+the anchor and the idle time are shown. A horizon that has already passed is
+reported as passed instead of being moved forward.
+
+**One graph, one revision, generated artifacts.** `render --out-dir` writes the
+dashboard and the Markdown summary of one graph revision, and both carry that
+revision. Two artifacts of one plan are generated, never kept in sync by hand. The
+report stays the authored source of the narrative - the plan is written first - and
+the graph is the single source of everything derived from it.
+
+**The search promises what it searches.** The searchable text of a row now holds the
+owner, the session id, the harness, the model, the note and the blocker, so every
+field the box offers can actually be found.
+
+**One palette, two themes.** The light and the dark theme are defined once, the
+status colors carry meaning only and are referenced through CSS variables, and a
+test measures the contrast of every text and status color on every surface of both
+themes. On a phone the cards become compact rows, the leaf table becomes one row
+per leaf instead of a wide table, and every touch target is at least 44 CSS px.
+
+**The dashboard says what it is.** It is a snapshot of the plan, not a control
+panel: the real state of the work comes from the API of the owners, and a button in
+the snapshot does not change the fleet.
+
+Four defects of 1.5.30 are now covered by tests, so they cannot return: the
+ordered forecast bounds, the counter and the done count from one layer, the owner
+in the searchable text, and the change log rendered as a change log.
+
 # 1.5.30 - the dashboard disagreed with the plan, and the owner search had no data
 
 The generator counted two different universes at once and printed both of them.

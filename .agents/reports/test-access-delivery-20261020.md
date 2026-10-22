@@ -1,0 +1,23 @@
+# TEST_ACCESS policy delivery — 2026-10-20
+
+Sole owner: Codex01a155b9-0b2c-7953-8afb-f530945dd0ff, existing outcome-contract worktree/branch. Policy delivered; cross-harness outcome acceptance remains partial.
+
+## Published and installed
+- Policy source39937730d30262f38d65051000576f00df921b5c/tree964552c674e09e7e91f77814d95511740b7753fd → PR19/main d63667f7affb9c449ad01d5843a6cd5a8f357a78.
+- Reviewer B14 found two installed test-skill source-tree pointers. Exact installed-path RED1failed; local correction fb3653fc8a29b814c4be304ba7f061c2d14788ab/treeb1bb629c4175eaa0fff223821b9d20a4733bb953 → PR20/main cd26050ccf10fe0cefc31fb5370f4ed258de2b68, version1.5.5. No policy-semantic or executable delta from1.5.4.
+- Normal native marketplace manager upgraded only megamen32-plugins and installed last-human-commit@megamen32-plugins1.5.5.97native files equal published Git; six actual root/native/cache skill links resolve. Native hooks/list sees10enabled/trusted hooks from exact1.5.5 cache.
+- Old1.5.2/1.5.1/1.5.4/1.4.13 cache paths preserved/restored after manager pruning. No live-session restart, abort, model/auth/provider/MCP change. All non-LHC semantic configuration sections are byte-hashed-equal before/after1.5.5 manager work; OpenCode/ZCode loader/registry hashes unchanged. An earlier post1.5.4-probe aggregate raw-config hash drift was preserved, not overwritten or claimed equal; no attribution to unrelated owners was inferred.
+
+## Actual policy and proof
+Router148lines; Lead/project router and existing worker/testing/acceptance/deployment skills discover the primary checkout's .agents/TEST_ACCESS.md through Git metadata. Contract carries allowed environments, authority, approved protected refs/fields, supported retrieval/login/provision/recovery, owner and cleanup. Rehydrate references/scope, never values. Reuse/recover authorized tester access, scoped sudo, initial password change, atomic same-ref rotation, supported disposable OAuth/native token manager and approved opaque runner delivery. Exact unauthorized external/revoked operations fail closed; no personal session cloning/admin QA/new store/schedules/recursive leaf testing.
+
+Initial11policy RED/1native-preservation PASS. Full552PASS205.16s on3993773 plus23skill/package/block PASS. B14 corrected33affectedPASS2.94s and parity/package PASS; old full count not reassigned to new bytes. Executable Python/OpenCode bytes equal accepted eb88c11/1.5.2. Existing independent reviewer/coordinator reviewed the policy; B14 was a local pointer correction with direct existence checks, not a new review chain.
+
+Fresh ordinary native Codex01a15891-413c-7820-b1a6-bb472cf41701 actually loaded1.5.4 and read its router/protocol; Russian answer correctly described autonomous recovery, canonical protected refs and sudo limits. Naturallyexit0, no administration/delegation/secret access. Existing classifier wrongly treated the question fullcycle/pending; preserved as runtime limitation, not terminal engineering PASS.1.5.5 changes pointers only; no new model/auth run or full matrix was needed. Its native manager/hooks/cache checks prove selection/loading availability for new sessions, not a claim that active sessions reloaded.
+
+## Retained boundaries and next action
+Codex accepted1.5.2 technical/consumer terminal result retained. Unaccepted1.5.3 runtime/tests remain at a769c3ae608e3bcd571c6ccc39ad069fe6420e46 in the working branch's ancestry and immutable artifacts, excluded from published policy tree. Keep this branch/worktree: these deferred contents are not all in main.
+
+Ordinary OpenCode and ZCode remain1.4.13. Real ZCode MiniMax sess_c03efe09-ca16-4fec-abe0-6d6cd69831d5 on privatea769 ran both checkout cases, wrote truthful Russian feedback, preserved product hash and naturallyended. Correct class testing; native-self unsupported/observer, finishpending. No provider/quota blocker inferred. Previous OpenCode product CLI PASS/automatic-close-adherence failures remain unaccepted. No unchanged model retries or old-case resumes. Next executable cross-harness step must address this exact supported native-close/host boundary; no evidence-backed completion ETA, no broader parser/council loop. Policy delivery itself is complete and does not wait on it.
+
+Receipts: .worktrees/outcome-contract-20261019/.tmp/outcome-acceptance-20261019/evidence/test-access-policy/{FULL_VALIDATE.log,B14_RED.log,B14_GREEN.log,INSTALL_155.json,INSTALLED_155_READBACK.json,HOOKS_155.json,POST_155_CONFIG_HASHES.json,ACTIVATION_PROOF.json}; ZCode retained raw feedback in evidence/zcode-minimax-testing-9eaac66/. No secret values included.

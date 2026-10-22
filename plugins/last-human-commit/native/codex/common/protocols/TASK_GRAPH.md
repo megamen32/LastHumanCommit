@@ -125,8 +125,15 @@ unknown estimate is a choice, never a demand.
 - Top-level `current_progress` states what is already proven, apart from the
   planned `business_result`. The dashboard keeps the two apart: the expected
   outcome is not the confirmed progress.
-- `actual_minutes` is measured active time. If it was not measured, leave it out
-  instead of inventing a number.
+- `actual_minutes` is the summed effort of the executors on the leaf. If it was not
+  measured, leave it out instead of inventing a number. The window on the clock is
+  `started_at` and `finished_at`, and it is a different number: 22 minutes of effort
+  inside an 11 minute window means two executors worked in parallel. The dashboard
+  shows both as «усилие» and «по часам».
+- `journal` is an optional top-level change log of the plan: a list of entries with
+  `at` (the time), `action`, `result` and `evidence` (the confirmation). The
+  dashboard renders it as a change log. Without it the panel falls back to the
+  statuses of the leaves, which repeats the task names and is not a history.
 - `owner`, `session`, `harness` and `model` say who works on the leaf now. The
   dashboard shows them so the user can see which session owns what.
 - `role`, `acceptance`, `read_paths` and `write_paths` declare who owns the

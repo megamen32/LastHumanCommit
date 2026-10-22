@@ -74,9 +74,13 @@ planned result, and `external_waits` are the pending human or platform waits.
 ## 4. Render and reconcile
 
 ```sh
-python3 "<tools>/lhc_grid.py" render <record-dir>/plan.graph.json -o <record-dir>/plan.html
+python3 "<tools>/lhc_grid.py" render <record-dir>/plan.graph.json --out-dir <record-dir>
 python3 "<tools>/lhc_grid.py" check-plan <record> <record-dir>/plan.graph.json
 ```
+
+`--out-dir` writes `plan.html` and `plan.md` from one graph, and both carry the same
+revision of the plan. Two artifacts of one plan are generated, never kept in sync by
+hand: if the two revisions differ, they are two plans.
 
 `check-plan` prints every divergence between the report and the graph and exits
 non-zero when they disagree. That exit code is the gate: the plan is not finished
@@ -88,7 +92,7 @@ a chat message.
 1. update the report in the record from the current state of the work;
 2. refresh the graph — export again with `--merge <the same graph>`, and the
    attribution survives;
-3. `render` the dashboard;
+3. `render --out-dir` — the dashboard and the text summary of one revision;
 4. `check-plan` — fix every divergence it prints.
 
 Do this at each 30-minute plan boundary, before dispatching work, before reporting
@@ -116,7 +120,30 @@ scheduling input: waves, parallelism and the critical path are derived from it.
 a leaf that estimates only part of the work also carries `estimate_unknown_reason`,
 so the forecast shows an unknown deadline instead of a silent zero.
 
-## 7. What the tools cannot do for you
+Two numbers about time, and they are not the same number. `actual_minutes` is the
+summed effort of the executors; `started_at` and `finished_at` are the window on
+the clock. 22 minutes of effort inside an 11 minute window means two executors
+worked in parallel — the dashboard shows both, as «усилие» and «по часам», and
+never one number quietly meaning the other.
+
+The forecast counts from the last confirmed event, not from the moment the page is
+opened: an idle plan must not push its own finish away with every minute of
+silence. The dashboard shows the anchor and the idle time, and reports a horizon
+that has already passed as passed.
+
+A graph may carry its own `journal` — a change log with time, action, result and
+confirmation. The report may carry the same thing as a `## Журнал изменений`
+section, and the export reads it into the graph. The dashboard renders it as a
+change log. Without it the panel falls back to the statuses of the leaves, which
+is a second list of the table, not a history.
+
+## 7. What the dashboard is
+
+The dashboard is a snapshot of the plan, not a control panel. It shows what the
+plan says; the actual state of the work comes from the API of the owners. A
+button in it does not change the fleet — it only draws the plan.
+
+## 8. What the tools cannot do for you
 
 - They do not choose the leaves. Decomposition is yours: one accepted outcome, one
   shortest real canary, hard dependencies only on the real consumer path, one

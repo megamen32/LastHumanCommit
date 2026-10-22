@@ -1,0 +1,12 @@
+{
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"ok\":true,\"created\":true,\"sessionId\":\"ses_eaa3d49d5ffeW86f8FurnVDCa0\",\"delivery\":\"accepted\",\"admitted\":true,\"harness\":\"opencode\",\"name\":\"lhc26_council_minimax_20261019\",\"cwd\":\"/home/roomhacker/agents-projects/LastHumanCommit\",\"model\":\"minimax-coding-plan/MiniMax-M3.1-Flash\"}"
+      }
+    ]
+  },
+  "jsonrpc": "2.0",
+  "id": 3
+}

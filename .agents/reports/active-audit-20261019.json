@@ -1,0 +1,317 @@
+{
+  "codex": {
+    "complete": false,
+    "unavailable": [],
+    "sessions": [
+      {
+        "id": "01a14c8e-370f-7161-bf53-5686306bf37e",
+        "harness": "codex",
+        "status": "running",
+        "title": "Спланировать Airlock Agent Plugin 1",
+        "cwd": "/home/roomhacker/airlock-admin",
+        "lastActivity": "2026-10-19T19:43:17.000Z",
+        "model": "gpt-6-luna",
+        "needsPermission": false,
+        "meta": {
+          "nativeSessionId": "01a14c8e-370f-7161-bf53-5686306bf37e",
+          "createdAt": "2026-10-18T01:09:11.000Z",
+          "transport": "codex-app-server",
+          "nativeLastTurn": {
+            "turnId": "01a15590-8f12-7472-99ff-7800bbff4981",
+            "status": "inProgress"
+          },
+          "modelProvider": "openai",
+          "threadSource": "user",
+          "pinned": true,
+          "launchCwd": "/home/roomhacker/airlock-admin",
+          "activeCwd": "/home/roomhacker/airlock-admin",
+          "projectSource": "coordination_activity"
+        },
+        "lastMessage": "Короче, мы долго думали, как правильно развивать Airlock, пришли к тому выводу, что многие не любят, когда они мордой. Это неудобно. И нам нужно сделать, короче"
+      },
+      {
+        "id": "01a150e2-3e47-7360-8548-978743d539b9",
+        "harness": "codex",
+        "status": "running",
+        "title": "Добавить RAG-поиск в Agent Herder",
+        "cwd": "/home/roomhacker/agents-projects",
+        "lastActivity": "2026-10-19T19:43:17.000Z",
+        "model": "gpt-6-luna",
+        "needsPermission": false,
+        "meta": {
+          "nativeSessionId": "01a150e2-3e47-7360-8548-978743d539b9",
+          "createdAt": "2026-10-18T21:19:26.000Z",
+          "transport": "codex-app-server",
+          "nativeLastTurn": {
+            "turnId": "01a155a9-5418-7882-9d86-262dda090c22",
+            "status": "inProgress"
+          },
+          "modelProvider": "openai",
+          "threadSource": "user",
+          "pinned": false,
+          "launchCwd": "/home/roomhacker/agents-projects",
+          "activeCwd": "/home/roomhacker/agents-projects",
+          "projectSource": "coordination_activity"
+        },
+        "lastMessage": "добавь rag на qdrant как opt in в agent herder и все codex+zcode+opencode сделай индекс, qdrant у нас уже где то работает настрой пожалуйста и сделай вкладку \"п"
+      },
+      {
+        "id": "01a15179-eae0-7e61-a0a8-90d934c8641f",
+        "harness": "codex",
+        "status": "running",
+        "title": "Обновить AeroLock и создать фронтенд (2)",
+        "cwd": "/home/roomhacker/airlock-admin",
+        "lastActivity": "2026-10-19T19:43:17.000Z",
+        "model": "gpt-6-luna",
+        "needsPermission": false,
+        "meta": {
+          "nativeSessionId": "01a15179-eae0-7e61-a0a8-90d934c8641f",
+          "createdAt": "2026-10-19T00:05:06.000Z",
+          "transport": "codex-app-server",
+          "nativeLastTurn": {
+            "turnId": "01a15597-e477-78d3-a699-f82088cedf12",
+            "status": "inProgress"
+          },
+          "modelProvider": "openai",
+          "threadSource": "user",
+          "pinned": true,
+          "launchCwd": "/home/roomhacker/airlock-admin",
+          "activeCwd": "/home/roomhacker/airlock-admin",
+          "projectSource": "coordination_activity"
+        },
+        "lastMessage": "продолжай и верни ссылку на файлы зачем удалли"
+      },
+      {
+        "id": "01a15478-d841-7a32-af4a-765f13808856",
+        "harness": "codex",
+        "status": "running",
+        "title": "Доделать ExManager по плану",
+        "cwd": "/home/roomhacker/.codex/worktrees/288c/exmanager",
+        "lastActivity": "2026-10-19T19:43:17.000Z",
+        "model": "gpt-6-luna",
+        "needsPermission": false,
+        "meta": {
+          "nativeSessionId": "01a15478-d841-7a32-af4a-765f13808856",
+          "createdAt": "2026-10-19T14:02:48.000Z",
+          "transport": "codex-app-server",
+          "nativeLastTurn": {
+            "turnId": "01a155ab-2b51-7081-b423-baafb021611c",
+            "status": "inProgress"
+          },
+          "modelProvider": "openai",
+          "threadSource": "user",
+          "pinned": false,
+          "launchCwd": "/home/roomhacker/.codex/worktrees/288c/exmanager",
+          "activeCwd": "/home/roomhacker/.codex/worktrees/288c/exmanager",
+          "projectSource": "coordination_activity"
+        },
+        "lastMessage": "# Files pasted by the user:\n\n## \"exmanager-ai-execution-plan.md Документ продолжай Возобновил все четыре Codex G…\": /home/roomhacker/.codex/attachments/34b9143b"
+      },
+      {
+        "id": "01a153f0-5c9d-7590-bfae-6a13f493bc24",
+        "harness": "codex",
+        "status": "running",
+        "title": "Добавить reply и edit в Telegram",
+        "cwd": "/home/roomhacker/agents-projects",
+        "lastActivity": "2026-10-19T19:43:16.000Z",
+        "model": "gpt-6-luna",
+        "needsPermission": false,
+        "meta": {
+          "nativeSessionId": "01a153f0-5c9d-7590-bfae-6a13f493bc24",
+          "createdAt": "2026-10-19T11:33:43.000Z",
+          "transport": "codex-app-server",
+          "nativeLastTurn": {
+            "turnId": "01a155ae-eac7-7d61-8539-a2f3f6bf23cc",
+            "status": "inProgress"
+          },
+          "modelProvider": "openai",
+          "threadSource": "user",
+          "pinned": false,
+          "launchCwd": "/home/roomhacker/agents-projects",
+          "activeCwd": "/home/roomhacker/agents-projects",
+          "projectSource": "coordination_activity"
+        },
+        "lastMessage": "Подключён именно Telegram-аккаунт Никиты. Но доступный интерфейс UserIO сейчас разрешает чтение, а отправку новых сообщений и добавление участников в группы не "
+      },
+      {
+        "id": "01a151c4-814d-78b0-9e5f-aa3b62dc6474",
+        "harness": "codex",
+        "status": "running",
+        "title": "Оценить переход на Kubernetes",
+        "cwd": "/home/roomhacker/ServersAdministartion",
+        "lastActivity": "2026-10-19T19:43:15.000Z",
+        "model": "gpt-6-luna",
+        "needsPermission": false,
+        "meta": {
+          "nativeSessionId": "01a151c4-814d-78b0-9e5f-aa3b62dc6474",
+          "createdAt": "2026-10-19T01:26:35.000Z",
+          "transport": "codex-app-server",
+          "nativeLastTurn": {
+            "turnId": "01a155a6-a96d-7802-b8d4-19b23daaa0ea",
+            "status": "inProgress"
+          },
+          "modelProvider": "openai",
+          "threadSource": "user",
+          "pinned": true,
+          "launchCwd": "/home/roomhacker/ServersAdministartion",
+          "activeCwd": "/home/roomhacker/ServersAdministartion",
+          "projectSource": "coordination_activity"
+        }
+      },
+      {
+        "id": "01a154b6-12e3-7c91-89bc-c3bbe3f77196",
+        "harness": "codex",
+        "status": "running",
+        "title": "Обновить AeroLock и создать фронтенд (3)",
+        "cwd": "/home/roomhacker/airlock-admin",
+        "lastActivity": "2026-10-19T19:43:15.000Z",
+        "model": "gpt-6-luna",
+        "needsPermission": false,
+        "meta": {
+          "nativeSessionId": "01a154b6-12e3-7c91-89bc-c3bbe3f77196",
+          "createdAt": "2026-10-19T15:09:40.000Z",
+          "transport": "codex-app-server",
+          "nativeLastTurn": {
+            "turnId": "01a1559a-6c4a-7630-8590-d0ad893924ca",
+            "status": "inProgress"
+          },
+          "modelProvider": "openai",
+          "threadSource": "user",
+          "pinned": false,
+          "launchCwd": "/home/roomhacker/airlock-admin",
+          "activeCwd": "/home/roomhacker/airlock-admin",
+          "projectSource": "coordination_activity"
+        }
+      },
+      {
+        "id": "01a15561-ffaf-7380-836b-32659c5a07d7",
+        "harness": "codex",
+        "status": "running",
+        "title": "Исправить лимиты и пересоздание сесс",
+        "cwd": "/home/roomhacker/agents-projects",
+        "lastActivity": "2026-10-19T19:43:10.000Z",
+        "model": "gpt-6-luna",
+        "needsPermission": false,
+        "meta": {
+          "nativeSessionId": "01a15561-ffaf-7380-836b-32659c5a07d7",
+          "createdAt": "2026-10-19T18:17:28.000Z",
+          "transport": "codex-app-server",
+          "nativeLastTurn": {
+            "turnId": "01a155a8-ec6c-7603-a20b-48730ba68278",
+            "status": "inProgress"
+          },
+          "modelProvider": "openai",
+          "threadSource": "user",
+          "pinned": false,
+          "launchCwd": "/home/roomhacker/agents-projects",
+          "activeCwd": "/home/roomhacker/agents-projects",
+          "projectSource": "coordination_activity"
+        }
+      },
+      {
+        "id": "01a13b75-8f6d-7f61-8016-7eeb5a661f2d",
+        "harness": "codex",
+        "status": "running",
+        "title": "Подключить VPS к GPTAdmin",
+        "cwd": "/home/roomhacker/.codex/worktrees/c986/gptadmin",
+        "lastActivity": "2026-10-19T19:42:56.000Z",
+        "model": "gpt-6-luna",
+        "needsPermission": false,
+        "meta": {
+          "nativeSessionId": "01a13b75-8f6d-7f61-8016-7eeb5a661f2d",
+          "createdAt": "2026-10-14T17:28:42.000Z",
+          "transport": "codex-app-server",
+          "nativeLastTurn": {
+            "turnId": "01a15587-e084-7e02-93f7-6afd06905a06",
+            "status": "inProgress"
+          },
+          "modelProvider": "openai",
+          "threadSource": "user",
+          "pinned": false,
+          "launchCwd": "/home/roomhacker/.codex/worktrees/c986/gptadmin",
+          "activeCwd": "/home/roomhacker/.codex/worktrees/c986/gptadmin",
+          "projectSource": "coordination_activity"
+        }
+      }
+    ],
+    "total": 9,
+    "limited": true,
+    "filters": {
+      "harness": "codex",
+      "status": "running",
+      "includeLastMessage": true
+    }
+  },
+  "opencode": {
+    "complete": true,
+    "unavailable": [],
+    "sessions": [
+      {
+        "id": "ses_eaa7615beffeLE0clYdNq2BDSd",
+        "harness": "opencode",
+        "status": "running",
+        "title": "exmanager_google_calendar_reminders_20261019",
+        "cwd": "/home/roomhacker/agents-projects/exmanager/.worktrees/google-calendar-reminders",
+        "lastActivity": "2026-10-19T19:42:45.217Z",
+        "model": "opencode/deepseek-v4.1-flash-free",
+        "needsPermission": false,
+        "costUsd": 0
+      }
+    ],
+    "total": 1,
+    "limited": false,
+    "filters": {
+      "harness": "opencode",
+      "status": "running",
+      "includeLastMessage": true
+    }
+  },
+  "zcode": {
+    "complete": true,
+    "unavailable": [],
+    "sessions": [],
+    "total": 0,
+    "limited": false,
+    "filters": {
+      "harness": "zcode",
+      "status": "running",
+      "includeLastMessage": true
+    }
+  },
+  "hermes": {
+    "complete": true,
+    "unavailable": [],
+    "sessions": [],
+    "total": 0,
+    "limited": false,
+    "filters": {
+      "harness": "hermes",
+      "status": "running",
+      "includeLastMessage": true
+    }
+  },
+  "fast-agent": {
+    "complete": true,
+    "unavailable": [],
+    "sessions": [],
+    "total": 0,
+    "limited": false,
+    "filters": {
+      "harness": "fast-agent",
+      "status": "running",
+      "includeLastMessage": true
+    }
+  },
+  "claude": {
+    "complete": true,
+    "unavailable": [],
+    "sessions": [],
+    "total": 0,
+    "limited": false,
+    "filters": {
+      "harness": "claude",
+      "status": "running",
+      "includeLastMessage": true
+    }
+  }
+}

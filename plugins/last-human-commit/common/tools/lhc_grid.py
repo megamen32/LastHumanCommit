@@ -26,6 +26,7 @@ with inline CSS/JS, safe to attach to a message or open from a phone.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import importlib.util
 import json
 import math
@@ -70,6 +71,72 @@ STATUS_COLORS = {
     STATUS_WAITING: "#f0a742",
     STATUS_QUEUED: "#7c8aa3",
 }
+
+# The status colors carry meaning only: done, in work, blocked, waiting, in
+# queue. They are referenced through CSS variables so one theme can change
+# them without touching a single markup line.
+STATUS_CSS_VARS = {
+    STATUS_DONE: "var(--st-done)",
+    STATUS_RUNNING: "var(--st-running)",
+    STATUS_BLOCKED: "var(--st-blocked)",
+    STATUS_WAITING: "var(--st-waiting)",
+    STATUS_QUEUED: "var(--st-queued)",
+}
+
+# One palette, two themes. Every surface, text and status color of a theme is
+# defined here once, so the light and the dark theme cannot drift apart and a
+# contrast test can check both of them.
+THEME_PALETTE = {
+    "dark": {
+        "bg": "#0d1117",
+        "panel": "#151b26",
+        "panel-2": "#1b2331",
+        "line": "#26303f",
+        "text": "#e6edf6",
+        "muted": "#9fb0c6",
+        "accent": "#6ea8fe",
+        "ok": "#2ecc71",
+        "warn": "#f0a742",
+        "bad": "#f25f74",
+        "st-done": "#2ecc71",
+        "st-running": "#4f9cf9",
+        "st-blocked": "#f25f74",
+        "st-waiting": "#f0a742",
+        "st-queued": "#8fa0b8",
+    },
+    "light": {
+        "bg": "#f4f6f9",
+        "panel": "#ffffff",
+        "panel-2": "#eaeef4",
+        "line": "#d3dae3",
+        "text": "#15202c",
+        "muted": "#58677a",
+        "accent": "#1a62cc",
+        "ok": "#1a7f37",
+        "warn": "#8a6100",
+        "bad": "#c02b38",
+        "st-done": "#1a7f37",
+        "st-running": "#1a62cc",
+        "st-blocked": "#c02b38",
+        "st-waiting": "#8a6100",
+        "st-queued": "#5a6b7f",
+    },
+}
+
+
+def palette_css() -> str:
+    """The CSS custom properties of both themes."""
+
+    def block(selector: str, values: dict[str, str]) -> str:
+        body = " ".join(f"--{key}: {value};" for key, value in values.items())
+        return f"{selector} {{ {body} }}"
+
+    return "\n  ".join(
+        [
+            block(":root, :root[data-theme=\"dark\"]", THEME_PALETTE["dark"]),
+            block(":root[data-theme=\"light\"]", THEME_PALETTE["light"]),
+        ]
+    )
 
 WAVE_LABELS = {}
 
@@ -119,6 +186,21 @@ class Leaf:
         if self.estimate_max is not None:
             return self.estimate_max
         return self.estimate_min
+
+    @property
+    def actual_span_minutes(self) -> Optional[float]:
+        """Calendar length of the work window.
+
+        ``actual_minutes`` is the summed effort of the executors. It can be
+        larger than the wall-clock window when several executors worked in the
+        same time, and the two numbers answer different questions, so the
+        dashboard shows both instead of one silently meaning the other.
+        """
+        start = parse_clock(self.started_at)
+        finish = parse_clock(self.finished_at)
+        if start is None or finish is None:
+            return None
+        return float((finish - start) % (24 * 60))
 
     @property
     def duration_label(self) -> str:
@@ -307,16 +389,66 @@ DECOMP_WAVES_RE = re.compile(r"(\d+)\s+волн", re.IGNORECASE)
 DECOMP_SLOTS_RE = re.compile(r"слотов\s*:?\s*(\d+)", re.IGNORECASE)
 
 
+JOURNAL_SECTION_RE = re.compile(r"^##\s*(журнал изменений|change log)\s*$", re.IGNORECASE)
+JOURNAL_ENTRY_RE = re.compile(r"^\s*[-*]\s*(\d{1,2}:\d{2})\s*·\s*(.+?)\s*$")
+JOURNAL_LEAF_RE = re.compile(r"^[A-Za-zА-Яа-я]?\d{1,3}[A-Za-zА-Яа-я]?$")
+
+
+def _parse_journal_entry(line: str) -> Optional[dict[str, Any]]:
+    """One line of the change log of a plan report.
+
+    The line reads as time, then the leaf it belongs to, then the action, the
+    result and the confirmation. The labels keep the line readable for a
+    person and unambiguous for the parser.
+    """
+
+    match = JOURNAL_ENTRY_RE.match(line)
+    if not match:
+        return None
+    entry: dict[str, Any] = {"at": match.group(1)}
+    action: list[str] = []
+    for part in (piece.strip() for piece in match.group(2).split("·")):
+        if not part:
+            continue
+        lowered = part.lower()
+        if part.startswith("результат:"):
+            entry["result"] = part.split(":", 1)[1].strip()
+        elif part.startswith("подтверждение:"):
+            entry["evidence"] = part.split(":", 1)[1].strip()
+        elif JOURNAL_LEAF_RE.match(part) and "leaf" not in entry:
+            entry["leaf"] = part
+        else:
+            action.append(part)
+    if action:
+        entry["action"] = " ".join(action).strip()
+    # An entry may carry only a result. It still belongs to the history.
+    return entry if entry.get("action") or entry.get("result") else None
+
+
 def parse_plan_report(text: str) -> Optional[Graph]:
     """Parse the canonical live plan report format."""
     graph = Graph(source_kind="plan-report")
     leaves: list[Leaf] = []
     pending_parallel: list[tuple[int, int]] = []
     pending_after: list[tuple[int, int]] = []
+    journal_entries: list[dict[str, Any]] = []
+    in_journal = False
     seen_leaf = False
 
     for raw_line in text.splitlines():
         line = raw_line.rstrip()
+        stripped = line.strip()
+        if stripped.startswith("##"):
+            # The change log of the report is a section of its own. Without it
+            # the dashboard would fall back to the leaf names, which is a
+            # second list of the table and not a history.
+            in_journal = bool(JOURNAL_SECTION_RE.match(stripped))
+            continue
+        if in_journal:
+            entry = _parse_journal_entry(line)
+            if entry:
+                journal_entries.append(entry)
+            continue
         header = HEADER_RE.match(line)
         if header and not seen_leaf:
             key, value = header.group(1), header.group(2)
@@ -390,6 +522,8 @@ def parse_plan_report(text: str) -> Optional[Graph]:
         leaves[index].depends_on.append(f"L{peer:02d}")
 
     graph.leaves = leaves
+    if journal_entries:
+        graph.journal = journal_entries
     graph.live_items = [
         {"status": leaf.status, "text": leaf.label or leaf.id, "leaf": leaf.id}
         for leaf in leaves
@@ -1001,13 +1135,13 @@ def build_metrics(graph: Graph) -> dict[str, Any]:
     now = now_clock()
     eta_min = pending_min.makespan
     eta_max = pending_max.makespan
-    eta_from = now
-    # The plan may already be inside a working day; anchor the forecast on the
-    # last observed activity so a stale "now" does not distort the horizon.
+    # The forecast counts from the last confirmed event, not from the moment
+    # the page is opened. An idle plan must not push its own finish further
+    # away with every minute of silence, so the anchor is the event itself and
+    # the idle time is shown instead of being hidden inside the horizon.
     anchor = _plan_anchor(graph)
-    if anchor is not None:
-        # A historic activity timestamp must never place the forecast in the past.
-        eta_from = max(anchor, now)
+    eta_from = now if anchor is None else anchor
+    idle_minutes = max(0, now - anchor) if anchor is not None else 0
     external_wait_unknown = bool(graph.external_waits.strip())
     eta_known = not unknown_estimate_pending and not external_wait_unknown
 
@@ -1042,6 +1176,10 @@ def build_metrics(graph: Graph) -> dict[str, Any]:
         "external_wait_unknown": external_wait_unknown,
         "eta_clock_min": "" if not eta_known else format_clock((eta_from + int(round(eta_min))) % (24 * 60)),
         "eta_clock_max": "" if not eta_known else format_clock((eta_from + int(round(eta_max))) % (24 * 60)),
+        "eta_anchor_clock": "" if anchor is None else format_clock(anchor % (24 * 60)),
+        "eta_anchor_idle_minutes": idle_minutes,
+        "eta_overdue": bool(eta_known and eta_from + int(round(eta_max)) < now),
+        "unfinished": max(0, headline_total - done),
         "schedule": schedule_max,
         "schedule_min": schedule_min,
         "pending": pending_max,
@@ -1326,6 +1464,70 @@ def escape(text: str) -> str:
     )
 
 
+def _search_text(leaf: Leaf) -> str:
+    """Everything a row can be found by.
+
+    The search box promises what it searches, so every promised field has to
+    be in the searchable text. A promise the data cannot satisfy is a dead
+    end the reader cannot see.
+    """
+    parts = [
+        leaf.id,
+        leaf.label,
+        leaf.owner,
+        leaf.session,
+        leaf.harness,
+        leaf.model,
+        leaf.note,
+        leaf.blocker,
+        leaf.acceptance,
+    ]
+    return " ".join(part for part in parts if part).lower()
+
+
+def graph_revision(graph: Graph) -> str:
+    """A short, stable fingerprint of the plan content.
+
+    The dashboard and the Markdown summary are generated from one graph, so
+    both carry the same revision. Two artifacts with different revisions are
+    two versions of the same plan, which is exactly what a single canonical
+    source has to prevent.
+    """
+    payload = [
+        [
+            leaf.id,
+            leaf.label,
+            leaf.status,
+            leaf.owner,
+            leaf.session,
+            leaf.estimate_min,
+            leaf.estimate_max,
+            leaf.actual_minutes,
+            leaf.started_at,
+            leaf.finished_at,
+        ]
+        for leaf in sorted(graph.leaves, key=lambda item: item.id)
+    ]
+    document = json.dumps(payload, ensure_ascii=False, sort_keys=True, default=str)
+    return hashlib.sha256(document.encode("utf-8")).hexdigest()[:12]
+
+
+SNAPSHOT_NOTE = (
+    "Это снимок плана, а не панель управления: фактическое состояние работы "
+    "приходит из API владельцев, а не из пересказа агента в графе."
+)
+
+
+def _eta_range_text(metrics: dict[str, Any]) -> str:
+    """The finish horizon as a range, when the two bounds differ."""
+
+    early = metrics.get("eta_clock_min") or ""
+    late = metrics.get("eta_clock_max") or ""
+    if not early or not late:
+        return ""
+    return early if early == late else f"{early}–{late}"
+
+
 def _short(text: str, limit: int) -> str:
     """Shorten a long name for a dense list, keeping it readable."""
 
@@ -1358,22 +1560,23 @@ def render_html(graph: Graph, metrics: dict[str, Any]) -> str:
         eta_hint = "Есть внешние ожидания без подтверждённого срока"
     elif metrics["unknown_estimate_pending"]:
         eta_hint = f"{metrics['unknown_estimate_pending']} листьев без оценки"
-    else:
-        eta_hint = f"если остаток стартует сейчас · {metrics['eta_clock_min']}"
-    eta_range = ""
-    if metrics["eta_clock_min"] and metrics["eta_clock_max"]:
-        eta_range = (
-            metrics["eta_clock_min"]
-            if metrics["eta_clock_min"] == metrics["eta_clock_max"]
-            else f"{metrics['eta_clock_min']}–{metrics['eta_clock_max']}"
+    elif metrics["eta_anchor_clock"]:
+        eta_hint = (
+            f"отсчёт от последнего события {metrics['eta_anchor_clock']} · "
+            f"простой {fmt_minutes(metrics['eta_anchor_idle_minutes'])}"
         )
+    else:
+        eta_hint = "остаток стартует сейчас"
+    if metrics["eta_overdue"]:
+        eta_hint = f"срок прошёл, остаток не начался · {eta_hint}"
+    eta_range = _eta_range_text(metrics)
     cards = [
         ("Готово", f"{metrics['done']} / {headline_total}",
          f"{metrics['progress_pct']}% {progress_note}", STATUS_DONE, True),
         ("В работе", str(metrics["running"]), "сейчас выполняется", STATUS_RUNNING, True),
         ("Заблокировано", str(metrics["blocked"]), "нужен внешний ход", STATUS_BLOCKED, True),
         ("В очереди", str(metrics["queued"]), "ждут своего слота", STATUS_QUEUED, True),
-        ("Осталось", str(metrics["total"] - metrics["done"]),
+        ("Осталось", str(metrics["unfinished"]),
          "не завершено, включая работу в процессе", STATUS_QUEUED, True),
         ("Параллельность", f"{metrics['current_parallel']} / {metrics['slots']}",
          f"пик по плану {metrics['planned_peak_parallel']}", STATUS_RUNNING, False),
@@ -1385,7 +1588,7 @@ def render_html(graph: Graph, metrics: dict[str, Any]) -> str:
          f"критический путь {fmt_minutes(metrics['critical_minutes'])}", STATUS_QUEUED, False),
     ]
     card_html = "".join(
-        f'<div class="kpi" style="--accent:{STATUS_COLORS.get(tone, "#6ea8fe")}">'
+        f'<div class="kpi" style="--accent:{STATUS_CSS_VARS.get(tone, "var(--accent)")}">'
         f'<div class="kpi-label" title="{escape(label)}">'
         + (f"{STATUS_GLYPHS.get(tone, '')} " if is_status else "")
         + f"{escape(label)}</div>"
@@ -1404,10 +1607,10 @@ def render_html(graph: Graph, metrics: dict[str, Any]) -> str:
             continue
         segments.append(
             f'<div class="seg" style="width:{100.0 * count / max(headline_total, 1):.4f}%;'
-            f'background:{STATUS_COLORS[status]}" title="{STATUS_LABELS[status]}: {count}"></div>'
+            f'background:{STATUS_CSS_VARS[status]}" title="{STATUS_LABELS[status]}: {count}"></div>'
         )
     legend = "".join(
-        f'<span class="legend-item"><i style="background:{STATUS_COLORS[status]}"></i>'
+        f'<span class="legend-item"><i style="background:{STATUS_CSS_VARS[status]}"></i>'
         f"{STATUS_LABELS[status]} · {headline.get(status, 0)}</span>"
         for status in STATUSES
         if headline.get(status, 0)
@@ -1552,13 +1755,14 @@ def render_html(graph: Graph, metrics: dict[str, Any]) -> str:
         finish = schedule.finishes.get(leaf.id, start)
         left = 100.0 * start / horizon
         width = max(0.6, 100.0 * max(finish - start, 0.0) / horizon)
-        color = STATUS_COLORS[leaf.status]
+        color = STATUS_CSS_VARS[leaf.status]
         critical = leaf.id in metrics["critical_path"]
         tooltip = (
             f"{leaf.id} · {leaf.label}\n"
             f"статус: {STATUS_LABELS[leaf.status]}\n"
             f"оценка: {leaf.duration_label}"
-            + (f"\nфакт: {fmt_minutes(leaf.actual_minutes)}" if leaf.actual_minutes is not None else "")
+            + (f"\nусилие (суммарно): {fmt_minutes(leaf.actual_minutes)}" if leaf.actual_minutes is not None else "")
+            + (f"\nпо часам: {fmt_minutes(leaf.actual_span_minutes)}" if leaf.actual_span_minutes is not None else "")
             + (f"\nначало: {leaf.started_at}" if leaf.started_at else "")
             + (f"\nконец: {leaf.finished_at}" if leaf.finished_at else "")
             + (f"\nзависит: {', '.join(label_by_id.get(dep, dep) for dep in leaf.depends_on)}" if leaf.depends_on else "")
@@ -1603,7 +1807,7 @@ def render_html(graph: Graph, metrics: dict[str, Any]) -> str:
             waits = ", ".join(label_by_id.get(dep, dep) for dep in leaf.depends_on) if leaf.depends_on else "Внешнее условие"
             items.append(
                 f'<div class="blocker"><div class="blocker-head">'
-                f'<span class="badge" style="background:{STATUS_COLORS[STATUS_BLOCKED]}">'
+                f'<span class="badge" style="background:{STATUS_CSS_VARS[STATUS_BLOCKED]}">'
                 "Ожидает</span>"
                 f"<b>{escape(leaf.label or leaf.id)}</b></div>"
                 f'<div class="blocker-reason"><b>Почему ждём:</b> {escape(reason)}</div>'
@@ -1624,7 +1828,7 @@ def render_html(graph: Graph, metrics: dict[str, Any]) -> str:
             continue
         session_rows.append(
             "<tr>"
-            f'<td><span class="dot" style="background:{STATUS_COLORS[leaf.status]}"></span>'
+            f'<td><span class="dot" style="background:{STATUS_CSS_VARS[leaf.status]}"></span>'
             f"{escape(leaf.id)}</td>"
             f"<td>{escape(leaf.label[:70])}</td>"
             f"<td>{escape(leaf.owner or '—')}</td>"
@@ -1650,6 +1854,7 @@ def render_html(graph: Graph, metrics: dict[str, Any]) -> str:
         deps = ", ".join(label_by_id.get(dep, dep) for dep in leaf.depends_on) or "—"
         peer = ", ".join(label_by_id.get(other, other) for other in leaf.parallel_with) or "—"
         actual = fmt_minutes(leaf.actual_minutes) if leaf.actual_minutes is not None else "не измерено"
+        span = fmt_minutes(leaf.actual_span_minutes) if leaf.actual_span_minutes is not None else "—"
         over = " over" if leaf.overrun else ""
         details = (
             f"<dl class='task-details'><dt>Код</dt><dd>{escape(leaf.id)}</dd>"
@@ -1658,7 +1863,14 @@ def render_html(graph: Graph, metrics: dict[str, Any]) -> str:
             f"<dt>Зависит от</dt><dd>{escape(deps)}</dd>"
             f"<dt>Параллельно с</dt><dd>{escape(peer)}</dd>"
             f"<dt>Блокер / примечание</dt><dd>{escape(leaf.blocker or leaf.note or '—')}</dd>"
-            f"<dt>Сессия</dt><dd>{escape(leaf.session or '—')}</dd></dl>"
+            f"<dt>Сессия</dt><dd>{escape(leaf.session or '—')}</dd>"
+            f"<dt>Усилие (суммарно)</dt><dd>{escape(actual)}</dd>"
+            f"<dt>Длительность по часам</dt><dd>{escape(span)}</dd>"
+            + (
+                f"<dt>Окно работы</dt><dd>{escape(leaf.started_at)} – {escape(leaf.finished_at)}</dd>"
+                if leaf.started_at and leaf.finished_at else ""
+            )
+            + "</dl>"
         )
         detail_templates.append(
             f"<template id='task-details-template-{details_index}'><div class='task-details-card'>"
@@ -1667,20 +1879,26 @@ def render_html(graph: Graph, metrics: dict[str, Any]) -> str:
             f"{details}</div></template>"
         )
         table_rows.append(
-            f'<tr data-status="{leaf.status}" data-text="{escape((leaf.id + " " + leaf.label + " " + (leaf.owner or "") + " " + (leaf.session or "")).lower())}">'
+            f'<tr data-status="{leaf.status}" data-text="{escape(_search_text(leaf))}">'
             f"<td class='task-title'><span class='row-id'>{escape(leaf.id)}</span>"
             f"<span class='row-name'>{escape(leaf.label)}</span></td>"
-            f'<td><span class="status" style="--c:{STATUS_COLORS[leaf.status]}">'
+            f'<td data-label="Статус"><span class="status" style="--c:{STATUS_CSS_VARS[leaf.status]}">'
             f"{STATUS_GLYPHS[leaf.status]} {STATUS_LABELS[leaf.status]}</span></td>"
-            f"<td>{escape(leaf.duration_label)}</td>"
-            f'<td class="{over.strip()}">{escape(actual)}</td>'
+            f"<td data-label=\"Оценка\">{escape(leaf.duration_label)}</td>"
+            f'<td data-label="Усилие" class="{over.strip()}">{escape(actual)}'
+            + (
+                f'<span class="cell-sub">по часам {escape(span)}</span>'
+                if leaf.actual_span_minutes is not None
+                else ""
+            )
+            + "</td>"
             f"<td><button type='button' class='task-details-trigger' data-details-id='{details_index}' "
             "aria-expanded='false'>Подробнее</button></td>"
             "</tr>"
         )
     leaves_table = (
         "<div class='table-scroll'><table class='table table-leaves'><thead><tr><th>Задача</th><th>Статус</th>"
-        "<th>Оценка</th><th>Факт</th><th>Детали</th></tr></thead><tbody>"
+        "<th>Оценка</th><th>Усилие</th><th>Детали</th></tr></thead><tbody>"
         + "".join(table_rows)
         + "</tbody></table></div>"
     )
@@ -1701,7 +1919,7 @@ def render_html(graph: Graph, metrics: dict[str, Any]) -> str:
         items = []
         for item in journal:
             status = item.get("status", STATUS_QUEUED)
-            color = STATUS_COLORS.get(status, STATUS_COLORS[STATUS_QUEUED])
+            color = STATUS_CSS_VARS.get(status, STATUS_CSS_VARS[STATUS_QUEUED])
             leaf_tag = ""
             if item.get("leaf"):
                 leaf_name = label_by_id.get(str(item["leaf"]))
@@ -1710,13 +1928,19 @@ def render_html(graph: Graph, metrics: dict[str, Any]) -> str:
             stamp = ""
             if item.get("at"):
                 stamp = f'<span class="live-at">{escape(str(item["at"]))}</span>'
+            # A change log names an action and a result. A journal that only
+            # repeats the task names is a second list of the table.
+            action = item.get("action") or item.get("text") or item.get("result") or ""
+            result_html = ""
+            if item.get("result") and item.get("result") != action:
+                result_html = f'<span class="live-result">{escape(str(item["result"]))}</span>'
             evidence = ""
             if item.get("evidence"):
                 evidence = f'<span class="live-evidence">{escape(str(item["evidence"]))}</span>'
             items.append(
                 f'<li><span class="dot" style="background:{color}"></span>'
-                f'{stamp}<span class="live-text">{escape(item.get("text", ""))}</span>'
-                f'{evidence}{leaf_tag}</li>'
+                f'{stamp}<span class="live-text">{escape(str(action))}</span>'
+                f'{result_html}{evidence}{leaf_tag}</li>'
             )
         live_html = f'<ul class="live">{"".join(items)}</ul>'
     else:
@@ -1803,6 +2027,10 @@ def render_html(graph: Graph, metrics: dict[str, Any]) -> str:
         generated=generated,
         source=escape(source_label),
         kind=escape(graph.source_kind),
+        revision=graph_revision(graph),
+        graph_updated=escape(graph.updated_at.replace("T", " ")) or "неизвестно",
+        snapshot=escape(SNAPSHOT_NOTE),
+        palette=palette_css(),
         cards=card_html,
         segments="".join(segments),
         legend=legend,
@@ -1829,18 +2057,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{title} · LHC</title>
 <style>
-  :root {{
-    --bg: #0d1117;
-    --panel: #151b26;
-    --panel-2: #1b2331;
-    --line: #26303f;
-    --text: #e6edf6;
-    --muted: #9fb0c6;
-    --accent: #6ea8fe;
-    --ok: #2ecc71;
-    --warn: #f0a742;
-    --bad: #f25f74;
-  }}
+  {palette}
   * {{ box-sizing: border-box; }}
   /* The page background lives on the canvas itself. No overlay element is
      painted over the content, so nothing can ever hide a block of the
@@ -1869,6 +2086,14 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     border: 1px solid var(--line); border-radius: 12px; padding: 8px 14px; }}
   .head-count b {{ font-size: 22px; font-weight: 650; letter-spacing: -0.4px; }}
   .head-count span {{ color: var(--muted); font-size: 12px; }}
+  .theme-toggle {{ background: var(--panel); border: 1px solid var(--line); color: var(--muted);
+    border-radius: 10px; padding: 8px 12px; cursor: pointer; font: inherit; font-size: 12.5px;
+    min-height: 44px; min-width: 44px; }}
+  .theme-toggle:hover {{ color: var(--text); }}
+  .head-actions {{ display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }}
+  .snapshot-note {{ color: var(--muted); font-size: 12.5px; margin: 0 0 14px; padding: 8px 12px;
+    border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 10px;
+    background: var(--panel); overflow-wrap: anywhere; }}
 
   /* ---- panels ---- */
   .panel {{ background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
@@ -1880,6 +2105,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
   /* ---- brief: goal and business result ---- */
   .brief {{ display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-bottom: 16px; }}
+  /* The technical wording is a confirmation, not the first thing to read. */
+  .brief-details {{ margin-bottom: 16px; }}
+  .brief-details > summary {{ cursor: pointer; color: var(--muted); font-size: 12.5px;
+    min-height: 44px; display: flex; align-items: center; }}
+  .brief-details[open] > summary {{ margin-bottom: 12px; color: var(--text); }}
   .brief-card {{ background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
     border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 12px; padding: 14px 16px;
     min-width: 0; }}
@@ -1999,9 +2229,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   .live li {{ display: flex; gap: 8px; padding: 6px 0; border-bottom: 1px solid #1e2632; align-items: baseline; }}
   .live-text {{ flex: 1; }}
   .live-at {{ color: #8aa0b8; font-variant-numeric: tabular-nums; white-space: nowrap; }}
+  .live-result {{ color: var(--text); font-size: 12.5px; }}
   .live-evidence {{ color: #8aa0b8; font-size: 12px; white-space: nowrap; }}
   .leaf-tag {{ color: var(--muted); font-size: 11px; border: 1px solid var(--line); border-radius: 5px;
     padding: 0 5px; min-width: 0; white-space: normal; overflow-wrap: anywhere; }}
+  .cell-sub {{ display: block; color: var(--muted); font-size: 11px; }}
   .table {{ width: 100%; border-collapse: collapse; font-size: 13px; }}
   .table th {{ text-align: left; color: var(--muted); font-weight: 600; font-size: 11px;
     text-transform: uppercase; letter-spacing: .05em; padding: 6px 8px; border-bottom: 1px solid var(--line);
@@ -2044,20 +2276,46 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     padding-top: 12px; }}
   /* The phone layout comes last, so it wins over every base rule above. */
   @media (max-width: 640px) {{
+    /* The state and the action come first; the Gantt opens on its own,
+       below the table that carries the same leaves. */
+    .page {{ display: flex; flex-direction: column; }}
+    /* A flex item keeps its content width by default, so the wide Gantt
+       would push the whole page sideways. The panels have to be allowed to
+       shrink and scroll inside. */
+    .page > * {{ min-width: 0; max-width: 100%; }}
+    .panel, .grid > *, .kpis {{ min-width: 0; }}
+    .panel-gantt {{ order: 8; }}
+    footer {{ order: 9; }}
     body {{ padding: 14px 10px 36px; }}
     .panel {{ padding: 12px; border-radius: 11px; }}
     h1 {{ font-size: 19px; }}
-    .kpis {{ grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }}
-    .kpi {{ padding: 9px 10px; }}
-    .kpi-value {{ font-size: 21px; }}
+    /* The cards become compact rows: on a phone the state and the action
+       have to be visible without a grid of boxes. */
+    .kpis {{ grid-template-columns: minmax(0, 1fr); gap: 6px; }}
+    .kpi {{ padding: 8px 10px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; }}
+    .kpi-label {{ order: 1; flex: 0 0 auto; }}
+    .kpi-value {{ order: 2; font-size: 19px; margin: 0; }}
+    .kpi-hint {{ order: 3; flex: 1 1 100%; font-size: 11px; }}
     .toolbar input {{ min-width: 0; width: 100%; }}
+    /* Every touch target is at least 44 CSS px. */
+    .chip, .task-details-trigger, .task-details-close {{ min-height: 44px; min-width: 44px; }}
     .task-details {{ grid-template-columns: minmax(0, 1fr); gap: 0; }}
     .task-details dd {{ margin-bottom: 8px; }}
-    .table-leaves {{ min-width: 560px; }}
-    .table-leaves th:nth-child(1) {{ width: auto; }}
-    .table-leaves th:nth-child(2) {{ width: 104px; }}
-    .table-leaves th:nth-child(3), .table-leaves th:nth-child(4) {{ width: 74px; }}
-    .table-leaves th:nth-child(5) {{ width: 92px; }}
+    /* The leaf table becomes one compact row per leaf instead of a wide
+       table that has to be scrolled sideways. */
+    .table-leaves {{ min-width: 0; display: block; }}
+    .table-leaves thead {{ display: none; }}
+    .table-leaves tbody {{ display: block; }}
+    .table-leaves tr {{ display: block; padding: 8px 0; border-bottom: 1px solid var(--line); }}
+    .table-leaves td {{ display: flex; gap: 10px; justify-content: space-between; align-items: baseline;
+      border: none; padding: 2px 0; text-align: right; }}
+    .table-leaves td::before {{ content: attr(data-label); color: var(--muted); font-size: 11px;
+      text-transform: uppercase; letter-spacing: .05em; text-align: left; flex: 0 0 auto; }}
+    .table-leaves td.task-title {{ display: block; text-align: left; }}
+    .table-leaves td.task-title::before {{ content: none; }}
+    .table-leaves td:last-child {{ justify-content: flex-start; }}
+    .table-leaves td:last-child::before {{ content: none; }}
+    .table-scroll {{ overflow-x: visible; }}
   }}
 </style>
 </head>
@@ -2066,25 +2324,33 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <header>
   <div>
     <h1>{title}</h1>
-    <div class="sub">LHC · {kind} · обновлено {generated}</div>
+    <div class="sub">LHC · {kind} · план обновлён {graph_updated} · ревизия {revision} · собран {generated}</div>
   </div>
-  <div class="head-count"><b>{total}</b><span>задач в графе</span></div>
+  <div class="head-actions">
+    <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Переключить тему">Светлая / тёмная</button>
+    <div class="head-count"><b>{total}</b><span>задач в графе</span></div>
+  </div>
 </header>
 
-{brief}
+<p class="snapshot-note">{snapshot}</p>
 
-<div class="panel">
+<div class="kpis">{cards}</div>
+
+<div class="panel panel-now">
+  {now}
+</div>
+
+<div class="panel panel-progress">
   <div class="progress">{segments}</div>
   <div class="legend">{legend}</div>
 </div>
 
-<div class="kpis">{cards}</div>
+<details class="panel brief-details">
+  <summary>Цель, результат и подтверждённый прогресс</summary>
+  {brief}
+</details>
 
-<div class="panel">
-  {now}
-</div>
-
-<div class="panel">
+<div class="panel panel-gantt">
   <h2>Гант · листья и параллельные волны</h2>
   <div class="gantt"><div class="gantt-inner">
     <div class="gantt-axis-row"><div class="gantt-axis-spacer"></div><div class="gantt-axis">{axis}</div></div>
@@ -2097,7 +2363,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     <h2>Листья</h2>
     {layer_hint}
     <div class="toolbar">
-      <input id="search" type="search" placeholder="Поиск по листу, id или владельцу…">
+      <input id="search" type="search" placeholder="Поиск по листу, id, владельцу, сессии или модели…">
       <button class="chip active" data-filter="all">все</button>
       <button class="chip" data-filter="done">готово</button>
       <button class="chip" data-filter="running">в работе</button>
@@ -2132,11 +2398,31 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 </div>
 
 <footer>
-  LHC task graph · один файл, без внешних зависимостей · собран {generated}
+  LHC task graph · ревизия {revision} · один файл, без внешних зависимостей · собран {generated}
   <details class="technical"><summary>Путь исходного плана</summary><code>{source}</code></details>
 </footer>
 
 <script>
+(function () {{
+  // The theme is the reader's choice, remembered between openings. Without a
+  // stored choice the dashboard follows the system.
+  var root = document.documentElement;
+  var stored = null;
+  try {{ stored = window.localStorage.getItem('lhc-theme'); }} catch (error) {{ stored = null; }}
+  if (stored === 'light' || stored === 'dark') {{
+    root.setAttribute('data-theme', stored);
+  }} else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {{
+    root.setAttribute('data-theme', 'light');
+  }}
+  var toggle = document.getElementById('theme-toggle');
+  if (toggle) {{
+    toggle.addEventListener('click', function () {{
+      var next = root.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+      root.setAttribute('data-theme', next);
+      try {{ window.localStorage.setItem('lhc-theme', next); }} catch (error) {{ /* no storage */ }}
+    }});
+  }}
+}})();
 (function () {{
   var chips = Array.prototype.slice.call(document.querySelectorAll('.chip'));
   var rows = Array.prototype.slice.call(document.querySelectorAll('.table-leaves tbody tr'));
@@ -2217,7 +2503,9 @@ def render_leaf_lines(graph: Graph, metrics: dict[str, Any]) -> list[str]:
         if leaf.label:
             parts.append(f"({leaf.label})")
         parts.append(f"оценка {leaf.duration_label}")
-        parts.append(f"факт {actual}")
+        parts.append(f"усилие {actual}")
+        if leaf.actual_span_minutes is not None:
+            parts.append(f"по часам {fmt_minutes(leaf.actual_span_minutes)}")
         parts.append(f"волна {wave}")
         parts.append("зависит: " + (", ".join(leaf.depends_on) or "—"))
         if leaf.parallel_with:
@@ -2231,6 +2519,8 @@ def render_leaf_lines(graph: Graph, metrics: dict[str, Any]) -> list[str]:
 def render_text(graph: Graph, metrics: dict[str, Any]) -> str:
     lines: list[str] = []
     lines.append(f"Граф задач: {graph.title}")
+    lines.append(f"Ревизия плана: {graph_revision(graph)}")
+    lines.append(SNAPSHOT_NOTE)
     if graph.goal:
         lines.append(f"Цель: {graph.goal}")
     if graph.business_result:
@@ -2242,7 +2532,7 @@ def render_text(graph: Graph, metrics: dict[str, Any]) -> str:
             scope=scope,
             done=metrics["done"], total=metrics["headline_total"], pct=metrics["progress_pct"],
             running=metrics["running"], blocked=metrics["blocked"],
-            left=metrics["queued"] + metrics["waiting"],
+            left=metrics["unfinished"],
         )
     )
     lines.append(
@@ -2258,13 +2548,16 @@ def render_text(graph: Graph, metrics: dict[str, Any]) -> str:
         )
     )
     lines.append(
-        "Прогноз: {work_label} {remaining} (мин. {minimum}), финиш {eta}".format(
+        "Прогноз: {work_label} {remaining} (от {minimum}), финиш {eta}. {anchor}".format(
             work_label=("известная активная часть" if metrics["unknown_estimate_pending"] or metrics["external_wait_unknown"] else "осталось"),
             remaining=fmt_minutes(metrics["remaining_minutes_max"]),
             minimum=fmt_minutes(metrics["remaining_minutes_min"]),
             eta=("неизвестен из-за внешнего ожидания" if metrics["external_wait_unknown"] else
                  f"неизвестен: {metrics['unknown_estimate_pending']} листьев без оценки"
-                 if metrics["unknown_estimate_pending"] else metrics["eta_clock_max"]),
+                 if metrics["unknown_estimate_pending"] else _eta_range_text(metrics)),
+            anchor=("отсчёт от последнего события " + metrics["eta_anchor_clock"]
+                    + f" · простой {fmt_minutes(metrics['eta_anchor_idle_minutes'])}"
+                    if metrics["eta_anchor_clock"] else "остаток стартует сейчас"),
         )
     )
     if metrics["critical_path"]:
@@ -2465,6 +2758,16 @@ def build_parser() -> argparse.ArgumentParser:
     render.add_argument("-o", "--output", type=Path, help="output HTML path")
     render.add_argument("--open", action="store_true", help="open the result in a browser")
     render.add_argument("--title", help="override the dashboard title")
+    render.add_argument(
+        "--markdown",
+        type=Path,
+        help="write the Markdown summary of the same graph revision",
+    )
+    render.add_argument(
+        "--out-dir",
+        type=Path,
+        help="write plan.html and plan.md of one graph revision into this directory",
+    )
 
     status = sub.add_parser("status", help="Print a compact text summary")
     status.add_argument("input", type=Path)
@@ -2496,12 +2799,24 @@ def command_render(args: argparse.Namespace) -> int:
         graph.title = args.title
     metrics = build_metrics(graph)
     html = render_html(graph, metrics)
+    # The dashboard and the Markdown summary come from the same graph, so they
+    # carry the same revision. Two artifacts of one plan are generated, never
+    # kept in sync by hand.
+    markdown_text = render_text(graph, metrics)
     output = args.output
+    markdown = args.markdown
+    if args.out_dir is not None:
+        args.out_dir.mkdir(parents=True, exist_ok=True)
+        output = args.out_dir / "plan.html"
+        markdown = args.out_dir / "plan.md"
     if output is None:
         stem = Path(graph.source_path).stem if graph.source_path else "lhc-grid"
         output = Path.cwd() / f"{stem}.grid.html"
     output.write_text(html, encoding="utf-8")
     print(f"{output}")
+    if markdown is not None:
+        markdown.write_text(markdown_text, encoding="utf-8")
+        print(f"{markdown}")
     if args.open:
         try:
             webbrowser.open(output.resolve().as_uri())
