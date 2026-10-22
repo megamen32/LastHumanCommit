@@ -1,3 +1,29 @@
+# 1.5.25 — the skill decides the mode, the language and the Lead, not the description
+
+A session in a hook-less harness loads the umbrella skill and nothing else, so that
+skill has to carry the first three decisions. It did not.
+
+**Who the Lead is.** The skill mentioned the Lead in passing. The role now opens the
+skill: you are the Lead, you orchestrate only, every inspection, edit, check,
+deployment, commit, push and install belongs to a Worker, and Workers do not hire
+other agents. The full role description is one path away.
+
+**Which mode the scope calls for.** There was no table, so an audit's defect list
+matched the mini improvement loop's catalog line and a session ran a fix loop over
+work that also creates a new service, a repository and an architecture decision. The
+skill now carries the mode table — quickfix, fullcycle, testing, research, status —
+with the rule that the mode comes from the accepted scope and never from a skill's
+description. The mini improvement loop says in its own catalog line and in a scope
+check that design work is Full: research Workers, one working→ideal→YAGNI plan, an
+optional quota-aware frontier council, then bounded dispatch.
+
+**Which language the user reads.** The policy reserved English for internal
+reasoning, planning, new task records and agent coordination, so leaf labels ended
+up in English inside a dashboard the owner reads. English is now for internal
+reasoning and agent coordination only. The answers, the task record, the plan
+report, the task graph and the dashboard — leaf labels and field wording included —
+are written in the user's language.
+
 # 1.5.24 — a fresh session in a hook-less harness finally knows what a Lead is
 
 The umbrella skill said "read the active package's `AGENTS.md` once". In a harness

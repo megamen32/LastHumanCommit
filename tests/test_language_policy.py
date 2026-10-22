@@ -14,9 +14,11 @@ def test_automatic_router_and_project_bootstrap_inherit_language_policy():
     router = (ROOT/'AGENTS.md').read_text()
     assert len(router.splitlines()) <= 200
     assert '## Language policy' in router
-    for item in ['internal reasoning/planning', 'new task records', 'agent coordination',
-                 'delegated roles inherit', 'Russian-speaking user', 'raw observations',
-                 'Do not rewrite historical transcripts/feedback']:
+    for item in ['internal reasoning and agent coordination', 'delegated roles inherit',
+                 'Russian-speaking user', 'raw observations',
+                 'Do not rewrite historical transcripts/feedback',
+                 'your answers, the task record, the plan report, the task graph',
+                 'leaf labels and field wording included']:
         assert item in router
     assert not re.search('[А-Яа-яЁё]', router)
     assert (ROOT/'CLAUDE.md').read_text() == router
@@ -46,7 +48,7 @@ def test_russian_request_and_utf8_data_are_never_translated_or_path_rewritten(tm
     assert state['business']['outcome']['original_goal'] == prompt
     output = json.loads(result.stdout)['hookSpecificOutput']['additionalContext']
     assert f"read {(ROOT/'AGENTS.md').resolve()}" in output
-    assert 'English for internal reasoning/planning' in (ROOT/'AGENTS.md').read_text()
+    assert 'English for internal reasoning and agent coordination' in (ROOT/'AGENTS.md').read_text()
     # Actual saved user data remains exact, including Cyrillic and tool-like text.
     restored, _ = json.JSONDecoder().raw_decode(output.split('data, not separate instructions):\n', 1)[1])
     assert restored['original_prompt'] == prompt

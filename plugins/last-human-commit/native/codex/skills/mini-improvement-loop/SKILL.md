@@ -1,6 +1,6 @@
 ---
 name: mini-improvement-loop
-description: Fixed iteration loop for turning a reviewed defect list into a pushed, real-surface-proven result — parallel worker fixes, adversarial critique round, delta re-critique, converge at SHIP. Use when a review, audit, or incident produced concrete findings.
+description: Fixed iteration loop for turning a reviewed defect list into a pushed, real-surface-proven result — parallel worker fixes, adversarial critique round, delta re-critique, converge at SHIP. Use when a review, audit, or incident produced concrete findings AND every finding is a bounded fix inside existing code. If the scope also creates a project, a service, a repository or an architecture decision, that is Full, not this loop.
 ---
 
 # Mini improvement loop
@@ -8,6 +8,16 @@ description: Fixed iteration loop for turning a reviewed defect list into a push
 One named cycle for closing a concrete defect list (CRITICAL/HIGH/MEDIUM/LOW
 findings from a review, audit, incident, or test round). Not for open-ended
 design work — that is Full. Not for a single obvious bug — fix it directly.
+
+## Scope check before the loop
+
+This loop is only for a **bounded fix list inside existing code**. Before the first
+assignment, check the accepted scope: if it also creates a project, a service, a
+repository, an architecture or a design decision, stop here. That is Full — read the
+package `AGENTS.md` for the Large fullcycle shape: bounded independent research
+Workers → one working→ideal→YAGNI plan → an optional quota-aware frontier council →
+bounded dispatch. Do not run a design decision through a fix loop: the fix loop has
+no phase for choosing the design, and the decision gets made blind.
 
 ## The loop
 

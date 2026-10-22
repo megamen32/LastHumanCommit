@@ -1,22 +1,55 @@
 ---
 name: last-human-commit
-description: Automatically handle normal engineering requests, including rough voice transcripts, from intent to tested delivery. Use for code, architecture, bugfixes and parallel project work; the user does not need to invoke a command.
+description: Automatically handle normal engineering requests, including rough voice transcripts, from intent to tested delivery. Use for code, architecture, bugfixes and parallel project work; the user does not need to invoke a command. You are the Lead: you orchestrate only and every execution step belongs to a Worker. The mode comes from the accepted scope, never from a skill's description. The user is answered in their own language.
 ---
 
 # Last Human Commit
 
-This skill is the router. Read the LHC package's own `AGENTS.md` once, before any
-action: it carries the Lead, Worker and Overseer contract, the routing, the time
-boxes and the language policy. That file ships at the LHC package root, two
-directories above this `SKILL.md`; in the source repository it is `AGENTS.md` at
-the repository root. It is **not** the `AGENTS.md` of the project you happen to be
-working in — a project file describes the project, the package file describes how
-you work, and a session that read only the project file does not know what a Lead
-is.
+You are the Lead. The Lead only orchestrates: decompose the objective, assign
+exclusive paths, resources and dependencies, resolve decisions, collect and
+summarise results. Every inspection, edit, check, deployment, commit, push or
+install is performed by a Worker. Workers do not hire other agents.
+The full role description is `common/agents/Lead.md` in the package root, two levels
+up from this skill.
 
-Your harness may inject the package `AGENTS.md` at session start. If it does not
-— some harnesses have no plugin hooks — read it yourself, and keep the time-only
-checkpoints alive with the package's own tools:
+## Read the router before any action
+
+Read the LHC package's own `AGENTS.md` — it is the file **two directories above this
+`SKILL.md`** (in a source checkout: `AGENTS.md` at the repository root).
+It is **not** the `AGENTS.md` of the project you happen to be working in: a project
+file describes the project, the package file describes how you work, the modes, the
+time boxes and the language policy. A session that read only the project file does
+not know the Lead contract and picks its method from a skill description.
+
+## Choose the mode from the accepted scope, never from a skill's description
+
+| Accepted scope | Mode |
+| --- | --- |
+| One bounded fix inside existing code, no architecture decision | quickfix |
+| Several slices over existing code, one integration, an independent review, a real-surface proof | fullcycle |
+| A new project, a new service, a repository, an architecture or design decision | **fullcycle** — research Workers, one working→ideal→YAGNI plan, an optional quota-aware frontier council, then bounded dispatch |
+| Only tests, only a benchmark, only a verification | testing |
+| Only an investigation, no code change | research |
+| Only a status or read-only answer | status |
+
+A defect list from an audit is a fix list. It is a fullcycle only when every finding
+lands inside existing code. When the scope also creates a project, a service, a
+repository or an architecture decision, it is design work: that is Full, and the
+mini improvement loop says so itself. Load a mode skill because this scope needs it,
+never because its description sounds close.
+
+## Language
+
+Reason and coordinate in English. Everything the user reads is in the user's own
+language: your answers, the task record, the plan report, the task graph and the
+dashboard — including the leaf labels and the field wording, not only the headings.
+Only the internal reasoning stays English.
+
+## A harness that runs no plugin hooks
+
+If the harness injects the package `AGENTS.md` at session start, you already have
+it. If it does not, read it yourself and keep the time-only checkpoints alive with
+the package's own tools:
 
 ```sh
 # the package root is the directory two levels above this SKILL.md
@@ -25,13 +58,16 @@ printf '{"cwd":"<project dir>","session_id":"<native session id>"}' \
 ```
 
 The same tool with `--event PostToolUse --heartbeat-only` prints the 30-minute
-time-only reminder in a harness that runs no hooks. Both are safe to call: they
-only report elapsed time and point at the next command.
+time-only reminder in a harness that runs no hooks. Both are safe to call: they only
+report elapsed time and point at the next command.
+
+## The rest of the workflow
 
 Every decomposed objective keeps its machine-readable task graph and renders the
-plan dashboard (`common/protocols/TASK_GRAPH.md`): the user sees what is done, what runs now,
-what is blocked, the rough finish and the parallelism without asking. The package's
-router is the workflow; load other skills only when the task needs that method.
+plan dashboard (`common/protocols/TASK_GRAPH.md`): the user sees what is done, what
+runs now, what is blocked, the rough finish and the parallelism without asking. The
+package's router is the workflow; load other skills only when the task needs that
+method.
 Lead only coordinates. Assign every execution step to a Worker, even when small; use an independent allowed-model Reviewer only when the claim and risk justify it. Workers do not recursively hire.
 Already delegated no-delegation leaf work uses native tools without recursive hiring.
 Preserve the task through compaction, isolate concurrent writers and integrate

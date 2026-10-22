@@ -22,7 +22,9 @@ Three header lines, then the leaves: finished first, running second, blocked
 third, queued last. Drop an empty group. Use the user's local time on a
 24-hour clock. Write the report in the user's own language — the field wording
 below is the Russian rendering, canonical for a Russian-speaking user. The
-order, the fields and the emoji do not change with the language.
+order, the fields and the emoji do not change with the language. The leaf
+labels written into the report, the task graph and the dashboard use that same
+language: the user reads the leaves, not the plan.
 
 ```text
 Цель: <одна строка — чего хочет пользователь>
