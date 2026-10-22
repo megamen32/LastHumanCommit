@@ -117,3 +117,32 @@ def test_the_shipped_package_carries_the_same_contract():
     assert (PACKAGE / 'skills/last-human-commit/SKILL.md').read_text() == UMBRELLA.read_text()
     for root in (PACKAGE, PACKAGE / 'native/codex'):
         assert 'session send' in (root / 'common/protocols/COORDINATION.md').read_text()
+
+
+def test_a_plain_send_to_a_busy_peer_is_a_queue_not_a_delivery():
+    # A coordinator once told the whole cluster to write with `sync: false`. That is
+    # a queue: the runtime holds the message until the peer's current turn ends, so
+    # the message arrived hours later and a worker sat idle while the build window
+    # waited on it. "Queued" is not a result.
+    protocol = flat(CANON.read_text())
+    assert 'A plain send to a busy peer is a queue' in protocol
+    assert 'it arrives hours later or never' in protocol
+    assert 'Use `force_steer: true` for a peer that is running' in protocol
+    assert '"Queued" is not a result' in protocol
+    assert 'stands idle is a defect' in protocol
+    # The same rule has to be in the always-loaded skill and in the router.
+    assert 'a plain send to a busy peer is a queue' in flat(UMBRELLA.read_text())
+    assert 'a plain send to a busy peer is a queue' in flat(ROUTER.read_text())
+
+
+def test_a_supervisor_decides_silently_and_reports_only_exceptions():
+    protocol = flat(CANON.read_text())
+    assert '## Supervision of other sessions' in protocol
+    assert 'decides inside the protocol instead of asking the owner' in protocol
+    assert 'wakes a peer that holds a contour and stands idle' in protocol
+    assert "a change of the owner's rules" in protocol
+    assert 'a deadlock that did not close in two cycles' in protocol
+    assert 'does not merge, rebuild, restart, publish' in protocol
+    skill = flat(UMBRELLA.read_text())
+    assert 'decide inside the protocol instead of asking the owner' in skill
+    assert 'a deadlock open for two cycles' in skill

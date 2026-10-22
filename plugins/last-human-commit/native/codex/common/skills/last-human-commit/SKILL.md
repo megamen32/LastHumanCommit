@@ -55,6 +55,12 @@ the work over, and prove the delivery by reading the peer's own answer.
 Address a peer through the runtime that owns it: Agent Herder does not know a native
 `mvs_...` id, and the runtime's own session interface carries the message
 (`session send` with `force_steer`, then `session messages` to read the answer).
+Send with `force_steer: true`: a plain send to a busy peer is a queue, and "queued" is
+not a result — a peer is done when its own answer appears.
+Supervising other sessions is the same mode: decide inside the protocol instead of
+asking the owner, wake a peer that holds the critical path and stands idle, and
+report only a change of the owner's rules, a risk of losing another's work, or a
+deadlock open for two cycles.
 The full contract is `common/protocols/COORDINATION.md`.
 
 ## A harness that runs no plugin hooks

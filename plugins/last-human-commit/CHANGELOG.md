@@ -1,3 +1,27 @@
+# 1.5.27 - a queued message is not a result, and a supervisor decides
+
+The coordinator session that became the cluster's supervisor found the cause of a
+four-hour stall in its own instructions: it had told six sessions to write with
+`sync: false`. That is a queue. The runtime holds the message until the peer's
+current turn ends, so a worker that held the whole build window sat idle from 09:50
+while its instructions waited, and the cluster's own reports read "done or queued".
+
+**A plain send to a busy peer is a queue.** The contract now says it: use
+`force_steer: true` for a peer that is running, keep a plain send for a peer that
+should start a fresh turn, and never count "queued" as a result - a peer is done when
+its own answer appears in `session messages`. A peer that holds the critical path and
+stands idle is a defect to repair, not a thing to wait for. The rule is in the
+umbrella skill and in the router, because that is where a hook-less session reads it.
+
+**Supervision is a mode too.** A session that watches other sessions decides inside
+the protocol instead of asking the owner, wakes a peer that holds a contour and
+stands idle, and reports only what the owner cannot decide from the record: a change
+of the owner's rules, a risk of losing or reverting another session's work, and a
+deadlock that did not close in two cycles. It does not merge, rebuild, restart,
+publish, or touch the live runtime and the public production.
+
+Tests: 1051 passed.
+
 # 1.5.26 — a Lead can address a peer session without discovering the channel
 
 A coordinator session was asked to steer six peer sessions, divide ownership between

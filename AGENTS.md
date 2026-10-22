@@ -139,7 +139,7 @@ Project chat: `<primary-checkout>/.agents/shared-session/chat/`; system chat:
 `~/.agents/shared-session/chat/`. Each message is one JSON file, atomically published
 and read with `src/common/tools/lhc_chat.py`, which creates that directory on first
 publish. Worktrees share the primary chat; all harnesses use one selected channel.
-Address a peer session through the runtime that owns it, not through Herder, which does not know a native `mvs_...` id; prove a delivery by reading the peer's own answer.
+Address a peer session through the runtime that owns it, not through Herder, which does not know a native `mvs_...` id; send with `force_steer: true` — a plain send to a busy peer is a queue and "queued" is not a result; prove a delivery by reading the peer's own answer.
 Send only scope, conflicts, decisions, completed results or dependencies that change the next action. One task, one file and one runtime have exactly one owner; publish the ownership registry before handing work out. See `src/common/protocols/COORDINATION.md`.
 
 ## Available work first

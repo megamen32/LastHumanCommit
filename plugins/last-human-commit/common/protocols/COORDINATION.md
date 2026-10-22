@@ -57,6 +57,13 @@ reading the peer's own answer with `session messages`, not by the receipt.
 Waking a peer Codex or ZCode session is a human decision: ask through Herder
 `human_request_create` and let the human resolve it.
 
+A plain send to a busy peer is a queue: the runtime holds the message until that
+peer's current turn ends, so it arrives hours later or never. Use `force_steer: true`
+for a peer that is running; a plain send is only for a peer that should start a fresh
+turn. "Queued" is not a result — a peer is done when its own answer appears in
+`session messages`. A peer that holds the critical path and stands idle is a defect
+to repair, not a thing to wait for.
+
 Verify a delivery once, through the runtime. Do not hunt the filesystem for the
 transcript: the on-disk session tree lives under the runtime data directory, its
 directory name is an encoded id that is not derivable by hand, and the mapping sits in
@@ -84,6 +91,16 @@ A handoff is complete when the receiver acknowledged it and the sender recorded
 registry line without an acknowledgement is a claim, not an ownership. Reading a
 peer's state is coordination; executing that peer's code is not — that belongs to a
 Worker.
+
+## Supervision of other sessions
+
+A session that watches other sessions is a supervisor. It decides inside the protocol
+instead of asking the owner, wakes a peer that holds a contour and stands idle, and
+reports only what the owner cannot decide from the record: a change of the owner's
+rules, a risk of losing or reverting another session's work, and a deadlock that did
+not close in two cycles. It does not merge, rebuild, restart, publish, or touch the
+live runtime and the public production — those belong to the execution owner.
+Supervision is coordination: no council, no research cycle, and no ceremony queue.
 
 ## Optional operator-communication provider
 
