@@ -1505,17 +1505,38 @@ _SCRIPTS = """
   /* ---- theme: the choice of the reader, remembered between openings ---- */
   var stored = null;
   try { stored = window.localStorage.getItem("lhc-theme"); } catch (error) { stored = null; }
-  if (stored === "light" || stored === "dark") {
-    root.setAttribute("data-theme", stored);
-  } else if (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches) {
-    root.setAttribute("data-theme", "light");
+  function systemPrefersLight() {
+    return !!(window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches);
   }
+  function applyTheme(state) {
+    if (state === "light" || state === "dark") {
+      root.setAttribute("data-theme", state);
+    } else {
+      // "as the system": no attribute, and the light scheme of the system wins.
+      root.removeAttribute("data-theme");
+      if (systemPrefersLight()) { root.setAttribute("data-theme", "light"); }
+    }
+  }
+  function currentTheme() {
+    var value = null;
+    try { value = window.localStorage.getItem("lhc-theme"); } catch (error) { value = null; }
+    return value === "light" || value === "dark" ? value : "auto";
+  }
+  applyTheme(currentTheme());
   var themeToggle = document.getElementById("lhc-theme-toggle");
   if (themeToggle) {
+    var themeOrder = ["auto", "light", "dark"];
+    var themeNames = { auto: "Тема: как в системе", light: "Тема: светлая", dark: "Тема: тёмная" };
+    function themeLabel() { themeToggle.textContent = themeNames[currentTheme()]; }
+    themeLabel();
     themeToggle.addEventListener("click", function () {
-      var next = root.getAttribute("data-theme") === "light" ? "dark" : "light";
-      root.setAttribute("data-theme", next);
-      try { window.localStorage.setItem("lhc-theme", next); } catch (error) { /* no storage */ }
+      var next = themeOrder[(themeOrder.indexOf(currentTheme()) + 1) % themeOrder.length];
+      applyTheme(next);
+      try {
+        if (next === "auto") { window.localStorage.removeItem("lhc-theme"); }
+        else { window.localStorage.setItem("lhc-theme", next); }
+      } catch (error) { /* no storage */ }
+      themeLabel();
     });
   }
 

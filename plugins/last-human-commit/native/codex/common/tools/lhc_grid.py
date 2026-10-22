@@ -460,6 +460,10 @@ def parse_plan_report(text: str) -> Optional[Graph]:
     for raw_line in text.splitlines():
         line = raw_line.rstrip()
         stripped = line.strip()
+        if stripped.startswith("# ") and graph.title == DEFAULT_GRAPH_TITLE:
+            # The name of the plan is its first line.
+            graph.title = stripped[2:].strip()
+            continue
         if stripped.startswith("##"):
             # The change log of the report is a section of its own. Without it
             # the dashboard would fall back to the leaf names, which is a
@@ -2368,6 +2372,22 @@ def render_html(
         product_scripts = lhc_product.product_scripts()
         hero_html = lhc_product.product_hero(product, with_theme=True)
         nav_html = merged_navigation(lhc_product.product_nav_items())
+    else:
+        hero_html = (
+            "<header>"
+            "<div>"
+            f"<h1>{escape(graph.title)}</h1>"
+            f'<div class="sub">LHC · {escape(graph.source_kind)} · план обновлён '
+            f"{escape(graph.updated_at.replace('T', ' ')) or 'неизвестно'} · ревизия "
+            f"{escape(graph_revision(graph))} · собран {escape(generated)}</div>"
+            "</div>"
+            '<div class="head-actions">'
+            '<button type="button" class="theme-toggle" id="theme-toggle" '
+            'aria-label="Переключить тему">Тема: как в системе</button>'
+            f'<div class="head-count"><b>{escape(str(total))}</b><span>задач в графе</span></div>'
+            "</div>"
+            "</header>"
+        )
 
     return HTML_TEMPLATE.format(
         product_styles=product_styles,
@@ -2380,7 +2400,7 @@ def render_html(
         blocking=blocking_html,
         tile_island=tile_island,
         progress_strip=progress_strip,
-        hero=hero_html,
+        header=hero_html,
         nav=nav_html,
         title=escape(graph.title),
         generated=generated,
@@ -2751,7 +2771,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <div class="page">
 {progress_strip}
 
-{hero}
+{header}
 
 {nav}
 
@@ -2847,17 +2867,38 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   var root = document.documentElement;
   var stored = null;
   try {{ stored = window.localStorage.getItem('lhc-theme'); }} catch (error) {{ stored = null; }}
-  if (stored === 'light' || stored === 'dark') {{
-    root.setAttribute('data-theme', stored);
-  }} else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {{
-    root.setAttribute('data-theme', 'light');
+  function systemPrefersLight() {{
+    return !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches);
   }}
+  function applyTheme(state) {{
+    if (state === 'light' || state === 'dark') {{
+      root.setAttribute('data-theme', state);
+    }} else {{
+      // "as the system": no attribute, and the light scheme of the system wins.
+      root.removeAttribute('data-theme');
+      if (systemPrefersLight()) {{ root.setAttribute('data-theme', 'light'); }}
+    }}
+  }}
+  function currentTheme() {{
+    var value = null;
+    try {{ value = window.localStorage.getItem('lhc-theme'); }} catch (error) {{ value = null; }}
+    return value === 'light' || value === 'dark' ? value : 'auto';
+  }}
+  applyTheme(currentTheme());
   var toggle = document.getElementById('theme-toggle');
   if (toggle) {{
+    var order = ['auto', 'light', 'dark'];
+    var names = {{ auto: 'Тема: как в системе', light: 'Тема: светлая', dark: 'Тема: тёмная' }};
+    function label() {{ toggle.textContent = names[currentTheme()]; }}
+    label();
     toggle.addEventListener('click', function () {{
-      var next = root.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
-      root.setAttribute('data-theme', next);
-      try {{ window.localStorage.setItem('lhc-theme', next); }} catch (error) {{ /* no storage */ }}
+      var next = order[(order.indexOf(currentTheme()) + 1) % order.length];
+      applyTheme(next);
+      try {{
+        if (next === 'auto') {{ window.localStorage.removeItem('lhc-theme'); }}
+        else {{ window.localStorage.setItem('lhc-theme', next); }}
+      }} catch (error) {{ /* no storage */ }}
+      label();
     }});
   }}
 }})();
@@ -3441,7 +3482,9 @@ def command_status(args: argparse.Namespace) -> int:
     return 0
 
 
-def merge_attribution(document: dict[str, Any], previous: dict[str, Any]) -> None:
+def merge_attribution(
+    document: dict[str, Any], previous: dict[str, Any], report_title: str = ""
+) -> None:
     """Carry the attribution of an earlier graph into a fresh export.
 
     The export writes what a plan report knows. The attribution of a leaf - the
@@ -3465,8 +3508,15 @@ def merge_attribution(document: dict[str, Any], previous: dict[str, Any]) -> Non
     for field in ("current_progress", "external_waits"):
         if not document.get(field) and previous.get(field):
             document[field] = previous[field]
-    if previous.get("title") and document.get("title") == DEFAULT_GRAPH_TITLE:
-        document["title"] = previous["title"]
+    # The title of the plan is the first line of the report. A title that was
+    # set in the graph by hand survives a refresh, a title that came from the
+    # report does not survive it as a stale copy.
+    previous_title = previous.get("title")
+    if previous_title and previous_title != DEFAULT_GRAPH_TITLE:
+        if not report_title or previous_title != report_title:
+            document["title"] = previous_title
+    elif previous_title and document.get("title") == DEFAULT_GRAPH_TITLE:
+        document["title"] = previous_title
 
 
 def command_export(args: argparse.Namespace) -> int:
@@ -3476,7 +3526,7 @@ def command_export(args: argparse.Namespace) -> int:
         previous = json.loads(args.merge.read_text(encoding="utf-8"))
         if not isinstance(previous, dict):
             raise ValueError("merged graph is not a JSON object")
-        merge_attribution(document, previous)
+        merge_attribution(document, previous, report_title=graph.title)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(
         json.dumps(document, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"

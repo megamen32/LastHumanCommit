@@ -1,3 +1,31 @@
+# 1.5.36 - the dark theme is back, and the page remembers that it belongs to the system
+
+The owner opened the plan on a machine where everything is dark by default and
+asked where the dark theme had gone. Two things were true at once: the dark
+theme was never removed, and the header of the page - with the title and the
+theme switch - had disappeared from the plan pages, because the merge had
+replaced the header of the dashboard with the headline of the delivery side and
+the plan pages have no delivery side.
+
+**The header of the plan page is the header of the dashboard again.** The title
+of the plan, the date of the plan, the revision and the switch are back above
+the state of the work.
+
+**The theme has three states, not two.** "As the system", "light" and "dark".
+The page follows the scheme of the operating system until the reader says
+otherwise, and the button says which of the three it is now, so a page that
+got stuck in the wrong theme can be returned to the system with one click. The
+choice of the reader is still remembered between openings; the way back to the
+system is not forgotten any more.
+
+**The title of the plan is the name of the plan.** The first line of the report
+is the name of the plan, and it is the title of the page. A title that was set
+in the graph by hand still survives a refresh of the report.
+
+Measured in Microsoft Edge with the dark scheme of the system: the background of
+the page is #0d1117, the cards are #151b26, and the delivery side of the merged
+page follows the same scheme as the plan.
+
 # 1.5.35 - the progress first, every number opens, and the page builds itself
 
 The owner read the merged page on a phone and did not find the work: the first
