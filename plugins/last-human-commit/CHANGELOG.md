@@ -1,3 +1,39 @@
+# 1.5.34 - one page for the state of the plan and the plan of the work
+
+Two pages were read side by side: the dashboard of a task graph and the audit
+of a specification with its plan of work. Each was better than the other in
+its own way - the dashboard knows the state of the work, the audit knows what
+the work rests on - and the owner had to hold both in his head. They are one
+page now.
+
+**The delivery side is part of the plan page.** A new module renders the
+delivery side of a plan: the conclusions, the remarks, the metrics of the
+requirements, the matrix of the readiness, the state of the services, the grid
+of the work by phases, the works with their scope and their criterion of
+acceptance, the agreed rules, the ready task for an agent, the sources of the
+evidence and the text of the specification. Every field of the data reaches the
+page; a field that is empty is not shown, a field that is not empty is never
+dropped.
+
+**One headline, one navigation, one theme switch.** The merged page has the
+headline of the delivery side, one navigation that leads to every section of
+both sides in the order of the page, and one switch between the light and the
+dark theme. The palette is the one of the dashboard: the delivery side does
+not invent colours.
+
+**The leaves of the plan are still there.** The table of the leaves, the state
+of every task, the card of a task with its executor, its session and its model
+- all of it is on the same page as the evidence the work rests on.
+
+**A new command.** `lhc_grid.py render-product <delivery.json> --out-dir DIR`
+builds the merged page out of the delivery side alone: the plan of the work
+becomes the graph of the page, and the page shows both.
+
+The mobile page was measured at 390 pixels in Microsoft Edge: the page does
+not scroll sideways, the touch targets are at least 44 pixels, and the two
+strips that are wider than the screen - the navigation and the grid of the
+work - scroll inside themselves.
+
 # 1.5.33 - the task opens where the owner taps it, and says what it is
 
 The owner opened the plan on the phone and could not read a task. Three

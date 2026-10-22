@@ -1564,7 +1564,51 @@ def _short(text: str, limit: int) -> str:
     return value[: max(1, limit - 1)].rstrip() + "…"
 
 
-def render_html(graph: Graph, metrics: dict[str, Any]) -> str:
+def product_module():
+    """The delivery side of the plan, loaded from next to this file.
+
+    The dashboard is loaded by path in the tests and by the CLI in the package,
+    so the neighbour cannot be found by a plain import.
+    """
+    try:
+        import lhc_product
+
+        return lhc_product
+    except ModuleNotFoundError:
+        path = Path(__file__).resolve().with_name("lhc_product.py")
+        spec = importlib.util.spec_from_file_location("lhc_product_sibling", path)
+        if spec is None or spec.loader is None:
+            raise
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = module
+        spec.loader.exec_module(module)
+        return module
+
+
+def merged_navigation(product_items: tuple) -> str:
+    """One navigation for the whole page: the delivery sections and the plan."""
+    # The navigation follows the order of the page: the state of the work is
+    # above the delivery sections, the leaves and the rest are below them.
+    state_items = (("lhc-state", "Состояние"),)
+    plan_items = (
+        ("lhc-leaves", "Листья"),
+        ("lhc-plan-gantt", "Гант плана"),
+        ("lhc-blockers", "Блокеры"),
+        ("lhc-forecast", "Прогноз"),
+        ("lhc-journal", "Журнал"),
+    )
+    links = "".join(
+        f'<a class="lhc-nav-link" href="#{escape(anchor)}">{escape(label)}</a>'
+        for anchor, label in state_items + tuple(product_items) + plan_items
+    )
+    return f'<nav class="lhc-nav" aria-label="Разделы">{links}</nav>'
+
+
+def render_html(
+    graph: Graph,
+    metrics: dict[str, Any],
+    product: Optional[dict[str, Any]] = None,
+) -> str:
     schedule: Schedule = metrics["schedule"]
     leaves = sorted(graph.leaves, key=lambda leaf: (schedule.waves.get(leaf.id, 0), leaf.order))
     label_by_id = {leaf.id: leaf.label or leaf.id for leaf in graph.leaves}
@@ -2120,7 +2164,32 @@ def render_html(graph: Graph, metrics: dict[str, Any]) -> str:
             "</details>"
         )
 
+    # ----- the delivery side -------------------------------------------
+    # The plan state and the delivery narrative are one page: the owner
+    # reads why the work exists, what state it is in and what it rests on.
+    # One headline, one navigation, one theme switch for the whole page.
+    product_sections = ""
+    product_styles = ""
+    product_scripts = ""
+    hero_html = ""
+    nav_html = ""
+    if product:
+        lhc_product = product_module()
+
+        product_sections = lhc_product.render_product_sections(
+            product, include_hero=False, include_nav=False
+        )
+        product_styles = lhc_product.product_styles()
+        product_scripts = lhc_product.product_scripts()
+        hero_html = lhc_product.product_hero(product, with_theme=True)
+        nav_html = merged_navigation(lhc_product.product_nav_items())
+
     return HTML_TEMPLATE.format(
+        product_styles=product_styles,
+        product_scripts=product_scripts,
+        product_sections=product_sections,
+        hero=hero_html,
+        nav=nav_html,
         title=escape(graph.title),
         generated=generated,
         source=escape(source_label),
@@ -2415,7 +2484,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     .kpi-hint {{ order: 3; flex: 1 1 100%; font-size: 11px; }}
     .toolbar input {{ min-width: 0; width: 100%; }}
     /* Every touch target is at least 44 CSS px. */
-    .chip, .task-details-trigger, .task-details-close {{ min-height: 44px; min-width: 44px; }}
+    .chip, .task-details-trigger, .task-details-close, .toolbar input, .toolbar select {{ min-height: 44px; min-width: 44px; }}
     .task-details {{ grid-template-columns: minmax(0, 1fr); gap: 0; }}
     .task-details dd {{ margin-bottom: 8px; }}
     /* The leaf table becomes one compact row per leaf instead of a wide
@@ -2438,26 +2507,22 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     .table-leaves tr.task-details-row > td {{ display: block; padding: 0; text-align: left; }}
     .table-leaves tr.task-details-row > td::before {{ content: none; }}
   }}
+{product_styles}
 </style>
 </head>
 <body>
 <div class="page">
-<header>
-  <div>
-    <h1>{title}</h1>
-    <div class="sub">LHC · {kind} · план обновлён {graph_updated} · ревизия {revision} · собран {generated}</div>
-  </div>
-  <div class="head-actions">
-    <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Переключить тему">Светлая / тёмная</button>
-    <div class="head-count"><b>{total}</b><span>задач в графе</span></div>
-  </div>
-</header>
+{hero}
+
+{nav}
 
 <p class="snapshot-note">{snapshot}</p>
 
 {why_panel}
 
-<div class="kpis">{cards}</div>
+{product_sections}
+
+<div class="kpis" id="lhc-state">{cards}</div>
 
 <div class="panel panel-now">
   {now}
@@ -2473,7 +2538,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   {brief}
 </details>
 
-<div class="panel panel-gantt">
+<div class="panel panel-gantt" id="lhc-plan-gantt">
   <h2>Гант · листья и параллельные волны</h2>
   <div class="gantt"><div class="gantt-inner">
     <div class="gantt-axis-row"><div class="gantt-axis-spacer"></div><div class="gantt-axis">{axis}</div></div>
@@ -2482,7 +2547,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 </div>
 
 <div class="grid">
-  <div class="panel panel-leaves">
+  <div class="panel panel-leaves" id="lhc-leaves">
     <h2>Листья</h2>
     {layer_hint}
     <div class="toolbar">
@@ -2497,7 +2562,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     {leaves_details}
   </div>
   <div>
-    <div class="panel">
+    <div class="panel" id="lhc-blockers">
       <h2>Блокеры</h2>
       {blockers}
     </div>
@@ -2507,12 +2572,12 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         {sessions}
       </details>
     </div>
-    <div class="panel">
+    <div class="panel" id="lhc-forecast">
       <h2>Прогноз</h2>
       {forecast}
       {notes}
     </div>
-    <div class="panel">
+    <div class="panel" id="lhc-journal">
       <h2>Журнал изменений</h2>
       {live}
     </div>
@@ -2617,6 +2682,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   }});
   apply();
 }})();
+{product_scripts}
 </script>
 </body>
 </html>
@@ -2919,6 +2985,19 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         help="write plan.html and plan.md of one graph revision into this directory",
     )
+    render.add_argument(
+        "--product",
+        type=Path,
+        help="delivery side of the plan as JSON; it is merged into the same page",
+    )
+
+    merged = sub.add_parser(
+        "render-product",
+        help="Build the merged page out of the delivery side alone",
+    )
+    merged.add_argument("input", type=Path, help="delivery side JSON")
+    merged.add_argument("--out-dir", type=Path, required=True)
+    merged.add_argument("--title", help="override the page title")
 
     status = sub.add_parser("status", help="Print a compact text summary")
     status.add_argument("input", type=Path)
@@ -2944,12 +3023,22 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def load_product(path: Optional[Path]) -> Optional[dict[str, Any]]:
+    """Read the delivery side of a plan."""
+    if path is None:
+        return None
+    document = json.loads(Path(path).read_text(encoding="utf-8"))
+    if not isinstance(document, dict):
+        raise ValueError(f"{path}: ожидался объект JSON")
+    return document
+
+
 def command_render(args: argparse.Namespace) -> int:
     graph = require_leaves(discover_graph(args.input))
     if args.title:
         graph.title = args.title
     metrics = build_metrics(graph)
-    html = render_html(graph, metrics)
+    html = render_html(graph, metrics, load_product(getattr(args, "product", None)))
     # The dashboard and the Markdown summary come from the same graph, so they
     # carry the same revision. Two artifacts of one plan are generated, never
     # kept in sync by hand.
@@ -2973,6 +3062,49 @@ def command_render(args: argparse.Namespace) -> int:
             webbrowser.open(output.resolve().as_uri())
         except Exception:  # pragma: no cover - headless hosts have no browser
             print("browser not available", file=sys.stderr)
+    return 0
+
+
+def command_render_product(args: argparse.Namespace) -> int:
+    """The merged page of a delivery side: the plan it carries and the plan itself."""
+    import lhc_product
+
+    product = load_product(args.input)
+    leaves = lhc_product.product_leaves(product)
+    if not leaves:
+        raise ValueError(f"{args.input}: в delivery side нет работ")
+    tasks = []
+    for leaf in leaves:
+        low = leaf.get("estimate_minutes")
+        high = leaf.get("estimate_max_minutes")
+        base = leaf.get("estimate_base_minutes")
+        note = str(leaf.get("note") or "")
+        if base is not None:
+            note = f"{note} · рабочая оценка {fmt_minutes(base)}".strip(" ·")
+        tasks.append({
+            "id": leaf.get("id"),
+            "label": leaf.get("label") or "",
+            "status": leaf.get("status") or STATUS_QUEUED,
+            "owner": leaf.get("owner") or "",
+            "estimate_minutes": {"minimum": low, "maximum": high if high is not None else low},
+            "depends_on": leaf.get("depends_on") or [],
+            "note": note,
+        })
+    document = {
+        "schema_version": 2,
+        "title": args.title or str(product.get("title") or "План работ"),
+        "goal": str(product.get("title") or ""),
+        "business_result": str(product.get("coverageNote") or ""),
+        "current_progress": str(product.get("method") or ""),
+        "tasks": tasks,
+    }
+    graph = parse_graph_json(document)
+    metrics = build_metrics(graph)
+    html = render_html(graph, metrics, product)
+    args.out_dir.mkdir(parents=True, exist_ok=True)
+    output = args.out_dir / "plan.html"
+    output.write_text(html, encoding="utf-8")
+    print(f"{output}")
     return 0
 
 
@@ -3094,6 +3226,7 @@ def main(argv: Optional[list[str]] = None) -> int:
     args = parser.parse_args(argv)
     handlers = {
         "render": command_render,
+        "render-product": command_render_product,
         "status": command_status,
         "export": command_export,
         "validate": command_validate,
