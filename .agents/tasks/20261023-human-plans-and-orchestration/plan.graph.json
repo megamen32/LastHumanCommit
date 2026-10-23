@@ -3,10 +3,10 @@
   "title": "Last Human Commit: понятный план до проверки результата",
   "goal": "выпустить native LHC, который помогает Lead-у вести понятный русскоязычный план от понимания запроса до проверки результата.",
   "business_result": "в установленном LHC пользователь читает понятный русский план: какой результат получит, кто что сделает и как проверить; статусы и квитанции показаны отдельно.",
-  "current_progress": "L01–L10, L13–L15, L18 и L19 подтверждены receipts. L19: commit 4fafcc5bf48e558c4b8c38f224198b89c3b31819 на origin/main; 45 targeted tests, sync parity 25 skills и package validator PASS. Marketplace manager показывал 1.5.40 installed/enabled; fleet-lhc 1.5.36 остался installed/disabled. L20 сейчас исправляет недостающий русский auto-routing trigger; 15 routing/parity tests и source/package checks PASS. L20 подготовил LHC 1.5.41 manifests. L11/L12 — прежние BLOCKED. L16 короткая запись без project-plan запроса и L17 явная просьба о плане — два fresh 1.5.40 user-path receipts; оба сохранены, L17 не создал plan.html. Точный session-loaded entrypoint UNKNOWN. Ранее full suite: 1176 passed и 5 известных failures из-за отсутствующего внешнего Mac fixture. ExManager tests не запускались.",
-  "external_waits": "После L20 release и manager readback на установленном 1.5.41 Lead повторит два раздельных fresh user paths: L16 подтверждает короткую однофайловую просьбу без project-plan bundle, L17 — просьбу о проектном плане с task record/graph/HTML и browser acceptance. Предыдущие L16/L17 receipts остаются неизменными и не считаются новым acceptance.",
+  "current_progress": "L01–L10, L13–L15, L18–L20 подтверждены receipts. L20: commit 45aec97c151ad8e4f0abc84433b94e3b44cf5b5b на origin/main; 15 routing/parity tests passed, sync parity 25 skills и package validator PASS. Native manager показывает megamen32-plugins 1.5.41 installed/enabled; fleet-lhc 1.5.36 остался installed/disabled. Manifest и обе изменённые skills совпадают по SHA между native package, marketplace source и installed cache. L11/L12 — прежние BLOCKED. Предыдущие L16/L17 receipts с 1.5.40 сохранены: L16 только просил одну короткую запись без project-plan запроса; L17 явно просил план, но plan.html не появился. Точный per-session loaded entrypoint UNKNOWN. Ранее full suite: 1176 passed и 5 известных failures из-за отсутствующего внешнего Mac fixture. ExManager tests не запускались.",
+  "external_waits": "Lead повторит L16/L17 в отдельных свежих user sessions после 1.5.41 manager readback: L16 подтвердит отсутствие project-plan bundle при короткой однофайловой просьбе, L17 подтвердит task record/graph/HTML и browser acceptance при запросе плана проекта. Сохранённые 1.5.40 receipts не считаются новым acceptance.",
   "slots": 3,
-  "updated_at": "2026-10-23T13:31:40",
+  "updated_at": "2026-10-23T13:34:58",
   "tasks": [
     {
       "id": "L01",
@@ -767,7 +767,7 @@
     {
       "id": "L20",
       "label": "русские просьбы составить план создают комплект плана проекта",
-      "status": "running",
+      "status": "done",
       "depends_on": [
         "L19"
       ],
@@ -776,7 +776,8 @@
         "maximum": 40.0
       },
       "started_at": "13:27",
-      "acceptance": "Регрессионная проверка покрывает «составь план», «сделай план проекта», «помоги спланировать работу», «план проекта», «план работ», связывает их с skill `plan-artifacts` и наличием `task.md`, `plan.graph.json`, `plan.html`; проверяет исключения для явно запрошенного черновика в чате и короткой однофайловой записи без запроса проектного плана. Native/package Codex copies проверяются тестом parity. `sync_skills.py --check`, package validator и graph validator проходят. Версия следующая после 1.5.40 опубликована штатно, installed manager readback подтверждает выбранный `megamen32-plugins`; rollback plugin не меняется. L16/L17 остаются отдельными pending user-path checks; этот leaf их не заявляет.",
+      "finished_at": "13:33",
+      "acceptance": "`pytest -q tests/test_umbrella_skill_router_pointer.py tests/test_model_routing_delegation_policy.py` — 15 passed. Проверены все пять русских triggers, вызов `plan-artifacts`, task record/graph/HTML, исключения для chat-only черновика и короткого однофайлового запроса. Package и native Codex parity проверены прямым тестом и `sync_skills.py --check` (25 skills); `scripts/validate.py` — PASS; `check-plan` — 20/20; graph validator — valid, 17 слоёв, неизвестные оценки сохранены. `git diff --check` — PASS. Release commit и `origin/main`: `45aec97c151ad8e4f0abc84433b94e3b44cf5b5b`. Native manager: `last-human-commit@megamen32-plugins` 1.5.41 installed/enabled; `last-human-commit@fleet-lhc` 1.5.36 installed/disabled, не менялся. SHA-256 manifest и двух skills совпадают между native package, manager marketplace source и installed cache; подробности в receipt. Точный entrypoint отдельной свежей сессии не заявляется. L16/L17 остаются отдельными пользовательскими проверками после этого readback; данный leaf их не выполняет.",
       "description": "Свежие попытки на установленном LHC 1.5.40 распознали каталог skills, но естественная просьба «помоги спланировать ...» не вызвала создание task record, графа и HTML, поэтому браузерная приёмка невозможна. Добавить явный auto-routing контракт для русских просьб составить/сделать план проекта или работы. Не направлять сюда просьбу только о короткой записи в один файл без запроса на проектный план; оставить пользователю возможность явно попросить черновой ответ в чате без файлов. Исполнитель не повторяет L16/L17 acceptance: их после установленного readback запускает Lead в отдельных свежих сессиях.",
       "affected_files": [
         "src/common/skills/last-human-commit/SKILL.md",
