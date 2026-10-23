@@ -233,6 +233,8 @@ def build() -> dict:
         digest = hashlib.sha256((DIST / name).read_bytes()).hexdigest()[:12]
         markup = markup.replace(f'"./{name}"', f'"./{name}?v={digest}"')
     (DIST / "index.html").write_text(markup, encoding="utf-8")
+    from gantt_demo import build_demo
+    data["planExample"] = build_demo(ROOT, DIST)
     (DIST / "data.json").write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return data
 

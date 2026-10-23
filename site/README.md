@@ -74,3 +74,22 @@ This checks both languages and both routes across 320–1440 px, exact source
 content, keyboard controls, selected-stage and role-card preservation, stored
 language, disabled storage and honest translated data failures. Screenshots
 are written to ignored `.tmp/`, not included in the published site.
+
+## Generated HTML plan example
+
+The `#plan` section embeds the real `lhc_grid.py render` output, not a separate
+Gantt component. `site/examples/task-plan.graph.json` is a public, synthetic
+fixture with sixteen <=15-minute leaves and three slots. It contains no live
+ExManager/Airlock data, account references, credentials or internal endpoints.
+The original generated UI is Russian; the explanatory landing copy is EN/RU.
+
+`build.py` invokes `gantt_demo.py`, which validates the fixture with the existing
+CLI and writes `dist/examples/task-plan.html` and its inspectable graph. The HTML
+works offline and is offered as a download. Multiple dependencies are explicit
+in the fixture and separately tested, rather than inferred from a prose report.
+This avoids relying on the current text exporter to preserve a multi-parent join.
+
+The example is a snapshot, not a monitor. A real agent updates the plan, graph and
+HTML as work changes; opening or downloading a static file does not update it.
+The hourly direction review compares progress with the original objective. No
+daemon, external account connection or production data feed is added here.

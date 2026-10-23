@@ -655,6 +655,76 @@
     "Last Human Commit | Ваш замысел. Полный цикл разработки."
   ]
 });
+  Object.assign(MESSAGES, {
+  "gantt.nav": [
+    "The plan",
+    "План"
+  ],
+  "gantt.eyebrow": [
+    "03 / THE PLAN YOU CAN OPEN",
+    "03 / ПЛАН, КОТОРЫЙ МОЖНО ОТКРЫТЬ"
+  ],
+  "gantt.heading": [
+    "The whole plan.<br><em>In one HTML file.</em>",
+    "Весь план.<br><em>В одной HTML-ке.</em>"
+  ],
+  "gantt.copy": [
+    "Not a separate planning system. The same short tasks, dependencies and statuses, shown as a timeline you can inspect at any time.",
+    "Не отдельная система планирования, а наглядное представление тех же коротких задач: что с чем связано, что идёт параллельно и что уже сделано. Открыть можно в любой момент."
+  ],
+  "gantt.badge": [
+    "GENERATED HTML · DEMO SNAPSHOT",
+    "ГОТОВЫЙ HTML · ДЕМОНСТРАЦИОННЫЙ СРЕЗ"
+  ],
+  "gantt.stats": [
+    "16 tasks · up to 15 minutes · 3 slots",
+    "16 задач · до 15 минут · 3 слота"
+  ],
+  "gantt.open": [
+    "Open the plan",
+    "Открыть план"
+  ],
+  "gantt.download": [
+    "Download HTML ↓",
+    "Скачать HTML ↓"
+  ],
+  "gantt.frameLabel": [
+    "LHC generated plan: interactive demonstration in Russian",
+    "План LHC: интерактивный HTML-пример на русском"
+  ],
+  "gantt.disclosure": [
+    "Illustrative data, not live ExManager or Airlock progress. The original generated plan is in Russian. Tasks and times are examples, not claims about a working team.",
+    "Нейтральный учебный пример, не текущий статус ExManager или Airlock. Все времена, статусы и результаты условные. Сам HTML создан штатным генератором LHC и показан без переделки его интерфейса."
+  ],
+  "gantt.explain1": [
+    "One plan, not two.",
+    "Один план, не два."
+  ],
+  "gantt.explain1copy": [
+    "The agent splits the objective into small verifiable tasks and records dependencies, owners and checks. Gantt is only a view of that work.",
+    "Агент разбивает цель на проверяемые задачи до 15 минут, указывает зависимости, исполнителей и приёмку. Сетка Ганта только показывает эту декомпозицию."
+  ],
+  "gantt.explain2": [
+    "Update facts, rebuild the HTML.",
+    "Обновить факты, пересобрать HTML."
+  ],
+  "gantt.explain2copy": [
+    "After progress changes, the agent refreshes the task graph and regenerates the same file. A downloaded snapshot cannot update itself.",
+    "По мере работы агент обновляет план и граф задач, затем пересобирает тот же HTML. Скачанный файл остаётся снимком: без повторной генерации новые статусы в нём не появятся."
+  ],
+  "gantt.explain3": [
+    "Review the outcome, not just the bars.",
+    "Каждый час сверяться с целью."
+  ],
+  "gantt.explain3copy": [
+    "At the hourly direction check, compare actual progress with the original goal. See what is waiting, what can run in parallel and where the plan has drifted.",
+    "При часовой сверке видно, что реально продвинулось, какие задачи ждут, что можно выполнять параллельно и не ушла ли работа в сторону от исходного результата."
+  ],
+  "gantt.command": [
+    "The existing LHC renderer. No new service.",
+    "Штатный генератор LHC. Без нового сервиса."
+  ]
+});
   function t(key, language, values = {}) {
     const entry = MESSAGES[key];
     let text = entry ? entry[language === "ru" ? 1 : 0] : key;
