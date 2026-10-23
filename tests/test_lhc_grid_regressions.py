@@ -224,6 +224,24 @@ def test_forecast_is_anchored_at_the_last_confirmed_event():
     assert "срок прошёл" in html
 
 
+def test_completed_plan_does_not_render_an_overdue_forecast():
+    graph = lhc.parse_graph_json({
+        "schema_version": 2,
+        "tasks": [{
+            "id": "done", "label": "Закончено", "status": "done",
+            "depends_on": [], "estimate_minutes": {"minimum": 7, "maximum": 7},
+            "started_at": "04:00", "finished_at": "04:10",
+        }],
+    })
+    with patch.object(lhc, "now_clock", return_value=4 * 60 + 17):
+        metrics = lhc.build_metrics(graph)
+    html = lhc.render_html(graph, metrics)
+    assert metrics["unfinished"] == 0
+    assert metrics["remaining_minutes_max"] == 0
+    assert metrics["eta_overdue"] is False
+    assert "срок прошёл, остаток не начался" not in html
+
+
 def test_one_graph_produces_one_revision_for_both_artifacts(tmp_path):
     """The dashboard and the summary are generated, never kept in sync."""
 
@@ -353,18 +371,20 @@ def test_business_goal_is_visible_without_interaction():
     assert "<details class=\"panel brief-details brief-why-details\" open>" in body
 
 
-def test_technical_brief_stays_folded():
-    """The confirmed progress and the external waits are the folded part."""
+def test_confirmed_progress_is_visible_without_tap():
+    """A non-empty progress value is visible without opening the panel."""
 
     graph = graph_with_brief()
     html = lhc.render_html(graph, lhc.build_metrics(graph))
     body = html[html.find("<body"):]
     folded = re.search(
-        r'<details class="panel brief-details">\s*<summary>([^<]*)</summary>', body
+        r'<details class="panel brief-details"( open)?>\s*<summary>([^<]*)</summary>', body
     )
     assert folded, "свёрнутый блок технической части не найден"
-    assert "Подтверждённый прогресс" in folded.group(1)
+    assert folded.group(1), "непустой подтверждённый прогресс должен быть виден сразу"
+    assert "Подтверждённый прогресс" in folded.group(2)
     assert "Подтверждённый прогресс" in body
+    assert "Контракт принят, приёмка в доске" in body
     assert body.find("Подтверждённый прогресс") > body.find("kpis"), (
         "техническая часть остаётся ниже состояния"
     )

@@ -1,3 +1,7 @@
+# 1.5.38 - Renderer progress and forecasts match the task state
+
+Completed plans no longer show overdue forecasts, and progress details open when current progress exists.
+
 # 1.5.37 - the Lead owns the decisions, and plans keep their full human detail
 
 **Every authorized development task starts from a plan.** The Lead researches the

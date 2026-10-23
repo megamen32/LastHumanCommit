@@ -358,7 +358,7 @@ class RenderTests(unittest.TestCase):
         self.assertIn('<details class="panel brief-details brief-why-details" open>', html)
         self.assertLess(html.index('class="kpis"'), html.index('Цель'))
         self.assertLess(html.index('Цель'), html.index('Подтверждённый прогресс'))
-        self.assertIn('<details class="panel brief-details">', html)
+        self.assertIn('<details class="panel brief-details" open>', html)
 
     def test_long_task_ids_do_not_compete_with_gantt_or_table_titles(self):
         long_id = 'integrator-source-subject-39e04120-97e5-4302-9756-5072de10c84c'

@@ -1196,6 +1196,7 @@ def build_metrics(graph: Graph) -> dict[str, Any]:
     idle_minutes = max(0, now - anchor) if anchor is not None else 0
     external_wait_unknown = bool(graph.external_waits.strip())
     eta_known = not unknown_estimate_pending and not external_wait_unknown
+    unfinished = max(0, headline_total - done - deferred)
 
     return {
         "total": total,
@@ -1231,8 +1232,10 @@ def build_metrics(graph: Graph) -> dict[str, Any]:
         "eta_clock_max": "" if not eta_known else format_clock((eta_from + int(round(eta_max))) % (24 * 60)),
         "eta_anchor_clock": "" if anchor is None else format_clock(anchor % (24 * 60)),
         "eta_anchor_idle_minutes": idle_minutes,
-        "eta_overdue": bool(eta_known and eta_from + int(round(eta_max)) < now),
-        "unfinished": max(0, headline_total - done - deferred),
+        "eta_overdue": bool(
+            unfinished > 0 and eta_known and eta_from + int(round(eta_max)) < now
+        ),
+        "unfinished": unfinished,
         "schedule": schedule_max,
         "schedule_min": schedule_min,
         "pending": pending_max,
@@ -2444,6 +2447,7 @@ def render_html(
         segments="".join(segments),
         legend=legend,
         brief=brief_html,
+        brief_details_open=" open" if graph.current_progress else "",
         why_panel=why_panel,
         now=now_html,
         axis=axis,
@@ -2830,7 +2834,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   <div class="legend">{legend}</div>
 </div>
 
-<details class="panel brief-details">
+<details class="panel brief-details"{brief_details_open}>
   <summary>Подтверждённый прогресс и внешние ожидания</summary>
   {brief}
 </details>
