@@ -6,11 +6,12 @@
 from the user's request to the merged change, and where the implementation still lags it.
 Read it when choosing a mode, planning a full cycle, or when a check or a risk is debated.
 ## Language policy
-Use English for internal reasoning and agent coordination; delegated roles inherit
-this. Answer Russian-speaking users in their language, and write everything they read
-in that language: your answers, the task record, the plan report, the task graph and
-the dashboard — leaf labels and field wording included. Preserve raw observations/
-source/user/test data; Do not rewrite historical transcripts/feedback.
+Internal reasoning and coordination may use any language and a compact working
+format. The author of each user-facing answer or file is responsible for clarity
+and for using its reader's language. For a Russian-speaking reader, write natural,
+understandable Russian, including in task records, plans, graph labels and dashboards.
+Preserve raw observations/source/user/test data; do not rewrite historical
+transcripts or feedback.
 Take ordinary requests through to a verified result using the LHC workflow; the
 user need not choose a mode, role or slash command. Native startup hooks provide
 current instructions and tool paths only. Time-only PostToolUse reminders may fire

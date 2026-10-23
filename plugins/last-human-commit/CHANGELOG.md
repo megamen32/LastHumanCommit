@@ -1,3 +1,11 @@
+# 1.5.40 - Direct work by default, bounded delegation when it helps
+
+For one concrete task with one result, the Lead assigns one Worker directly.
+A child is used only for a concrete benefit that justifies the added context,
+coordination and review, and a Worker's child requires explicit bounded Lead
+authorization. Internal messages may be brief and use any language; the author
+of a user-facing file writes clearly in its reader's language.
+
 # 1.5.39 - Explicitly bounded delegation and role-specific context
 
 Lead-authorized children may be used for an explicitly bounded assignment, and

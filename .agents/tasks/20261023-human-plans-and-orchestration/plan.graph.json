@@ -6,7 +6,7 @@
   "current_progress": "L01–L10, L13–L15 и L18 завершены по receipts. L13: source fix commit 3eb3142c3c648e869e6c9273c313dc0db07184a0, 35 targeted tests passed, sync parity 25 skills. L15: 1.5.39 installed/enabled; прежний 1.5.36 installed/disabled. L18: независимый direct workflow test прошёл после первичного slot-limit отказа и единственного retry тем же Worker. Точный per-session loaded entrypoint остаётся UNKNOWN. Полная suite: 1176 passed, 5 известных failures из-за отсутствующего внешнего Mac fixture; ExManager tests не запускались. L11/L12 сохраняют BLOCKED; L16/L17 ожидают независимые installed browser checks.",
   "external_waits": "L16/L17: независимые installed browser checks короткого и полного сценариев. Точный entrypoint, загруженный текущей сессией, UNKNOWN по manager readback.",
   "slots": 3,
-  "updated_at": "2026-10-23T12:40:13",
+  "updated_at": "2026-10-23T13:00:51",
   "tasks": [
     {
       "id": "L01",
@@ -732,7 +732,30 @@
       "paths": [
         ".agents/tasks/20261023-human-plans-and-orchestration/receipts/L18-workflow-tester.md"
       ]
+    },
+    {
+      "id": "L19",
+      "label": "прямое назначение и ограниченная делегация не спорят друг с другом",
+      "status": "queued",
+      "depends_on": [
+        "L18"
+      ],
+      "estimate_minutes": {
+        "minimum": 25.0,
+        "maximum": 40.0
+      },
+      "acceptance": "Канонические инструкции ясно задают прямой маршрут по умолчанию, ограниченный критерий пользы для Child и условное полномочие Lead с отдельными scope, owner/path, dependency, acceptance и пределом потомков/слотов. Конечный автор отвечает за понятный русский текст, когда он адресован русскоязычному человеку; внутренний Lead может передавать рабочее задание кратко и на любом языке. Тесты ловят конфликт общей инструкции с model-routing и проверяют native Codex parity. Package/native копии синхронизированы; релевантные тесты и `sync_skills.py --check` проходят. Штатный workflow выпускает следующую версию и plugin-manager readback подтверждает выбранный пакет `megamen32-plugins`; rollback `fleet-lhc` не меняется. Не заявлять точный session-loaded entrypoint без доказательства менеджера. Замер и его ограничение сохранены в receipt; метрики не обобщаются на все задачи.",
+      "description": "Устранить противоречие, из-за которого общая инструкция запрещает Worker создавать дочерние сессии даже при явном разрешении Lead. Для одной конкретной задачи с одним результатом назначать одного автора напрямую, не требуя от пользователя отдельно просить «вызвать агента». Дочернюю сессию использовать только при отдельной доказуемой пользе, превышающей передачу контекста, координацию и проверку. Внутреннее сообщение Lead может быть кратким и на любом языке; языковое требование задаётся конечному автору пользовательского файла. Зафиксировать прямой и делегированный прогоны: 343550 токенов на исходный прямой ход плюс 119541 на исправление ссылки (всего 463091); Lead+Child — 343285 + 592346 (всего 935631); оба gpt-6-luna; 1101 и 1133 слова. Один пример не задаёт постоянный коэффициент стоимости.",
+      "affected_files": [
+        "src/common/skills/last-human-commit/SKILL.md",
+        "src/common/skills/model-routing/SKILL.md",
+        "tests/test_umbrella_skill_router_pointer.py",
+        "tests/test_model_routing_delegation_policy.py",
+        "plugins/last-human-commit/",
+        "package.json",
+        ".agents/tasks/20261023-human-plans-and-orchestration/receipts/L19-cost-aware-delegation.md"
+      ]
     }
   ],
-  "leaf_count": 18
+  "leaf_count": 19
 }

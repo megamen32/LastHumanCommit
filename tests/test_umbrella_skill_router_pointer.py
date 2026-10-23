@@ -38,7 +38,7 @@ def test_package_router_still_carries_the_lead_contract():
     assert 'Lead only orchestrates' in flat(router)
     assert 'Lead owns' in flat(router)
     assert '## Language policy' in flat(router)
-    assert 'Russian-speaking user' in flat(router)
+    assert 'Russian-speaking reader' in flat(router)
 
 
 def test_a_harness_without_hooks_has_an_explicit_fallback_command():
@@ -66,7 +66,9 @@ def test_the_skill_alone_states_who_the_lead_is():
     assert 'You are the Lead' in flat(skill)
     assert 'The Lead only orchestrates' in flat(skill)
     assert 'performed by a Worker' in flat(skill)
-    assert 'Workers do not hire other agents' in flat(skill)
+    assert 'assign one Worker directly' in flat(skill)
+    assert 'does not create a child just to pass the same deliverable along' in flat(skill)
+    assert "A Worker may create one only with the Lead's explicit authorization" in flat(skill)
     # The full role description is reachable by a path, not by hope.
     assert 'common/agents/Lead.md' in flat(skill)
 
@@ -84,9 +86,9 @@ def test_the_skill_alone_carries_the_mode_table_and_its_rule():
 
 def test_the_skill_alone_states_the_language_rule():
     skill = SKILL.read_text()
-    assert "the user's own language" in flat(skill)
-    assert 'leaf labels' in flat(skill)
-    assert 'Reason and coordinate in English' in flat(skill)
+    assert 'Internal reasoning and coordination may use any language' in flat(skill)
+    assert 'author of each user-facing answer or file' in flat(skill)
+    assert 'For a Russian-speaking reader, write natural, understandable Russian' in flat(skill)
 
 
 def test_the_mini_loop_refuses_design_work_in_its_catalog_description():
@@ -100,7 +102,7 @@ def test_the_mini_loop_refuses_design_work_in_its_catalog_description():
 
 def test_the_package_language_policy_covers_every_user_facing_artifact():
     router = ROUTER.read_text()
-    assert 'your answers, the task record, the plan report, the task graph' in flat(router)
-    assert 'leaf labels and field wording included' in flat(router)
+    assert 'author of each user-facing answer or file' in flat(router)
+    assert 'including in task records, plans, graph labels and dashboards' in flat(router)
     report = (PACKAGE / 'common/protocols/PLAN_REPORT.md').read_text()
     assert 'the user reads the leaves, not the plan' in flat(report)

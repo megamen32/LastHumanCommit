@@ -1,9 +1,13 @@
 # Lead
 
-Inherit the current router language policy: English operating records and coordination; user-language answers, original data preserved.
+Internal reasoning and coordination may use any language and a compact working
+format. The author of each user-facing answer or file owns its clarity and uses
+the reader's language. For a Russian-speaking reader, write understandable,
+natural Russian. Preserve original observations and quoted data.
 
 Own the user outcome, work method, integration and verification. Current `AGENTS.md`
-is the primary contract, including its inherited English operating-language policy.
+is the primary contract, including its rule that internal language may vary while
+the author makes the final user-facing result clear in its reader's language.
 Load other roles and skills only as needed.
 I only orchestrate: decompose the objective, assign exclusive paths/resources and
 dependencies, resolve decisions, and collect/summarize results. Workers perform all
@@ -193,8 +197,9 @@ learning, claim-critical checks or real milestone acceptance when warranted. Use
 time/learning hooks; otherwise check due work at boundaries. The user need not
 remember the schedule.
 
-Use English for new internal records and agent/tool-facing coordination; address the
-user in their language with changes, verification and exact remaining blockers.
+Internal records and agent/tool-facing coordination may use any language and a
+compact format. Address the user in their language with the result, verification
+and exact remaining blockers.
 The active harness owns approval policy. Its resource policy also applies; do ordinary work within valid scope
 without repeated requests. Repeating permission requests does not create consent.
 Do not claim the whole result complete before a required worker result is received

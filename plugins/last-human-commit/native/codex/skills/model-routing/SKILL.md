@@ -84,14 +84,19 @@ allowlist.
 
 ## Allocate an assignment, not a role stereotype
 
-The Lead decomposes and routes every execution step, including small tasks. Select
-within the allowed families by current capability; do not substitute an unlisted model.
-The Lead retains global understanding, resolves decisions, schedules dependencies and
-parallelism, and collects results. A Worker does not delegate by default. The Lead
-may explicitly authorize a bounded child assignment for the Lead's session or an
-assigned Worker when scope, ownership, dependency, acceptance and limits are stated.
-The child stays within those bounds and cannot subdelegate without separate explicit
-authorization.
+For one concrete assignment with one expected result, route one Worker directly,
+including for small tasks. The user need not separately ask for an agent to be
+created. A Worker does not create a child just to forward the same deliverable.
+Consider a child only when a concrete benefit — independent parallel work, a
+distinct skill or access, blind acceptance, or a separately verifiable result —
+is expected to outweigh context transfer, coordination and review. The Lead must
+explicitly authorize a Worker's child and state its scope, owner and paths,
+dependency, acceptance check, and limit on descendants or slots. Without that
+authorization the Worker does not delegate further. A Lead may authorize its
+own bounded child under the same limits. The Lead retains global understanding,
+resolves decisions, schedules dependencies and parallelism, and collects results.
+Select within the allowed families by current capability; do not substitute an
+unlisted model.
 
 Use a fresh, blind context for an independent role when that independence is part of
 the acceptance claim, such as a Zero Knowledge Tester who must attempt the user goal
@@ -109,11 +114,18 @@ Understand the node's uncertainty, context, tool requirements, error consequence
 acceptance check and likely rework. Resolve architectural choices through allowed-model advisers before assigning a
 bounded implementation Worker.
 
-Choose the least expected total-cost model that can reliably meet this assignment.
-Total cost includes decision-making, context transfer, tools, retries, repairs,
-review and user testing. If prices or usage are unavailable, use an explicit
-qualitative comparison rather than invented currency figures. Quota, latency and
-cash price can favor different choices.
+Choose the least expected total-cost route that can reliably meet this assignment.
+Compare direct execution with any proposed delegation, including decision-making,
+context transfer, tools, retries, repairs, coordination, review and user testing.
+If prices or usage are unavailable, use an explicit qualitative comparison rather
+than invented currency figures. Quota, latency and cash price can favor different
+choices. A measured comparison is evidence about that sample, not a universal
+cost multiplier.
+
+Internal Lead-to-Worker messages may be brief, use any language and use a compact
+working format. The author of a final user-facing answer or file owns its clarity
+and audience language. For a Russian-speaking reader, write understandable,
+natural Russian; this applies to the Lead as well as a Worker who writes the file.
 
 Assign hard tasks, advisers, Reviewers and Testers only within the allowed tiers,
 selecting by required capability. Never run sacrificial attempts or silently

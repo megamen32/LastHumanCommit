@@ -8,18 +8,41 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def test_lead_can_explicitly_authorize_a_bounded_child_for_an_assigned_worker():
     router = (ROOT / "AGENTS.md").read_text()
+    umbrella = (ROOT / "src/common/skills/last-human-commit/SKILL.md").read_text()
     lead = (ROOT / "src/common/agents/Lead.md").read_text()
     worker = (ROOT / "src/common/agents/Worker.md").read_text()
     routing = (ROOT / "src/common/skills/model-routing/SKILL.md").read_text()
-    sources = "\n".join((router, lead, worker, routing))
+    sources = "\n".join((router, umbrella, lead, worker, routing))
 
     assert "explicitly authorize" in sources
     assert "bounded child" in sources
     assert "scope, ownership, dependency" in sources
-    assert "A Worker does not delegate by default" in sources
+    assert "does not delegate by default" in sources
+    assert "assign one Worker directly" in " ".join(umbrella.split())
+    assert "For one concrete assignment with one expected result, route one Worker directly" in " ".join(routing.split())
+    assert "outweigh context transfer, coordination and review" in routing
+    assert "limit on descendants or slots" in routing
+    assert "Workers do not hire other agents" not in umbrella
+    assert "Workers do not recursively hire" not in umbrella
     assert "never recursively recruits" not in sources
     assert "does not recursively hire" not in sources
     assert "does not hire recursively" not in sources
+
+
+def test_final_writer_owns_clarity_but_internal_messages_may_be_compact():
+    router = (ROOT / "AGENTS.md").read_text()
+    umbrella = (ROOT / "src/common/skills/last-human-commit/SKILL.md").read_text()
+    routing = (ROOT / "src/common/skills/model-routing/SKILL.md").read_text()
+    lead = (ROOT / "src/common/agents/Lead.md").read_text()
+    worker = (ROOT / "src/common/agents/Worker.md").read_text()
+    for source in (router, umbrella, routing, lead, worker):
+        flat = " ".join(source.split())
+        assert "Internal" in flat and "any language" in flat
+        assert "user-facing" in flat
+        assert "Russian-speaking reader" in flat
+        assert "Russian" in flat and "language" in flat
+        assert "Use English for internal" not in flat
+        assert "English operating records and coordination" not in flat
 
 
 def test_fresh_blind_context_is_reserved_for_independent_acceptance_roles():
@@ -38,6 +61,10 @@ def test_generated_native_package_matches_routing_policy_sources():
     expected_router = (ROOT / "AGENTS.md").read_bytes().replace(b"src/common/", b"common/")
     assert (ROOT / "plugins/last-human-commit/AGENTS.md").read_bytes() == expected_router
     for source, generated in (
+        (
+            "src/common/skills/last-human-commit/SKILL.md",
+            "plugins/last-human-commit/skills/last-human-commit/SKILL.md",
+        ),
         ("src/common/agents/Lead.md", "plugins/last-human-commit/common/agents/Lead.md"),
         ("src/common/agents/Worker.md", "plugins/last-human-commit/common/agents/Worker.md"),
         (
@@ -45,7 +72,9 @@ def test_generated_native_package_matches_routing_policy_sources():
             "plugins/last-human-commit/skills/model-routing/SKILL.md",
         ),
     ):
-        expected = (ROOT / source).read_bytes().replace(b"src/common/", b"common/")
+        expected = (ROOT / source).read_bytes()
+        if source.startswith("src/common/") and not source.endswith("last-human-commit/SKILL.md"):
+            expected = expected.replace(b"src/common/", b"common/")
         if source.endswith("model-routing/SKILL.md"):
             expected = expected.replace(
                 b"../../config/model-routing.example.json",
@@ -72,6 +101,11 @@ def test_native_codex_copies_match_canonical_routing_policy_sources(tmp_path):
     )
     copies = (
         ("AGENTS.md", "plugins/last-human-commit/native/codex/AGENTS.md", common_rewrite),
+        (
+            "src/common/skills/last-human-commit/SKILL.md",
+            "plugins/last-human-commit/native/codex/skills/last-human-commit/SKILL.md",
+            (),
+        ),
         (
             "src/common/agents/Lead.md",
             "plugins/last-human-commit/native/codex/common/agents/Lead.md",

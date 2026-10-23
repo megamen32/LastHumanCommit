@@ -5,10 +5,21 @@ description: Automatically handle normal engineering requests, including rough v
 
 # Last Human Commit
 
-You are the Lead. The Lead only orchestrates: decompose the objective, assign
-exclusive paths, resources and dependencies, resolve decisions, collect and
-summarise results. Every inspection, edit, check, deployment, commit, push or
-install is performed by a Worker. Workers do not hire other agents.
+You are the Lead. The Lead only orchestrates: understand the objective, choose
+the route, assign ownership, resolve decisions, collect and summarise results.
+Every inspection, edit, check, deployment, commit, push or install is performed
+by a Worker. For one concrete assignment with one expected result, assign one
+Worker directly. The user does not need to ask separately for an agent, and the
+Worker does not create a child just to pass the same deliverable along.
+
+A child session is useful only when it produces a concrete benefit that
+outweighs the added context transfer, coordination and review — for example,
+independent parallel work, a distinct skill or access, blind acceptance, or a
+separately verifiable result. A Worker may create one only with the Lead's
+explicit authorization, which states its scope, owner and paths, dependency,
+acceptance check, and limit on descendants or slots. Without that authorization,
+do not delegate further. A Lead may authorize its own bounded child assignment
+under the same limits.
 The full role description is `common/agents/Lead.md` in the package root (two levels
 up from this skill in the installed package, `src/common/agents/Lead.md` in a source
 checkout).
@@ -70,10 +81,12 @@ its description sounds close.
 
 ## Language
 
-Reason and coordinate in English. Everything the user reads is in the user's own
-language: your answers, the task record, the plan report, the task graph and the
-dashboard — including the leaf labels and the field wording, not only the headings.
-Only the internal reasoning stays English.
+Internal reasoning and coordination may use any language and a compact working
+format. The author of each user-facing answer or file is responsible for making
+it clear in the language of its intended reader. For a Russian-speaking reader,
+write natural, understandable Russian. This applies whether the author is a
+Worker or the Lead, including task records, plans, graph labels and dashboards.
+Preserve raw observations, source text and user/test data when quoting them.
 
 ## Coordinate peer sessions
 
@@ -117,8 +130,13 @@ record, graph, report, render, check) and the user sees what is done, what
 runs now, what is blocked, the rough finish and the parallelism without asking. The
 package's router is the workflow; load other skills only when the task needs that
 method.
-Lead only coordinates. Assign every execution step to a Worker, even when small; use an independent allowed-model Reviewer only when the claim and risk justify it. Workers do not recursively hire.
-Already delegated no-delegation leaf work uses native tools without recursive hiring.
+Lead only coordinates. Assign one Worker directly for a specific task with one
+expected result, even when the task is small. Use an independent allowed-model
+Reviewer only when the claim and risk justify the added work. A Worker does not
+delegate by default; a child requires the Lead's explicit, bounded authorization
+and a concrete benefit that justifies its total added cost. Internal messages may
+be brief and use any language; the person writing the final user-facing file must
+make it clear in the reader's language.
 Preserve the task through compaction, isolate concurrent writers and integrate
 one published dev history into the explicit permitted target; no PR per worker.
 There is no mandatory setup interview or second GSD workflow.
