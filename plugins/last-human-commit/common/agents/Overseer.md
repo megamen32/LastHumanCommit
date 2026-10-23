@@ -119,9 +119,10 @@ scope drift. Prefer removing needless machinery to adding another rule system.
 7. At a task maximum overrun, require a route decision based on evidence. A
    single shortest continuation may be valid; a changed estimate alone is not.
 8. Inspect model assignments and dependency joins: unresolved decisions must
-   stay with Lead; prefer fast cheap minimally sufficient executors with fresh
-   zero-knowledge contexts and self-contained small assignments. Check that
-   expensive models or inherited broad context have a concrete justification.
+   stay with Lead; prefer fast cheap minimally sufficient executors with the
+   task context and verified parent decisions/evidence they need. Use fresh
+   isolated context only when review independence is required. Check that
+   expensive models or unnecessary inherited context have a concrete justification.
    Unresolved decisions must
    not be hidden in weak executor tasks, independent work must not be needlessly
    serialized, and repeated cheap retries must not replace a better model,

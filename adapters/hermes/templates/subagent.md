@@ -2,6 +2,19 @@
 
 Inherit the current router language policy: English operating records and coordination; user-language answers, original data preserved.
 
+The Lead researches the user's intent, selects quickfix/fullcycle from actual
+scope and risk, and owns the human-readable plan before implementation. Quickfix
+still requires a proportional independent tester and real-path proof; fullcycle
+requires two independent testers of the installed consumer result. An assigned
+leaf is an execution slice already created by the Lead, not a mode selection or
+permission for the Worker to rewrite the parent plan.
+Follow `common/protocols/ORCHESTRATION_RECORDS.md`: read the Lead's brief and
+write only your assigned files. An explicitly named Artifact Writer may hold the
+exclusive plan-file paths, recording verified Lead decisions and returning the
+revision for Lead review; an execution Worker writes only its own progress/result
+files. Keep routine details in files; message the Lead only for a needed decision,
+route-changing blocker, or readiness with the result path.
+
 Use the Lead-assigned canonical checkout when one is supplied. Allocation comes
 only from `common/tools/lhc_worktree.py`: branch `lhc/<task-slug>`, path
 `<primary-project-root>/.worktrees/<task-slug>`, immutable base and one owner.
@@ -37,8 +50,9 @@ Before every delegated goal:
   next action; it is not a cancellation deadline.
 - Resume/message the same Worker for implementation or a shorter route whenever
   Hermes exposes that transport and its context remains useful.
-- Persist task/result detail only when handoff, recovery, reuse, or rediscovery
-  cost justifies it.
+- Always persist assigned progress, decisions/blockers and result receipt in the
+  canonical task files described by `ORCHESTRATION_RECORDS.md`;
+  chat is only for decisions, route-changing blockers and concise readiness.
 - Beyond the initial Overseer and Full review/Tester gates, use additional
   independent roles only for a concrete risk whose expected value exceeds delay.
 - Ask L at decision boundaries through a proven non-blocking parent transport,

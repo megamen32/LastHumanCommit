@@ -33,8 +33,10 @@ def test_useful_method_does_not_restore_report_ritual():
     assert "three passes over one solution" in router
     assert "not three reports" in router
     assert "three-line minimal path" not in router
-    # Small work keeps the same short route: one leaf, no full-cycle ritual.
-    assert "Quickfix/testing/assigned leaf tasks skip that cycle" in router
+    # Small work keeps the broad council route short, while authorized code work
+    # still gets the minimal Lead-owned plan before implementation.
+    assert "Every authorized development task has a user-readable Lead-owned plan" in router
+    assert "Quickfix still requires a proportional independent tester" in router
     assert "An assigned no-delegation leaf" in router
 
 
@@ -46,13 +48,13 @@ FULL_CYCLE_ROUTE = {
         ['bounded independent research Workers', 'working→ideal→YAGNI',
          'quota-aware frontier council', 'bounded dispatch'],
         ('alternatives', 'crosschallenge', 'business cost', 'dissent',
-         'Quickfix/testing/assigned leaf'),
+         'Every authorized development task has a user-readable Lead-owned plan'),
     ),
     'src/common/agents/Lead.md': (
         ['bounded independent research Workers', 'working→ideal→YAGNI',
          'quota-aware frontier council', 'bounded dispatch'],
         ('alternatives', 'crosschallenge', 'business cost', 'dissent',
-         'Quickfix/testing/assigned leaf'),
+         'Quickfix/testing/assigned leaf tasks may skip the broad research/council'),
     ),
     'src/common/skills/architecture-design/SKILL.md': (
         ['bounded independent research Workers', 'working→ideal→YAGNI',

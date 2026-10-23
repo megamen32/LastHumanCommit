@@ -87,13 +87,13 @@ def test_what_blocks_and_what_needs_the_owner_are_told_apart():
     assert html.count('class="holding"') == 1
 
 
-# ---------------------------------------------------------------- the budget
-def test_the_plan_wording_has_a_budget():
+# ------------------------------------------------------------ no text cap
+def test_long_plan_and_task_descriptions_are_not_rejected_by_short_caps():
     lhc, graph = sample_graph()
     graph.goal = "Д" * 400
-    problems = lhc.check_text_budget(graph)
-    assert problems, "раздутая цель должна быть отвергнута"
-    assert "символов" in problems[0]
+    graph.business_result = "Р" * 800
+    graph.leaves[0].description = "Описание с контекстом, действием и ожидаемым результатом. " * 120
+    assert lhc.check_text_budget(graph) == []
 
 
 def test_a_lean_plan_passes_the_budget():

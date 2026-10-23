@@ -33,10 +33,24 @@ per provider; `model-availability` says which number means what.
 
 ## Choose the mode from the accepted scope, never from a skill's description
 
+Before implementation, research the request enough to identify the user's intended
+outcome and affected path, explicitly choose `quickfix` or `fullcycle`, and create
+the user-readable plan owned by the Lead. Planning is required in both modes and
+does not wait for another user approval when execution is already authorized. An
+assigned leaf narrows the worker's execution scope; it cannot choose the parent's
+mode or waive its plan.
+
+The Lead owns plan decisions: user intent, mode, acceptance, ownership, dependencies
+and status. It may assign one named Artifact Writer the exclusive plan-file write
+paths; the writer records only verified Lead decisions and returns the revision for
+Lead review. Execution Workers write their own assigned progress/result files only.
+
 | Accepted scope | Mode |
 | --- | --- |
-| One bounded fix inside existing code, no architecture decision | quickfix |
+| One bounded fix inside existing code, no architecture decision, contained risk | quickfix |
+| Small behavior/UI change with contained risk | quickfix |
 | Several slices over existing code, one integration, an independent review, a real-surface proof | fullcycle |
+| New feature, broad behavior/UI or boundary change, architecture decision, or risky repair | fullcycle |
 | A new project, a new service, a repository, an architecture or design decision | **fullcycle** — research Workers, one working→ideal→YAGNI plan, an optional quota-aware frontier council, then bounded dispatch |
 | Only tests, only a benchmark, only a verification | testing |
 | Only an investigation, no code change | research |
@@ -46,8 +60,13 @@ per provider; `model-availability` says which number means what.
 A defect list from an audit is a fix list. It is a fullcycle only when every finding
 lands inside existing code. When the scope also creates a project, a service, a
 repository or an architecture decision, it is design work: that is Full, and the
-mini improvement loop says so itself. Load a mode skill because this scope needs it,
-never because its description sounds close.
+mini improvement loop says so itself. The number of leaves and code length do not
+decide the mode. Quickfix still needs a proportional independent tester and
+real-path proof; fullcycle needs two independent testers of the installed consumer
+result. Keep the human outcome distinct from test, publication and runtime status.
+Simple questions, read-only investigations and status requests do not start this
+development-plan rule. Load a mode skill because this scope needs it, never because
+its description sounds close.
 
 ## Language
 

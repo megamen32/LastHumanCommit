@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Last Human Commit: понятный план до проверки результата · LHC</title>
+<style>
+  :root, :root[data-theme="dark"] { --bg: #0d1117; --panel: #151b26; --panel-2: #1b2331; --line: #26303f; --text: #e6edf6; --muted: #9fb0c6; --accent: #6ea8fe; --ok: #2ecc71; --warn: #f0a742; --bad: #f25f74; --st-done: #2ecc71; --st-running: #4f9cf9; --st-blocked: #f25f74; --st-waiting: #f0a742; --st-deferred: #b08ce8; --st-queued: #8fa0b8; }
+  :root[data-theme="light"] { --bg: #f4f6f9; --panel: #ffffff; --panel-2: #eaeef4; --line: #d3dae3; --text: #15202c; --muted: #58677a; --accent: #1a62cc; --ok: #1a7f37; --warn: #8a6100; --bad: #c02b38; --st-done: #1a7f37; --st-running: #1a62cc; --st-blocked: #c02b38; --st-waiting: #8a6100; --st-deferred: #6b4fa8; --st-queued: #5a6b7f; }
+  * { box-sizing: border-box; }
+  /* The page background lives on the canvas itself. No overlay element is
+     painted over the content, so nothing can ever hide a block of the
+     dashboard behind an opaque layer. */
+  html { background: var(--bg); }
+  body {
+    margin: 0; background: var(--bg);
+    background-image: radial-gradient(1500px 760px at 12% -12%, #1b2b45 0%, rgba(13,17,23,0) 62%);
+    background-repeat: no-repeat;
+    color: var(--text);
+    font: 14px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, "Helvetica Neue", Arial, sans-serif;
+    padding: 22px clamp(12px, 3vw, 40px) 56px;
+    min-height: 100%;
+    overflow-x: hidden;
+  }
+  a { color: var(--accent); }
+  .page { max-width: 2200px; margin: 0 auto; }
+
+  /* ---- header ---- */
+  header { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between;
+    margin-bottom: 16px; }
+  h1 { font-size: 23px; margin: 0; letter-spacing: -0.3px; overflow-wrap: anywhere; }
+  header > div { min-width: 0; max-width: 100%; }
+  .sub { color: var(--muted); font-size: 12.5px; overflow-wrap: anywhere; }
+  .head-count { display: flex; align-items: baseline; gap: 8px; background: var(--panel);
+    border: 1px solid var(--line); border-radius: 12px; padding: 8px 14px; }
+  .head-count b { font-size: 22px; font-weight: 650; letter-spacing: -0.4px; }
+  .head-count span { color: var(--muted); font-size: 12px; }
+  .theme-toggle { background: var(--panel); border: 1px solid var(--line); color: var(--muted);
+    border-radius: 10px; padding: 8px 12px; cursor: pointer; font: inherit; font-size: 12.5px;
+    min-height: 44px; min-width: 44px; }
+  .theme-toggle:hover { color: var(--text); }
+  .head-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  /* The progress stays in sight while the page scrolls. */
+  /* A number you can click: the tasks behind it. */
+  .kpi-tile { cursor: pointer; }
+  .kpi-tile:hover { border-color: var(--accent); }
+  .kpi-tile:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .progress-strip { cursor: pointer; }
+  .tile-card { margin: 0 0 14px; padding: 10px 12px; border: 1px solid var(--line);
+    border-radius: 10px; background: var(--panel-2); }
+  .tile-card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    margin-bottom: 8px; }
+  .tile-card-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .tile-card-item { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px;
+    padding: 6px 0; border-top: 1px solid var(--line); cursor: pointer; }
+  .tile-card-item:hover .row-name { color: var(--accent); }
+  .tile-card-close, .tile-card-back { min-height: 44px; padding: 4px 10px; border-radius: 8px;
+    border: 1px solid var(--line); background: transparent; color: var(--muted); cursor: pointer; }
+  .journal-fold summary { cursor: pointer; list-style: none; }
+  .journal-fold summary::-webkit-details-marker { display: none; }
+  .journal-fold summary h2 { margin: 0; font-size: 12px; text-transform: uppercase;
+    letter-spacing: .08em; color: var(--muted); }
+  .journal-fold[open] summary h2 { color: var(--text); }
+  .evidence-fold { margin: 0 0 14px; border: 1px solid var(--line); border-radius: 10px;
+    background: var(--panel); }
+  .evidence-fold > summary { cursor: pointer; padding: 10px 12px; color: var(--muted);
+    font-size: 12.5px; }
+  .evidence-fold[open] > summary { color: var(--text); border-bottom: 1px solid var(--line); }
+  .evidence-fold > *:not(summary) { margin-left: 12px; margin-right: 12px; }
+  .blocking-group { display: grid; gap: 8px; }
+  .blocking-group h3 { margin: 0 0 2px; font-size: 11px; text-transform: uppercase;
+    letter-spacing: .08em; color: var(--muted); }
+  .blocker-owner { border-left-color: var(--warn); }
+  /* The progress strip sticks to the top, so an anchor jump must not land
+     a section under it. */
+  section, .panel, .kpis, [id^="lhc-"] { scroll-margin-top: 76px; }
+  .progress-strip { position: sticky; top: 0; z-index: 40; margin: 0 0 12px;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; }
+  .progress-strip-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; }
+  .progress-strip-title { font-size: 11px; text-transform: uppercase; letter-spacing: .08em;
+    color: var(--muted); }
+  .progress-strip-value { font-size: 15px; font-weight: 700; color: var(--text); }
+  .progress-strip-percent { font-size: 13px; font-weight: 600; color: var(--accent); }
+  .progress-strip-hint { font-size: 12px; color: var(--muted); }
+  .progress-strip-bar { display: flex; height: 6px; margin-top: 7px; border-radius: 999px;
+    overflow: hidden; background: var(--panel-2); }
+  .progress-strip-bar .seg { height: 100%; }
+  .snapshot-note { color: var(--muted); font-size: 12.5px; margin: 0 0 14px; padding: 8px 12px;
+    border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 10px;
+    background: var(--panel); overflow-wrap: anywhere; }
+
+  /* ---- panels ---- */
+  .panel { background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
+    border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; margin-bottom: 16px; min-width: 0; }
+  .panel h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .09em; color: var(--muted);
+    margin: 0 0 12px; font-weight: 600; }
+  .panel-head { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+  .panel-head h2 { margin: 0; }
+
+  /* ---- brief: goal and business result ---- */
+  .brief { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-bottom: 16px; }
+  /* The technical wording is a confirmation, not the first thing to read. */
+  .brief-details { margin-bottom: 16px; }
+  .brief-details > summary { cursor: pointer; color: var(--muted); font-size: 12.5px;
+    min-height: 44px; display: flex; align-items: center; }
+  .brief-details[open] > summary { margin-bottom: 12px; color: var(--text); }
+  .brief-card { background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
+    border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 12px; padding: 14px 16px;
+    min-width: 0; }
+  .brief-card h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted);
+    margin: 0 0 6px; font-weight: 600; }
+  .brief-card p { margin: 0; overflow-wrap: anywhere; }
+  .brief-goal { border-left-color: var(--accent); }
+  .brief-result { border-left-color: var(--ok); }
+  .brief-wait { border-left-color: var(--warn); }
+  /* The why-panel is open on the first screen; it may be folded by the owner. */
+  .brief-why-details { margin-bottom: 16px; }
+  .brief-why-details > summary { color: var(--text); }
+  .brief-why { margin-bottom: 0; }
+
+  /* ---- KPI strip ---- */
+  .kpis { display: grid; gap: 10px; grid-template-columns: repeat(5, minmax(0, 1fr)); margin-bottom: 14px; }
+  .kpi { background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
+    border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 12px; padding: 11px 13px;
+    min-width: 0; }
+  .kpi-label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .07em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .kpi-value { font-size: 25px; font-weight: 650; margin: 3px 0 2px; letter-spacing: -0.6px; line-height: 1.15;
+    overflow-wrap: anywhere; }
+  .kpi-hint { color: var(--muted); font-size: 11.5px; overflow-wrap: anywhere; }
+
+  /* ---- progress and legend ---- */
+  .progress { display: flex; height: 12px; border-radius: 999px; overflow: hidden; background: #0b1018;
+    border: 1px solid var(--line); }
+  .seg { height: 100%; }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 10px; color: var(--muted); font-size: 12px; }
+  .legend-item i { display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-right: 6px; }
+
+  /* ---- what to do now ---- */
+  .slots-badge { font-size: 12.5px; color: var(--muted); background: var(--panel-2);
+    border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px; }
+  .slots-badge b { color: var(--text); font-size: 14px; }
+  .now-grid { display: grid; gap: 14px; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 14px;
+    align-items: start; }
+  .now-col { background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px;
+    min-width: 0; }
+  .now-col h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted);
+    margin: 0 0 10px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+  .now-count { margin-left: auto; background: #0e141d; border: 1px solid var(--line); border-radius: 999px;
+    padding: 0 8px; color: var(--text); font-size: 11.5px; }
+  .now-subtitle { color: var(--muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: .06em;
+    margin: 12px 0 6px; }
+  .now-list { list-style: none; margin: 0; padding: 0; }
+  .now-item { padding: 8px 0; border-bottom: 1px solid #232c3a; }
+  .now-item:last-child { border-bottom: 0; }
+  .now-head { display: flex; gap: 8px; align-items: baseline; min-width: 0; }
+  .now-id { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11.5px;
+    color: var(--accent); flex: none; max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .now-name { min-width: 0; overflow-wrap: anywhere; }
+  .now-meta { color: var(--muted); font-size: 11.5px; margin-top: 2px; overflow-wrap: anywhere; }
+  .now-item.deferred { opacity: .75; }
+  .now-item.blocked .now-id { color: var(--bad); }
+  .now-empty { color: var(--muted); font-style: italic; font-size: 12.5px; }
+  .wait-list { display: flex; flex-wrap: wrap; gap: 6px; }
+  .wait-chip { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11.5px;
+    color: var(--muted); background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px;
+    padding: 2px 7px; white-space: nowrap; }
+  .wait-more { color: var(--muted); font-size: 11.5px; align-self: center; }
+
+  /* ---- gantt ---- */
+  .gantt { overflow-x: auto; max-width: 100%; }
+  .gantt-inner { min-width: 760px; }
+  .gantt-axis-row, .gantt-row { display: grid; grid-template-columns: minmax(240px, 320px) minmax(360px, 1fr);
+    gap: 10px; min-width: 680px; }
+  .gantt-axis-spacer { min-width: 0; }
+  .gantt-axis { position: relative; height: 22px; min-width: 0; border-bottom: 1px solid var(--line); }
+  .tick { position: absolute; top: 2px; transform: translateX(-50%); font-size: 11px; color: var(--muted);
+    white-space: nowrap; }
+  .tick-0 { transform: none; }
+  .tick-6 { transform: translateX(-100%); }
+  .gantt-row { align-items: center; border-bottom: 1px solid #1e2632; }
+  .gantt-row:hover { background: #18202d; }
+  .gantt-label { display: flex; flex-direction: column; gap: 1px; padding: 5px 0; min-width: 0; overflow: hidden; }
+  .gantt-line { display: flex; align-items: center; gap: 7px; min-width: 0; }
+  .gantt-id { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11px;
+    color: var(--muted); flex: none; max-width: 34%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .gantt-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .gantt-meta { gap: 8px; }
+  .gantt-status { font-size: 11px; color: var(--muted); white-space: nowrap; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex: none; }
+  .crit { color: #f0a742; font-size: 10.5px; white-space: nowrap; }
+  .gantt-track { position: relative; height: 26px; min-width: 0; }
+  .bar { position: absolute; top: 6px; height: 15px; border-radius: 5px; min-width: 3px;
+    box-shadow: 0 0 0 1px rgba(0,0,0,.25) inset; }
+  .wave-row { display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    margin-top: 14px; padding: 8px 12px; background: var(--panel-2); border: 1px solid var(--line);
+    border-left: 3px solid var(--accent); border-radius: 10px; color: var(--muted);
+    font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+  .wave-count { text-transform: none; letter-spacing: 0; }
+
+  /* ---- two column work area ---- */
+  .grid { display: grid; gap: 16px; grid-template-columns: minmax(0, 1.35fr) minmax(0, .65fr);
+    align-items: start; }
+  .grid > * { min-width: 0; }
+  @media (max-width: 1000px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+  @media (min-width: 1700px) {
+    .gantt-axis-row, .gantt-row { grid-template-columns: minmax(340px, 460px) minmax(360px, 1fr); }
+  }
+  @media (max-width: 1800px) { .kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  @media (max-width: 1200px) { .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (max-width: 1100px) {
+    .now-grid { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 900px) {
+    .brief { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 700px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .blocker { background: var(--panel-2); border: 1px solid #3a2530; border-left: 3px solid var(--bad);
+    border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; }
+  .blocker-head { display: flex; gap: 8px; align-items: center; margin-bottom: 4px; }
+  .blocker-reason { color: #d7e0ec; }
+  .blocker-meta { color: var(--muted); font-size: 12px; margin-top: 4px; }
+  .badge { font-size: 11px; font-weight: 700; color: #0d1117; border-radius: 5px; padding: 1px 6px; }
+  .facts { margin: 0; padding-left: 18px; color: var(--muted); }
+  .facts li { margin-bottom: 6px; }
+  .facts b { color: var(--text); }
+  .live { list-style: none; margin: 0; padding: 0; }
+  .live li { display: flex; gap: 8px; padding: 6px 0; border-bottom: 1px solid #1e2632; align-items: baseline; }
+  .live-text { flex: 1; }
+  .live-at { color: #8aa0b8; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .live-result { color: var(--text); font-size: 12.5px; }
+  .live-evidence { color: #8aa0b8; font-size: 12px; white-space: nowrap; }
+  .leaf-tag { color: var(--muted); font-size: 11px; border: 1px solid var(--line); border-radius: 5px;
+    padding: 0 5px; min-width: 0; white-space: normal; overflow-wrap: anywhere; }
+  .cell-sub { display: block; color: var(--muted); font-size: 11px; }
+  .table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .table th { text-align: left; color: var(--muted); font-weight: 600; font-size: 11px;
+    text-transform: uppercase; letter-spacing: .05em; padding: 6px 8px; border-bottom: 1px solid var(--line);
+    background: var(--panel); }
+  .table td { padding: 6px 8px; border-bottom: 1px solid #1c2431; vertical-align: top; }
+  /* The leaves are read as a table, so the panel takes the whole width
+     of the page instead of one column of a two-column grid. */
+  .panel-leaves { grid-column: 1 / -1; }
+  .table-leaves { min-width: 920px; width: 100%; table-layout: fixed; }
+  .table-scroll { max-width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; }
+  .table-leaves th:nth-child(1) { width: 42%; }
+  .table-leaves th:nth-child(2) { width: 120px; }
+  .table-leaves th:nth-child(3), .table-leaves th:nth-child(4) { width: 86px; }
+  .table-leaves th:nth-child(5) { width: 120px; }
+  .task-title { font-weight: 550; overflow-wrap: anywhere; }
+  .row-id { display: inline-block; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 11px; color: var(--muted); margin-right: 7px; vertical-align: 1px; }
+  .table-leaves .status { white-space: nowrap; }
+  .task-details-trigger, .task-details-close { color: var(--accent); background: transparent; border: 1px solid var(--line);
+    border-radius: 6px; cursor: pointer; font: inherit; padding: 3px 7px; }
+  .task-details-host { position: static; width: 100%; margin-top: 12px; }
+  /* The leaf row is the control: the owner taps the task, and the task opens
+     right under itself, where the finger already is. */
+  .leaf-row { cursor: pointer; }
+  .leaf-row:hover .row-name { color: var(--accent); }
+  .leaf-row:focus-within { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .task-details-row > td { padding: 0; border: none; background: transparent; }
+  .task-details-row .task-details-card { margin: 0 0 10px; }
+  .row-meta { display: block; margin-top: 2px; color: var(--muted); font-size: 12px;
+    overflow-wrap: anywhere; }
+  .details-cell { text-align: right; }
+  .task-details-card { width: 100%; min-width: 0; background: var(--panel-2); border: 1px solid var(--line);
+    border-radius: 10px; padding: 12px; }
+  .task-details-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+  .task-details-head h3 { min-width: 0; margin: 0; font-size: 14px; overflow-wrap: anywhere; }
+  .task-details { display: grid; grid-template-columns: minmax(110px, auto) minmax(0, 1fr); gap: 3px 12px; margin: 8px 0 2px; }
+  .task-details dt { color: var(--muted); }
+  .task-details dd { margin: 0; min-width: 0; width: 100%; overflow-wrap: anywhere; word-break: break-word; }
+  details > summary { color: var(--accent); cursor: pointer; }
+  .technical { font-size: 12px; }
+  .status { color: var(--c); font-weight: 600; white-space: nowrap; }
+  .over { color: #f0a742; }
+  .empty { color: var(--muted); font-style: italic; }
+  .notes { color: var(--muted); margin: 0; padding-left: 18px; }
+  .hint { color: var(--muted); font-size: 12px; margin: 10px 0 0; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .toolbar input { background: #0e141d; border: 1px solid var(--line); color: var(--text); border-radius: 8px;
+    padding: 6px 10px; min-width: 200px; font: inherit; }
+  .chip { background: #0e141d; border: 1px solid var(--line); color: var(--muted); border-radius: 999px;
+    padding: 4px 11px; cursor: pointer; font: inherit; font-size: 12px; }
+  .chip.active { background: var(--accent); color: #0d1117; border-color: var(--accent); font-weight: 600; }
+  footer { color: var(--muted); font-size: 11.5px; margin-top: 22px; border-top: 1px solid var(--line);
+    padding-top: 12px; }
+  /* The phone layout comes last, so it wins over every base rule above. */
+  @media (max-width: 640px) {
+    /* The state and the action come first; the Gantt opens on its own,
+       below the table that carries the same leaves. */
+    .page { display: flex; flex-direction: column; }
+    /* A flex item keeps its content width by default, so the wide Gantt
+       would push the whole page sideways. The panels have to be allowed to
+       shrink and scroll inside. */
+    .page > * { min-width: 0; max-width: 100%; }
+    .panel, .grid > *, .kpis { min-width: 0; }
+    .panel-gantt { order: 8; }
+    footer { order: 9; }
+    body { padding: 14px 10px 36px; }
+    .panel { padding: 12px; border-radius: 11px; }
+    h1 { font-size: 19px; }
+    /* The cards become compact rows: on a phone the state and the action
+       have to be visible without a grid of boxes. */
+    .kpis { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+    .kpi { padding: 8px 10px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; }
+    .kpi-label { order: 1; flex: 0 0 auto; }
+    .kpi-value { order: 2; font-size: 19px; margin: 0; }
+    .kpi-hint { order: 3; flex: 1 1 100%; font-size: 11px; }
+    .toolbar input { min-width: 0; width: 100%; }
+    /* Every touch target is at least 44 CSS px. */
+    .chip, .task-details-trigger, .task-details-close, .toolbar input, .toolbar select { min-height: 44px; min-width: 44px; }
+    .task-details { grid-template-columns: minmax(0, 1fr); gap: 0; }
+    .task-details dd { margin-bottom: 8px; }
+    /* The leaf table becomes one compact row per leaf instead of a wide
+       table that has to be scrolled sideways. */
+    .table-leaves { min-width: 0; display: block; }
+    .table-leaves thead { display: none; }
+    .table-leaves tbody { display: block; }
+    .table-leaves tr { display: block; padding: 8px 0; border-bottom: 1px solid var(--line); }
+    .table-leaves td { display: flex; gap: 10px; justify-content: space-between; align-items: baseline;
+      border: none; padding: 2px 0; text-align: right; }
+    .table-leaves td::before { content: attr(data-label); color: var(--muted); font-size: 11px;
+      text-transform: uppercase; letter-spacing: .05em; text-align: left; flex: 0 0 auto; }
+    .table-leaves td.task-title { display: block; text-align: left; }
+    .table-leaves td.task-title::before { content: none; }
+    .table-leaves td:last-child { justify-content: flex-start; }
+    .table-leaves td:last-child::before { content: none; }
+    .table-scroll { overflow-x: visible; }
+    /* The opened task is a card under its own row, not another table cell. */
+    .table-leaves tr.task-details-row { display: block; padding: 0; border: none; }
+    .table-leaves tr.task-details-row > td { display: block; padding: 0; text-align: left; }
+    .table-leaves tr.task-details-row > td::before { content: none; }
+  }
+
+</style>
+</head>
+<body>
+<div class="page">
+<div class="progress-strip" id="lhc-progress-strip" role="button" tabindex="0" data-tile="all" aria-label="Степень прогресса — показать все задачи"><div class="progress-strip-line"><span class="progress-strip-title">Степень прогресса</span><span class="progress-strip-value">6 / 12</span><span class="progress-strip-percent">50%</span><span class="progress-strip-hint">от 1 ч 50 мин до 2 ч 40 мин</span></div><div class="progress-strip-bar"><div class="seg" style="width:50.0000%;background:var(--st-done)" title="Готово: 6"></div><div class="seg" style="width:50.0000%;background:var(--st-queued)" title="В очереди: 6"></div></div></div>
+
+<header><div><h1>Last Human Commit: понятный план до проверки результата</h1><div class="sub">LHC · graph-json · план обновлён 2026-10-23 03:08:26 · ревизия fff970c0fc97 · собран 23.10.2026 03:42</div></div><div class="head-actions"><button type="button" class="theme-toggle" id="theme-toggle" aria-label="Переключить тему">Тема: как в системе</button><div class="head-count"><b>12</b><span>задач в графе</span></div></div></header>
+
+
+
+<p class="snapshot-note">Это снимок плана, а не панель управления: фактическое состояние работы приходит из API владельцев, а не из пересказа агента в графе.</p>
+
+<div class="kpis" id="lhc-state"><div class="kpi kpi-tile" data-tile="done" role="button" tabindex="0" aria-label="Готово: 6 / 12 — показать задачи" style="--accent:var(--st-done)"><div class="kpi-label" title="Готово">✅ Готово</div><div class="kpi-value">6 / 12</div><div class="kpi-hint">50.0% листьев</div></div><div class="kpi kpi-tile" data-tile="running" role="button" tabindex="0" aria-label="В работе: 0 — показать задачи" style="--accent:var(--st-running)"><div class="kpi-label" title="В работе">🔄 В работе</div><div class="kpi-value">0</div><div class="kpi-hint">сейчас выполняется</div></div><div class="kpi kpi-tile" data-tile="blocked" role="button" tabindex="0" aria-label="Заблокировано: 0 — показать задачи" style="--accent:var(--st-blocked)"><div class="kpi-label" title="Заблокировано">⛔ Заблокировано</div><div class="kpi-value">0</div><div class="kpi-hint">нужен внешний ход</div></div><div class="kpi kpi-tile" data-tile="queued" role="button" tabindex="0" aria-label="В очереди: 6 — показать задачи" style="--accent:var(--st-queued)"><div class="kpi-label" title="В очереди">⋯ В очереди</div><div class="kpi-value">6</div><div class="kpi-hint">ждут своего слота</div></div><div class="kpi kpi-tile" data-tile="deferred" role="button" tabindex="0" aria-label="Отложено владельцем: 0 — показать задачи" style="--accent:var(--st-deferred)"><div class="kpi-label" title="Отложено владельцем">⏸ Отложено владельцем</div><div class="kpi-value">0</div><div class="kpi-hint">ответа не ждём, вне остатка</div></div><div class="kpi kpi-tile" data-tile="unfinished" role="button" tabindex="0" aria-label="Осталось: 6 — показать задачи" style="--accent:var(--st-queued)"><div class="kpi-label" title="Осталось">⋯ Осталось</div><div class="kpi-value">6</div><div class="kpi-hint">не завершено · отложено владельцем: 0 (в остаток не входит)</div></div><div class="kpi kpi-tile" data-tile="parallel" role="button" tabindex="0" aria-label="Параллельность: 0 / 3 — показать задачи" style="--accent:var(--st-running)"><div class="kpi-label" title="Параллельность">Параллельность</div><div class="kpi-value">0 / 3</div><div class="kpi-hint">пик по плану 2</div></div><div class="kpi kpi-tile" data-tile="remaining" role="button" tabindex="0" aria-label="Осталось по плану: 2 ч 40 мин — показать задачи" style="--accent:var(--st-waiting)"><div class="kpi-label" title="Осталось по плану">Осталось по плану</div><div class="kpi-value">2 ч 40 мин</div><div class="kpi-hint">от 1 ч 50 мин до 2 ч 40 мин</div></div><div class="kpi kpi-tile" data-tile="forecast" role="button" tabindex="0" aria-label="Прогноз финиша: 12:35–13:25 — показать задачи" style="--accent:var(--st-done)"><div class="kpi-label" title="Прогноз финиша">Прогноз финиша</div><div class="kpi-value">12:35–13:25</div><div class="kpi-hint">отсчёт от последнего события 10:45 · простой 0 мин</div></div><div class="kpi kpi-tile" data-tile="effort" role="button" tabindex="0" aria-label="Усилие: 6 ч 10 мин — показать задачи" style="--accent:var(--st-queued)"><div class="kpi-label" title="Усилие">Усилие</div><div class="kpi-value">6 ч 10 мин</div><div class="kpi-hint">критический путь 5 ч 40 мин</div></div></div>
+
+<div class="tile-card" id="lhc-tile-card" hidden></div>
+<template id="lhc-tile-index">{"tiles": {"all": ["L01", "L02", "L03", "L04", "L05", "L06", "L07", "L08", "L09", "L10", "L11", "L12"], "done": ["L01", "L02", "L03", "L04", "L05", "L06"], "running": [], "blocked": [], "queued": ["L07", "L08", "L09", "L10", "L11", "L12"], "deferred": [], "unfinished": ["L07", "L08", "L09", "L10", "L11", "L12"], "parallel": ["L01"], "remaining": ["L07", "L08", "L09", "L10", "L11", "L12"], "forecast": ["L12"], "effort": ["L01", "L02", "L03", "L04", "L05", "L06", "L07", "L08", "L09", "L10", "L12"]}, "titles": {"done": "Готово", "running": "В работе", "blocked": "Заблокировано", "queued": "В очереди", "deferred": "Отложено владельцем", "unfinished": "Осталось", "parallel": "Параллельность", "remaining": "Осталось по плану", "forecast": "Прогноз финиша", "effort": "Усилие", "all": "Все задачи плана"}, "leaves": {"L01": {"id": "L01", "template": 0, "label": "понятный выбор режима и план до реализации", "status": "done", "status_label": "Готово", "owner": "Lead", "estimate": "25 мин"}, "L02": {"id": "L02", "template": 1, "label": "полный цикл выбран по объёму и риску", "status": "done", "status_label": "Готово", "owner": "Planner/Artifact Writer (delegated by Lead)", "estimate": "20 мин"}, "L03": {"id": "L03", "template": 2, "label": "Lead выбирает короткий или полный цикл и заранее показывает человеку план", "status": "done", "status_label": "Готово", "owner": "Worker L03–L06", "estimate": "20 мин–30 мин"}, "L04": {"id": "L04", "template": 3, "label": "длинное описание и список файлов видны в плане", "status": "done", "status_label": "Готово", "owner": "Worker L03–L06", "estimate": "30 мин–45 мин"}, "L05": {"id": "L05", "template": 4, "label": "исполнители передают подробный результат в файлах", "status": "done", "status_label": "Готово", "owner": "Worker L03–L06", "estimate": "20 мин–30 мин"}, "L06": {"id": "L06", "template": 5, "label": "все входы ведут к плану и проверке результата", "status": "done", "status_label": "Готово", "owner": "Worker L03–L06", "estimate": "20 мин–30 мин"}, "L07": {"id": "L07", "template": 6, "label": "читатель понимает пользу, статус, доказательства и следующий шаг", "status": "queued", "status_label": "В очереди", "owner": "Independent reader", "estimate": "20 мин"}, "L08": {"id": "L08", "template": 7, "label": "замечания читателя устранены и результат понятен повторно", "status": "queued", "status_label": "В очереди", "owner": "Worker L03–L06", "estimate": "15 мин–25 мин"}, "L09": {"id": "L09", "template": 8, "label": "новые файлы сохраняются и старые планы открываются", "status": "queued", "status_label": "В очереди", "owner": "Independent compatibility tester", "estimate": "25 мин–40 мин"}, "L10": {"id": "L10", "template": 9, "label": "установленная версия совпадает с проверенным выпуском", "status": "queued", "status_label": "В очереди", "owner": "Release Worker", "estimate": "25 мин–35 мин"}, "L11": {"id": "L11", "template": 10, "label": "короткая задача завершается планом Lead-а и файловой передачей результата", "status": "queued", "status_label": "В очереди", "owner": "Independent tester A", "estimate": "20 мин–30 мин"}, "L12": {"id": "L12", "template": 11, "label": "полный цикл завершается независимой проверкой установленной версии", "status": "queued", "status_label": "В очереди", "owner": "Independent tester B", "estimate": "25 мин–40 мин"}}}</template>
+
+<div class="panel panel-now">
+  <div class="panel-head"><h2>Что делать сейчас</h2><div class="slots-badge">Свободных слотов: <b>3 из 3</b></div></div><div class="now-grid"><section class="now-col"><h3><span class="now-glyph">🔄</span> В работе <span class="now-count">0</span></h3><div class="now-empty">Сейчас не идёт ни одна линия.</div></section><section class="now-col"><h3><span class="now-glyph">🚀</span> Готовы к запуску <span class="now-count">1</span></h3><ul class="now-list"><li class="now-item"><div class="now-head"><span class="now-id">L07</span><span class="now-name">читатель понимает пользу, статус, доказательства и следующий шаг</span></div><div class="now-meta">оценка 20 мин · разблокирует: замечания читателя устранены и ре…</div></li></ul></section><section class="now-col"><h3><span class="now-glyph">⛔</span> Заблокированы <span class="now-count">0</span></h3><div class="now-empty">Активных блокеров нет.</div></section></div><div class="now-subtitle">Ждут зависимостей (5)</div><div class="wait-list"><span class="wait-chip" title="замечания читателя устранены и результат понятен повторно">L08 ← L07</span><span class="wait-chip" title="новые файлы сохраняются и старые планы открываются">L09 ← L08</span><span class="wait-chip" title="установленная версия совпадает с проверенным выпуском">L10 ← L09</span><span class="wait-chip" title="короткая задача завершается планом Lead-а и файловой передачей результата">L11 ← L10</span><span class="wait-chip" title="полный цикл завершается независимой проверкой установленной версии">L12 ← L10</span></div><div class="hint">Источник расчёта: lhc_parallel.</div>
+</div>
+
+<div class="panel panel-blocking" id="lhc-blocking">
+  <h2>Что блокирует</h2>
+  <div class="empty">Ничего не блокировано и от меня ничего не нужно.</div>
+</div>
+
+<details class="panel brief-details brief-why-details" open>
+  <summary>Цель и ожидаемый бизнес-результат</summary>
+  <div class="brief brief-why"><article class="brief-card brief-goal"><h2>Цель</h2><p>выпустить native LHC, который помогает Lead-у вести понятный русскоязычный план от понимания запроса до проверки результата.</p></article><article class="brief-card brief-result"><h2>Ожидаемый бизнес-результат</h2><p>в установленном LHC пользователь читает понятный русский план: какой результат получит, кто что сделает и как проверить; статусы и квитанции показаны отдельно.</p></article></div>
+</details>
+
+
+
+<div class="panel panel-progress">
+  <div class="progress"><div class="seg" style="width:50.0000%;background:var(--st-done)" title="Готово: 6"></div><div class="seg" style="width:50.0000%;background:var(--st-queued)" title="В очереди: 6"></div></div>
+  <div class="legend"><span class="legend-item"><i style="background:var(--st-done)"></i>Готово · 6</span><span class="legend-item"><i style="background:var(--st-queued)"></i>В очереди · 6</span></div>
+</div>
+
+<details class="panel brief-details">
+  <summary>Подтверждённый прогресс и внешние ожидания</summary>
+  <div class="brief"><article class="brief-card"><h2>Подтверждённый прогресс</h2><p>Stage 2 blind reading подтвердил, что проблема структурная: человек не может восстановить цель и шаги проверки, а технические статусы подменяют результат.</p></article></div>
+</details>
+
+
+
+<div class="panel panel-gantt" id="lhc-plan-gantt">
+  <h2>Гант · листья и параллельные волны</h2>
+  <div class="gantt"><div class="gantt-inner">
+    <div class="gantt-axis-row"><div class="gantt-axis-spacer"></div><div class="gantt-axis"><div class="tick tick-0" style="left:0.0000%">0 мин</div><div class="tick tick-1" style="left:16.6667%">56 мин</div><div class="tick tick-2" style="left:33.3333%">1 ч 53 мин</div><div class="tick tick-3" style="left:50.0000%">2 ч 50 мин</div><div class="tick tick-4" style="left:66.6667%">3 ч 47 мин</div><div class="tick tick-5" style="left:83.3333%">4 ч 43 мин</div><div class="tick tick-6" style="left:100.0000%">5 ч 40 мин</div></div></div>
+    <div class="wave-row"><span>Волна 1</span><span class="wave-count">1 листьев</span></div><div class="gantt-row" data-status="done" data-leaf="L01"><div class="gantt-label" title="понятный выбор режима и план до реализации"><span class="gantt-line"><span class="dot" style="background:var(--st-done)"></span><span class="gantt-id" title="L01">L01</span><span class="gantt-text">понятный выбор режима и план до реализации</span></span><span class="gantt-line gantt-meta"><span class="gantt-status">✅ Готово</span><span class="crit" title="критический путь">◆ критический путь</span></span></div><div class="gantt-track"><div class="bar" style="left:0.0000%;width:7.3529%;background:var(--st-done)" title="L01 · понятный выбор режима и план до реализации
+статус: Готово
+оценка: 25 мин
+начало: 10:25
+на критическом пути"></div></div></div><div class="wave-row"><span>Волна 2</span><span class="wave-count">1 листьев</span></div><div class="gantt-row" data-status="done" data-leaf="L02"><div class="gantt-label" title="полный цикл выбран по объёму и риску"><span class="gantt-line"><span class="dot" style="background:var(--st-done)"></span><span class="gantt-id" title="L02">L02</span><span class="gantt-text">полный цикл выбран по объёму и риску</span></span><span class="gantt-line gantt-meta"><span class="gantt-status">✅ Готово</span><span class="crit" title="критический путь">◆ критический путь</span></span></div><div class="gantt-track"><div class="bar" style="left:7.3529%;width:5.8824%;background:var(--st-done)" title="L02 · полный цикл выбран по объёму и риску
+статус: Готово
+оценка: 20 мин
+начало: 10:45
+зависит: понятный выбор режима и план до реализации
+на критическом пути"></div></div></div><div class="wave-row"><span>Волна 3</span><span class="wave-count">1 листьев</span></div><div class="gantt-row" data-status="done" data-leaf="L03"><div class="gantt-label" title="Lead выбирает короткий или полный цикл и заранее показывает человеку план"><span class="gantt-line"><span class="dot" style="background:var(--st-done)"></span><span class="gantt-id" title="L03">L03</span><span class="gantt-text">Lead выбирает короткий или полный цикл и заранее показывает человеку план</span></span><span class="gantt-line gantt-meta"><span class="gantt-status">✅ Готово</span><span class="crit" title="критический путь">◆ критический путь</span></span></div><div class="gantt-track"><div class="bar" style="left:13.2353%;width:8.8235%;background:var(--st-done)" title="L03 · Lead выбирает короткий или полный цикл и заранее показывает человеку план
+статус: Готово
+оценка: 20 мин–30 мин
+начало: 03:10
+зависит: полный цикл выбран по объёму и риску
+на критическом пути"></div></div></div><div class="wave-row"><span>Волна 4</span><span class="wave-count">1 листьев</span></div><div class="gantt-row" data-status="done" data-leaf="L04"><div class="gantt-label" title="длинное описание и список файлов видны в плане"><span class="gantt-line"><span class="dot" style="background:var(--st-done)"></span><span class="gantt-id" title="L04">L04</span><span class="gantt-text">длинное описание и список файлов видны в плане</span></span><span class="gantt-line gantt-meta"><span class="gantt-status">✅ Готово</span><span class="crit" title="критический путь">◆ критический путь</span></span></div><div class="gantt-track"><div class="bar" style="left:22.0588%;width:13.2353%;background:var(--st-done)" title="L04 · длинное описание и список файлов видны в плане
+статус: Готово
+оценка: 30 мин–45 мин
+зависит: Lead выбирает короткий или полный цикл и заранее показывает человеку план
+на критическом пути"></div></div></div><div class="wave-row"><span>Волна 5</span><span class="wave-count">1 листьев</span></div><div class="gantt-row" data-status="done" data-leaf="L05"><div class="gantt-label" title="исполнители передают подробный результат в файлах"><span class="gantt-line"><span class="dot" style="background:var(--st-done)"></span><span class="gantt-id" title="L05">L05</span><span class="gantt-text">исполнители передают подробный результат в файлах</span></span><span class="gantt-line gantt-meta"><span class="gantt-status">✅ Готово</span><span class="crit" title="критический путь">◆ критический путь</span></span></div><div class="gantt-track"><div class="bar" style="left:35.2941%;width:8.8235%;background:var(--st-done)" title="L05 · исполнители передают подробный результат в файлах
+статус: Готово
+оценка: 20 мин–30 мин
+зависит: длинное описание и список файлов видны в плане
+на критическом пути"></div></div></div><div class="wave-row"><span>Волна 6</span><span class="wave-count">1 листьев</span></div><div class="gantt-row" data-status="done" data-leaf="L06"><div class="gantt-label" title="все входы ведут к плану и проверке результата"><span class="gantt-line"><span class="dot" style="background:var(--st-done)"></span><span class="gantt-id" title="L06">L06</span><span class="gantt-text">все входы ведут к плану и проверке результата</span></span><span class="gantt-line gantt-meta"><span class="gantt-status">✅ Готово</span><span class="crit" title="критический путь">◆ критический путь</span></span></div><div class="gantt-track"><div class="bar" style="left:44.1176%;width:8.8235%;background:var(--st-done)" title="L06 · все входы ведут к плану и проверке результата
+статус: Готово
+оценка: 20 мин–30 мин
+зависит: исполнители передают подробный результат в файлах
+на критическом пути"></div></div></div><div class="wave-row"><span>Волна 7</span><span class="wave-count">1 листьев</span></div><div class="gantt-row" data-status="queued" data-leaf="L07"><div class="gantt-label" title="читатель понимает пользу, статус, доказательства и следующий шаг"><span class="gantt-line"><span class="dot" style="background:var(--st-queued)"></span><span class="gantt-id" title="L07">L07</span><span class="gantt-text">читатель понимает пользу, статус, доказательства и следующий шаг</span></span><span class="gantt-line gantt-meta"><span class="gantt-status">⋯ В очереди</span><span class="crit" title="критический путь">◆ критический путь</span></span></div><div class="gantt-track"><div class="bar" style="left:52.9412%;width:5.8824%;background:var(--st-queued)" title="L07 · читатель понимает пользу, статус, доказательства и следующий шаг
+статус: В очереди
+оценка: 20 мин
+зависит: все входы ведут к плану и проверке результата
+на критическом пути"></div></div></div><div class="wave-row"><span>Волна 8</span><span class="wave-count">1 листьев</span></div><div class="gantt-row" data-status="queued" data-leaf="L08"><div class="gantt-label" title="замечания читателя устранены и результат понятен повторно"><span class="gantt-line"><span class="dot" style="background:var(--st-queued)"></span><span class="gantt-id" title="L08">L08</span><span class="gantt-text">замечания читателя устранены и результат понятен повторно</span></span><span class="gantt-line gantt-meta"><span class="gantt-status">⋯ В очереди</span><span class="crit" title="критический путь">◆ критический путь</span></span></div><div class="gantt-track"><div class="bar" style="left:58.8235%;width:7.3529%;background:var(--st-queued)" title="L08 · замечания читателя устранены и результат понятен повторно
+статус: В очереди
+оценка: 15 мин–25 мин
+зависит: читатель понимает пользу, статус, доказательства и следующий шаг
+на критическом пути"></div></div></div><div class="wave-row"><span>Волна 9</span><span class="wave-count">1 листьев</span></div><div class="gantt-row" data-status="queued" data-leaf="L09"><div class="gantt-label" title="новые файлы сохраняются и старые планы открываются"><span class="gantt-line"><span class="dot" style="background:var(--st-queued)"></span><span class="gantt-id" title="L09">L09</span><span class="gantt-text">новые файлы сохраняются и старые планы открываются</span></span><span class="gantt-line gantt-meta"><span class="gantt-status">⋯ В очереди</span><span class="crit" title="критический путь">◆ критический путь</span></span></div><div class="gantt-track"><div class="bar" style="left:66.1765%;width:11.7647%;background:var(--st-queued)" title="L09 · новые файлы сохраняются и старые планы открываются
+статус: В очереди
+оценка: 25 мин–40 мин
+зависит: замечания читателя устранены и результат понятен повторно
+на критическом пути"></div></div></div><div class="wave-row"><span>Волна 10</span><span class="wave-count">1 листьев</span></div><div class="gantt-row" data-status="queued" data-leaf="L10"><div class="gantt-label" title="установленная версия совпадает с проверенным выпуском"><span class="gantt-line"><span class="dot" style="background:var(--st-queued)"></span><span class="gantt-id" title="L10">L10</span><span class="gantt-text">установленная версия совпадает с проверенным выпуском</span></span><span class="gantt-line gantt-meta"><span class="gantt-status">⋯ В очереди</span><span class="crit" title="критический путь">◆ критический путь</span></span></div><div class="gantt-track"><div class="bar" style="left:77.9412%;width:10.2941%;background:var(--st-queued)" title="L10 · установленная версия совпадает с проверенным выпуском
+статус: В очереди
+оценка: 25 мин–35 мин
+зависит: новые файлы сохраняются и старые планы открываются
+на критическом пути"></div></div></div><div class="wave-row"><span>Волна 11</span><span class="wave-count">2 листьев</span></div><div class="gantt-row" data-status="queued" data-leaf="L11"><div class="gantt-label" title="короткая задача завершается планом Lead-а и файловой передачей результата"><span class="gantt-line"><span class="dot" style="background:var(--st-queued)"></span><span class="gantt-id" title="L11">L11</span><span class="gantt-text">короткая задача завершается планом Lead-а и файловой передачей результата</span></span><span class="gantt-line gantt-meta"><span class="gantt-status">⋯ В очереди</span></span></div><div class="gantt-track"><div class="bar" style="left:88.2353%;width:8.8235%;background:var(--st-queued)" title="L11 · короткая задача завершается планом Lead-а и файловой передачей результата
+статус: В очереди
+оценка: 20 мин–30 мин
+зависит: установленная версия совпадает с проверенным выпуском"></div></div></div><div class="gantt-row" data-status="queued" data-leaf="L12"><div class="gantt-label" title="полный цикл завершается независимой проверкой установленной версии"><span class="gantt-line"><span class="dot" style="background:var(--st-queued)"></span><span class="gantt-id" title="L12">L12</span><span class="gantt-text">полный цикл завершается независимой проверкой установленной версии</span></span><span class="gantt-line gantt-meta"><span class="gantt-status">⋯ В очереди</span><span class="crit" title="критический путь">◆ критический путь</span></span></div><div class="gantt-track"><div class="bar" style="left:88.2353%;width:11.7647%;background:var(--st-queued)" title="L12 · полный цикл завершается независимой проверкой установленной версии
+статус: В очереди
+оценка: 25 мин–40 мин
+зависит: установленная версия совпадает с проверенным выпуском
+на критическом пути"></div></div></div>
+  </div></div>
+</div>
+
+<div class="grid">
+  <div class="panel panel-leaves" id="lhc-leaves">
+    <h2>Листья</h2>
+    <div class="hint">граф: 12 листьев · слотов: 3 · пик параллельности 2</div>
+    <div class="toolbar">
+      <input id="search" type="search" placeholder="Поиск по листу, id, владельцу, сессии или модели…">
+      <button class="chip active" data-filter="all">все</button>
+      <button class="chip" data-filter="done">готово</button>
+      <button class="chip" data-filter="running">в работе</button>
+      <button class="chip" data-filter="blocked">блокеры</button>
+      <button class="chip" data-filter="queued">в очереди</button>
+    </div>
+    <div class='table-scroll'><table class='table table-leaves'><thead><tr><th>Задача</th><th>Статус</th><th>Оценка</th><th>Усилие</th><th>Детали</th></tr></thead><tbody><tr data-status="done" data-text="l01 понятный выбор режима и план до реализации lead подтверждены первичными файлами конфликт quickfix/fullcycle, принудительные текстовые лимиты, схема export/render/check и генерация native-проекций. итог записан в research receipts; exmanager runtime не проверялся и его источники не менялись. lead сверил источник правил, реальную классификацию короткого и полного циклов, ограничения task graph, обновление пакета и независимые отзывы. stage 2 blind comparison exmanager подтверждает, что бизнес-результат нельзя заменять публикацией, кодами этапов или тестовыми статусами. .agents/tasks/20261023-human-plans-and-orchestration/research/intent.md" data-details-id='0' class='leaf-row'><td class='task-title'><span class='row-id'>L01</span><span class='row-name'>понятный выбор режима и план до реализации</span><span class='row-meta'>владелец: Lead</span></td><td data-label="Статус"><span class="status" style="--c:var(--st-done)">✅ Готово</span></td><td data-label="Оценка">25 мин</td><td data-label="Усилие" class="">не измерено</td><td class='details-cell'><button type='button' class='task-details-trigger' data-details-id='0' aria-expanded='false' aria-label='Подробнее: понятный выбор режима и план до реализации'>Подробнее</button></td></tr><tr data-status="done" data-text="l02 полный цикл выбран по объёму и риску planner/artifact writer (delegated by lead) plan contains the customer benefit, leaf descriptions, owners, acceptance, file scope, dependencies, estimates and separate release/consumer checks. no user plan-approval wait is introduced. lead owns intent, mode, decomposition and acceptance decisions. the delegated planner/artifact writer is the exclusive writer of the five plan files; lead validates the derived output through context-mode. this applies equally to short and full cycles and uses parent routing for handoff. .agents/tasks/20261023-human-plans-and-orchestration/task.md .agents/tasks/20261023-human-plans-and-orchestration/progress.md .agents/tasks/20261023-human-plans-and-orchestration/plan.graph.json .agents/tasks/20261023-human-plans-and-orchestration/plan.html .agents/tasks/20261023-human-plans-and-orchestration/plan.md" data-details-id='1' class='leaf-row'><td class='task-title'><span class='row-id'>L02</span><span class='row-name'>полный цикл выбран по объёму и риску</span><span class='row-meta'>владелец: Planner/Artifact Writer (delegated by Lead)</span></td><td data-label="Статус"><span class="status" style="--c:var(--st-done)">✅ Готово</span></td><td data-label="Оценка">20 мин</td><td data-label="Усилие" class="">не измерено</td><td class='details-cell'><button type='button' class='task-details-trigger' data-details-id='1' aria-expanded='false' aria-label='Подробнее: полный цикл выбран по объёму и риску'>Подробнее</button></td></tr><tr data-status="done" data-text="l03 lead выбирает короткий или полный цикл и заранее показывает человеку план worker l03–l06 технический статус классификатора и стадий выполнения показывается отдельно от того, что сможет проверить пользователь. tests and examples cover bounded fixes, small behavior changes, broad/high-risk changes and user-assigned leaves. short mode still requires a proportional independent tester and real-path verification; full mode requires two independent testers of the installed outcome. a leaf assignment cannot force a shorter mode or waive planning. change the lead router and task-class rules so the lead first understands the requested result, then chooses a short or full cycle from scope and risk. both modes require a user-readable lead-owned plan before implementation; assigned leaves remain execution slices and do not own or skip the parent plan. agents.md product-philosophy.md src/common/agents/lead.md src/common/protocols/outcome_contract.md src/common/skills/last-human-commit/skill.md src/common/tools/lhc_outcome.py tests/test_lhc_outcome.py" data-details-id='2' class='leaf-row'><td class='task-title'><span class='row-id'>L03</span><span class='row-name'>Lead выбирает короткий или полный цикл и заранее показывает человеку план</span><span class='row-meta'>владелец: Worker L03–L06</span></td><td data-label="Статус"><span class="status" style="--c:var(--st-done)">✅ Готово</span></td><td data-label="Оценка">20 мин–30 мин</td><td data-label="Усилие" class="">не измерено</td><td class='details-cell'><button type='button' class='task-details-trigger' data-details-id='2' aria-expanded='false' aria-label='Подробнее: Lead выбирает короткий или полный цикл и заранее показывает человеку план'>Подробнее</button></td></tr><tr data-status="done" data-text="l04 длинное описание и список файлов видны в плане worker l03–l06 also correct the documented difference between available slots and observed parallel tasks; keep effort, elapsed window, waiting time and unknown estimates separate. fixtures with text beyond all former caps and several affected files survive repeated export/render/check; schema-v1 and prior schema-v2 plans still load. automated checks reject mismatched report/graph details, dangling anchors and inconsistent dependency/coverage maps. unknown estimates never become zero-duration forecasts; labels cannot imply user acceptance from done/source/test/publication status. the html visibly shows available card and section data, russian explanations, blocker ownership/next step and an honest acceptance scenario. add an uncapped human-readable task description and a separate affected_files json field. carry both through report/json import, export, --merge, html and markdown rendering and check-plan without mixing them with business_result, progress or receipts. render every embedded field visibly, give fragment links real targets, separate current from historical blockers, keep unknown estimates unknown, make task status and user acceptance distinct, use plain russian, and keep phase/dependency maps consistent and visibly complete. src/common/protocols/task_graph.md src/common/protocols/plan_report.md src/common/tools/lhc_grid.py tests/test_lhc_grid.py tests/test_lhc_grid_regressions.py tests/test_lhc_plan_surface.py" data-details-id='3' class='leaf-row'><td class='task-title'><span class='row-id'>L04</span><span class='row-name'>длинное описание и список файлов видны в плане</span><span class='row-meta'>владелец: Worker L03–L06</span></td><td data-label="Статус"><span class="status" style="--c:var(--st-done)">✅ Готово</span></td><td data-label="Оценка">30 мин–45 мин</td><td data-label="Усилие" class="">не измерено</td><td class='details-cell'><button type='button' class='task-details-trigger' data-details-id='3' aria-expanded='false' aria-label='Подробнее: длинное описание и список файлов видны в плане'>Подробнее</button></td></tr><tr data-status="done" data-text="l05 исполнители передают подробный результат в файлах worker l03–l06 an independent worker can write its scoped result file and the lead can resume from progress.md plus task.md/plan graph and the referenced receipt. routine updates stay in files; chat carries only decisions, blockers or readiness. define one durable folder and file format for briefs, progress, decisions, blockers, results, tests, receipts, commits and next actions. state which role owns the plan, what each worker can write, how handoff is recorded and what the next lead reads after compaction. src/common/protocols/orchestration_records.md src/common/skills/task-decomposition/skill.md src/common/skills/plan-artifacts/skill.md src/common/profiles/planning.md" data-details-id='4' class='leaf-row'><td class='task-title'><span class='row-id'>L05</span><span class='row-name'>исполнители передают подробный результат в файлах</span><span class='row-meta'>владелец: Worker L03–L06</span></td><td data-label="Статус"><span class="status" style="--c:var(--st-done)">✅ Готово</span></td><td data-label="Оценка">20 мин–30 мин</td><td data-label="Усилие" class="">не измерено</td><td class='details-cell'><button type='button' class='task-details-trigger' data-details-id='4' aria-expanded='false' aria-label='Подробнее: исполнители передают подробный результат в файлах'>Подробнее</button></td></tr><tr data-status="done" data-text="l06 все входы ведут к плану и проверке результата worker l03–l06 the source entrypoints and generated package copies all explain mode selection, lead plan ownership, file-based handoff and the mode-appropriate independent tester count. generated files are refreshed from their canonical sources, not edited as a second source. bring the native entrypoints, short-route aliases and harness templates back to one canonical workflow so none tells a lead or assigned worker to skip a required plan or consumer proof. src/common/templates/project-router.md adapters/codex/templates/subagent.md adapters/claude-code/templates/subagent.md adapters/zcode/templates/subagent.md adapters/hermes/templates/subagent.md" data-details-id='5' class='leaf-row'><td class='task-title'><span class='row-id'>L06</span><span class='row-name'>все входы ведут к плану и проверке результата</span><span class='row-meta'>владелец: Worker L03–L06</span></td><td data-label="Статус"><span class="status" style="--c:var(--st-done)">✅ Готово</span></td><td data-label="Оценка">20 мин–30 мин</td><td data-label="Усилие" class="">не измерено</td><td class='details-cell'><button type='button' class='task-details-trigger' data-details-id='5' aria-expanded='false' aria-label='Подробнее: все входы ведут к плану и проверке результата'>Подробнее</button></td></tr><tr data-status="queued" data-text="l07 читатель понимает пользу, статус, доказательства и следующий шаг independent reader the reader names the customer-visible result and a reproducible input/action/visible-output check. the reader does not treat source publication, a task count or a green test as user acceptance. read the rendered plan without the source conversation, then report what a person would believe is available, who changes what, how to verify it and what remains unknown. .agents/tasks/20261023-human-plans-and-orchestration/reviews/plan-review-final.md" data-details-id='6' class='leaf-row'><td class='task-title'><span class='row-id'>L07</span><span class='row-name'>читатель понимает пользу, статус, доказательства и следующий шаг</span><span class='row-meta'>владелец: Independent reader</span></td><td data-label="Статус"><span class="status" style="--c:var(--st-queued)">⋯ В очереди</span></td><td data-label="Оценка">20 мин</td><td data-label="Усилие" class="">не измерено</td><td class='details-cell'><button type='button' class='task-details-trigger' data-details-id='6' aria-expanded='false' aria-label='Подробнее: читатель понимает пользу, статус, доказательства и следующий шаг'>Подробнее</button></td></tr><tr data-status="queued" data-text="l08 замечания читателя устранены и результат понятен повторно worker l03–l06 every supported reader finding is fixed or documented as an unresolved external condition. the lead records why; no user requirement is quietly weakened. use the independent reader's concrete obstacles to fix the source fields, labels or renderer that caused them, then rebuild the candidate plan from the corrected rules. human-facing plan and workflow sources called out by the reader" data-details-id='7' class='leaf-row'><td class='task-title'><span class='row-id'>L08</span><span class='row-name'>замечания читателя устранены и результат понятен повторно</span><span class='row-meta'>владелец: Worker L03–L06</span></td><td data-label="Статус"><span class="status" style="--c:var(--st-queued)">⋯ В очереди</span></td><td data-label="Оценка">15 мин–25 мин</td><td data-label="Усилие" class="">не измерено</td><td class='details-cell'><button type='button' class='task-details-trigger' data-details-id='7' aria-expanded='false' aria-label='Подробнее: замечания читателя устранены и результат понятен повторно'>Подробнее</button></td></tr><tr data-status="queued" data-text="l09 новые файлы сохраняются и старые планы открываются independent compatibility tester old fixtures remain readable; new details survive export, merge, render and check. automated coverage detects missing embedded fields, dangling anchors, mixed blocker history, conflicting/zero forecasts, unreproducible acceptance text, done-versus-user-outcome confusion, english/jargon and incomplete/truncated dependency maps. the receipt records exact commands/results and does not claim browser or installed acceptance. check the changed schema and real roundtrip behavior against an old plan and a new plan with long descriptions, affected files and separate evidence fields; exercise every new r01–r08 renderer regression fixture. .agents/tasks/20261023-human-plans-and-orchestration/receipts/l09.md" data-details-id='8' class='leaf-row'><td class='task-title'><span class='row-id'>L09</span><span class='row-name'>новые файлы сохраняются и старые планы открываются</span><span class='row-meta'>владелец: Independent compatibility tester</span></td><td data-label="Статус"><span class="status" style="--c:var(--st-queued)">⋯ В очереди</span></td><td data-label="Оценка">25 мин–40 мин</td><td data-label="Усилие" class="">не измерено</td><td class='details-cell'><button type='button' class='task-details-trigger' data-details-id='8' aria-expanded='false' aria-label='Подробнее: новые файлы сохраняются и старые планы открываются'>Подробнее</button></td></tr><tr data-status="queued" data-text="l10 установленная версия совпадает с проверенным выпуском release worker the published package version and commit match the verified source, and fleet installed-package readback confirms the same version. this does not claim that already-running sessions have reloaded. generate, validate, publish and independently read back the new native package through the current lhc release procedure; reconcile the existing main history first. plugins/last-human-commit/ package.json native publication metadata" data-details-id='9' class='leaf-row'><td class='task-title'><span class='row-id'>L10</span><span class='row-name'>установленная версия совпадает с проверенным выпуском</span><span class='row-meta'>владелец: Release Worker</span></td><td data-label="Статус"><span class="status" style="--c:var(--st-queued)">⋯ В очереди</span></td><td data-label="Оценка">25 мин–35 мин</td><td data-label="Усилие" class="">не измерено</td><td class='details-cell'><button type='button' class='task-details-trigger' data-details-id='9' aria-expanded='false' aria-label='Подробнее: установленная версия совпадает с проверенным выпуском'>Подробнее</button></td></tr><tr data-status="queued" data-text="l11 короткая задача завершается планом lead-а и файловой передачей результата independent tester a the tester independently finds the lead-owned plan before implementation, reads the user benefit and exact check, and resumes from the handoff file without chat. in browser open → snapshot, the task details, all available field content, affected-file list and linked targets are visible, and the test outcome is distinguishable from user acceptance. json-only checks do not satisfy this leaf. use the installed package in a fresh native agent session on a harmless bounded task with a long description and affected_files. follow the generated plan, verify the small outcome and hand off through the assigned worker result file. open plan.html in a browser and inspect actual cards and internal links. .agents/tasks/20261023-human-plans-and-orchestration/fixtures/short/ .agents/tasks/20261023-human-plans-and-orchestration/receipts/l11.md" data-details-id='10' class='leaf-row'><td class='task-title'><span class='row-id'>L11</span><span class='row-name'>короткая задача завершается планом Lead-а и файловой передачей результата</span><span class='row-meta'>владелец: Independent tester A</span></td><td data-label="Статус"><span class="status" style="--c:var(--st-queued)">⋯ В очереди</span></td><td data-label="Оценка">20 мин–30 мин</td><td data-label="Усилие" class="">не измерено</td><td class='details-cell'><button type='button' class='task-details-trigger' data-details-id='10' aria-expanded='false' aria-label='Подробнее: короткая задача завершается планом Lead-а и файловой передачей результата'>Подробнее</button></td></tr><tr data-status="queued" data-text="l12 полный цикл завершается независимой проверкой установленной версии independent tester b the tester sees a lead-owned plan before work and follows its visible dependencies. browser open → snapshot confirms the expected data is actually rendered, links land on targets, blockers/history and forecasts are honest, russian labels do not inflate task-count readiness, and the human test can be reproduced. source/installed/publication/test evidence remains separate from consumer acceptance. the receipt cites only this tester's own observed artifacts. use a second independent fresh installed lhc session to run a meaningful full-cycle fixture from user intent to a checked result, with assigned roles, two independent end checks and file-based progress/result handoff. open the generated plan.html in a browser and inspect the visible sections, task cards, fragment links and acceptance scenario. .agents/tasks/20261023-human-plans-and-orchestration/fixtures/full/ .agents/tasks/20261023-human-plans-and-orchestration/receipts/l12.md" data-details-id='11' class='leaf-row'><td class='task-title'><span class='row-id'>L12</span><span class='row-name'>полный цикл завершается независимой проверкой установленной версии</span><span class='row-meta'>владелец: Independent tester B</span></td><td data-label="Статус"><span class="status" style="--c:var(--st-queued)">⋯ В очереди</span></td><td data-label="Оценка">25 мин–40 мин</td><td data-label="Усилие" class="">не измерено</td><td class='details-cell'><button type='button' class='task-details-trigger' data-details-id='11' aria-expanded='false' aria-label='Подробнее: полный цикл завершается независимой проверкой установленной версии'>Подробнее</button></td></tr></tbody></table></div>
+    <div id='task-details-host' class='task-details-host' hidden></div><template id='task-details-template-0'><div class='task-details-card'><div class='task-details-head'><h3>понятный выбор режима и план до реализации</h3><button type='button' class='task-details-close'>Закрыть</button></div><dl class='task-details'><dt>Код</dt><dd>L01</dd><dt>Описание задачи</dt><dd>Lead сверил источник правил, реальную классификацию короткого и полного циклов, ограничения task graph, обновление пакета и независимые отзывы. Stage 2 blind comparison ExManager подтверждает, что бизнес-результат нельзя заменять публикацией, кодами этапов или тестовыми статусами.</dd><dt>Ожидаемый результат</dt><dd>Подтверждены первичными файлами конфликт quickfix/fullcycle, принудительные текстовые лимиты, схема export/render/check и генерация native-проекций. Итог записан в research receipts; ExManager runtime не проверялся и его источники не менялись.</dd><dt>Затрагиваемые файлы</dt><dd>.agents/tasks/20261023-human-plans-and-orchestration/research/intent.md</dd><dt>Владелец</dt><dd>Lead</dd><dt>Зависит от</dt><dd>—</dd><dt>Параллельно с</dt><dd>—</dd><dt>Сессия</dt><dd>—</dd><dt>Усилие (суммарно)</dt><dd>не измерено</dd><dt>Длительность по часам</dt><dd>—</dd></dl></div></template><template id='task-details-template-1'><div class='task-details-card'><div class='task-details-head'><h3>полный цикл выбран по объёму и риску</h3><button type='button' class='task-details-close'>Закрыть</button></div><dl class='task-details'><dt>Код</dt><dd>L02</dd><dt>Описание задачи</dt><dd>Lead owns intent, mode, decomposition and acceptance decisions. The delegated Planner/Artifact Writer is the exclusive writer of the five plan files; Lead validates the derived output through context-mode. This applies equally to short and full cycles and uses parent routing for handoff.</dd><dt>Ожидаемый результат</dt><dd>Plan contains the customer benefit, leaf descriptions, owners, acceptance, file scope, dependencies, estimates and separate release/consumer checks. No user plan-approval wait is introduced.</dd><dt>Затрагиваемые файлы</dt><dd>.agents/tasks/20261023-human-plans-and-orchestration/task.md, .agents/tasks/20261023-human-plans-and-orchestration/progress.md, .agents/tasks/20261023-human-plans-and-orchestration/plan.graph.json, .agents/tasks/20261023-human-plans-and-orchestration/plan.html, .agents/tasks/20261023-human-plans-and-orchestration/plan.md</dd><dt>Владелец</dt><dd>Planner/Artifact Writer (delegated by Lead)</dd><dt>Зависит от</dt><dd>понятный выбор режима и план до реализации</dd><dt>Параллельно с</dt><dd>—</dd><dt>Сессия</dt><dd>—</dd><dt>Усилие (суммарно)</dt><dd>не измерено</dd><dt>Длительность по часам</dt><dd>—</dd></dl></div></template><template id='task-details-template-2'><div class='task-details-card'><div class='task-details-head'><h3>Lead выбирает короткий или полный цикл и заранее показывает человеку план</h3><button type='button' class='task-details-close'>Закрыть</button></div><dl class='task-details'><dt>Код</dt><dd>L03</dd><dt>Описание задачи</dt><dd>Change the Lead router and task-class rules so the Lead first understands the requested result, then chooses a short or full cycle from scope and risk. Both modes require a user-readable Lead-owned plan before implementation; assigned leaves remain execution slices and do not own or skip the parent plan.</dd><dt>Ожидаемый результат</dt><dd>Tests and examples cover bounded fixes, small behavior changes, broad/high-risk changes and user-assigned leaves. Short mode still requires a proportional independent tester and real-path verification; full mode requires two independent testers of the installed outcome. A leaf assignment cannot force a shorter mode or waive planning.</dd><dt>Затрагиваемые файлы</dt><dd>AGENTS.md, PRODUCT-PHILOSOPHY.md, src/common/agents/Lead.md, src/common/protocols/OUTCOME_CONTRACT.md, src/common/skills/last-human-commit/SKILL.md, src/common/tools/lhc_outcome.py, tests/test_lhc_outcome.py</dd><dt>Примечание</dt><dd>Технический статус классификатора и стадий выполнения показывается отдельно от того, что сможет проверить пользователь.</dd><dt>Владелец</dt><dd>Worker L03–L06</dd><dt>Зависит от</dt><dd>полный цикл выбран по объёму и риску</dd><dt>Параллельно с</dt><dd>—</dd><dt>Сессия</dt><dd>—</dd><dt>Усилие (суммарно)</dt><dd>не измерено</dd><dt>Длительность по часам</dt><dd>—</dd></dl></div></template><template id='task-details-template-3'><div class='task-details-card'><div class='task-details-head'><h3>длинное описание и список файлов видны в плане</h3><button type='button' class='task-details-close'>Закрыть</button></div><dl class='task-details'><dt>Код</dt><dd>L04</dd><dt>Описание задачи</dt><dd>Add an uncapped human-readable task description and a separate affected_files JSON field. Carry both through report/JSON import, export, --merge, HTML and Markdown rendering and check-plan without mixing them with business_result, progress or receipts. Render every embedded field visibly, give fragment links real targets, separate current from historical blockers, keep unknown estimates unknown, make task status and user acceptance distinct, use plain Russian, and keep phase/dependency maps consistent and visibly complete.</dd><dt>Ожидаемый результат</dt><dd>Fixtures with text beyond all former caps and several affected files survive repeated export/render/check; schema-v1 and prior schema-v2 plans still load. Automated checks reject mismatched report/graph details, dangling anchors and inconsistent dependency/coverage maps. Unknown estimates never become zero-duration forecasts; labels cannot imply user acceptance from done/source/test/publication status. The HTML visibly shows available card and section data, Russian explanations, blocker ownership/next step and an honest acceptance scenario.</dd><dt>Затрагиваемые файлы</dt><dd>src/common/protocols/TASK_GRAPH.md, src/common/protocols/PLAN_REPORT.md, src/common/tools/lhc_grid.py, tests/test_lhc_grid.py, tests/test_lhc_grid_regressions.py, tests/test_lhc_plan_surface.py</dd><dt>Примечание</dt><dd>Also correct the documented difference between available slots and observed parallel tasks; keep effort, elapsed window, waiting time and unknown estimates separate.</dd><dt>Владелец</dt><dd>Worker L03–L06</dd><dt>Зависит от</dt><dd>Lead выбирает короткий или полный цикл и заранее показывает человеку план</dd><dt>Параллельно с</dt><dd>—</dd><dt>Сессия</dt><dd>—</dd><dt>Усилие (суммарно)</dt><dd>не измерено</dd><dt>Длительность по часам</dt><dd>—</dd></dl></div></template><template id='task-details-template-4'><div class='task-details-card'><div class='task-details-head'><h3>исполнители передают подробный результат в файлах</h3><button type='button' class='task-details-close'>Закрыть</button></div><dl class='task-details'><dt>Код</dt><dd>L05</dd><dt>Описание задачи</dt><dd>Define one durable folder and file format for briefs, progress, decisions, blockers, results, tests, receipts, commits and next actions. State which role owns the plan, what each Worker can write, how handoff is recorded and what the next Lead reads after compaction.</dd><dt>Ожидаемый результат</dt><dd>An independent Worker can write its scoped result file and the Lead can resume from progress.md plus task.md/plan graph and the referenced receipt. Routine updates stay in files; chat carries only decisions, blockers or readiness.</dd><dt>Затрагиваемые файлы</dt><dd>src/common/protocols/ORCHESTRATION_RECORDS.md, src/common/skills/task-decomposition/SKILL.md, src/common/skills/plan-artifacts/SKILL.md, src/common/profiles/Planning.md</dd><dt>Владелец</dt><dd>Worker L03–L06</dd><dt>Зависит от</dt><dd>длинное описание и список файлов видны в плане</dd><dt>Параллельно с</dt><dd>—</dd><dt>Сессия</dt><dd>—</dd><dt>Усилие (суммарно)</dt><dd>не измерено</dd><dt>Длительность по часам</dt><dd>—</dd></dl></div></template><template id='task-details-template-5'><div class='task-details-card'><div class='task-details-head'><h3>все входы ведут к плану и проверке результата</h3><button type='button' class='task-details-close'>Закрыть</button></div><dl class='task-details'><dt>Код</dt><dd>L06</dd><dt>Описание задачи</dt><dd>Bring the native entrypoints, short-route aliases and harness templates back to one canonical workflow so none tells a Lead or assigned Worker to skip a required plan or consumer proof.</dd><dt>Ожидаемый результат</dt><dd>The source entrypoints and generated package copies all explain mode selection, Lead plan ownership, file-based handoff and the mode-appropriate independent tester count. Generated files are refreshed from their canonical sources, not edited as a second source.</dd><dt>Затрагиваемые файлы</dt><dd>src/common/templates/project-router.md, adapters/codex/templates/subagent.md, adapters/claude-code/templates/subagent.md, adapters/zcode/templates/subagent.md, adapters/hermes/templates/subagent.md</dd><dt>Владелец</dt><dd>Worker L03–L06</dd><dt>Зависит от</dt><dd>исполнители передают подробный результат в файлах</dd><dt>Параллельно с</dt><dd>—</dd><dt>Сессия</dt><dd>—</dd><dt>Усилие (суммарно)</dt><dd>не измерено</dd><dt>Длительность по часам</dt><dd>—</dd></dl></div></template><template id='task-details-template-6'><div class='task-details-card'><div class='task-details-head'><h3>читатель понимает пользу, статус, доказательства и следующий шаг</h3><button type='button' class='task-details-close'>Закрыть</button></div><dl class='task-details'><dt>Код</dt><dd>L07</dd><dt>Описание задачи</dt><dd>Read the rendered plan without the source conversation, then report what a person would believe is available, who changes what, how to verify it and what remains unknown.</dd><dt>Ожидаемый результат</dt><dd>The reader names the customer-visible result and a reproducible input/action/visible-output check. The reader does not treat source publication, a task count or a green test as user acceptance.</dd><dt>Затрагиваемые файлы</dt><dd>.agents/tasks/20261023-human-plans-and-orchestration/reviews/plan-review-final.md</dd><dt>Владелец</dt><dd>Independent reader</dd><dt>Зависит от</dt><dd>все входы ведут к плану и проверке результата</dd><dt>Параллельно с</dt><dd>—</dd><dt>Сессия</dt><dd>—</dd><dt>Усилие (суммарно)</dt><dd>не измерено</dd><dt>Длительность по часам</dt><dd>—</dd></dl></div></template><template id='task-details-template-7'><div class='task-details-card'><div class='task-details-head'><h3>замечания читателя устранены и результат понятен повторно</h3><button type='button' class='task-details-close'>Закрыть</button></div><dl class='task-details'><dt>Код</dt><dd>L08</dd><dt>Описание задачи</dt><dd>Use the independent reader's concrete obstacles to fix the source fields, labels or renderer that caused them, then rebuild the candidate plan from the corrected rules.</dd><dt>Ожидаемый результат</dt><dd>Every supported reader finding is fixed or documented as an unresolved external condition. The Lead records why; no user requirement is quietly weakened.</dd><dt>Затрагиваемые файлы</dt><dd>human-facing plan and workflow sources called out by the reader</dd><dt>Владелец</dt><dd>Worker L03–L06</dd><dt>Зависит от</dt><dd>читатель понимает пользу, статус, доказательства и следующий шаг</dd><dt>Параллельно с</dt><dd>—</dd><dt>Сессия</dt><dd>—</dd><dt>Усилие (суммарно)</dt><dd>не измерено</dd><dt>Длительность по часам</dt><dd>—</dd></dl></div></template><template id='task-details-template-8'><div class='task-details-card'><div class='task-details-head'><h3>новые файлы сохраняются и старые планы открываются</h3><button type='button' class='task-details-close'>Закрыть</button></div><dl class='task-details'><dt>Код</dt><dd>L09</dd><dt>Описание задачи</dt><dd>Check the changed schema and real roundtrip behavior against an old plan and a new plan with long descriptions, affected files and separate evidence fields; exercise every new R01–R08 renderer regression fixture.</dd><dt>Ожидаемый результат</dt><dd>Old fixtures remain readable; new details survive export, merge, render and check. Automated coverage detects missing embedded fields, dangling anchors, mixed blocker history, conflicting/zero forecasts, unreproducible acceptance text, done-versus-user-outcome confusion, English/jargon and incomplete/truncated dependency maps. The receipt records exact commands/results and does not claim browser or installed acceptance.</dd><dt>Затрагиваемые файлы</dt><dd>.agents/tasks/20261023-human-plans-and-orchestration/receipts/L09.md</dd><dt>Владелец</dt><dd>Independent compatibility tester</dd><dt>Зависит от</dt><dd>замечания читателя устранены и результат понятен повторно</dd><dt>Параллельно с</dt><dd>—</dd><dt>Сессия</dt><dd>—</dd><dt>Усилие (суммарно)</dt><dd>не измерено</dd><dt>Длительность по часам</dt><dd>—</dd></dl></div></template><template id='task-details-template-9'><div class='task-details-card'><div class='task-details-head'><h3>установленная версия совпадает с проверенным выпуском</h3><button type='button' class='task-details-close'>Закрыть</button></div><dl class='task-details'><dt>Код</dt><dd>L10</dd><dt>Описание задачи</dt><dd>Generate, validate, publish and independently read back the new native package through the current LHC release procedure; reconcile the existing main history first.</dd><dt>Ожидаемый результат</dt><dd>The published package version and commit match the verified source, and Fleet installed-package readback confirms the same version. This does not claim that already-running sessions have reloaded.</dd><dt>Затрагиваемые файлы</dt><dd>plugins/last-human-commit/, package.json, native publication metadata</dd><dt>Владелец</dt><dd>Release Worker</dd><dt>Зависит от</dt><dd>новые файлы сохраняются и старые планы открываются</dd><dt>Параллельно с</dt><dd>—</dd><dt>Сессия</dt><dd>—</dd><dt>Усилие (суммарно)</dt><dd>не измерено</dd><dt>Длительность по часам</dt><dd>—</dd></dl></div></template><template id='task-details-template-10'><div class='task-details-card'><div class='task-details-head'><h3>короткая задача завершается планом Lead-а и файловой передачей результата</h3><button type='button' class='task-details-close'>Закрыть</button></div><dl class='task-details'><dt>Код</dt><dd>L11</dd><dt>Описание задачи</dt><dd>Use the installed package in a fresh native agent session on a harmless bounded task with a long description and affected_files. Follow the generated plan, verify the small outcome and hand off through the assigned Worker result file. Open plan.html in a browser and inspect actual cards and internal links.</dd><dt>Ожидаемый результат</dt><dd>The tester independently finds the Lead-owned plan before implementation, reads the user benefit and exact check, and resumes from the handoff file without chat. In browser open → snapshot, the task details, all available field content, affected-file list and linked targets are visible, and the test outcome is distinguishable from user acceptance. JSON-only checks do not satisfy this leaf.</dd><dt>Затрагиваемые файлы</dt><dd>.agents/tasks/20261023-human-plans-and-orchestration/fixtures/short/, .agents/tasks/20261023-human-plans-and-orchestration/receipts/L11.md</dd><dt>Владелец</dt><dd>Independent tester A</dd><dt>Зависит от</dt><dd>установленная версия совпадает с проверенным выпуском</dd><dt>Параллельно с</dt><dd>—</dd><dt>Сессия</dt><dd>—</dd><dt>Усилие (суммарно)</dt><dd>не измерено</dd><dt>Длительность по часам</dt><dd>—</dd></dl></div></template><template id='task-details-template-11'><div class='task-details-card'><div class='task-details-head'><h3>полный цикл завершается независимой проверкой установленной версии</h3><button type='button' class='task-details-close'>Закрыть</button></div><dl class='task-details'><dt>Код</dt><dd>L12</dd><dt>Описание задачи</dt><dd>Use a second independent fresh installed LHC session to run a meaningful full-cycle fixture from user intent to a checked result, with assigned roles, two independent end checks and file-based progress/result handoff. Open the generated plan.html in a browser and inspect the visible sections, task cards, fragment links and acceptance scenario.</dd><dt>Ожидаемый результат</dt><dd>The tester sees a Lead-owned plan before work and follows its visible dependencies. Browser open → snapshot confirms the expected data is actually rendered, links land on targets, blockers/history and forecasts are honest, Russian labels do not inflate task-count readiness, and the human test can be reproduced. Source/installed/publication/test evidence remains separate from consumer acceptance. The receipt cites only this tester's own observed artifacts.</dd><dt>Затрагиваемые файлы</dt><dd>.agents/tasks/20261023-human-plans-and-orchestration/fixtures/full/, .agents/tasks/20261023-human-plans-and-orchestration/receipts/L12.md</dd><dt>Владелец</dt><dd>Independent tester B</dd><dt>Зависит от</dt><dd>установленная версия совпадает с проверенным выпуском</dd><dt>Параллельно с</dt><dd>—</dd><dt>Сессия</dt><dd>—</dd><dt>Усилие (суммарно)</dt><dd>не измерено</dd><dt>Длительность по часам</dt><dd>—</dd></dl></div></template>
+  </div>
+  <div>
+    <div class="panel">
+      <h2>Технические привязки</h2>
+      <details class="technical"><summary>Владельцы, сессии, harness и модели</summary>
+        <div class='table-scroll'><table class='table'><thead><tr><th>ID</th><th>Лист</th><th>Владелец</th><th>Сессия</th><th>Harness</th><th>Модель</th><th>Статус</th></tr></thead><tbody><tr><td><span class="dot" style="background:var(--st-done)"></span>L01</td><td>понятный выбор режима и план до реализации</td><td>Lead</td><td>—</td><td>—</td><td>—</td><td>Готово</td></tr><tr><td><span class="dot" style="background:var(--st-done)"></span>L02</td><td>полный цикл выбран по объёму и риску</td><td>Planner/Artifact Writer (delegated by Lead)</td><td>—</td><td>—</td><td>—</td><td>Готово</td></tr><tr><td><span class="dot" style="background:var(--st-done)"></span>L03</td><td>Lead выбирает короткий или полный цикл и заранее показывает человеку п</td><td>Worker L03–L06</td><td>—</td><td>—</td><td>—</td><td>Готово</td></tr><tr><td><span class="dot" style="background:var(--st-done)"></span>L04</td><td>длинное описание и список файлов видны в плане</td><td>Worker L03–L06</td><td>—</td><td>—</td><td>—</td><td>Готово</td></tr><tr><td><span class="dot" style="background:var(--st-done)"></span>L05</td><td>исполнители передают подробный результат в файлах</td><td>Worker L03–L06</td><td>—</td><td>—</td><td>—</td><td>Готово</td></tr><tr><td><span class="dot" style="background:var(--st-done)"></span>L06</td><td>все входы ведут к плану и проверке результата</td><td>Worker L03–L06</td><td>—</td><td>—</td><td>—</td><td>Готово</td></tr><tr><td><span class="dot" style="background:var(--st-queued)"></span>L07</td><td>читатель понимает пользу, статус, доказательства и следующий шаг</td><td>Independent reader</td><td>—</td><td>—</td><td>—</td><td>В очереди</td></tr><tr><td><span class="dot" style="background:var(--st-queued)"></span>L08</td><td>замечания читателя устранены и результат понятен повторно</td><td>Worker L03–L06</td><td>—</td><td>—</td><td>—</td><td>В очереди</td></tr><tr><td><span class="dot" style="background:var(--st-queued)"></span>L09</td><td>новые файлы сохраняются и старые планы открываются</td><td>Independent compatibility tester</td><td>—</td><td>—</td><td>—</td><td>В очереди</td></tr><tr><td><span class="dot" style="background:var(--st-queued)"></span>L10</td><td>установленная версия совпадает с проверенным выпуском</td><td>Release Worker</td><td>—</td><td>—</td><td>—</td><td>В очереди</td></tr><tr><td><span class="dot" style="background:var(--st-queued)"></span>L11</td><td>короткая задача завершается планом Lead-а и файловой передачей результ</td><td>Independent tester A</td><td>—</td><td>—</td><td>—</td><td>В очереди</td></tr><tr><td><span class="dot" style="background:var(--st-queued)"></span>L12</td><td>полный цикл завершается независимой проверкой установленной версии</td><td>Independent tester B</td><td>—</td><td>—</td><td>—</td><td>В очереди</td></tr></tbody></table></div>
+      </details>
+    </div>
+    <div class="panel" id="lhc-forecast">
+      <h2>Прогноз</h2>
+      <ul class='facts'><li><b>Усилие</b> (сумма известных оценок): 6 ч 10 мин</li><li><b>Длительность (план с 3 слотами): 5 ч 40 мин</li><li><b>Осталось</b> (без завершённых): 2 ч 40 мин</li><li><b>Пик параллельности</b> по плану: 2 из 3 слотов</li><li><b>Критический путь</b>: понятный выбор режима и план до реализации → полный цикл выбран по объёму и риску → Lead выбирает короткий или полный цикл и заранее показывает человеку план → длинное описание и список файлов видны в плане → исполнители передают подробный результат в файлах → все входы ведут к плану и проверке результата → читатель понимает пользу, статус, доказательства и следующий шаг → замечания читателя устранены и результат понятен повторно → новые файлы сохраняются и старые планы открываются → установленная версия совпадает с проверенным выпуском → полный цикл завершается независимой проверкой установленной версии</li><li><b>Заблокировано</b> работы: 0 мин</li></ul>
+      
+    </div>
+    <div class="panel journal-fold" id="lhc-journal">
+      <details>
+        <summary><h2>Журнал изменений</h2></summary>
+
+      <h2>Журнал изменений</h2>
+      <ul class="live"><li><span class="dot" style="background:var(--st-done)"></span><span class="live-text">понятный выбор режима и план до реализации</span><span class="leaf-tag">понятный выбор режима и план до реализации</span></li><li><span class="dot" style="background:var(--st-done)"></span><span class="live-text">полный цикл выбран по объёму и риску</span><span class="leaf-tag">полный цикл выбран по объёму и риску</span></li><li><span class="dot" style="background:var(--st-done)"></span><span class="live-text">Lead выбирает короткий или полный цикл и заранее показывает человеку план</span><span class="leaf-tag">Lead выбирает короткий или полный цикл и заранее показывает человеку план</span></li><li><span class="dot" style="background:var(--st-done)"></span><span class="live-text">длинное описание и список файлов видны в плане</span><span class="leaf-tag">длинное описание и список файлов видны в плане</span></li><li><span class="dot" style="background:var(--st-done)"></span><span class="live-text">исполнители передают подробный результат в файлах</span><span class="leaf-tag">исполнители передают подробный результат в файлах</span></li><li><span class="dot" style="background:var(--st-done)"></span><span class="live-text">все входы ведут к плану и проверке результата</span><span class="leaf-tag">все входы ведут к плану и проверке результата</span></li><li><span class="dot" style="background:var(--st-queued)"></span><span class="live-text">читатель понимает пользу, статус, доказательства и следующий шаг</span><span class="leaf-tag">читатель понимает пользу, статус, доказательства и следующий шаг</span></li><li><span class="dot" style="background:var(--st-queued)"></span><span class="live-text">замечания читателя устранены и результат понятен повторно</span><span class="leaf-tag">замечания читателя устранены и результат понятен повторно</span></li><li><span class="dot" style="background:var(--st-queued)"></span><span class="live-text">новые файлы сохраняются и старые планы открываются</span><span class="leaf-tag">новые файлы сохраняются и старые планы открываются</span></li><li><span class="dot" style="background:var(--st-queued)"></span><span class="live-text">установленная версия совпадает с проверенным выпуском</span><span class="leaf-tag">установленная версия совпадает с проверенным выпуском</span></li><li><span class="dot" style="background:var(--st-queued)"></span><span class="live-text">короткая задача завершается планом Lead-а и файловой передачей результата</span><span class="leaf-tag">короткая задача завершается планом Lead-а и файловой передачей результата</span></li><li><span class="dot" style="background:var(--st-queued)"></span><span class="live-text">полный цикл завершается независимой проверкой установленной версии</span><span class="leaf-tag">полный цикл завершается независимой проверкой установленной версии</span></li></ul>
+
+      </details>
+    </div>
+  </div>
+</div>
+</div>
+
+<footer>
+  LHC task graph · ревизия fff970c0fc97 · один файл, без внешних зависимостей · собран 23.10.2026 03:42
+  <details class="technical"><summary>Путь исходного плана</summary><code>.agents/tasks/20261023-human-plans-and-orchestration/plan.graph.json</code></details>
+</footer>
+
+<script>
+(function () {
+  // The theme is the reader's choice, remembered between openings. Without a
+  // stored choice the dashboard follows the system.
+  var root = document.documentElement;
+  var stored = null;
+  try { stored = window.localStorage.getItem('lhc-theme'); } catch (error) { stored = null; }
+  function systemPrefersLight() {
+    return !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches);
+  }
+  function applyTheme(state) {
+    if (state === 'light' || state === 'dark') {
+      root.setAttribute('data-theme', state);
+    } else {
+      // "as the system": no attribute, and the light scheme of the system wins.
+      root.removeAttribute('data-theme');
+      if (systemPrefersLight()) { root.setAttribute('data-theme', 'light'); }
+    }
+  }
+  function currentTheme() {
+    var value = null;
+    try { value = window.localStorage.getItem('lhc-theme'); } catch (error) { value = null; }
+    return value === 'light' || value === 'dark' ? value : 'auto';
+  }
+  applyTheme(currentTheme());
+  var toggle = document.getElementById('theme-toggle');
+  if (toggle) {
+    var order = ['auto', 'light', 'dark'];
+    var names = { auto: 'Тема: как в системе', light: 'Тема: светлая', dark: 'Тема: тёмная' };
+    function label() { toggle.textContent = names[currentTheme()]; }
+    label();
+    toggle.addEventListener('click', function () {
+      var next = order[(order.indexOf(currentTheme()) + 1) % order.length];
+      applyTheme(next);
+      try {
+        if (next === 'auto') { window.localStorage.removeItem('lhc-theme'); }
+        else { window.localStorage.setItem('lhc-theme', next); }
+      } catch (error) { /* no storage */ }
+      label();
+    });
+  }
+})();
+(function () {
+  var chips = Array.prototype.slice.call(document.querySelectorAll('.chip'));
+  var rows = Array.prototype.slice.call(document.querySelectorAll('.table-leaves tbody tr'));
+  var input = document.getElementById('search');
+  var activeDetailsRow = null;
+  var filter = 'all';
+  function apply() {
+    var query = (input && input.value || '').trim().toLowerCase();
+    rows.forEach(function (row) {
+      var okFilter = filter === 'all' || row.dataset.status === filter;
+      var okQuery = !query || (row.dataset.text || '').indexOf(query) !== -1;
+      row.style.display = (okFilter && okQuery) ? '' : 'none';
+    });
+  }
+  chips.forEach(function (chip) {
+    chip.addEventListener('click', function () {
+      chips.forEach(function (other) { other.classList.remove('active'); });
+      chip.classList.add('active');
+      filter = chip.dataset.filter;
+      apply();
+    });
+  });
+  if (input) { input.addEventListener('input', apply); }
+  // The task opens where the owner taps it. The card used to open in a host
+  // below the whole table, which on a phone is thousands of pixels away from
+  // the finger that asked for it.
+  function closeDetails() {
+    if (!activeDetailsRow) { return; }
+    if (activeDetailsRow.previousElementSibling) {
+      var previousButton = activeDetailsRow.previousElementSibling.querySelector('.task-details-trigger');
+      if (previousButton) { previousButton.setAttribute('aria-expanded', 'false'); }
+    }
+    activeDetailsRow.remove();
+    activeDetailsRow = null;
+  }
+  function openDetails(row, id) {
+    var template = document.getElementById('task-details-template-' + id);
+    if (!template || !row) { return; }
+    closeDetails();
+    var detailsRow = document.createElement('tr');
+    detailsRow.className = 'task-details-row';
+    var cell = document.createElement('td');
+    cell.colSpan = 5;
+    cell.appendChild(template.content.cloneNode(true));
+    detailsRow.appendChild(cell);
+    row.after(detailsRow);
+    activeDetailsRow = detailsRow;
+    var button = row.querySelector('.task-details-trigger');
+    if (button) { button.setAttribute('aria-expanded', 'true'); }
+    var close = detailsRow.querySelector('.task-details-close');
+    if (close) {
+      close.addEventListener('click', function () { closeDetails(); });
+      close.focus({ preventScroll: true });
+    }
+    detailsRow.scrollIntoView({ block: 'nearest' });
+  }
+  document.querySelectorAll('.task-details-trigger').forEach(function (button) {
+    button.addEventListener('click', function (event) {
+      event.stopPropagation();
+      var row = button.closest('tr');
+      openDetails(row, button.dataset.detailsId);
+    });
+  });
+  rows.forEach(function (row) {
+    if (!row.dataset.detailsId) { return; }
+    row.addEventListener('click', function () {
+      openDetails(row, row.dataset.detailsId);
+    });
+  });
+  // Every number of the page can be opened: the tile shows the tasks behind
+  // it, and a task in that list opens its full card.
+  var tileIndex = null;
+  try {
+    var island = document.getElementById('lhc-tile-index');
+    tileIndex = island ? JSON.parse(island.content.textContent) : null;
+  } catch (error) { tileIndex = null; }
+  var tileCard = document.getElementById('lhc-tile-card');
+  var currentTile = null;
+  function tileTitle(key) {
+    return (tileIndex && tileIndex.titles && tileIndex.titles[key]) || 'Задачи';
+  }
+  function renderTileList(key) {
+    if (!tileIndex || !tileCard) { return; }
+    var ids = (tileIndex.tiles && tileIndex.tiles[key]) || [];
+    var head = document.createElement('div');
+    head.className = 'tile-card-head';
+    var title = document.createElement('b');
+    title.textContent = tileTitle(key) + ' · ' + ids.length;
+    var close = document.createElement('button');
+    close.type = 'button'; close.className = 'tile-card-close'; close.textContent = 'Закрыть';
+    close.addEventListener('click', function () {
+      tileCard.hidden = true; tileCard.replaceChildren(); currentTile = null;
+    });
+    head.appendChild(title); head.appendChild(close);
+    var list = document.createElement('ul');
+    list.className = 'tile-card-list';
+    ids.forEach(function (id) {
+      var leaf = (tileIndex.leaves && tileIndex.leaves[id]) || {};
+      var item = document.createElement('li');
+      item.className = 'tile-card-item';
+      var code = document.createElement('span'); code.className = 'row-id'; code.textContent = id;
+      var name = document.createElement('span'); name.className = 'row-name';
+      name.textContent = leaf.label || id;
+      var meta = document.createElement('span'); meta.className = 'row-meta';
+      meta.textContent = [leaf.status_label, leaf.owner, leaf.estimate].filter(Boolean).join(' · ');
+      item.appendChild(code); item.appendChild(name); item.appendChild(meta);
+      item.addEventListener('click', function () { openLeafInTile(id); });
+      list.appendChild(item);
+    });
+    if (!ids.length) {
+      var empty = document.createElement('div');
+      empty.className = 'empty'; empty.textContent = 'Задач нет.';
+      list.appendChild(empty);
+    }
+    tileCard.replaceChildren(head, list);
+    tileCard.hidden = false;
+  }
+  function openLeafInTile(id) {
+    if (!tileIndex || !tileCard) { return; }
+    var leaf = (tileIndex.leaves && tileIndex.leaves[id]) || {};
+    var template = document.getElementById('task-details-template-' + leaf.template);
+    if (!template) { return; }
+    var back = document.createElement('button');
+    back.type = 'button'; back.className = 'tile-card-back'; back.textContent = '← ко всем задачам';
+    back.addEventListener('click', function () { renderTileList(currentTile); });
+    var card = template.content.cloneNode(true);
+    tileCard.replaceChildren(back, card);
+    tileCard.hidden = false;
+    var close = tileCard.querySelector('.task-details-close');
+    if (close) {
+      close.addEventListener('click', function () { renderTileList(currentTile); });
+    }
+  }
+  document.querySelectorAll('[data-tile]').forEach(function (tile) {
+    tile.addEventListener('click', function () {
+      currentTile = tile.dataset.tile;
+      renderTileList(currentTile);
+    });
+    tile.addEventListener('keydown', function (event) {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        tile.click();
+      }
+    });
+  });
+  apply();
+})();
+
+</script>
+</body>
+</html>

@@ -1,0 +1,254 @@
+{
+  "schema_version": 2,
+  "title": "Last Human Commit: понятный план до проверки результата",
+  "goal": "выпустить native LHC, который помогает Lead-у вести понятный русскоязычный план от понимания запроса до проверки результата.",
+  "business_result": "в установленном LHC пользователь читает понятный русский план: какой результат получит, кто что сделает и как проверить; статусы и квитанции показаны отдельно.",
+  "current_progress": "Stage 2 blind reading подтвердил, что проблема структурная: человек не может восстановить цель и шаги проверки, а технические статусы подменяют результат.",
+  "external_waits": "",
+  "slots": 3,
+  "updated_at": "2026-10-23T03:08:26",
+  "tasks": [
+    {
+      "id": "L01",
+      "label": "понятный выбор режима и план до реализации",
+      "status": "done",
+      "depends_on": [],
+      "estimate_minutes": {
+        "minimum": 25.0,
+        "maximum": 25.0
+      },
+      "owner": "Lead",
+      "role": "исследование",
+      "read_paths": ["AGENTS.md", "PRODUCT-PHILOSOPHY.md", "src/common/protocols/OUTCOME_CONTRACT.md", "src/common/protocols/TASK_GRAPH.md", "src/common/tools/lhc_outcome.py", "src/common/tools/lhc_grid.py", "plugins/last-human-commit/scripts/sync_skills.py"],
+      "write_paths": [".agents/tasks/20261023-human-plans-and-orchestration/research/intent.md"],
+      "paths": [".agents/tasks/20261023-human-plans-and-orchestration/research/intent.md"],
+      "affected_files": [".agents/tasks/20261023-human-plans-and-orchestration/research/intent.md"],
+      "description": "Lead сверил источник правил, реальную классификацию короткого и полного циклов, ограничения task graph, обновление пакета и независимые отзывы. Stage 2 blind comparison ExManager подтверждает, что бизнес-результат нельзя заменять публикацией, кодами этапов или тестовыми статусами.",
+      "acceptance": "Подтверждены первичными файлами конфликт quickfix/fullcycle, принудительные текстовые лимиты, схема export/render/check и генерация native-проекций. Итог записан в research receipts; ExManager runtime не проверялся и его источники не менялись.",
+      "started_at": "10:25"
+    },
+    {
+      "id": "L02",
+      "label": "полный цикл выбран по объёму и риску",
+      "status": "done",
+      "depends_on": ["L01"],
+      "estimate_minutes": {
+        "minimum": 20.0,
+        "maximum": 20.0
+      },
+      "owner": "Planner/Artifact Writer (delegated by Lead)",
+      "role": "планирование и запись артефактов по решениям Lead",
+      "read_paths": [".agents/tasks/20261023-human-plans-and-orchestration/research/", "src/common/skills/plan-artifacts/SKILL.md", "src/common/protocols/PLAN_REPORT.md", "src/common/protocols/TASK_GRAPH.md"],
+      "write_paths": [".agents/tasks/20261023-human-plans-and-orchestration/task.md", ".agents/tasks/20261023-human-plans-and-orchestration/progress.md", ".agents/tasks/20261023-human-plans-and-orchestration/plan.graph.json", ".agents/tasks/20261023-human-plans-and-orchestration/plan.html", ".agents/tasks/20261023-human-plans-and-orchestration/plan.md"],
+      "paths": [".agents/tasks/20261023-human-plans-and-orchestration/task.md", ".agents/tasks/20261023-human-plans-and-orchestration/progress.md", ".agents/tasks/20261023-human-plans-and-orchestration/plan.graph.json", ".agents/tasks/20261023-human-plans-and-orchestration/plan.html", ".agents/tasks/20261023-human-plans-and-orchestration/plan.md"],
+      "affected_files": [".agents/tasks/20261023-human-plans-and-orchestration/task.md", ".agents/tasks/20261023-human-plans-and-orchestration/progress.md", ".agents/tasks/20261023-human-plans-and-orchestration/plan.graph.json", ".agents/tasks/20261023-human-plans-and-orchestration/plan.html", ".agents/tasks/20261023-human-plans-and-orchestration/plan.md"],
+      "description": "Lead owns intent, mode, decomposition and acceptance decisions. The delegated Planner/Artifact Writer is the exclusive writer of the five plan files; Lead validates the derived output through context-mode. This applies equally to short and full cycles and uses parent routing for handoff.",
+      "acceptance": "Plan contains the customer benefit, leaf descriptions, owners, acceptance, file scope, dependencies, estimates and separate release/consumer checks. No user plan-approval wait is introduced.",
+      "started_at": "10:45"
+    },
+    {
+      "id": "L03",
+      "label": "Lead выбирает короткий или полный цикл и заранее показывает человеку план",
+      "status": "done",
+      "depends_on": [
+        "L02"
+      ],
+      "estimate_minutes": {
+        "minimum": 20.0,
+        "maximum": 30.0
+      },
+      "started_at": "03:10",
+      "owner": "Worker L03–L06",
+      "role": "workflow implementer",
+      "read_paths": ["AGENTS.md", "PRODUCT-PHILOSOPHY.md", "src/common/agents/Lead.md", "src/common/protocols/OUTCOME_CONTRACT.md", "src/common/skills/last-human-commit/SKILL.md", "src/common/tools/lhc_outcome.py", "tests/test_lhc_outcome.py"],
+      "write_paths": ["AGENTS.md", "PRODUCT-PHILOSOPHY.md", "src/common/agents/Lead.md", "src/common/protocols/OUTCOME_CONTRACT.md", "src/common/skills/last-human-commit/SKILL.md", "src/common/tools/lhc_outcome.py", "tests/test_lhc_outcome.py"],
+      "paths": ["AGENTS.md", "PRODUCT-PHILOSOPHY.md", "src/common/agents/Lead.md", "src/common/protocols/OUTCOME_CONTRACT.md", "src/common/skills/last-human-commit/SKILL.md", "src/common/tools/lhc_outcome.py", "tests/test_lhc_outcome.py"],
+      "affected_files": ["AGENTS.md", "PRODUCT-PHILOSOPHY.md", "src/common/agents/Lead.md", "src/common/protocols/OUTCOME_CONTRACT.md", "src/common/skills/last-human-commit/SKILL.md", "src/common/tools/lhc_outcome.py", "tests/test_lhc_outcome.py"],
+      "description": "Change the Lead router and task-class rules so the Lead first understands the requested result, then chooses a short or full cycle from scope and risk. Both modes require a user-readable Lead-owned plan before implementation; assigned leaves remain execution slices and do not own or skip the parent plan.",
+      "acceptance": "Tests and examples cover bounded fixes, small behavior changes, broad/high-risk changes and user-assigned leaves. Short mode still requires a proportional independent tester and real-path verification; full mode requires two independent testers of the installed outcome. A leaf assignment cannot force a shorter mode or waive planning.",
+      "note": "Технический статус классификатора и стадий выполнения показывается отдельно от того, что сможет проверить пользователь."
+    },
+    {
+      "id": "L04",
+      "label": "длинное описание и список файлов видны в плане",
+      "status": "done",
+      "depends_on": [
+        "L03"
+      ],
+      "estimate_minutes": {
+        "minimum": 30.0,
+        "maximum": 45.0
+      },
+      "owner": "Worker L03–L06",
+      "role": "graph schema and generator",
+      "read_paths": ["src/common/protocols/TASK_GRAPH.md", "src/common/protocols/PLAN_REPORT.md", "src/common/tools/lhc_grid.py", "tests/test_lhc_grid.py", "tests/test_lhc_grid_regressions.py", "tests/test_lhc_plan_surface.py"],
+      "write_paths": ["src/common/protocols/TASK_GRAPH.md", "src/common/protocols/PLAN_REPORT.md", "src/common/tools/lhc_grid.py", "tests/test_lhc_grid.py", "tests/test_lhc_grid_regressions.py", "tests/test_lhc_plan_surface.py"],
+      "paths": ["src/common/protocols/TASK_GRAPH.md", "src/common/protocols/PLAN_REPORT.md", "src/common/tools/lhc_grid.py", "tests/test_lhc_grid.py", "tests/test_lhc_grid_regressions.py", "tests/test_lhc_plan_surface.py"],
+      "affected_files": ["src/common/protocols/TASK_GRAPH.md", "src/common/protocols/PLAN_REPORT.md", "src/common/tools/lhc_grid.py", "tests/test_lhc_grid.py", "tests/test_lhc_grid_regressions.py", "tests/test_lhc_plan_surface.py"],
+      "description": "Add an uncapped human-readable task description and a separate affected_files JSON field. Carry both through report/JSON import, export, --merge, HTML and Markdown rendering and check-plan without mixing them with business_result, progress or receipts. Render every embedded field visibly, give fragment links real targets, separate current from historical blockers, keep unknown estimates unknown, make task status and user acceptance distinct, use plain Russian, and keep phase/dependency maps consistent and visibly complete.",
+      "acceptance": "Fixtures with text beyond all former caps and several affected files survive repeated export/render/check; schema-v1 and prior schema-v2 plans still load. Automated checks reject mismatched report/graph details, dangling anchors and inconsistent dependency/coverage maps. Unknown estimates never become zero-duration forecasts; labels cannot imply user acceptance from done/source/test/publication status. The HTML visibly shows available card and section data, Russian explanations, blocker ownership/next step and an honest acceptance scenario.",
+      "note": "Also correct the documented difference between available slots and observed parallel tasks; keep effort, elapsed window, waiting time and unknown estimates separate."
+    },
+    {
+      "id": "L05",
+      "label": "исполнители передают подробный результат в файлах",
+      "status": "done",
+      "depends_on": [
+        "L04"
+      ],
+      "estimate_minutes": {
+        "minimum": 20.0,
+        "maximum": 30.0
+      },
+      "owner": "Worker L03–L06",
+      "role": "orchestration protocol",
+      "read_paths": ["src/common/protocols/COORDINATION.md", "src/common/protocols/SHARED_WORKTREE.md", "src/common/skills/task-decomposition/SKILL.md", "src/common/skills/plan-artifacts/SKILL.md", "src/common/profiles/Planning.md"],
+      "write_paths": ["src/common/protocols/ORCHESTRATION_RECORDS.md", "src/common/skills/task-decomposition/SKILL.md", "src/common/skills/plan-artifacts/SKILL.md", "src/common/profiles/Planning.md"],
+      "paths": ["src/common/protocols/ORCHESTRATION_RECORDS.md", "src/common/skills/task-decomposition/SKILL.md", "src/common/skills/plan-artifacts/SKILL.md", "src/common/profiles/Planning.md"],
+      "affected_files": ["src/common/protocols/ORCHESTRATION_RECORDS.md", "src/common/skills/task-decomposition/SKILL.md", "src/common/skills/plan-artifacts/SKILL.md", "src/common/profiles/Planning.md"],
+      "description": "Define one durable folder and file format for briefs, progress, decisions, blockers, results, tests, receipts, commits and next actions. State which role owns the plan, what each Worker can write, how handoff is recorded and what the next Lead reads after compaction.",
+      "acceptance": "An independent Worker can write its scoped result file and the Lead can resume from progress.md plus task.md/plan graph and the referenced receipt. Routine updates stay in files; chat carries only decisions, blockers or readiness."
+    },
+    {
+      "id": "L06",
+      "label": "все входы ведут к плану и проверке результата",
+      "status": "done",
+      "depends_on": [
+        "L05"
+      ],
+      "estimate_minutes": {
+        "minimum": 20.0,
+        "maximum": 30.0
+      },
+      "owner": "Worker L03–L06",
+      "role": "entrypoint integration",
+      "read_paths": ["AGENTS.md", "src/common/templates/project-router.md", "adapters/", "plugins/last-human-commit/scripts/sync_skills.py"],
+      "write_paths": ["src/common/templates/project-router.md", "adapters/codex/templates/subagent.md", "adapters/claude-code/templates/subagent.md", "adapters/zcode/templates/subagent.md", "adapters/hermes/templates/subagent.md"],
+      "paths": ["src/common/templates/project-router.md", "adapters/codex/templates/subagent.md", "adapters/claude-code/templates/subagent.md", "adapters/zcode/templates/subagent.md", "adapters/hermes/templates/subagent.md"],
+      "affected_files": ["src/common/templates/project-router.md", "adapters/codex/templates/subagent.md", "adapters/claude-code/templates/subagent.md", "adapters/zcode/templates/subagent.md", "adapters/hermes/templates/subagent.md"],
+      "description": "Bring the native entrypoints, short-route aliases and harness templates back to one canonical workflow so none tells a Lead or assigned Worker to skip a required plan or consumer proof.",
+      "acceptance": "The source entrypoints and generated package copies all explain mode selection, Lead plan ownership, file-based handoff and the mode-appropriate independent tester count. Generated files are refreshed from their canonical sources, not edited as a second source."
+    },
+    {
+      "id": "L07",
+      "label": "читатель понимает пользу, статус, доказательства и следующий шаг",
+      "status": "queued",
+      "depends_on": [
+        "L06"
+      ],
+      "estimate_minutes": {
+        "minimum": 20.0,
+        "maximum": 20.0
+      },
+      "owner": "Independent reader",
+      "role": "blind comprehension review",
+      "read_paths": [".agents/tasks/20261023-human-plans-and-orchestration/plan.html", ".agents/tasks/20261023-human-plans-and-orchestration/task.md"],
+      "write_paths": [".agents/tasks/20261023-human-plans-and-orchestration/reviews/plan-review-final.md"],
+      "paths": [".agents/tasks/20261023-human-plans-and-orchestration/reviews/plan-review-final.md"],
+      "affected_files": [".agents/tasks/20261023-human-plans-and-orchestration/reviews/plan-review-final.md"],
+      "description": "Read the rendered plan without the source conversation, then report what a person would believe is available, who changes what, how to verify it and what remains unknown.",
+      "acceptance": "The reader names the customer-visible result and a reproducible input/action/visible-output check. The reader does not treat source publication, a task count or a green test as user acceptance."
+    },
+    {
+      "id": "L08",
+      "label": "замечания читателя устранены и результат понятен повторно",
+      "status": "queued",
+      "depends_on": [
+        "L07"
+      ],
+      "estimate_minutes": {
+        "minimum": 15.0,
+        "maximum": 25.0
+      },
+      "owner": "Worker L03–L06",
+      "role": "reader-feedback correction",
+      "read_paths": [".agents/tasks/20261023-human-plans-and-orchestration/reviews/plan-review-final.md"],
+      "write_paths": ["AGENTS.md", "PRODUCT-PHILOSOPHY.md", "src/common/", "adapters/"],
+      "paths": ["AGENTS.md", "PRODUCT-PHILOSOPHY.md", "src/common/", "adapters/"],
+      "affected_files": ["human-facing plan and workflow sources called out by the reader"],
+      "description": "Use the independent reader's concrete obstacles to fix the source fields, labels or renderer that caused them, then rebuild the candidate plan from the corrected rules.",
+      "acceptance": "Every supported reader finding is fixed or documented as an unresolved external condition. The Lead records why; no user requirement is quietly weakened."
+    },
+    {
+      "id": "L09",
+      "label": "новые файлы сохраняются и старые планы открываются",
+      "status": "queued",
+      "depends_on": [
+        "L08"
+      ],
+      "estimate_minutes": {
+        "minimum": 25.0,
+        "maximum": 40.0
+      },
+      "owner": "Independent compatibility tester",
+      "role": "schema and migration verification",
+      "read_paths": ["src/common/tools/lhc_grid.py", "tests/", ".agents/tasks/20261023-human-plans-and-orchestration/plan.graph.json"],
+      "write_paths": [".agents/tasks/20261023-human-plans-and-orchestration/receipts/L09.md"],
+      "paths": [".agents/tasks/20261023-human-plans-and-orchestration/receipts/L09.md"],
+      "affected_files": [".agents/tasks/20261023-human-plans-and-orchestration/receipts/L09.md"],
+      "description": "Check the changed schema and real roundtrip behavior against an old plan and a new plan with long descriptions, affected files and separate evidence fields; exercise every new R01–R08 renderer regression fixture.",
+      "acceptance": "Old fixtures remain readable; new details survive export, merge, render and check. Automated coverage detects missing embedded fields, dangling anchors, mixed blocker history, conflicting/zero forecasts, unreproducible acceptance text, done-versus-user-outcome confusion, English/jargon and incomplete/truncated dependency maps. The receipt records exact commands/results and does not claim browser or installed acceptance."
+    },
+    {
+      "id": "L10",
+      "label": "установленная версия совпадает с проверенным выпуском",
+      "status": "queued",
+      "depends_on": [
+        "L09"
+      ],
+      "estimate_minutes": {
+        "minimum": 25.0,
+        "maximum": 35.0
+      },
+      "owner": "Release Worker",
+      "role": "native release and Fleet readback",
+      "read_paths": ["src/common/", "adapters/", "plugins/last-human-commit/", "plugins/last-human-commit/skills/lhc-update-agents/SKILL.md"],
+      "write_paths": ["plugins/last-human-commit/", "package.json", "release metadata and publication record"],
+      "paths": ["plugins/last-human-commit/", "package.json", "release metadata and publication record"],
+      "affected_files": ["plugins/last-human-commit/", "package.json", "native publication metadata"],
+      "description": "Generate, validate, publish and independently read back the new native package through the current LHC release procedure; reconcile the existing main history first.",
+      "acceptance": "The published package version and commit match the verified source, and Fleet installed-package readback confirms the same version. This does not claim that already-running sessions have reloaded."
+    },
+    {
+      "id": "L11",
+      "label": "короткая задача завершается планом Lead-а и файловой передачей результата",
+      "status": "queued",
+      "depends_on": [
+        "L10"
+      ],
+      "estimate_minutes": {
+        "minimum": 20.0,
+        "maximum": 30.0
+      },
+      "owner": "Independent tester A",
+      "role": "installed short-cycle user test",
+      "read_paths": ["installed native LHC package", ".agents/tasks/20261023-human-plans-and-orchestration/plan.html"],
+      "write_paths": [".agents/tasks/20261023-human-plans-and-orchestration/receipts/L11.md", ".agents/tasks/20261023-human-plans-and-orchestration/fixtures/short/"],
+      "paths": [".agents/tasks/20261023-human-plans-and-orchestration/receipts/L11.md", ".agents/tasks/20261023-human-plans-and-orchestration/fixtures/short/"],
+      "affected_files": [".agents/tasks/20261023-human-plans-and-orchestration/fixtures/short/", ".agents/tasks/20261023-human-plans-and-orchestration/receipts/L11.md"],
+      "description": "Use the installed package in a fresh native agent session on a harmless bounded task with a long description and affected_files. Follow the generated plan, verify the small outcome and hand off through the assigned Worker result file. Open plan.html in a browser and inspect actual cards and internal links.",
+      "acceptance": "The tester independently finds the Lead-owned plan before implementation, reads the user benefit and exact check, and resumes from the handoff file without chat. In browser open → snapshot, the task details, all available field content, affected-file list and linked targets are visible, and the test outcome is distinguishable from user acceptance. JSON-only checks do not satisfy this leaf."
+    },
+    {
+      "id": "L12",
+      "label": "полный цикл завершается независимой проверкой установленной версии",
+      "status": "queued",
+      "depends_on": [
+        "L10"
+      ],
+      "estimate_minutes": {
+        "minimum": 25.0,
+        "maximum": 40.0
+      },
+      "owner": "Independent tester B",
+      "role": "installed full-cycle user test",
+      "read_paths": ["installed native LHC package", ".agents/tasks/20261023-human-plans-and-orchestration/plan.html"],
+      "write_paths": [".agents/tasks/20261023-human-plans-and-orchestration/receipts/L12.md", ".agents/tasks/20261023-human-plans-and-orchestration/fixtures/full/"],
+      "paths": [".agents/tasks/20261023-human-plans-and-orchestration/receipts/L12.md", ".agents/tasks/20261023-human-plans-and-orchestration/fixtures/full/"],
+      "affected_files": [".agents/tasks/20261023-human-plans-and-orchestration/fixtures/full/", ".agents/tasks/20261023-human-plans-and-orchestration/receipts/L12.md"],
+      "description": "Use a second independent fresh installed LHC session to run a meaningful full-cycle fixture from user intent to a checked result, with assigned roles, two independent end checks and file-based progress/result handoff. Open the generated plan.html in a browser and inspect the visible sections, task cards, fragment links and acceptance scenario.",
+      "acceptance": "The tester sees a Lead-owned plan before work and follows its visible dependencies. Browser open → snapshot confirms the expected data is actually rendered, links land on targets, blockers/history and forecasts are honest, Russian labels do not inflate task-count readiness, and the human test can be reproduced. Source/installed/publication/test evidence remains separate from consumer acceptance. The receipt cites only this tester's own observed artifacts."
+    }
+  ],
+  "leaf_count": 12
+}

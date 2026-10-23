@@ -412,7 +412,10 @@ def test_the_opened_task_carries_the_whole_of_it():
             "session": "mvs_92b7a29fcb6147ae848063c2e62bf864",
             "model": "MiniMax-M3.1-Flash",
             "harness": "minimax-code",
-            "note": "Интерпретатор 100 не содержит пакета mcp.",
+            "description": "Задача: после настройки интерпретатор 100 содержит пакет mcp, чтобы интеграция могла подключаться.",
+            "acceptance": "Импортировать mcp в целевом интерпретаторе и успешно создать тестовое соединение.",
+            "affected_files": ["src/integration.py", "tests/test_integration.py"],
+            "note": "Локальная среда пока без пакета mcp.",
             "blocker": "venv без пакета mcp",
             "blocker_details": {
                 "next_action": "Поставить пакет в venv и перезапустить проверку.",
@@ -426,7 +429,12 @@ def test_the_opened_task_carries_the_whole_of_it():
     html = lhc.render_html(graph, lhc.build_metrics(graph))
     for probe in (
         "Описание задачи",
-        "Интерпретатор 100 не содержит пакета mcp.",
+        "Задача: после настройки интерпретатор 100 содержит пакет mcp, чтобы интеграция могла подключаться.",
+        "Ожидаемый результат",
+        "Импортировать mcp в целевом интерпретаторе",
+        "Затрагиваемые файлы",
+        "src/integration.py",
+        "Локальная среда пока без пакета mcp.",
         "Блокер",
         "venv без пакета mcp",
         "Следующий шаг",
@@ -439,7 +447,7 @@ def test_the_opened_task_carries_the_whole_of_it():
         "minimax-code",
     ):
         assert probe in html, f"в карточке задачи нет: {probe}"
-    # A blocker and a description are two different things; neither eats the other.
+    # A blocker, task description and technical note stay separate.
     assert "Блокер / примечание" not in html
     # The row names the executor, so the owner sees it without opening anything.
     assert "row-meta" in html
@@ -454,6 +462,164 @@ def test_the_task_details_stay_reachable_on_a_phone():
     assert ".table-leaves tr.task-details-row { display: block;" in html
     assert ".table-leaves tr.task-details-row > td { display: block;" in html
     assert ".leaf-row { cursor: pointer; }" in html
+
+
+def test_unbounded_task_details_roundtrip_report_graph_html_markdown_and_merge(tmp_path):
+    description = "Человек сохраняет настройки и после перезагрузки видит выбранный канал. " * 80
+    acceptance = "Открыть настройки, выбрать канал, сохранить, перезагрузить и увидеть тот же канал. " * 45
+    paths = ["src/settings/page.py", "src/settings/store.py", "tests/settings/test_page.py"]
+    report = tmp_path / "plan.md"
+    report.write_text(
+        "Цель: Сделать настройки понятными\n"
+        "Бизнес-результат: Пользователь видит сохранённый канал\n"
+        "Декомпозиция: 1 лист · 1 параллельно · 1 волна · слотов: 1\n\n"
+        "⏳ (сохранение канала) оценка 15 минут\n"
+        f"  Описание задачи: {description}\n"
+        f"  Приёмка: {acceptance}\n"
+        "  Затрагиваемые файлы: " + ", ".join(f"`{path}`" for path in paths) + "\n",
+        encoding="utf-8",
+    )
+    graph_path = tmp_path / "plan.graph.json"
+    exported = run_tool("export", str(report), "-o", str(graph_path))
+    assert exported.returncode == 0, exported.stderr
+    graph = json.loads(graph_path.read_text(encoding="utf-8"))
+    assert graph["tasks"][0]["description"] == description.strip()
+    assert graph["tasks"][0]["acceptance"] == acceptance.strip()
+    assert graph["tasks"][0]["affected_files"] == paths
+
+    rendered = run_tool("render", str(graph_path), "--out-dir", str(tmp_path / "rendered"))
+    assert rendered.returncode == 0, rendered.stderr
+    html = (tmp_path / "rendered/plan.html").read_text(encoding="utf-8")
+    markdown = (tmp_path / "rendered/plan.md").read_text(encoding="utf-8")
+    for value in (description.strip(), acceptance.strip(), *paths):
+        assert value in html
+        assert value in markdown
+    checked = run_tool("check-plan", str(report), str(graph_path))
+    assert checked.returncode == 0, checked.stdout + checked.stderr
+
+    # A later concise status report has no task-detail lines. --merge must keep
+    # the last accepted details from the graph instead of discarding them.
+    plain_report = tmp_path / "plain-report.md"
+    plain_report.write_text("\n".join(
+        line for line in report.read_text(encoding="utf-8").splitlines()
+        if not line.startswith(("  Описание задачи:", "  Приёмка:", "  Затрагиваемые файлы:"))
+    ) + "\n", encoding="utf-8")
+    merged_path = tmp_path / "merged.json"
+    merged = run_tool("export", str(plain_report), "-o", str(merged_path), "--merge", str(graph_path))
+    assert merged.returncode == 0, merged.stderr
+    merged_graph = json.loads(merged_path.read_text(encoding="utf-8"))
+    assert merged_graph["tasks"][0]["description"] == description.strip()
+    assert merged_graph["tasks"][0]["acceptance"] == acceptance.strip()
+    assert merged_graph["tasks"][0]["affected_files"] == paths
+    merged_check = run_tool("check-plan", str(plain_report), str(merged_path))
+    assert merged_check.returncode == 0, merged_check.stdout + merged_check.stderr
+    merged_render = run_tool("render", str(merged_path), "--out-dir", str(tmp_path / "merged-render"))
+    assert merged_render.returncode == 0, merged_render.stderr
+    merged_html = (tmp_path / "merged-render/plan.html").read_text(encoding="utf-8")
+    merged_markdown = (tmp_path / "merged-render/plan.md").read_text(encoding="utf-8")
+    for value in (description.strip(), acceptance.strip(), *paths):
+        assert value in merged_html
+        assert value in merged_markdown
+
+
+def test_check_plan_reports_different_task_description(tmp_path):
+    report = tmp_path / "plan.md"
+    report.write_text(
+        "Цель: Проверить сохранение\nБизнес-результат: Настройка сохраняется\n"
+        "Декомпозиция: 1 лист · 1 параллельно · 1 волна · слотов: 1\n\n"
+        "⏳ (сохранение настройки) оценка 10 минут\n"
+        "  Описание задачи: Форма сохраняет выбранный пользователем канал.\n",
+        encoding="utf-8",
+    )
+    graph = tmp_path / "graph.json"
+    graph.write_text(json.dumps({
+        "schema_version": 2,
+        "tasks": [{"id": "L01", "label": "сохранение настройки", "status": "queued",
+                   "depends_on": [], "description": "Форма теряет выбранный пользователем канал."}],
+    }, ensure_ascii=False), encoding="utf-8")
+    checked = run_tool("check-plan", str(report), str(graph))
+    assert checked.returncode == 1
+    assert "описание задачи не совпадает" in checked.stdout
+
+
+def test_every_navigation_fragment_has_a_rendered_target():
+    nav = lhc.merged_navigation(())
+    fragments = re.findall(r'href=["\']#([^"\']+)["\']', nav)
+    targets = set(re.findall(r'\bid=["\']([^"\']+)["\']', lhc.HTML_TEMPLATE))
+    assert fragments, "page should have in-page section links"
+    assert set(fragments) <= targets
+
+
+def test_current_blocker_and_resolved_historical_blocker_stay_separate():
+    graph = lhc.parse_graph_json({
+        "schema_version": 2,
+        "tasks": [{"id": "L01", "label": "Сохранить выбор", "status": "blocked",
+                   "depends_on": [], "blocker": "Сервис сейчас не отвечает."}],
+    })
+    graph.journal = [{"at": "09:20", "action": "Устранено старое препятствие",
+                      "result": "Удалён прежний конфликт доступа.", "evidence": "receipt-1"}]
+    html = lhc.render_html(graph, lhc.build_metrics(graph))
+    blocker_panel = html[html.index('id="lhc-blocking"'):html.index('id="lhc-plan-gantt"')]
+    journal_panel = html[html.index('id="lhc-journal"'):]
+    assert "Сервис сейчас не отвечает." in blocker_panel
+    assert "Удалён прежний конфликт доступа." in journal_panel
+    assert "Удалён прежний конфликт доступа." not in blocker_panel
+
+
+def test_done_leaf_and_technical_progress_do_not_claim_user_acceptance():
+    graph = lhc.parse_graph_json({
+        "schema_version": 2,
+        "goal": "Покупатель находит нужный товар и оформляет безопасный заказ.",
+        "business_result": "Покупатель видит итоговую цену и может подтвердить заказ.",
+        "current_progress": "Исходники опубликованы, сборка и модульные проверки прошли.",
+        "tasks": [{"id": "L01", "label": "Сборка и модульные проверки завершены",
+                   "status": "done", "depends_on": [], "acceptance": "Сборка завершается без ошибок."}],
+    })
+    html = lhc.render_html(graph, lhc.build_metrics(graph))
+    assert "Ожидаемый бизнес-результат" in html
+    assert "Покупатель видит итоговую цену и может подтвердить заказ." in html
+    assert "Сборка и модульные проверки завершены" in html
+    assert "Исходники опубликованы, сборка и модульные проверки прошли." in html
+    assert "Покупатель принял результат" not in html
+    assert "Пользователь уже может подтвердить заказ" not in html
+
+
+def test_leaf_percent_and_plain_russian_do_not_mean_business_readiness():
+    graph = lhc.parse_graph_json({
+        "schema_version": 2,
+        "goal": "Пользователь получает и настраивает подписку на интересующие товары.",
+        "business_result": "Пользователь получает уведомление до изменения цены.",
+        "current_progress": "Все два технических листа закрыты; приёмка пользовательского пути не проводилась.",
+        "tasks": [
+            {"id": "L01", "label": "Добавить опрос цен", "status": "done", "depends_on": []},
+            {"id": "L02", "label": "Собрать русские подписи", "status": "done", "depends_on": []},
+        ],
+    })
+    html = lhc.render_html(graph, lhc.build_metrics(graph))
+    assert "2 / 2" in html
+    assert "100.0% листьев" in html
+    assert "Все два технических листа закрыты; приёмка пользовательского пути не проводилась." in html
+    assert "Пользователь получает уведомление до изменения цены." in html
+    assert "готовность продукта 100%" not in html.lower()
+
+
+def test_dependency_map_lists_every_prerequisite_for_long_join():
+    tasks = []
+    for index in range(1, 9):
+        tasks.append({
+            "id": f"L{index:02d}",
+            "label": f"Шаг {index}: проверить часть сценария",
+            "status": "queued",
+            "depends_on": [f"L{prior:02d}" for prior in range(1, index)],
+        })
+    graph = lhc.parse_graph_json({"schema_version": 2, "tasks": tasks})
+    html = lhc.render_html(graph, lhc.build_metrics(graph))
+    last_card = html[html.index("<template id='task-details-template-7'"):]
+    for index in range(1, 8):
+        assert f"Шаг {index}: проверить часть сценария" in last_card
+    gantt = html[html.index('id="lhc-plan-gantt"'):html.index('id="lhc-leaves"')]
+    for index in range(1, 9):
+        assert f"Шаг {index}: проверить часть сценария" in gantt
 
 
 def test_leaf_cell_shows_effort_and_calendar_span():

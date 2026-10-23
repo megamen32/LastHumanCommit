@@ -5,6 +5,21 @@ description: Decompose large or stalled work into independently verifiable subta
 
 # Task Decomposition
 
+Every authorized development task has a Lead-owned plan before implementation,
+including one bounded fix or a small behavior change. A small task can use one
+concise leaf; it does not require a review ceremony or another user approval.
+Research enough to understand intent and affected path, then explicitly choose
+quickfix or fullcycle from scope and risk. A user-assigned leaf remains an
+execution slice created and managed by the Lead; it cannot choose the parent mode
+or waive its plan. Questions, status requests and read-only investigations do not
+need a development plan.
+
+The Lead retains authority for plan meaning, mode, acceptance, owners,
+dependencies and status decisions. To reduce bookkeeping, the Lead may name one
+exclusive `Artifact Writer` to create/update `task.md`, task-level `progress.md`,
+graph, HTML and Markdown from the Lead's verified decisions. The writer returns
+the exact revision for Lead review before execution/status changes proceed.
+
 Decompose for faster business proof, not for more process artifacts.
 
 ## Procedure
@@ -77,6 +92,10 @@ active or wall-clock time and not a promise of background execution.
 
 ```text
 Outcome:
+User outcome and benefit:
+Human-readable task title and full description:
+Expected visible result and acceptance path:
+Affected files (separate from owned read/write paths):
 Business/canary delta:
 Owner:
 Assigned branch/worktree/base commit (if isolated):
@@ -119,3 +138,8 @@ Do not create separate research, implementation, review, documentation, and
 task-card leaves for one tiny change unless they are genuinely independent and
 decision-relevant. Do not confuse started agents, written plans, or completed
 checks with business delta.
+
+Use `common/protocols/ORCHESTRATION_RECORDS.md` for durable Lead briefs, worker
+progress, decisions, blockers and result receipts. Detailed execution state lives
+in the canonical task directory; chat carries only a required decision, a
+route-changing blocker, or concise readiness with a receipt path.

@@ -1,7 +1,9 @@
 # Business-first cost-aware planning
 
-Load only when planning adds more decision value than implementation delay.
-Simple and clear work does not need a planning artifact.
+Use this profile to choose an efficient route for a Lead-owned plan. Every
+authorized development task has a plan before implementation; simple bounded
+work may need only one short leaf and minimal research. Read-only questions,
+investigations and status requests do not need a development plan.
 
 ## Decision order
 
@@ -13,12 +15,16 @@ not override new instructions. For architecture, use
 1. State the user's current business outcome and accepted Definition of Done.
 2. Trace the actual production consumer path enough to identify the next change.
 3. Name the shortest safe business canary and cheapest sufficient proof.
-4. Use `../skills/model-routing/SKILL.md` and
+4. Explicitly select quickfix or fullcycle from actual scope and risk; an
+   assigned leaf does not select the parent's mode or own the plan.
+5. Create and present the plan before implementation, without waiting for a
+   second approval when execution is authorized.
+6. Use `../skills/model-routing/SKILL.md` and
    `../skills/decompose-and-dispatch/SKILL.md` to assign every task to an allowed
    Worker: fast tier glm-5.3-flash or minimax-3.1-flash, frontier tier gpt-6-luna,
    glm-5.3 or gpt-6.1-sol, resolved to an exact live
    catalog ID. The Lead coordinates only and never executes. No silent fallback.
-5. Consult the Overseer when a concrete blocker or route uncertainty would benefit
+7. Consult the Overseer when a concrete blocker or route uncertainty would benefit
    from independent advice. Add technical review and fresh independent testing when
    the change’s risk and claim justify their cost.
 
@@ -81,6 +87,14 @@ task-card repair slices merely to satisfy a timer.
 Persist a task/result artifact only when recovery, handoff, reuse, audit, or
 rediscovery cost justifies it. Keep it compact and current. No elapsed-time
 threshold requires a file or commit.
+For delegated work, however, the canonical assignment, progress, decision/blocker
+and result receipt are always written under the owning task directory as defined
+by `../protocols/ORCHESTRATION_RECORDS.md`; routine chat updates are not their
+durable record.
+The Lead retains plan decisions and may name exactly one Artifact Writer to
+write task/progress/graph/HTML/Markdown from verified Lead decisions. Execution
+Workers own only their assigned result/progress files. Keep the plan-file writer
+exclusive until the Artifact Writer hands back the revision for Lead review.
 
 ## Two compressed approaches
 

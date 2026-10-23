@@ -4,10 +4,11 @@ These are optional Codex integration details, not a core role. A configured
 profile embeds the complete role prompt; use file fallback only when native
 profile delivery is absent.
 
-Before every child call, load `templates/subagent.md`. It requires
-`fork_context: false`, compact explicit business context, the cheapest sufficient
-model, a 20-minute reporting checkpoint, and a real wait/join when the result is
-required. Include a task/result path only when durable handoff is worth its cost.
+Before every child call, load `templates/subagent.md`. Pass the context needed
+for the assigned role; reserve fresh context for independent review when
+required. Follow its model selection, reporting checkpoint, and wait/join rules
+when the result is required. Include a task/result path only when durable
+handoff is worth its cost.
 
 One Codex V1/V2 wait window is absolute and monotonic:
 `deadline = monotonicNow() + 1800000 ms`. On each target-specific wait, mailbox

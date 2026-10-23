@@ -5,6 +5,18 @@ description: Create the LHC plan artifacts in one pass — the task record, the 
 
 # Plan artifacts
 
+For every authorized development objective, including quickfix and a
+user-assigned leaf, the Lead researches intent and chooses the overall mode from
+scope and risk, then creates/presents the plan before implementation. A small
+task may use one short leaf. Do not wait for a separate plan approval when
+execution is already authorized. The Lead owns all plan decisions and statuses;
+it may assign one named Artifact Writer as the exclusive file writer for
+`task.md`, task-level `progress.md`, graph, HTML and Markdown. The writer records
+only verified Lead decisions and returns the artifacts for Lead review. Execution
+workers write only their assigned progress/result files in
+`common/protocols/ORCHESTRATION_RECORDS.md`. Read-only/status work is outside this
+development-plan rule.
+
 One procedure, no discovery. Do not read `lhc_grid.py`, do not grep the parser
 regexes, do not infer the shape from an old task record: everything needed is here.
 
@@ -22,8 +34,8 @@ the groups are never merged. Canonical wording (the Russian rendering; the field
 wording and the emoji do not change with the language):
 
 ```text
-Цель: <одна строка — чего хочет пользователь>
-Бизнес-результат: <одна строка — что пользователь может использовать уже сейчас>
+Цель: <какой человек выполняет какую задачу, на какой обычной поверхности и с какими главными границами>
+Бизнес-результат: <какую наблюдаемую пользу получит человек после реализации>
 Декомпозиция: <N> листьев · <P> параллельно · <W> волн(а) · слотов: <S>
 
 ✅ (описание листа) начата 14:02 закончена 14:09, оценка 15 минут, факт 7 минут
@@ -37,6 +49,12 @@ leaf names the leaf it waits for and why it could not start in parallel. A runni
 leaf that passed its estimate names the cause. When active time was not measured,
 write `не измерено` instead of a number. The leaf labels are the labels the graph
 and the dashboard show, in the user's language.
+
+The report may follow a task line with indented `Описание задачи:`, `Приёмка:`
+and `Затрагиваемые файлы:` details. Explain the problem, change, human benefit,
+input, visible outcome and verification path as fully as needed. There is no
+small character cap for task descriptions. Put implementation identifiers in
+technical details rather than replacing the human explanation with them.
 
 ## 2. Derive the graph from the report
 
@@ -59,7 +77,7 @@ The report knows the work; the graph also carries who owns it. Four leaf fields 
 two document fields have no place in a report, so set them once, on the first
 export, and let `--merge` carry them through every later refresh:
 
-- per leaf: `role`, `read_paths`, `write_paths`, `paths`;
+- per leaf: `role`, `read_paths`, `write_paths`, `paths`, `affected_files`;
 - on the document: `current_progress`, `external_waits`.
 
 `read_paths`, `write_paths` and `paths` are how one owner per path is proven, so
@@ -83,9 +101,10 @@ revision of the plan. Two artifacts of one plan are generated, never kept in syn
 hand: if the two revisions differ, they are two plans.
 
 `check-plan` prints every divergence between the report and the graph and exits
-non-zero when they disagree. That exit code is the gate: the plan is not finished
-until it passes. `status` prints the same facts as text when the answer belongs in
-a chat message.
+non-zero when task IDs, statuses, or explicitly stated description, acceptance
+and affected-file details disagree. That exit code is the gate: the plan is not
+finished until it passes. It does not reject descriptions by length. `status`
+prints the same facts as text when the answer belongs in a chat message.
 
 ## 5. The order at every plan boundary
 

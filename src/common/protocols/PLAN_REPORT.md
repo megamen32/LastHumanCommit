@@ -18,6 +18,19 @@ what you did instead of where the plan stands.
 
 ## Format
 
+Each task line may be followed by indented detail lines, which the report parser,
+JSON export, Markdown view and HTML dashboard preserve as separate fields:
+
+```text
+  Описание задачи: Исполнитель меняет форму сохранения, чтобы человек мог сохранить выбранный канал и увидеть его после перезагрузки; затрагиваются экран настроек и сохранённое значение.
+  Приёмка: Выбрать канал, сохранить, перезагрузить страницу и убедиться, что выбор восстановился.
+  Затрагиваемые файлы: `src/settings.py`, `tests/test_settings.py`
+```
+
+These descriptions may be as long as needed. Do not replace the business result
+with test, publication or runtime status. A report and graph must keep task
+description, acceptance, affected files and technical progress distinct.
+
 Three header lines, then the leaves: finished first, running second, blocked
 third, queued last. Drop an empty group. Use the user's local time on a
 24-hour clock. Write the report in the user's own language — the field wording

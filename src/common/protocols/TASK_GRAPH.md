@@ -55,8 +55,8 @@ fields are optional there.
   "schema_version": 2,
   "title": "ExManager → Board integration",
   "goal": "one accepted business outcome",
-  "business_result": "what the user can already use now",
-  "current_progress": "what is already proven, not what is planned",
+  "business_result": "the observable benefit the person will get after the task is complete",
+  "current_progress": "what is already proven now, not what is planned",
   "external_waits": "pending human or platform waits, outside the active work",
   "slots": 4,
   "updated_at": "2026-10-21T06:16:00",
@@ -77,7 +77,9 @@ fields are optional there.
       "model_class": "gpt-6-luna",
       "model": "gpt-6-luna",
       "blocker": "",
-      "acceptance": "what a person can verify when this task is done",
+      "description": "Кто и что изменит, зачем это человеку и какой путь это затронет; текст не обрезается искусственным лимитом.",
+      "acceptance": "Как человек проверит ожидаемое изменение и что увидит.",
+      "affected_files": ["src/module.py", "tests/test_module.py"],
       "blocker_details": {
         "reason": "the concrete reason this task cannot continue",
         "responsible": "the named person or active owner who handles it",
@@ -92,7 +94,13 @@ fields are optional there.
 }
 ```
 
-Required per task: `id`, `label`, `status`, `depends_on`. Everything else is
+Required per task: `id`, `label`, `status`, `depends_on`. `description`,
+`acceptance`, and `affected_files` are separate optional fields: the first
+explains the work in human language, the second says how to recognize its result,
+and the third lists affected paths. Descriptions and file lists have no
+application-imposed short character cap. Older schema-v1 and schema-v2 graphs
+remain readable; legacy task `description` is retained as a description, and
+existing acceptance data remains available. Everything else is
 optional but expected for a live objective. An optional field is checked only
 when it is present: declaring a path, a model class, an acceptance line or an
 unknown estimate is a choice, never a demand.

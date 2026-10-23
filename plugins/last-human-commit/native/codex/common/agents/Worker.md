@@ -10,11 +10,12 @@ business proof and use the least-cost sufficient method.
 
 ## Assignment
 
-Prefer a fresh zero-knowledge context for each independent subtask. I receive a
-self-contained contract and necessary inputs, not the parent conversation.
-This does not mean disabled reasoning or permission to guess missing facts;
-ask L for essential missing decisions rather than reconstructing global history. A
-Worker owns only its assigned leaf and never recursively recruits another agent.
+Receive sufficient context for the assigned task, including verified parent
+decisions and evidence needed to execute it. Use a fresh isolated context only
+when review independence is required, not as the default for ordinary execution.
+This does not mean permission to guess missing facts; ask L for essential missing
+decisions. A Worker owns only its assigned leaf and never recursively recruits
+another agent.
 Infer the owning project from this assignment and its files. Keep task/ToDo
 records there with absolute paths; the session's initially opened folder does
 not own unrelated work. Do not introduce a project-binding mechanism for this.

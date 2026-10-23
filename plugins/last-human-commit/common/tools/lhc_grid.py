@@ -178,7 +178,9 @@ class Leaf:
 
     id: str
     label: str = ""
+    description: str = ""
     acceptance: str = ""
+    affected_files: list[str] = field(default_factory=list)
     status: str = STATUS_QUEUED
     owner: str = ""
     session: str = ""
@@ -251,6 +253,8 @@ ATTRIBUTION_FIELDS = (
     "model_class",
     "role",
     "acceptance",
+    "description",
+    "affected_files",
     "note",
     "blocker",
     "blocker_details",
@@ -487,6 +491,17 @@ def parse_plan_report(text: str) -> Optional[Graph]:
                 graph.declared_parallel = _int_or_none(DECOMP_PARALLEL_RE.search(value))
                 graph.declared_waves = _int_or_none(DECOMP_WAVES_RE.search(value))
                 graph.slots = graph.declared_parallel or _int_or_none(DECOMP_SLOTS_RE.search(value)) or 1
+            continue
+        detail = re.match(r"^\s+(Описание задачи|Приёмка|Затрагиваемые файлы):\s*(.*)$", line)
+        if detail and leaves:
+            key, value = detail.groups()
+            if key == "Описание задачи":
+                leaves[-1].description = normalize(value)
+            elif key == "Приёмка":
+                leaves[-1].acceptance = normalize(value)
+            else:
+                quoted_paths = re.findall(r"`([^`]+)`", value)
+                leaves[-1].affected_files = quoted_paths or [item.strip() for item in value.split(",") if item.strip()]
             continue
         match = LEAF_LINE_RE.match(line)
         if not match:
@@ -826,10 +841,18 @@ def parse_graph_json(document: Any) -> Graph:
         raw_blocker_details = task.get("blocker_details")
         if not isinstance(raw_blocker_details, dict):
             raw_blocker_details = {}
+        raw_affected_files = task.get("affected_files")
+        if raw_affected_files is not None and (
+            not isinstance(raw_affected_files, list)
+            or not all(isinstance(item, str) for item in raw_affected_files)
+        ):
+            raise ValueError(f"tasks[{index}].affected_files must be a list of strings")
         leaf = Leaf(
             id=str(task.get("id") or f"task-{index + 1}"),
             label=normalize(str(task.get("label") or task.get("outcome") or task.get("acceptance") or "")),
-            acceptance=normalize(str(task.get("acceptance") or task.get("description") or "")),
+            description=normalize(str(task.get("description") or "")),
+            acceptance=normalize(str(task.get("acceptance") or "")),
+            affected_files=list(raw_affected_files or []),
             status=normalize_status(task.get("status") or STATUS_QUEUED),
             owner=str(task.get("owner") or task.get("role") or ""),
             session=str(task.get("session") or ""),
@@ -1512,6 +1535,8 @@ def _search_text(leaf: Leaf) -> str:
         leaf.note,
         leaf.blocker,
         leaf.acceptance,
+        leaf.description,
+        " ".join(leaf.affected_files),
     ]
     return " ".join(part for part in parts if part).lower()
 
@@ -1528,6 +1553,9 @@ def graph_revision(graph: Graph) -> str:
         [
             leaf.id,
             leaf.label,
+            leaf.description,
+            leaf.acceptance,
+            leaf.affected_files,
             leaf.status,
             leaf.owner,
             leaf.session,
@@ -2122,8 +2150,10 @@ def render_html(
         model = leaf.model or leaf.model_class or ""
         details = (
             f"<dl class='task-details'><dt>Код</dt><dd>{escape(leaf.id)}</dd>"
-            + (f"<dt>Описание задачи</dt><dd>{escape(leaf.note)}</dd>" if leaf.note else "")
+            + (f"<dt>Описание задачи</dt><dd>{escape(leaf.description)}</dd>" if leaf.description else "")
             + (f"<dt>Ожидаемый результат</dt><dd>{escape(leaf.acceptance)}</dd>" if leaf.acceptance else "")
+            + (f"<dt>Затрагиваемые файлы</dt><dd>{escape(', '.join(leaf.affected_files))}</dd>" if leaf.affected_files else "")
+            + (f"<dt>Примечание</dt><dd>{escape(leaf.note)}</dd>" if leaf.note else "")
             + f"<dt>Владелец</dt><dd>{escape(leaf.owner or '—')}</dd>"
             f"<dt>Зависит от</dt><dd>{escape(deps)}</dd>"
             f"<dt>Параллельно с</dt><dd>{escape(peer)}</dd>"
@@ -3097,6 +3127,12 @@ def render_leaf_lines(graph: Graph, metrics: dict[str, Any]) -> list[str]:
         if leaf.blocker and leaf.status == STATUS_BLOCKED:
             parts.append(f"блокер: {leaf.blocker}")
         lines.append(" · ".join(parts))
+        if leaf.description:
+            lines.append(f"      Описание задачи: {leaf.description}")
+        if leaf.acceptance:
+            lines.append(f"      Приёмка: {leaf.acceptance}")
+        if leaf.affected_files:
+            lines.append("      Затрагиваемые файлы: " + ", ".join(f"`{path}`" for path in leaf.affected_files))
     return lines
 
 
@@ -3210,6 +3246,10 @@ def export_graph(graph: Graph) -> dict[str, Any]:
             task["blocker"] = leaf.blocker
         if leaf.acceptance:
             task["acceptance"] = leaf.acceptance
+        if leaf.description:
+            task["description"] = leaf.description
+        if leaf.affected_files:
+            task["affected_files"] = leaf.affected_files
         if leaf.blocker_details:
             task["blocker_details"] = leaf.blocker_details
         if leaf.note:
@@ -3246,11 +3286,12 @@ class PlanSync:
     extra_in_report: list[Leaf] = field(default_factory=list)
     missing_in_report: list[Leaf] = field(default_factory=list)
     status_mismatch: list[tuple[Leaf, Leaf]] = field(default_factory=list)
+    field_mismatch: list[tuple[Leaf, Leaf, str]] = field(default_factory=list)
     matched_by_label: int = 0
 
     @property
     def ok(self) -> bool:
-        return not (self.extra_in_report or self.missing_in_report or self.status_mismatch)
+        return not (self.extra_in_report or self.missing_in_report or self.status_mismatch or self.field_mismatch)
 
 
 def _graph_leaf_for(leaf: Leaf, graph: Graph, taken: set[str]) -> tuple[Optional[Leaf], bool]:
@@ -3278,7 +3319,7 @@ def _graph_leaf_for(leaf: Leaf, graph: Graph, taken: set[str]) -> tuple[Optional
 
 
 def compare_plan_with_graph(report: Graph, graph: Graph) -> PlanSync:
-    """Compare the report's tasks with the graph's leaves: same set, same statuses."""
+    """Compare task identity/status and human details stated in the report."""
 
     result = PlanSync()
     taken: set[str] = set()
@@ -3293,6 +3334,10 @@ def compare_plan_with_graph(report: Graph, graph: Graph) -> PlanSync:
             result.matched_by_label += 1
         if leaf.status != target.status:
             result.status_mismatch.append((leaf, target))
+        for field_name in ("description", "acceptance", "affected_files"):
+            reported = getattr(leaf, field_name)
+            if reported and reported != getattr(target, field_name):
+                result.field_mismatch.append((leaf, target, field_name))
     for leaf in graph.leaves:
         if leaf.id not in taken:
             result.missing_in_report.append(leaf)
@@ -3383,7 +3428,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     check = sub.add_parser(
         "check-plan",
-        help="Compare a plan report with its task graph: same tasks, same statuses",
+        help="Compare plan task identity, statuses and stated task details with the graph",
     )
     check.add_argument("report", type=Path, help="canonical plan report (markdown)")
     check.add_argument("graph", type=Path, help="plan.graph.json of the same objective")
@@ -3562,37 +3607,9 @@ def command_validate(args: argparse.Namespace) -> int:
     return 0 if not errors else 2
 
 
-# The plan is read by a person on a phone. The wording of the plan has a
-# budget: the goal and the business result say what the work is for, the
-# leaves say what has to happen, and the detail lives in the card of the leaf
-# and in the journal. A plan that has to be read twice is a plan that was
-# written for the writer.
-TEXT_BUDGET = {"goal": 240, "business_result": 240, "label": 120, "note": 200}
-
-
 def check_text_budget(graph: Graph) -> list[str]:
-    """What the plan says at length, and why it should not."""
-    problems: list[str] = []
-    for field in ("goal", "business_result"):
-        value = getattr(graph, field, "") or ""
-        limit = TEXT_BUDGET[field]
-        if len(value) > limit:
-            problems.append(
-                f"{field}: {len(value)} символов, максимум {limit} — "
-                f"это читается для документа, а не для протокола"
-            )
-    for leaf in graph.leaves:
-        if len(leaf.label or "") > TEXT_BUDGET["label"]:
-            problems.append(
-                f"{leaf.id}: название задачи {len(leaf.label)} символов, "
-                f"максимум {TEXT_BUDGET['label']}"
-            )
-        if len(leaf.note or "") > TEXT_BUDGET["note"]:
-            problems.append(
-                f"{leaf.id}: примечание {len(leaf.note)} символов, "
-                f"максимум {TEXT_BUDGET['note']} — детали живут в карточке задачи"
-            )
-    return problems
+    """Legacy API retained for compatibility; no human field is length-capped."""
+    return []
 
 
 def command_check_plan(args: argparse.Namespace) -> int:
@@ -3608,17 +3625,7 @@ def command_check_plan(args: argparse.Namespace) -> int:
         + (f" · сопоставлено по названию: {result.matched_by_label}" if result.matched_by_label else "")
     )
     if result.ok:
-        print("OK: задачи отчёта и листья графа совпадают — один набор, те же id и статусы.")
-        overbudget = check_text_budget(graph)
-        if overbudget:
-            print("ТЕКСТ ПЛАНА РАЗРОС:")
-            for problem in overbudget:
-                print(f"  - {problem}")
-            print(
-                "План читают на телефоне: цель и результат — по одному предложению, "
-                "название задачи — коротко, детали — в карточке задачи и в журнале."
-            )
-            return 1
+        print("OK: задачи отчёта и листья графа совпадают — идентификаторы, статусы и указанные описания.")
         return 0
     print("РАСХОЖДЕНИЕ между отчётом и графом:")
     if result.extra_in_report:
@@ -3636,6 +3643,11 @@ def command_check_plan(args: argparse.Namespace) -> int:
                 f"    - {leaf.id}: в отчёте «{STATUS_LABELS.get(leaf.status, leaf.status)}», "
                 f"в графе «{STATUS_LABELS.get(target.status, target.status)}»"
             )
+    if result.field_mismatch:
+        print("  разные описания, приёмки или затрагиваемые файлы:")
+        names = {"description": "описание задачи", "acceptance": "приёмка", "affected_files": "список файлов"}
+        for leaf, _target, field_name in result.field_mismatch:
+            print(f"    - {leaf.id} «{leaf.label}»: {names[field_name]} не совпадает")
     print("Приведите отчёт и граф в соответствие; расхождение — дефект, а не «примерно одинаково».")
     return 1
 

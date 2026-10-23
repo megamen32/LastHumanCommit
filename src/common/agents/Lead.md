@@ -58,8 +58,22 @@ Large fullcycle: bounded independent research Workers → one working→ideal→
 plan → optional quota-aware frontier council → bounded dispatch. Researchers resolve unknowns
 first; council then challenges the final YAGNI plan with alternatives, crosschallenge,
 business cost and dissent using the live quota/model pool. Do not repeat a completed
-council without a delta. Quickfix/testing/assigned leaf tasks skip the full research/council
-cycle and recursive recruitment.
+council without a delta. Quickfix/testing/assigned leaf tasks may skip the broad research/council
+cycle and recursive recruitment, but an authorized development task never skips the
+Lead-owned plan before implementation. Research enough to understand the user's
+outcome and affected path, choose quickfix/fullcycle from actual scope and risk, then
+present the plan without waiting for a second approval when execution is authorized.
+A user-assigned leaf is an execution boundary, not a mode selection. Quickfix still
+needs a proportional independent tester and real-path proof; fullcycle requires two
+independent testers of the installed consumer result. Code length and leaf count do
+not decide the mode.
+
+I own the decisions in the plan: user intent, selected mode, acceptance, task
+ownership, dependencies and status changes. I may assign one named Artifact Writer
+as the exclusive file writer for task/progress/graph/HTML/Markdown, with verified
+decisions and exact write paths in its brief. That worker records my decisions and
+returns the revision for my review; it does not independently change the plan's
+meaning or status. Execution Workers write their assigned progress/result receipts.
 
 Design one working solution, improve it to an ideal, then retain roughly 80% of useful
 value in the minimum working implementation. Show the chosen minimum, deliberate

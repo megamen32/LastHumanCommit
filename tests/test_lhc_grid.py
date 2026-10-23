@@ -192,17 +192,22 @@ class GraphJsonTests(unittest.TestCase):
                  'estimate_minutes': {'minimum': 5, 'maximum': 5}},
                 {'id': 'wait', 'label': 'External wait', 'status': 'blocked', 'depends_on': ['done'],
                  'estimate_unknown_reason': 'Owner has not confirmed access.'},
+                {'id': 'known', 'label': 'Known next work', 'status': 'queued', 'depends_on': [],
+                 'estimate_minutes': {'minimum': 10, 'maximum': 10}},
             ],
         })
         with patch.object(lhc, 'now_clock', return_value=17 * 60):
             metrics = lhc.build_metrics(graph)
         self.assertEqual(metrics['unknown_estimate_pending'], 1)
         self.assertEqual(metrics['eta_clock_max'], '')
+        self.assertEqual(metrics['remaining_minutes_max'], 10)
         self.assertEqual(graph.leaves[1].duration_label, 'Срок неизвестен')
         self.assertEqual(lhc.parse_graph_json(lhc.export_graph(graph)).leaves[1].estimate_unknown_reason,
                          'Owner has not confirmed access.')
         html = lhc.render_html(graph, metrics)
         self.assertIn('Срок неизвестен', html)
+        self.assertIn('Известная часть работы', html)
+        self.assertIn('без неизвестных оценок и ожиданий', html)
 
     def test_forecast_counts_from_the_last_confirmed_event(self):
         """The forecast is anchored at the last confirmed event.

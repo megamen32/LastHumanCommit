@@ -13,6 +13,22 @@ The Lead owns task-note updates: initial/revised estimate and reason, actual act
 versus wall-clock elapsed time, next ~15-minute tasks/owners/dependencies and parallel
 opportunities. At 60 minutes the Lead also checks the original goal and business result.
 User updates report material progress, not every timer reminder.
+The Lead's plan, briefs, worker progress, decisions, blockers and result receipts
+live in the owning task directory under `ORCHESTRATION_RECORDS.md`; outcome state
+does not replace those human-readable records.
+For authorized development, the Lead first researches enough to understand the
+user's intended outcome and affected path, selects `quickfix` or `fullcycle` from
+actual scope and risk, and creates the human-readable plan before implementation.
+The plan states what a person will get, what changes, why it matters, and how to
+check it. A quickfix still needs a proportional independent tester and real-path
+proof; a fullcycle needs two independent testers of the installed consumer result.
+A worker's assigned leaf narrows its execution scope but cannot select the parent
+mode or waive the Lead-owned plan. The Lead may assign one named Planner exclusive
+artifact writing from verified Lead decisions; this does not transfer plan
+decision authority. A human-readable outcome is a separate claim
+from test status, source publication, package installation, runtime state, and
+consumer acceptance. Do not wait for a second plan approval when the user's
+execution authority is already clear.
 Quickfix needs focused RED/fix/GREEN and its real narrow canary; fullcycle also
 needs applicable deployment and publication. Testing completes assigned coverage
 and candid raw observations, including a product defect; it does not require code,

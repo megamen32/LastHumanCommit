@@ -1,3 +1,21 @@
+# 1.5.37 - the Lead owns the decisions, and plans keep their full human detail
+
+**Every authorized development task starts from a plan.** The Lead researches the
+user's intent, chooses quickfix or fullcycle from scope and risk, then presents a
+proportionate plan before implementation. A worker's assigned leaf does not
+change the overall mode or waive the plan.
+
+**Task plans can explain the complete result.** Descriptions have no artificial
+short length cap, affected files remain a separate field, and report, graph,
+HTML, Markdown, merge and `check-plan` preserve those details independently from
+acceptance and technical progress.
+
+**The plan has one accountable decision owner and one file writer at a time.**
+The Lead may assign an Artifact Writer to record verified decisions in the task
+record, progress, graph and generated views. Execution workers keep their own
+progress and result receipts in the canonical task directory; handoffs carry the
+parent route and exact evidence.
+
 # 1.5.36 - the dark theme is back, and the page remembers that it belongs to the system
 
 The owner opened the plan on a machine where everything is dark by default and

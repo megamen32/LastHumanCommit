@@ -232,8 +232,15 @@ def classify(goal):
         if not context:
             return 'fullcycle'
     if REPAIR.search(intent):
-        broad = re.search(r'\b(?:full|entire|complete|all)\b|весь|целиком|полностью', intent, re.I)
-        small = re.search(r'\b(?:fix|repair|small|minor|typo)\b|исправ|почин|мелк|опечат', intent, re.I)
+        # Scope and risk override lexical hints like "fix": a risky repair,
+        # feature, architecture decision, or change across several boundaries
+        # is a fullcycle even when phrased as one assigned leaf.
+        broad = re.search(
+            r'\b(?:full|entire|complete|all|new feature|feature|architecture|redesign|risky|'
+            r'multiple|several|cross.cut(?:ting)?)\b|'
+            r'весь|целиком|полностью|нов(?:ая|ую) функцию|архитектур|нескольк.{0,30}(?:сервис|модул|репозитор)|'
+            r'широк.{0,25}(?:измен|риск|охват)|рискованн.{0,20}(?:ремонт|исправ)', intent, re.I)
+        small = re.search(r'\b(?:fix|repair|small|minor|typo|bounded)\b|исправ|почин|мелк|опечат|ограниченн.{0,20}(?:исправ|измен)', intent, re.I)
         return 'quickfix' if small and not broad else 'fullcycle'
     if TEST.search(intent):
         return 'testing'
