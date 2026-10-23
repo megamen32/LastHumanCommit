@@ -2,8 +2,12 @@
 import json
 from pathlib import Path
 
+import pytest
+
 from test_outcome_contract import anchored, cli, review_export
 from lhc_outcome_review import browser_journey, real_observation
+
+from _inprocess import isolate_case_modules
 
 
 URL = 'https://new.auto-gram.ru/chat/2122?cabinet=6'
@@ -11,6 +15,17 @@ AGENT_BROWSER = '/home/roomhacker/.npm-global/bin/agent-browser'
 
 
 NATIVE_CWD = str(Path('/tmp').resolve())
+
+
+@pytest.fixture(autouse=True)
+def fresh_case_modules(tmp_path):
+    """Give every case the module state a fresh interpreter would have had.
+
+    The review fixture discovers the case's own test module by name, so a
+    module a sibling case imported must not answer for it.
+    """
+    isolate_case_modules(tmp_path)
+    yield
 
 
 def _browser_call(command, *, name='exec_command'):

@@ -4,13 +4,14 @@ These are policy/projection tests, not a claim that a model rotated credentials.
 """
 import json
 from pathlib import Path
-import subprocess
-import sys
 
 import pytest
 
+from _inprocess import git_repo, load_module, run_cli
+
 ROOT = Path(__file__).resolve().parents[1]
 PROTOCOL = 'src/common/protocols/REVIEW_TO_DELIVERY.md'
+entry = load_module(ROOT / 'src/common/tools/lhc_entry.py', name='lhc_entry_access_policy_test')
 
 
 def access_policy():
@@ -86,7 +87,7 @@ def test_generated_access_contract_is_generic_and_parity_checked():
 
 
 def test_native_handoff_preserves_russian_goal_and_only_secret_reference(tmp_path):
-    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
+    git_repo(tmp_path)
     secret = tmp_path/'protected-fixture.json'
     sentinel = 'synthetic-value-must-not-enter-context'
     secret.write_text(json.dumps({'password': sentinel})); secret.chmod(0o600)
@@ -98,10 +99,10 @@ def test_native_handoff_preserves_russian_goal_and_only_secret_reference(tmp_pat
     for event in ('UserPromptSubmit', 'PreCompact'):
         # The live path is the explicit session command; the native hooks stay
         # time-only and never capture or replay the business goal.
-        r = subprocess.run([sys.executable, str(ROOT/'src/common/tools/lhc_entry.py'),
-            '--root', str(ROOT), '--runtime', 'codex', '--event', event, '--session'],
-            input=json.dumps({'cwd': str(tmp_path), 'session_id': 'access-reference', 'prompt': prompt},
-                             ensure_ascii=False), text=True, capture_output=True, check=True)
+        r = run_cli(entry, ['--root', str(ROOT), '--runtime', 'codex', '--event', event, '--session'],
+            stdin=json.dumps({'cwd': str(tmp_path), 'session_id': 'access-reference', 'prompt': prompt},
+                             ensure_ascii=False))
+        assert r.returncode == 0, r.stderr
         outputs.append(r.stdout)
     state = next((tmp_path/'.agents/shared-session/learning').glob('*.json')).read_text()
     assert json.loads(state)['business']['original_prompt'] == prompt

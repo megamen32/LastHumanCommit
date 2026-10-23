@@ -4,29 +4,26 @@
 from __future__ import annotations
 
 import argparse
-import importlib.util
 import io
 import json
-import subprocess
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
 
+from _inprocess import git_repo, load_module, run_cli
+
 
 ROOT = Path(__file__).resolve().parents[1]
 TOOL = ROOT / "src/common/tools/lhc_time_guard.py"
 PLUGIN = ROOT / "plugins/last-human-commit"
-SPEC = importlib.util.spec_from_file_location("lhc_time_guard_native_test", TOOL)
-assert SPEC is not None and SPEC.loader is not None
-TIME_GUARD = importlib.util.module_from_spec(SPEC)
-SPEC.loader.exec_module(TIME_GUARD)
+TIME_GUARD = load_module(TOOL, name="lhc_time_guard_native_test")
 
 
 @pytest.fixture(autouse=True)
 def isolated_git_project(tmp_path):
-    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    git_repo(tmp_path)
 
 
 def task(root: Path, *, active: int | None = None) -> None:
@@ -41,13 +38,11 @@ def task(root: Path, *, active: int | None = None) -> None:
 
 
 def run(root: Path, runtime: str, event: str) -> dict[str, object] | None:
-    completed = subprocess.run(
-        [sys.executable, str(TOOL), "hook", "--runtime", runtime, "--event", event],
-        input=json.dumps({"cwd": str(root)}),
-        text=True,
-        capture_output=True,
-        check=True,
+    completed = run_cli(
+        TIME_GUARD, ["hook", "--runtime", runtime, "--event", event],
+        stdin=json.dumps({"cwd": str(root)}),
     )
+    assert completed.returncode == 0, completed.stderr
     return json.loads(completed.stdout) if completed.stdout.strip() else None
 
 

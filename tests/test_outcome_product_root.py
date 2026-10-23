@@ -14,6 +14,8 @@ import lhc_outcome as outcome
 import lhc_outcome_review as review
 import lhc_time_guard as guard
 
+from _inprocess import git_repo, run_cli
+
 
 def native_source(tmp_path, prompt, operations, *, sid="worker", cwd=None):
     """Write a small Codex source with its user assignment and actual calls."""
@@ -39,11 +41,9 @@ def brief_read(brief_path, body, *, workdir, exit_code=0, command=None, extra_ar
 
 
 def cli(tmp_path, cwd, *args):
-    return subprocess.run(
-        [sys.executable, str(Path(outcome.__file__).resolve()), "--cwd", str(cwd),
-         "--runtime", "codex", "--session-id", "worker", *args],
-        capture_output=True, text=True,
-        env={**os.environ, "HOME": str(tmp_path / "home"), "CODEX_HOME": str(tmp_path / ".codex")})
+    return run_cli(
+        outcome, ["--cwd", str(cwd), "--runtime", "codex", "--session-id", "worker", *args],
+        env={"HOME": str(tmp_path / "home"), "CODEX_HOME": str(tmp_path / ".codex")})
 
 
 def stored_assignment(tmp_path):
@@ -51,8 +51,8 @@ def stored_assignment(tmp_path):
     product_root = tmp_path / "product"
     session_root.mkdir()
     product_root.mkdir()
-    subprocess.run(["git", "init", "-q", str(session_root)], check=True)
-    subprocess.run(["git", "init", "-q", str(product_root)], check=True)
+    git_repo(session_root)
+    git_repo(product_root)
     (product_root / "owned.py").write_text("print('before')\n")
     brief = session_root / ".agents/tasks/briefs/20261020-parallel-u53.md"
     scope_prompt = f"Execute the exact paths in {brief} in {product_root}."

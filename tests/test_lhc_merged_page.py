@@ -13,27 +13,20 @@ the seams of that merge:
 """
 from __future__ import annotations
 
-import importlib.util
 import json
 import re
-import sys
 from pathlib import Path
+
+from _inprocess import load_module
 
 ROOT = Path(__file__).resolve().parent.parent
 TOOL = ROOT / "src" / "common" / "tools" / "lhc_grid.py"
 PRODUCT = ROOT / "src" / "common" / "tools" / "lhc_product.py"
-DATA = Path(
-    "/Users/user/Documents/ServerAdministartion/.tmp/airlock-audit/audit-data.json"
-)
+DATA = ROOT / "tests" / "fixtures" / "product_side_example.json"
 
 
 def load(name: str, path: Path):
-    spec = importlib.util.spec_from_file_location(name, path)
-    module = importlib.util.module_from_spec(spec)
-    assert spec.loader is not None
-    sys.modules[name] = module
-    spec.loader.exec_module(module)
-    return module
+    return load_module(path, name=name)
 
 
 def merged_html():

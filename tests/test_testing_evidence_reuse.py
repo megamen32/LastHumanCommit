@@ -8,6 +8,8 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src/common/tools'))
 import lhc_outcome_review as review
 
+from _inprocess_lane import anchored_outcome, outcome_cli
+
 
 def call(cmd, ident='operation', output='observed', index=2):
     return ({'name': 'exec_command', 'call_id': ident, 'arguments': json.dumps({'cmd': cmd}),
@@ -99,13 +101,12 @@ def reuse_fixture(root, monkeypatch, live=False):
     state and the native transcript describe one and the same contract and the
     reuse binding can be driven by the explicit review command.
     """
-    import test_outcome_contract as fixtures
     from datetime import datetime, timedelta, timezone
     import lhc_outcome as outcomes
     goal = ('Read-only testing: test cabinet switching on https://example.test; '
             'report actual defects.')
     if live:
-        outcome = fixtures.anchored(root, goal=goal, coverage=('cabinet switching',),
+        outcome = anchored_outcome(root, goal=goal, coverage=('cabinet switching',),
                                     canary=('Switch cabinets', 'https://example.test',
                                             'Cabinet switches and failures are reported'))
         # The saved contract time is the floor for the original native source
@@ -116,7 +117,7 @@ def reuse_fixture(root, monkeypatch, live=False):
         report_at = (base + timedelta(seconds=3)).isoformat()
         authorization_at = (base + timedelta(seconds=4)).isoformat()
     else:
-        outcome = fixtures.anchored(root, goal=goal, coverage=('cabinet switching',))
+        outcome = anchored_outcome(root, goal=goal, coverage=('cabinet switching',))
         outcome['canary'].update(target='https://example.test', scenario='Switch cabinets', expected='Cabinet switches and failures are reported')
         outcome['coverage'] = ['cabinet switching']
         outcome['owned_paths'] = []
@@ -309,16 +310,15 @@ def test_explicit_review_command_routes_the_reuse_binding_into_the_live_outcome(
     actually reads --testing-reuse-bindings and that the reuse is what closes
     the consumer stage.
     """
-    import test_outcome_contract as fixtures
     outcome,manifest,binding,source=reuse_fixture(tmp_path,monkeypatch,live=True)
     bindings=tmp_path/'reuse-bindings.json'
     bindings.write_text(json.dumps(binding))
     # Without the explicit binding the same own-native source cannot close:
     # the reuse grant is the only route to the original consumer evidence.
-    rejected=fixtures.cli(tmp_path,'review','--manifest',str(manifest),ok=False)
+    rejected=outcome_cli(tmp_path,'review','--manifest',str(manifest),ok=False)
     assert 'assigned coverage needs its actual native consumer observations' in rejected, rejected
-    result=fixtures.cli(tmp_path,'review','--manifest',str(manifest),
-                         '--testing-reuse-bindings',str(bindings))
+    result=outcome_cli(tmp_path,'review','--manifest',str(manifest),
+                        '--testing-reuse-bindings',str(bindings))
     assert result['finish_verdict']=='complete'
     assert result['verification_level']=='self-check'
     assert result['product_verdict']=='changes-required'

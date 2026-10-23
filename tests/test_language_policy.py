@@ -2,12 +2,15 @@
 import json
 from pathlib import Path
 import re
-import subprocess
 import sys
+
+from _inprocess import git_repo, load_module, run_cli
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT/'src/common/tools'))
 import lhc_entry
+
+entry = load_module(ROOT/'src/common/tools/lhc_entry.py', name="lhc_entry_language_policy_test")
 
 
 def language_policy(router: str) -> str:
@@ -49,14 +52,15 @@ def test_automatic_router_and_project_bootstrap_inherit_language_policy():
 
 
 def test_russian_request_and_utf8_data_are_never_translated_or_path_rewritten(tmp_path):
-    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
+    git_repo(tmp_path)
     prompt = 'Исправь export.py: Ирина,Москва\nОлег,Казань. Не делегируй. lhc_time_guard.py'
     event = {'cwd': str(tmp_path), 'session_id': 'russian-language-policy', 'prompt': prompt}
     # The live path is the explicit session command; the native hooks stay
     # time-only and never capture the business anchor.
-    result = subprocess.run([sys.executable, str(ROOT/'src/common/tools/lhc_entry.py'),
-        '--root', str(ROOT), '--runtime', 'codex', '--event', 'UserPromptSubmit', '--session'],
-        input=json.dumps(event, ensure_ascii=False), text=True, capture_output=True, check=True)
+    result = run_cli(entry,
+        ['--root', str(ROOT), '--runtime', 'codex', '--event', 'UserPromptSubmit', '--session'],
+        stdin=json.dumps(event, ensure_ascii=False))
+    assert result.returncode == 0, result.stderr
     state = json.loads(next((tmp_path/'.agents/shared-session/learning').glob('*.json')).read_text())
     assert state['business']['original_prompt'] == prompt
     assert state['business']['outcome']['original_goal'] == prompt
@@ -98,13 +102,13 @@ def test_opencode_rebuilt_model_context_keeps_policy_without_resetting_goal_cloc
     for runtime in ('opencode', 'codex'):
         project = tmp_path/runtime
         project.mkdir()
-        subprocess.run(['git', 'init', '-q', str(project)], check=True)
+        git_repo(project)
         prompt = 'Исследуй кодировку в settings.txt. Не меняй код.'
         def emit(event, **fields):
-            result = subprocess.run([sys.executable, str(ROOT/'src/common/tools/lhc_entry.py'),
-                '--root', str(ROOT), '--runtime', runtime, '--event', event, '--session'],
-                input=json.dumps({'cwd': str(project), 'session_id': 'rebuilt-context', **fields}, ensure_ascii=False),
-                text=True, capture_output=True, check=True)
+            result = run_cli(entry,
+                ['--root', str(ROOT), '--runtime', runtime, '--event', event, '--session'],
+                stdin=json.dumps({'cwd': str(project), 'session_id': 'rebuilt-context', **fields}, ensure_ascii=False))
+            assert result.returncode == 0, result.stderr
             output = json.loads(result.stdout or '{}')
             return output.get('hookSpecificOutput', {}).get('additionalContext', '')
         first = emit('UserPromptSubmit', prompt=prompt)

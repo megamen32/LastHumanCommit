@@ -18,6 +18,10 @@ what you did instead of where the plan stands.
 
 ## Format
 
+This report is the readable projection of the plan. When the plan has leaf
+files, they are the source of it: the report is written from them, never the
+other way round. See "The leaf file is the source of truth" below.
+
 Each task line may be followed by indented detail lines, which the report parser,
 JSON export, Markdown view and HTML dashboard preserve as separate fields:
 
@@ -40,8 +44,8 @@ labels written into the report, the task graph and the dashboard use that same
 language: the user reads the leaves, not the plan.
 
 ```text
-Цель: <одна строка — чего хочет пользователь>
-Бизнес-результат: <одна строка — что пользователь может использовать уже сейчас>
+Цель: <чего хочет пользователь — столько, сколько нужно>
+Бизнес-результат: <что пользователь может использовать уже сейчас — столько, сколько нужно>
 Декомпозиция: <N> листьев · <P> параллельно · <W> волн(а) · слотов: <S>
 
 ✅ (описание листа) начата 14:02 закончена 14:09, оценка 15 минут, факт 7 минут
@@ -103,6 +107,13 @@ again:
 - Leaves come from the existing plan. The report never invents leaves to look
   complete and never hides a leaf that was already started.
 
+## The wording is not capped
+
+The goal, the business result and the description of a leaf are written as long
+as they need to be. A long, precise result beats a short one, and a limit on the
+wording of a person is never the answer to a slow plan. What is limited is the
+number of leaves, not the size of the text.
+
 ## What a plan is not
 
 The plan is the report, the graph and the page generated from them. It is not a
@@ -150,6 +161,10 @@ The task list in the report and the leaf list in `plan.graph.json` are one set:
 the same ids, the same statuses, no task without a leaf and no leaf without a
 task. A difference is a defect, not "roughly the same".
 
+When the plan has leaf files, that set has one source: the leaf files. The
+report and the graph are two projections of them, and the check below compares
+two projections of one source.
+
 Check it with one command:
 
 ```sh
@@ -159,6 +174,99 @@ python3 <LHC>/common/tools/lhc_grid.py check-plan <objective>/plan.report.md <ob
 It prints every divergence — a task without a leaf, a leaf without a task, a
 different status — and exits non-zero when the two disagree. Reconcile the
 divergence in the same boundary; do not carry it to the next one.
+
+## The leaf file is the source of truth
+
+A plan that has a `leaves/` directory keeps every leaf in one JSON file of its
+own:
+
+```text
+<objective>/leaves/L12.json
+```
+
+The file is named after the leaf and carries the same id. The owner of a leaf
+changes his own file and nothing else, so two workers never write the same
+file, never conflict and never wait for each other. The graph, this report and
+the page are projections of those files: nobody writes them by hand.
+
+One leaf file looks like this:
+
+```json
+{
+  "id": "L12",
+  "label": "Собрать сборщик листов",
+  "status": "running",
+  "description": "Что именно делает лист.",
+  "acceptance": "Как проверить, что лист сделан.",
+  "affected_files": ["src/common/tools/lhc_plan_json.py"],
+  "owner": "worker-1",
+  "session": "mvs_...",
+  "harness": "codex",
+  "model": "minimax-3.1-flash",
+  "depends_on": ["L03"],
+  "estimate_minutes": {"minimum": 15, "maximum": 20},
+  "started_at": "14:02",
+  "finished_at": "",
+  "actual_minutes": 7,
+  "note": "Что ещё важно знать про этот лист.",
+  "updated_at": "2026-10-23T22:04"
+}
+```
+
+The fields, one by one:
+
+- `id` — the identifier of the leaf. It equals the name of the file: `L12.json`
+  is the leaf `L12`.
+- `label` — the title of the leaf, in the user's language. Required.
+- `status` — one of `queued`, `running`, `blocked`, `waiting`, `deferred`,
+  `done`. The words of this report (`готово`, `в работе`, `ожидание`,
+  `отложено`, `заблокировано`, `в очереди`) and its markers (`✅`, `🔄`, `⌛`,
+  `⏸`, `⛔`, `⏳`) mean the same thing and are accepted as well. A new leaf
+  starts as `queued`.
+- `description` — what the leaf does. As long as it needs to be.
+- `acceptance` — how to check that the leaf is done.
+- `affected_files` — the files the leaf touches.
+- `owner`, `session`, `harness`, `model` — who does the leaf and with what.
+- `depends_on` — the leaves that have to be finished before this one starts.
+  `parallel_with` — the leaves it runs at the same time as.
+- `estimate_minutes` — the original estimate as `{"minimum": 15, "maximum": 20}`.
+  `{"min": 15, "max": 20}` is accepted as well. The estimate is never rewritten
+  to fit reality.
+- `actual_minutes` — the measured active time of the leaf, when it was measured.
+- `started_at`, `finished_at` — when the leaf actually ran, as `ЧЧ:ММ` on a
+  24-hour clock in the user's local time.
+- `note` — anything else the leaf has to carry.
+- `updated_at` — when the leaf was last changed, as `2026-10-23T22:04`. The
+  plan takes the newest of these as its own update time.
+
+A leaf that cannot be read stops the collection and is named: a broken leaf
+never becomes a missing leaf. The same is true for an unknown status, a
+dependency on a leaf that does not exist, and an id that contradicts the name of
+the file.
+
+The plan-level facts — the goal, the business result, the number of slots — are
+not a leaf's business. They live in `<objective>/plan.json` next to `leaves/`:
+
+```json
+{
+  "title": "План поставки",
+  "goal": "Чего хочет пользователь.",
+  "business_result": "Что пользователь может использовать уже сейчас.",
+  "slots": 2,
+  "updated_at": "2026-10-23T22:04"
+}
+```
+
+Collect the leaves into the graph with one command:
+
+```sh
+python3 <LHC>/common/tools/lhc_plan_json.py build <objective>
+```
+
+The hook does it by itself: after a worker writes his leaf file, the graph of
+the plan and the page of the plan are rebuilt without a command and without a
+reload. The collection is deterministic — the same leaves always give the same
+graph, byte for byte — so a rebuilt plan is comparable with the one before it.
 
 ## What the report is for
 

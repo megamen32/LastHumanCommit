@@ -13,6 +13,8 @@ from pathlib import Path
 
 import pytest
 
+from _inprocess_lane import git_repo, run_tool
+
 
 ROOT = Path(__file__).resolve().parents[1]
 TOOL = ROOT / "src/common/tools/lhc_time_guard.py"
@@ -24,16 +26,15 @@ SPEC.loader.exec_module(TIME_GUARD)
 
 @pytest.fixture(autouse=True)
 def isolated_git_project(tmp_path):
-    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    git_repo(tmp_path)
 
 
 def run_guard(state: Path, now: str, active_minutes: int, *extra: str) -> dict[str, object]:
     """Run one deterministic guard check and decode its JSON result."""
 
-    completed = subprocess.run(
+    completed = run_tool(
+        "lhc_time_guard",
         [
-            sys.executable,
-            str(TOOL),
             "check",
             "--state",
             str(state),
@@ -51,10 +52,8 @@ def run_guard(state: Path, now: str, active_minutes: int, *extra: str) -> dict[s
             str(active_minutes),
             *extra,
         ],
-        check=True,
-        capture_output=True,
-        text=True,
     )
+    completed.check_returncode()
     return json.loads(completed.stdout)
 
 
@@ -68,10 +67,9 @@ def run_native_hook(
 ) -> dict[str, object] | None:
     """Run one native hook against a disposable project root."""
 
-    completed = subprocess.run(
+    completed = run_tool(
+        "lhc_time_guard",
         [
-            sys.executable,
-            str(TOOL),
             "hook",
             "--runtime",
             runtime,
@@ -80,7 +78,7 @@ def run_native_hook(
             "--now",
             "2026-08-12T12:00:00+03:00",
         ],
-        input=json.dumps(
+        stdin=json.dumps(
             {
                 "cwd": str(root),
                 "hook_event_name": event,
@@ -89,10 +87,8 @@ def run_native_hook(
                 **(extra_payload or {}),
             }
         ),
-        check=True,
-        capture_output=True,
-        text=True,
     )
+    completed.check_returncode()
     return json.loads(completed.stdout) if completed.stdout.strip() else None
 
 
@@ -230,10 +226,9 @@ def test_estimate_mutation_is_reported_and_original_maximum_is_retained(tmp_path
     state = tmp_path / "time-guard.json"
     run_guard(state, "2026-08-12T10:10:00+03:00", 10)
 
-    completed = subprocess.run(
+    completed = run_tool(
+        "lhc_time_guard",
         [
-            sys.executable,
-            str(TOOL),
             "check",
             "--state",
             str(state),
@@ -250,10 +245,8 @@ def test_estimate_mutation_is_reported_and_original_maximum_is_retained(tmp_path
             "--active-minutes",
             "125",
         ],
-        check=True,
-        capture_output=True,
-        text=True,
     )
+    completed.check_returncode()
     result = json.loads(completed.stdout)
 
     assert "estimate_mutation" in result["events"]

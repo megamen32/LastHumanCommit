@@ -8,6 +8,8 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src/common/tools'))
 import lhc_outcome as outcomes
 
+from _inprocess_lane import git_repo, run_tool
+
 
 def sample_outcome():
     return {
@@ -162,7 +164,7 @@ def test_old_unfingerprinted_complete_rows_are_never_migrated_as_current_pass():
 def test_repeated_require_stage_preserves_same_fingerprinted_acceptance(tmp_path):
     import sys
     sys.path.insert(0, str(Path(__file__).resolve().parent))
-    from test_outcome_contract import anchored, cli
+    from _inprocess_lane import anchored_outcome as anchored, outcome_cli as cli
     import lhc_time_guard as guard
 
     outcome = anchored(tmp_path)
@@ -186,7 +188,7 @@ def test_repeated_require_stage_preserves_same_fingerprinted_acceptance(tmp_path
 def test_repeated_require_stage_still_invalidates_changed_semantics(tmp_path):
     import sys
     sys.path.insert(0, str(Path(__file__).resolve().parent))
-    from test_outcome_contract import anchored, cli
+    from _inprocess_lane import anchored_outcome as anchored, outcome_cli as cli
     import lhc_time_guard as guard
 
     anchored(tmp_path)
@@ -209,7 +211,9 @@ def test_short_native_assignment_is_used_by_discovery_and_acceptance(tmp_path, m
     # Reuse the established native transcript fixture; no product or provider
     # action is performed by this source-level regression.
     sys.path.insert(0, str(Path(__file__).resolve().parent))
-    from test_outcome_contract import cli, review_export, semantic_research_fixture, state
+    from _inprocess_lane import (outcome_cli as cli, learning_state as state,
+                                 review_export_manifest as review_export)
+    from test_outcome_contract import semantic_research_fixture
     outcome, _, _, _ = semantic_research_fixture(tmp_path)
     assert cli(tmp_path, 'status')['review_subject'] == outcomes.review_subject(outcome)
     manifest = review_export(
@@ -241,7 +245,9 @@ def test_child_reviewer_uses_verified_parent_dispatch_without_fake_user_row(tmp_
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     from test_native_subagent_identity import (AGENT_PATH, CHILD, PARENT, parent_rows,
         session_header, write_jsonl)
-    from test_outcome_contract import review_export, semantic_research_fixture, state as load_state
+    from _inprocess_lane import (review_export_manifest as review_export,
+                                 learning_state as load_state)
+    from test_outcome_contract import semantic_research_fixture
     import lhc_native_identity as identity
     import lhc_outcome_review as reviews
     import lhc_time_guard as guard
@@ -309,7 +315,9 @@ def test_technical_only_native_assessment_survives_duplicate_assignment_and_late
     from copy import deepcopy
     from datetime import datetime, timezone, timedelta
     sys.path.insert(0, str(Path(__file__).resolve().parent))
-    from test_outcome_contract import anchored, review_export, state as load_state
+    from _inprocess_lane import (anchored_outcome as anchored,
+                                 review_export_manifest as review_export,
+                                 learning_state as load_state)
     import lhc_outcome_review as reviews
 
     outcome = anchored(tmp_path)
@@ -388,12 +396,13 @@ def test_quick_child_native_self_review_reads_only_verified_parent_dispatch_stat
     from datetime import datetime, timezone, timedelta
     from test_native_subagent_identity import (AGENT_PATH, CHILD, PARENT, parent_rows,
         session_header, write_jsonl)
-    from test_outcome_contract import anchored, review_export
+    from _inprocess_lane import (anchored_outcome as anchored,
+                                 review_export_manifest as review_export)
     import lhc_native_identity as identity
     import lhc_outcome_review as reviews
     import lhc_time_guard as guard
 
-    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
+    git_repo(tmp_path)
     goal = 'Fix the small total CLI. Verify the empty basket returns 0. Do not delegate.'
     outcome = anchored(tmp_path, goal)
     logical_id = identity.composite_session_id(PARENT, CHILD)
@@ -444,10 +453,10 @@ def test_quick_child_native_self_review_reads_only_verified_parent_dispatch_stat
     assert manifest_data['target']['sessionId'] == CHILD
     assert manifest_data['target']['source']['dispatch_binding']['logical_id'] == logical_id
 
-    result = subprocess.run([sys.executable, str(Path(__file__).resolve().parents[1] / 'src/common/tools/lhc_outcome.py'),
-                             '--cwd', str(tmp_path), '--runtime', 'codex', '--session-id', logical_id,
-                             'review', '--native-self'], capture_output=True, text=True,
-                            env={**os.environ, 'HOME': str(tmp_path / 'native-home'), 'CODEX_HOME': str(home)})
+    result = run_tool('lhc_outcome',
+                      ['--cwd', str(tmp_path), '--runtime', 'codex', '--session-id', logical_id,
+                       'review', '--native-self'],
+                      env={'HOME': str(tmp_path / 'native-home'), 'CODEX_HOME': str(home)})
     assert result.returncode == 0, result.stderr
     reviewed = guard.load_state(child_state_path)['business']['outcome']
     assert reviewed['stages']['technical']['status'] == 'complete'
@@ -459,13 +468,13 @@ def test_quick_child_native_self_without_parent_capture_stays_pending(tmp_path, 
     import json
     from test_native_subagent_identity import (AGENT_PATH, CHILD, PARENT, parent_rows,
         session_header, write_jsonl)
-    from test_outcome_contract import anchored
+    from _inprocess_lane import anchored_outcome as anchored
     import lhc_native_identity as identity
     import lhc_outcome_review as reviews
     import lhc_time_guard as guard
 
     subprocess = __import__('subprocess')
-    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
+    git_repo(tmp_path)
     outcome = anchored(tmp_path, 'Fix the small total CLI. Verify the empty basket returns 0. Do not delegate.')
     logical_id = identity.composite_session_id(PARENT, CHILD)
     outcome['owner']['session_id'] = logical_id
@@ -483,9 +492,9 @@ def test_testing_contract_requires_coverage_before_it_changes_evidence_floor(tmp
     import subprocess
     from copy import deepcopy
     from test_native_milestone_gate import invoke
-    from test_outcome_contract import cli, state
+    from _inprocess_lane import outcome_cli as cli, learning_state as state
 
-    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
+    git_repo(tmp_path)
     invoke(tmp_path, 'UserPromptSubmit', prompt=(
         'You are a testing leaf. Do not edit code. Test the empty basket CLI and report its total.'))
     before = deepcopy(state(tmp_path)['business']['outcome'])
@@ -510,7 +519,8 @@ def test_testing_contract_requires_coverage_before_it_changes_evidence_floor(tmp
 
 
 def test_testing_without_selected_native_assessment_gets_actionable_error(tmp_path):
-    from test_outcome_contract import anchored, cli, review_export
+    from _inprocess_lane import (anchored_outcome as anchored, outcome_cli as cli,
+                                 review_export_manifest as review_export)
 
     outcome = anchored(tmp_path, 'You are a testing leaf. Do not edit code. Test empty basket total.',
                        ('empty basket total',))

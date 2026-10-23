@@ -14,15 +14,14 @@ A fix without a test is a fix that comes back.
 """
 from __future__ import annotations
 
-import importlib.util
 import json
 import re
-import subprocess
-import sys
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+
+from _inprocess import load_module, run_cli
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -30,19 +29,14 @@ TOOL = ROOT / "src" / "common" / "tools" / "lhc_grid.py"
 
 
 def load_tool():
-    spec = importlib.util.spec_from_file_location("lhc_grid_regressions", TOOL)
-    module = importlib.util.module_from_spec(spec)
-    assert spec.loader is not None
-    sys.modules[spec.name] = module
-    spec.loader.exec_module(module)
-    return module
+    return load_module(TOOL, name="lhc_grid_regressions")
 
 
 lhc = load_tool()
 
 
-def run_tool(*args: str) -> subprocess.CompletedProcess:
-    return subprocess.run([sys.executable, str(TOOL), *args], capture_output=True, text=True)
+def run_tool(*args: str):
+    return run_cli(lhc, args)
 
 
 REPORT = """Цель: закрыть интеграцию источника

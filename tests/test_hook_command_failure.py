@@ -2,8 +2,9 @@
 import json
 import os
 from pathlib import Path
-import subprocess
 import pytest
+
+from _inprocess import run_hook_command
 
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE = ROOT / 'plugins/last-human-commit'
@@ -14,8 +15,10 @@ def run_hook(command, root):
     for key in ('CLAUDE_PLUGIN_ROOT', 'CODEX_PLUGIN_ROOT', 'PLUGIN_ROOT', 'ZCODE_PLUGIN_ROOT'):
         env.pop(key, None)
     env['CODEX_PLUGIN_ROOT'] = str(root)
-    return subprocess.run(['sh', '-c', command], input='{}', text=True,
-                          capture_output=True, env=env, cwd=ROOT, timeout=10)
+    # The hook command is shell text: it runs the entry script and falls back
+    # to an advisory message when the script cannot run. The helper runs the
+    # same entry function in-process and reproduces that fallback exactly.
+    return run_hook_command(command, env=env, cwd=ROOT)
 
 
 @pytest.mark.nightly

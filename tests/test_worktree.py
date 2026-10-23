@@ -6,6 +6,8 @@ from pathlib import Path
 
 import pytest
 
+from _inprocess_lane import git_repo, run_tool
+
 TOOL = Path(__file__).resolve().parents[1] / "src/common/tools/lhc_worktree.py"
 
 
@@ -17,9 +19,8 @@ def git(repo, *args):
 def repo(tmp_path):
     root = tmp_path / "primary"
     root.mkdir()
-    git(root, "init", "-b", "main")
-    git(root, "config", "user.name", "Fixture")
-    git(root, "config", "user.email", "fixture@example.invalid")
+    git_repo(root, branch="main", config=(("user.name", "Fixture"),
+                                          ("user.email", "fixture@example.invalid")))
     (root / ".gitignore").write_text(".worktrees/\n")
     git(root, "add", ".gitignore")
     git(root, "commit", "-m", "base")
@@ -27,10 +28,10 @@ def repo(tmp_path):
 
 
 def run(repo, action="plan", task="lane-one", base=None, ok=True):
-    args = [sys.executable, str(TOOL), action, "--repo", str(repo), "--task=" + task]
+    args = [action, "--repo", str(repo), "--task=" + task]
     if base is not None:
         args.extend(["--base", base])
-    result = subprocess.run(args, capture_output=True, text=True)
+    result = run_tool("lhc_worktree", args)
     if ok:
         assert result.returncode == 0, result.stderr
         return json.loads(result.stdout)

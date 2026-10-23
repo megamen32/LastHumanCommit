@@ -1,20 +1,16 @@
 """Offline structural tests. These do not attest live agents, browser runs or adapters."""
 from __future__ import annotations
-import importlib.util
 import json
 from pathlib import Path
 import re
-import subprocess
-import sys
 import tempfile
 import unittest
 import pytest
 
+from _inprocess import load_module, run_cli
+
 ROOT = Path(__file__).resolve().parents[1]
-spec = importlib.util.spec_from_file_location('lhc_graph', ROOT / 'scripts/lhc_validate_graph.py')
-assert spec and spec.loader
-mod = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(mod)
+mod = load_module(ROOT / 'scripts/lhc_validate_graph.py', name='lhc_graph')
 
 
 def task(tid='a', deps=None, writes=None, reads=None, model=None):
@@ -170,11 +166,11 @@ class GraphTests(unittest.TestCase):
             f = Path(d)/'plan.json'
             for data, code in ((graph(task()),0), (graph(task('a',['b']),task('b',['a'])),2)):
                 f.write_text(json.dumps(data))
-                p = subprocess.run([sys.executable, str(ROOT/'scripts/lhc_validate_graph.py'), str(f)], capture_output=True, text=True)
+                p = run_cli(mod, [str(f)])
                 self.assertEqual(p.returncode, code, p.stderr)
                 self.assertEqual(json.loads(p.stdout)['valid'], code == 0)
     def test_cli_missing_file(self):
-        p = subprocess.run([sys.executable, str(ROOT/'scripts/lhc_validate_graph.py'), '/a/nonexistent/lhc-graph.json'], capture_output=True, text=True)
+        p = run_cli(mod, ['/a/nonexistent/lhc-graph.json'])
         self.assertEqual(p.returncode, 2)
         self.assertFalse(json.loads(p.stdout)['valid'])
 
@@ -188,9 +184,7 @@ class GraphTests(unittest.TestCase):
                                     (['local', 'local'], 2), ([], 2), ([7], 2)):
                 with self.subTest(order=order):
                     config.write_text(json.dumps({'tier_order': order}))
-                    result = subprocess.run(
-                        [sys.executable, str(ROOT / 'scripts/lhc_validate_graph.py'),
-                         str(plan), '--config', str(config)], capture_output=True, text=True)
+                    result = run_cli(mod, [str(plan), '--config', str(config)])
                     self.assertEqual(result.returncode, expected, result.stderr)
                     self.assertEqual(json.loads(result.stdout)['valid'], expected == 0)
 
@@ -199,9 +193,7 @@ class GraphTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(dir=ROOT / '.tmp') as d:
             plan = Path(d) / 'plan.json'
             plan.write_text('{')
-            result = subprocess.run(
-                [sys.executable, str(ROOT / 'scripts/lhc_validate_graph.py'), str(plan)],
-                capture_output=True, text=True)
+            result = run_cli(mod, [str(plan)])
             self.assertEqual(result.returncode, 2, result.stderr)
             self.assertFalse(json.loads(result.stdout)['valid'])
 

@@ -1,6 +1,6 @@
 {
   "name": "last-human-commit",
-  "version": "1.5.44",
+  "version": "1.5.45",
   "description": "Automatic engineering workflow with isolated parallel work, shared file messages, and verified PR integration.",
   "skills": "./skills/",
   "hooks": "./hooks/zcode-hooks.json"

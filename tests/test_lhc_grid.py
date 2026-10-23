@@ -2,16 +2,15 @@
 
 from __future__ import annotations
 
-import importlib.util
 import json
 import re
-import subprocess
-import sys
 import tempfile
 import unittest
 from unittest.mock import patch
 from pathlib import Path
 import pytest
+
+from _inprocess import load_module, run_cli
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -20,33 +19,19 @@ VALIDATOR = ROOT / 'scripts' / 'lhc_validate_graph.py'
 
 
 def load_tool():
-    spec = importlib.util.spec_from_file_location('lhc_grid', TOOL)
-    module = importlib.util.module_from_spec(spec)
-    assert spec.loader is not None
-    sys.modules[spec.name] = module
-    spec.loader.exec_module(module)
-    return module
+    return load_module(TOOL, name='lhc_grid')
 
 
 def load_validator():
-    spec = importlib.util.spec_from_file_location('lhc_validate_graph', VALIDATOR)
-    module = importlib.util.module_from_spec(spec)
-    assert spec.loader is not None
-    sys.modules[spec.name] = module
-    spec.loader.exec_module(module)
-    return module
+    return load_module(VALIDATOR, name='lhc_validate_graph')
 
 
 def run_tool(*args):
-    return subprocess.run(
-        [sys.executable, str(TOOL), *args], capture_output=True, text=True,
-    )
+    return run_cli(lhc, args)
 
 
 def run_validator(*args):
-    return subprocess.run(
-        [sys.executable, str(VALIDATOR), *args], capture_output=True, text=True,
-    )
+    return run_cli(validator, args)
 
 
 lhc = load_tool()

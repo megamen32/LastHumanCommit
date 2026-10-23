@@ -11,6 +11,8 @@ import tempfile
 
 import pytest
 
+from _inprocess_lane import run_tool
+
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src/common/tools"))
 import lhc_outcome as outcome  # noqa: E402
@@ -117,8 +119,7 @@ def resolve(env, quote=PERMISSION):
 
 def run_contract(env, *, ownership="owned"):
     workspace, repo, current, permission_source, project_source, _, _ = env
-    return subprocess.run([
-        sys.executable, str(ROOT / "src/common/tools/lhc_outcome.py"),
+    return run_tool("lhc_outcome", [
         "--cwd", str(workspace), "--runtime", "codex", "--session-id", SID, "contract",
         "--product-root", str(repo), "--scope-source", project_source["source"],
         "--scenario", "Only owned LastHumanCommit paths", "--target", "project:" + str(repo),
@@ -126,7 +127,7 @@ def run_contract(env, *, ownership="owned"):
         "--owned-path", OWNED[0], "--owned-path", OWNED[1],
         "--integration-branch", "main", "--integration-remote", "origin",
         "--integration-ownership", ownership, "--integration-permission-quote", PERMISSION,
-    ], capture_output=True, text=True, env=os.environ.copy())
+    ])
 
 
 def test_long_exact_permission_quote_resolves_from_separate_native_source(isolated_tmp_path, monkeypatch):

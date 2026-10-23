@@ -5,11 +5,15 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import atexit
+import shutil
 import subprocess
 import sys
+import tempfile
 
 import pytest
 
+from _inprocess_lane import prepare_git_template
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src/common/tools"))
@@ -36,6 +40,45 @@ def _git(root: Path, *args):
                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
+def _rev_parse(root: Path, ref="HEAD"):
+    return subprocess.run(["git", "-C", str(root), "rev-parse", ref], check=True,
+                          capture_output=True, text=True).stdout.strip()
+
+
+# One prepared repository per remote URL, copied per case. The history the
+# fixture needs is fixed, so it is built once instead of nine `git` calls per
+# case: `git init`, two `git config`, two `git add`, two `git commit` and two
+# `git rev-parse` all become a copy.
+_REPO_TEMPLATES: dict[str, tuple[Path, str, str]] = {}
+
+
+def _repo_template(remote_url):
+    template = _REPO_TEMPLATES.get(remote_url)
+    if template is not None:
+        return template
+    root = Path(tempfile.mkdtemp(prefix="lhc-project-mapping-"))
+    atexit.register(shutil.rmtree, root, True)
+    _git(root, "init", "-q")
+    _git(root, "remote", "add", "origin", remote_url)
+    _git(root, "config", "user.email", "test@example.invalid")
+    _git(root, "config", "user.name", "Historical proof fixture")
+    (root / "base.txt").write_text("historical base\n", encoding="utf-8")
+    _git(root, "add", "base.txt")
+    _git(root, "commit", "-qm", "base")
+    base = _rev_parse(root)
+    for relative in OWNED:
+        target = root / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text("original published bytes: " + relative + "\n", encoding="utf-8")
+    _git(root, "add", *OWNED)
+    _git(root, "commit", "-qm", "published source candidate")
+    candidate_head = _rev_parse(root)
+    prepare_git_template(root)
+    template = (root, base, candidate_head)
+    _REPO_TEMPLATES[remote_url] = template
+    return template
+
+
 def setup_mapping(tmp_path, monkeypatch, *, prompt=None, repository=REPOSITORY,
                   remote_url="https://github.com/megamen32/LastHumanCommit.git",
                   proof_root=None, accepted=True, ownership=OWNED,
@@ -44,23 +87,12 @@ def setup_mapping(tmp_path, monkeypatch, *, prompt=None, repository=REPOSITORY,
     workspace.mkdir()
     repo = workspace / root_name
     repo.mkdir()
-    _git(repo, "init", "-q")
-    _git(repo, "remote", "add", "origin", remote_url)
-    _git(repo, "config", "user.email", "test@example.invalid")
-    _git(repo, "config", "user.name", "Historical proof fixture")
-    (repo / "base.txt").write_text("historical base\n", encoding="utf-8")
-    _git(repo, "add", "base.txt")
-    _git(repo, "commit", "-qm", "base")
-    base = subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"], check=True,
-                          capture_output=True, text=True).stdout.strip()
+    template, base, candidate_head = _repo_template(remote_url)
+    shutil.copytree(template, repo, dirs_exist_ok=True)
     for relative in OWNED:
         target = repo / relative
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text("original published bytes: " + relative + "\n", encoding="utf-8")
-    _git(repo, "add", *OWNED)
-    _git(repo, "commit", "-qm", "published source candidate")
-    candidate_head = subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"], check=True,
-                                    capture_output=True, text=True).stdout.strip()
     monkeypatch.setenv("CODEX_HOME", str(tmp_path / ".codex"))
 
     user_prompt = prompt or (

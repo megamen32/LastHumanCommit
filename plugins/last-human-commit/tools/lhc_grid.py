@@ -241,6 +241,33 @@ class Leaf:
             return False
         return self.actual_minutes > self.estimate_max + 0.01
 
+    @property
+    def plan_minutes(self) -> Optional[float]:
+        """The planned duration of the task.
+
+        The plan is the upper bound of the estimate: that is the time the
+        owner counted on. A leaf with one bound only is planned for that
+        bound, and a leaf without an estimate has no plan at all - the page
+        says so instead of inventing a number.
+        """
+        return self.estimate
+
+    @property
+    def overrun_minutes(self) -> Optional[float]:
+        """The wall-clock time spent beyond the plan.
+
+        Only a measured work window can overrun. Without a start and a
+        finish there is no real duration to compare with the plan, so the
+        number stays absent instead of going stale, and the page shows the
+        absence rather than a number nobody measured.
+        """
+        span = self.actual_span_minutes
+        plan = self.plan_minutes
+        if span is None or plan is None:
+            return None
+        extra = span - plan
+        return extra if extra > 0.01 else None
+
 
 DEFAULT_GRAPH_TITLE = "LHC · граф задач"
 # The attribution a plan report has no place for. The export writes it when the
@@ -1700,6 +1727,27 @@ def product_module():
         return module
 
 
+def live_module():
+    """The sibling module that keeps the built page in sync with its file.
+
+    The dashboard is loaded by path in the tests and by the CLI in the package,
+    so the neighbour cannot be found by a plain import.
+    """
+    try:
+        import lhc_live
+
+        return lhc_live
+    except ModuleNotFoundError:
+        path = Path(__file__).resolve().with_name("lhc_live.py")
+        spec = importlib.util.spec_from_file_location("lhc_live_sibling", path)
+        if spec is None or spec.loader is None:
+            raise
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = module
+        spec.loader.exec_module(module)
+        return module
+
+
 def merged_navigation(product_items: tuple) -> str:
     """One navigation for the whole page: the delivery sections and the plan."""
     # The navigation follows the order of the page: the state of the work is
@@ -2173,6 +2221,8 @@ def render_html(
             f"оценка: {leaf.duration_label}"
             + (f"\nусилие (суммарно): {fmt_minutes(leaf.actual_minutes)}" if leaf.actual_minutes is not None else "")
             + (f"\nпо часам: {fmt_minutes(leaf.actual_span_minutes)}" if leaf.actual_span_minutes is not None else "")
+            + (f"\nплан: {fmt_minutes(leaf.plan_minutes)}" if leaf.plan_minutes is not None else "")
+            + (f"\nсверх плана: {fmt_minutes(leaf.overrun_minutes)}" if leaf.overrun_minutes is not None else "")
             + (f"\nначало: {leaf.started_at}" if leaf.started_at else "")
             + (f"\nконец: {leaf.finished_at}" if leaf.finished_at else "")
             + (f"\nзависит: {', '.join(label_by_id.get(dep, dep) for dep in leaf.depends_on)}" if leaf.depends_on else "")
@@ -2312,6 +2362,48 @@ def render_html(
         actual = fmt_minutes(leaf.actual_minutes) if leaf.actual_minutes is not None else "не измерено"
         span = fmt_minutes(leaf.actual_span_minutes) if leaf.actual_span_minutes is not None else "—"
         over = " over" if leaf.overrun else ""
+        # The owner reads the plan in two colors: the time that was planned
+        # is green, everything above it is yellow. Both numbers come from the
+        # report - a leaf without an estimate has no plan, and a leaf without
+        # a measured window has no overrun, so neither is invented here.
+        plan = leaf.plan_minutes
+        extra = leaf.overrun_minutes
+        if plan is None:
+            plan_cell = "<span class='plan-none'>плана нет</span>"
+            plan_dd = "<dd>плана нет</dd>"
+        else:
+            plan_cell = f"<span class='plan-time'>план {escape(fmt_minutes(plan))}</span>"
+            plan_dd = f"<dd class='plan-value'>{escape(fmt_minutes(plan))}</dd>"
+        if extra is not None:
+            plan_cell += (
+                f"<span class='cell-sub plan-over'>сверх плана {escape(fmt_minutes(extra))}</span>"
+            )
+            overrun_dd = f"<dd class='plan-over-value'>{escape(fmt_minutes(extra))}</dd>"
+        elif leaf.actual_span_minutes is None:
+            overrun_dd = "<dd>длительность не измерена</dd>"
+        elif plan is None:
+            overrun_dd = "<dd>плана нет</dd>"
+        else:
+            plan_cell += "<span class='cell-sub'>в пределах плана</span>"
+            overrun_dd = "<dd>в пределах плана</dd>"
+        if (
+            leaf.estimate_min is not None
+            and leaf.estimate_max is not None
+            and abs(leaf.estimate_max - leaf.estimate_min) > 0.01
+        ):
+            # A range says more than its upper bound: both bounds stay visible.
+            plan_cell += f"<span class='cell-sub'>оценка {escape(leaf.duration_label)}</span>"
+            estimate_dd = f"<dt>Оценка</dt><dd>{escape(leaf.duration_label)}</dd>"
+        else:
+            estimate_dd = ""
+        # The real times of the work, or their honest absence.
+        times_parts = []
+        if leaf.started_at:
+            times_parts.append(f"старт {leaf.started_at}")
+        if leaf.finished_at:
+            times_parts.append(f"финиш {leaf.finished_at}")
+        times_text = " · ".join(times_parts) if times_parts else "время не зафиксировано"
+        times_html = f"<span class='row-times'>{escape(times_text)}</span>"
         # The owner reads a task and needs the whole of it: what the task is,
         # who works on it, in which session and with which model, what waits
         # for it, and what the next step is. A field that is empty for this
@@ -2348,6 +2440,11 @@ def render_html(
                 f"<dt>Окно работы</dt><dd>{escape(leaf.started_at)} – {escape(leaf.finished_at)}</dd>"
                 if leaf.started_at and leaf.finished_at else ""
             )
+            + estimate_dd
+            + f"<dt>План</dt>{plan_dd}"
+            + f"<dt>Сверх плана</dt>{overrun_dd}"
+            + f"<dt>Начало</dt><dd>{escape(leaf.started_at or 'не зафиксировано')}</dd>"
+            + f"<dt>Конец</dt><dd>{escape(leaf.finished_at or 'не зафиксировано')}</dd>"
             + (
                 f"<dt>Почему нет оценки</dt><dd>{escape(leaf.estimate_unknown_reason)}</dd>"
                 if leaf.estimate_unknown_reason else ""
@@ -2378,10 +2475,10 @@ def render_html(
             f'<tr data-status="{leaf.status}" data-text="{escape(_search_text(leaf))}" '
             f"data-details-id='{details_index}' class='leaf-row'>"
             f"<td class='task-title'><span class='row-id'>{escape(leaf.id)}</span>"
-            f"<span class='row-name'>{escape(leaf.label)}</span>{meta_html}</td>"
+            f"<span class='row-name'>{escape(leaf.label)}</span>{times_html}{meta_html}</td>"
             f'<td data-label="Статус"><span class="status" style="--c:{STATUS_CSS_VARS[leaf.status]}">'
             f"{STATUS_GLYPHS[leaf.status]} {STATUS_LABELS[leaf.status]}</span></td>"
-            f"<td data-label=\"Оценка\">{escape(leaf.duration_label)}</td>"
+            f"<td data-label=\"Оценка\"><div class='cell-plan'>{plan_cell}</div></td>"
             f'<td data-label="Усилие" class="{over.strip()}">{escape(actual)}'
             + (
                 f'<span class="cell-sub">по часам {escape(span)}</span>'
@@ -2625,7 +2722,7 @@ def render_html(
             "</header>"
         )
 
-    return HTML_TEMPLATE.format(
+    html = HTML_TEMPLATE.format(
         product_styles=product_styles,
         product_scripts=product_scripts,
         product_sections=product_sections,
@@ -2666,6 +2763,15 @@ def render_html(
         notes=notes_html,
         total=total,
     )
+
+    # The page keeps itself in sync with the file it was built from: a plan
+    # that changed a second ago is visible without a reload. The rendering
+    # stays in Python; the page only swaps in what Python rendered.
+    try:
+        html = live_module().inject_live(html)
+    except Exception:  # pragma: no cover - a page without the poller is still a page
+        pass
+    return html
 
 
 HTML_TEMPLATE = """<!DOCTYPE html>
@@ -2917,7 +3023,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   .table-scroll {{ max-width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; }}
   .table-leaves th:nth-child(1) {{ width: 42%; }}
   .table-leaves th:nth-child(2) {{ width: 120px; }}
-  .table-leaves th:nth-child(3), .table-leaves th:nth-child(4) {{ width: 86px; }}
+  .table-leaves th:nth-child(3), .table-leaves th:nth-child(4) {{ width: 110px; }}
   .table-leaves th:nth-child(5) {{ width: 120px; }}
   .task-title {{ font-weight: 550; overflow-wrap: anywhere; }}
   .row-id {{ display: inline-block; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -2946,7 +3052,18 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   details > summary {{ color: var(--accent); cursor: pointer; }}
   .technical {{ font-size: 12px; }}
   .status {{ color: var(--c); font-weight: 600; white-space: nowrap; }}
-  .over {{ color: #f0a742; }}
+  /* The overrun of the plan and the plan itself are two facts with two
+     colors, and both colors come from the palette of the theme: the planned
+     time is green, everything above it is yellow. */
+  .over {{ color: var(--warn); }}
+  .plan-time {{ display: block; color: var(--ok); font-weight: 600; }}
+  .plan-over {{ color: var(--warn); font-weight: 600; }}
+  .plan-none {{ color: var(--muted); }}
+  .plan-value {{ color: var(--ok); font-weight: 600; }}
+  .plan-over-value {{ color: var(--warn); font-weight: 600; }}
+  .cell-plan {{ display: flex; flex-direction: column; align-items: flex-start; gap: 1px; }}
+  .row-times {{ display: block; margin-top: 2px; color: var(--muted); font-size: 12px;
+    font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }}
   .empty {{ color: var(--muted); font-style: italic; }}
   .notes {{ color: var(--muted); margin: 0; padding-left: 18px; }}
   .hint {{ color: var(--muted); font-size: 12px; margin: 10px 0 0; }}
@@ -2997,6 +3114,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       text-transform: uppercase; letter-spacing: .05em; text-align: left; flex: 0 0 auto; }}
     .table-leaves td.task-title {{ display: block; text-align: left; }}
     .table-leaves td.task-title::before {{ content: none; }}
+    /* The plan cell keeps its lines stacked and flush right on a phone. */
+    .table-leaves td .cell-plan {{ align-items: flex-end; }}
     .table-leaves td:last-child {{ justify-content: flex-start; }}
     .table-leaves td:last-child::before {{ content: none; }}
     .table-scroll {{ overflow-x: visible; }}
@@ -3844,11 +3963,6 @@ def command_validate(args: argparse.Namespace) -> int:
     }
     print(json.dumps(payload, ensure_ascii=False, indent=2))
     return 0 if not errors else 2
-
-
-def check_text_budget(graph: Graph) -> list[str]:
-    """Legacy API retained for compatibility; no human field is length-capped."""
-    return []
 
 
 def command_check_plan(args: argparse.Namespace) -> int:

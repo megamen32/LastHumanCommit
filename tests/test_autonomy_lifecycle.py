@@ -7,7 +7,6 @@ import copy
 from datetime import datetime, timedelta, timezone
 import json
 from pathlib import Path
-import subprocess
 import sys
 from types import SimpleNamespace
 
@@ -20,6 +19,8 @@ import lhc_outcome
 import lhc_time_guard
 import lhc_entry
 import lhc_native_identity
+
+from _inprocess import git_repo
 
 
 AI_RELAY = (
@@ -47,7 +48,7 @@ def test_unknown_sender_header_is_relay_and_semantic_scope_excludes_transport_li
 
 
 def test_capture_preserves_relay_as_raw_provenance_without_promoting_latest_task_scope(tmp_path):
-    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    git_repo(tmp_path)
     state_path = lhc_time_guard.learning_path(tmp_path, "codex", "relay-probe")
     initial = {
         "schema_version": 1,
@@ -92,7 +93,7 @@ def test_capture_preserves_relay_as_raw_provenance_without_promoting_latest_task
     HUMAN_ORIGINAL,
 ])
 def test_context_status_ack_and_old_duplicate_are_saved_without_promoting_latest_scope(tmp_path, prompt):
-    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    git_repo(tmp_path)
     state_path = lhc_time_guard.learning_path(tmp_path, "codex", "relay-probe")
     state = {
         "schema_version": 1, "started_at": NOW.isoformat(),
@@ -149,7 +150,7 @@ def test_compaction_projection_ignores_relay_status_and_ack_prompts(tmp_path, mo
 
 
 def test_legacy_relay_latest_is_filtered_in_rehydrate_reminder_and_compaction(tmp_path, monkeypatch):
-    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    git_repo(tmp_path)
     agents_root = tmp_path / ".agents"
     agents_root.mkdir()
     relay_body = lhc_outcome.semantic_scope(AI_RELAY)
@@ -244,7 +245,7 @@ def test_short_rehydrate_omits_history_but_detail_retains_it_without_mutation(tm
 
 
 def test_startup_points_to_truncated_long_latest_correction(tmp_path):
-    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    git_repo(tmp_path)
     root = Path(__file__).resolve().parents[1]
     session_id = "long-latest-correction"
     original = "Fix the small parser bug and reject malformed input."
@@ -333,7 +334,7 @@ def test_affirmative_continuation_of_paused_task_still_resumes_manual_hold():
 
 @pytest.mark.nightly
 def test_entry_finish_hold_requires_substantive_unmarked_prompt_and_preserves_permission_event(tmp_path):
-    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    git_repo(tmp_path)
     root = Path(__file__).resolve().parents[1]
     sid = "relay-entry-probe"
 
@@ -407,7 +408,7 @@ def test_first_delegated_relay_can_still_start_a_scoped_outcome(tmp_path):
 
 
 def test_first_delegated_relay_still_seeds_business_scope(tmp_path):
-    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    git_repo(tmp_path)
     root = Path(__file__).resolve().parents[1]
 
     lhc_entry.handle({"cwd": str(tmp_path), "session_id": "delegated-first", "turn_id": "relay-first",
@@ -437,7 +438,7 @@ def _write_native_journal(path, rows):
 
 
 def test_spawn_pretool_capture_is_pending_and_kept_out_of_rehydrated_context(tmp_path, monkeypatch):
-    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    git_repo(tmp_path)
     codex_home = tmp_path / ".codex"
     sessions = codex_home / "sessions"
     parent_id = "parent-native-id"
@@ -463,7 +464,7 @@ def test_spawn_pretool_capture_is_pending_and_kept_out_of_rehydrated_context(tmp
 
 
 def test_encrypted_spawn_pretool_capture_stays_unavailable_and_pending(tmp_path, monkeypatch):
-    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    git_repo(tmp_path)
     codex_home = tmp_path / ".codex"
     sessions = codex_home / "sessions"
     parent_id = "parent-encrypted-id"
@@ -489,7 +490,7 @@ def test_encrypted_spawn_pretool_capture_stays_unavailable_and_pending(tmp_path,
 
 
 def test_child_hook_uses_only_captured_prompt_after_native_spawn_receipt_join(tmp_path, monkeypatch):
-    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    git_repo(tmp_path)
     codex_home = tmp_path / ".codex"
     sessions = codex_home / "sessions"
     parent_id, child_id = "parent-native-id", "child-native-id"
@@ -545,7 +546,7 @@ def test_child_hook_uses_only_captured_prompt_after_native_spawn_receipt_join(tm
 
 
 def test_child_assignment_retries_after_join_race_at_first_pretool_without_user_prompt(tmp_path, monkeypatch):
-    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    git_repo(tmp_path)
     codex_home = tmp_path / ".codex"
     sessions = codex_home / "sessions"
     parent_id, child_id = "parent-delayed-receipt", "child-delayed-receipt"
@@ -603,7 +604,7 @@ def test_child_assignment_retries_after_join_race_at_first_pretool_without_user_
 
 
 def test_unjoined_child_prompt_is_preserved_as_relay_but_never_bootstraps_old_scope(tmp_path, monkeypatch):
-    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    git_repo(tmp_path)
     codex_home = tmp_path / ".codex"
     sessions = codex_home / "sessions"
     parent_id, child_id = "parent-no-receipt", "child-no-receipt"

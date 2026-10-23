@@ -470,6 +470,12 @@ def handle(event, name, runtime, root):
     return output
 
 PLAN_FILES = ("plan.graph.json", "plan.report.md")
+# The leaf files of a plan: one file per leaf, named after the leaf.
+LEAVES_DIRNAME = "leaves"
+
+
+class PlanBuildError(ValueError):
+    """The leaves of a plan cannot be collected into one graph."""
 
 
 def written_paths(event):
@@ -495,12 +501,47 @@ def written_paths(event):
     return found
 
 
+def leaf_plan_dir(path):
+    """The plan directory of a leaf file, or None when the path is not a leaf."""
+    if path.suffix.lower() != ".json" or path.parent.name != LEAVES_DIRNAME:
+        return None
+    return path.parent.parent
+
+
+def rebuild_plan_graph(plan_dir, tools):
+    """Collect the leaves of one plan into its plan.graph.json.
+
+    The leaf files are the source of truth of a plan, so the graph is rebuilt
+    from them before the page is rendered. A leaf that cannot be read is named
+    and the build stops: a broken leaf never becomes a missing leaf.
+    """
+    collector = Path(tools) / "lhc_plan_json.py"
+    if not collector.is_file() or not (Path(plan_dir) / LEAVES_DIRNAME).is_dir():
+        return None
+    try:
+        result = subprocess.run(
+            [sys.executable, str(collector), "build", str(plan_dir)],
+            capture_output=True, timeout=20, check=False, text=True,
+        )
+    except (OSError, subprocess.SubprocessError) as error:
+        raise PlanBuildError(f"{plan_dir}: сборщик листов не запустился: {error}") from error
+    if result.returncode != 0:
+        detail = (result.stderr or result.stdout or "").strip()
+        raise PlanBuildError(detail or f"{plan_dir}: сборщик листов не ответил")
+    return Path(plan_dir) / "plan.graph.json"
+
+
 def render_written_plan(event, root):
     """Rebuild the page of the plan that has just been written.
 
     The agent writes the plan; the page is generated from it by this hook. The
     agent does not have to remember a command, and the page can never describe
     a plan that is older than the plan itself.
+
+    A leaf file is the source of truth of its leaf, so writing one rebuilds the
+    graph of the whole plan from the leaves and then rebuilds the page. The
+    chain never loops: the hook reacts to the files the agent wrote, and the
+    files the hook writes are not part of that event.
     """
     tools = Path(root) / "tools" if (Path(root) / "tools" / "lhc_grid.py").is_file() else method_root(root) / "tools"
     tool = tools / "lhc_grid.py"
@@ -508,14 +549,20 @@ def render_written_plan(event, root):
         return None
     base = Path(event.get("cwd") or ".").expanduser() if isinstance(event, dict) else Path(".")
     for raw in written_paths(event):
-        if not raw.endswith(PLAN_FILES):
-            continue
         path = Path(raw).expanduser()
         if not path.is_absolute():
             path = base / path
-        directory = path.parent
-        graph = directory / "plan.graph.json"
-        if not graph.is_file():
+        directory = leaf_plan_dir(path)
+        if directory is not None:
+            graph = rebuild_plan_graph(directory, tools)
+            if graph is None:
+                continue
+        elif path.name in PLAN_FILES:
+            directory = path.parent
+            graph = directory / "plan.graph.json"
+            if not graph.is_file():
+                continue
+        else:
             continue
         try:
             subprocess.run(
@@ -588,15 +635,25 @@ def main():
                 session_id += ":subagent:" + str(event["agent_id"])
             # The page of the plan is rebuilt before the heartbeat: the plan is
             # the owner's artefact, the reminder is the agent's.
+            build_error = None
             try:
                 hook_root = (args.root or Path(__file__).resolve().parents[1]).resolve()
                 rendered = render_written_plan(event, hook_root)
+            except PlanBuildError as error:
+                # A leaf that cannot be collected is named: a broken leaf must
+                # not pass as a missing one.
+                rendered = None
+                build_error = str(error)
             except (OSError, ValueError, KeyError, TypeError, NameError, AttributeError,
                     subprocess.SubprocessError):
                 rendered = None
             if rendered is not None:
                 print(json.dumps({"systemMessage":
                                   f"LHC: страница плана пересобрана из {rendered.name}"},
+                                 ensure_ascii=False))
+            elif build_error:
+                print(json.dumps({"systemMessage":
+                                  f"LHC: план не пересобран: {build_error}"},
                                  ensure_ascii=False))
             import lhc_time_guard
             project = Path(cwd_value).expanduser()

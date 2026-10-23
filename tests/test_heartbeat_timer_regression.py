@@ -17,11 +17,12 @@ from __future__ import annotations
 import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-import subprocess
-import sys
+
+from _inprocess import git_repo, load_module, run_cli
 
 ROOT = Path(__file__).resolve().parents[1]
 ENTRY = ROOT / "src/common/tools/lhc_entry.py"
+entry = load_module(ENTRY, name="lhc_entry_heartbeat_regression_test")
 
 
 def run_heartbeat(project: Path, session_id: str, prompt: str | None = None) -> str:
@@ -29,10 +30,11 @@ def run_heartbeat(project: Path, session_id: str, prompt: str | None = None) -> 
     payload = {"cwd": str(project), "session_id": session_id, "tool_name": "exec_command"}
     if prompt is not None:
         payload["prompt"] = prompt
-    result = subprocess.run(
-        [sys.executable, str(ENTRY), "--root", str(ROOT), "--runtime", "codex",
-         "--event", "PostToolUse", "--heartbeat-only"],
-        input=json.dumps(payload, ensure_ascii=False), text=True, capture_output=True, check=True)
+    result = run_cli(
+        entry, ["--root", str(ROOT), "--runtime", "codex",
+                "--event", "PostToolUse", "--heartbeat-only"],
+        stdin=json.dumps(payload, ensure_ascii=False))
+    assert result.returncode == 0, result.stderr
     return result.stdout
 
 
@@ -61,7 +63,7 @@ def additional_context(stdout: str) -> str:
 
 
 def test_heartbeat_state_keeps_both_the_observation_and_the_timer(tmp_path):
-    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    git_repo(tmp_path)
 
     stdout = run_heartbeat(tmp_path, "heartbeat-regression")
 
@@ -80,7 +82,7 @@ def test_heartbeat_state_keeps_both_the_observation_and_the_timer(tmp_path):
 
 
 def test_elapsed_time_still_emits_the_plan_reminder(tmp_path):
-    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    git_repo(tmp_path)
     run_heartbeat(tmp_path, "heartbeat-elapsed")
 
     rewind(state_path(tmp_path), 31)
@@ -91,7 +93,7 @@ def test_elapsed_time_still_emits_the_plan_reminder(tmp_path):
 
 
 def test_elapsed_learning_checkpoint_is_not_swallowed_by_the_heartbeat(tmp_path):
-    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    git_repo(tmp_path)
     run_heartbeat(tmp_path, "heartbeat-learning")
 
     # The 120-minute deadline passes while the heartbeat keeps running.
@@ -106,7 +108,7 @@ def test_elapsed_learning_checkpoint_is_not_swallowed_by_the_heartbeat(tmp_path)
 
 
 def test_the_hook_never_writes_a_state_without_the_observed_timestamp(tmp_path):
-    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    git_repo(tmp_path)
 
     # Two consecutive heartbeats must not lose the observation clock either.
     run_heartbeat(tmp_path, "heartbeat-repeat")

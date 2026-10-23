@@ -6,10 +6,17 @@ from pathlib import Path
 
 import pytest
 
-from test_outcome_contract import review_export, state
-from test_outcome_product_root import cli, review, stored_assignment
+from _inprocess_lane import local_command, outcome_process, review_export_manifest
+from test_outcome_contract import state
+from test_outcome_product_root import review, stored_assignment
 
 pytestmark = pytest.mark.nightly
+
+
+def cli(tmp_path, cwd, *args):
+    """The outcome CLI of one case, without a new interpreter."""
+    return outcome_process(cwd, *args, home=Path(tmp_path) / "home",
+                           codex_home=Path(tmp_path) / ".codex", session_id="worker")
 
 
 def bound_quickfix(tmp_path):
@@ -38,17 +45,18 @@ def native_review(tmp_path, session_root, product_root, outcome, *, workdir="pro
     elif workdir == "omitted":
         consumer_root = session_root
         (session_root / "owned.py").write_text("print('wrong-root')\n")
-    manifest = review_export(session_root, outcome, sid="reviewer", stage_names=("technical", "consumer"),
-                             command="python3 owned.py", consumer_workdir=consumer_root)
+    manifest = review_export_manifest(session_root, outcome, sid="reviewer",
+                                       stage_names=("technical", "consumer"),
+                                       command="python3 owned.py",
+                                       consumer_workdir=consumer_root)
     data = json.loads(manifest.read_text())
     source = Path(data["target"]["source"]["location"])
     rows = [json.loads(line) for line in source.read_text().splitlines()]
     tech_args = json.loads(rows[2]["payload"]["arguments"])
     tech_args["workdir"] = str(product_root)
     rows[2]["payload"]["arguments"] = json.dumps(tech_args)
-    tech = subprocess.run(["python3", "-m", "unittest", "discover", "-q"],
-                          cwd=product_root, capture_output=True, text=True)
-    rows[3]["payload"]["output"] = tech.stdout + tech.stderr
+    _, tech_stdout, tech_stderr = local_command("python3 -m unittest discover -q", product_root)
+    rows[3]["payload"]["output"] = tech_stdout + tech_stderr
     if native_cwd is not None:
         rows[0]["payload"]["cwd"] = str(native_cwd)
         if Path(native_cwd) == product_root or assigned_product_root:

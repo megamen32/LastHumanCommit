@@ -1,13 +1,23 @@
 """Ordinary task completion must retain its real canary, including non-UI work.
 
-These regressions exercise the native entry subprocess; no installed runtime,
-external services or fabricated acceptance are involved.
+These regressions exercise the native entry and the native outcome tool; no
+installed runtime, external services or fabricated acceptance are involved.
+Both tools are ordinary Python, so the cases call them in this process and
+reproduce the isolation a fresh process gave them.
 """
+import atexit
+import contextlib
+import io
+import runpy
+import shutil
 import subprocess
+import sys
+import tempfile
+import unittest
 
 import pytest
 
-from test_native_milestone_gate import invoke, setup, state
+from test_native_milestone_gate import GOAL, state
 
 
 @pytest.mark.parametrize("goal", [
@@ -17,7 +27,7 @@ from test_native_milestone_gate import invoke, setup, state
     "and preserves Cyrillic names.",
 ])
 def test_non_ui_task_cannot_finish_with_only_technical_tests(tmp_path, goal):
-    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    git_repo(tmp_path)
     invoke(tmp_path, "UserPromptSubmit", prompt=goal)
     (tmp_path / "service.py").write_text("def total(): return 0\n")
     invoke(tmp_path, "PostToolUse", tool_name="exec_command",
@@ -28,7 +38,7 @@ def test_non_ui_task_cannot_finish_with_only_technical_tests(tmp_path, goal):
 
 
 def test_read_only_testing_cannot_finish_without_assigned_scenario(tmp_path):
-    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    git_repo(tmp_path)
     invoke(tmp_path, "UserPromptSubmit", prompt=(
         "You are a fresh Zero Knowledge tester. Do not modify code. "
         "Test checkout with an empty basket and a two-item basket on the running "
@@ -57,24 +67,197 @@ import json
 import os
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
-import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 OUTCOME = ROOT / 'src/common/tools/lhc_outcome.py'
 sys.path.insert(0, str(OUTCOME.parent))
 
+import lhc_entry
+import lhc_outcome
+
+
+# --------------------------------------------------------------------------
+# The native tools run inside this process
+#
+# Every case used to start a fresh interpreter for the outcome CLI and for the
+# native entry, and to run `git init` inside its own directory. Both tools are
+# ordinary Python, so the cases call them here and reproduce the isolation a
+# fresh process gave them:
+#
+#   * a fresh environment: HOME and CODEX_HOME point into the case checkout,
+#   * a fresh argv plus a fresh stdout/stderr capture,
+#   * a fresh checkout: one real template repository copied per case,
+#   * fresh module state: the tool modules keep no mutable module state, the
+#     learning state lives inside the case checkout and the lazily loaded
+#     siblings are stateless readers, so a case starts where case one started.
+# --------------------------------------------------------------------------
+
+
+@contextlib.contextmanager
+def tool_environment(root):
+    """Give one tool call the HOME/CODEX_HOME its own process would have had."""
+    saved = {name: os.environ.get(name) for name in ('HOME', 'CODEX_HOME')}
+    os.environ['HOME'] = str(root / 'native-home')
+    os.environ['CODEX_HOME'] = str(root / 'native-home/.codex')
+    try:
+        yield
+    finally:
+        for name, value in saved.items():
+            if value is None:
+                os.environ.pop(name, None)
+            else:
+                os.environ[name] = value
+
+
+def run_outcome_tool(root, *args):
+    """Run lhc_outcome.py in-process; return (returncode, stdout, stderr)."""
+    stdout, stderr = io.StringIO(), io.StringIO()
+    saved_argv = sys.argv
+    with tool_environment(root), contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+        sys.argv = [str(OUTCOME), '--cwd', str(root), '--runtime', 'codex', '--session-id', 'leader', *args]
+        try:
+            lhc_outcome.main()
+        except (OSError, ValueError, KeyError, TypeError) as error:
+            # The tool's own __main__ guard reports these on stderr and exits 1.
+            stderr.write('LHC outcome: ' + str(error))
+            return 1, stdout.getvalue(), stderr.getvalue()
+        except SystemExit as exit_error:
+            code = exit_error.code
+            return (0 if code is None else int(code)), stdout.getvalue(), stderr.getvalue()
+        finally:
+            sys.argv = saved_argv
+    return 0, stdout.getvalue(), stderr.getvalue()
+
+
+def run_entry_tool(root, event, **fields):
+    """Run one native entry event in-process; return the tool's JSON answer."""
+    native_session = root / 'native-home/.codex/sessions/leader.jsonl'
+    native_session.parent.mkdir(parents=True, exist_ok=True)
+    if not native_session.exists():
+        native_session.write_text(json.dumps({'type': 'session_meta', 'payload': {
+            'id': 'leader', 'cwd': str(root.resolve()), 'timestamp': datetime.now(timezone.utc).isoformat()}}) + '\n')
+    # Keep the native transcript fixture aligned with a real UserPromptSubmit:
+    # LHC may bind permission only to a role=user message in this journal.
+    if event == 'UserPromptSubmit' and isinstance(fields.get('prompt'), str):
+        native_row = {'type': 'response_item', 'timestamp': datetime.now(timezone.utc).isoformat(),
+                      'payload': {'type': 'message', 'role': 'user',
+                                  'content': [{'type': 'input_text', 'text': fields['prompt']}],
+                                  'internal_chat_message_metadata_passthrough': {
+                                      'turn_id': fields.get('turn_id', 'one')}}}
+        with native_session.open('a', encoding='utf-8') as stream:
+            stream.write(json.dumps(native_row, ensure_ascii=False) + '\n')
+    payload = {'cwd': str(root), 'session_id': 'leader', 'turn_id': 'one',
+               'transcript_path': str(native_session), **fields}
+    with tool_environment(root):
+        try:
+            return lhc_entry.handle(payload, event, 'codex', ROOT)
+        except (OSError, ValueError, KeyError, TypeError) as error:
+            # The entry answers a rejected native event instead of failing.
+            return {'systemMessage': f'LHC session command rejected the native event: {error}'}
+
+
+def invoke(root, event, **fields):
+    """One native entry event of one case, without a new interpreter."""
+    return run_entry_tool(root, event, **fields)
+
+
+def setup(root, prompt=GOAL):
+    """The ordinary milestone fixture of one case, without a new interpreter."""
+    git_repo(root)
+    invoke(root, 'UserPromptSubmit', prompt=prompt)
+    (root / 'dashboard.html').write_text('<main><input type=search><button>Import</button><nav>Reports</nav></main>')
+    invoke(root, 'PostToolUse', tool_name='exec_command', tool_input={'cmd': 'write dashboard'},
+           tool_response={'exit_code': 0})
+
 
 def cli(root, *args, ok=True):
-    result = subprocess.run([sys.executable, str(OUTCOME), '--cwd', str(root), '--runtime', 'codex',
-                             '--session-id', 'leader', *args], capture_output=True, text=True,
-                            env={**os.environ, 'HOME': str(root / 'native-home'),
-                                 'CODEX_HOME': str(root / 'native-home/.codex')})
-    assert (result.returncode == 0) == ok, result.stderr
-    return json.loads(result.stdout) if result.returncode == 0 else result.stderr
+    """The outcome CLI of one case, without a new interpreter."""
+    code, stdout, stderr = run_outcome_tool(root, *args)
+    assert (code == 0) == ok, stderr
+    return json.loads(stdout) if code == 0 else stderr
+
+
+# --------------------------------------------------------------------------
+# One real template repository, copied per case
+#
+# `git init` pays for a fresh repository in every case; a copy of one prepared
+# repository costs a fraction of that and produces the same checkout.
+# --------------------------------------------------------------------------
+
+_REPO_TEMPLATE = None
+
+
+def repo_template():
+    """Prepare the one template repository this session copies per case."""
+    global _REPO_TEMPLATE
+    if _REPO_TEMPLATE is None:
+        template = Path(tempfile.mkdtemp(prefix='lhc-outcome-repo-'))
+        atexit.register(shutil.rmtree, template, True)
+        subprocess.run(['git', 'init', '-q', str(template)], check=True)
+        _REPO_TEMPLATE = template
+    return _REPO_TEMPLATE
+
+
+def git_repo(root):
+    """Give the case its own Git checkout."""
+    shutil.copytree(repo_template(), root, dirs_exist_ok=True)
+
+
+# --------------------------------------------------------------------------
+# Observed commands run in this process
+#
+# The review fixture observes real commands. The Python ones are ordinary
+# scripts, so they run here instead of in a new interpreter per observation;
+# every other command keeps its own process.
+# --------------------------------------------------------------------------
+
+PYTHON_COMMANDS = {'python', 'python3', os.path.basename(sys.executable)}
+
+
+def observed_command(command, cwd):
+    """Run one observed command and return its stdout and stderr together."""
+    words = command.split()
+    if words and os.path.basename(words[0]) in PYTHON_COMMANDS:
+        return run_python_command(words, cwd)
+    completed = subprocess.run(words, cwd=cwd, capture_output=True, text=True)
+    return completed.stdout + completed.stderr
+
+
+def run_python_command(words, cwd):
+    """Run a `python ...` command in-process and return its stdout+stderr."""
+    stdout, stderr = io.StringIO(), io.StringIO()
+    saved_path = list(sys.path)
+    saved_modules = set(sys.modules)
+    saved_argv = sys.argv
+    saved_cwd = os.getcwd()
+    try:
+        os.chdir(cwd)
+        with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+            if '-m' in words:
+                module = words[words.index('-m') + 1]
+                # The module sees its own arguments, exactly as `python -m` gives them.
+                sys.argv = [words[0], *words[words.index('-m') + 2:]]
+                runpy.run_module(module, run_name='__main__', alter_sys=True)
+            else:
+                script = next(word for word in words[1:] if not word.startswith('-'))
+                sys.argv = list(words)
+                runpy.run_path(script, run_name='__main__')
+    except SystemExit:
+        pass
+    finally:
+        os.chdir(saved_cwd)
+        sys.argv = saved_argv
+        sys.path[:] = saved_path
+        # The discovered test module belongs to this case alone.
+        for name in set(sys.modules) - saved_modules:
+            del sys.modules[name]
+        # unittest keeps the directory of the last discovery on its shared loader.
+        unittest.defaultTestLoader._top_level_dir = None
+    return stdout.getvalue() + stderr.getvalue()
 
 
 def anchored(root, goal='Fix the small total CLI. Verify the empty basket returns 0.', coverage=(), canary=None):
-    subprocess.run(['git', 'init', '-q', str(root)], check=True)
+    git_repo(root)
     (root / 'total.py').write_text('print(0)\n')
     (root / 'test_total.py').write_text(
         "import unittest, subprocess, sys\nclass TotalTest(unittest.TestCase):\n"
@@ -117,8 +300,7 @@ def review_export(root, outcome, *, product='pass', stage_names=('technical', 'c
         # Actually run local technical/consumer commands for this fixture; remote
         # stage rows below are deliberately fake and never release acceptance.
         if stage in {'technical', 'consumer'}:
-            completed = subprocess.run(cmd.split(), cwd=consumer_workdir if stage == 'consumer' and consumer_workdir else root, capture_output=True, text=True)
-            output = completed.stdout + completed.stderr
+            output = observed_command(cmd, consumer_workdir if stage == 'consumer' and consumer_workdir else root)
         else:
             # Explicit native-format fixtures, NOT live release receipts. Unlike
             # a generic nonempty string, the readback binds target and version.
@@ -474,7 +656,7 @@ def test_latest_direct_repair_correction_adds_deploy_and_target_without_resettin
 
 
 def test_lead_can_confirm_semantic_class_from_native_scope_but_not_missing_merge_rights(tmp_path):
-    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
+    git_repo(tmp_path)
     invoke(tmp_path, 'UserPromptSubmit', prompt='Exercise the checkout in the existing demo; report each observation, no merge.')
     outcome = state(tmp_path)['business']['outcome']
     assert outcome['task_class'] == 'unknown'
@@ -847,7 +1029,7 @@ def test_foreign_ui_wip_does_not_rearm_owned_ui_task(tmp_path):
     '"RESEARCH ONLY: Research the configured export encoding and explain implementation/tests→deploy ordering. Do not edit code.\n"',
 ])
 def test_research_assignment_can_close_from_actual_source_read(tmp_path, goal):
-    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
+    git_repo(tmp_path)
     (tmp_path / 'settings.txt').write_text('encoding=UTF-8\n')
     invoke(tmp_path, 'UserPromptSubmit', prompt=goal)
     assert state(tmp_path)['business']['outcome']['original_goal'] == goal
@@ -872,7 +1054,7 @@ def test_native_whole_prompt_quotes_do_not_hide_assignment_header():
 @pytest.mark.parametrize('goal,blocked', [('Hello, good evening!', False), ('Status of the current release?', False),
                                        ('Ensure UTF-8 export preserves the two customer names.', True)])
 def test_unknown_finish_control_requires_direct_actionable_scope(tmp_path, goal, blocked):
-    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
+    git_repo(tmp_path)
     invoke(tmp_path, 'UserPromptSubmit', prompt=goal)
     assert (invoke(tmp_path, 'Stop').get('decision') == 'block') is blocked
 
@@ -1129,7 +1311,7 @@ def test_native_self_fallback_does_not_accept_fullcycle(tmp_path):
 
 
 def test_real_russian_testing_prompt_with_excluded_repair_is_testing(tmp_path):
-    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
+    git_repo(tmp_path)
     goal = 'Только протестируй существующий checkout CLI в двух случаях: пустая корзина и корзина two из двух товаров. Пользователь ожидает успешный ответ и сумму 0 для пустой корзины, сумму 20 для two. Выполни реальные команды, сравни наблюдения и сохрани полный отзыв в FEEDBACK.md. Не меняй код, не создавай новые тесты, не деплой и не делегируй. Найденный дефект нужно честно описать; исправление продукта в эту задачу не входит.'
     invoke(tmp_path, 'UserPromptSubmit', prompt=goal)
     assert cli(tmp_path, 'status')['task_class'] == 'testing'
@@ -1515,7 +1697,7 @@ def test_research_words_inside_engineering_subject_do_not_remove_repair(goal):
 
 
 def test_later_research_only_does_not_erase_existing_repair(tmp_path):
-    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
+    git_repo(tmp_path)
     invoke(tmp_path, 'UserPromptSubmit', prompt='Fix the small total.py CLI.')
     invoke(tmp_path, 'UserPromptSubmit', prompt='RESEARCH ONLY: Explain the failing test. Do not edit code.')
     outcome = state(tmp_path)['business']['outcome']
@@ -1527,7 +1709,7 @@ def test_research_reminder_prioritizes_assigned_finding_before_close_bookkeeping
     import lhc_outcome as outcomes
     goal = ('RESEARCH ONLY: Проверь кодировку в settings.txt и сохрани результат в FEEDBACK.md. '
             'Не меняй исходник, не создавай тесты, ничего не деплой и не делегируй.')
-    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
+    git_repo(tmp_path)
     (tmp_path/'settings.txt').write_text('encoding=UTF-8\n')
     invoke(tmp_path, 'UserPromptSubmit', prompt=goal)
     outcome = state(tmp_path)['business']['outcome']
@@ -1545,7 +1727,7 @@ def test_research_reminder_prioritizes_assigned_finding_before_close_bookkeeping
 @pytest.mark.parametrize('absolute', [False, True])
 @pytest.mark.parametrize('relative', ['settings.txt', 'data/settings.txt', 'FEEDBACK.md'])
 def test_project_research_closes_from_direct_scope_named_source_read(tmp_path, absolute, relative):
-    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
+    git_repo(tmp_path)
     source = tmp_path/relative; source.parent.mkdir(exist_ok=True)
     source.write_text('encoding=UTF-8\n')
     invoke(tmp_path, 'UserPromptSubmit', prompt=f'RESEARCH ONLY: Read {relative} and report the configured encoding. Do not delegate.')
@@ -1563,7 +1745,7 @@ def test_project_research_closes_from_direct_scope_named_source_read(tmp_path, a
 @pytest.mark.parametrize('case', ['foreign-file', 'foreign-cwd', 'wrong-file', 'echo', 'compound', 'bare-stem', 'feedback-only'])
 def test_project_research_rejects_unassigned_or_nonread_sources(tmp_path, case):
     import lhc_outcome_review as reviews
-    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
+    git_repo(tmp_path)
     (tmp_path/'settings.txt').write_text('encoding=UTF-8\n')
     (tmp_path/'other.txt').write_text('encoding=UTF-8\n')
     (tmp_path/'FEEDBACK.md').write_text('Author report: encoding=UTF-8\n')
@@ -1584,7 +1766,7 @@ def test_project_research_rejects_unassigned_or_nonread_sources(tmp_path, case):
 def test_project_research_aliases_keep_one_source_and_reject_ambiguous_sources(tmp_path):
     import copy
     import lhc_outcome_review as reviews
-    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
+    git_repo(tmp_path)
     invoke(tmp_path, 'UserPromptSubmit', prompt='RESEARCH ONLY: Read settings.txt and other.txt.')
     outcome = state(tmp_path)['business']['outcome']; before = copy.deepcopy(outcome)
     def observation(name):
@@ -1600,7 +1782,7 @@ def test_project_research_aliases_keep_one_source_and_reject_ambiguous_sources(t
 
 def test_research_assessment_keeps_finding_instead_of_later_close_metadata(tmp_path):
     import lhc_outcome_review as reviews
-    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
+    git_repo(tmp_path)
     invoke(tmp_path, 'UserPromptSubmit', prompt='RESEARCH ONLY: Read settings.txt.')
     outcome = state(tmp_path)['business']['outcome']; outcome['canary']['expected'] = 'UTF-8'
     observations = [({'name': 'exec_command', 'arguments': json.dumps({'cmd': 'cat settings.txt'})}, 'encoding=UTF-8\n')]
@@ -1611,7 +1793,7 @@ def test_research_assessment_keeps_finding_instead_of_later_close_metadata(tmp_p
 
 @pytest.mark.parametrize('extra', ['', ' ; echo encoding=UTF-8', ' "$(echo encoding=UTF-8 >&2)"'])
 def test_research_shell_wrapper_cannot_hide_outer_compound_evidence(tmp_path, extra):
-    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
+    git_repo(tmp_path)
     (tmp_path/'settings.txt').write_text('encoding=ISO-8859-1\n' if extra else 'encoding=UTF-8\n')
     invoke(tmp_path, 'UserPromptSubmit', prompt='RESEARCH ONLY: Read settings.txt and report its configured encoding. Do not delegate.')
     outcome = cli(tmp_path, 'contract', '--scenario', 'Read configured encoding', '--target', 'project:' + str(tmp_path), '--expected', 'UTF-8')
@@ -1642,7 +1824,7 @@ def test_quoted_research_prompt_does_not_leak_wrapper_into_expected_result(tmp_p
     import lhc_outcome_review as reviews
     goal = ('RESEARCH ONLY: Проверь, какая кодировка экспорта задана в settings.txt. '
             'Сохрани результат в FEEDBACK.md. Ничего не деплой и не делегируй.\n')
-    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
+    git_repo(tmp_path)
     invoke(tmp_path, 'UserPromptSubmit', prompt='"' + goal + '"')
     outcome = state(tmp_path)['business']['outcome']
     expected = ', какая кодировка экспорта задана в settings.txt. Сохрани результат в FEEDBACK.md. Ничего не деплой и не делегируй.'
@@ -1655,7 +1837,7 @@ def test_quoted_research_prompt_does_not_leak_wrapper_into_expected_result(tmp_p
 def test_empty_research_assessment_gives_bounded_visible_report_recovery(tmp_path):
     import lhc_outcome_review as reviews
     import lhc_outcome as outcomes
-    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
+    git_repo(tmp_path)
     initial = invoke(tmp_path, 'UserPromptSubmit', prompt='RESEARCH ONLY: Read settings.txt and save results in FEEDBACK.md. Do not delegate.')
     outcome = state(tmp_path)['business']['outcome']
     with pytest.raises(ValueError, match='visible assistant message'):
@@ -1685,7 +1867,7 @@ def test_unattributed_interrupt_does_not_claim_a_human_stop_or_resume(tmp_path):
 
 
 def semantic_research_fixture(tmp_path, expected_extra='', target_alias=None):
-    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
+    git_repo(tmp_path)
     (tmp_path/'settings.txt').write_text('encoding=UTF-8\n')
     invoke(tmp_path, 'UserPromptSubmit', prompt='RESEARCH ONLY: Read settings.txt, identify the export encoding and explain whether this file proves implementation/tests, deploy and merge. Save results in FEEDBACK.md. Do not delegate.')
     source = tmp_path/'settings.txt'

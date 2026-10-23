@@ -9,6 +9,8 @@ import subprocess
 
 import pytest
 
+from _inprocess import git_repo
+
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -440,7 +442,7 @@ def test_rollout_rejects_symlink_tmp_escape(tmp_path: Path) -> None:
 
     repo = tmp_path / "source-repo"
     repo.mkdir()
-    subprocess.run(["git", "init", "-q", str(repo)], check=True)
+    git_repo(repo)
     (repo / ".gitignore").write_text(".tmp/\n", encoding="utf-8")
     outside = tmp_path / "escaped"
     outside.mkdir()

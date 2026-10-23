@@ -7,20 +7,22 @@ from pathlib import Path
 
 import pytest
 
+from _inprocess_lane import git_repo, run_tool
+
 
 TOOL = Path(__file__).resolve().parents[1] / "src/common/tools/lhc_time_guard.py"
 
 
 @pytest.fixture(autouse=True)
 def project_boundary(tmp_path):
-    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    git_repo(tmp_path)
 
 
 def cli(*args, payload=None, ok=True):
-    result = subprocess.run(
-        [sys.executable, str(TOOL), *map(str, args)],
-        input=json.dumps(payload) if payload is not None else None,
-        capture_output=True, text=True, timeout=10,
+    result = run_tool(
+        "lhc_time_guard",
+        [str(arg) for arg in args],
+        stdin=json.dumps(payload) if payload is not None else "",
     )
     if ok:
         assert result.returncode == 0, result.stderr

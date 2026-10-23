@@ -1,6 +1,9 @@
 """Bounded source-only candidate and publication proof regressions."""
+import atexit
+import shutil
 import subprocess
 import sys
+import tempfile
 import hashlib
 import json
 from datetime import datetime, timedelta, timezone
@@ -15,23 +18,54 @@ import lhc_outcome_review as review
 import lhc_outcome as outcome
 import lhc_time_guard as guard
 
+from _inprocess_lane import prepare_git_template
+
 
 def git(root, *args):
     return subprocess.run(["git", "-C", str(root), *args], check=True,
                           capture_output=True, text=True).stdout.strip()
 
 
+# One prepared product checkout and one prepared bare remote, copied per case.
+# The history and the identity of the fixture are fixed, so `git init`, both
+# `git config` calls, `git add`, `git commit` and the bare `git init` all
+# become a copy; only the real publication work stays a real Git call.
+_REPO_TEMPLATE: Path | None = None
+_BARE_TEMPLATE: Path | None = None
+
+
+def _repo_template() -> Path:
+    global _REPO_TEMPLATE
+    if _REPO_TEMPLATE is None:
+        root = Path(tempfile.mkdtemp(prefix="lhc-source-publication-repo-"))
+        atexit.register(shutil.rmtree, root, True)
+        git(root, "init", "-q")
+        git(root, "config", "user.email", "test@example.invalid")
+        git(root, "config", "user.name", "Test")
+        (root / "owned.py").write_text("print('base')\n")
+        git(root, "add", "owned.py")
+        git(root, "commit", "-qm", "base")
+        prepare_git_template(root)
+        _REPO_TEMPLATE = root
+    return _REPO_TEMPLATE
+
+
+def _bare_template() -> Path:
+    global _BARE_TEMPLATE
+    if _BARE_TEMPLATE is None:
+        root = Path(tempfile.mkdtemp(prefix="lhc-source-publication-bare-"))
+        atexit.register(shutil.rmtree, root, True)
+        subprocess.run(["git", "init", "--bare", "-q", str(root)], check=True)
+        _BARE_TEMPLATE = root
+    return _BARE_TEMPLATE
+
+
 def repository(tmp_path):
     root = tmp_path / "product"
     root.mkdir()
-    git(root, "init", "-q")
-    git(root, "config", "user.email", "test@example.invalid")
-    git(root, "config", "user.name", "Test")
-    (root / "owned.py").write_text("print('base')\n")
-    git(root, "add", "owned.py")
-    git(root, "commit", "-qm", "base")
+    shutil.copytree(_repo_template(), root, dirs_exist_ok=True)
     bare = tmp_path / "remote.git"
-    subprocess.run(["git", "init", "--bare", "-q", str(bare)], check=True)
+    shutil.copytree(_bare_template(), bare, dirs_exist_ok=True)
     git(root, "remote", "add", "origin", str(bare))
     git(root, "push", "-q", "-u", "origin", "HEAD:main")
     return root, bare

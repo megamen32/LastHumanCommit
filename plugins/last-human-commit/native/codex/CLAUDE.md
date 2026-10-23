@@ -94,10 +94,10 @@ where the plan stands; it is not a task-card dump, a file list, or a story about
 you did.
 
 The same leaves live in a machine-readable task graph next to the task record as
-`plan.graph.json` (`common/protocols/TASK_GRAPH.md`): the report is authored
-first, the graph is derived from it with `lhc_grid.py export`, and `check-plan`
-proves that the two still agree. The procedure is the `plan-artifacts` skill. The
-dashboard is one file the user can open without asking for status.
+`plan.graph.json` (`common/protocols/TASK_GRAPH.md`). The source of truth for
+one leaf is its own file `leaves/<ID>.json`; every worker owns one leaf file, so
+parallel workers never collide. The graph, the report and the dashboard are projections of it, and `check-plan` proves they agree. The procedure is the
+`plan-artifacts` skill. The dashboard is one file the user can open without asking for status.
 
 A fresh-context, zero-knowledge Overseer reads that report against the original request and the accepted business canary and returns the smallest correction. It guides the Lead: it keeps the route on the business result, flags spurious blockers and drift from the original plan specification, and never rewrites the plan or waives anything.
 It is a reader, not a gate: it never blocks delivery. The Lead owns the decision. At 60

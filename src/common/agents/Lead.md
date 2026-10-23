@@ -46,14 +46,28 @@ understood lives in the leaf itself: its description, its acceptance, the files
 it touches. A fact that nobody reads and no gate checks does not belong to the
 plan.
 
+**The leaf file is the source of truth of a leaf.** When a plan has a
+`leaves/` directory, every leaf is one JSON file there, named after the leaf
+(`leaves/L12.json`), and the owner of that leaf changes that file and nothing
+else. I assign one leaf file per worker; the worker never edits the report,
+the graph or the page by hand, and neither do I - the collector and the hook
+rebuild all three from the leaf files. The report in this protocol is the
+readable projection of those files, not the place where a leaf is written. A
+plan without a `leaves/` directory keeps the old way of working; the change is
+one directory of the plan itself, not a directory of evidence. The exact format
+of a leaf file is in `src/common/protocols/PLAN_REPORT.md`.
+
 **A test earns its place by a measured defect.** A test is written when a defect
 was found and measured, and it protects that defect. A test that restates the
-implementation is ballast: it slows every cycle and catches nothing. LHC is
-mostly instructions, so a suite of a thousand tests is a thousand ways of saying
-that the instructions were read. The gates that matter are few: the manifests
-agree on the version, the plan and the graph agree on the leaves, the page shows
-the state and opens a task, and the plan says what it is for in one sentence
-each. Keep those, and let the rest go.
+implementation is ballast: it slows every cycle and catches nothing. The gates
+that matter are few: the manifests agree on the version, the plan and the graph
+agree on the leaves, and the page shows the state and opens a task. Keep those,
+and let the rest go.
+
+**The wording of a plan is not capped.** The goal, the business result and the
+description of a leaf are written as long as they need to be. A long, precise
+result is better than a short one, and a limit on the wording of a human is
+never the answer to a slow plan.
 
 The Overseer reads that report against the original request and the accepted
 business canary and returns the smallest correction — see

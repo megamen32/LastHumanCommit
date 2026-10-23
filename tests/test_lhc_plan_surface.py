@@ -5,28 +5,23 @@ the page on a phone:
 
 * the progress is at the very top and stays in sight while the page scrolls;
 * every number on the page can be opened and shows the tasks behind it;
-* the wording of a plan has a budget, so the plan stays a plan.
-"""
+* """
 from __future__ import annotations
 
-import importlib.util
 import json
-import subprocess
 import sys
 from pathlib import Path
+
+from _inprocess import load_module, run_cli
 
 ROOT = Path(__file__).resolve().parent.parent
 TOOL = ROOT / "src" / "common" / "tools" / "lhc_grid.py"
 ENTRY = ROOT / "plugins" / "last-human-commit" / "tools" / "lhc_entry.py"
+entry = load_module(ENTRY, name="lhc_entry_plan_surface_test")
 
 
 def load(name: str, path: Path):
-    spec = importlib.util.spec_from_file_location(name, path)
-    module = importlib.util.module_from_spec(spec)
-    assert spec.loader is not None
-    sys.modules[name] = module
-    spec.loader.exec_module(module)
-    return module
+    return load_module(path, name=name)
 
 
 def sample_graph():
@@ -88,20 +83,21 @@ def test_what_blocks_and_what_needs_the_owner_are_told_apart():
 
 
 # ------------------------------------------------------------ no text cap
-def test_long_plan_and_task_descriptions_are_not_rejected_by_short_caps():
+def test_long_plan_and_task_descriptions_are_never_capped():
+    """The wording of a human is not capped: a long, precise text is better."""
     lhc, graph = sample_graph()
     graph.goal = "Д" * 400
     graph.business_result = "Р" * 800
+    graph.business_results = [graph.business_result]
     graph.leaves[0].description = "Описание с контекстом, действием и ожидаемым результатом. " * 120
-    assert lhc.check_text_budget(graph) == []
+    html = lhc.render_html(graph, lhc.build_metrics(graph))
+    assert "Д" * 400 in html
+    assert "Р" * 800 in html
+    # No cap function survives in the renderer.
+    assert not hasattr(lhc, "check_text_budget")
 
 
-def test_a_lean_plan_passes_the_budget():
-    lhc, graph = sample_graph()
-    assert lhc.check_text_budget(graph) == []
 
-
-# ---------------------------------------------------------------- the hook
 def test_writing_the_plan_rebuilds_the_page(tmp_path):
     """The agent writes the plan; the page is generated from it."""
     plan_dir = tmp_path / "plan"
@@ -117,10 +113,8 @@ def test_writing_the_plan_rebuilds_the_page(tmp_path):
     assert not page.exists()
 
     event = {"cwd": str(plan_dir), "session_id": "s", "tool_input": {"file_path": str(graph_path)}}
-    proc = subprocess.run(
-        [sys.executable, str(ENTRY), "--event", "PostToolUse", "--heartbeat-only"],
-        input=json.dumps(event).encode(), capture_output=True, timeout=60,
-    )
+    proc = run_cli(entry, ["--event", "PostToolUse", "--heartbeat-only"],
+                   stdin=json.dumps(event), text=False)
     assert page.exists(), f"страница не пересобрана: {proc.stdout!r} {proc.stderr!r}"
     assert "пересобрана" in proc.stdout.decode("utf-8", "replace")
 

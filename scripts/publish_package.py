@@ -94,6 +94,8 @@ TOOL_COPIES = (
     "lhc_testing_reuse.py",
     "lhc_worktree.py",
     "lhc_chat.py",
+    "lhc_plan_json.py",
+    "lhc_live.py",
 )
 
 TREE_FOLDERS = (

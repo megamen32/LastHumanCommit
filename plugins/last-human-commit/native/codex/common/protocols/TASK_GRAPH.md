@@ -173,13 +173,16 @@ unknown estimate is a choice, never a demand.
 
 1. Write the graph when the objective is decomposed, before dispatch. A
    decomposition without a graph is not finished.
-2. Update the graph and the report together at every plan boundary. A graph that
-   says `queued` while the report says `done` is wrong in both directions.
-   The order is fixed: refresh the graph from the report, then build the view
-   on the refreshed graph, then reconcile the two with `check-plan`.
-3. The report's tasks and the graph's leaves are one set. No task without a
-   leaf, no leaf without a task, no two places claiming a different status for
-   the same task. `check-plan` prints the divergence and exits non-zero.
+2. Update the leaf file at every plan boundary; the graph, the report and the
+   page are projections of it. A projection that says `queued` while the leaf
+   file says `done` is wrong in both directions. The order is fixed: write the
+   leaf file, build the graph from the leaf files (`lhc_plan_json.py build`),
+   then build the view on the built graph, then reconcile the projections with
+   `check-plan`.
+3. The leaf files, the report's tasks and the graph's leaves are one set. No task
+   without a leaf, no leaf without a task, no two places claiming a different
+   status for the same task. `check-plan` prints the divergence and exits
+   non-zero.
 4. Estimate from the work and its proof, in minutes, with the named uncertainty.
    An unknown estimate is honest; a padded one is not.
 5. Record the real blocker text, not "waiting" or "later".

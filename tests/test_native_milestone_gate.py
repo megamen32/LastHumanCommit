@@ -10,6 +10,8 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from datetime import datetime, timezone, timedelta
 import pytest
 
+from _inprocess_lane import git_repo, run_tool
+
 ROOT = Path(__file__).resolve().parents[1]
 ENTRY = ROOT / "src/common/tools/lhc_entry.py"
 MILESTONE = ROOT / "src/common/tools/lhc_milestone.py"
@@ -33,32 +35,33 @@ def invoke(root, event, **fields):
             stream.write(json.dumps(native_row, ensure_ascii=False) + "\n")
     # --session is the explicit agent command that advances the stateful
     # lifecycle. The native hook templates stay time-only and never block.
-    result = subprocess.run([sys.executable, str(ENTRY), "--root", str(ROOT), "--runtime", "codex", "--event", event, "--session"],
-        input=json.dumps({"cwd": str(root), "session_id": "leader", "turn_id": "one",
+    result = run_tool("lhc_entry", ["--root", str(ROOT), "--runtime", "codex", "--event", event, "--session"],
+        stdin=json.dumps({"cwd": str(root), "session_id": "leader", "turn_id": "one",
                           "transcript_path": str(native_session), **fields}),
-        capture_output=True, text=True, check=True, timeout=8, env={**os.environ, "HOME": str(root / "native-home"), "CODEX_HOME": str(root / "native-home/.codex")})
+        env={"HOME": str(root / "native-home"), "CODEX_HOME": str(root / "native-home/.codex")})
+    result.check_returncode()
     return json.loads(result.stdout) if result.stdout.strip() else {}
 
 def acceptance_gate(root, session_id="leader"):
     """Run the explicit milestone acceptance gate command."""
-    result = subprocess.run([sys.executable, str(MILESTONE), "--cwd", str(root), "--runtime", "codex",
-                             "--session-id", session_id, "gate"],
-        capture_output=True, text=True, check=True, timeout=8)
+    result = run_tool("lhc_milestone", ["--cwd", str(root), "--runtime", "codex",
+                             "--session-id", session_id, "gate"])
+    result.check_returncode()
     return json.loads(result.stdout)
 
 def heartbeat(root, session_id="leader", event="PostToolUse"):
     """Run the time-only native hook exactly as the hook template does."""
-    result = subprocess.run([sys.executable, str(ENTRY), "--root", str(ROOT), "--runtime", "codex",
+    result = run_tool("lhc_entry", ["--root", str(ROOT), "--runtime", "codex",
                              "--event", event, "--heartbeat-only"],
-        input=json.dumps({"cwd": str(root), "session_id": session_id}),
-        capture_output=True, text=True, check=True, timeout=8)
+        stdin=json.dumps({"cwd": str(root), "session_id": session_id}))
+    result.check_returncode()
     return json.loads(result.stdout) if result.stdout.strip() else {}
 
 def state(root):
     return json.loads(next((root / ".agents/shared-session/learning").glob("*.json")).read_text())
 
 def setup(root, prompt=GOAL):
-    subprocess.run(["git", "init", "-q", str(root)], check=True)
+    git_repo(root)
     invoke(root, "UserPromptSubmit", prompt=prompt)
     (root / "dashboard.html").write_text("<main><input type=search><button>Import</button><nav>Reports</nav></main>")
     invoke(root, "PostToolUse", tool_name="exec_command", tool_input={"cmd": "write dashboard"}, tool_response={"exit_code": 0})
@@ -71,7 +74,7 @@ def test_hook_heartbeat_keeps_the_learning_clock_and_the_wall_timer_in_one_state
     "last_observed_at", so learning_checkpoint raised KeyError and the whole
     time reminder was swallowed for every harness.
     """
-    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    git_repo(tmp_path)
     heartbeat(tmp_path)
     observed = state(tmp_path)
     assert "last_observed_at" in observed
@@ -86,7 +89,7 @@ def test_hook_heartbeat_keeps_the_learning_clock_and_the_wall_timer_in_one_state
 
 def test_hook_heartbeat_reminds_once_the_wall_clock_passed_the_plan_bucket(tmp_path):
     """Regression: an elapsed wall clock still produces its time reminder."""
-    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    git_repo(tmp_path)
     heartbeat(tmp_path)
     path = next((tmp_path / ".agents/shared-session/learning").glob("*.json"))
     observed = json.loads(path.read_text())
@@ -102,10 +105,10 @@ def test_hook_heartbeat_reminds_once_the_wall_clock_passed_the_plan_bucket(tmp_p
 
 def test_plain_native_hook_invocation_is_inert_and_never_observes_the_session(tmp_path):
     """Hooks only track time; state creation belongs to the explicit commands."""
-    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
-    result = subprocess.run([sys.executable, str(ENTRY), "--root", str(ROOT), "--runtime", "codex", "--event", "Stop"],
-        input=json.dumps({"cwd": str(tmp_path), "session_id": "leader"}),
-        capture_output=True, text=True, check=True, timeout=8)
+    git_repo(tmp_path)
+    result = run_tool("lhc_entry", ["--root", str(ROOT), "--runtime", "codex", "--event", "Stop"],
+        stdin=json.dumps({"cwd": str(tmp_path), "session_id": "leader"}))
+    result.check_returncode()
     assert result.stdout.strip() == ""
     assert not (tmp_path / ".agents/shared-session/learning").exists()
 
@@ -304,7 +307,7 @@ def test_minor_questions_and_readonly_testers_do_not_recruit(tmp_path, prompt):
         assert result.get("decision") != "block"
 
 def test_arbitrary_tool_text_and_unchanged_task_do_not_create_milestone(tmp_path):
-    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    git_repo(tmp_path)
     invoke(tmp_path, "UserPromptSubmit", prompt="Explain the module")
     invoke(tmp_path, "PostToolUse", tool_response={"stdout": GOAL})
     initial = invoke(tmp_path, "Stop")
@@ -319,7 +322,7 @@ def test_arbitrary_tool_text_and_unchanged_task_do_not_create_milestone(tmp_path
     assert state(tmp_path)["business"]["outcome"]["finish_verdict"] == "pending"
 
 def test_later_human_ui_task_and_generated_html_are_detected(tmp_path):
-    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    git_repo(tmp_path)
     invoke(tmp_path, "UserPromptSubmit", prompt="Explain the import format")
     invoke(tmp_path, "UserPromptSubmit", prompt="Build a complete customer dashboard with search and mobile navigation")
     (tmp_path / "server.mjs").write_text('res.end(`<html><main><button>Import customers</button></main></html>`)')
@@ -335,7 +338,7 @@ def test_feedback_without_url_in_original_goal_uses_real_browser_surface(tmp_pat
     assert state(tmp_path)["milestone"]["status"] == "accepted"
 
 def test_existing_thread_bootstraps_goal_from_native_transcript(tmp_path):
-    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    git_repo(tmp_path)
     transcript = tmp_path / "existing.jsonl"
     transcript.write_text(json.dumps({"type": "response_item", "payload": {"type": "message", "role": "user", "content": [{"type": "input_text", "text": GOAL}]}}))
     invoke(tmp_path, "PreToolUse", transcript_path=str(transcript))
@@ -372,7 +375,7 @@ def test_native_pass_verdict_does_not_need_a_magic_goal_phrase(tmp_path):
     assert state(tmp_path)["milestone"]["status"] == "accepted"
 
 def test_tool_failure_is_authoritative_for_due_clock_without_known_goal(tmp_path):
-    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    git_repo(tmp_path)
     invoke(tmp_path, "PreToolUse")
     p = next((tmp_path / ".agents/shared-session/learning").glob("*.json"))
     d = json.loads(p.read_text()); d["due_at"] = "2020-01-01T00:00:00+00:00"; p.write_text(json.dumps(d))
@@ -387,7 +390,7 @@ def test_explicit_ui_acceptance_is_not_a_requirement_quoted_in_an_internal_task(
     assert state(tmp_path)["milestone"]["status"] == "not-required"
 
 def test_test_html_fixtures_do_not_count_as_changed_product_surface(tmp_path):
-    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    git_repo(tmp_path)
     invoke(tmp_path, "UserPromptSubmit", prompt=GOAL)
     (tmp_path / "tests").mkdir()
     (tmp_path / "tests/test_render.py").write_text('expected="<main><button>Import</button></main>"')
