@@ -1655,7 +1655,14 @@ def render_html(
     progress_note = "по журналу волны" if metrics["use_live"] else "листьев"
     if metrics["unknown_estimate_pending"] or metrics["external_wait_unknown"]:
         remaining_label = "Известная часть работы"
-        remaining_hint = "без неизвестных оценок и ожиданий"
+        uncertainties = []
+        if metrics["unknown_estimate_pending"]:
+            uncertainties.append(
+                f"Листьев без оценки — {metrics['unknown_estimate_pending']}"
+            )
+        if metrics["external_wait_unknown"]:
+            uncertainties.append("срок внешнего ожидания не подтверждён")
+        remaining_hint = "Неизвестно: " + "; ".join(uncertainties)
     else:
         remaining_label = "Осталось по плану"
         remaining_hint = (
@@ -3064,6 +3071,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     var card = template.content.cloneNode(true);
     tileCard.replaceChildren(back, card);
     tileCard.hidden = false;
+    var progressStrip = document.getElementById('lhc-progress-strip');
+    var stickySpace = progressStrip ? progressStrip.getBoundingClientRect().height + 12 : 76;
+    tileCard.style.scrollMarginTop = Math.max(76, Math.ceil(stickySpace)) + 'px';
+    tileCard.scrollIntoView({{ block: 'start' }});
     var close = tileCard.querySelector('.task-details-close');
     if (close) {{
       close.addEventListener('click', function () {{ renderTileList(currentTile); }});

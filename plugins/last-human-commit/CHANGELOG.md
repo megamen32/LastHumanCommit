@@ -1,3 +1,7 @@
+# 1.5.42 - truthful unknowns and reachable task details
+
+The progress summary now names unknown effort and external wait duration instead of claiming they are absent. Opening a task detail scrolls it below the sticky progress strip so the return control stays reachable.
+
 # 1.5.41 - Russian project-plan requests route to the full plan artifacts
 
 Natural requests such as «составь план» and «помоги спланировать работу» now

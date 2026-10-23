@@ -207,7 +207,8 @@ class GraphJsonTests(unittest.TestCase):
         html = lhc.render_html(graph, metrics)
         self.assertIn('Срок неизвестен', html)
         self.assertIn('Известная часть работы', html)
-        self.assertIn('без неизвестных оценок и ожиданий', html)
+        self.assertIn('Листьев без оценки — 1', html)
+        self.assertNotIn('без неизвестных оценок и ожиданий', html)
 
     def test_forecast_counts_from_the_last_confirmed_event(self):
         """The forecast is anchored at the last confirmed event.

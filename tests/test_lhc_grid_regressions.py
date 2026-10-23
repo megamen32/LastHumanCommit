@@ -129,6 +129,54 @@ def test_forecast_bounds_are_ordered():
     assert early <= late, "прогноз финиша должен идти от ранней границы к поздней"
 
 
+def test_progress_strip_never_claims_unknown_estimates_and_waits_are_absent():
+    graph = lhc.parse_graph_json({
+        "schema_version": 2,
+        "external_waits": "Подключение источников не подтверждено.",
+        "tasks": [
+            {"id": f"L{i:02d}", "label": f"Phase {i}", "status": "queued", "depends_on": []}
+            for i in range(1, 7)
+        ],
+    })
+    html = lhc.render_html(graph, lhc.build_metrics(graph))
+
+    assert "Известная часть работы" in html
+    assert "Листьев без оценки — 6" in html
+    assert "срок внешнего ожидания не подтверждён" in html
+    assert "без неизвестных оценок и ожиданий" not in html
+
+
+def test_tile_detail_scrolls_back_control_below_the_sticky_progress_strip():
+    html = lhc.render_html(graph_with_owner(), lhc.build_metrics(graph_with_owner()))
+    function = re.search(
+        r"function openLeafInTile\(id\) \{.*?\n  \}\n  document\.querySelectorAll",
+        html,
+        re.S,
+    )
+    assert function, "функция показа подробностей карточки не найдена"
+    body = function.group(0)
+
+    shown = body.index("tileCard.hidden = false;")
+    scrolled = body.index("tileCard.scrollIntoView({ block: 'start' });")
+    assert scrolled > shown, "карточку нужно показать до прокрутки к кнопке возврата"
+    assert '[id^="lhc-"] { scroll-margin-top: 76px; }' in html
+
+
+def test_lhc_grid_fix_is_present_in_every_installed_package_projection():
+    source = TOOL.read_bytes()
+    package = ROOT / "plugins/last-human-commit"
+    projections = {
+        "tools/lhc_grid.py": source,
+        "common/tools/lhc_grid.py": source.replace(b"src/common/", b"common/"),
+        "native/codex/tools/lhc_grid.py": source,
+        "native/codex/common/tools/lhc_grid.py": source.replace(b"src/common/", b"common/"),
+    }
+    for relative, expected in projections.items():
+        path = package / relative
+        assert path.is_file(), f"missing generated renderer: {path}"
+        assert path.read_bytes() == expected, f"generated renderer drift: {path}"
+
+
 def test_remaining_counter_and_done_share_one_layer():
     """«Осталось» and «Готово» answer the same question in the same layer."""
 
