@@ -103,6 +103,26 @@ again:
 - Leaves come from the existing plan. The report never invents leaves to look
   complete and never hides a leaf that was already started.
 
+## What a plan is not
+
+The plan is the report, the graph and the page generated from them. It is not a
+project archive. A plan does not carry:
+
+- a `receipts/` file per leaf, a `consumer-tests/` matrix per scenario, a
+  `research/` or `reviews/` folder, or any other directory of evidence;
+- a second copy of the plan in another format, another language or another
+  place;
+- a narrative of what was tried, what was considered and what was rejected.
+
+Everything a leaf needs in order to be understood and checked lives in the leaf:
+its description, its acceptance, the files it touches, its owner and its
+relations. The change log says what changed and how it was confirmed, once per
+change - not once per leaf.
+
+The plan is written once, before the work, and the work starts. Re-reading a
+plan that grew a directory tree is a sign that the plan was used as a place to
+put the work instead of as a way to start it.
+
 ## Where it lives
 
 Keep the current report under `## Plan` in the canonical task record, so it

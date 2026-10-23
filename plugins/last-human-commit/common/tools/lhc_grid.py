@@ -272,6 +272,10 @@ class Graph:
     title: str = "LHC · граф задач"
     goal: str = ""
     business_result: str = ""
+    # A task may carry several business results. Each one is a capability the
+    # user can touch by hand and check on its own; they are not merged into one
+    # and they are not the commits and the internal stages.
+    business_results: list[str] = field(default_factory=list)
     current_progress: str = ""
     external_waits: str = ""
     leaves: list[Leaf] = field(default_factory=list)
@@ -485,7 +489,13 @@ def parse_plan_report(text: str) -> Optional[Graph]:
             if key == "Цель":
                 graph.goal = value.strip()
             elif key == "Бизнес-результат":
-                graph.business_result = value.strip()
+                # Several results are allowed in one task: the line may be
+                # repeated, and every repeat is a result of its own.
+                result = value.strip()
+                if result:
+                    graph.business_results.append(result)
+                    if not graph.business_result:
+                        graph.business_result = result
             else:
                 graph.declared_leaves = _int_or_none(DECOMP_LEAVES_RE.search(value))
                 graph.declared_parallel = _int_or_none(DECOMP_PARALLEL_RE.search(value))
@@ -819,6 +829,11 @@ def parse_graph_json(document: Any) -> Graph:
     graph.title = str(document.get("title") or graph.title)
     graph.goal = str(document.get("goal") or "")
     graph.business_result = str(document.get("business_result") or "")
+    declared_results = document.get("business_results")
+    if isinstance(declared_results, list):
+        graph.business_results = [str(item).strip() for item in declared_results if str(item).strip()]
+    elif graph.business_result:
+        graph.business_results = [graph.business_result]
     graph.current_progress = str(document.get("current_progress") or "")
     graph.external_waits = str(document.get("external_waits") or "")
     graph.updated_at = str(document.get("updated_at") or "")
@@ -1209,8 +1224,45 @@ def build_metrics(graph: Graph) -> dict[str, Any]:
     anchor = _plan_anchor(graph)
     eta_from = now if anchor is None else anchor
     idle_minutes = max(0, now - anchor) if anchor is not None else 0
-    external_wait_unknown = bool(graph.external_waits.strip())
-    eta_known = not unknown_estimate_pending and not external_wait_unknown
+    # A closed leaf with an unknown duration, and a report that still mentions a
+    # wait, must not freeze the horizon forever: only a wait that is still
+    # waiting makes the finish unknown.
+    waiting_now = [
+        leaf for leaf in graph.leaves
+        if leaf.status in (STATUS_WAITING, STATUS_BLOCKED)
+    ]
+    # The report may still declare a wait that has been closed since; the
+    # declaration is a note, the live wait is what withholds the clock.
+    external_wait_declared = bool(graph.external_waits.strip())
+    external_wait_unknown = bool(waiting_now)
+    # The horizon is computable from the leaves that do have a duration. When
+    # some pending leaf has none, the bound is still shown - it is the known
+    # part - and marked as imprecise instead of being hidden behind "unknown".
+    pending_with_duration = [
+        leaf for leaf in graph.leaves
+        if leaf.status not in (STATUS_DONE, STATUS_DEFERRED)
+        and (leaf.estimate_min is not None or leaf.estimate_max is not None)
+    ]
+    eta_bounds_available = bool(pending_with_duration) or bool(waiting_now)
+    # A leaf that still waits for an external answer withholds the clock: the
+    # time of the answer is unknown, so the finish time is unknown whatever the
+    # durations are. A leaf that only has no duration does not: its known part
+    # is computed and shown, and the imprecision is named.
+    # A leaf that really waits (blocked or waiting) withholds the clock: the
+    # time of the answer is unknown, so the finish time is unknown whatever the
+    # durations are. A declared wait that no open leaf carries any more is a
+    # note on an otherwise known horizon, not a reason to hide the number.
+    eta_clock_available = eta_bounds_available and not external_wait_unknown
+    eta_known = eta_clock_available and not unknown_estimate_pending
+    # What makes the bound imprecise, in the words of the owner: a task whose
+    # duration is unknown is still open.
+    eta_imprecise_reasons = []
+    if unknown_estimate_pending:
+        eta_imprecise_reasons.append(
+            metrics_unknown_phrase(len(unknown_estimate_pending))
+        )
+    if external_wait_unknown:
+        eta_imprecise_reasons.append("срок внешнего ожидания не подтверждён")
     unfinished = max(0, headline_total - done - deferred)
 
     return {
@@ -1252,8 +1304,12 @@ def build_metrics(graph: Graph) -> dict[str, Any]:
         "blocked_unknown_count": len(blocked_unknown_ids),
         "blocked_known_minutes": blocked_known_minutes,
         "external_wait_unknown": external_wait_unknown,
-        "eta_clock_min": "" if not eta_known else format_clock((eta_from + int(round(eta_min))) % (24 * 60)),
-        "eta_clock_max": "" if not eta_known else format_clock((eta_from + int(round(eta_max))) % (24 * 60)),
+        "external_wait_declared": external_wait_declared,
+        "eta_clock_min": "" if not eta_clock_available else format_clock((eta_from + int(round(eta_min))) % (24 * 60)),
+        "eta_clock_max": "" if not eta_clock_available else format_clock((eta_from + int(round(eta_max))) % (24 * 60)),
+        "eta_bounds_available": eta_clock_available,
+        "eta_exact": eta_known,
+        "eta_imprecise_reasons": eta_imprecise_reasons,
         "eta_anchor_clock": "" if anchor is None else format_clock(anchor % (24 * 60)),
         "eta_anchor_idle_minutes": idle_minutes,
         "eta_overdue": bool(
@@ -1663,6 +1719,15 @@ def merged_navigation(product_items: tuple) -> str:
     return f'<nav class="lhc-nav" aria-label="Разделы">{links}</nav>'
 
 
+def metrics_unknown_phrase(count: int) -> str:
+    """How many leaves have no duration, in the words of the owner."""
+    if count == 1:
+        return "1 лист без оценки"
+    if count < 5:
+        return f"{count} листа без оценки"
+    return f"{count} листьев без оценки"
+
+
 def render_html(
     graph: Graph,
     metrics: dict[str, Any],
@@ -1677,26 +1742,37 @@ def render_html(
     # The number is the headline; the label and the hint are secondary.
     headline_total = metrics["headline_total"]
     progress_note = "по журналу волны" if metrics["use_live"] else "листьев"
-    if metrics["unknown_estimate_pending"] or metrics["external_wait_unknown"]:
-        remaining_label = "Известная часть работы"
-        uncertainties = []
-        if metrics["unknown_estimate_pending"]:
-            uncertainties.append(
-                f"Листьев без оценки — {metrics['unknown_estimate_pending']}"
-            )
-        if metrics["external_wait_unknown"]:
-            uncertainties.append("срок внешнего ожидания не подтверждён")
-        remaining_hint = "Неизвестно: " + "; ".join(uncertainties)
-    else:
-        remaining_label = "Осталось по плану"
-        remaining_hint = (
-            f"от {fmt_minutes(metrics['remaining_minutes_min'])} "
-            f"до {fmt_minutes(metrics['remaining_minutes_max'])}"
+    # The owner asked for this: a task with an unknown duration must not make
+    # the whole remainder "unknown". The known part is stated, and the
+    # imprecision is named next to it.
+    known_remainder = metrics["remaining_minutes_max"] > 0
+    # The label names what the time means: a plan with a leaf of unknown
+    # duration shows its known part, a plan with known durations shows the
+    # remainder. A wait makes the horizon imprecise, not the duration.
+    partly_unknown = bool(metrics["unknown_estimate_pending"])
+    remaining_label = "Известная часть работы" if partly_unknown else "Осталось по плану"
+    remaining_value = (
+        f"от {fmt_minutes(metrics['remaining_minutes_min'])} "
+        f"до {fmt_minutes(metrics['remaining_minutes_max'])}"
+    )
+    remaining_hint = remaining_value
+    uncertainties = []
+    if metrics["unknown_estimate_pending"]:
+        uncertainties.append(
+            f"Листьев без оценки — {metrics['unknown_estimate_pending']}"
         )
+    if metrics["external_wait_unknown"] or metrics["external_wait_declared"]:
+        uncertainties.append("срок внешнего ожидания не подтверждён")
+    if uncertainties:
+        remaining_hint = f"{remaining_value} · неточно: " + "; ".join(uncertainties)
+        if not known_remainder:
+            remaining_hint = "неизвестно · " + "; ".join(uncertainties)
     if metrics["external_wait_unknown"]:
         eta_hint = "Есть внешние ожидания без подтверждённого срока"
     elif metrics["unknown_estimate_pending"]:
-        eta_hint = f"{metrics['unknown_estimate_pending']} листьев без оценки"
+        eta_hint = (
+            f"неточно: {metrics['unknown_estimate_pending']} листьев без оценки"
+        )
     elif metrics["eta_anchor_clock"]:
         eta_hint = (
             f"отсчёт от последнего события {metrics['eta_anchor_clock']} · "
@@ -1740,8 +1816,7 @@ def render_html(
          STATUS_QUEUED, True, "unfinished"),
         ("Параллельность", f"{metrics['current_parallel']} / {metrics['slots']}",
          peak_hint, STATUS_RUNNING, False, "parallel"),
-        (remaining_label, fmt_minutes(metrics["remaining_minutes_max"]),
-         remaining_hint, STATUS_WAITING, False, "remaining"),
+        (remaining_label, remaining_value, remaining_hint, STATUS_WAITING, False, "remaining"),
         ("Прогноз финиша", eta_range or "Срок неизвестен",
          eta_hint, STATUS_DONE, False, "forecast"),
         ("Усилие", effort_value, effort_hint, STATUS_QUEUED, False, "effort"),
@@ -2461,10 +2536,13 @@ def render_html(
             f'<article class="brief-card brief-goal"><h2>Цель</h2>'
             f"<p>{escape(graph.goal)}</p></article>"
         )
-    if graph.business_result:
+    for index, result in enumerate(
+        graph.business_results or ([graph.business_result] if graph.business_result else [])
+    ):
+        heading = "Ожидаемый бизнес-результат" if index == 0 else f"Бизнес-результат {index + 1}"
         why_cards.append(
-            f'<article class="brief-card brief-result"><h2>Ожидаемый бизнес-результат</h2>'
-            f"<p>{escape(graph.business_result)}</p></article>"
+            f'<article class="brief-card brief-result"><h2>{escape(heading)}</h2>'
+            f"<p>{escape(result)}</p></article>"
         )
     if graph.current_progress:
         detail_cards.append(
@@ -3281,8 +3359,8 @@ def render_text(graph: Graph, metrics: dict[str, Any]) -> str:
     lines.append(SNAPSHOT_NOTE)
     if graph.goal:
         lines.append(f"Цель: {graph.goal}")
-    if graph.business_result:
-        lines.append(f"Бизнес-результат: {graph.business_result}")
+    for result in (graph.business_results or ([graph.business_result] if graph.business_result else [])):
+        lines.append(f"Бизнес-результат: {result}")
     scope = "по журналу волны" if metrics["use_live"] else "по листьям графа"
     lines.append(
         "Прогресс ({scope}): {done}/{total} готово ({pct}%) · в работе {running} · "
@@ -3307,7 +3385,7 @@ def render_text(graph: Graph, metrics: dict[str, Any]) -> str:
         )
     )
     lines.append(
-        "Прогноз: {work_label} {remaining} (от {minimum}), финиш {eta}. {anchor}".format(
+        "Прогноз: {work_label} {remaining} (от {minimum}), финиш {eta}. {anchor}{imprecise}".format(
             work_label=("известная активная часть" if metrics["unknown_estimate_pending"] or metrics["external_wait_unknown"] else "осталось"),
             remaining=fmt_minutes(metrics["remaining_minutes_max"]),
             minimum=fmt_minutes(metrics["remaining_minutes_min"]),
@@ -3317,6 +3395,25 @@ def render_text(graph: Graph, metrics: dict[str, Any]) -> str:
             anchor=("отсчёт от последнего события " + metrics["eta_anchor_clock"]
                     + f" · простой {fmt_minutes(metrics['eta_anchor_idle_minutes'])}"
                     if metrics["eta_anchor_clock"] else "остаток стартует сейчас"),
+                imprecise=(
+                    " · неточно: " + "; ".join(
+                        (
+                            [f"Листьев без оценки — {metrics['unknown_estimate_pending']}"]
+                            if metrics["unknown_estimate_pending"] else []
+                        )
+                        + (
+                            ["срок внешнего ожидания не подтверждён"]
+                            if metrics["external_wait_unknown"] or metrics["external_wait_declared"]
+                            else []
+                        )
+                    )
+                    if (
+                        metrics["unknown_estimate_pending"]
+                        or metrics["external_wait_unknown"]
+                        or metrics["external_wait_declared"]
+                    )
+                    else ""
+                ),
         )
     )
     if metrics["critical_path"] and metrics["critical_known"]:
@@ -3403,6 +3500,7 @@ def export_graph(graph: Graph) -> dict[str, Any]:
         "title": graph.title,
         "goal": graph.goal,
         "business_result": graph.business_result,
+        "business_results": list(graph.business_results),
         "current_progress": graph.current_progress,
         "external_waits": graph.external_waits,
         "slots": graph.slots,

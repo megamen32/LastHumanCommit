@@ -37,6 +37,24 @@ survives compaction and the Overseer can read it. The report is the answer: do n
 describe the format, and do not substitute a file list, a task-card dump or a
 story about what you did for where the plan stands.
 
+**The plan is a working instrument, not a deliverable.** It is the report, the
+graph and the page the hook generates from them - three views of one thing. A
+plan does not grow directories: no `receipts/` per leaf, no `consumer-tests/`
+matrices, no `research/` or `reviews/` folders, no evidence file per leaf, no
+second copy of the plan in another shape. What a leaf needs in order to be
+understood lives in the leaf itself: its description, its acceptance, the files
+it touches. A fact that nobody reads and no gate checks does not belong to the
+plan.
+
+**A test earns its place by a measured defect.** A test is written when a defect
+was found and measured, and it protects that defect. A test that restates the
+implementation is ballast: it slows every cycle and catches nothing. LHC is
+mostly instructions, so a suite of a thousand tests is a thousand ways of saying
+that the instructions were read. The gates that matter are few: the manifests
+agree on the version, the plan and the graph agree on the leaves, the page shows
+the state and opens a task, and the plan says what it is for in one sentence
+each. Keep those, and let the rest go.
+
 The Overseer reads that report against the original request and the accepted
 business canary and returns the smallest correction — see
 `common/agents/Overseer.md`. It is a zero-knowledge guide, not a gate: it never

@@ -234,7 +234,13 @@ class GraphJsonTests(unittest.TestCase):
         self.assertIn('отсчёт от последнего события 15:19', html)
         self.assertIn('срок прошёл', html)
 
-    def test_external_wait_withholds_clock_eta_and_round_trips(self):
+    def test_a_declared_external_wait_makes_the_horizon_imprecise(self):
+        """A declared wait is a note; a leaf that waits is what hides the clock.
+
+        The owner asked for the known number with a note that it is imprecise,
+        instead of "the duration is unknown" while the task is already closed.
+        A wait that no open leaf carries any more must not freeze the horizon.
+        """
         graph = lhc.parse_graph_json({
             'schema_version': 2,
             'external_waits': 'Ждём подтверждения владельца; срок неизвестен.',
@@ -243,11 +249,25 @@ class GraphJsonTests(unittest.TestCase):
         })
         with patch.object(lhc, 'now_clock', return_value=17 * 60):
             metrics = lhc.build_metrics(graph)
-        self.assertEqual(metrics['eta_clock_max'], '')
-        self.assertTrue(metrics['external_wait_unknown'])
-        self.assertIn('неизвестен из-за внешнего ожидания', lhc.render_text(graph, metrics).lower())
+        self.assertTrue(metrics['external_wait_declared'])
+        self.assertFalse(metrics['external_wait_unknown'])
+        self.assertNotEqual(metrics['eta_clock_max'], '')
+        self.assertIn('срок внешнего ожидания не подтверждён', lhc.render_text(graph, metrics).lower())
         self.assertEqual(lhc.parse_graph_json(lhc.export_graph(graph)).external_waits,
                          'Ждём подтверждения владельца; срок неизвестен.')
+
+    def test_a_leaf_that_waits_still_withholds_the_clock(self):
+        """When the plan really waits, the finish time is unknown - and says so."""
+        graph = lhc.parse_graph_json({
+            'schema_version': 2,
+            'external_waits': 'Ждём подтверждения владельца.',
+            'tasks': [{'id': 'wait', 'label': 'Wait', 'status': 'waiting', 'depends_on': [],
+                       'estimate_minutes': {'minimum': 5, 'maximum': 5}}],
+        })
+        with patch.object(lhc, 'now_clock', return_value=17 * 60):
+            metrics = lhc.build_metrics(graph)
+        self.assertEqual(metrics['eta_clock_max'], '')
+        self.assertTrue(metrics['external_wait_unknown'])
 
     def test_declared_model_class_survives_the_round_trip(self):
         graph = lhc.parse_graph_json({

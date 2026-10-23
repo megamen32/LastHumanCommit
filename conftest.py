@@ -81,3 +81,56 @@ def pytest_unconfigure(config) -> None:
         raise RuntimeError(f"refusing to clean escaped pytest root: {basetemp}") from error
     if basetemp.name.startswith("pytest-") and basetemp.is_dir():
         shutil.rmtree(basetemp)
+
+
+# --------------------------------------------------------------------------
+# The long lane
+#
+# The suite has two lanes. The fast lane is the work loop: it must finish in
+# seconds, because a plan is written and the work starts in the same breath.
+# The long lane is the cases that drive an external process - a CLI
+# subprocess, a git operation, a live reviewer chain - and are measured at or
+# above half a second each.
+#
+# These files are the long lane, measured with `pytest tests -q --durations=0`:
+#
+#   test_outcome_contract.py        237 items   255 s
+#   test_native_milestone_gate.py    72 items    85 s
+#   test_testing_evidence_reuse.py   59 items    38 s
+#   test_codex_lifecycle_delivery.py 34 items   21 s
+#   test_autonomy_evidence.py        27 items   19 s
+#   test_learning_checkpoint.py      11 items    16 s
+#   test_product_root_review.py      11 items   12 s
+#   test_project_mapping.py          29 items   11 s
+#   test_main_permission_scope.py    25 items    8 s
+#   test_time_guard_active_integration.py  9 items  8 s
+#   test_source_publication.py       17 items    8 s
+#   test_zcode_native_lifecycle.py   11 items    8 s
+#   test_worktree.py                 12 items    7 s
+#   test_time_guard.py                8 items    6 s
+#
+# None of these cases is deleted: every gate still runs, on the schedule. The
+# work loop stops paying for them.
+LONG_LANE_FILES = {
+    "test_outcome_contract.py",
+    "test_native_milestone_gate.py",
+    "test_testing_evidence_reuse.py",
+    "test_codex_lifecycle_delivery.py",
+    "test_autonomy_evidence.py",
+    "test_learning_checkpoint.py",
+    "test_product_root_review.py",
+    "test_project_mapping.py",
+    "test_main_permission_scope.py",
+    "test_time_guard_active_integration.py",
+    "test_source_publication.py",
+    "test_zcode_native_lifecycle.py",
+    "test_worktree.py",
+    "test_time_guard.py",
+}
+
+
+def pytest_collection_modifyitems(config, items):
+    """Put the long lane into the nightly marker, by the file that owns it."""
+    for item in items:
+        if item.path.name in LONG_LANE_FILES:
+            item.add_marker("nightly")

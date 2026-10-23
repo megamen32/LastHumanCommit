@@ -1,3 +1,38 @@
+# 1.5.44 - the task opens where the owner taps it, the plan says what it is, and the suite is two lanes
+
+Three things the owner asked for, in the order he asked them.
+
+**The plan says what the work is for, and how much of it is known.** The
+remainder of a plan is not "unknown" because one leaf has no duration: the
+known part is stated, and the imprecision is named next to it. A wait that no
+open leaf carries any more is a note on a known horizon, not a reason to hide
+the number. A leaf that really waits - blocked or waiting - still withholds the
+clock, because the time of the answer is unknown whatever the durations are.
+
+**Several business results in one task.** A task may deliver more than one
+capability the user can touch by hand and check on its own. The report may
+repeat the line "Бизнес-результат:", and every repeat is a result of its own:
+the graph carries the list, the dashboard shows a card per result, and the text
+view prints them one per line. The means - the commits, the internal stages -
+are not results.
+
+**The plan is an instrument, not an archive.** A plan does not grow
+directories: no receipts per leaf, no consumer-test matrices, no research or
+reviews folders, no second copy of the plan in another shape. What a leaf needs
+in order to be understood lives in the leaf. A test earns its place by a
+measured defect; a test that only restates the implementation is ballast.
+
+**The suite is two lanes.** The work loop must finish in seconds. The cases
+that drive an external process - a CLI subprocess, a git operation, a live
+reviewer chain - are the long lane and run on the schedule: 1190 cases in 553
+seconds before, 616 cases in 38 seconds now, and no gate was deleted. The
+marker `nightly` already existed in pytest.ini; it was never applied to the
+cases that needed it.
+
+**The projection is a command.** `scripts/publish_package.py` republishes the
+generated package copies from the canonical sources, so a change in the canon no
+longer leaves the package stale and the projection gate red.
+
 # 1.5.43 - unknown durations are named, not drawn as zero
 
 A plan whose leaves carry no estimate no longer shows a minute axis on the Gantt, and the effort, critical path, remainder and planned peak say "unknown" instead of "0 min". The known subtotal and the count of the missing estimates are kept, and the counts that are really known stay exact.
