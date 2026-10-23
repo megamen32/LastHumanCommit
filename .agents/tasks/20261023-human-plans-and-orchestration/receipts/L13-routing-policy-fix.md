@@ -43,7 +43,7 @@ policy не менялись.
   преобразования: `src/common/` → `common/`, а
   `../../config/model-routing.example.json` → `references/model-routing.example.json`.
 - GREEN: `pytest -q tests/test_business_first_contract.py tests/test_model_routing_delegation_policy.py`
-  — 34 passed.
+  — 35 passed.
 - `python3 plugins/last-human-commit/scripts/sync_skills.py --check` —
   `parity: PASS (25 skills)`.
 - Поиск абсолютных старых формулировок в canonical router/agent/skill sources
