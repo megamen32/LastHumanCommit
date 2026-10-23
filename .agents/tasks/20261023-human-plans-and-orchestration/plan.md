@@ -1,14 +1,23 @@
 Граф задач: Last Human Commit: понятный план до проверки результата
-Ревизия плана: fff970c0fc97
+Ревизия плана: 629dfaef89a2
 Это снимок плана, а не панель управления: фактическое состояние работы приходит из API владельцев, а не из пересказа агента в графе.
 Цель: выпустить native LHC, который помогает Lead-у вести понятный русскоязычный план от понимания запроса до проверки результата.
 Бизнес-результат: в установленном LHC пользователь читает понятный русский план: какой результат получит, кто что сделает и как проверить; статусы и квитанции показаны отдельно.
-Прогресс (по листьям графа): 6/12 готово (50.0%) · в работе 0 · заблокировано 0 · осталось 6
-Листьев в графе: 12 · слотов: 3 · волн: 11
+Прогресс (по листьям графа): 14/18 готово (77.8%) · в работе 0 · заблокировано 2 · осталось 4
+Листьев в графе: 18 · слотов: 3 · волн: 14
 Параллельность: сейчас 0 из 3 слотов, пик по плану 2
-Прогноз: осталось 2 ч 40 мин (от 1 ч 50 мин), финиш 12:35–13:25. отсчёт от последнего события 10:45 · простой 0 мин
+Прогноз: известная активная часть 40 мин (от 25 мин), финиш неизвестен из-за внешнего ожидания. отсчёт от последнего события 14:20 · простой 0 мин
 Критический путь: понятный выбор режима и план до реализации → полный цикл выбран по объёму и риску → Lead выбирает короткий или полный цикл и заранее показывает человеку план → длинное описание и список файлов видны в плане → исполнители передают подробный результат в файлах → все входы ведут к плану и проверке результата → читатель понимает пользу, статус, доказательства и следующий шаг → замечания читателя устранены и результат понятен повторно → новые файлы сохраняются и старые планы открываются → установленная версия совпадает с проверенным выпуском → полный цикл завершается независимой проверкой установленной версии
-Листья плана (12):
+Блокеры:
+  - Почему ждём: Старая установленная consumer-попытка была остановлена до acceptance после конфликта двух менеджеров загрузчиков.
+    Кто делает: Lead координирует устранение при выпуске L15.
+    Следующий шаг: Завершить независимую проверку L14, выпустить/readback 1.5.39 в L15, затем провести новый browser acceptance в L16.
+    Нужен ли человек: Нет. Не требуется; продолжить уже выданное поручение.
+  - Почему ждём: Старая установленная consumer-попытка была остановлена до acceptance после конфликта двух менеджеров загрузчиков.
+    Кто делает: Lead координирует устранение при выпуске L15.
+    Следующий шаг: Завершить независимую проверку L14, выпустить/readback 1.5.39 в L15, затем провести новый browser acceptance в L17.
+    Нужен ли человек: Нет. Не требуется; продолжить уже выданное поручение.
+Листья плана (18):
   - L01 · ✅ Готово · (понятный выбор режима и план до реализации) · оценка 25 мин · усилие не измерено · волна 1 · зависит: —
       Описание задачи: Lead сверил источник правил, реальную классификацию короткого и полного циклов, ограничения task graph, обновление пакета и независимые отзывы. Stage 2 blind comparison ExManager подтверждает, что бизнес-результат нельзя заменять публикацией, кодами этапов или тестовыми статусами.
       Приёмка: Подтверждены первичными файлами конфликт quickfix/fullcycle, принудительные текстовые лимиты, схема export/render/check и генерация native-проекций. Итог записан в research receipts; ExManager runtime не проверялся и его источники не менялись.
@@ -33,27 +42,50 @@
       Описание задачи: Bring the native entrypoints, short-route aliases and harness templates back to one canonical workflow so none tells a Lead or assigned Worker to skip a required plan or consumer proof.
       Приёмка: The source entrypoints and generated package copies all explain mode selection, Lead plan ownership, file-based handoff and the mode-appropriate independent tester count. Generated files are refreshed from their canonical sources, not edited as a second source.
       Затрагиваемые файлы: `src/common/templates/project-router.md`, `adapters/codex/templates/subagent.md`, `adapters/claude-code/templates/subagent.md`, `adapters/zcode/templates/subagent.md`, `adapters/hermes/templates/subagent.md`
-  - L07 · ⋯ В очереди · (читатель понимает пользу, статус, доказательства и следующий шаг) · оценка 20 мин · усилие не измерено · волна 7 · зависит: L06
+  - L07 · ✅ Готово · (читатель понимает пользу, статус, доказательства и следующий шаг) · оценка 20 мин · усилие не измерено · волна 7 · зависит: L06
       Описание задачи: Read the rendered plan without the source conversation, then report what a person would believe is available, who changes what, how to verify it and what remains unknown.
       Приёмка: The reader names the customer-visible result and a reproducible input/action/visible-output check. The reader does not treat source publication, a task count or a green test as user acceptance.
       Затрагиваемые файлы: `.agents/tasks/20261023-human-plans-and-orchestration/reviews/plan-review-final.md`
-  - L08 · ⋯ В очереди · (замечания читателя устранены и результат понятен повторно) · оценка 15 мин–25 мин · усилие не измерено · волна 8 · зависит: L07
+  - L08 · ✅ Готово · (замечания читателя устранены и результат понятен повторно) · оценка 15 мин–25 мин · усилие не измерено · волна 8 · зависит: L07
       Описание задачи: Use the independent reader's concrete obstacles to fix the source fields, labels or renderer that caused them, then rebuild the candidate plan from the corrected rules.
       Приёмка: Every supported reader finding is fixed or documented as an unresolved external condition. The Lead records why; no user requirement is quietly weakened.
       Затрагиваемые файлы: `human-facing plan and workflow sources called out by the reader`
-  - L09 · ⋯ В очереди · (новые файлы сохраняются и старые планы открываются) · оценка 25 мин–40 мин · усилие не измерено · волна 9 · зависит: L08
+  - L09 · ✅ Готово · (новые файлы сохраняются и старые планы открываются) · оценка 25 мин–40 мин · усилие не измерено · волна 9 · зависит: L08
       Описание задачи: Check the changed schema and real roundtrip behavior against an old plan and a new plan with long descriptions, affected files and separate evidence fields; exercise every new R01–R08 renderer regression fixture.
       Приёмка: Old fixtures remain readable; new details survive export, merge, render and check. Automated coverage detects missing embedded fields, dangling anchors, mixed blocker history, conflicting/zero forecasts, unreproducible acceptance text, done-versus-user-outcome confusion, English/jargon and incomplete/truncated dependency maps. The receipt records exact commands/results and does not claim browser or installed acceptance.
       Затрагиваемые файлы: `.agents/tasks/20261023-human-plans-and-orchestration/receipts/L09.md`
-  - L10 · ⋯ В очереди · (установленная версия совпадает с проверенным выпуском) · оценка 25 мин–35 мин · усилие не измерено · волна 10 · зависит: L09
+  - L10 · ✅ Готово · (установленная версия совпадает с проверенным выпуском) · оценка 25 мин–35 мин · усилие не измерено · волна 10 · зависит: L09
       Описание задачи: Generate, validate, publish and independently read back the new native package through the current LHC release procedure; reconcile the existing main history first.
       Приёмка: The published package version and commit match the verified source, and Fleet installed-package readback confirms the same version. This does not claim that already-running sessions have reloaded.
       Затрагиваемые файлы: `plugins/last-human-commit/`, `package.json`, `native publication metadata`
-  - L11 · ⋯ В очереди · (короткая задача завершается планом Lead-а и файловой передачей результата) · оценка 20 мин–30 мин · усилие не измерено · волна 11 · зависит: L10
-      Описание задачи: Use the installed package in a fresh native agent session on a harmless bounded task with a long description and affected_files. Follow the generated plan, verify the small outcome and hand off through the assigned Worker result file. Open plan.html in a browser and inspect actual cards and internal links.
-      Приёмка: The tester independently finds the Lead-owned plan before implementation, reads the user benefit and exact check, and resumes from the handoff file without chat. In browser open → snapshot, the task details, all available field content, affected-file list and linked targets are visible, and the test outcome is distinguishable from user acceptance. JSON-only checks do not satisfy this leaf.
-      Затрагиваемые файлы: `.agents/tasks/20261023-human-plans-and-orchestration/fixtures/short/`, `.agents/tasks/20261023-human-plans-and-orchestration/receipts/L11.md`
-  - L12 · ⋯ В очереди · (полный цикл завершается независимой проверкой установленной версии) · оценка 25 мин–40 мин · усилие не измерено · волна 11 · зависит: L10
-      Описание задачи: Use a second independent fresh installed LHC session to run a meaningful full-cycle fixture from user intent to a checked result, with assigned roles, two independent end checks and file-based progress/result handoff. Open the generated plan.html in a browser and inspect the visible sections, task cards, fragment links and acceptance scenario.
-      Приёмка: The tester sees a Lead-owned plan before work and follows its visible dependencies. Browser open → snapshot confirms the expected data is actually rendered, links land on targets, blockers/history and forecasts are honest, Russian labels do not inflate task-count readiness, and the human test can be reproduced. Source/installed/publication/test evidence remains separate from consumer acceptance. The receipt cites only this tester's own observed artifacts.
-      Затрагиваемые файлы: `.agents/tasks/20261023-human-plans-and-orchestration/fixtures/full/`, `.agents/tasks/20261023-human-plans-and-orchestration/receipts/L12.md`
+  - L11 · ⛔ Заблокировано · (короткая задача завершается проверкой установленного плана) · оценка 20 мин–30 мин · усилие не измерено · волна 11 · зависит: L10 · блокер: конфликт двух менеджеров загрузчиков; есть BLOCKED receipt; оценка 20–30 минут
+      Описание задачи: Сохранить результат старой попытки на установленном до исправления состоянии. Не выдавать её за выполненную и не смешивать с новой проверкой на 1.5.39.
+      Приёмка: Старый прогон остаётся BLOCKED, не PASS; Tester A сохранил BLOCKED receipt. Новый independent browser test проходит отдельным листом L16.
+      Затрагиваемые файлы: `.agents/tasks/20261023-human-plans-and-orchestration/receipts/L11.md`, `.agents/tasks/20261023-human-plans-and-orchestration/fixtures/short/`
+  - L12 · ⛔ Заблокировано · (полный цикл завершается независимой проверкой установленной версии) · оценка 25 мин–40 мин · усилие не измерено · волна 11 · зависит: L10 · блокер: конфликт двух менеджеров загрузчиков; оценка 25–40 минут
+      Описание задачи: Сохранить результат второй старой попытки, у которой браузерная проверка не завершена. Её не засчитывать вместо нового полного consumer-прогона.
+      Приёмка: У Tester B браузерная проверка не завершена; старый статус BLOCKED, не PASS. Новое browser-тестирование на 1.5.39 проходит отдельным листом L17.
+      Затрагиваемые файлы: `.agents/tasks/20261023-human-plans-and-orchestration/receipts/L12.md`, `.agents/tasks/20261023-human-plans-and-orchestration/fixtures/full/`
+  - L13 · ✅ Готово · (Lead может делегировать исполнителя с проверенным родительским контекстом) · оценка — · усилие не измерено · по часам 8 мин · волна 11 · зависит: L10
+      Описание задачи: До изменения policy обычная делегация была запрещена без исключения для явно ограниченного полномочия Lead, а свежий Zero Knowledge контекст рекомендовался каждому независимому subtask. Теперь обычный Worker использует проверенные факты и контекст задачи; ограниченный child разрешён при явном полномочии Lead и сохранении scope/ownership/dependency/acceptance; blind контекст остаётся независимым ролям, когда он нужен для приёмки.
+      Приёмка: Commit `3eb3142c3c648e869e6c9273c313dc0db07184a0` содержит source fix; `pytest -q tests/test_business_first_contract.py tests/test_model_routing_delegation_policy.py` — 35 passed; `python3 plugins/last-human-commit/scripts/sync_skills.py --check` — parity PASS (25 skills). Receipt подтверждает canonical router `AGENTS.md` (путь `src/AGENTS.md` отсутствует), canonical Lead/Worker/model-routing source и сгенерированные LHC copies. Менеджер runtime не доказывает точный session-loaded entrypoint; consumer workflow подтверждён отдельным листом L18.
+      Затрагиваемые файлы: `AGENTS.md`, `CLAUDE.md`, `src/common/agents/Lead.md`, `src/common/agents/Worker.md`, `src/common/skills/model-routing/SKILL.md`, `skills/model-routing/SKILL.md`, `plugins/last-human-commit/AGENTS.md`, `plugins/last-human-commit/CLAUDE.md`, `plugins/last-human-commit/common/agents/Lead.md`, `plugins/last-human-commit/common/agents/Worker.md`, `plugins/last-human-commit/common/skills/model-routing/SKILL.md`, `plugins/last-human-commit/skills/model-routing/SKILL.md`, `plugins/last-human-commit/native/codex/AGENTS.md`, `plugins/last-human-commit/native/codex/CLAUDE.md`, `plugins/last-human-commit/native/codex/common/agents/Lead.md`, `plugins/last-human-commit/native/codex/common/agents/Worker.md`, `plugins/last-human-commit/native/codex/common/skills/model-routing/SKILL.md`, `plugins/last-human-commit/native/codex/skills/model-routing/SKILL.md`, `tests/test_model_routing_delegation_policy.py`, `.agents/tasks/20261023-human-plans-and-orchestration/receipts/L13-routing-policy-fix.md`
+  - L14 · ✅ Готово · (исправление проходит независимую adversarial-проверку) · оценка Срок неизвестен · усилие не измерено · по часам 2 мин · волна 12 · зависит: L13
+      Описание задачи: Независимый reviewer проверил явное bounded-поручение, обычный проверенный parent context и fresh/zero-knowledge для blind роли. Итог получен в native Codex-сессии `01a1668f-87cf-7fc3-afa7-140802031c39`; отдельного receipt-файла нет.
+      Приёмка: Обе policy-семантики оценены PASS; повторный pytest дал 34 passed, а `sync_skills.py --check` — parity PASS (25 skills). Обнаружен один regression-test gap: `tests/test_model_routing_delegation_policy.py:35` не перечисляет native Codex copies, поэтому сам pytest не ловит дрейф этих copies; отдельный штатный `--check` native facet покрывает. Package divergence не найден. Вывод review не проверял release/browser.
+  - L15 · ✅ Готово · (исправленный source выпускается и читается как native LHC 1.5.39) · оценка Срок неизвестен · усилие не измерено · волна 13 · зависит: L14
+      Описание задачи: Выпустить patch 1.5.39 из проверенного source, устранить неоднозначность двух текущих менеджерских записей и выполнить независимый installed readback.
+      Приёмка: Release receipt подтверждает 1.5.39 installed/enabled в `megamen32-plugins` и прежний 1.5.36 installed/disabled в `fleet-lhc`, с provenance и installed file hashes. Точный per-session loaded entrypoint manager не показывает и он остаётся UNKNOWN. Полный suite: 1176 passed, 5 известных failures из-за отсутствующего внешнего Mac fixture; тестов ExManager не запускали. Старые consumer-прогоны не являются приёмкой.
+      Затрагиваемые файлы: `plugins/last-human-commit/`, `package.json`, `.agents/tasks/20261023-human-plans-and-orchestration/receipts/L15-release-1.5.39.md`
+  - L16 · ⋯ В очереди · (короткий установленный сценарий принят в браузере) · оценка Срок неизвестен · усилие не измерено · волна 14 · зависит: L15
+      Описание задачи: Независимый consumer запускает короткую harmless задачу в новой native agent-сессии с установленным LHC 1.5.39 и осматривает фактический plan.html в браузере.
+      Приёмка: Пользовательская цель/план понятны до реализации; результат, статусы и доказательства разделены; браузер подтверждает видимые поля и рабочие ссылки. Фиксируются только наблюдения этой новой сессии.
+      Затрагиваемые файлы: `.agents/tasks/20261023-human-plans-and-orchestration/fixtures/short-1.5.39/`, `.agents/tasks/20261023-human-plans-and-orchestration/receipts/L16.md`
+  - L17 · ⋯ В очереди · (полный цикл независимо принят в браузере) · оценка Срок неизвестен · усилие не измерено · волна 14 · зависит: L15
+      Описание задачи: Второй независимый consumer запускает содержательный fullcycle в отдельной новой native agent-сессии, проверяет handoff и осматривает итоговый plan.html в браузере.
+      Приёмка: Две независимые финальные проверки выполнены в реальном сценарии; видны данные, ссылки, зависимости, честные неизвестные и следующий шаг. Никакие source/unit результаты не подменяют browser acceptance.
+      Затрагиваемые файлы: `.agents/tasks/20261023-human-plans-and-orchestration/fixtures/full-1.5.39/`, `.agents/tasks/20261023-human-plans-and-orchestration/receipts/L17.md`
+  - L18 · ✅ Готово · (workflow Tester проверяет полномочия делегации и родительский контекст) · оценка Срок неизвестен · усилие не измерено · волна 14 · зависит: L15
+      Описание задачи: Отдельный Tester следует точному bounded-delegation сценарию на установленном LHC, включая передачу Worker проверенного контекста и отдельную blind independent роль.
+      Приёмка: Проверенный parent context доступен обычному Worker; явное bounded поручение Lead не запрещает допустимого subagent; fresh/zero-knowledge применяется к blind роли и не навязывается всем исполнителям. Worker создал заметку в своей исключительной области, после подтверждённого `agent thread limit reached` Lead разрешил один retry существующего Worker, тот создал единственного Child для чеклиста; Child завершился без потомков. Tester прочитал оба понятных русскоязычных файла. Точный session-loaded entrypoint остаётся UNKNOWN. Подтверждение: `consumer-tests/post1539-independent-direct/tester-report.md`.
+      Затрагиваемые файлы: `.agents/tasks/20261023-human-plans-and-orchestration/receipts/L18-workflow-tester.md`
