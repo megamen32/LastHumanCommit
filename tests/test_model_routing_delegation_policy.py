@@ -71,9 +71,15 @@ def test_generated_native_package_matches_routing_policy_sources():
             "src/common/skills/model-routing/SKILL.md",
             "plugins/last-human-commit/skills/model-routing/SKILL.md",
         ),
+        (
+            "src/common/skills/plan-artifacts/SKILL.md",
+            "plugins/last-human-commit/skills/plan-artifacts/SKILL.md",
+        ),
     ):
         expected = (ROOT / source).read_bytes()
-        if source.startswith("src/common/") and not source.endswith("last-human-commit/SKILL.md"):
+        if source.startswith("src/common/") and not source.endswith(
+            ("last-human-commit/SKILL.md", "plan-artifacts/SKILL.md")
+        ):
             expected = expected.replace(b"src/common/", b"common/")
         if source.endswith("model-routing/SKILL.md"):
             expected = expected.replace(
@@ -120,6 +126,11 @@ def test_native_codex_copies_match_canonical_routing_policy_sources(tmp_path):
             "src/common/skills/model-routing/SKILL.md",
             "plugins/last-human-commit/native/codex/skills/model-routing/SKILL.md",
             routing_rewrites,
+        ),
+        (
+            "src/common/skills/plan-artifacts/SKILL.md",
+            "plugins/last-human-commit/native/codex/skills/plan-artifacts/SKILL.md",
+            (),
         ),
     )
 

@@ -84,6 +84,28 @@ def test_the_skill_alone_carries_the_mode_table_and_its_rule():
     assert 'council' in flat(skill)
 
 
+def test_natural_russian_project_plan_requests_create_the_plan_artifacts():
+    skill = (ROOT / 'src/common/skills/last-human-commit/SKILL.md').read_text()
+    planning = (ROOT / 'src/common/skills/plan-artifacts/SKILL.md').read_text()
+    instructions = flat(skill + '\n' + planning)
+
+    for request in (
+        'составь план',
+        'сделай план проекта',
+        'помоги спланировать работу',
+        'план проекта',
+        'план работ',
+    ):
+        assert request in instructions
+
+    assert 'Load the `plan-artifacts` skill' in flat(skill)
+    assert 'user-readable task record' in instructions
+    assert '`plan.graph.json`' in instructions
+    assert '`plan.html`' in instructions
+    assert 'explicit request for a rough, prose-only sketch in the chat' in flat(skill)
+    assert 'one short file is not a request for a project plan' in flat(skill)
+
+
 def test_the_skill_alone_states_the_language_rule():
     skill = SKILL.read_text()
     assert 'Internal reasoning and coordination may use any language' in flat(skill)

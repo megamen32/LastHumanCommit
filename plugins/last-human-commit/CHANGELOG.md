@@ -1,3 +1,10 @@
+# 1.5.41 - Russian project-plan requests route to the full plan artifacts
+
+Natural requests such as «составь план» and «помоги спланировать работу» now
+select the project-plan workflow and create the task record, graph and HTML.
+Explicit chat-only sketches and short single-file writing requests stay outside
+that project-plan trigger.
+
 # 1.5.40 - Direct work by default, bounded delegation when it helps
 
 For one concrete task with one result, the Lead assigns one Worker directly.

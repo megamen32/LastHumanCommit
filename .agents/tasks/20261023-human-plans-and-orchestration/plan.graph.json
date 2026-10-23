@@ -3,10 +3,10 @@
   "title": "Last Human Commit: понятный план до проверки результата",
   "goal": "выпустить native LHC, который помогает Lead-у вести понятный русскоязычный план от понимания запроса до проверки результата.",
   "business_result": "в установленном LHC пользователь читает понятный русский план: какой результат получит, кто что сделает и как проверить; статусы и квитанции показаны отдельно.",
-  "current_progress": "L01–L10, L13–L15 и L18 завершены по receipts. L13: source fix commit 3eb3142c3c648e869e6c9273c313dc0db07184a0, 35 targeted tests passed, sync parity 25 skills. L15: 1.5.39 installed/enabled; прежний 1.5.36 installed/disabled. L18: независимый direct workflow test прошёл после первичного slot-limit отказа и единственного retry тем же Worker. Точный per-session loaded entrypoint остаётся UNKNOWN. Полная suite: 1176 passed, 5 известных failures из-за отсутствующего внешнего Mac fixture; ExManager tests не запускались. L11/L12 сохраняют BLOCKED; L16/L17 ожидают независимые installed browser checks.",
-  "external_waits": "L16/L17: независимые installed browser checks короткого и полного сценариев. Точный entrypoint, загруженный текущей сессией, UNKNOWN по manager readback.",
+  "current_progress": "L01–L10, L13–L15, L18 и L19 подтверждены receipts. L19: commit 4fafcc5bf48e558c4b8c38f224198b89c3b31819 на origin/main; 45 targeted tests, sync parity 25 skills и package validator PASS. Marketplace manager показывал 1.5.40 installed/enabled; fleet-lhc 1.5.36 остался installed/disabled. L20 сейчас исправляет недостающий русский auto-routing trigger; 15 routing/parity tests и source/package checks PASS. L20 подготовил LHC 1.5.41 manifests. L11/L12 — прежние BLOCKED. L16 короткая запись без project-plan запроса и L17 явная просьба о плане — два fresh 1.5.40 user-path receipts; оба сохранены, L17 не создал plan.html. Точный session-loaded entrypoint UNKNOWN. Ранее full suite: 1176 passed и 5 известных failures из-за отсутствующего внешнего Mac fixture. ExManager tests не запускались.",
+  "external_waits": "После L20 release и manager readback на установленном 1.5.41 Lead повторит два раздельных fresh user paths: L16 подтверждает короткую однофайловую просьбу без project-plan bundle, L17 — просьбу о проектном плане с task record/graph/HTML и browser acceptance. Предыдущие L16/L17 receipts остаются неизменными и не считаются новым acceptance.",
   "slots": 3,
-  "updated_at": "2026-10-23T13:00:51",
+  "updated_at": "2026-10-23T13:31:40",
   "tasks": [
     {
       "id": "L01",
@@ -648,16 +648,16 @@
     },
     {
       "id": "L16",
-      "label": "короткий установленный сценарий принят в браузере",
+      "label": "короткая запись в один файл не запускает план проекта",
       "status": "queued",
       "depends_on": [
-        "L15"
+        "L20"
       ],
-      "acceptance": "Пользовательская цель/план понятны до реализации; результат, статусы и доказательства разделены; браузер подтверждает видимые поля и рабочие ссылки. Фиксируются только наблюдения этой новой сессии.",
-      "description": "Независимый consumer запускает короткую harmless задачу в новой native agent-сессии с установленным LHC 1.5.39 и осматривает фактический plan.html в браузере.",
+      "acceptance": "Памятка доступна на указанном пользователем пути; в новом output folder нет task record, `plan.graph.json` и `plan.html`, поскольку проектный план не просили. Браузер не требуется для этого пути. Результат и точный установленный путь версии фиксируются в отдельной новой квитанции; старые L16 receipts остаются нетронутыми.",
+      "description": "В новой сессии Lead повторяет короткую просьбу только создать одну Markdown-памятку, без просьбы составлять план проекта. Проверяет, что файл создан понятным русским, а project-plan bundle не создавался. Предыдущий user-path receipt 1.5.40 сохранён как история в `consumer-tests/L16-short-installed/receipt.md` и не считается повторным результатом.",
       "affected_files": [
-        ".agents/tasks/20261023-human-plans-and-orchestration/fixtures/short-1.5.39/",
-        ".agents/tasks/20261023-human-plans-and-orchestration/receipts/L16.md"
+        ".agents/tasks/20261023-human-plans-and-orchestration/consumer-tests/L16-short-1.5.41/",
+        ".agents/tasks/20261023-human-plans-and-orchestration/consumer-tests/L16-short-installed/receipt.md"
       ],
       "role": "независимый consumer короткого сценария",
       "estimate_unknown_reason": "Lead не задавал оценку новой короткой consumer/browser-сессии.",
@@ -677,16 +677,15 @@
     },
     {
       "id": "L17",
-      "label": "полный цикл независимо принят в браузере",
+      "label": "просьба спланировать проект создаёт страницу для браузерной приёмки",
       "status": "queued",
       "depends_on": [
-        "L15"
+        "L20"
       ],
-      "acceptance": "Две независимые финальные проверки выполнены в реальном сценарии; видны данные, ссылки, зависимости, честные неизвестные и следующий шаг. Никакие source/unit результаты не подменяют browser acceptance.",
-      "description": "Второй независимый consumer запускает содержательный fullcycle в отдельной новой native agent-сессии, проверяет handoff и осматривает итоговый plan.html в браузере.",
+      "acceptance": "Свежая сессия использует установленный LHC 1.5.41 и создаёт `task.md`, `plan.graph.json`, `plan.html` (и generated `plan.md`). Browser snapshot подтверждает видимые поля и переходы по ссылкам. Сохраняются свежие session/provenance и browser evidence в отдельной квитанции; прежние L17 receipts не изменяются.",
+      "description": "В отдельной новой сессии Lead повторяет русскую просьбу спланировать проект/работу. Проверяет, что LHC создал task record, `plan.graph.json`, `plan.html`, открывает страницу в браузере, осматривает карточки и рабочие ссылки. Старый тест L17 на 1.5.40 не создал plan artifacts и не является acceptance.",
       "affected_files": [
-        ".agents/tasks/20261023-human-plans-and-orchestration/fixtures/full-1.5.39/",
-        ".agents/tasks/20261023-human-plans-and-orchestration/receipts/L17.md"
+        ".agents/tasks/20261023-human-plans-and-orchestration/consumer-tests/L17-project-plan-1.5.41/"
       ],
       "role": "второй независимый consumer полного цикла",
       "estimate_unknown_reason": "Lead не задавал оценку новой full-cycle consumer/browser-сессии.",
@@ -736,7 +735,7 @@
     {
       "id": "L19",
       "label": "прямое назначение и ограниченная делегация не спорят друг с другом",
-      "status": "queued",
+      "status": "done",
       "depends_on": [
         "L18"
       ],
@@ -744,18 +743,50 @@
         "minimum": 25.0,
         "maximum": 40.0
       },
-      "acceptance": "Канонические инструкции ясно задают прямой маршрут по умолчанию, ограниченный критерий пользы для Child и условное полномочие Lead с отдельными scope, owner/path, dependency, acceptance и пределом потомков/слотов. Конечный автор отвечает за понятный русский текст, когда он адресован русскоязычному человеку; внутренний Lead может передавать рабочее задание кратко и на любом языке. Тесты ловят конфликт общей инструкции с model-routing и проверяют native Codex parity. Package/native копии синхронизированы; релевантные тесты и `sync_skills.py --check` проходят. Штатный workflow выпускает следующую версию и plugin-manager readback подтверждает выбранный пакет `megamen32-plugins`; rollback `fleet-lhc` не меняется. Не заявлять точный session-loaded entrypoint без доказательства менеджера. Замер и его ограничение сохранены в receipt; метрики не обобщаются на все задачи.",
+      "started_at": "13:01",
+      "finished_at": "13:07",
+      "acceptance": "Канонические router, Lead, Worker, umbrella и model-routing согласованы по прямому назначению, явно ограниченной делегации и языку конечного автора; package/native копии синхронизированы. `pytest -q tests/test_business_first_contract.py tests/test_umbrella_skill_router_pointer.py tests/test_model_routing_delegation_policy.py` — 45 passed; `sync_skills.py --check` — PASS (25 skills); `scripts/validate.py` — PASS; `git diff --check` — PASS. Commit и `origin/main` совпали: `4fafcc5bf48e558c4b8c38f224198b89c3b31819`. Native Codex manager readback показал `last-human-commit@megamen32-plugins` 1.5.40 installed/enabled и прежний `last-human-commit@fleet-lhc` 1.5.36 installed/disabled, без изменения rollback-записи. Манифест, umbrella/model-routing skills и router/Lead/Worker совпадают SHA-256 между native source, marketplace manager path и installed cache. Точный entrypoint текущей сессии неизвестен. Метрики из одной выборки не превращаются в универсальный коэффициент; подробности — `receipts/L19-cost-aware-delegation.md`.",
       "description": "Устранить противоречие, из-за которого общая инструкция запрещает Worker создавать дочерние сессии даже при явном разрешении Lead. Для одной конкретной задачи с одним результатом назначать одного автора напрямую, не требуя от пользователя отдельно просить «вызвать агента». Дочернюю сессию использовать только при отдельной доказуемой пользе, превышающей передачу контекста, координацию и проверку. Внутреннее сообщение Lead может быть кратким и на любом языке; языковое требование задаётся конечному автору пользовательского файла. Зафиксировать прямой и делегированный прогоны: 343550 токенов на исходный прямой ход плюс 119541 на исправление ссылки (всего 463091); Lead+Child — 343285 + 592346 (всего 935631); оба gpt-6-luna; 1101 и 1133 слова. Один пример не задаёт постоянный коэффициент стоимости.",
       "affected_files": [
+        "AGENTS.md",
+        "CLAUDE.md",
+        ".claude-plugin/marketplace.json",
+        "adapters/hermes/plugin/plugin.yaml",
+        "src/common/agents/Lead.md",
+        "src/common/agents/Worker.md",
         "src/common/skills/last-human-commit/SKILL.md",
         "src/common/skills/model-routing/SKILL.md",
+        "skills/last-human-commit/SKILL.md",
+        "skills/model-routing/SKILL.md",
+        "plugins/last-human-commit/",
+        "tests/test_umbrella_skill_router_pointer.py",
+        "tests/test_model_routing_delegation_policy.py",
+        ".agents/tasks/20261023-human-plans-and-orchestration/receipts/L19-cost-aware-delegation.md"
+      ]
+    },
+    {
+      "id": "L20",
+      "label": "русские просьбы составить план создают комплект плана проекта",
+      "status": "running",
+      "depends_on": [
+        "L19"
+      ],
+      "estimate_minutes": {
+        "minimum": 25.0,
+        "maximum": 40.0
+      },
+      "started_at": "13:27",
+      "acceptance": "Регрессионная проверка покрывает «составь план», «сделай план проекта», «помоги спланировать работу», «план проекта», «план работ», связывает их с skill `plan-artifacts` и наличием `task.md`, `plan.graph.json`, `plan.html`; проверяет исключения для явно запрошенного черновика в чате и короткой однофайловой записи без запроса проектного плана. Native/package Codex copies проверяются тестом parity. `sync_skills.py --check`, package validator и graph validator проходят. Версия следующая после 1.5.40 опубликована штатно, installed manager readback подтверждает выбранный `megamen32-plugins`; rollback plugin не меняется. L16/L17 остаются отдельными pending user-path checks; этот leaf их не заявляет.",
+      "description": "Свежие попытки на установленном LHC 1.5.40 распознали каталог skills, но естественная просьба «помоги спланировать ...» не вызвала создание task record, графа и HTML, поэтому браузерная приёмка невозможна. Добавить явный auto-routing контракт для русских просьб составить/сделать план проекта или работы. Не направлять сюда просьбу только о короткой записи в один файл без запроса на проектный план; оставить пользователю возможность явно попросить черновой ответ в чате без файлов. Исполнитель не повторяет L16/L17 acceptance: их после установленного readback запускает Lead в отдельных свежих сессиях.",
+      "affected_files": [
+        "src/common/skills/last-human-commit/SKILL.md",
+        "src/common/skills/plan-artifacts/SKILL.md",
         "tests/test_umbrella_skill_router_pointer.py",
         "tests/test_model_routing_delegation_policy.py",
         "plugins/last-human-commit/",
-        "package.json",
-        ".agents/tasks/20261023-human-plans-and-orchestration/receipts/L19-cost-aware-delegation.md"
+        ".agents/tasks/20261023-human-plans-and-orchestration/receipts/L20-russian-plan-routing.md"
       ]
     }
   ],
-  "leaf_count": 19
+  "leaf_count": 20
 }

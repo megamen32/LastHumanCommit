@@ -1,9 +1,20 @@
 ---
 name: plan-artifacts
-description: Create the LHC plan artifacts in one pass — the task record, the machine-readable plan.graph.json and the HTML dashboard — with the exact commands (export, render, check-plan) and the check that proves the report and the graph agree. Use when a task is decomposed, when a plan or the plan status is asked for, when leaves are added, moved or finished, and when the dashboard must be refreshed. Never reverse-engineer the format from the tool source: this skill is the procedure.
+description: Create LHC project-plan artifacts in one pass — the user-readable task record, machine-readable plan.graph.json and HTML dashboard — with the exact commands (export, render, check-plan) and their consistency check. Use when the user asks to составить план, сделать план проекта, спланировать работу, or asks for a project/work plan; also use when tasks are decomposed, leaves change, or the dashboard needs refreshing. If the user explicitly asks only for a rough chat sketch, do not create files. Never reverse-engineer the format from the tool source: this skill is the procedure.
 ---
 
 # Plan artifacts
+
+## Requests for a project or work plan
+
+Treat natural Russian requests including «составь план», «сделай план проекта»,
+«помоги спланировать работу», «план проекта» and «план работ» as a request for a
+project/work plan. Unless the user explicitly asks for a prose-only chat sketch,
+create the user-readable task record and its `plan.graph.json` and `plan.html`;
+rendering also produces `plan.md`. Do not route a request merely to write or update
+one short file into this full project-plan flow when no project/work plan was
+requested. This boundary does not waive the normal planning required for
+engineering work under the selected LHC mode.
 
 For every authorized development objective, including quickfix and a
 user-assigned leaf, the Lead researches intent and chooses the overall mode from

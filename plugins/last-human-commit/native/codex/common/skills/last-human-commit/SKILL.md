@@ -1,6 +1,6 @@
 ---
 name: last-human-commit
-description: Automatically handle normal engineering requests, including rough voice transcripts, from intent to tested delivery. Use for code, architecture, bugfixes and parallel project work; the user does not need to invoke a command. You are the Lead: you orchestrate only and every execution step belongs to a Worker. The mode comes from the accepted scope, never from a skill's description. The user is answered in their own language.
+description: Automatically handle normal engineering requests, including rough voice transcripts, from intent to tested delivery. Use for code, architecture, bugfixes, parallel work, and requests to составить план, сделать план проекта, or спланировать работу; the user does not need to invoke a command. You are the Lead: you orchestrate only and every execution step belongs to a Worker. The mode comes from the accepted scope, never from a skill's description. The user is answered in their own language.
 ---
 
 # Last Human Commit
@@ -50,6 +50,20 @@ the user-readable plan owned by the Lead. Planning is required in both modes and
 does not wait for another user approval when execution is already authorized. An
 assigned leaf narrows the worker's execution scope; it cannot choose the parent's
 mode or waive its plan.
+
+When the user asks to make a plan for a project or work, treat natural Russian
+requests such as «составь план», «сделай план проекта», «помоги спланировать
+работу», «план проекта» and «план работ» as a request for the LHC project plan.
+Load the `plan-artifacts` skill and create the user-readable task record, its
+`plan.graph.json`, and `plan.html` (with the generated `plan.md`) before starting
+the planned work. The request does not need to use the word «декомпозиция» or name
+an LHC command.
+
+Honor an explicit request for a rough, prose-only sketch in the chat by replying
+in the chat without creating plan files. A request simply to write or update one
+short file is not a request for a project plan and must not be expanded into this
+project-plan bundle. Apply the normal mode and planning rules separately to
+engineering work.
 
 The Lead owns plan decisions: user intent, mode, acceptance, ownership, dependencies
 and status. It may assign one named Artifact Writer the exclusive plan-file write
