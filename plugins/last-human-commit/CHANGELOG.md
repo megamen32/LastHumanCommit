@@ -1,3 +1,7 @@
+# 1.5.43 - unknown durations are named, not drawn as zero
+
+A plan whose leaves carry no estimate no longer shows a minute axis on the Gantt, and the effort, critical path, remainder and planned peak say "unknown" instead of "0 min". The known subtotal and the count of the missing estimates are kept, and the counts that are really known stay exact.
+
 # 1.5.42 - truthful unknowns and reachable task details
 
 The progress summary now names unknown effort and external wait duration instead of claiming they are absent. Opening a task detail scrolls it below the sticky progress strip so the return control stays reachable.

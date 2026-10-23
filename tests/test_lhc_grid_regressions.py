@@ -700,6 +700,163 @@ def test_leaf_cell_shows_effort_and_calendar_span():
 
 
 # --------------------------------------------------------------------------
+# an unknown estimate is not a zero estimate
+# --------------------------------------------------------------------------
+
+
+def all_unknown_graph(leaf_count: int = 16):
+    """A plan where no leaf carries an estimate at all."""
+
+    return lhc.parse_graph_json(
+        {
+            "schema_version": 2,
+            "slots": 2,
+            "tasks": [
+                {
+                    "id": f"L{index:02d}",
+                    "label": f"Лист {index}",
+                    "status": "queued",
+                    "depends_on": [],
+                }
+                for index in range(1, leaf_count + 1)
+            ],
+        }
+    )
+
+
+def gantt_section(html: str) -> str:
+    start = html.index('class="panel panel-gantt"')
+    end = html.index('id="lhc-leaves"')
+    return html[start:end]
+
+
+def test_the_gantt_draws_no_numeric_scale_when_no_duration_is_known():
+    """F1: sixteen leaves without an estimate are not a one-minute plan."""
+
+    graph = all_unknown_graph()
+    html = lhc.render_html(graph, lhc.build_metrics(graph))
+    panel = gantt_section(html)
+
+    assert 'class="tick' not in panel, "шкала времени нарисована без единой известной оценки"
+    assert "мин" not in panel, "панель Ганта обещает длительность, которой нет"
+    assert "Шкала времени недоступна" in panel
+    # the rows keep their state, the plan stays readable
+    assert panel.count('class="gantt-status"') == 16
+    assert "Ни один лист не имеет оценки длительности" in panel
+
+
+def test_unknown_effort_is_not_reported_as_zero_minutes():
+    """F2: unknown effort, critical path and remainder are named as unknown."""
+
+    graph = all_unknown_graph()
+    html = lhc.render_html(graph, lhc.build_metrics(graph))
+
+    assert kpi_value(html, "Усилие") == "неизвестно"
+    assert "критический путь неизвестен" in html
+    # the known subtotal is kept and the unknown count is named
+    assert "16 оценок неизвестны" in html
+    # the remaining work is not claimed to be zero
+    assert "Осталось</b> (без завершённых): неизвестно" in html
+    assert "Осталось</b> (без завершённых): 0 мин" not in html
+    # the counts that are really known stay exact
+    assert kpi_value(html, "Осталось") == "16"
+    assert kpi_value(html, "Готово") == "0 / 16"
+    assert kpi_value(html, "Прогноз финиша") == "Срок неизвестен"
+
+
+def test_a_partly_known_plan_keeps_the_known_subtotal_and_names_the_unknown():
+    """A plan with one known estimate keeps its real numbers and says what is missing."""
+
+    graph = lhc.parse_graph_json(
+        {
+            "schema_version": 2,
+            "slots": 2,
+            "tasks": [
+                {
+                    "id": "L01",
+                    "label": "Известный лист",
+                    "status": "queued",
+                    "depends_on": [],
+                    "estimate_minutes": {"minimum": 30, "maximum": 45},
+                },
+                {
+                    "id": "L02",
+                    "label": "Лист без оценки",
+                    "status": "queued",
+                    "depends_on": [],
+                },
+                {
+                    "id": "L03",
+                    "label": "Заблокированный лист без оценки",
+                    "status": "blocked",
+                    "depends_on": [],
+                    "blocker": "ждём внешний ответ",
+                },
+            ],
+        }
+    )
+    metrics = lhc.build_metrics(graph)
+    html = lhc.render_html(graph, metrics)
+
+    # the total is unknown, the known part is not lost
+    assert kpi_value(html, "Усилие") == "неизвестно"
+    assert "известная часть 45 мин" in html
+    assert "2 оценок неизвестны" in html
+    # the real timeline of the known leaf is still drawn
+    assert 'class="tick' in gantt_section(html)
+    # the leaf without an estimate gets no false bar
+    assert 'class="gantt-noduration"' in html
+    assert "Листьев без оценки длительности: 2" in html
+    # blocked work without an estimate is not "0 мин"
+    assert "Заблокировано</b> работы: неизвестно" in html
+    # a blocked leaf is still counted as blocked
+    assert kpi_value(html, "Заблокировано") == "1"
+    # the remainder of a plan with unknown leaves is unknown, not zero
+    assert "Осталось</b> (без завершённых): неизвестно" in html
+
+
+def test_a_fully_known_plan_still_shows_its_numbers():
+    """The honest state of a measured plan keeps every number as it was."""
+
+    graph = lhc.parse_graph_json(
+        {
+            "schema_version": 2,
+            "slots": 2,
+            "tasks": [
+                {
+                    "id": "L01",
+                    "label": "Первый",
+                    "status": "queued",
+                    "depends_on": [],
+                    "estimate_minutes": {"minimum": 30, "maximum": 45},
+                },
+                {
+                    "id": "L02",
+                    "label": "Второй",
+                    "status": "blocked",
+                    "depends_on": [],
+                    "estimate_minutes": {"minimum": 10, "maximum": 20},
+                    "blocker": "ждём внешний ответ",
+                },
+            ],
+        }
+    )
+    metrics = lhc.build_metrics(graph)
+    html = lhc.render_html(graph, metrics)
+
+    assert metrics["effort_known"] is True
+    assert metrics["critical_known"] is True
+    assert metrics["remaining_known"] is True
+    assert kpi_value(html, "Усилие") == "1 ч 05 мин"
+    assert "критический путь 45 мин" in html
+    assert "Осталось</b> (без завершённых): 45 мин" in html
+    assert "Заблокировано</b> работы: 20 мин" in html
+    assert "Пик параллельности</b> по плану: 2 из 2 слотов" in html
+    assert 'class="tick' in gantt_section(html)
+    assert 'class="gantt-noduration"' not in html
+
+
+# --------------------------------------------------------------------------
 # the palette and the phone layout
 # --------------------------------------------------------------------------
 

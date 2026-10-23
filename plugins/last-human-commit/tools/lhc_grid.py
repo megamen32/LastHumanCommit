@@ -1160,28 +1160,43 @@ def build_metrics(graph: Graph) -> dict[str, Any]:
     pending_max = schedule_graph(graph, use_max=True, only_pending=True)
     pending_min = schedule_graph(graph, use_max=False, only_pending=True)
 
-    unknown_estimate_pending = [
-        leaf for leaf in graph.leaves
-        if leaf.status != STATUS_DONE
-        and leaf.status != STATUS_DEFERRED
-        and leaf.estimate_min is None and leaf.estimate_max is None
-    ]
+    # A missing estimate is not a zero estimate. The leaves whose duration is
+    # unknown are named here, so every number derived from the schedule can
+    # say "unknown" instead of quietly turning the missing time into zero.
     unknown_estimate_all = [
         leaf for leaf in graph.leaves
         if leaf.status != STATUS_DEFERRED
         and leaf.estimate_min is None and leaf.estimate_max is None
     ]
+    unknown_estimate_pending = [
+        leaf for leaf in unknown_estimate_all if leaf.status != STATUS_DONE
+    ]
+    unknown_ids_all = {leaf.id for leaf in unknown_estimate_all}
+    known_duration_count = sum(
+        1 for leaf in graph.leaves
+        if leaf.status != STATUS_DEFERRED and leaf.id not in unknown_ids_all
+    )
+    # The effort, the critical path and the planned peak are whole-plan
+    # numbers: one unknown leaf is enough to make all three unknown.
+    duration_known = not unknown_estimate_all
 
     effort = sum(leaf.estimate or 0.0 for leaf in graph.leaves)
     critical = schedule_max.critical_path
     critical_minutes = sum(
-        (leaf.estimate_max or 0.0) for leaf in graph.leaves if leaf.id in critical
+        (leaf.estimate or 0.0) for leaf in graph.leaves if leaf.id in critical
     )
 
     current_peak = running
     slot_limit = graph.slots or 1
-    blocked_minutes = sum(
-        (leaf.estimate_max or 0.0) for leaf in graph.leaves if leaf.status == STATUS_BLOCKED
+    blocked_leaves = [leaf for leaf in graph.leaves if leaf.status == STATUS_BLOCKED]
+    blocked_minutes = sum((leaf.estimate or 0.0) for leaf in blocked_leaves)
+    blocked_unknown_ids = {
+        leaf.id for leaf in blocked_leaves
+        if leaf.estimate_min is None and leaf.estimate_max is None
+    }
+    blocked_known_minutes = sum(
+        (leaf.estimate or 0.0) for leaf in blocked_leaves
+        if leaf.id not in blocked_unknown_ids
     )
 
     now = now_clock()
@@ -1227,6 +1242,15 @@ def build_metrics(graph: Graph) -> dict[str, Any]:
         "critical_minutes": critical_minutes,
         "unknown_estimate_pending": len(unknown_estimate_pending),
         "unknown_estimate_all": len(unknown_estimate_all),
+        "unknown_estimate_leaf_ids": [leaf.id for leaf in unknown_estimate_all],
+        # The honest state of every number the schedule produces.
+        "duration_known": duration_known,
+        "known_duration_count": known_duration_count,
+        "effort_known": duration_known,
+        "critical_known": duration_known,
+        "remaining_known": not unknown_estimate_pending,
+        "blocked_unknown_count": len(blocked_unknown_ids),
+        "blocked_known_minutes": blocked_known_minutes,
         "external_wait_unknown": external_wait_unknown,
         "eta_clock_min": "" if not eta_known else format_clock((eta_from + int(round(eta_min))) % (24 * 60)),
         "eta_clock_max": "" if not eta_known else format_clock((eta_from + int(round(eta_max))) % (24 * 60)),
@@ -1683,6 +1707,26 @@ def render_html(
     if metrics["eta_overdue"]:
         eta_hint = f"срок прошёл, остаток не начался · {eta_hint}"
     eta_range = _eta_range_text(metrics)
+    # The peak of the plan is a schedule number: without a duration on every
+    # leaf the scheduler has nothing to overlap, so the peak is unknown and
+    # not "0".
+    peak_hint = (
+        f"пик по плану {metrics['planned_peak_parallel']}"
+        if metrics["duration_known"] else "пик по плану неизвестен"
+    )
+    # The effort and the critical path are whole-plan numbers. When a leaf
+    # has no estimate, the total is unknown — the known part is kept, and the
+    # count of the unknown ones is named instead of a bare "0 мин".
+    if metrics["effort_known"]:
+        effort_value = fmt_minutes(metrics["effort_minutes"])
+        effort_hint = f"критический путь {fmt_minutes(metrics['critical_minutes'])}"
+    else:
+        effort_value = "неизвестно"
+        effort_hint = (
+            f"известная часть {fmt_minutes(metrics['effort_minutes'])} · "
+            f"критический путь неизвестен · "
+            f"{metrics['unknown_estimate_all']} оценок неизвестны"
+        )
     cards = [
         ("Готово", f"{metrics['done']} / {headline_total}",
          f"{metrics['progress_pct']}% {progress_note}", STATUS_DONE, True, "done"),
@@ -1695,13 +1739,12 @@ def render_html(
          f"не завершено · отложено владельцем: {metrics['deferred']} (в остаток не входит)",
          STATUS_QUEUED, True, "unfinished"),
         ("Параллельность", f"{metrics['current_parallel']} / {metrics['slots']}",
-         f"пик по плану {metrics['planned_peak_parallel']}", STATUS_RUNNING, False, "parallel"),
+         peak_hint, STATUS_RUNNING, False, "parallel"),
         (remaining_label, fmt_minutes(metrics["remaining_minutes_max"]),
          remaining_hint, STATUS_WAITING, False, "remaining"),
         ("Прогноз финиша", eta_range or "Срок неизвестен",
          eta_hint, STATUS_DONE, False, "forecast"),
-        ("Усилие", fmt_minutes(metrics["effort_minutes"]),
-         f"критический путь {fmt_minutes(metrics['critical_minutes'])}", STATUS_QUEUED, False, "effort"),
+        ("Усилие", effort_value, effort_hint, STATUS_QUEUED, False, "effort"),
     ]
     # Every tile knows the tasks behind it: the owner clicks a number and
     # wants to see them, without leaving the page.
@@ -1717,6 +1760,12 @@ def render_html(
         if leaf.estimate_min is None and leaf.status not in (STATUS_DONE, STATUS_DEFERRED)
     ]
     critical_ids = [leaf.id for leaf in leaves if leaf.id in metrics["critical_path"]]
+    # Without a duration on every leaf the critical path is not a fact yet,
+    # so the effort tile points at the leaves that make it unknown.
+    effort_ids = (
+        critical_ids if metrics["critical_known"]
+        else list(metrics["unknown_estimate_leaf_ids"])
+    )
     wave_ids: list[str] = []
     if schedule.waves:
         current_wave = min(
@@ -1742,7 +1791,7 @@ def render_html(
         "parallel": wave_ids or [leaf.id for leaf in leaves],
         "remaining": [i for i in unfinished_ids if i not in unknown_ids] or unfinished_ids,
         "forecast": forecast_ids,
-        "effort": critical_ids,
+        "effort": effort_ids,
     }
     tile_titles = {key: label for label, _, _, _, _, key in cards}
     tile_titles["all"] = "Все задачи плана"
@@ -2008,26 +2057,41 @@ def render_html(
     )
 
     # ----- gantt ---------------------------------------------------------
-    horizon = max(schedule.makespan, metrics["delivery_minutes_max"], 1.0)
-    ticks = 6
-    axis = "".join(
-        f'<div class="tick tick-{index}" style="left:{100.0 * index / ticks:.4f}%">'
-        f"{fmt_minutes(horizon * index / ticks)}</div>"
-        for index in range(ticks + 1)
-    )
+    # A leaf without an estimate has no duration. The time scale is drawn
+    # only when at least one leaf carries a known one; otherwise the panel
+    # says the time is unavailable instead of drawing a minute axis that
+    # promises a duration nobody measured.
+    scheduled = [leaf for leaf in leaves if leaf.id in schedule.waves]
+    deferred_leaves = [leaf for leaf in leaves if leaf.id not in schedule.waves]
+    timed_leaf_ids = {
+        leaf.id for leaf in scheduled
+        if leaf.estimate_min is not None or leaf.estimate_max is not None
+    }
+    timeline_available = bool(timed_leaf_ids)
+    if timeline_available:
+        horizon = max(schedule.makespan, metrics["delivery_minutes_max"], 1.0)
+        ticks = 6
+        axis = "".join(
+            f'<div class="tick tick-{index}" style="left:{100.0 * index / ticks:.4f}%">'
+            f"{fmt_minutes(horizon * index / ticks)}</div>"
+            for index in range(ticks + 1)
+        )
+    else:
+        horizon = 1.0
+        axis = (
+            '<div class="gantt-axis-note">Шкала времени недоступна</div>'
+        )
     gantt_rows: list[str] = []
     current_wave: Optional[int] = None
     wave_counts: dict[int, int] = {}
-    # A leaf the owner deferred has no schedule: it is shown apart from the
-    # waves, because it does not take part in the delivery.
-    scheduled = [leaf for leaf in leaves if leaf.id in schedule.waves]
-    deferred_leaves = [leaf for leaf in leaves if leaf.id not in schedule.waves]
 
     def gantt_row(leaf: Leaf, start: float, finish: float) -> str:
-        left = 100.0 * start / horizon
-        width = max(0.6, 100.0 * max(finish - start, 0.0) / horizon)
         color = STATUS_CSS_VARS[leaf.status]
-        critical = leaf.id in metrics["critical_path"]
+        duration_known = leaf.id in timed_leaf_ids
+        # The critical path is a fact only when every leaf carries a
+        # duration; until then the marker would name an accident of the
+        # schedule, so it is not drawn.
+        critical = metrics["critical_known"] and leaf.id in metrics["critical_path"]
         tooltip = (
             f"{leaf.id} · {leaf.label}\n"
             f"статус: {STATUS_LABELS[leaf.status]}\n"
@@ -2043,6 +2107,17 @@ def render_html(
         )
         title = escape(tooltip)
         critical_mark = '<span class="crit" title="критический путь">◆ критический путь</span>' if critical else ""
+        if duration_known and timeline_available:
+            left = 100.0 * start / horizon
+            width = max(0.6, 100.0 * max(finish - start, 0.0) / horizon)
+            bar = (
+                f'<div class="bar" style="left:{left:.4f}%;width:{width:.4f}%;background:{color}"'
+                f' title="{title}"></div>'
+            )
+        else:
+            # No duration, no bar: a drawn width would read as a measured
+            # length of time.
+            bar = f'<span class="gantt-noduration" title="{title}">—</span>'
         return (
             f'<div class="gantt-row" data-status="{leaf.status}" data-leaf="{escape(leaf.id)}">'
             f'<div class="gantt-label" title="{escape(leaf.label)}">'
@@ -2057,8 +2132,7 @@ def render_html(
             f"</span>"
             f'</div>'
             f'<div class="gantt-track">'
-            f'<div class="bar" style="left:{left:.4f}%;width:{width:.4f}%;background:{color}" title="{title}">'
-            f"</div></div></div>"
+            f"{bar}</div></div>"
         )
 
     for leaf in scheduled:
@@ -2082,6 +2156,21 @@ def render_html(
         for leaf in deferred_leaves:
             gantt_rows.append(gantt_row(leaf, 0.0, 0.0))
     gantt_html = "".join(gantt_rows)
+
+    # The panel states what its rows do and do not show.
+    if timeline_available:
+        untimed = [leaf for leaf in scheduled if leaf.id not in timed_leaf_ids]
+        gantt_note = (
+            f'<div class="hint">Листьев без оценки длительности: {len(untimed)} — '
+            "они показаны знаком «—», без полосы длительности.</div>"
+            if untimed else ""
+        )
+    else:
+        gantt_note = (
+            '<div class="hint">Ни один лист не имеет оценки длительности: строки '
+            "показывают состояние и волны, а не длительность. "
+            f"Оценок неизвестны: {metrics['unknown_estimate_all']}.</div>"
+        )
 
     # ----- blockers ------------------------------------------------------
     blockers = [leaf for leaf in leaves if leaf.status == STATUS_BLOCKED]
@@ -2294,6 +2383,32 @@ def render_html(
         f" · {metrics['unknown_estimate_all']} оценок неизвестны"
         if metrics["unknown_estimate_all"] else ""
     )
+    # The remaining work is a real number only when every unfinished leaf
+    # carries an estimate; otherwise the missing time is named, not zeroed.
+    if metrics["remaining_known"]:
+        remaining_fact = escape(fmt_minutes(metrics["remaining_minutes_max"]))
+    else:
+        remaining_fact = (
+            f"неизвестно — {metrics['unknown_estimate_pending']} листьев без оценки"
+        )
+    # The blocked work is a real number only when every blocked leaf carries
+    # an estimate. No blocked leaf at all is a known zero and stays a zero.
+    if not metrics["blocked_unknown_count"]:
+        blocked_fact = escape(fmt_minutes(metrics["blocked_minutes"]))
+    else:
+        blocked_fact = (
+            f"неизвестно · известная часть "
+            f"{escape(fmt_minutes(metrics['blocked_known_minutes']))} · "
+            f"{metrics['blocked_unknown_count']} листьев без оценки"
+        )
+    if metrics["critical_known"]:
+        critical_fact = escape(critical_chain)
+    else:
+        critical_fact = "неизвестен — оценки длительности не заданы"
+    if metrics["duration_known"]:
+        peak_fact = f"{metrics['planned_peak_parallel']} из {metrics['slots']} слотов"
+    else:
+        peak_fact = "неизвестен — оценки длительности не заданы"
     forecast_html = (
         "<ul class='facts'>"
         f"<li><b>Усилие</b> (сумма известных оценок): {escape(fmt_minutes(metrics['effort_minutes']))}"
@@ -2302,11 +2417,10 @@ def render_html(
         f" (план с {metrics['slots']} слотами): "
         f"{escape(fmt_minutes(metrics['delivery_minutes_max']))}</li>"
         f"<li><b>Осталось</b> (без завершённых): "
-        f"{escape(fmt_minutes(metrics['remaining_minutes_max']))}</li>"
-        f"<li><b>Пик параллельности</b> по плану: {metrics['planned_peak_parallel']} "
-        f"из {metrics['slots']} слотов</li>"
-        f"<li><b>Критический путь</b>: {escape(critical_chain)}</li>"
-        f"<li><b>Заблокировано</b> работы: {escape(fmt_minutes(metrics['blocked_minutes']))}</li>"
+        f"{remaining_fact}</li>"
+        f"<li><b>Пик параллельности</b> по плану: {peak_fact}</li>"
+        f"<li><b>Критический путь</b>: {critical_fact}</li>"
+        f"<li><b>Заблокировано</b> работы: {blocked_fact}</li>"
         f"{unknown_forecast}"
         f"{external_forecast}"
         "</ul>"
@@ -2327,9 +2441,13 @@ def render_html(
             f"где журнал прямо называет лист.</div>"
         )
     else:
+        peak_text = (
+            f"пик параллельности {metrics['planned_peak_parallel']}"
+            if metrics["duration_known"] else "пик параллельности неизвестен"
+        )
         layer_hint = (
             f'<div class="hint">граф: {metrics["total"]} листьев · слотов: {metrics["slots"]} · '
-            f"пик параллельности {metrics['planned_peak_parallel']}</div>"
+            f"{peak_text}</div>"
         )
 
     # ----- brief: what the work is for ------------------------------------
@@ -2459,6 +2577,7 @@ def render_html(
         now=now_html,
         axis=axis,
         gantt=gantt_html,
+        gantt_note=gantt_note,
         blockers=blocker_html,
         sessions=sessions_html,
         leaves_table=leaves_table,
@@ -2646,6 +2765,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     gap: 10px; min-width: 680px; }}
   .gantt-axis-spacer {{ min-width: 0; }}
   .gantt-axis {{ position: relative; height: 22px; min-width: 0; border-bottom: 1px solid var(--line); }}
+  .gantt-axis-note {{ font-size: 11px; color: var(--muted); line-height: 22px; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis; }}
+  .gantt-noduration {{ color: var(--muted); font-size: 13px; line-height: 26px; opacity: .8; }}
   .tick {{ position: absolute; top: 2px; transform: translateX(-50%); font-size: 11px; color: var(--muted);
     white-space: nowrap; }}
   .tick-0 {{ transform: none; }}
@@ -2850,6 +2972,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
 <div class="panel panel-gantt" id="lhc-plan-gantt"{plan_gantt_hidden}>
   <h2>Гант · листья и параллельные волны</h2>
+  {gantt_note}
   <div class="gantt"><div class="gantt-inner">
     <div class="gantt-axis-row"><div class="gantt-axis-spacer"></div><div class="gantt-axis">{axis}</div></div>
     {gantt}
@@ -3177,9 +3300,10 @@ def render_text(graph: Graph, metrics: dict[str, Any]) -> str:
         )
     )
     lines.append(
-        "Параллельность: сейчас {current} из {slots} слотов, пик по плану {peak}".format(
+        "Параллельность: сейчас {current} из {slots} слотов, {peak}".format(
             current=metrics["current_parallel"], slots=metrics["slots"],
-            peak=metrics["planned_peak_parallel"],
+            peak=(f"пик по плану {metrics['planned_peak_parallel']}"
+                  if metrics["duration_known"] else "пик по плану неизвестен"),
         )
     )
     lines.append(
@@ -3195,9 +3319,11 @@ def render_text(graph: Graph, metrics: dict[str, Any]) -> str:
                     if metrics["eta_anchor_clock"] else "остаток стартует сейчас"),
         )
     )
-    if metrics["critical_path"]:
+    if metrics["critical_path"] and metrics["critical_known"]:
         labels = {leaf.id: leaf.label or leaf.id for leaf in graph.leaves}
         lines.append("Критический путь: " + " → ".join(labels.get(item, item) for item in metrics["critical_path"]))
+    elif not metrics["critical_known"]:
+        lines.append("Критический путь: неизвестен — оценки длительности не заданы")
     blockers = [leaf for leaf in graph.leaves if leaf.status == STATUS_BLOCKED]
     if blockers:
         lines.append("Блокеры:")
