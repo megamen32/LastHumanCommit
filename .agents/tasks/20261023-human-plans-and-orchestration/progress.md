@@ -59,3 +59,13 @@
 - Regression checks охватывают точные триггеры, все три выхода, исключения, package parity и native Codex parity. `pytest -q tests/test_umbrella_skill_router_pointer.py tests/test_model_routing_delegation_policy.py`: 15 passed; `sync_skills.py --check`: PASS (25 skills); `scripts/validate.py`: PASS; `git diff --check`: PASS.
 - LHC 1.5.41 опубликован commit `45aec97c151ad8e4f0abc84433b94e3b44cf5b5b`; `origin/main` совпадает. Native manager readback: `megamen32-plugins` 1.5.41 installed/enabled, marketplace refresh без ошибок; `fleet-lhc` 1.5.36 installed/disabled и не изменён. Manifest, umbrella skill и `plan-artifacts` skill совпадают по SHA между native source, marketplace source path и installed cache.
 - L20 подтверждён тестами, validators и release receipt `receipts/L20-russian-plan-routing.md`. L16/L17 остаются отдельными следующими действиями Lead после readback в двух свежих user sessions; этот Worker не выполнял их rerun, не открывал их браузеры и не изменял их receipts.
+
+## 2026-10-23 · L21 renderer regression fixes
+
+- Lead передал fresh native user-path receipt `consumer-tests/L17-full-project-v1541/user-test-receipt.md` со статусом **CHANGES_REQUIRED**. Реальный HTML показывает «без неизвестных оценок и ожиданий» при шести неизвестных оценках и неопределённом сроке финиша; скриншот `plan-return-click-error.png` документирует, что sticky progress strip перекрывает кнопку возврата до ручной прокрутки.
+- L17 screenshots, generated plan files, session snapshots and receipt remain tester-owned evidence; не перезаписывать и не засчитывать CHANGES_REQUIRED как PASS.
+- L21 открыт до source изменений: исправить только правду progress-strip hint и доступность «← ко всем задачам», добавить быстрые regression tests в существующие grid tests. После source/package release Lead назначит новый независимый browser rerun L17.
+
+- L21 завершён: добавленные до фикса проверки воспроизвели две ошибки; после исправлений `pytest -q tests/test_lhc_grid.py tests/test_lhc_grid_regressions.py` — 91 passed. Generated/native parity (25 skills), package validator и graph validator проходят; `check-plan` подтверждает 21/21.
+- Commit `0a95a9c` запушен в `origin/main`. Native manager подтверждает `megamen32-plugins` 1.5.42 installed/enabled; SHA manifest и обоих renderer copies совпадают между native package, обновлённым marketplace и installed cache. Rollback `fleet-lhc` 1.5.36 installed/disabled, неизменён. Детали в `receipts/L21-renderer-fix.md`.
+- L17 остаётся `CHANGES_REQUIRED`: следующий шаг — отдельный свежий browser consumer run Lead на 1.5.42. Этот Worker не запускал браузерную приёмку и не переписывал tester-owned evidence.
