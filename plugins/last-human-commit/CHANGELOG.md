@@ -1,3 +1,9 @@
+# 1.5.39 - Explicitly bounded delegation and role-specific context
+
+Lead-authorized children may be used for an explicitly bounded assignment, and
+fresh blind context is reserved for independent acceptance roles that need it.
+The regression check covers native Codex projections.
+
 # 1.5.38 - Renderer progress and forecasts match the task state
 
 Completed plans no longer show overdue forecasts, and progress details open when current progress exists.

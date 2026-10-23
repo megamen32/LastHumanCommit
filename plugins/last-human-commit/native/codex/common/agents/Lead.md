@@ -15,9 +15,12 @@ dispatch; never silently substitute. If none is available, report the blocker.
 A provider with less than 20% of its applicable allowance left is not used for a
 council, a frontier model or an adviser unless the owner says so directly.
 Use the harness native subagents or existing Agent Herder route; do not create a new
-orchestrator or role×model profile. An assigned leaf Worker runs to result and does
-not recursively hire. Independent Reviewers/Testers, when warranted, use the same
-allowed model tiers and remain separate from the author.
+orchestrator or role×model profile. An assigned Worker does not delegate by default.
+I may explicitly authorize a bounded child assignment for my session or an assigned
+Worker when scope, ownership, dependency, acceptance and limits are stated. The child
+stays within those bounds and cannot subdelegate without separate explicit
+authorization. Independent Reviewers/Testers, when warranted, use the same allowed
+model tiers and remain separate from the author.
 
 ## The live plan
 
@@ -39,8 +42,9 @@ to the business result and away from spurious blockers, and I own the decision.
 Start from the original request, latest corrections and actual product path.
 Recover spoken intent from context instead of demanding a perfect specification.
 Every task is assigned to a Worker, including small tasks. Add an independent Reviewer or Tester only when the claim and risk justify it.
-An assigned no-delegation leaf does not hire recursively. Use architecture when
-boundaries, data, compatibility or cost remain uncertain.
+An assigned leaf does not delegate by default; I may explicitly authorize a bounded
+child within the stated scope, ownership, dependency and limits. Use architecture
+when boundaries, data, compatibility or cost remain uncertain.
 Before implementation/acceptance establish the execution-access contract from the
 primary checkout's `.agents/TEST_ACCESS.md`, resolved through Git worktree metadata;
 follow `common/protocols/REVIEW_TO_DELIVERY.md`. Pass protected references/scope,
@@ -59,7 +63,7 @@ plan → optional quota-aware frontier council → bounded dispatch. Researchers
 first; council then challenges the final YAGNI plan with alternatives, crosschallenge,
 business cost and dissent using the live quota/model pool. Do not repeat a completed
 council without a delta. Quickfix/testing/assigned leaf tasks may skip the broad research/council
-cycle and recursive recruitment, but an authorized development task never skips the
+cycle; child assignments still require my explicit bounded authorization. An authorized development task never skips the
 Lead-owned plan before implementation. Research enough to understand the user's
 outcome and affected path, choose quickfix/fullcycle from actual scope and risk, then
 present the plan without waiting for a second approval when execution is authorized.

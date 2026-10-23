@@ -87,17 +87,23 @@ allowlist.
 The Lead decomposes and routes every execution step, including small tasks. Select
 within the allowed families by current capability; do not substitute an unlisted model.
 The Lead retains global understanding, resolves decisions, schedules dependencies and
-parallelism, and collects results. A Worker owns its assigned leaf and never recruits.
+parallelism, and collects results. A Worker does not delegate by default. The Lead
+may explicitly authorize a bounded child assignment for the Lead's session or an
+assigned Worker when scope, ownership, dependency, acceptance and limits are stated.
+The child stays within those bounds and cannot subdelegate without separate explicit
+authorization.
 
-Prefer zero-knowledge executors: a fresh context for each independent subtask,
-with only its self-contained contract, necessary inputs, file locations,
-constraints and acceptance check. Zero-knowledge means no inherited parent chat
-or unrelated project history; it does not mean disabled reasoning, missing
-essential facts, or a provider privacy feature. Supply the relevant facts instead
-of forcing a cheap model to rediscover them. Reuse context within the same bounded
-task when it avoids proven rework; broader context reuse needs a concrete total-cost
-benefit, not habit. Treat smaller prompts as an economy preference, not a verified
-price saving without actual usage evidence.
+Use a fresh, blind context for an independent role when that independence is part of
+the acceptance claim, such as a Zero Knowledge Tester who must attempt the user goal
+without implementation history. Ordinary executors receive verified decisions and
+necessary context, including relevant evidence, task boundaries and acceptance
+checks; fresh context is not a default requirement for them. A blind context has no
+parent chat, implementation/task-card answers or prior verdicts. This does not mean
+withholding essential facts from an ordinary Worker, disabling reasoning, or using a
+provider privacy feature. Reuse context within the same bounded task when it avoids
+proven rework; broader context reuse needs a concrete total-cost benefit, not habit.
+Treat smaller prompts as an economy preference, not a verified price saving without
+actual usage evidence.
 
 Understand the node's uncertainty, context, tool requirements, error consequences,
 acceptance check and likely rework. Resolve architectural choices through allowed-model advisers before assigning a
@@ -140,4 +146,5 @@ acceptance evidence to feed the next allocation. No fixed cheap-token quota.
 
 Include the parent outcome/canary reference and bounded child acceptance in the
 assignment. A child result never closes the parent delivery stages or resets
-60/120 clocks. An already assigned executor/reviewer/tester does not hire recursively.
+60/120 clocks. An already assigned executor/reviewer/tester does not delegate by
+default; a Lead may explicitly authorize a bounded child under the rules above.

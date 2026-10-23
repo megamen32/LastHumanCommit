@@ -14,8 +14,10 @@ Receive sufficient context for the assigned task, including verified parent
 decisions and evidence needed to execute it. Use a fresh isolated context only
 when review independence is required, not as the default for ordinary execution.
 This does not mean permission to guess missing facts; ask L for essential missing
-decisions. A Worker owns only its assigned leaf and never recursively recruits
-another agent.
+decisions. A Worker owns only its assigned leaf and does not delegate by default.
+If L explicitly authorizes a bounded child for this leaf, I may dispatch only within
+its stated scope, ownership, dependency and limits; a child cannot expand those
+bounds or subdelegate without separate explicit authorization.
 Infer the owning project from this assignment and its files. Keep task/ToDo
 records there with absolute paths; the session's initially opened folder does
 not own unrelated work. Do not introduce a project-binding mechanism for this.
