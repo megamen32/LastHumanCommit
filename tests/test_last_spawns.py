@@ -17,6 +17,7 @@ These cases hold two things at once:
   byte, for every shape of a repository the module reads.
 """
 import contextlib
+import json
 import os
 from pathlib import Path
 import shutil
@@ -405,3 +406,100 @@ def test_a_broken_leaf_is_named_and_the_build_stops(tmp_path):
     with pytest.raises(entry.PlanBuildError) as error:
         entry.render_written_plan(event, ROOT)
     assert "L12" in str(error.value)
+
+
+# ---------------------------------------------------------------------------
+# The Opencode boundary: the plugin payload and the hook binary
+# ---------------------------------------------------------------------------
+
+ENTRY = TOOLS / "lhc_entry.py"
+PLUGIN_TS = ROOT / "plugins" / "last-human-commit" / "opencode" / "lhc-v2.ts"
+
+
+def run_opencode_hook(payload, project):
+    """Run the hook binary exactly the way the Opencode plugin spawns it."""
+    return subprocess.run(
+        [sys.executable, str(ENTRY), "--event", "PostToolUse", "--heartbeat-only",
+         "--runtime", "opencode"],
+        cwd=str(project), input=json.dumps(payload, ensure_ascii=False),
+        capture_output=True, text=True, timeout=120)
+
+
+def test_an_opencode_event_rebuilds_the_plan_of_the_written_leaf(tmp_path):
+    """The real consumer path: a payload of the Opencode shape rebuilds the page.
+
+    The hook binary is started the way Opencode starts it, the payload names
+    a leaf that has just been written, and the graph and the page of that
+    plan appear.  This is the promise the plugin used to break by sending
+    only cwd and session_id.
+    """
+    plan_dir = tmp_path / "task"
+    path = leaf(plan_dir, "L14")
+    result = run_opencode_hook(
+        {"cwd": str(tmp_path), "session_id": "ses_l14",
+         "tool_input": {"file_path": str(path)}},
+        tmp_path)
+    assert result.returncode == 0, result.stderr
+    assert "пересобрана" in result.stdout, result.stdout
+    assert (plan_dir / "plan.graph.json").is_file()
+    assert (plan_dir / "plan.html").is_file()
+
+
+def test_the_old_opencode_payload_without_tool_input_changes_nothing(tmp_path):
+    """A payload of the old shape stays harmless: exit 0, no rebuild, no crash.
+
+    Nothing was ever rebuilt from cwd and session_id alone; the guard still
+    answers its heartbeat and never touches the plan of the task.
+    """
+    plan_dir = tmp_path / "task"
+    leaf(plan_dir, "L14")
+    result = run_opencode_hook({"cwd": str(tmp_path), "session_id": "ses_l14"}, tmp_path)
+    assert result.returncode == 0, result.stderr
+    assert (plan_dir / "plan.graph.json").exists() is False
+    assert (plan_dir / "plan.html").exists() is False
+    assert "пересобрана" not in result.stdout
+
+
+def test_the_opencode_plugin_puts_the_written_paths_into_the_payload(tmp_path):
+    """The plugin must forward the tool arguments of `tool.execute.after`.
+
+    The plugin module is instantiated by Node exactly as OpenCode loads it,
+    a tool boundary arrives with the arguments of a write into leaves/, and
+    the payload the plugin pipes into the hook must carry them as
+    tool_input.  The hook binary is replaced by a recorder so this case
+    reads the wire, not the promise.
+    """
+    node = shutil.which("node")
+    if node is None:
+        pytest.fail("node is required to run the OpenCode plugin contract")
+    package = tmp_path / "package"
+    (package / "tools").mkdir(parents=True)
+    (package / "tools" / "lhc_entry.py").write_text("# recorder stand-in\n", encoding="utf8")
+    project = tmp_path / "project"
+    project.mkdir()
+    recorded = tmp_path / "payload.json"
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    shim = bin_dir / "python3"
+    shim.write_text('#!/bin/sh\ncat > "%s"\n' % recorded, encoding="utf8")
+    shim.chmod(0o755)
+    driver = tmp_path / "drive.mts"
+    driver.write_text(
+        "import plugin from %s\n"
+        "const hooks = await plugin({ directory: %s, worktree: %s })\n"
+        "await hooks['tool.execute.after'](\n"
+        "  { tool: 'write', sessionID: 'ses_wire', callID: 'call_1',\n"
+        "    args: { filePath: '/task/leaves/L14.json', content: '{}' } },\n"
+        "  { title: 'write', output: '' })\n"
+        % (json.dumps(str(PLUGIN_TS)), json.dumps(str(project)), json.dumps(str(project))),
+        encoding="utf8")
+    env = dict(os.environ, LHC_PLUGIN_ROOT=str(package),
+               PATH="%s:%s" % (bin_dir, os.environ["PATH"]))
+    result = subprocess.run([node, "--experimental-strip-types", str(driver)],
+                            cwd=str(tmp_path), env=env,
+                            capture_output=True, text=True, timeout=120)
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(recorded.read_text(encoding="utf8"))
+    assert payload["cwd"] == str(project)
+    assert payload["session_id"] == "ses_wire"
+    assert payload["tool_input"]["filePath"] == "/task/leaves/L14.json"

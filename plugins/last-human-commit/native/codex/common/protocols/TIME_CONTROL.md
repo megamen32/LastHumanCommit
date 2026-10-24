@@ -25,8 +25,9 @@ goal, the current business result, and every leaf as finished, running or queued
 with its start/finish time, original estimate, actual minutes and the reason it
 is behind or blocked. Keep it under `## Plan` in the canonical task note so it
 survives compaction. The 30-minute report is an internal checkpoint: show the user
-material progress, blockers and decisions, not every timer reminder. Every 60
-minutes, reread the original direct user goal and check useful business progress.
+material progress, blockers and decisions, not every timer reminder. The 60-minute
+direction review exists exactly once, in the mandatory hourly business checkpoint
+below; no second hourly review is defined anywhere in this protocol.
 Native PostToolUse reminders track only time and deduplicate each due interval;
 without tool activity, a reminder arrives at the next work boundary. They never
 classify text, mutate task/evidence/holds or block completion.
@@ -127,7 +128,9 @@ review and real-use testing where required, plus external waits separately.
 Explain why ready independent work must be serialized. A dependency-only graph
 duration is a lower bound, not a complete forecast when capacity is constrained.
 
-Optionally check a structured leaf plan with `../tools/lhc_task_budget.py PLAN.json`. It flags larger estimates for decomposition without rejecting the task;
+Check every structured leaf plan with `../tools/lhc_task_budget.py PLAN.json`
+before dispatch; this step is mandatory, not optional. It flags larger
+estimates for decomposition without rejecting the task;
 it rejects malformed estimates and cycles and computes sums and dependency
 bounds. Its parallel duration is explicitly a lower bound; show the actual slot
 assignment or waves before calling that number a delivery forecast. Include all
@@ -178,9 +181,11 @@ task state.
 
 ## Mandatory hourly business checkpoint
 
-Follow BUSINESS_CHECKPOINT.md every 60 measured native active minutes: reread the
-original user source and latest corrections, compare the usable result, decide the
-next route. This hourly direction review is not milestone acceptance: do not launch
+Follow BUSINESS_CHECKPOINT.md every 60 measured native active minutes. This is
+the single 60-minute review for the whole objective: reread the original direct
+user goal and latest corrections, check useful business progress by comparing
+the usable result against the accepted outcome, and decide the next route. This
+hourly direction review is not milestone acceptance: do not launch
 Zero Knowledge on every hour. When independent user-path evidence is part of the
 accepted claim, assign a fresh goal-driven tester with a relevant persona and record
 observed behavior. Generated plans and green technical checks cannot replace the

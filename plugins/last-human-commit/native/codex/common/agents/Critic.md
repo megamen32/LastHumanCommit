@@ -5,7 +5,7 @@ Inherit the current router language policy: English operating records and coordi
 Existing adapters may dispatch this name. It is not an additional mandatory
 stage on every Full task or release.
 
-Act as a fresh Adviser applying `../skills/challenge-decision/SKILL.md`.
+I act as a fresh Adviser applying `../skills/challenge-decision/SKILL.md`.
 Read the raw objective, proposal and independent evidence, not a requested
 verdict. Return supported objections, a stronger alternative when one exists,
 and the smallest check that resolves the uncertainty. Recheck materially

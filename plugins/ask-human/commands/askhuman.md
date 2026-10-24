@@ -52,14 +52,27 @@ keep instance host paths, credentials and private recipients out of this package
 ## Endpoint — bring your own
 
 The command is endpoint-agnostic: any AskHuman-compatible MCP works. Yours is
-configured per harness, not by the marketplace:
+configured per harness, not by the marketplace. The registration script reads
+the keys that really exist on a host, so nothing has to be exported first when
+the host keeps its producer identity in `~/.config/ask-human/env`:
 
 ```bash
-export LHC_ASKHUMAN_MCP_URL="https://your-notify.example/mcp"   # or .env
-python3 plugins/ask-human/scripts/setup_mcp.py --apply          # registers it in Codex
+python3 plugins/ask-human/scripts/setup_mcp.py             # dry-run: prints the snippet
+python3 plugins/ask-human/scripts/setup_mcp.py --apply     # patches ~/.codex/config.toml
 ```
 
-`LHC_ASKSECRET_MCP_URL` does the same for `/secret`
-(`--name AskSecret`). Optional `..._MCP_TOKEN` becomes a Bearer header. The
-script is dry-run by default and keeps a backup on `--apply`; for other
+The endpoint comes from `LHC_ASKHUMAN_MCP_URL`, `ASK_HUMAN_MCP_URL` or
+`ASK_HUMAN_URL` (the human-request intake of the same service, from which the
+MCP URL is derived). The bearer token comes from `NOTIFY_CENTER_TOKEN`. An
+explicit `--url` wins over every environment key.
+
+The script is dry-run by default and keeps a backup on `--apply`; for other
 harnesses it prints the snippet to add manually.
+
+`LHC_ASKSECRET_MCP_URL` does the same for `/secret`
+(`--name AskSecret`). Optional `..._MCP_TOKEN` becomes a Bearer header.
+
+The harness's own permission question is intercepted by the plugin's
+`PermissionRequest` hook and needs none of this: it goes to the human through
+the Notice Place human-request intake and the answer comes back to the
+harness.

@@ -39,6 +39,33 @@ TOOLS = ROOT / 'src/common/tools'
 COLLECTOR = TOOLS / 'lhc_plan_json.py'
 GRID = TOOLS / 'lhc_grid.py'
 ENTRY = TOOLS / 'lhc_entry.py'
+REPORT_PROTOCOL = ROOT / 'src/common/protocols/PLAN_REPORT.md'
+GRAPH_PROTOCOL = ROOT / 'src/common/protocols/TASK_GRAPH.md'
+
+# The three documents a person reads one after another. A field with two
+# meanings, or a plan with two sources, is a defect the reader has to find.
+PLAN_DOCUMENTS = (
+    ('PLAN_REPORT.md', REPORT_PROTOCOL),
+    ('TASK_GRAPH.md', GRAPH_PROTOCOL),
+    ('plan-artifacts/SKILL.md', CANON),
+)
+
+# The meaning of `business_result`: the achieved fact, the person can use it
+# already now.
+ACHIEVED_MARKERS = (
+    'уже сейчас',
+    'достигнутый факт',
+    'can already use',
+    'achieved fact',
+)
+
+# The meaning the field must not carry: a benefit that only exists once the
+# work is done. The two of them together are the defect.
+FUTURE_MARKERS = (
+    'после реализации',
+    'after the task is complete',
+    'after the work is complete',
+)
 
 
 def flat(text: str) -> str:
@@ -141,6 +168,87 @@ def test_the_skill_names_every_field_a_leaf_file_may_carry():
     for field in ('role', 'read_paths', 'write_paths', 'paths'):
         assert f"`{field}`" in body
     assert 'are **not** leaf fields' in body
+
+
+def meaning_windows(text: str, window: int = 240) -> list:
+    """The text that follows every mention of the field label, flattened.
+
+    A definition is the label and the meaning that comes with it, so the window
+    is what a reader gets from the line that names the field.
+    """
+
+    body = flat(text)
+    lowered = body.lower()
+    out = []
+    for label in ('business_result', 'бизнес-результат'):
+        start = 0
+        while True:
+            at = lowered.find(label, start)
+            if at < 0:
+                break
+            out.append(body[at:at + window])
+            start = at + len(label)
+    return out
+
+
+def test_business_result_has_one_meaning_in_the_three_plan_documents():
+    """One field, one meaning: the achieved fact, paired with the progress.
+
+    The field used to be defined twice in the same report template — "what the
+    person can already use now" and "the benefit the person gets after the
+    work is done" — and a plan could therefore either pass a promised benefit
+    off as a fact or write a technical status into the target field.
+    """
+
+    for name, path in PLAN_DOCUMENTS:
+        windows = meaning_windows(path.read_text())
+        assert windows, f"{name} never names business_result"
+        for window in windows:
+            for marker in FUTURE_MARKERS:
+                assert marker.lower() not in window.lower(), (
+                    f"{name} gives business_result a second meaning: {marker!r} "
+                    f"sits next to the achieved fact in {window[:160]!r}"
+                )
+        assert any(
+            any(marker in window.lower() for marker in ACHIEVED_MARKERS)
+            for window in windows
+        ), f"{name} never says that business_result is the achieved fact"
+        # The pair is named explicitly, so the progress is not read as the result.
+        assert 'current_progress' in flat(path.read_text()), (
+            f"{name} never pairs business_result with current_progress"
+        )
+
+
+def test_the_source_of_the_plan_is_the_leaf_file_in_the_three_documents():
+    """One source of the plan: the file of the leaf, not the graph."""
+
+    old_claim = 'The graph is the canonical artifact'
+    source_markers = {
+        'PLAN_REPORT.md': 'The leaf file is the source of truth',
+        'TASK_GRAPH.md': 'leaves/<ID>.json',
+        'plan-artifacts/SKILL.md': 'The leaf file is the source of truth of its leaf',
+    }
+    for name, path in PLAN_DOCUMENTS:
+        body = flat(path.read_text())
+        assert old_claim not in body, (
+            f"{name} still calls the graph the canonical artifact"
+        )
+        assert source_markers[name] in body, (
+            f"{name} does not name the file of the leaf as the source of the plan"
+        )
+
+
+def test_the_hook_promise_names_the_harnesses_it_was_checked_in():
+    """The page rebuilds itself only where the LHC write hook is registered."""
+
+    for name, path in PLAN_DOCUMENTS:
+        body = flat(path.read_text())
+        if 'LHC write hook' not in body and 'lhc_entry.py' not in body:
+            continue
+        for harness in ('codex', 'claude-code', 'zcode', 'opencode', 'hermes'):
+            assert harness in body, (
+                f"{name} promises a self-rebuilding page without naming {harness}"
+            )
 
 
 def test_the_status_vocabulary_and_the_estimate_rule_are_in_the_skill():
@@ -286,6 +394,9 @@ def test_the_documented_leaf_path_builds_the_graph_and_the_page(tmp_path):
                 'id': 'L02', 'label': 'Второй лист', 'status': 'running',
                 'depends_on': ['L01'],
                 'estimate_minutes': {'minimum': 20, 'maximum': 30},
+                # A leaf above the fifteen-minute cap passes only with the
+                # reason it is deliberately larger — the rule the skill names.
+                'estimate_over_limit_reason': 'Один длинный блок без точки разрыва.',
                 'started_at': '10:10',
             },
         },

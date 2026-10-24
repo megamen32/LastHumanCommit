@@ -1,0 +1,17 @@
+{
+  "description": "Ask Human: intercept the question the harness asks the human, send it through the Notice Place human-request intake, and return the answer to the harness.",
+  "hooks": {
+    "PermissionRequest": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}/scripts/ask_human_hook.py\" --event PermissionRequest",
+            "timeout": 120,
+            "statusMessage": "Asking the human"
+          }
+        ]
+      }
+    ]
+  }
+}

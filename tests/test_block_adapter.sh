@@ -14,6 +14,13 @@ fail() { printf '%s\n' "FAIL: $*" >&2; exit 1; }
 expect_fail() { "$@" >/dev/null 2>&1 && fail "expected failure: $*" || :; }
 expect_same() { cmp -s "$1" "$2" || fail "files differ: $1 $2"; }
 
+# The mode of a file, in the form this system prints it: GNU stat and BSD stat
+# disagree, and a check that only works on one of them is a check that silently
+# stops checking on the other.
+mode_of() {
+  stat -c %a "$1" 2>/dev/null || stat -f %Lp "$1"
+}
+
 [ -x "$ADAPTER" ] || fail "missing executable adapter: scripts/lhc-block"
 
 cat >"$TMPDIR_TEST/source" <<EOF
@@ -50,7 +57,7 @@ cp "$TMPDIR_TEST/project-agents" "$TMPDIR_TEST/once"
 chmod 640 "$TMPDIR_TEST/project-agents"
 "$ADAPTER" apply "$TMPDIR_TEST/source" "$TMPDIR_TEST/project-agents"
 expect_same "$TMPDIR_TEST/once" "$TMPDIR_TEST/project-agents"
-[ "$(stat -c %a "$TMPDIR_TEST/project-agents")" = 640 ] || fail "apply changed target mode"
+[ "$(mode_of "$TMPDIR_TEST/project-agents")" = 640 ] || fail "apply changed target mode"
 
 cp "$TMPDIR_TEST/project-agents" "$TMPDIR_TEST/editor-failure-before"
 expect_fail env LHC_BLOCK_ED=false "$ADAPTER" apply "$TMPDIR_TEST/source" "$TMPDIR_TEST/project-agents"
@@ -70,7 +77,7 @@ EOF
 chmod 600 "$TMPDIR_TEST/project-claude"
 "$ADAPTER" init "$TMPDIR_TEST/source" "$TMPDIR_TEST/project-claude"
 expect_same "$TMPDIR_TEST/expected-initialized" "$TMPDIR_TEST/project-claude"
-[ "$(stat -c %a "$TMPDIR_TEST/project-claude")" = 600 ] || fail "init changed target mode"
+[ "$(mode_of "$TMPDIR_TEST/project-claude")" = 600 ] || fail "init changed target mode"
 
 mkdir "$TMPDIR_TEST/paths with spaces"
 cp "$TMPDIR_TEST/source" "$TMPDIR_TEST/paths with spaces/source router"
@@ -124,7 +131,7 @@ EOF
 chmod 600 "$TMPDIR_TEST/removable"
 "$ADAPTER" remove-block "$TMPDIR_TEST/removable"
 expect_same "$TMPDIR_TEST/expected-removed" "$TMPDIR_TEST/removable"
-[ "$(stat -c %a "$TMPDIR_TEST/removable")" = 600 ] || fail "remove changed target mode"
+[ "$(mode_of "$TMPDIR_TEST/removable")" = 600 ] || fail "remove changed target mode"
 
 printf '# no final newline' >"$TMPDIR_TEST/no-final-newline"
 cp "$TMPDIR_TEST/no-final-newline" "$TMPDIR_TEST/no-final-newline-before"

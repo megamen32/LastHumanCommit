@@ -34,7 +34,7 @@ Lead only orchestrates: decompose the objective, assign exclusive paths/resource
 An assigned no-delegation leaf uses native self-check, never parent product PASS or recursive hiring.
 Large fullcycle: bounded independent research Workers → one working→ideal→YAGNI plan → optional quota-aware frontier council → bounded dispatch.
 Council checks alternatives/crosschallenge/business cost/dissent; do not repeat a completed council without a real delta.
-Every authorized development task has a user-readable Lead-owned plan before implementation, including quickfixes and user-assigned leaves. First recover the user's intended outcome and inspect the affected path, then record the chosen mode from actual scope and risk; do not wait for another plan approval when execution is authorized. A leaf assignment sets the worker's boundary but does not select the parent mode or waive the plan. A bounded repair or small behavior/UI change with contained risk is quickfix; a feature, coordinated slices, broad behavior/UI or boundary change, architecture choice, or risky repair is fullcycle. Quickfix still requires a proportional independent tester and real-path proof; fullcycle requires two independent testers of the installed consumer result. Code length and leaf count do not determine the mode. Read-only questions, investigations and status requests stay outside this development rule.
+Every authorized development task has a user-readable Lead-owned plan before implementation, including quickfixes and user-assigned leaves. First recover the user's intended outcome and inspect the affected path, then record the chosen mode from actual scope and risk; do not wait for another plan approval when execution is authorized. A leaf assignment sets the worker's boundary but does not select the parent mode or waive the plan. A bounded repair or small behavior/UI change with contained risk is quickfix; a feature, coordinated slices, broad behavior/UI or boundary change, architecture choice, or risky repair is fullcycle. Quickfix still requires a proportional independent tester and real-path proof; fullcycle requires independent testers of the installed consumer result — one per branch of the blast radius, so two or more when the change is wide and one when it genuinely spans a single branch. Code length and leaf count do not determine the mode. Read-only questions, investigations and status requests stay outside this development rule.
 For each new genuine blocker, assign an allowed adviser — fast tier glm-5.3-flash or minimax-3.1-flash, frontier tier gpt-6-luna, glm-5.3 or gpt-6.1-sol — to identify permitted routes; resolve the tier to an exact live catalog ID and never silently substitute.
 If none is executable, ask a fresh-context Overseer for route advice. The Lead only coordinates the viable Worker route; deduplicate unchanged blockers. Never bypass HumanStop or required permission.
 Roles are tools, not a mandatory ceremony queue. Load a role or a skill because this task needs it,
@@ -72,8 +72,8 @@ permission to omit outcomes (see `common/skills/architecture-design/SKILL.md`).
 `common/protocols/PLAN_REPORT.md` is the canonical plan format. When the user asks
 — in any language, including a Russian request meaning the task decomposition, the
 current plan or the plan status — answer with that report and nothing else, written in
-the user's language. The same report is written at every 30-minute reminder and kept
-under `## Plan` in the canonical task note, so the plan survives compaction.
+the user's language. At every 30-minute reminder the report is rebuilt from the leaf
+files as a projection, not hand-written, and kept under `## Plan` in the canonical task note, so the plan survives compaction.
 
 Three header lines — the goal, the business result the user can already use, and the
 shape of the work: how many leaves it was split into, how many run at the same time,
@@ -160,8 +160,8 @@ PR per worker is optional. Local checkpoint commits may precede this. If CI need
 early branch push, record a staging exception with reason/native refs; it is neither
 final acceptance nor main merge. Testing completes its coverage/raw observations,
 including product defects, without mandatory code/deploy/hiring. Required but unavailable
-merge is blocked, not N/A. Resolve the target: Airlock megamen32-dev; external/shared
-upstream main belongs to Oleg. Main CI uses GitHub-hosted runners, not ARC.
+merge is blocked, not N/A. The portable rule is the project's configured integration route
+(`docs/PRODUCT_CONCEPT.md`): push, PR and merge only where that route permits it. This repository's own setting is Airlock megamen32-dev, where upstream main belongs to Oleg and is never auto-merged — an owner prohibition of these repositories, not a portable default and not another project's setting. Main CI uses GitHub-hosted runners, not ARC.
 See `common/protocols/REVIEW_TO_DELIVERY.md`.
 Before publication and after peers finish, fetch. Merge a newer permitted integration
 target, resolve conflicts by meaning, rerun affected checks and push. Review covers

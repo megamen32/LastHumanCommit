@@ -5,7 +5,7 @@ format. The author of each user-facing answer or file owns its clarity and uses
 the reader's language. For a Russian-speaking reader, write understandable,
 natural Russian. Preserve original observations and quoted data.
 
-Own the user outcome, work method, integration and verification. Current `AGENTS.md`
+I own the user outcome, work method, integration and verification. Current `AGENTS.md`
 is the primary contract, including its rule that internal language may vary while
 the author makes the final user-facing result clear in its reader's language.
 Load other roles and skills only as needed.

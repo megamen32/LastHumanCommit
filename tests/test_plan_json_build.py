@@ -284,3 +284,18 @@ def test_the_poller_is_not_restarted_by_the_swap():
     script = live.live_script()
     assert live.LIVE_MARKER in live.live_snippet()
     assert "old.getAttribute" in script
+
+
+def test_render_written_plan_accepts_a_str_root(tmp_path):
+    """The hook may hand the root as plain text; the page still gets rebuilt.
+
+    ``render_written_plan`` used to raise TypeError the moment ``root`` was a
+    ``str`` instead of a ``Path``, so a caller that passed the root from a
+    config value crashed instead of rebuilding the plan page.
+    """
+
+    plan_dir = tmp_path / "plan"
+    path = leaf(plan_dir, "L12", label="Первый заголовок")
+    event = {"cwd": str(tmp_path), "tool_input": {"file_path": str(path)}}
+    assert entry.render_written_plan(event, str(ROOT)) == plan_dir
+    assert (plan_dir / "plan.md").is_file()

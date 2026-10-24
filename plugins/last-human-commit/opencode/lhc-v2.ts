@@ -40,7 +40,7 @@ export type LhcHooks = {
     output: { message?: { id?: string; sessionID?: string }; parts?: unknown[] },
   ) => Promise<void>
   "tool.execute.after"?: (
-    input: { tool?: string; sessionID?: string; callID?: string },
+    input: { tool?: string; sessionID?: string; callID?: string; args?: Record<string, unknown> },
     output: { title?: string; output?: string },
   ) => Promise<void>
   "experimental.chat.system.transform"?: (input: { sessionID?: string }, output: { system?: string[] }) => Promise<void>
@@ -200,7 +200,7 @@ function extractReminder(raw: string): string | null {
  */
 function runTimeGuard(
   entry: string,
-  options: { cwd: string; sessionID: string; runtime?: string },
+  options: { cwd: string; sessionID: string; runtime?: string; toolInput?: unknown },
 ): Promise<string | null> {
   const runtime = options.runtime ?? "opencode"
   return new Promise((resolvePromise) => {
@@ -251,7 +251,12 @@ function runTimeGuard(
       finish(extractReminder(out))
     })
     try {
-      child.stdin?.end(JSON.stringify({ cwd: options.cwd, session_id: options.sessionID }))
+      // The payload carries the tool arguments whenever the plugin knows them:
+      // without tool_input the hook sees no written path and never rebuilds
+      // the plan, the promise Codex, Claude and Zcode already keep.
+      const payload: Record<string, unknown> = { cwd: options.cwd, session_id: options.sessionID }
+      if (options.toolInput !== undefined) payload.tool_input = options.toolInput
+      child.stdin?.end(JSON.stringify(payload))
     } catch {
       // A guard without stdin reports nothing; that is a fail-open outcome.
     }
@@ -274,12 +279,12 @@ const LastHumanCommitTimeGuard = async (context: LhcPluginInput = {}): Promise<L
   const pending = new Map<string, string>()
   const running = new Set<string>()
 
-  const observe = async (sessionID: string) => {
+  const observe = async (sessionID: string, toolInput?: unknown) => {
     if (!sessionID || !paths.entry || !paths.projectRoot) return
     if (running.has(sessionID)) return
     running.add(sessionID)
     try {
-      const reminder = await runTimeGuard(paths.entry, { cwd: paths.projectRoot, sessionID })
+      const reminder = await runTimeGuard(paths.entry, { cwd: paths.projectRoot, sessionID, toolInput })
       if (reminder) pending.set(sessionID, reminder)
     } catch {
       // A missing or failing guard must not disturb the session.
@@ -314,7 +319,7 @@ const LastHumanCommitTimeGuard = async (context: LhcPluginInput = {}): Promise<L
       try {
         const sessionID = input?.sessionID
         if (typeof sessionID !== "string") return
-        await observe(sessionID)
+        await observe(sessionID, input?.args)
       } catch {
         // Fail open: a tool boundary must never break the session.
       }

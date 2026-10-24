@@ -1,0 +1,28 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "lhc-plan",
+  "version": "1.0.0",
+  "description": "MCP facade over the LHC plan CLI: create a leaf, edit a leaf, rebuild the plan, price a leaf - for the harnesses that have no native hooks.",
+  "license": "MIT",
+  "keywords": [
+    "plan",
+    "mcp",
+    "workflow",
+    "planning"
+  ],
+  "mcpServers": "./mcp.json",
+  "interface": {
+    "displayName": "LHC Plan MCP",
+    "shortDescription": "Plan CLI operations over MCP",
+    "longDescription": "Four MCP tools that each equal one call of the existing plan CLI (lhc_plan_json.py, lhc_grid.py, lhc_models.py) and return its output verbatim. Qoder and Opencode have no LHC hooks, so this is how a person there still creates a leaf, edits a leaf, rebuilds a plan and prices it.",
+    "developerName": "megamen32",
+    "category": "Productivity",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Use the LhcPlan tools to create a leaf, rebuild the plan and check it."
+    ]
+  }
+}

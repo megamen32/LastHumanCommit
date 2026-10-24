@@ -41,9 +41,11 @@ The report's task list and the graph's leaf list are one set: the same ids, the
 same statuses, no task without a leaf and no leaf without a task. The command
 prints every divergence and exits non-zero when the two disagree.
 
-The graph is the canonical artifact. The dashboard, the text view and the plan
-section of a compaction handoff are all rendered from this file, so a stale
-report never becomes the plan of record.
+The graph is not the canonical artifact — the leaf files are. The graph is
+collected from `leaves/<ID>.json`, and the dashboard, the text view and the plan
+section of a compaction handoff are all rendered from it, so a stale report
+never becomes the plan of record and a hand-edited graph never becomes the
+source either. One leaf file, one owner; the graph is its projection.
 
 ## Format
 
@@ -54,9 +56,9 @@ fields are optional there.
 {
   "schema_version": 2,
   "title": "ExManager → Board integration",
-  "goal": "one accepted business outcome",
-  "business_result": "the observable benefit the person will get after the task is complete",
-  "current_progress": "what is already proven now, not what is planned",
+  "goal": "the outcome the person wants; it may still be open",
+  "business_result": "what the person can already use now — the achieved fact",
+  "current_progress": "what is already proven on the way, apart from the business result",
   "external_waits": "pending human or platform waits, outside the active work",
   "slots": 4,
   "updated_at": "2026-10-21T06:16:00",
@@ -130,9 +132,13 @@ unknown estimate is a choice, never a demand.
   from active work. If it is nonempty, the renderer withholds a clock ETA and
   labels the finish time unknown; it still shows the bounded active-work
   subtotal.
-- Top-level `current_progress` states what is already proven, apart from the
-  planned `business_result`. The dashboard keeps the two apart: the expected
-  outcome is not the confirmed progress.
+- Top-level `goal` is the outcome the person wants; it may still be open. Top-
+  level `business_result` is what the person can already use now: the achieved
+  fact. "Nothing has changed for the person yet" is a valid value; the benefit
+  promised for a future delivery is not. Top-level `current_progress` states
+  what is already proven on the way to the goal, apart from the business
+  result. The dashboard keeps the three apart: the wanted outcome, the
+  achieved fact and the confirmed progress are different things.
 - `actual_minutes` is the summed effort of the executors on the leaf. If it was not
   measured, leave it out instead of inventing a number. The window on the clock is
   `started_at` and `finished_at`, and it is a different number: 22 minutes of effort

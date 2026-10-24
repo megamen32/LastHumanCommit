@@ -23,11 +23,15 @@ Usage::
 
     python3 lhc_plan_json.py build <plan-dir>   # collect the leaves into plan.graph.json
     python3 lhc_plan_json.py check <plan-dir>   # validate the leaves, write nothing
+    python3 lhc_plan_json.py report <plan-dir>  # print the canonical «## Plan» block
+    python3 lhc_plan_json.py report <plan-dir> --write   # rewrite it in task.md
 """
 
 from __future__ import annotations
 
 import argparse
+import difflib
+import importlib.util
 import json
 import os
 import re
@@ -38,6 +42,23 @@ from typing import Any, Optional
 LEAVES_DIRNAME = "leaves"
 PLAN_FILE = "plan.json"
 GRAPH_FILE = "plan.graph.json"
+
+# The economics vocabulary of a leaf. A leaf declares its own model class and
+# its own complexity; the plan kernel turns those two into a model, a token
+# estimate and a dollar cost (`lhc_grid.py` prices them from the live catalog).
+# These are the only accepted spellings, and they are enums on purpose: a free
+# string here would let one executor invent a fourth class of model and a plan
+# would price it as if it were a fact.
+TIERS = ("fast", "frontier")
+COMPLEXITIES = ("S", "M", "L")
+COST_SOURCES = ("measured", "provisional")
+
+# The format (PLAN_REPORT.md, TASK_GRAPH.md) says a leaf is about fifteen minutes
+# and a longer job is two leaves. That cap lived only in the prose; the collector
+# silently accepted a 30–50 minute leaf. `check` now names the breach and exits
+# nonzero, unless the leaf records, in its own words, why it is deliberately
+# larger — so the rule is a signpost, not a blind barrier.
+LEAF_ESTIMATE_CAP_MINUTES = 15
 
 STATUS_QUEUED = "queued"
 STATUS_RUNNING = "running"
@@ -95,11 +116,18 @@ STATUS_ALIASES = {
 # The fields one leaf file may carry. The names are the names of a task of the
 # graph schema, so a collected leaf is a task the existing reader understands
 # without a translation table.
+#
+# `result` is the executor's own answer for the leaf: it happened today that a
+# finished worker wrote `result` into his leaf file, the collector rejected the
+# unknown field, and the whole build stopped - one extra word of one executor
+# broke the chain. A leaf's result is real leaf data, so it is a first-class
+# field here, not a text smuggled into `note`.
 LEAF_FIELDS = (
     "id",
     "label",
     "description",
     "acceptance",
+    "result",
     "affected_files",
     "status",
     "owner",
@@ -107,6 +135,11 @@ LEAF_FIELDS = (
     "harness",
     "model",
     "model_class",
+    "tier",
+    "complexity",
+    "token_estimate",
+    "cost_usd",
+    "cost_source",
     "depends_on",
     "parallel_with",
     "estimate_minutes",
@@ -114,6 +147,16 @@ LEAF_FIELDS = (
     "estimate_min",
     "estimate_max",
     "estimate_unknown_reason",
+    # A leaf longer than the 15-minute cap is a real situation (the cost kernel
+    # itself is one), but it must never pass silently: the leaf names why it is
+    # deliberately large, and only that named reason lets it through `check`.
+    "estimate_over_limit_reason",
+    # What a leaf in the queue owes the report: why it cannot start yet, and the
+    # planned start and finish. The format promises these; without fields to hold
+    # them the projection of a human plan cannot say them.
+    "wait_reason",
+    "planned_start",
+    "planned_finish",
     "actual_minutes",
     "started_at",
     "finished_at",
@@ -134,6 +177,7 @@ PLAN_FIELDS = (
     "current_progress",
     "external_waits",
     "slots",
+    "budget_usd",
     "updated_at",
     "journal",
 )
@@ -273,6 +317,87 @@ def _status(value: Any, path: Path) -> str:
     )
 
 
+def _enum(raw: dict[str, Any], field: str, allowed: tuple[str, ...], path: Path,
+          *, fold: str = "lower") -> str:
+    """One value of a closed vocabulary, or a message that names the vocabulary."""
+
+    value = _text(raw, field, path)
+    if not value:
+        return ""
+    candidate = value.lower() if fold == "lower" else value.upper()
+    if candidate not in allowed:
+        raise LeafError(
+            f"{path}: поле {field} = «{value}»; допустимы только {', '.join(allowed)}"
+        )
+    return candidate
+
+
+def _whole_count(raw: dict[str, Any], field: str, path: Path) -> Optional[int]:
+    """A counted quantity (tokens): a whole, non-negative number, never a string."""
+
+    value = raw.get(field)
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise LeafError(f"{path}: поле {field} должно быть целым числом токенов")
+    if value < 0:
+        raise LeafError(f"{path}: поле {field} не может быть отрицательным")
+    return value
+
+
+def _money(raw: dict[str, Any], field: str, path: Path) -> Optional[float]:
+    """A declared amount of money: a number, never a word, never negative."""
+
+    value = raw.get(field)
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise LeafError(f"{path}: поле {field} должно быть числом долларов")
+    if value < 0:
+        raise LeafError(f"{path}: поле {field} не может быть отрицательным")
+    return float(value)
+
+
+def unknown_field_error(path: Path, unknown: list[str]) -> LeafError:
+    """The gate stays shut, but it says what to do instead of reciting the schema.
+
+    A bare list of every accepted field is what stopped a finished worker today:
+    he had one extra word and no clue which field it belonged to. Each rejected
+    name is now answered with its nearest accepted alternatives, with the plan
+    file when the name is a plan-level fact, and with the honest way to add a
+    genuinely new field.
+    """
+
+    lines = []
+    for field in unknown:
+        close = difflib.get_close_matches(field, LEAF_FIELDS, n=3, cutoff=0.4)
+        parts = []
+        if field in PLAN_FIELDS:
+            parts.append(
+                f"«{field}» — факт уровня плана, он пишется в {PLAN_FILE}, а не в лист"
+            )
+        if close:
+            parts.append("ближайшие принятые поля листа: " + ", ".join(close))
+        if field in {"result", "итог", "результат"}:
+            parts.append("для ответа исполнителя есть поле result")
+        if field in {"cost", "price", "usd", "dollars"}:
+            parts.append("для стоимости есть пара cost_usd + cost_source (measured|provisional)")
+        if field in {"class", "model_tier", "класс"}:
+            parts.append("для класса модели есть поле tier (fast|frontier)")
+        if not parts:
+            parts.append("принятое поле с таким именем отсутствует")
+        parts.append(
+            "если поле правда новое — его добавляет правка схемы в LEAF_FIELDS, "
+            "а не молча проглоченное значение"
+        )
+        lines.append(f"  - {field}: " + "; ".join(parts))
+    return LeafError(
+        f"{path}: неизвестные поля листа — {', '.join(unknown)}. "
+        + " Исправь так: "
+        + " ".join(lines)
+    )
+
+
 # --------------------------------------------------------------------------
 # one leaf
 # --------------------------------------------------------------------------
@@ -285,10 +410,7 @@ def task_from_leaf(raw: Any, path: Path) -> dict[str, Any]:
         raise LeafError(f"{path}: лист должен быть объектом JSON")
     unknown = sorted(set(raw) - set(LEAF_FIELDS))
     if unknown:
-        raise LeafError(
-            f"{path}: неизвестные поля: {', '.join(unknown)}; "
-            f"допустимые поля: {', '.join(sorted(LEAF_FIELDS))}"
-        )
+        raise unknown_field_error(path, unknown)
 
     leaf_id = _text(raw, "id", path)
     if not leaf_id:
@@ -308,12 +430,39 @@ def task_from_leaf(raw: Any, path: Path) -> dict[str, Any]:
         "status": _status(raw.get("status"), path),
     }
 
-    for field in ("description", "acceptance", "owner", "session", "harness",
+    for field in ("description", "acceptance", "result", "owner", "session", "harness",
                   "model", "model_class", "note", "blocker",
-                  "estimate_unknown_reason"):
+                  "estimate_unknown_reason", "estimate_over_limit_reason", "wait_reason"):
         value = _text(raw, field, path)
         if value:
             task[field] = value
+
+    # The economics of the leaf. `tier` and `complexity` are what the leaf
+    # declares about itself; `token_estimate`/`cost_usd`/`cost_source` are the
+    # numbers it already knows, and a number of money without its provenance is
+    # not a number a person may read as a fact.
+    tier = _enum(raw, "tier", TIERS, path)
+    if tier:
+        task["tier"] = tier
+    complexity = _enum(raw, "complexity", COMPLEXITIES, path, fold="upper")
+    if complexity:
+        task["complexity"] = complexity
+    cost_source = _enum(raw, "cost_source", COST_SOURCES, path)
+    tokens = _whole_count(raw, "token_estimate", path)
+    if tokens is not None:
+        task["token_estimate"] = tokens
+    cost = _money(raw, "cost_usd", path)
+    if cost is not None:
+        if not cost_source:
+            raise LeafError(
+                f"{path}: cost_usd = {cost} без cost_source: цифра в долларах обязана "
+                "говорить, откуда она (measured — снято с замера или каталога, "
+                "provisional — условная константа планирования); "
+                "без метки источника стоимость не показывается"
+            )
+        task["cost_usd"] = cost
+    if cost_source:
+        task["cost_source"] = cost_source
 
     affected = _string_list(raw, "affected_files", path)
     if affected:
@@ -335,7 +484,7 @@ def task_from_leaf(raw: Any, path: Path) -> dict[str, Any]:
     if actual is not None:
         task["actual_minutes"] = actual
 
-    for field in ("started_at", "finished_at"):
+    for field in ("started_at", "finished_at", "planned_start", "planned_finish"):
         value = _clock(raw, field, path)
         if value:
             task[field] = value
@@ -440,6 +589,9 @@ def _plan_fields(raw: dict[str, Any], path: Path) -> dict[str, Any]:
         if isinstance(slots, bool) or not isinstance(slots, int) or slots < 1:
             raise LeafError(f"{path}: поле slots должно быть целым числом от 1")
         fields["slots"] = slots
+    budget = _money(raw, "budget_usd", path)
+    if budget is not None:
+        fields["budget_usd"] = budget
     journal = raw.get("journal")
     if journal is not None:
         if not isinstance(journal, list) or not all(
@@ -485,6 +637,9 @@ def plan_metadata(plan_dir: Path) -> dict[str, Any]:
             slots = raw.get("slots")
             if isinstance(slots, int) and not isinstance(slots, bool) and slots >= 1:
                 fields["slots"] = slots
+            budget = raw.get("budget_usd")
+            if isinstance(budget, (int, float)) and not isinstance(budget, bool) and budget >= 0:
+                fields["budget_usd"] = float(budget)
             journal = raw.get("journal")
             if isinstance(journal, list) and all(
                 isinstance(item, dict) for item in journal
@@ -582,6 +737,9 @@ def build_document(plan_dir: Path) -> dict[str, Any]:
         "tasks": tasks,
         "leaf_count": len(tasks),
     }
+    budget = metadata.get("budget_usd")
+    if budget is not None:
+        document["budget_usd"] = budget
     journal = metadata.get("journal")
     if journal:
         document["journal"] = journal
@@ -616,8 +774,391 @@ def _write_atomic(target: Path, text: str) -> None:
 
 
 # --------------------------------------------------------------------------
+# the report block: the projection of the leaves into the canonical report
+# --------------------------------------------------------------------------
+
+# The section of the task record that carries the report. PLAN_REPORT.md keeps
+# it under this heading, and the block that goes there is a projection: the
+# next render erases whatever a model wrote into it by hand.
+REPORT_SECTION = "## Plan"
+
+# The markers of the canonical report (PLAN_REPORT.md). The grid keeps the
+# same table in `GLYPH_STATUS`, and the block and the parser that reads it
+# back must agree on what a marker means; the test of this table pins the two
+# copies together, so neither of them can drift from the other.
+STATUS_GLYPHS = {
+    STATUS_DONE: "✅",
+    STATUS_RUNNING: "🔄",
+    STATUS_BLOCKED: "⛔",
+    STATUS_WAITING: "⌛",
+    STATUS_DEFERRED: "⏸",
+    STATUS_QUEUED: "⏳",
+}
+
+# The groups of the report stand in this order - finished, running, blocked,
+# waiting, deferred, queued - and an empty group is dropped.
+GROUP_ORDER = (
+    STATUS_DONE,
+    STATUS_RUNNING,
+    STATUS_BLOCKED,
+    STATUS_WAITING,
+    STATUS_DEFERRED,
+    STATUS_QUEUED,
+)
+
+
+def grid_module() -> Any:
+    """The neighbour that reads and renders the graph, loaded from next to this file.
+
+    The grid is loaded by path in the tests and by the CLI in the package, so
+    the neighbour cannot always be found by a plain import. The shape of the
+    work (the number of leaves, the width of the widest wave, the number of
+    slots) and the fingerprint of the revision are computed there, and a second
+    copy of that arithmetic here would drift away from the very numbers
+    `check-plan` compares the report with.
+    """
+
+    try:
+        import lhc_grid
+
+        return lhc_grid
+    except ModuleNotFoundError:
+        path = Path(__file__).resolve().with_name("lhc_grid.py")
+        spec = importlib.util.spec_from_file_location("lhc_grid_sibling", path)
+        if spec is None or spec.loader is None:
+            raise
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = module
+        spec.loader.exec_module(module)
+        return module
+
+
+def _minutes_text(value: Any) -> str:
+    """One number of minutes in the words of the report: «15», «7.5»."""
+
+    number = float(value)
+    if abs(number - round(number)) < 0.01:
+        return str(int(round(number)))
+    return f"{number:.1f}"
+
+
+def estimate_text(task: dict[str, Any]) -> str:
+    """The estimate of a leaf, in the words of the report.
+
+    «оценка» is the leaf's original estimate and it is never rewritten to fit
+    reality. A leaf that has none says so instead of borrowing a zero.
+    """
+
+    bounds = task.get("estimate_minutes") or {}
+    low = bounds.get("minimum")
+    high = bounds.get("maximum")
+    if low is None and high is None:
+        return "оценка не записана"
+    if low is None:
+        low = high
+    if high is None:
+        high = low
+    if abs(float(high) - float(low)) < 0.01:
+        return f"оценка {_minutes_text(low)} минут"
+    return f"оценка {_minutes_text(low)}–{_minutes_text(high)} минут"
+
+
+def fact_text(task: dict[str, Any], status: str) -> str:
+    """The measured time of a leaf: «факт 7 минут» or «прошло 22 минут».
+
+    The numbers are measured, never typed in by hand, and a leaf that was not
+    measured reads «не измерено» instead of a zero.
+    """
+
+    word = "прошло" if status == STATUS_RUNNING else "факт"
+    actual = task.get("actual_minutes")
+    if actual is None:
+        return f"{word} не измерено"
+    return f"{word} {_minutes_text(actual)} минут"
+
+
+def overrun_text(task: dict[str, Any]) -> str:
+    """The cause of an overrun, in the slot the format gives it.
+
+    The format asks for the cause whenever the measured time is longer than
+    the estimate. The leaf file has no field for that cause - its `note` is
+    the place where the executor writes it - so the block points at the leaf
+    instead of inventing a reason of its own.
+    """
+
+    actual = task.get("actual_minutes")
+    bounds = task.get("estimate_minutes") or {}
+    high = bounds.get("maximum")
+    if actual is None or high is None:
+        return ""
+    if float(actual) <= float(high):
+        return ""
+    reason = "причина в листе" if task.get("note") else "причина не записана в листе"
+    return f"отстаём потому что: {reason}"
+
+
+def relations_text(task: dict[str, Any]) -> list[str]:
+    """The relations of a leaf: who runs beside it and who it waits for.
+
+    The parallel mark is the one of the format («∥ параллельно с листом 1»).
+    The dependencies of a leaf that does not wait for anybody yet are named in
+    the slot of the format itself («начнём после листа 3»); the dependencies of
+    every other leaf are named in the relations cell of the projection, the
+    same word the page uses («зависит: L01, L05b»).
+    """
+
+    parts: list[str] = []
+    peers = [str(peer) for peer in (task.get("parallel_with") or [])]
+    if len(peers) == 1:
+        parts.append(f"∥ параллельно с листом {peers[0]}")
+    elif peers:
+        parts.append("∥ параллельно с листами " + ", ".join(peers))
+    return parts
+
+
+def render_leaf_line(task: dict[str, Any]) -> str:
+    """One leaf as one line of the canonical report.
+
+    The id of the leaf stands before the marker, so the parser of the report
+    binds the line to that leaf by its id and never by the position of its row:
+    a line without an id is a positional guess, and a guess is what made the
+    hand-written report and the graph disagree twice in one day.
+    """
+
+    status = task["status"]
+    glyph = STATUS_GLYPHS.get(status, STATUS_GLYPHS[STATUS_QUEUED])
+    head = f"{task['id']} {glyph}"
+    if status == STATUS_RUNNING:
+        head += " работаем"
+    # The label stands in parentheses: the parser of the report reads the first
+    # pair of parentheses as the name of the leaf, so a label that carries
+    # parentheses of its own is read up to the first closing one.
+    head += f" ({task.get('label') or ''})"
+
+    fields: list[str] = []
+    reason = str(task.get("wait_reason") or "").strip()
+
+    if status == STATUS_QUEUED:
+        dependencies = [str(item) for item in (task.get("depends_on") or [])]
+        if dependencies:
+            # The format names the leaf a queued one waits for: one leaf is
+            # «после листа N», several are «после листов N, M».
+            word = "листа" if len(dependencies) == 1 else "листов"
+            fields.append(f"начнём после {word} " + ", ".join(dependencies))
+            if reason:
+                fields.append("потому что " + reason)
+        elif reason:
+            fields.append("потому что " + reason)
+        else:
+            fields.append("исполнитель ещё не назначен")
+        if task.get("planned_start"):
+            fields.append(f"примерно в {task['planned_start']}")
+        fields.append(estimate_text(task))
+        if task.get("planned_finish"):
+            fields.append(f"закончим в {task['planned_finish']}")
+        return head + ", " + ", ".join(fields)
+
+    started = str(task.get("started_at") or "")
+    finished = str(task.get("finished_at") or "")
+    times = ""
+    if started:
+        times = f"начата {started}"
+        # A finish belongs to a leaf that finished. A leaf that runs again
+        # keeps the old finish in its file, and the report does not show a
+        # finish of a work that is still going on.
+        if finished and status == STATUS_DONE:
+            times += f" закончена {finished}"
+    elif finished and status == STATUS_DONE:
+        times = f"закончена {finished}"
+
+    if status == STATUS_WAITING:
+        fields.append("ждём ответа внешнего источника")
+        if reason:
+            fields.append("потому что " + reason)
+        fields.append(estimate_text(task))
+    elif status == STATUS_DEFERRED:
+        fields.append("владелец отложил лист")
+        fields.append(estimate_text(task))
+    elif status == STATUS_BLOCKED:
+        fields.append(estimate_text(task))
+        blocker = str(task.get("blocker") or "").strip()
+        fields.append("блокер: " + (blocker or "не записан в листе"))
+    else:
+        fields.append(estimate_text(task))
+        fields.append(fact_text(task, status))
+
+    overrun = overrun_text(task)
+    if overrun:
+        fields.append(overrun)
+    fields.extend(relations_text(task))
+    dependencies = [str(item) for item in (task.get("depends_on") or [])]
+    if dependencies:
+        # The relations cell is the last thing on the line: the parser reads it
+        # up to the end of the line, and a word after it would be read as a
+        # dependency of the leaf.
+        fields.append("зависит: " + ", ".join(dependencies))
+
+    body = ", ".join(fields)
+    if times:
+        return f"{head} {times}, {body}"
+    return f"{head} {body}"
+
+
+def report_block(plan_dir: Path) -> str:
+    """The `## Plan` block of the task record, projected from the leaf files.
+
+    The block is built from the same graph the page is built from, so the
+    report and the page carry one revision of one plan: the numbers of the
+    header are computed from the graph, never typed in by hand, and the
+    fingerprint of the revision is the one the page prints.
+    """
+
+    return report_block_of(build_document(Path(plan_dir)))
+
+
+def report_block_of(document: dict[str, Any]) -> str:
+    """The `## Plan` block of one collected document."""
+
+    grid = grid_module()
+    graph = grid.parse_graph_json(document)
+    metrics = grid.build_metrics(graph)
+    parallel, waves, slots = grid.plan_shape(graph, metrics)
+
+    lines: list[str] = []
+    goal = str(document.get("goal") or "")
+    if goal:
+        lines.append(f"Цель: {goal}")
+    results = [str(item).strip() for item in (document.get("business_results") or [])]
+    results = [item for item in results if item]
+    if not results and document.get("business_result"):
+        results = [str(document["business_result"]).strip()]
+    for result in results:
+        lines.append(f"Бизнес-результат: {result}")
+    lines.append(
+        "Декомпозиция: {leaves} · {parallel} параллельно · {waves} · слотов: {slots}".format(
+            leaves=grid.count_russian(len(document["tasks"]), "лист", "листа", "листьев"),
+            parallel=parallel,
+            waves=grid.count_russian(waves, "волна", "волны", "волн"),
+            slots=slots,
+        )
+    )
+    lines.append(f"Ревизия плана: {grid.graph_revision(graph)}")
+    lines.append("")
+    for status in GROUP_ORDER:
+        group = [task for task in document["tasks"] if task["status"] == status]
+        if not group:
+            continue
+        for task in group:
+            lines.append(render_leaf_line(task))
+        lines.append("")
+    return "\n".join(lines).rstrip("\n") + "\n"
+
+
+def write_report_block(task_path: Path, block: str) -> Path:
+    """Rewrite the `## Plan` section of the task record with the projection.
+
+    The section is replaced as a whole: a hand-written line inside it is a
+    defect, because the next render erases it anyway.
+    """
+
+    path = Path(task_path)
+    text = path.read_text(encoding="utf-8")
+    lines = text.splitlines()
+    start = None
+    for index, line in enumerate(lines):
+        if line.strip() == REPORT_SECTION:
+            start = index
+            break
+    if start is None:
+        raise LeafError(f"{path}: в записи задачи нет раздела «{REPORT_SECTION}»")
+    end = len(lines)
+    for index in range(start + 1, len(lines)):
+        if lines[index].startswith("## "):
+            end = index
+            break
+    replacement = [""] + block.rstrip("\n").splitlines() + [""]
+    written = "\n".join(lines[: start + 1] + replacement + lines[end:])
+    if text.endswith("\n"):
+        written += "\n"
+    _write_atomic(path, written)
+    return path
+
+
+def stale_graph_reason(plan_dir: Path, document: dict[str, Any]) -> str:
+    """Why the graph on disk no longer says what the leaves say.
+
+    The report is compared with the graph, not with the leaves: when the graph
+    is older than the leaves, the report and the graph disagree by definition,
+    and the reason is named instead of the divergence being discovered later.
+    """
+
+    graph_file = Path(plan_dir) / GRAPH_FILE
+    if not graph_file.is_file():
+        return "файла графа нет"
+    try:
+        raw = _read_json(graph_file)
+    except LeafError:
+        return "файл графа не прочитан"
+    if not isinstance(raw, dict):
+        return "файл графа не является объектом"
+    stored = raw.get("tasks")
+    if not isinstance(stored, list):
+        return "в файле графа нет списка задач"
+    by_id = {
+        str(task.get("id")): task
+        for task in stored
+        if isinstance(task, dict)
+    }
+    for task in document["tasks"]:
+        other = by_id.get(task["id"])
+        if other is None:
+            return f"в графе нет листа {task['id']}"
+        if str(other.get("status") or "") != task["status"]:
+            return f"статус листа {task['id']} в графе другой"
+        if [str(item) for item in (other.get("depends_on") or [])] != [
+            str(item) for item in (task.get("depends_on") or [])
+        ]:
+            return f"зависимости листа {task['id']} в графе другие"
+    if len(by_id) != len(document["tasks"]):
+        return "в графе листьев больше, чем в каталоге"
+    return ""
+
+
+# --------------------------------------------------------------------------
 # the command line
 # --------------------------------------------------------------------------
+
+
+def fmt_cap_minutes(value: float) -> str:
+    if abs(value - round(value)) < 0.01:
+        return f"{int(round(value))} мин"
+    return f"{value:.1f} мин"
+
+
+def estimate_cap_findings(tasks: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Leaves whose estimate passes the 15-minute cap without saying why.
+
+    The cap belongs to the format, not to a single tool, so the finding is a
+    plain list the command line and any other caller can read: a leaf longer
+    than the cap is either split into two leaves or records the reason it is
+    deliberately larger. Silence is what this function exists to end.
+    """
+
+    findings: list[dict[str, Any]] = []
+    for task in tasks:
+        bounds = task.get("estimate_minutes") or {}
+        high = bounds.get("maximum")
+        if high is None or high <= LEAF_ESTIMATE_CAP_MINUTES:
+            continue
+        reason = str(task.get("estimate_over_limit_reason") or "").strip()
+        if reason:
+            continue
+        findings.append({
+            "id": task.get("id", ""),
+            "minutes": float(high),
+            "cap": LEAF_ESTIMATE_CAP_MINUTES,
+        })
+    return findings
 
 
 def main(argv: Optional[list[str]] = None) -> int:
@@ -630,13 +1171,60 @@ def main(argv: Optional[list[str]] = None) -> int:
     build.add_argument("plan_dir", type=Path)
     check = sub.add_parser("check", help="validate the leaves, write nothing")
     check.add_argument("plan_dir", type=Path)
+    report = sub.add_parser(
+        "report",
+        help="print the canonical «## Plan» block of the task record",
+    )
+    report.add_argument("plan_dir", type=Path)
+    report.add_argument(
+        "--write",
+        action="store_true",
+        help="rewrite the «## Plan» block in the task record",
+    )
+    report.add_argument(
+        "--task",
+        type=Path,
+        default=None,
+        help="the task record to rewrite (default: <plan-dir>/task.md)",
+    )
     args = parser.parse_args(argv)
     try:
         if args.command == "build":
             print(str(build_graph(args.plan_dir)))
+        elif args.command == "report":
+            document = build_document(args.plan_dir)
+            block = report_block_of(document)
+            reason = stale_graph_reason(args.plan_dir, document)
+            if reason:
+                print(
+                    f"LHC: файл {GRAPH_FILE} в каталоге устарел ({reason}); "
+                    "соберите граф командой build, иначе сверка увидит расхождение",
+                    file=sys.stderr,
+                )
+            if args.write:
+                task_path = args.task or (Path(args.plan_dir) / "task.md")
+                print(str(write_report_block(task_path, block)))
+            else:
+                sys.stdout.write(block)
         else:
-            build_document(args.plan_dir)
+            document = build_document(args.plan_dir)
             print(f"{args.plan_dir}: листы согласованы")
+            findings = estimate_cap_findings(document.get("tasks", []))
+            if findings:
+                print(
+                    f"ПРЕВЫШЕН ПРЕДЕЛ ОЦЕНКИ ЛИСТА ({LEAF_ESTIMATE_CAP_MINUTES} мин) — "
+                    "длинную работу надо разбить на два листа, либо записать в листе "
+                    "estimate_over_limit_reason, почему он сознательно больше:",
+                    file=sys.stderr,
+                )
+                for item in findings:
+                    print(
+                        f"  - лист {item['id']}: оценка {fmt_cap_minutes(item['minutes'])} "
+                        f"при пределе {item['cap']} мин — чего не хватает: разбиения или "
+                        "причины превышения",
+                        file=sys.stderr,
+                    )
+                return 1
     except (LeafError, OSError) as error:
         print(f"LHC: {error}", file=sys.stderr)
         return 1

@@ -751,7 +751,9 @@ class HonestLeafStatesTests(unittest.TestCase):
     REPORT = (
         'Цель: довести интеграцию до результата\n'
         'Бизнес-результат: карточка принимается\n'
-        'Декомпозиция: 4 листа · 2 параллельно · 2 волны · слотов: 2\n'
+        # The graph of this fixture has no dependency between its leaves, so
+        # the honest shape is one wave; the deferred leaf takes no place in it.
+        'Декомпозиция: 4 листа · 2 параллельно · 1 волна · слотов: 2\n'
         '\n'
         '✅ (контракт источника) начата 14:02 закончена 14:09, оценка 15 минут\n'
         '⌛ (ответ поставщика) ждём ответа поставщика, оценка 20 минут\n'

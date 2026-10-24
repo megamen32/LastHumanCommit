@@ -580,8 +580,12 @@ def render_written_plan(event, root):
     graph of the whole plan from the leaves and then rebuilds the page. The
     chain never loops: the hook reacts to the files the agent wrote, and the
     files the hook writes are not part of that event.
+
+    The root arrives as a Path or as plain text — a caller that reads it from
+    a config value must not pay a TypeError for it.
     """
-    tools = Path(root) / "tools" if (Path(root) / "tools" / "lhc_grid.py").is_file() else method_root(root) / "tools"
+    root = Path(root)
+    tools = root / "tools" if (root / "tools" / "lhc_grid.py").is_file() else method_root(root) / "tools"
     tool = tools / "lhc_grid.py"
     if not tool.is_file():
         return None

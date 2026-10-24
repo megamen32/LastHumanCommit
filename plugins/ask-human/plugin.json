@@ -1,0 +1,23 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "ask-human",
+  "version": "1.0.0",
+  "description": "Ask Human: forward the harness's own permission question to the human through the Notice Place human-request intake, and hand the answer back to the harness.",
+  "author": {
+    "name": "megamen32",
+    "url": "https://github.com/megamen32"
+  },
+  "license": "MIT",
+  "keywords": [
+    "ask-human",
+    "human-in-the-loop",
+    "hooks",
+    "telegram",
+    "mcp"
+  ],
+  "extensions": {
+    "com.openai": {
+      "hooks": "./hooks/hooks.json"
+    }
+  }
+}

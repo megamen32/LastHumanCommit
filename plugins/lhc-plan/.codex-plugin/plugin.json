@@ -1,0 +1,15 @@
+{
+  "name": "lhc-plan",
+  "version": "1.0.0",
+  "description": "Create a task leaf, edit a leaf, rebuild the plan and price a leaf over MCP, for the harnesses without native LHC hooks. Each tool is one call of the existing plan CLI and returns its output verbatim.",
+  "author": {
+    "name": "megamen32",
+    "url": "https://github.com/megamen32"
+  },
+  "mcpServers": {
+    "LhcPlan": {
+      "command": "python3",
+      "args": ["./scripts/plan_mcp.py"]
+    }
+  }
+}

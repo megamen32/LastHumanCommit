@@ -77,11 +77,21 @@
     });
     showStep(index);
   }
+  function countKinds(roles) {
+    const pad = value => String(value).padStart(2, "0");
+    const counts = { roles: 0, methods: 0, aliases: 0 };
+    for (const role of roles) {
+      if (role.kind === "role") counts.roles += 1;
+      else if (role.kind === "method-reference") counts.methods += 1;
+      else if (role.kind === "compatibility-alias") counts.aliases += 1;
+    }
+    return { roles: pad(counts.roles), methods: pad(counts.methods), aliases: pad(counts.aliases) };
+  }
   function renderRoles() {
     const grid = byId("roles-grid");
     const open = new Set(Array.from(grid.querySelectorAll(".role-toggle[aria-expanded='true']"), button => button.dataset.role));
     grid.replaceChildren();
-    byId("roles-count").textContent = t("roleCount", { count: String(state.data.roles.length).padStart(2, "0") });
+    byId("roles-count").textContent = t("roleCount", countKinds(state.data.roles));
     state.data.roles.forEach((role, index) => {
       const card = make("article", "role-card");
       const top = make("div", "role-top");

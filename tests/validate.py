@@ -2,6 +2,7 @@
 """Validate the current package and behavior, not mandatory prompt wording."""
 from __future__ import annotations
 import ast
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -20,7 +21,20 @@ def require(condition:bool,message:str)->None:
     if not condition: raise SystemExit("FAIL: "+message)
 
 router=(ROOT/"AGENTS.md").read_bytes()
-require(router==(ROOT/"CLAUDE.md").read_bytes(),"agent and Claude routers differ")
+# CLAUDE.md is not a second router a person has to remember to edit: the
+# publisher copies the bytes of AGENTS.md into it. A difference here is a build
+# leftover, so the gate names the command that fixes it instead of asking for
+# a hand edit.
+require(router==(ROOT/"CLAUDE.md").read_bytes(),
+        "CLAUDE.md is stale; it is generated from AGENTS.md - run: python3 scripts/publish_package.py")
+# And it stays a copy: the publisher derives it from AGENTS.md, and no projection
+# reads CLAUDE.md as a source. Otherwise the router silently gains a second author.
+_spec=importlib.util.spec_from_file_location("publish_package",ROOT/"scripts/publish_package.py")
+_publisher=importlib.util.module_from_spec(_spec);_spec.loader.exec_module(_publisher)
+require(("AGENTS.md","CLAUDE.md",()) in _publisher.COPIES,
+        "the publisher must generate CLAUDE.md from AGENTS.md - add that copy to COPIES, do not edit CLAUDE.md by hand")
+require(not any(source=="CLAUDE.md" for source,_,_ in _publisher.COPIES),
+        "CLAUDE.md must not be a projection source again; AGENTS.md is the only authored router")
 require(len(router.decode().splitlines())<=200,"automatic entry grew beyond its context budget")
 for role in ("Lead","Worker","Overseer","Tester","Reviewer","Adviser","Critic","Maintainer"):
     require((ROOT/f"src/common/agents/{role}.md").is_file(),f"missing optional role {role}")

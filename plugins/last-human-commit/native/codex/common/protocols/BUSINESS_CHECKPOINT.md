@@ -1,7 +1,10 @@
 # Hourly business-result direction check
 
 This control is mandatory every hour of observed active work, including with green
-tests and a confident implementer. The original assignment, attached document and
+tests and a confident implementer. It is the single 60-minute direction review:
+TIME_CONTROL.md names no second hourly checkpoint, and the two are the same
+review described once here and referenced there. The original assignment,
+attached document and
 latest direct user corrections define the goal; your plan, summary or new task card
 cannot replace them. A fresh zero-knowledge Overseer may read this checkpoint against
 the original request to guide the Lead; it does not own the result and never gates

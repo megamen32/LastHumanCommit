@@ -72,8 +72,10 @@ python3 <installed-package>/scripts/install_runtime.py \
 are replaced; unrelated instructions are preserved and backed up. Existing GSD
 skills are not deleted. Reload/start a new session to load changed instructions.
 
-Source updates: edit the source, run `plugins/last-human-commit/scripts/sync_skills.py`,
-then `python3 tests/validate.py`.
+Source updates: edit the source, then republish the generated copies with
+`python3 scripts/publish_package.py` — it rewrites `CLAUDE.md` from the router
+`AGENTS.md`, and `python3 tests/validate.py` fails as stale until it does — then run
+`plugins/last-human-commit/scripts/sync_skills.py` and `python3 tests/validate.py`.
 The validator runs package/source parity and all executable regressions. Runtime
 installation and actual use must be verified separately from source tests.
 

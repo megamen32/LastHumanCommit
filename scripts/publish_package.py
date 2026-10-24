@@ -6,6 +6,11 @@ and of the repository root files. A change in the canon that is not republished
 leaves the package stale, and the projection gate turns red - which is how a
 one-line edit of an instruction used to cost a release.
 
+The entry router is a projection too. `AGENTS.md` is the only authored text;
+`CLAUDE.md` exists because some harnesses read that filename instead of
+`AGENTS.md`, and it carries exactly the same bytes. It is written here, so a
+human never maintains two versions of the router.
+
 This script makes the projection a command instead of a ritual:
 
     python3 scripts/publish_package.py            # republish what changed
@@ -27,11 +32,31 @@ ROUTING = COMMON + (
 )
 
 # (source, generated, replacements)
+# `AGENTS.md` is the single authored router: the root `CLAUDE.md` and both
+# package router copies are projections of its bytes, never hand-edited files.
 COPIES: tuple[tuple[str, str, tuple[tuple[bytes, bytes], ...]], ...] = (
+    ("AGENTS.md", "CLAUDE.md", ()),
+    # The native Codex package is the root the fleet installs for Codex, so the
+    # facade and its MCP declaration travel with it as copies of the bytes.
+    (
+        "plugins/last-human-commit/scripts/plan_mcp.py",
+        "plugins/last-human-commit/native/codex/scripts/plan_mcp.py",
+        (),
+    ),
+    (
+        "plugins/last-human-commit/.mcp.json",
+        "plugins/last-human-commit/native/codex/.mcp.json",
+        (),
+    ),
+    (
+        "plugins/last-human-commit/.mcp.json",
+        "plugins/last-human-commit/mcp.json",
+        (),
+    ),
     ("AGENTS.md", "plugins/last-human-commit/AGENTS.md", COMMON),
-    ("CLAUDE.md", "plugins/last-human-commit/CLAUDE.md", COMMON),
+    ("AGENTS.md", "plugins/last-human-commit/CLAUDE.md", COMMON),
     ("AGENTS.md", "plugins/last-human-commit/native/codex/AGENTS.md", COMMON),
-    ("CLAUDE.md", "plugins/last-human-commit/native/codex/CLAUDE.md", COMMON),
+    ("AGENTS.md", "plugins/last-human-commit/native/codex/CLAUDE.md", COMMON),
     ("src/common/agents/Lead.md", "plugins/last-human-commit/common/agents/Lead.md", COMMON),
     ("src/common/agents/Worker.md", "plugins/last-human-commit/common/agents/Worker.md", COMMON),
     (
@@ -98,6 +123,7 @@ TOOL_COPIES = (
     "lhc_live.py",
     "lhc_git_facts.py",
     "lhc_gitlayout.py",
+    "lhc_models.py",
 )
 
 TREE_FOLDERS = (

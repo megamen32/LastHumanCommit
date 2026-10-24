@@ -14,3 +14,10 @@ capabilities:
   resume_transport: adapter-dependent
   nonblocking_parent_transport: adapter-dependent
   lifecycle_time_guard_hook: proven
+  # proven by a real run, not by the branch alone: the plugin now forwards
+  # tool args as tool_input, and the hook binary started the OpenCode way
+  # (--event PostToolUse --heartbeat-only --runtime opencode) rebuilds the
+  # plan from a written leaf with exit 0.  Guards:
+  # tests/test_last_spawns.py::test_the_opencode_plugin_puts_the_written_paths_into_the_payload,
+  # test_an_opencode_event_rebuilds_the_plan_of_the_written_leaf,
+  # test_the_old_opencode_payload_without_tool_input_changes_nothing.

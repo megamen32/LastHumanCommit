@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "AskHuman": {
+      "type": "http",
+      "url": "https://notify.bezrabotnyi.com/mcp",
+      "bearer_token_env_var": "NOTIFY_CENTER_TOKEN"
+    }
+  }
+}

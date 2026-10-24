@@ -1,6 +1,7 @@
 """Translation packaging and source-preservation regressions (stdlib only)."""
 import hashlib
 import json
+import re
 import shutil
 import subprocess
 import unittest
@@ -13,6 +14,21 @@ class LanguageTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.data = build.build()
+
+    def test_roles_header_states_honest_taxonomy_in_both_locales(self):
+        source = (build.SITE / "i18n.js").read_text(encoding="utf-8")
+        entry = re.search(r'"roleCount":\s*\[([^\]]*)\]', source)
+        self.assertIsNotNone(entry, "roleCount message is missing")
+        texts = re.findall(r'"((?:[^"\\]|\\.)*)"', entry.group(1))
+        self.assertEqual(len(texts), 2)
+        for text in texts:
+            for token in ("{roles}", "{methods}", "{aliases}"):
+                self.assertIn(token, text, text)
+        self.assertRegex(texts[0], r"\d*ROLES.*METHOD REFERENCES.*ALIAS")
+        self.assertRegex(texts[1], "РОЛИ.*МЕТОДИК.*ПСЕВДОНИМ")
+        app = (build.SITE / "app.js").read_text(encoding="utf-8")
+        self.assertNotIn('t("roleCount", { count:', app, "header still counts all cards as roles")
+        self.assertIn("method-reference", app)
 
     def test_language_assets_are_versioned_and_in_order(self):
         markup = (build.DIST / "index.html").read_text(encoding="utf-8")

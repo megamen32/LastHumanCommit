@@ -1,0 +1,23 @@
+{
+  "id": "L02b",
+  "label": "Резолвер моделей: алиас fast-тира minimax-3.1-flash должен находиться",
+  "status": "done",
+  "started_at": "05:45",
+  "finished_at": "06:03",
+  "actual_minutes": 18,
+  "description": "В каталоге models.dev модель записана с буквой семейства, прилепленной к номеру: empiriolabs/minimax-m3-1-flash, edenai/minimax/MiniMax-M3.1-Flash, cloudflare-ai-gateway/minimax/m3.1-flash. Запрос minimax-3.1-flash нормализуется в minimax-3-1-flash и не совпадает ни с одним из них, поэтому resolve возвращает exit 2 и список nearest. Это ломает ровно тот путь, на который опирается AGENTS.md: minimax-3.1-flash — один из двух разрешённых fast-тиров, и без разрешения имени его нельзя ни назначить, ни оценить в деньгах (L03 зависит от этого). Второе: nearest сейчас предлагает commandcode/inclusionai/ling-3.1-flash — модель другого вендора, на неё не должно попадать ни exact, ни prefix, потому что в запросе есть подсказка вендора minimax.",
+  "acceptance": "python3 src/common/tools/lhc_models.py resolve minimax-3.1-flash печатает resolved с confidence exact и непустой effective_price_per_mtok, коды возврата 0; resolve glm-5.3-flash, glm-5.3, gpt-6-luna, gpt-6.1-sol остаются exact без изменения цен; список nearest для заведомо чужого вендора (query minimax-3.1-flash) не содержит ling-3.1-flash; весь tests/test_lhc_models.py проходит без сети, и добавлены регрессии на букву семейства и на подсказку вендора.",
+  "affected_files": [
+    "src/common/tools/lhc_models.py",
+    "tests/test_lhc_models.py"
+  ],
+  "owner": "worker-l02b",
+  "model_class": "fast",
+  "depends_on": [],
+  "estimate_minutes": {
+    "minimum": 10,
+    "maximum": 15
+  },
+  "note": "Правка только в нормализации/совпадении имени, цены и классификация тира не трогаются. Снимок каталога лежит в .tmp/lhc_models/api.json — сети может не быть, тесты не ходят в сеть. Нельзя разворачивать алгоритм «удалить один токен и молча подобрать близкого»: чужая модель вместо запрошенной хуже, чем exit 2.\n\nРезультат (перенесён из поля result, которого нет в схеме): src/common/tools/lhc_models.py: (1) runs()/differs_by_family_letter() — единственная допусковая норма: ровно один дополнительный запуск из ОДНОЙ буквы, стоящий непосредственно перед числами, все остальные части имени совпадают; симметрично в обе стороны; вариант без буквы не повышает free/preview SKU из bucket variant. (2) carries_vendor_hint()+name_match() — подсказка вендора вида Vendor/model теперь жёсткое требование на стадии решения о confidence (не в сортировке): её нет в provider id / vendor-части model id / id / name / family → ни exact, ни variant, ни prefix; наружный вендор может попасть только в nearest с явной меткой vendor_hint_match=false и текстом «different vendor». (3) find_matches прокидывает provider_id/model_id, строка получает match_note когда сработала буква семейства; nearest для запроса с подсказкой помечает чужого вендора. Совпадение prefix переведено на runs вместо токенов — поведение прежнее. Зашитых цен и имён моделей не добавлено: ни одного имени моделей в структурах данных (AST-аудит), единственные совпадения подстроки «ling» — слова spelling/ceiling. accept: resolve minimax-3.1-flash exit 0, exact, empiriolabs/minimax-m3-1-flash, effective 0.18 USD/Mtok, nearest пуст; glm-5.3-flash 0.088, glm-5.3 0.3432, gpt-6-luna 0.18, gpt-6.1-sol 3.6 — списки строк до/после идентичны по составу, порядку и ценам; suggest/cost/snapshot работают (cost 15 мин = 0.0054 USD, snapshot 40 записей); отказ по чужой подсказке (not-a-real-vendor/minimax-3.1-flash) → exit 2. Тесты: tests/test_lhc_models.py 41 шт, 3 прогона + один прогон в network namespace без сети — все зелёные, вне сети; весь tests -m 'not nightly' 807 passed, 2 skipped. Изменённое поведение, важное для L03: запрос с Vendor/ больше НЕ резолвится через другого вендора — раньше подсказка была только предпочтением при сортировке (тест openai/gpt-6-luna expectation переписан сознательно). actual_minutes=18 — это wall-clock интервал 05:45→06:03 без пауз, отдельного измерителя активной работы не было.",
+  "updated_at": "2026-10-24T06:08"
+}

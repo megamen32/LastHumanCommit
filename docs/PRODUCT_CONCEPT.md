@@ -26,8 +26,11 @@ what changes, what failed before, and where the result can be tried.
 ### Choose the shortest responsible route
 
 Use current project evidence to choose the smallest route that can prove the
-result. Work directly when the path is clear; investigate or compare options
-when an unresolved choice could materially change the outcome or cost.
+result. Work directly when the path is clear: "direct" is the shortest route
+through one assigned executor — an executor still performs every edit, check and
+deployment — never the planner doing the work instead of delegating. Investigate
+or compare options when an unresolved choice could materially change the outcome
+or cost.
 
 <!-- lhc-workflow-step:execute -->
 ### Do the work with the right boundaries
