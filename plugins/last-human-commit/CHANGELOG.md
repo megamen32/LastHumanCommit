@@ -1,83 +1,46 @@
-# 1.5.48 - the plan prices itself, the report is generated, and the harness can ask the human
+# 1.5.50 - the plan prices itself, the report is generated, and the harness can ask the human
 
 **The plan says what it costs.** A leaf declares its model class and its complexity; the
 plan kernel adds the model, the token estimate and the price from the live catalogue -
-without a model in the loop. `validate` warns when an expensive class takes a simple job,
-`status` and `render` show the price of each leaf, the price of the whole plan and the
-share of the frontier dollars, and the dashboard draws the same numbers next to the form
-of the work. Every figure carries its source: measured or provisional. A leaf without a
-chosen model says so instead of showing zero.
+without a model in the loop. Every figure carries its source, measured or provisional,
+and a leaf without a chosen model says so instead of showing zero.
 
 **The report is generated from the leaves.** The `## Plan` block of the task record is a
-projection of the leaf files, not text a model wrote by hand: change a status or an
-estimate in the leaf and the block changes with the rebuild, and a doctored header is
-caught with the named mismatch - "the header claims 4 waves, the graph has 7". The
-numbers in the header come from the same code the page uses, so the record and the graph
-cannot drift apart silently. `check-plan` on the live plan now says that the tasks of the
-report and the leaves of the graph agree - identifiers, statuses, dependencies and
-descriptions - and exits zero.
+projection of the leaf files: change a status in the leaf and the block changes with the
+rebuild, and a doctored header is caught with the named mismatch. The numbers in the
+header come from the same code the page uses, so the record and the graph cannot drift
+apart silently. `check-plan` on the live plan now says that the tasks of the report and
+the leaves of the graph agree and exits zero.
 
-**One meaning per field.** `business_result` is now one thing in the three documents that
-define it - what a person can already use, the achieved fact - with `goal` for the goal
-that is not open yet and `current_progress` for what has been shown. The source of the
-plan is named once: the leaf files are the source, the graph and the page are projections
-of them, and the report is a projection of the graph. The plan-artifacts skill names every
-field a leaf may carry and the path it documents really builds the graph and the page.
-
-**The plan CLI answers over MCP.** Four operations - create a leaf, edit a leaf, rebuild
-the plan, price a leaf - each equal one call of the existing CLI and return its output
-verbatim. The facade is **part of this package**, not a second plugin: it is declared in
-the package manifests and travels with the package to every host.
+**The plan CLI answers over MCP - from inside this package.** Four operations: create a
+leaf, edit a leaf, rebuild the plan, price a leaf. Each one is a call of the existing CLI
+and returns its output verbatim. The facade is part of the Last Human Commit package, not
+a second plugin: the separate plan plugin is gone and the facade travels with the package
+to every host.
 
 **Ask Human is a plugin of this marketplace.** Asking a human is a standard thing for
 every harness, so it ships as its own plugin inside the same marketplace: a hook catches
 the question the harness itself asks - the permission request - and forwards it to the
-human through the Notice Place human-request intake; the answer comes back to the
-harness. A harness with no answer within the timeout is not blocked: the question stays in
-Telegram and the harness asks on its own.
+human through the human-request intake; the answer comes back to the harness. A harness
+with no answer within the timeout is not blocked.
 
- 1.5.48 - the plan prices itself, the report is generated, and the harness can ask the human
+**One meaning per field.** `business_result` is one thing in the three documents that
+define it, and the source of the plan is named once: the leaf files are the source, the
+graph and the page are projections of them. The plan-artifacts skill names every field a
+leaf may carry, and the path it documents really builds the graph and the page.
 
-**The plan says what it costs.** A leaf declares its model class and its complexity; the
-plan kernel adds the model, the token estimate and the price from the live catalogue -
-without a model in the loop. `validate` warns when an expensive class takes a simple job,
-`status` and `render` show the price of each leaf, the price of the whole plan and the
-share of the frontier dollars, and the dashboard draws the same numbers next to the form
-of the work. Every figure carries its source: measured or provisional. A leaf without a
-chosen model says so instead of showing zero.
+**The suite stays green, and the package ships what it claims.** The model resolver and
+the facade travel with the package instead of being left behind in the source tree.
+# 1.5.48 - correct the route from actual progress
 
-**The report is generated from the leaves.** The `## Plan` block of the task record is a
-projection of the leaf files, not text a model wrote by hand: change a status or an
-estimate in the leaf and the block changes with the rebuild, and a doctored header is
-caught with the named mismatch - "the header claims 4 waves, the graph has 7". The
-numbers in the header come from the same code the page uses, so the record and the graph
-cannot drift apart silently. `check-plan` on the live plan now says that the tasks of the
-report and the leaves of the graph agree - identifiers, statuses, dependencies and
-descriptions - and exits zero.
+- Codex: an optional trusted async hook invokes a fresh read-only Overseer at a
+  due work boundary and returns one concrete progress correction to the active turn.
+- Bound and redact native evidence, prevent recursive/duplicate reviews, honor
+  native stop/new-turn cancellation and hook disablement, and fail open.
+- Shorten report-only reminders. Other harnesses retain manual consultation.
+- Native fixture proof: actual callback redirected repeated SHA checks to local
+  installation and a successful consumer check. Only fixture timing was synthetic.
 
-**One meaning per field.** `business_result` is now one thing in the three documents that
-define it - what a person can already use, the achieved fact - with `goal` for the goal
-that is not open yet and `current_progress` for what has been shown. The source of the
-plan is named once: the leaf files are the source, the graph and the page are projections
-of them, and the report is a projection of the graph. The plan-artifacts skill names every
-field a leaf may carry and the path it documents really builds the graph and the page.
-
-**The plan CLI answers over MCP.** Four operations - create a leaf, edit a leaf, rebuild
-the plan, price a leaf - each equal one call of the existing CLI and return its output
-verbatim. The facade is **part of this package**, not a second plugin: it is declared in
-the package manifests and travels with the package to every host.
-
-**Ask Human is a plugin of this marketplace.** Asking a human is a standard thing for
-every harness, so it ships as its own plugin inside the same marketplace: a hook catches
-the question the harness itself asks - the permission request - and forwards it to the
-human through the Notice Place human-request intake; the answer comes back to the
-harness. A harness with no answer within the timeout is not blocked: the question stays in
-Telegram and the harness asks on its own.
-
-**The core keeps its promises.** A leaf estimated above the limit is named as a violation,
-unless it carries the reason it is deliberately long; a waiting leaf shows why it waits
-and when it is planned to start; a running leaf shows how long it has been running and
-whether it is behind.
 # 1.5.47 - one answer about a repository, and no leftovers in the package
 
 **The last duplicate is gone.** The milestone module had grown its own search for

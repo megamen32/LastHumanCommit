@@ -329,7 +329,9 @@ python3 <LHC>/common/tools/lhc_plan_json.py build <objective>
 
 The hook does it by itself: after a worker writes his leaf file, the graph of
 the plan and the page of the plan are rebuilt without a command and without a
-reload. That is what the LHC write hook does where it is registered and
+reload. That is what the LHC write hook does where it is registered: `codex`,
+`claude-code` and `zcode` install it, while `hermes` and `opencode` do not, so
+their pages are rebuilt by the collector command and
 receives the written paths: codex, claude-code, zcode and opencode. A harness
 that registers no LHC hook at all (hermes) rebuilds nothing by itself — there
 the plan is rebuilt by running the command above and the render command. The

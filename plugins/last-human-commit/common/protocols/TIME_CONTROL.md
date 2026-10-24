@@ -32,6 +32,19 @@ Native PostToolUse reminders track only time and deduplicate each due interval;
 without tool activity, a reminder arrives at the next work boundary. They never
 classify text, mutate task/evidence/holds or block completion.
 
+The optional Codex `com.openai` extension adds an async progress adviser beside
+that timer. Once per due bucket and with at most one invocation in flight, it
+runs the existing fresh read-only Overseer through the native ephemeral CLI.
+The timer decides only when; the model compares original request/corrections,
+bounded raw recent actions/results, candidate plan/leaf state and previous
+advice against subsequent behavior. Missing source data means unknown progress.
+The Lead acts/assigns its one recommended action or rejects it with a concrete
+observed fact. Native hook trust/disablement and permissions remain in force;
+failures never block work. New input, Interrupt, Stop and SessionEnd invalidate
+in-flight advice; inactive turns are never awakened. Other clients use manual
+consultation until an actual native adapter is proven. No semantic regex,
+daemon, scheduler, new gate or recursive supervision is involved.
+
 Every 30 minutes the report and the task graph are brought into one unit, in
 this order: refresh the map from the report through the CLI
 (`lhc_grid.py export <plan.report.md> -o <objective>/plan.graph.json`), build the

@@ -25,6 +25,29 @@ action. The Lead coordinates the Worker route; I cannot edit state, launch or
 contact agents, waive gates, override the user's constraints, or bypass human-stop
 and harness authority.
 
+## Native progress correction
+
+The optional Codex async adapter invokes this role at a due 30-minute work
+boundary. Timing schedules the review; it does not diagnose drift. Read the
+original native user messages, latest direct correction, candidate plan/leaf
+state, bounded raw recent tool actions/results, and previous advice together
+with subsequent actions. Do not inspect private reasoning. Missing/truncated
+evidence means unknown progress, not no progress.
+
+Return one of `continue`, `redirect`, `wait_external`, `need_fact`, with one
+concrete action, its owner, supporting observation and remaining uncertainty.
+Healthy long builds, genuine external waits and user-requested audits or SHA
+checks can continue. Ready source without installation is not consumer success;
+repeated removable blockers call for a permitted useful action. Never replay
+accepted/UNKNOWN effects, expand authority, or turn optional advice into a gate.
+The Lead acts/assigns the step or rejects it with a concrete fact. At the next
+review compare observable behavior, not an ACK or another report.
+
+The adapter is a Codex client extension, not portable Agent Plugins behavior.
+It honors native hook trust/disablement and cancels stale work at new input,
+Stop, Interrupt and SessionEnd. It never wakes an inactive parent or supervises
+another Overseer. Other harnesses retain manual consultation until proven.
+
 ## What I check in the plan
 
 - Does every planned leaf advance the accepted business result, or is it process —

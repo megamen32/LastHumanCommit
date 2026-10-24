@@ -71,10 +71,8 @@ One leaf file looks like this:
   "session": "mvs_...",
   "harness": "codex",
   "model": "minimax-3.1-flash",
-  "tier": "fast",
-  "complexity": "S",
   "depends_on": [],
-  "estimate_minutes": {"minimum": 10, "maximum": 15},
+  "estimate_minutes": {"minimum": 15, "maximum": 20},
   "actual_minutes": 7,
   "started_at": "14:02",
   "finished_at": "",
@@ -82,9 +80,6 @@ One leaf file looks like this:
   "updated_at": "2026-10-23T22:04"
 }
 ```
-
-The example is collectable as it is: a leaf whose estimate stays within fifteen
-minutes needs nothing else.
 
 `id` equals the name of the file: `L01.json` is the leaf `L01`, and a file whose
 `id` contradicts its name is rejected. `label` is required and is the title of
@@ -100,19 +95,16 @@ the owner deferred: no answer is expected, it takes no slot and it is outside th
 remainder of the delivery.
 
 `estimate_minutes` keeps the original bounds and is never rewritten to fit
-reality: `{"minimum": 10, "maximum": 15}`, `{"min": 10, "max": 15}` and a plain
+reality: `{"minimum": 15, "maximum": 20}`, `{"min": 15, "max": 20}` and a plain
 number are all accepted. A leaf that estimates only part of the work also carries
 `estimate_unknown_reason`, so the forecast shows an unknown deadline instead of a
 silent zero.
 
-A leaf is about fifteen minutes of work, and a longer job is two leaves. A leaf
-that is deliberately longer carries `estimate_over_limit_reason` — why it is
-bigger, in its own words. Without that reason the collector names the breach and
-stops, so the cap is a signpost and not a blind barrier.
-
 `actual_minutes` is the summed effort of the executors; `started_at` and
-`finished_at` are the window on the clock, as `ЧЧ:ММ` on a 24-hour clock in the
-user's local time. 22 minutes of effort inside an 11 minute window means two
+`finished_at` are the window on the clock. Prefer ISO with timezone, for example
+`2026-10-24T23:55:00+03:00`, to measure across midnight or days. Legacy `ЧЧ:ММ`
+remains accepted; public comparison does not invent its date. 22 minutes of
+effort inside an 11 minute window means two
 executors worked in parallel — the dashboard shows both, as «усилие» and «по
 часам», and never one number quietly meaning the other.
 
@@ -125,33 +117,12 @@ update time.
 The complete set of fields a leaf file may carry is exactly:
 
 ```text
-acceptance, actual_minutes, affected_files, blocker, blocker_details,
-complexity, cost_source, cost_usd, depends_on, description, estimate,
-estimate_max, estimate_min, estimate_minutes, estimate_over_limit_reason,
-estimate_unknown_reason, finished_at, harness, id, label, model, model_class,
-note, owner, parallel_with, planned_finish, planned_start, result, session,
-started_at, status, tier, token_estimate, updated_at, wait_reason, wave
+acceptance, actual_minutes, affected_files, blocker, blocker_details, complexity, cost_source, cost_usd
+depends_on, description, duration_estimate_minutes, estimate, estimate_max, estimate_min, estimate_minutes, estimate_over_limit_reason
+estimate_unknown_reason, finished_at, harness, id, label, model, model_class, note
+origin, owner, parallel_with, planned_finish, planned_start, progress_events, result, session
+started_at, status, supersedes, tier, token_estimate, updated_at, wait_reason, wave
 ```
-
-The fields that are not obvious from their name:
-
-- `result` — the executor's own answer for the leaf: what the finished worker
-  delivered, in his words. It is leaf data, not a text smuggled into `note`.
-- `tier` — the class of the worker on this leaf, `fast` or `frontier`.
-  `complexity` — the size of the work, `S`, `M` or `L`. The plan kernel turns
-  those two into a model and a price; a free string here would let one
-  executor invent a fourth class of model and a plan would price it as if it
-  were a fact.
-- `token_estimate` — the token budget of the leaf, `cost_usd` — its price, and
-  `cost_source` — where that price came from, `measured` or `provisional`. A
-  number of money without its provenance is not a number a person may read as
-  a fact.
-- `wait_reason` — why a queued leaf cannot start yet, and `planned_start` and
-  `planned_finish` — when it is expected to run, as `ЧЧ:ММ` on a 24-hour clock
-  in the user's local time. They are the planned window; `started_at` and
-  `finished_at` are the real one.
-- `wave` — the wave of the leaf, when the author knows it. The renderer
-  derives it from the dependencies when the field is absent.
 
 An unknown field stops the collection and is named, like every other defect.
 `role`, `read_paths`, `write_paths` and `paths` are **not** leaf fields — the
@@ -164,30 +135,18 @@ Plan-level facts are not a leaf's business. They live in `plan.json` next to
 ```json
 {
   "title": "План поставки",
-  "goal": "Чего хочет пользователь, когда поставка закончится.",
-  "business_result": "Что пользователь может использовать уже сейчас — достигнутый факт.",
-  "current_progress": "Что уже доказано по дороге к цели.",
+  "goal": "Чего хочет пользователь.",
+  "business_result": "Что пользователь может использовать уже сейчас.",
   "slots": 2,
   "updated_at": "2026-10-23T22:04"
 }
 ```
 
-Three plan-level fields carry three different facts, and none of them borrows
-another one's wording:
-
-- `goal` — the outcome the person wants. It may still be open: it is the
-  target of the delivery, not a status.
-- `business_result` — what the person can already use **now**: the achieved
-  fact. «пока ничего не изменилось» is a valid and useful value; the benefit
-  promised for a future delivery is not.
-- `current_progress` — what is already proven on the way to the goal, apart
-  from the business result. It is the confirmed progress, not the wanted
-  outcome.
-
-`plan.json` may also carry `business_results`, `external_waits` and `journal`.
-When it is absent the collector falls back to the plan-level fields of an
-existing `plan.graph.json`, so a plan that already has a graph keeps its title,
-goal and business result.
+`plan.json` may also carry `business_results`, `current_progress`,
+`external_waits`, `journal` and `planned_start_at` (ISO with timezone, only when
+the intended start is known). When it is absent the collector falls back to the
+plan-level fields of an existing `plan.graph.json`, so a plan that already has a
+graph keeps its title, goal and business result.
 
 ## 2. Collect the leaves into the graph
 
@@ -240,14 +199,10 @@ section 5).
 The agent does not have to remember the commands of sections 2 and 3. The hook
 (`<tools>/lhc_entry.py`) watches the files a tool has written: a write into
 `leaves/` rebuilds the graph of the whole plan from the leaf files and then
-rebuilds the page. The chain never loops — the hook reacts to the files the
+rebuilds the page. The hook is installed for `codex`, `claude-code`, `zcode` and
+`opencode`; `hermes` registers no LHC hook, so there the collector command is
+what rebuilds the page. The chain never loops — the hook reacts to the files the
 agent wrote, and the files the hook writes are not part of that event.
-
-This is what the LHC write hook does where it is registered and receives the
-written paths: codex, claude-code, zcode and opencode. A harness that registers
-no LHC hook at all (hermes) rebuilds nothing by itself — there the plan is
-rebuilt by running the two commands of sections 2 and 3. The promise "the page
-rebuilds itself" is never made for a harness that was not checked.
 
 Measured on this machine: the collect-and-render chain takes about half a
 second (0.43–0.51 s over five runs), and the whole hook call about 0.7 s. The
@@ -279,7 +234,7 @@ language):
 
 ```text
 Цель: <какой человек выполняет какую задачу, на какой обычной поверхности и с какими главными границами>
-Бизнес-результат: <что человек может использовать уже сейчас — достигнутый факт>
+Бизнес-результат: <что пользователь может использовать уже сейчас — достигнутый факт>
 Декомпозиция: <N> листьев · <P> параллельно · <W> волн(а) · слотов: <S>
 
 ✅ (описание листа) начата 14:02 закончена 14:09, оценка 15 минут, факт 7 минут
@@ -287,13 +242,6 @@ language):
 ⛔ (описание листа) начата 14:05, оценка 20 минут, блокер: <внешнее препятствие>
 ⏳ (описание листа) начнём после листа 3, потому что <почему нельзя параллельно>, примерно в 14:30, оценка 10 минут, закончим в 14:40
 ```
-
-The header lines carry three different facts. `Цель` names the wanted outcome,
-`Бизнес-результат` names what the person can already use now — the achieved
-fact, and «пока ничего не изменилось» is a valid value — and `current_progress`
-(in `plan.json` and in the graph) names what is already proven on the way. The
-report never puts a planned benefit into the business-result line, and never
-puts a technical status there instead.
 
 `✅` finished · `🔄` running · `⛔` blocked · `⏳` queued and not started. A queued
 leaf names the leaf it waits for and why it could not start in parallel. A running
@@ -318,13 +266,10 @@ non-zero when task IDs, statuses, or explicitly stated description, acceptance
 and affected-file details disagree. That exit code is the gate: the plan is not
 finished until it passes. It does not reject descriptions by length.
 
-Every leaf line of the report carries the id of its leaf, and the reader takes
-that id from either side of the glyph: `✅ L01 · …` and `  - L01 · ✅ Готово · …`
-are the same leaf. A line that carries no id is matched by its position, and the
-reader says so instead of pretending that it found an id. `check-plan` matches
-the report to the graph by the id first; a unique title match is the only
-fallback. Write the report's lines in the order of the graph, which is the
-order `status` prints.
+The report's leaf lines carry a positional id — the first line is `L01`, the
+second is `L02` — and `check-plan` matches the report to the graph by that id
+first; a unique title match is the only fallback. Write the report's lines in the
+order of the graph, which is the order `status` prints.
 
 ## 6. The live page
 
@@ -426,3 +371,79 @@ button in it does not change the fleet — it only draws the plan.
 - They do not write the business result, the acceptance line or the blocker text.
 - They do not translate: the labels, the report and the dashboard are written in
   the user's own language by you.
+
+## 12. Public HTML, CLI first
+
+Use the actual shared plan-dir in every worker assignment. A worktree is not a
+new plan. For NEW plans, after writing the initial leaves, run the following
+initial publication whenever the host has configured `~/.config/lhc/publish.json`:
+
+```sh
+python3 "<tools>/lhc_plan_publish.py" publish-html <plan-dir> --autopublish
+```
+
+This workflow initialization binds only that new safe plan; never bulk-publish
+existing unbound plans. Existing plans require an explicit initial publish.
+The configuration is a host-local object:
+
+```json
+{"webroot":"/var/www/lhc","base_url":"https://lhc.bezrabotnyi.com"}
+```
+
+An optional `ssh_host` is an existing SSH alias; the same CLI copies the bundle
+using existing SSH credentials. No new key/token store. Use `--config FILE` to
+select a different target before first publication. The stable identity and
+binding stay in `<plan-dir>/.lhc-publication/state.json`; do not remove/reset this
+directory when rebuilding the graph. Keep it local and back it up with the plan.
+
+The first publish freezes r001. Source estimates, dependencies and original
+intent remain in that immutable snapshot. Status/notes do not create revisions.
+Planning edits are shown as unaccepted changes until the deliberate command:
+
+```sh
+python3 "<tools>/lhc_plan_publish.py" revise <plan-dir> --reason "Изменилась зависимость"
+```
+
+r002 links to r001; old HTML/JSON remain byte-identical, including facts known
+at that time. To split/remove tasks, keep stable IDs and record `origin` and
+`supersedes` (list of prior IDs). Removed tasks remain visible from snapshots.
+Measured effort is `actual_minutes`; independent scheduled duration can use
+`duration_estimate_minutes`. Without the latter the legacy estimate is an
+explicit scheduling assumption. No active minutes are inferred from mtime.
+
+```sh
+python3 "<tools>/lhc_plan_json.py" create-leaf <plan-dir> L01 --fields '{"label":"Проверить страницу","estimate_minutes":10}'
+python3 "<tools>/lhc_plan_json.py" progress <plan-dir> L01 --note "Страница открыта, проверка продолжается" --fields '{"status":"running"}'
+python3 "<tools>/lhc_plan_json.py" update-leaf <plan-dir> L01 --fields '{"status":"done"}' --expected-hash <sha256-from-previous-write>
+python3 "<tools>/lhc_plan_json.py" build-plan <plan-dir>
+```
+
+The CLI appends `progress_events`, atomically validates/replaces one leaf, and
+serializes writers with a plan-local lock. Direct file edits remain supported;
+use the CLI to preserve append-only history and optimistic conflict detection.
+Reliable Codex `CODEX_THREAD_ID` binds session/harness only when missing. Other
+harnesses pass actual identity explicitly; missing is unknown. The tool never
+invents model identity or turns a successful command into business acceptance.
+
+After opting in, collector builds and the normal leaf-write hook re-publish
+without MCP. Unchanged public inputs skip delivery; a short coalescing window
+bounds burst work. Failure logs a warning and leaves the last good page while
+leaf work continues. Do not re-enable globally disabled native hooks.
+
+The page is unlisted and gets a random suffix of at least 96 bits. Anyone with
+the link can read/copy/share it. `noindex` is NOT authentication. Publish only
+authorized safe plan metadata/notes: never credentials, transcripts or private
+project dumps. Paths and recognizable credential patterns are redacted as a
+best-effort backstop, not a security boundary. Configure the static host to deny
+directory listing/dotfiles and set no-store, no-referrer and noindex headers.
+
+The current page polls `version.json` with no-store every 12 seconds over HTTP,
+reloads only changed versions and restores scroll. Revision pages and downloaded
+HTML are standalone immutable snapshots. The badge reports missing connection
+or an old snapshot; it does not prove the worker is online. Delivery keeps the
+current and one previous generated bundle; revision files remain in each bundle.
+
+`plugins/lhc-plan` is the optional self-contained stdio facade. `create_leaf`,
+`update_leaf`, `update_progress`, `build_plan`, `publish_html`, `revise_plan` invoke
+the same CLIs. `estimate_cost` explicitly reports unavailable when the models
+CLI is absent. `scripts/setup_mcp.py` only prints registration; no global enable.

@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "LhcPlan": {
-      "command": "python3",
-      "args": ["./scripts/plan_mcp.py"]
-    }
-  }
-}

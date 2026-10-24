@@ -1,0 +1,25 @@
+{
+  "id": "L03",
+  "label": "MCP-фасад, переносимый пакет и регрессии",
+  "status": "done",
+  "owner": "implementation-worker",
+  "harness": "codex",
+  "session": "01a16e15-c7a3-79e3-9272-0aa110e4dcbf",
+  "depends_on": [
+    "L02"
+  ],
+  "estimate_minutes": 15,
+  "note": "CLI/stdIO-фасад написан. Первый прогон: 31 проверка прошла, одна ошибка последовательности в тесте parity исправляется.",
+  "updated_at": "2026-10-24T16:55:41+03:00",
+  "progress_events": [
+    {
+      "at": "2026-10-24T16:55:41+03:00",
+      "note": "CLI/MCP parity и stdio initialize/tools/list/tools/call проверены из отдельного пакета вне исходников. Пакет на Mac реально публикует по SSH. 87 целевых проверок прошли; ещё одна прошла после исправления тестового fixture.",
+      "changes": {
+        "status": "done"
+      },
+      "session": "01a16e15-c7a3-79e3-9272-0aa110e4dcbf",
+      "harness": "codex"
+    }
+  ]
+}

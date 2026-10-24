@@ -34,6 +34,47 @@
       "summary": "Worker mode selects worker-research, worker-code, or worker-bugfix; canonical skills sync into the Agent Plugin and its validator pins discovery.",
       "verified_at": "2026-08-12T13:53:25.340715+03:00"
     },
+    "plan-publication": {
+      "confidence": "verified",
+      "evidence": [
+        "tests/test_plan_publish.py"
+      ],
+      "git_head": "f216a2aaa1c0973fc4afc80b656a4312ec7b5009",
+      "key": "plan-publication",
+      "kind": "production-path",
+      "locations": [
+        {
+          "exists_at_verification": true,
+          "observed_kind": "file",
+          "observed_sha256": "644941919d31620cf86f96a65ac617298807ed17bd372ededb9dd0f62d41eb92",
+          "path": "src/common/tools/lhc_plan_json.py",
+          "symbol": ""
+        },
+        {
+          "exists_at_verification": true,
+          "observed_kind": "file",
+          "observed_sha256": "e668f92144ffc454890958420e0b7880e5950dcc78520f3fa3bdd12b2f787f9e",
+          "path": "src/common/tools/lhc_plan_publish.py",
+          "symbol": ""
+        },
+        {
+          "exists_at_verification": true,
+          "observed_kind": "file",
+          "observed_sha256": "fef603cf89bc4d0982bf08f39229f550cbb1f90063f7ea9d399e835000549969",
+          "path": "src/common/tools/lhc_plan_transport.py",
+          "symbol": ""
+        },
+        {
+          "exists_at_verification": true,
+          "observed_kind": "file",
+          "observed_sha256": "7bd00227ec63c583fe26f1a7a5209ba4b09630e69f350d71605ce25e60f750b7",
+          "path": "plugins/lhc-plan/scripts/plan_mcp.py",
+          "symbol": ""
+        }
+      ],
+      "summary": "CLI-only plan publication: collector build/leaf hook -> opt-in lhc_plan_publish.publish -> immutable revisions and observed removed-leaf facts -> atomic local/SSH static bundle. MCP delegates to the same CLI; no daemon/DB.",
+      "verified_at": "2026-10-24T16:55:25.359679+03:00"
+    },
     "task-wide-read-only-milestone": {
       "confidence": "verified",
       "evidence": [

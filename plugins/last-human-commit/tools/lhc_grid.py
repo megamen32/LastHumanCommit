@@ -282,6 +282,15 @@ class Leaf:
         same time, and the two numbers answer different questions, so the
         dashboard shows both instead of one silently meaning the other.
         """
+        if "T" in self.started_at or "T" in self.finished_at:
+            try:
+                start_iso = datetime.fromisoformat(self.started_at.replace("Z", "+00:00"))
+                end_iso = datetime.fromisoformat(self.finished_at.replace("Z", "+00:00"))
+                if start_iso.tzinfo is None or end_iso.tzinfo is None or end_iso < start_iso:
+                    return None
+                return (end_iso - start_iso).total_seconds() / 60
+            except ValueError:
+                return None
         start = parse_clock(self.started_at)
         finish = parse_clock(self.finished_at)
         if start is None or finish is None:
@@ -1531,6 +1540,10 @@ def build_metrics(graph: Graph) -> dict[str, Any]:
     )
 
     current_peak = running
+    if not use_live:
+        active = [leaf for leaf in graph.leaves if leaf.status == STATUS_RUNNING]
+        current_peak = len({(leaf.harness, leaf.session) if leaf.session else ("unknown", leaf.id)
+                            for leaf in active})
     slot_limit = graph.slots or 1
     # The same moment read by hands instead of rows: how many distinct
     # executors actually hold work, and whether the plan is over-subscribed at
