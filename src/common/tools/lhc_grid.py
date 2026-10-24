@@ -41,7 +41,10 @@ import json
 import math
 import os
 import re
+import shutil
+import subprocess
 import sys
+import tempfile
 import webbrowser
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
@@ -364,6 +367,14 @@ class Leaf:
 DEFAULT_GRAPH_TITLE = "LHC · граф задач"
 # The attribution a plan report has no place for. The export writes it when the
 # source graph knows it, and a refresh keeps it from the earlier graph.
+# The cap of the format: a leaf is about fifteen minutes, and a longer job is
+# two leaves. The collector (`lhc_plan_json.py`) owns the same number, and a
+# leaf that records why it is deliberately larger is not a breach.
+LEAF_ESTIMATE_CAP_MINUTES = 15
+
+# The fields a leaf carries for the report: why it waits, and when it starts
+# and finishes. The format promises all three, so the renderer has to carry
+# them and show them.
 ATTRIBUTION_FIELDS = (
     "owner",
     "session",
@@ -384,6 +395,10 @@ ATTRIBUTION_FIELDS = (
     "blocker",
     "blocker_details",
     "estimate_unknown_reason",
+    "estimate_over_limit_reason",
+    "wait_reason",
+    "planned_start",
+    "planned_finish",
     "read_paths",
     "write_paths",
     "paths",
@@ -524,6 +539,23 @@ def format_clock(minutes: Optional[int]) -> str:
     return f"{minutes // 60:02d}:{minutes % 60:02d}"
 
 
+def _elapsed_since(started_at: str, build_minutes: Optional[int]) -> Optional[float]:
+    """Minutes from a leaf's start to the moment the projection was built.
+
+    The time is taken from the fact of the build, not invented: a leaf that
+    started at 14:12 and whose page is built at 15:00 has been going for
+    forty-eight minutes. Without a start time there is nothing to measure, and
+    the number stays absent rather than becoming a guess.
+    """
+
+    if build_minutes is None:
+        return None
+    started = parse_clock(started_at)
+    if started is None:
+        return None
+    return float((build_minutes - started) % (24 * 60))
+
+
 def now_clock() -> int:
     return datetime.now().hour * 60 + datetime.now().minute
 
@@ -581,6 +613,19 @@ AFTER_TOKEN_RE = re.compile(
 )
 OVERRUN_RE = re.compile(r"отстаём потому что\s*:\s*(.+)$", re.IGNORECASE)
 BLOCK_RE = re.compile(r"блокер\s*:\s*(.+)$", re.IGNORECASE)
+# A leaf in the queue owes the report three things: why it cannot start yet,
+# when it is planned to start, and when it is planned to finish. The canonical
+# line names them in words - «потому что <почему нельзя параллельно>, примерно
+# в 14:30 … закончим в 14:40» - and those words are the leaf's own
+# `wait_reason`, `planned_start` and `planned_finish`. Read as plain times they
+# would be taken for a work window, and a leaf that has not started would be
+# reported as if it had.
+PLANNED_START_RE = re.compile(r"примерно в\s*(\d{1,2}:\d{2})", re.IGNORECASE)
+PLANNED_FINISH_RE = re.compile(r"закончим в\s*(\d{1,2}:\d{2})", re.IGNORECASE)
+# The reason of a queued leaf. «отстаём потому что» belongs to the running
+# leaf and keeps its own meaning, so it is not read as a wait reason.
+WAIT_REASON_RE = re.compile(r"(?<!отстаём )потому что\s*:?\s*([^,]+)", re.IGNORECASE)
+WAITING_REASON_RE = re.compile(r"жд[её]м\s+([^,]+?)(?:,\s*оценка|$)", re.IGNORECASE)
 # The projected summary states the relations of a leaf in its own words:
 # "зависит: L01, L02" and "параллельно: L03". The report is a projection, so
 # reading the projection back is not a favour to the renderer — it is the same
@@ -738,6 +783,28 @@ def parse_plan_report(text: str) -> Optional[Graph]:
                 if high is not None:
                     leaf.actual_minutes = high
         times = TIME_RE.findall(rest)
+        # A leaf in the queue has not started yet: «примерно в 14:30» and
+        # «закончим в 14:40» are its plan, not a work window. Reading them as
+        # `started_at`/`finished_at` would tell the reader that a leaf nobody
+        # began has already run for ten minutes.
+        planned = PLANNED_START_RE.search(rest)
+        if planned:
+            leaf.planned_start = planned.group(1)
+        planned_finish = PLANNED_FINISH_RE.search(rest)
+        if planned_finish:
+            leaf.planned_finish = planned_finish.group(1)
+        if leaf.status in (STATUS_QUEUED, STATUS_WAITING):
+            work_window = re.sub(
+                r"(примерно в|закончим в)\s*\d{1,2}:\d{2}", " ", rest, flags=re.IGNORECASE
+            )
+            times = TIME_RE.findall(work_window)
+            reason = WAIT_REASON_RE.search(work_window)
+            if reason:
+                leaf.wait_reason = normalize(reason.group(1))
+            elif leaf.status == STATUS_WAITING:
+                waiting_reason = WAITING_REASON_RE.search(work_window)
+                if waiting_reason:
+                    leaf.wait_reason = normalize(waiting_reason.group(1))
         if times:
             leaf.started_at = times[0]
             if len(times) > 1:
@@ -1540,10 +1607,14 @@ def build_metrics(graph: Graph) -> dict[str, Any]:
     )
 
     current_peak = running
+    # Without a live source the peak is counted by the executors, not by the
+    # rows: one executor holding two leaves occupies one slot.
     if not use_live:
         active = [leaf for leaf in graph.leaves if leaf.status == STATUS_RUNNING]
-        current_peak = len({(leaf.harness, leaf.session) if leaf.session else ("unknown", leaf.id)
-                            for leaf in active})
+        current_peak = len({
+            (leaf.harness, leaf.session) if leaf.session else ("unknown", leaf.id)
+            for leaf in active
+        })
     slot_limit = graph.slots or 1
     # The same moment read by hands instead of rows: how many distinct
     # executors actually hold work, and whether the plan is over-subscribed at
@@ -1667,6 +1738,10 @@ def build_metrics(graph: Graph) -> dict[str, Any]:
         "eta_imprecise_reasons": eta_imprecise_reasons,
         "eta_anchor_clock": "" if anchor is None else format_clock(anchor % (24 * 60)),
         "eta_anchor_idle_minutes": idle_minutes,
+        # The moment this projection is built. A running leaf is weighed
+        # against its estimate here: the time that has passed since it started
+        # is a fact of the build, and the build says how long ago that was.
+        "build_minutes": now,
         "eta_overdue": bool(
             unfinished > 0 and eta_known and eta_from + int(round(eta_max)) < now
         ),
@@ -3292,6 +3367,14 @@ def render_html(
         peer = ", ".join(label_by_id.get(other, other) for other in leaf.parallel_with) or "—"
         actual = fmt_minutes(leaf.actual_minutes) if leaf.actual_minutes is not None else "не измерено"
         span = fmt_minutes(leaf.actual_span_minutes) if leaf.actual_span_minutes is not None else "—"
+        # The time a running leaf has been going, measured at the moment this
+        # page is built. It is a fact of the build, not a measured effort: the
+        # leaf declares when it started and the build says how long ago that was.
+        elapsed_at_build = (
+            _elapsed_since(leaf.started_at, metrics.get("build_minutes"))
+            if leaf.status == STATUS_RUNNING
+            else None
+        )
         over = " over" if leaf.overrun else ""
         # The owner reads the plan in two colors: the time that was planned
         # is green, everything above it is yellow. Both numbers come from the
@@ -3424,6 +3507,35 @@ def render_html(
                 if leaf.estimate_unknown_reason else ""
             )
             + (f"<dt>Волна</dt><dd>{escape(str(leaf.wave))}</dd>" if leaf.wave else "")
+            # A leaf in the queue owes the report three things: why it cannot
+            # start yet, when it is planned to start and when it is planned to
+            # finish. A queued leaf without a reason says so: the format does
+            # not go silent about a wait nobody explained.
+            + (
+                f"<dt>Почему в очереди</dt><dd>"
+                + escape(leaf.wait_reason or "причина не названа")
+                + "</dd>"
+                + (f"<dt>Начнём по плану</dt><dd>{escape(leaf.planned_start)}</dd>" if leaf.planned_start else "")
+                + (f"<dt>Закончим по плану</dt><dd>{escape(leaf.planned_finish)}</dd>" if leaf.planned_finish else "")
+                if leaf.status in (STATUS_QUEUED, STATUS_WAITING)
+                else ""
+            )
+            # A running leaf is weighed against its estimate at the moment the
+            # page is built: the time that has passed is a fact of the build,
+            # not a measured effort.
+            + (
+                f"<dt>Прошло на момент сборки</dt><dd>{escape(fmt_minutes(elapsed_at_build))}"
+                + (
+                    f" <span class='cell-sub'>отстаём: оценка {escape(leaf.duration_label)}</span>"
+                    if elapsed_at_build is not None
+                    and leaf.estimate_max is not None
+                    and elapsed_at_build > leaf.estimate_max + 0.01
+                    else ""
+                )
+                + "</dd>"
+                if elapsed_at_build is not None
+                else ""
+            )
             + "</dl>"
         )
         detail_templates.append(
@@ -3451,6 +3563,17 @@ def render_html(
             )
         elif leaf.status != STATUS_DEFERRED:
             meta_parts.append(f"стоимость: {entry.get('text') or PRICE_UNAVAILABLE}")
+        # What a leaf in the queue waits for belongs on the row: the owner reads
+        # the plan in the open, not in a dialog. A queued leaf without a reason
+        # says so here rather than passing in silence.
+        if leaf.status in (STATUS_QUEUED, STATUS_WAITING):
+            meta_parts.append(f"ждёт: {leaf.wait_reason or 'причина не названа'}")
+            if leaf.planned_start:
+                meta_parts.append(f"начнём {leaf.planned_start}")
+            if leaf.planned_finish:
+                meta_parts.append(f"закончим {leaf.planned_finish}")
+        if elapsed_at_build is not None:
+            meta_parts.append(f"прошло {fmt_minutes(elapsed_at_build)} на момент сборки")
         meta_html = (
             f"<span class='row-meta'>{escape(' · '.join(meta_parts))}</span>" if meta_parts else ""
         )
@@ -3586,6 +3709,26 @@ def render_html(
         notes_html = "<ul class='notes'>" + "".join(
             f"<li>{escape(note)}</li>" for note in graph.notes
         ) + "</ul>"
+
+    # The cap of the format, named on the page itself: a leaf over fifteen
+    # minutes is two leaves, and a plan that carries one says so instead of
+    # looking like a plan whose leaves are all short.
+    cap_html = ""
+    cap_breaches = [item for item in estimate_cap_findings(graph) if item["breach"]]
+    if cap_breaches:
+        items = "".join(
+            f"<li>{escape(item['id'])}: оценка {escape(fmt_minutes(item['minutes']))} "
+            f"при пределе {item['cap']} мин — "
+            "разбейте лист на два либо запишите в листе estimate_over_limit_reason"
+            "</li>"
+            for item in cap_breaches
+        )
+        cap_html = (
+            "<div class='hint' id='lhc-estimate-cap'><b>Превышен предел оценки листа "
+            f"({LEAF_ESTIMATE_CAP_MINUTES} мин)</b>: {len(cap_breaches)} листьев. "
+            "Лист длиннее предела — это два листа. "
+            "<ul>" + items + "</ul></div>"
+        )
 
     source_label = graph.source_path or "—"
     generated = datetime.now().strftime("%d.%m.%Y %H:%M")
@@ -3745,6 +3888,7 @@ def render_html(
         live=live_html,
         forecast=forecast_html,
         notes=notes_html,
+        estimate_cap=cap_html,
         total=total,
     )
 
@@ -4188,6 +4332,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       <h2>Прогноз</h2>
       {forecast}
       {notes}
+      {estimate_cap}
     </div>
     <div class="panel journal-fold" id="lhc-journal">
       <details>
@@ -4408,6 +4553,239 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
 
 # --------------------------------------------------------------------------
+# the paper version of the plan
+# --------------------------------------------------------------------------
+
+# The paper version is its own document, not the dashboard with the clicks
+# taken away: a dashboard is a working surface, and a sheet of paper is not.
+# So the print sheet carries the same graph and the same numbers, laid out for
+# A4 with a page break per wave, and it references nothing outside the file —
+# a sheet that waits for a font server prints differently on the next machine.
+PRINT_CSS = """\
+@page { size: A4 portrait; margin: 14mm 12mm 16mm; }
+@page :first { margin-top: 12mm; }
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 10pt;
+  line-height: 1.35;
+  color: #16181d;
+  background: #fff;
+}
+h1 { font-size: 17pt; margin: 0 0 2mm; }
+h2 { font-size: 13pt; margin: 0 0 2mm; }
+p { margin: 0 0 2mm; }
+ul { margin: 0 0 2mm; padding-left: 5mm; }
+table { width: 100%; border-collapse: collapse; margin-bottom: 4mm; }
+th, td { border: 1px solid #b9bec7; padding: 3px 5px; text-align: left; vertical-align: top; }
+th { background: #eef1f5; font-weight: 600; }
+tr { break-inside: avoid; page-break-inside: avoid; }
+.cover { break-after: page; page-break-after: always; }
+.wave { break-before: page; page-break-before: always; }
+.wave.first { break-before: avoid; page-break-before: avoid; }
+.kpis td { width: 25%; }
+.muted { color: #4a4f58; }
+.small { font-size: 9pt; }
+"""
+
+
+def _print_leaf_state(leaf: Leaf, metrics: dict[str, Any]) -> str:
+    """What the paper says about the state of one leaf.
+
+    The same truth the screen tells: a leaf in the queue owes the reader the
+    reason it waits and the times it plans to start and finish, a leaf in
+    work owes the time that has passed since it started, and a leaf that
+    passed its own estimate says so.
+    """
+
+    bits: list[str] = []
+    if leaf.status in (STATUS_QUEUED, STATUS_WAITING):
+        bits.append(f"ждёт: {leaf.wait_reason or 'причина не названа'}")
+        if leaf.planned_start:
+            bits.append(f"начнём {leaf.planned_start}")
+        if leaf.planned_finish:
+            bits.append(f"закончим {leaf.planned_finish}")
+    elif leaf.status == STATUS_RUNNING:
+        if leaf.started_at:
+            bits.append(f"начата {leaf.started_at}")
+        passed = _elapsed_since(leaf.started_at, metrics.get("build_minutes"))
+        if passed is not None:
+            bits.append(f"прошло {fmt_minutes(passed)} на момент сборки")
+            if leaf.estimate_max is not None and passed > leaf.estimate_max + 0.01:
+                bits.append(
+                    f"отстаём: прошло {fmt_minutes(passed)} при оценке "
+                    f"{fmt_minutes(leaf.estimate_max)}"
+                )
+    elif leaf.status == STATUS_BLOCKED:
+        bits.append(f"блокер: {leaf.blocker or 'не назван'}")
+    if leaf.actual_minutes is not None:
+        bits.append(f"факт {fmt_minutes(leaf.actual_minutes)}")
+    return " · ".join(bits) if bits else "—"
+
+
+def render_print_html(graph: Graph, metrics: dict[str, Any]) -> str:
+    """The plan on paper: one wave per page, no clicks, no external resource.
+
+    The dashboard is a working surface — it folds, it searches, it scrolls. A
+    sheet of paper can do none of that, and a document that keeps the
+    machinery of a screen prints badly and drags in resources the printer
+    never sees. So the paper version is its own document: the same graph and
+    the same numbers, laid out for A4 with a page break per wave, and not one
+    reference to anything outside the file.
+    """
+
+    schedule: Schedule = metrics["schedule"]
+    cost = _cost_of(graph, metrics)
+    leaves = sorted(
+        graph.leaves,
+        key=lambda leaf: (schedule.waves.get(leaf.id, 0), leaf.order),
+    )
+    waves: dict[int, list[Leaf]] = {}
+    unscheduled: list[Leaf] = []
+    for leaf in leaves:
+        wave = schedule.waves.get(leaf.id)
+        if wave is None:
+            # A leaf the scheduler does not place - a deferred one - is not a
+            # wave of its own: it is outside the delivery, and the paper says
+            # so instead of giving it a wave number it never had.
+            unscheduled.append(leaf)
+            continue
+        waves.setdefault(wave, []).append(leaf)
+
+    priced = cost.get("priced_count") or 0
+    if priced:
+        money = (
+            f"{fmt_usd(cost['total_usd'])}"
+            + (f" ({cost['label']})" if cost.get("label") else "")
+            + f" за {priced} из {cost['leaf_count']} листьев"
+        )
+    else:
+        money = f"нет посчитанных денег — {cost['leaf_count']} листьев без цены"
+
+    kpi_rows = []
+    for label, value in (
+        ("Готово", f"{metrics['done']} / {metrics['headline_total']}"),
+        ("В работе", str(metrics["running"])),
+        ("В очереди", str(metrics["queued"])),
+        ("Заблокировано", str(metrics["blocked"])),
+        ("Отложено владельцем", str(metrics["deferred"])),
+        ("Осталось", str(metrics["unfinished"])),
+        ("Параллельность", f"{metrics['current_parallel']} / {metrics['slots']}"),
+        (
+            "Усилие",
+            fmt_minutes(metrics["effort_minutes"])
+            if metrics["effort_known"]
+            else "неизвестно",
+        ),
+    ):
+        kpi_rows.append(
+            f"<tr><td>{escape(label)}</td><td>{escape(value)}</td></tr>"
+        )
+
+    findings = estimate_cap_warnings(graph) + staffing_warnings(graph, cost)
+    finding_html = ""
+    if findings:
+        finding_html = (
+            "<h2>Что требует внимания</h2>\n<ul>\n"
+            + "".join(f"<li>{escape(note)}</li>\n" for note in findings)
+            + "</ul>\n"
+        )
+
+    business = ""
+    if graph.business_result:
+        business += (
+            f"<p><b>Бизнес-результат:</b> {escape(graph.business_result)}</p>\n"
+        )
+    for item in graph.business_results:
+        business += f"<p class='small muted'>{escape(item)}</p>\n"
+
+    def row_html(leaf: Leaf) -> str:
+        """One leaf as one row of the paper table."""
+
+        entry = cost.get("leaves", {}).get(leaf.id, {})
+        if entry.get("usd") is not None:
+            leaf_money = fmt_usd(entry.get("usd"))
+        else:
+            leaf_money = entry.get("text") or PRICE_UNAVAILABLE
+        estimate = leaf.duration_label
+        if (
+            leaf.estimate_max is not None
+            and leaf.estimate_max > LEAF_ESTIMATE_CAP_MINUTES
+        ):
+            estimate += f" — выше предела {LEAF_ESTIMATE_CAP_MINUTES} мин"
+            estimate += (
+                f": {leaf.estimate_over_limit_reason}"
+                if leaf.estimate_over_limit_reason
+                else " (причина не названа)"
+            )
+        return (
+            "<tr>"
+            f"<td><b>{escape(leaf.id)}</b></td>"
+            f"<td>{escape(STATUS_GLYPHS.get(leaf.status, '⋯'))} "
+            f"{escape(STATUS_LABELS.get(leaf.status, leaf.status))}</td>"
+            f"<td>{escape(leaf.label or leaf.id)}</td>"
+            f"<td>{escape(estimate)}</td>"
+            f"<td>{escape(_print_leaf_state(leaf, metrics))}</td>"
+            f"<td>{escape(', '.join(leaf.depends_on) or '—')}</td>"
+            f"<td>{escape(leaf.owner or '—')}</td>"
+            f"<td>{escape(leaf_money)}</td>"
+            "</tr>"
+        )
+
+    def table_html(members: list[Leaf]) -> str:
+        return (
+            "<table>\n<thead><tr>"
+            "<th>Лист</th><th>Статус</th><th>Что делает</th><th>Оценка</th>"
+            "<th>Состояние</th><th>Зависит</th><th>Кто</th><th>Стоимость</th>"
+            "</tr></thead>\n<tbody>\n"
+            + "\n".join(row_html(leaf) for leaf in members)
+            + "\n</tbody>\n</table>\n"
+        )
+
+    sections: list[str] = []
+    for index, wave in enumerate(sorted(waves)):
+        members = waves[wave]
+        head = (
+            f"<h2>Волна {wave}</h2>\n"
+            f"<p class='small muted'>{len(members)} "
+            f"{'лист' if len(members) == 1 else 'листьев'}</p>\n"
+        )
+        klass = "wave first" if index == 0 else "wave"
+        sections.append(
+            f'<section class="{klass}">\n{head}{table_html(members)}</section>\n'
+        )
+    if unscheduled:
+        sections.append(
+            '<section class="wave">\n'
+            "<h2>Вне расписания</h2>\n"
+            "<p class='small muted'>отложено владельцем — вне поставки</p>\n"
+            f"{table_html(unscheduled)}</section>\n"
+        )
+
+    goal = f"<p><b>Цель:</b> {escape(graph.goal)}</p>\n" if graph.goal else ""
+    return (
+        "<!DOCTYPE html>\n"
+        '<html lang="ru">\n<head>\n<meta charset="utf-8">\n'
+        f"<title>{escape(graph.title)} — печатная версия</title>\n"
+        f"<style>{PRINT_CSS}</style>\n"
+        "</head>\n<body>\n"
+        '<section class="cover">\n'
+        f"<h1>{escape(graph.title)}</h1>\n"
+        + goal
+        + business
+        + "<table class='kpis'>\n<tbody>\n"
+        + "\n".join(kpi_rows)
+        + "\n</tbody>\n</table>\n"
+        + f"<p><b>Смета плана:</b> {escape(money)}</p>\n"
+        + finding_html
+        + "</section>\n"
+        + "".join(sections)
+        + "</body>\n</html>\n"
+    )
+
+
+# --------------------------------------------------------------------------
 # text summary
 # --------------------------------------------------------------------------
 
@@ -4526,6 +4904,25 @@ def render_leaf_lines(graph: Graph, metrics: dict[str, Any]) -> list[str]:
         parts.append(f"усилие {actual}")
         if leaf.actual_span_minutes is not None:
             parts.append(f"по часам {fmt_minutes(leaf.actual_span_minutes)}")
+        # A leaf in the queue owes the report three things: why it cannot start
+        # yet, when it is planned to start and when it is planned to finish. A
+        # queued leaf without a reason is not silent either - the report says the
+        # reason is missing, so nobody reads an unexplained wait as a plan.
+        if leaf.status in (STATUS_QUEUED, STATUS_WAITING):
+            parts.append(f"ждёт: {leaf.wait_reason}" if leaf.wait_reason else "ждёт: причина не названа")
+            if leaf.planned_start:
+                parts.append(f"начнём {leaf.planned_start}")
+            if leaf.planned_finish:
+                parts.append(f"закончим {leaf.planned_finish}")
+        # A running leaf is measured against its estimate: the time that has
+        # passed since it started is what the owner weighs, so the projection
+        # shows it and names the delay when it passes the estimate.
+        if leaf.status == STATUS_RUNNING and leaf.started_at:
+            passed = _elapsed_since(leaf.started_at, metrics.get("build_minutes"))
+            if passed is not None:
+                parts.append(f"прошло {fmt_minutes(passed)} на момент сборки")
+                if leaf.estimate_max is not None and passed > leaf.estimate_max + 0.01:
+                    parts.append(f"отстаём: прошло {fmt_minutes(passed)} при оценке {leaf.duration_label}")
         # A deferred leaf is not scheduled: it has no wave, it is outside the
         # remainder of the delivery.
         parts.append("вне остатка" if leaf.status == STATUS_DEFERRED else f"волна {wave}")
@@ -4601,6 +4998,11 @@ def render_text(graph: Graph, metrics: dict[str, Any]) -> str:
     # The money of the plan, next to its shape: what one leaf costs, what the
     # whole plan costs, and how much of the dollars go to the frontier class.
     lines.extend(cost_lines(_cost_of(graph, metrics)))
+    # The cap of the format, said out loud where the plan is read: a leaf over
+    # fifteen minutes is two leaves, and only a leaf that says why it is
+    # deliberately larger is allowed past it. The plan that carries such a leaf
+    # is named here rather than rendered as if it were ordinary.
+    lines.extend(estimate_cap_warnings(graph))
     # The waves are counted from the dependencies, never copied from the
     # header: a hand-written number is a claim, the graph is the evidence.
     computed_waves = wave_count(graph, metrics)
@@ -5022,6 +5424,35 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         help="delivery side of the plan as JSON; it is merged into the same page",
     )
+    render.add_argument(
+        "--print",
+        dest="print_mode",
+        action="store_true",
+        help="also write the paper version of the same graph (plan.print.html)",
+    )
+
+    pdf = sub.add_parser(
+        "pdf",
+        help="Print the plan on paper through a headless renderer",
+    )
+    pdf.add_argument("input", type=Path, help="plan record, plan report or graph JSON")
+    pdf.add_argument("-o", "--output", type=Path, help="output PDF path")
+    pdf.add_argument("--title", help="override the plan title")
+    pdf.add_argument(
+        "--print-html",
+        type=Path,
+        help="print this prepared sheet instead of building one from the graph",
+    )
+    pdf.add_argument(
+        "--renderer",
+        help="the renderer to use: a name on the PATH or a path to the binary",
+    )
+    pdf.add_argument(
+        "--timeout",
+        type=int,
+        default=PDF_RENDERER_TIMEOUT,
+        help=f"seconds the renderer may take (default {PDF_RENDERER_TIMEOUT})",
+    )
 
     merged = sub.add_parser(
         "render-product",
@@ -5089,12 +5520,244 @@ def command_render(args: argparse.Namespace) -> int:
     if markdown is not None:
         markdown.write_text(markdown_text, encoding="utf-8")
         print(f"{markdown}")
+    if getattr(args, "print_mode", False):
+        # The paper version of the same graph: one wave per page, nothing to
+        # click, nothing to fetch. It is written next to the other artifacts of
+        # this revision, so the plan on paper and the plan on screen are the
+        # same plan.
+        if args.out_dir is not None:
+            print_output = args.out_dir / "plan.print.html"
+        elif args.output is not None:
+            print_output = args.output.with_name(f"{args.output.stem}.print.html")
+        else:
+            stem = Path(graph.source_path).stem if graph.source_path else "lhc-grid"
+            print_output = Path.cwd() / f"{stem}.print.html"
+        print_output.write_text(render_print_html(graph, metrics), encoding="utf-8")
+        print(f"{print_output}")
     if args.open:
         try:
             webbrowser.open(output.resolve().as_uri())
         except Exception:  # pragma: no cover - headless hosts have no browser
             print("browser not available", file=sys.stderr)
     return 0
+
+
+# --------------------------------------------------------------------------
+# PDF: the honest command
+# --------------------------------------------------------------------------
+
+# The headless renderers a machine may have. Each one prints a PDF out of a
+# local HTML file, and none of them needs the network — the sheet is a local
+# file with no reference outside itself. The list is also the honest answer to
+# the question "which renderer do I need", so the error names it instead of
+# shrugging.
+PDF_RENDERERS: tuple[tuple[str, tuple[str, ...], str], ...] = (
+    (
+        "google-chrome",
+        (
+            "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+            "/Applications/Chromium.app/Contents/MacOS/Chromium",
+            "/usr/bin/google-chrome",
+            "/usr/bin/chromium",
+        ),
+        "chrome",
+    ),
+    ("chromium", (), "chrome"),
+    ("chromium-browser", (), "chrome"),
+    ("wkhtmltopdf", (), "wkhtmltopdf"),
+    ("weasyprint", (), "weasyprint"),
+)
+# The list may be narrowed by the environment, so an operator can name the
+# renderer this machine is allowed to use.
+PDF_RENDERER_ENV = "LHC_PDF_RENDERERS"
+PDF_RENDERER_TIMEOUT = 120
+
+
+def _pdf_renderer_kind(name: str) -> str:
+    """How a renderer is called, judged by its own name."""
+
+    lowered = name.lower()
+    if "chrome" in lowered or "chromium" in lowered:
+        return "chrome"
+    if "wkhtmltopdf" in lowered:
+        return "wkhtmltopdf"
+    if "weasyprint" in lowered:
+        return "weasyprint"
+    return "generic"
+
+
+def find_pdf_renderer(
+    requested: Optional[str] = None,
+) -> tuple[Optional[str], Optional[str], list[str]]:
+    """Find the renderer that prints the sheet.
+
+    Returns the executable, the way it is called and the names it looked for.
+    The names are the point: a machine without a renderer has to be told
+    which one is missing, not merely that something went wrong.
+    """
+
+    tried: list[str] = []
+    if requested:
+        candidates = [requested]
+    else:
+        override = os.environ.get(PDF_RENDERER_ENV, "")
+        if override.strip():
+            candidates = [item for item in override.split(os.pathsep) if item]
+        else:
+            candidates = [name for name, _paths, _kind in PDF_RENDERERS]
+    for candidate in candidates:
+        tried.append(candidate)
+        # A known renderer also lives in places the PATH does not name.
+        for name, paths, kind in PDF_RENDERERS:
+            if name != candidate:
+                continue
+            for path in paths:
+                if path and os.path.exists(path):
+                    return path, kind, tried
+        found = shutil.which(candidate)
+        if found:
+            return found, _pdf_renderer_kind(candidate), tried
+        if os.path.sep in candidate and os.path.exists(candidate):
+            return candidate, _pdf_renderer_kind(candidate), tried
+    return None, None, tried
+
+
+def _pdf_commands(
+    executable: str,
+    kind: str,
+    source: Path,
+    target: Path,
+    profile: Optional[Path] = None,
+) -> list[list[str]]:
+    """The command lines that print the sheet, best first."""
+
+    url = source.resolve().as_uri()
+    if kind == "chrome":
+        shared = [
+            "--disable-gpu",
+            "--no-first-run",
+            "--no-default-browser-check",
+            "--disable-extensions",
+            "--disable-background-networking",
+            # The sheet references nothing outside itself, so the renderer has
+            # no reason to reach the network either.
+            "--host-resolver-rules=MAP * ~NOTFOUND",
+        ]
+        if profile is not None:
+            shared.append(f"--user-data-dir={profile}")
+        return [
+            [executable, "--headless=new", *shared, "--no-pdf-header-footer",
+             f"--print-to-pdf={target}", url],
+            [executable, "--headless", *shared, "--print-to-pdf-no-header",
+             f"--print-to-pdf={target}", url],
+        ]
+    if kind == "wkhtmltopdf":
+        return [
+            [executable, "--enable-local-file-access", "--quiet", str(source), str(target)]
+        ]
+    return [[executable, str(source), str(target)]]
+
+
+def _looks_like_pdf(path: Path) -> bool:
+    """A PDF starts with its own name; a file that does not is not one."""
+
+    try:
+        with path.open("rb") as handle:
+            return handle.read(5) == b"%PDF-"
+    except OSError:
+        return False
+
+
+def command_pdf(args: argparse.Namespace) -> int:
+    """Print the plan on paper, or name the renderer that is missing.
+
+    There is no PDF encoder written here on purpose: a file a hand-rolled
+    writer produced would be a different document from the one a browser
+    prints, with its own bugs. So the sheet goes to a headless renderer that
+    is installed on this machine, and when none is, the command says which
+    one it looked for and exits with code 2 — a named absence, not a silent
+    empty file.
+    """
+
+    graph = require_leaves(discover_graph(args.input))
+    if args.title:
+        graph.title = args.title
+    metrics = build_metrics(graph)
+
+    workdir: Optional[Path] = None
+    if args.print_html:
+        source = Path(args.print_html)
+        if not source.exists():
+            print(f"файл печатной версии не найден: {source}", file=sys.stderr)
+            return 2
+    else:
+        workdir = Path(tempfile.mkdtemp(prefix="lhc-print-"))
+        source = workdir / "plan.print.html"
+        source.write_text(render_print_html(graph, metrics), encoding="utf-8")
+
+    try:
+        if args.output:
+            target = Path(args.output)
+        else:
+            stem = Path(graph.source_path).stem if graph.source_path else "lhc-plan"
+            target = Path.cwd() / f"{stem}.pdf"
+        target.parent.mkdir(parents=True, exist_ok=True)
+
+        executable, kind, tried = find_pdf_renderer(args.renderer)
+        if executable is None:
+            names = ", ".join(tried) if tried else "ни одного известного"
+            print(
+                "PDF не собран: рендерер не найден. Проверены: "
+                f"{names}. Установите один из них "
+                "(например: brew install --cask google-chrome) и повторите: "
+                "python3 src/common/tools/lhc_grid.py pdf <план> -o plan.pdf",
+                file=sys.stderr,
+            )
+            return 2
+
+        profile = workdir / "chrome-profile" if workdir is not None else None
+        if profile is not None:
+            profile.mkdir(parents=True, exist_ok=True)
+        failures: list[str] = []
+        for command in _pdf_commands(executable, kind or "generic", source, target, profile):
+            try:
+                finished = subprocess.run(
+                    command,
+                    capture_output=True,
+                    text=True,
+                    timeout=args.timeout,
+                    check=False,
+                )
+            except subprocess.TimeoutExpired:
+                failures.append(f"{command[0]}: не ответил за {args.timeout} с")
+                continue
+            except OSError as error:
+                failures.append(f"{command[0]}: не запустился ({error})")
+                continue
+            if finished.returncode != 0:
+                tail = (finished.stderr or finished.stdout or "").strip().splitlines()
+                failures.append(
+                    f"{command[0]}: код {finished.returncode}"
+                    + (f" — {tail[-1]}" if tail else "")
+                )
+                continue
+            if not target.exists() or target.stat().st_size == 0:
+                failures.append(f"{command[0]}: файл PDF не создан")
+                continue
+            if not _looks_like_pdf(target):
+                failures.append(f"{command[0]}: созданный файл не похож на PDF")
+                continue
+            print(f"{target}")
+            return 0
+        print(
+            f"PDF не собран: {executable} не напечатал файл. "
+            + "; ".join(failures),
+            file=sys.stderr,
+        )
+        return 2
+    finally:
+        if workdir is not None:
+            shutil.rmtree(workdir, ignore_errors=True)
 
 
 def command_render_product(args: argparse.Namespace) -> int:
@@ -5206,6 +5869,55 @@ def command_export(args: argparse.Namespace) -> int:
     )
     print(f"{args.output}")
     return 0
+
+
+def estimate_cap_findings(graph: Graph) -> list[dict[str, Any]]:
+    """The leaves whose estimate passes the cap of the format.
+
+    The format says a leaf is about fifteen minutes and a longer job is two
+    leaves. That cap lived only in the prose, so a thirty-to-fifty minute leaf
+    passed every gate and was printed as «оценка 30 мин–50 мин» without a word.
+    A leaf that records, in its own words, why it is deliberately larger is not
+    a breach: the reason is the signpost, and only the reason lets it through.
+    """
+
+    cap = LEAF_ESTIMATE_CAP_MINUTES
+    findings: list[dict[str, Any]] = []
+    for leaf in graph.leaves:
+        high = leaf.estimate_max
+        if high is None or high <= cap:
+            continue
+        reason = leaf.estimate_over_limit_reason
+        findings.append(
+            {
+                "id": leaf.id,
+                "minutes": high,
+                "cap": cap,
+                "reason": reason,
+                "breach": not reason,
+            }
+        )
+    return findings
+
+
+def estimate_cap_warnings(graph: Graph) -> list[str]:
+    """The cap of the format, said out loud by the renderer as well."""
+
+    breaches = [item for item in estimate_cap_findings(graph) if item["breach"]]
+    if not breaches:
+        return []
+    notes = [
+        f"ПРЕВЫШЕН ПРЕДЕЛ ОЦЕНКИ ЛИСТА ({LEAF_ESTIMATE_CAP_MINUTES} мин) — "
+        "длинную работу надо разбить на два листа, либо записать в листе "
+        "estimate_over_limit_reason, почему он сознательно больше:"
+    ]
+    for item in breaches:
+        notes.append(
+            f"  - лист {item['id']}: оценка {fmt_minutes(item['minutes'])} "
+            f"при пределе {item['cap']} мин — "
+            "чего не хватает: разбиения или причины превышения"
+        )
+    return notes
 
 
 def staffing_warnings(graph: Graph, cost: dict[str, Any]) -> list[str]:
@@ -5366,6 +6078,12 @@ def command_validate(args: argparse.Namespace) -> int:
     # human weighs, not a reason for the tool to refuse a plan.
     cost = _cost_of(graph, build_metrics(graph))
     warnings = cost_warnings(graph, cost) + staffing_warnings(graph, cost)
+    # The cap of the format is not a taste but a norm: a leaf over it is two
+    # leaves, and only a leaf that says why it is deliberately larger passes.
+    # The gate that refuses the plan lives with the leaf files
+    # (`lhc_plan_json.py check`); here the breach is named, so a plan that
+    # carries one is never rendered as if it were ordinary.
+    warnings.extend(estimate_cap_warnings(graph))
     payload = {
         "valid": not errors,
         "errors": errors,
@@ -5483,6 +6201,7 @@ def main(argv: Optional[list[str]] = None) -> int:
         "export": command_export,
         "validate": command_validate,
         "check-plan": command_check_plan,
+        "pdf": command_pdf,
     }
     try:
         return handlers[args.command](args)

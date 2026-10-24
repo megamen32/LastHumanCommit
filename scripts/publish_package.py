@@ -176,9 +176,11 @@ def main() -> int:
         data = source.read_bytes()
         write(ROOT / "plugins" / "last-human-commit" / "tools" / name, data)
         write(ROOT / "plugins" / "last-human-commit" / "native" / "codex" / "tools" / name, data)
-        rewritten = data.replace(
-            b"src/common/protocols/PLAN_REPORT.md", b"common/protocols/PLAN_REPORT.md"
-        )
+        # The same rewrite the bundle check applies, so the copy in the
+        # package and the copy the check expects are the same bytes.
+        rewritten = data
+        for old_path, new_path in COMMON:
+            rewritten = rewritten.replace(old_path, new_path)
         write(ROOT / "plugins" / "last-human-commit" / "common" / "tools" / name, rewritten)
         write(
             ROOT / "plugins" / "last-human-commit" / "native" / "codex" / "common" / "tools" / name,

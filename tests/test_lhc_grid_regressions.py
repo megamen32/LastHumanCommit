@@ -1623,3 +1623,208 @@ def test_a_row_without_an_id_in_the_wrong_order_is_a_divergence(tmp_path):
     # The names on both sides are named, so the reader sees which leaf is meant.
     assert "L01" in checked.stdout
     assert "L02" in checked.stdout
+
+
+# --------------------------------------------------------------------------
+# DEFECT 4 (L17): the kernel accepts an over-long leaf silently, and the queue
+# cannot say what it waits for
+#
+# The format promises a leaf of about fifteen minutes, and a leaf in the queue
+# owes the report three things: why it cannot start yet, when it is planned to
+# start and when it is planned to finish.
+# --------------------------------------------------------------------------
+
+OVER_CAP_GRAPH = {
+    "schema_version": 2,
+    "slots": 1,
+    "tasks": [
+        {
+            "id": "L01",
+            "label": "Долгий расчёт",
+            "status": "queued",
+            "depends_on": [],
+            "estimate_minutes": {"minimum": 30, "maximum": 50},
+        }
+    ],
+}
+
+
+def test_an_over_long_leaf_is_named_by_the_kernel(tmp_path):
+    """A 30–50 minute leaf is named, not printed as an ordinary estimate."""
+
+    from _inprocess import run_cli
+
+    grid = _build_grid_tool()
+    graph_path = tmp_path / "plan.graph.json"
+    graph_path.write_text(json.dumps(OVER_CAP_GRAPH, ensure_ascii=False), encoding="utf-8")
+
+    checked = run_cli(grid, ["validate", str(graph_path)])
+    payload = json.loads(checked.stdout)
+    # The breach is named with the leaf, its estimate and the cap.
+    cap_warnings = [w for w in payload["warnings"] if "ПРЕДЕЛ ОЦЕНКИ ЛИСТА" in w or "при пределе" in w]
+    assert cap_warnings, payload["warnings"]
+    assert "L01" in " ".join(cap_warnings)
+    assert "50 мин" in " ".join(cap_warnings)
+    assert "15 мин" in " ".join(cap_warnings)
+
+    # The same breach is named where the plan is read: the summary and the page.
+    summary = run_cli(grid, ["status", str(graph_path)])
+    assert "ПРЕДЕЛ ОЦЕНКИ ЛИСТА" in summary.stdout
+
+
+def test_a_leaf_that_says_why_it_is_longer_is_not_a_breach(tmp_path):
+    """The same leaf with the reason recorded passes the cap."""
+
+    from _inprocess import run_cli
+
+    grid = _build_grid_tool()
+    allowed = json.loads(json.dumps(OVER_CAP_GRAPH))
+    allowed["tasks"][0]["estimate_over_limit_reason"] = "расчёт стоимости сам по себе"
+    graph_path = tmp_path / "plan.graph.json"
+    graph_path.write_text(json.dumps(allowed, ensure_ascii=False), encoding="utf-8")
+
+    checked = run_cli(grid, ["validate", str(graph_path)])
+    payload = json.loads(checked.stdout)
+    assert not [w for w in payload["warnings"] if "ПРЕДЕЛ ОЦЕНКИ ЛИСТА" in w]
+    assert checked.returncode == 0
+
+
+def test_the_queue_names_its_reason_and_its_planned_times(tmp_path):
+    """A leaf in the queue shows all three things it owes the report."""
+
+    from _inprocess import run_cli
+
+    grid = _build_grid_tool()
+    report = tmp_path / "plan.md"
+    report.write_text(
+        "Цель: t\n"
+        "Бизнес-результат: t\n"
+        "Декомпозиция: 1 лист · 1 параллельно · 1 волна · слотов: 1\n\n"
+        "⏳ (сборка и push) начнём после листа 3, потому что нужен принятый контракт, "
+        "примерно в 14:30, оценка 10 минут, закончим в 14:40\n",
+        encoding="utf-8",
+    )
+    graph_path = tmp_path / "plan.graph.json"
+    assert run_cli(grid, ["export", str(report), "-o", str(graph_path)]).returncode == 0
+
+    # The reason and the two planned times are read out of the line.
+    graph = grid.parse_graph_json(json.loads(graph_path.read_text(encoding="utf-8")))
+    leaf = graph.by_id()["L01"]
+    assert leaf.wait_reason == "нужен принятый контракт"
+    assert leaf.planned_start == "14:30"
+    assert leaf.planned_finish == "14:40"
+    # A leaf that has not started owns no work window.
+    assert leaf.started_at == ""
+    assert leaf.finished_at == ""
+
+    # The summary (and so plan.md) names all three.
+    summary = run_cli(grid, ["status", str(graph_path)])
+    assert "ждёт: нужен принятый контракт" in summary.stdout
+    assert "начнём 14:30" in summary.stdout
+    assert "закончим 14:40" in summary.stdout
+
+    # The page names them too.
+    html = run_cli(grid, ["render", str(graph_path), "-o", str(tmp_path / "plan.html")])
+    assert html.returncode == 0
+    page = (tmp_path / "plan.html").read_text(encoding="utf-8")
+    assert "ждёт: нужен принятый контракт" in page
+    assert "начнём 14:30" in page
+    assert "закончим 14:40" in page
+
+
+def test_a_queued_leaf_without_a_reason_does_not_pass_in_silence(tmp_path):
+    """A leaf in the queue without a reason says that the reason is missing."""
+
+    from _inprocess import run_cli
+
+    grid = _build_grid_tool()
+    report = tmp_path / "plan.md"
+    report.write_text(
+        "Цель: t\n"
+        "Бизнес-результат: t\n"
+        "Декомпозиция: 1 лист · 1 параллельно · 1 волна · слотов: 1\n\n"
+        "⏳ (сборка и push) исполнитель ещё не назначен, примерно в 14:30, "
+        "оценка 10 минут, закончим в 14:40\n",
+        encoding="utf-8",
+    )
+    graph_path = tmp_path / "plan.graph.json"
+    assert run_cli(grid, ["export", str(report), "-o", str(graph_path)]).returncode == 0
+
+    summary = run_cli(grid, ["status", str(graph_path)])
+    assert "ждёт: причина не названа" in summary.stdout
+
+
+def test_a_running_leaf_shows_the_time_passed_at_the_moment_of_the_build(tmp_path):
+    """A running leaf is weighed against its estimate at the moment of the build."""
+
+    from _inprocess import run_cli
+
+    grid = _build_grid_tool()
+    graph_path = tmp_path / "plan.graph.json"
+    graph_path.write_text(json.dumps({
+        "schema_version": 2,
+        "slots": 1,
+        "tasks": [
+            {
+                "id": "L01",
+                "label": "Идущий лист",
+                "status": "running",
+                "depends_on": [],
+                "estimate_minutes": {"minimum": 15, "maximum": 15},
+                "started_at": "14:12",
+            }
+        ],
+    }, ensure_ascii=False), encoding="utf-8")
+
+    summary = run_cli(grid, ["status", str(graph_path)])
+    # The time that has passed is a fact of the build, and it is named as such.
+    assert "на момент сборки" in summary.stdout
+    # The leaf overran its estimate, and the delay is named.
+    assert "отстаём" in summary.stdout
+
+
+def test_the_collector_refuses_an_over_long_leaf_and_accepts_a_named_one(tmp_path):
+    """The gate that decides: a 30–50 minute leaf is refused, a named one passes."""
+
+    from _inprocess import run_cli
+
+    collector = _build_plan_json_tool()
+    plan_dir = tmp_path / "plan"
+    (plan_dir / "leaves").mkdir(parents=True)
+
+    def leaf(**extra):
+        payload = {
+            "id": "L01",
+            "label": "Долгий расчёт",
+            "status": "queued",
+            "depends_on": [],
+            "estimate_minutes": {"minimum": 30, "maximum": 50},
+        }
+        payload.update(extra)
+        return payload
+
+    (plan_dir / "leaves" / "L01.json").write_text(
+        json.dumps(leaf(), ensure_ascii=False), encoding="utf-8"
+    )
+    (plan_dir / "plan.json").write_text(
+        json.dumps({"title": "t", "goal": "g", "business_result": "b", "slots": 1}),
+        encoding="utf-8",
+    )
+
+    checked = run_cli(collector, ["check", str(plan_dir)])
+    assert checked.returncode == 1, checked.stdout + checked.stderr
+    # The breach is named with the leaf and the cap.
+    assert "ПРЕДЕЛ ОЦЕНКИ ЛИСТА" in checked.stderr
+    assert "L01" in checked.stderr
+    assert "15 мин" in checked.stderr
+
+    # The same leaf, with the reason recorded, passes.
+    (plan_dir / "leaves" / "L01.json").write_text(
+        json.dumps(
+            leaf(estimate_over_limit_reason="расчёт стоимости сам по себе"),
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    allowed = run_cli(collector, ["check", str(plan_dir)])
+    assert allowed.returncode == 0, allowed.stdout + allowed.stderr

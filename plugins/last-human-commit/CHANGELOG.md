@@ -1,3 +1,23 @@
+# 1.5.51 - the page prints, the core keeps its promises, and a row without an id says so
+
+**A report row says how its leaf was matched.** A row without an id is never
+silently fitted by position: `check-plan` prints "matched by position, not by
+id", and a wrong order is a divergence with both sides named.
+
+**The core keeps its promises.** The fifteen-minute limit on a leaf lived only
+in prose; the kernel now names every leaf above it - in `validate`, in
+`status`, in the plan and on the page - unless the leaf records why it is
+deliberately longer. A waiting leaf shows why it waits and when it is planned
+to start and finish, and a leaf without a reason says so instead of staying
+silent. The planned times of a queued leaf are no longer read as a work
+window. A running leaf shows how long it has been running and whether it is
+behind.
+
+**The page prints.** `render --print` writes a printable page without the
+interactive parts - one wave per sheet - and the PDF command either produces a
+file or names the renderer that is missing, with exit code 2. No PDF writer of
+its own: a file from a hand-written encoder would be a different document than
+the browser's.
 # 1.5.50 - the plan prices itself, the report is generated, and the harness can ask the human
 
 **The plan says what it costs.** A leaf declares its model class and its complexity; the
