@@ -96,6 +96,8 @@ TOOL_COPIES = (
     "lhc_chat.py",
     "lhc_plan_json.py",
     "lhc_live.py",
+    "lhc_git_facts.py",
+    "lhc_gitlayout.py",
 )
 
 TREE_FOLDERS = (

@@ -19,6 +19,8 @@ import pytest
 
 from test_native_milestone_gate import GOAL, state
 
+from _fixture_process import cat_file, own_interpreter_in_process
+
 
 @pytest.mark.parametrize("goal", [
     "Fix the small API bug: GET /totals returns 500 for an empty cart. "
@@ -204,6 +206,60 @@ def git_repo(root):
 
 
 # --------------------------------------------------------------------------
+# The remotes of the checkout, read from and written to its own config
+#
+# Git keeps the remotes of a repository in its configuration file.  The file
+# is read and written here in the very shape Git writes it, so Git and this
+# harness answer the same questions about the same repository.
+# --------------------------------------------------------------------------
+
+def git_config_path(root):
+    """The configuration file of the repository of the case."""
+    return Path(root) / '.git' / 'config'
+
+
+def git_remotes(root):
+    """The remotes of the repository, as ``git remote`` lists them."""
+    path = git_config_path(root)
+    names = []
+    if path.is_file():
+        for line in path.read_text(encoding='utf-8').splitlines():
+            if line.startswith('[remote "'):
+                names.append(line[len('[remote "'):].split('"')[0])
+    return sorted(names)
+
+
+def git_remote_add(root, name, url):
+    """Add a remote to the repository, as ``git remote add`` does."""
+    if name in git_remotes(root):
+        raise ValueError('remote ' + name + ' already exists.')
+    path = git_config_path(root)
+    text = path.read_text(encoding='utf-8') if path.is_file() else ''
+    if text and not text.endswith('\n'):
+        text += '\n'
+    text += (f'[remote "{name}"]\n\turl = {url}\n'
+             f'\tfetch = +refs/heads/*:refs/remotes/{name}/*\n')
+    path.write_text(text, encoding='utf-8')
+
+
+def git_remote_set_url(root, name, url):
+    """Point a remote at another URL, as ``git remote set-url`` does."""
+    if name not in git_remotes(root):
+        raise ValueError('No such remote: ' + name)
+    path = git_config_path(root)
+    lines = path.read_text(encoding='utf-8').splitlines(keepends=True)
+    inside = False
+    for index, line in enumerate(lines):
+        if line.startswith('['):
+            inside = line.strip() == f'[remote "{name}"]'
+            continue
+        if inside and line.startswith('\turl = '):
+            lines[index] = f'\turl = {url}\n'
+            break
+    path.write_text(''.join(lines), encoding='utf-8')
+
+
+# --------------------------------------------------------------------------
 # Observed commands run in this process
 #
 # The review fixture observes real commands. The Python ones are ordinary
@@ -219,8 +275,28 @@ def observed_command(command, cwd):
     words = command.split()
     if words and os.path.basename(words[0]) in PYTHON_COMMANDS:
         return run_python_command(words, cwd)
+    if len(words) == 2 and words[0] == 'cat':
+        # Reading a file is the reading of a file; ``cat`` needs no process.
+        _, stdout, stderr = cat_file(Path(cwd) / words[1], words[1])
+        return stdout.decode('utf-8', 'replace') + stderr.decode('utf-8', 'replace')
     completed = subprocess.run(words, cwd=cwd, capture_output=True, text=True)
     return completed.stdout + completed.stderr
+
+
+def cat_output(name, cwd):
+    """What ``cat`` would print for the file; the reading of a file needs no process."""
+    _, stdout, stderr = cat_file(Path(cwd) / name, name)
+    return stdout.decode('utf-8', 'replace') + stderr.decode('utf-8', 'replace')
+
+
+def checked_output(words, cwd, text=False):
+    """The stdout of a command; our own interpreter answers it here.
+
+    The command asks for the interpreter of this very process, so the answer
+    is the one this interpreter gives - without a second interpreter start.
+    """
+    with own_interpreter_in_process():
+        return subprocess.check_output(words, cwd=cwd, text=text)
 
 
 def run_python_command(words, cwd):
@@ -232,7 +308,8 @@ def run_python_command(words, cwd):
     saved_cwd = os.getcwd()
     try:
         os.chdir(cwd)
-        with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+        with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr), \
+                own_interpreter_in_process():
             if '-m' in words:
                 module = words[words.index('-m') + 1]
                 # The module sees its own arguments, exactly as `python -m` gives them.
@@ -1177,8 +1254,8 @@ def test_shared_upstream_main_cannot_be_selected(tmp_path):
 
 
 def integration_contract(root, outcome, branch='main', ownership='owned', owner=None, publication_branch=None, permission_quote=None):
-    if not subprocess.check_output(['git','remote'],cwd=root,text=True).strip():
-        subprocess.run(['git','remote','add','origin','https://github.com/megamen32/totalrepo.git'],cwd=root,check=True)
+    if not git_remotes(root):
+        git_remote_add(root, 'origin', 'https://github.com/megamen32/totalrepo.git')
     args = ['contract', '--scenario', outcome['canary']['scenario'], '--target', outcome['canary']['target'],
         '--expected', outcome['canary']['expected'], '--owned-path', 'total.py',
         '--scope-source', outcome['scope_sources'][0]['source'], '--integration-branch', branch,
@@ -1215,7 +1292,7 @@ def test_dev_history_without_worker_pr_closes_only_after_target_and_integrated_s
         stamp = rows[-1]['timestamp']
         rows[-1:-1] = [
             {'timestamp':stamp,'type':'response_item','payload':{'type':'function_call','name':'exec_command','call_id':'smoke','arguments':json.dumps({'cmd':'python3 total.py'})}},
-            {'timestamp':stamp,'type':'response_item','payload':{'type':'function_call_output','call_id':'smoke','output':subprocess.check_output([sys.executable,'total.py'],cwd=tmp_path,text=True)}}]
+            {'timestamp':stamp,'type':'response_item','payload':{'type':'function_call_output','call_id':'smoke','output':checked_output([sys.executable,'total.py'], tmp_path, text=True)}}]
         report['stages']['integration']['evidence_calls'].append('smoke')
     rows[-1]['payload']['content'][0]['text'] = 'Observed branch history and integrated smoke.\nLHC_OUTCOME_REVIEW ' + json.dumps(report)
     raw = '\n'.join(json.dumps(row) for row in rows) + '\n'; source.write_text(raw); Path(data['target']['path']).write_text(raw)
@@ -1250,7 +1327,7 @@ def test_remote_change_invalidates_the_bound_main_consent(tmp_path):
     outcome = anchored(tmp_path, 'Implement the complete total CLI. Allow merge megamen32/totalrepo into main.')
     outcome = integration_contract(tmp_path, outcome)
     assert outcome['integration_policy']['main_permission_confirmed'] is True
-    subprocess.run(['git','remote','set-url','origin','https://github.com/another/shared.git'],cwd=tmp_path,check=True)
+    git_remote_set_url(tmp_path, 'origin', 'https://github.com/another/shared.git')
     manifest = review_export(tmp_path, outcome, stage_names=('technical','deploy','consumer','publication','integration'))
     cli(tmp_path, 'review', '--manifest', str(manifest), ok=False)
     assert cli(tmp_path, 'status')['finish_verdict'] == 'pending'
@@ -1258,7 +1335,7 @@ def test_remote_change_invalidates_the_bound_main_consent(tmp_path):
 
 def test_foreign_remote_cannot_reuse_a_different_repository_permission(tmp_path):
     outcome = anchored(tmp_path, 'Implement the complete total CLI. Allow merge megamen32/totalrepo into main.')
-    subprocess.run(['git','remote','add','origin','https://github.com/another/shared.git'],cwd=tmp_path,check=True)
+    git_remote_add(tmp_path, 'origin', 'https://github.com/another/shared.git')
     outcome = integration_contract(tmp_path, outcome)
     assert outcome['integration_policy']['main_permission_confirmed'] is False
     assert outcome['finish_verdict'] == 'pending'
@@ -1272,7 +1349,7 @@ def test_permission_quote_cannot_strip_native_prohibition_prefix(tmp_path):
 
 def test_explicit_external_airlock_scope_cannot_be_relabelled_owned_main(tmp_path):
     outcome = anchored(tmp_path, 'Implement the entire Airlock fix in shared external repository. Only origin megamen32-dev is permitted; Oleg owns main.')
-    subprocess.run(['git','remote','add','origin','https://github.com/shared/Airlock.git'],cwd=tmp_path,check=True)
+    git_remote_add(tmp_path, 'origin', 'https://github.com/shared/Airlock.git')
     outcome = integration_contract(tmp_path, outcome, 'main', 'owned')
     manifest = review_export(tmp_path, outcome, stage_names=('technical','deploy','consumer','publication','integration'))
     cli(tmp_path, 'review', '--manifest', str(manifest), ok=False)
@@ -1502,7 +1579,7 @@ def test_project_alias_rejects_nested_namesake_instead_of_owned_root_cli(tmp_pat
     review_export(tmp_path,outcome,sid='leader',command='python3 foreign/total.py',
                   raw_final='PASS. Regression tests passed. python3 foreign/total.py output 0 matched expected 0. Self-check only.')
     cli(tmp_path,'review','--native-self',ok=False)
-    assert subprocess.check_output(['python3','total.py'],cwd=tmp_path).strip()==b'99'
+    assert checked_output(['python3','total.py'], tmp_path).strip()==b'99'
 
 
 @pytest.mark.parametrize('goal',[
@@ -1561,7 +1638,7 @@ def test_explicit_owned_nested_cli_works_without_rebinding_the_root_name(tmp_pat
     (tmp_path/'foreign').mkdir();(tmp_path/'foreign/total.py').write_text('print(0)\n')
     outcome['owned_paths']=['foreign/total.py'];outcome['canary']['target']='project:'+str(tmp_path)
     call={'name':'exec_command','arguments':json.dumps({'cmd':'python3 foreign/total.py','workdir':str(tmp_path)})}
-    output=subprocess.check_output(['python3','foreign/total.py'],cwd=tmp_path,text=True)
+    output=checked_output(['python3','foreign/total.py'], tmp_path, text=True)
     assert consumer_target(outcome,[(call,output)],tmp_path)==str(tmp_path/'foreign/total.py')
     assert not equivalent_target('project:'+str(tmp_path),'python3 foreign/total.py',tmp_path,'Fix the root total.py CLI.')
 
@@ -1883,7 +1960,7 @@ def semantic_research_fixture(tmp_path, expected_extra='', target_alias=None):
     rows = [json.loads(line) for line in source.read_text().splitlines()]
     feedback = 'settings.txt contains encoding=UTF-8.\nThis file does not prove that implementation/tests → deploy → merge have completed.\n'
     (tmp_path/'FEEDBACK.md').write_text(feedback)
-    actual_feedback = subprocess.check_output(['cat', 'FEEDBACK.md'], cwd=tmp_path, text=True)
+    actual_feedback = cat_output('FEEDBACK.md', tmp_path)
     stamp = rows[-1]['timestamp']
     rows[-1:-1] = [{'type': 'response_item', 'timestamp': stamp, 'payload': {'type': 'function_call',
                    'name': 'exec_command', 'call_id': 'call-feedback', 'arguments': json.dumps({'cmd': 'cat FEEDBACK.md'})}},
@@ -2018,7 +2095,7 @@ def test_research_explicit_source_path_matches_its_actual_cat_read(tmp_path, ali
     target = tmp_path/'settings.txt'
     outcome['canary']['target'] = str(target) if alias == 'absolute' else 'settings.txt' if alias == 'relative' else target.as_uri()
     call = {'name': 'exec_command', 'call_id': 'source', 'arguments': json.dumps({'cmd': 'cat settings.txt'})}
-    actual = [(call, subprocess.check_output(['cat','settings.txt'],cwd=tmp_path,text=True))]
+    actual = [(call, cat_output('settings.txt', tmp_path))]
     assert reviews.consumer_target(outcome, actual, tmp_path) == 'cat ' + str(target)
     assert reviews.source_finding_quote(outcome, raw, actual, tmp_path, raw)
     result = cli(tmp_path, 'review', '--manifest', str(manifest), '--comparison-quote', raw)
@@ -2059,7 +2136,7 @@ def test_independent_research_review_can_read_exact_target_from_existing_session
                              command='cat settings.txt', consumer_workdir=tmp_path, raw_final=raw)
     data=json.loads(manifest.read_text()); source=Path(data['target']['source']['location'])
     rows=[json.loads(line) for line in source.read_text().splitlines()]
-    feedback=subprocess.check_output(['cat','FEEDBACK.md'],cwd=tmp_path,text=True)
+    feedback=cat_output('FEEDBACK.md', tmp_path)
     stamp=rows[-1]['timestamp']
     rows[-1:-1]=[{'type':'response_item','timestamp':stamp,'payload':{'type':'function_call',
         'name':'exec_command','call_id':'reviewer-feedback','arguments':json.dumps({'cmd':'cat FEEDBACK.md','workdir':str(tmp_path)})}},

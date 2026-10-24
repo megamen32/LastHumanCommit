@@ -1,40 +1,38 @@
-# 1.5.45 - the plan is one file per leaf, the page follows it, and the suite runs the tool in process
+# 1.5.46 - the suite runs the tool in process, and the tool reads Git from disk
 
-**The plan is JSON, one file per leaf.** The machine already read `plan.graph.json`;
-what cost the work was that the leaves were written by hand into a Markdown report
-and reconciled with the graph afterwards. The source of truth for a leaf is now its
-own file `leaves/<ID>.json`: one file, one owner, so two workers never edit the same
-thing. The graph is built from the leaf files, the report and the dashboard are
-projections of the graph, and `check-plan` proves they still agree. A worker edits
-one file and the plan rebuilds itself - the hook does the whole chain in 0.50 s,
-measured. Plans without a `leaves/` directory keep working as before.
+**The suite runs the tool in process.** The cases that drove an external process
+now call the tool's own `main()` with the argument vector it would have received,
+and `git init` per case became a copy of one prepared template. 561 s became 30 s
+for 1320 cases on the development machine, and no gate was deleted: the number of
+tests and their names are the same as before. On server-100 the same suite takes
+97 s, where the machine is shared with other work and the suite waits on the disk
+rather than on processes.
 
-**The page follows the file.** The built page polls its own file and swaps in what
-Python rendered, so a plan that changed a second ago is visible without a reload.
-The rendering stays in Python; the page never reimplements it. The honest limit: a
-page opened as `file://` cannot fetch itself, so the live mode needs the plan
-directory served over HTTP.
+**The tool stopped asking the operating system what it can read from disk.** The
+Git layout - where the git directory is, where the common directory is, which
+worktrees exist, what the index contains, which paths changed - is a fact about
+the filesystem, and the tool now reads it. Every answer is read at the moment of
+the question, so a stale read is impossible by construction; the real git stays
+the fallback for anything unusual, such as a revision expression only git can
+parse, or a rename that only git knows how to pair. The answers were compared
+against git on ten repository shapes, including a linked worktree, a separate git
+directory, a bare repository and a packed repository: no difference.
 
-**The plan says what the work cost.** Every leaf carries the real start and the real
-finish. The dashboard shows the planned duration in green and everything beyond it
-in yellow; a leaf that stayed within the plan says so; a leaf without a measured
-window says that the duration was not measured instead of inventing a number. The
-summed effort and the wall-clock window stay separate numbers, because they answer
-different questions.
+**One answer, one place.** Three modules had grown their own answers to the same
+questions about a repository - one of them was a byte-for-byte copy of another.
+There is now one implementation, and the test suite holds it there: the check
+parses the modules and fails if an answer is defined anywhere else.
 
-**The wording is not capped.** The text budget is gone from the code, the protocol
-and the Lead. The number of leaves is the limit, not the size of the text.
+**What was found while measuring.** Comparing the disk answers with git turned up
+real defects in the tool itself - a changed path with the same name was not seen
+as changed, a revision was resolved too narrowly, a directory git does not
+recognise was accepted as a repository. They are fixed.
 
-**The suite runs the tool in process.** The cases that drove an external process now
-call the tool's own `main()` with the argument vector it would have received, and
-`git init` per case is a copy of one prepared template. The tool also stopped asking
-the operating system what it can read from disk itself: the Git layout is read from
-`.git` directly, with the real git kept as a fallback for anything unusual - a linked
-worktree, a split index, an `insteadOf` rewrite. 561 s became 62 s for 1261 cases,
-and no gate was deleted. The suite is not yet at the 30 s the owner asked for; the
-remaining process spawns are being removed, and this release ships the part that is
-done.
-
+**What is still a process, and why.** A rename, an addition together with a
+deletion, and a path under a `.gitattributes` conversion are questions git answers
+with its own rules; the module does not guess them. A revision expression that is
+not a hash - and a short hash, which the baseline reuse uses - is resolved by git
+as well.
 # 1.5.44 - the task opens where the owner taps it, the plan says what it is, and the suite is two lanes
 
 Three things the owner asked for, in the order he asked them.

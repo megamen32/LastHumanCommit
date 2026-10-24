@@ -145,23 +145,30 @@ def pytest_collection_modifyitems(config, items):
 #
 # The tools under test are ordinary Python, so the cases call them in this
 # process. What is left of the process starts is what the suite still pays
-# for, and every start costs about 7-25 ms on this machine.
+# for, and every start costs about 7-220 ms on this machine.
 #
-# This counter patches ``subprocess.run`` and ``subprocess.Popen`` and counts
-# the starts per program and per test file, so a regression that puts the
-# process boundary back is visible instead of merely slow.
+# This counter counts the process starts of the session per program, per call
+# site and per test file, so a regression that puts the process boundary back
+# is visible instead of merely slow.  The count happens where the process is
+# really started, so a command that is asked for once is counted once.
 #
 # It is off unless ``LHC_SPAWN_BUDGET`` is set, so an ordinary run of the
-# suite is untouched. When it is set, the session fails if the budget is
+# suite is untouched.  When it is set, the session fails if the budget is
 # exceeded:
 #
-#     LHC_SPAWN_BUDGET=300 python3 -m pytest tests -q --no-header
+#     LHC_SPAWN_BUDGET=default python3 -m pytest tests -q --no-header
 #
-# The report is written to ``LHC_SPAWN_REPORT`` (default: stdout).
+# The budget of the suite is the number it spends today; a larger number in
+# the environment overrides it for a one-off measurement.  The report is
+# written to ``LHC_SPAWN_REPORT`` (default: the terminal).
 # --------------------------------------------------------------------------
 
 SPAWN_BUDGET_ENV = "LHC_SPAWN_BUDGET"
 SPAWN_REPORT_ENV = "LHC_SPAWN_REPORT"
+
+#: The process starts the suite spends today.  A regression that puts the
+#: process boundary back raises this number, and the session fails.
+SPAWN_BUDGET = 900
 
 _SPAWN_COUNTS: collections.Counter = collections.Counter()
 _SPAWN_BY_FILE: collections.Counter = collections.Counter()
@@ -187,15 +194,15 @@ def _spawn_site() -> str:
     """The place in the tree that asked for the process start.
 
     The stack is walked outwards until it leaves the ``subprocess`` module and
-    this file, so the site is the code that really asked for the process and
-    not the plumbing that carried the request.
+    the harness helpers, so the site is the code that really asked for the
+    process and not the plumbing that carried the request.
     """
 
     frame = inspect.currentframe()
     try:
         while frame is not None:
             name = Path(frame.f_code.co_filename).name
-            if name not in ("subprocess.py", "conftest.py"):
+            if name not in ("subprocess.py", "conftest.py", "_fixture_process.py"):
                 return "%s:%d" % (name, frame.f_lineno)
             frame = frame.f_back
         return "<unknown>"
@@ -204,19 +211,17 @@ def _spawn_site() -> str:
 
 
 def _install_spawn_counter():
-    """Count every process start of this session."""
+    """Count every process start of this session.
+
+    The count happens where the process is really started, so a command that
+    is asked for once is counted once - whether it is asked for through
+    ``run``, through ``check_output`` or through ``Popen`` itself.
+    """
 
     real_run = subprocess.run
     real_popen = subprocess.Popen
 
     def counted_run(args, *pargs, **kwargs):
-        _SPAWN_COUNTS["total"] += 1
-        _SPAWN_BY_FILE[_SPAWN_CURRENT_FILE or "<session>"] += 1
-        program = _spawn_program(args)
-        _SPAWN_BY_PROGRAM[program] += 1
-        site = _spawn_site()
-        _SPAWN_BY_SITE[site] += 1
-        _SPAWN_BY_PROGRAM_SITE[(program, site)] += 1
         return real_run(args, *pargs, **kwargs)
 
     def counted_popen(args, *pargs, **kwargs):
@@ -234,9 +239,13 @@ def _install_spawn_counter():
 
 
 def _read_budget() -> int | None:
+    """The budget of this session, or None when the counter is off."""
+
     raw = os.environ.get(SPAWN_BUDGET_ENV)
     if not raw:
         return None
+    if raw == "default":
+        return SPAWN_BUDGET
     try:
         return int(raw)
     except ValueError:

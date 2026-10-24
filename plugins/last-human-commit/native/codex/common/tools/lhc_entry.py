@@ -5,9 +5,12 @@ No process is started here. Native Interrupt/permission events never resume work
 Codex compact hooks only preserve state: SessionStart(source=compact) delivers it.
 """
 import argparse
+import contextlib
 from datetime import datetime
 import fcntl
 import hashlib
+import importlib.util
+import io
 import json
 import os
 import re
@@ -508,6 +511,42 @@ def leaf_plan_dir(path):
     return path.parent.parent
 
 
+# The sibling tools this entry runs in its own process instead of starting an
+# interpreter for them.  One entry per path, so a tool is loaded once.
+_TOOLS = {}
+
+
+def sibling_tool(tools, name):
+    """One sibling tool of the canon, loaded into this process.
+
+    The tool is loaded by the path it has in the package, the way the
+    command line would have run it, so the answer of the process is the
+    answer of this process.  None when the tool cannot be loaded, and then
+    the caller keeps the answer it had.
+    """
+    key = str(Path(tools) / name)
+    cached = _TOOLS.get(key)
+    if cached is not None:
+        return cached
+    path = Path(key)
+    if not path.is_file():
+        return None
+    try:
+        spec = importlib.util.spec_from_file_location("lhc_entry_%s_sibling" % path.stem, path)
+        if spec is None or spec.loader is None:
+            return None
+        module = importlib.util.module_from_spec(spec)
+        # The module is known to the interpreter before it runs: a tool that
+        # declares its own types looks itself up while it is loaded.
+        sys.modules[spec.name] = module
+        spec.loader.exec_module(module)
+    except Exception:
+        sys.modules.pop("lhc_entry_%s_sibling" % path.stem, None)
+        return None
+    _TOOLS[key] = module
+    return module
+
+
 def rebuild_plan_graph(plan_dir, tools):
     """Collect the leaves of one plan into its plan.graph.json.
 
@@ -518,16 +557,15 @@ def rebuild_plan_graph(plan_dir, tools):
     collector = Path(tools) / "lhc_plan_json.py"
     if not collector.is_file() or not (Path(plan_dir) / LEAVES_DIRNAME).is_dir():
         return None
+    module = sibling_tool(tools, "lhc_plan_json.py")
+    if module is None:
+        raise PlanBuildError(f"{plan_dir}: сборщик листов не запустился: нет сборщика листов")
     try:
-        result = subprocess.run(
-            [sys.executable, str(collector), "build", str(plan_dir)],
-            capture_output=True, timeout=20, check=False, text=True,
-        )
-    except (OSError, subprocess.SubprocessError) as error:
-        raise PlanBuildError(f"{plan_dir}: сборщик листов не запустился: {error}") from error
-    if result.returncode != 0:
-        detail = (result.stderr or result.stdout or "").strip()
-        raise PlanBuildError(detail or f"{plan_dir}: сборщик листов не ответил")
+        module.build_graph(Path(plan_dir))
+    except (OSError, ValueError) as error:
+        # The collector names the leaf it cannot collect; the answer of the
+        # command line is that name, and this process gives the same name.
+        raise PlanBuildError(f"LHC: {error}") from error
     return Path(plan_dir) / "plan.graph.json"
 
 
@@ -564,11 +602,15 @@ def render_written_plan(event, root):
                 continue
         else:
             continue
+        module = sibling_tool(tools, "lhc_grid.py")
+        if module is None:
+            return None
         try:
-            subprocess.run(
-                [sys.executable, str(tool), "render", str(graph), "--out-dir", str(directory)],
-                capture_output=True, timeout=20, check=False,
-            )
+            # The renderer names the files it wrote; the command line of the
+            # renderer kept that answer to itself, and this process does the
+            # same.
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                module.main(["render", str(graph), "--out-dir", str(directory)])
         except (OSError, subprocess.SubprocessError, ValueError):
             return None
         return directory

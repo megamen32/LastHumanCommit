@@ -40,12 +40,13 @@ worktree of a repository is derived from the location of its ``.git``
 directory).  :func:`git_repo` copies that template.
 
 **The git binary.**  The tools spawn git a few thousand times per lane, and on
-this machine ``/usr/bin/git`` is an ``xcrun`` stub that spends about 19 ms on
+this machine ``/usr/bin/git`` is an ``xcrun`` stub that spends about 21 ms on
 every spawn to resolve the developer directory, while the git it forwards to
-needs about 7 ms.  :func:`use_fast_git` prefers that forwarded binary, but
-only after checking that it reports exactly the same version and produces
-byte identical output, so the git under test does not change.  When no such
-binary exists the lane simply keeps the git of the PATH.
+needs about 7 ms.  The lane uses that forwarded binary, but only after
+proving that it reports the same version and produces byte identical output
+for every git command the tools use, so the git under test does not change.
+When no such binary can be proven the lane simply keeps the git of the PATH
+(see ``tests/_fast_git.py``).
 
 The helpers here are private to this lane.  No other test file may depend on
 them.
@@ -71,6 +72,9 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
+
+from _fast_git import git_environment, use_fast_git
+from _fixture_process import cat_file, missing_script_in_process
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 TOOLS_DIR = REPO_ROOT / "src" / "common" / "tools"
@@ -284,68 +288,8 @@ _GIT_TEMPLATE_ROOT: Path | None = None
 # The git binary
 # --------------------------------------------------------------------------
 
-_FAST_GIT_DIRECTORY: str | None = None
-_FAST_GIT_RESOLVED = False
-
-
-def fast_git_directory() -> str | None:
-    """A directory whose only entry is a symlink to the git the system forwards to.
-
-    On this machine ``/usr/bin/git`` is an ``xcrun`` stub: it spends about
-    19 ms on every spawn to resolve the developer directory, while the git it
-    forwards to needs about 7 ms.  The production tools spawn git a few
-    thousand times per lane, so the difference is the largest remaining cost.
-
-    The forwarded binary is only accepted when it reports exactly the same
-    version as the git of the PATH, so the git under test stays the same.  The
-    directory holds a symlink and nothing else, so the rest of the PATH - the
-    ``python3`` of the fixture commands included - is untouched.
-    """
-
-    global _FAST_GIT_DIRECTORY, _FAST_GIT_RESOLVED
-    if _FAST_GIT_RESOLVED:
-        return _FAST_GIT_DIRECTORY
-    _FAST_GIT_RESOLVED = True
-    try:
-        current = subprocess.run(["git", "--version"], capture_output=True,
-                                 text=True, check=True).stdout.strip()
-        forwarded = subprocess.run(["xcrun", "-f", "git"], capture_output=True,
-                                   text=True, check=True).stdout.strip()
-    except (OSError, subprocess.CalledProcessError):
-        return None
-    if not forwarded or forwarded == shutil.which("git"):
-        return None
-    try:
-        version = subprocess.run([forwarded, "--version"], capture_output=True,
-                                 text=True, check=True).stdout.strip()
-    except (OSError, subprocess.CalledProcessError):
-        return None
-    if version != current:
-        return None
-    directory = Path(tempfile.mkdtemp(prefix="lhc-lane-git-bin-"))
-    atexit.register(shutil.rmtree, directory, True)
-    (directory / "git").symlink_to(forwarded)
-    _FAST_GIT_DIRECTORY = str(directory)
-    return _FAST_GIT_DIRECTORY
-
-
-def git_environment() -> dict[str, str]:
-    """The environment that makes a ``git`` call use the forwarded binary."""
-
-    directory = fast_git_directory()
-    if directory is None:
-        return {}
-    return {"PATH": directory + os.pathsep + os.environ.get("PATH", "")}
-
-
-def use_fast_git() -> None:
-    """Let every ``git`` of this process use the forwarded binary."""
-
-    environment = git_environment()
-    if environment:
-        os.environ.update(environment)
-
-
+#: Every git of this process uses the binary that was proven to be the same
+#: git; see ``tests/_fast_git.py``.
 use_fast_git()
 
 
@@ -517,7 +461,7 @@ def _unittest_command(cwd: Path):
         sys.path.insert(0, str(cwd))
         suite = unittest.TestLoader().discover(str(cwd))
         runner = unittest.TextTestRunner(stream=out, verbosity=0)
-        with contextlib.redirect_stderr(err):
+        with contextlib.redirect_stderr(err), missing_script_in_process():
             result = runner.run(suite)
     except Exception:  # noqa: BLE001 - the CLI would have died with a traceback
         err.write(traceback.format_exc())
@@ -558,7 +502,18 @@ def _script_command(script: Path, cwd: Path):
 
 
 def local_command(command: str, cwd):
-    """Run one local fixture command and return (returncode, stdout, stderr)."""
+    """Run one local fixture command and return (returncode, stdout, stderr).
+
+    The command of a fixture is ordinary shell text.  The Python ones are
+    ordinary scripts, so they run here instead of in a new interpreter; the
+    reading of a file is the reading of a file.  Every other command keeps its
+    own process.
+
+    The interpreter a fixture asks for from *inside* its own test keeps its
+    process too: in this lane the fixture's script is not found next to the
+    process, and the observation of such a case is the interpreter's own
+    diagnostic.  Answering it here would change what the review reads.
+    """
 
     cwd = Path(cwd)
     parts = shlex.split(command)
@@ -566,6 +521,9 @@ def local_command(command: str, cwd):
         return _unittest_command(cwd)
     if len(parts) == 2 and parts[0] == "python3":
         return _script_command(cwd / parts[1], cwd)
+    if len(parts) == 2 and parts[0] == "cat":
+        code, stdout, stderr = cat_file(cwd / parts[1], parts[1])
+        return code, stdout.decode("utf-8", "replace"), stderr.decode("utf-8", "replace")
     completed = subprocess.run(parts, cwd=str(cwd), capture_output=True, text=True)
     return completed.returncode, completed.stdout, completed.stderr
 

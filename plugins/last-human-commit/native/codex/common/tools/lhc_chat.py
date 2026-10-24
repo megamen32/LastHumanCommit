@@ -16,12 +16,12 @@ MAX_TEXT = 16384
 
 def project_root(repo: Path) -> Path:
     repo = Path(repo).expanduser().resolve()
-    from lhc_worktree import git, worktrees
-    common = Path(git(repo, "rev-parse", "--path-format=absolute", "--git-common-dir")).resolve()
+    from lhc_worktree import absolute_git_dir, common_dir, worktrees
+    common = common_dir(repo)
     for entry in worktrees(repo):
         candidate = Path(entry["worktree"])
         if "bare" not in entry and "prunable" not in entry and candidate.exists():
-            if Path(git(candidate, "rev-parse", "--absolute-git-dir")).resolve() == common:
+            if absolute_git_dir(candidate) == common:
                 return candidate.resolve()
     raise ValueError("No primary checkout; pass the owning project explicitly")
 

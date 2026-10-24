@@ -21,11 +21,19 @@ import os
 from pathlib import Path
 import re
 import shlex
+import stat
 import subprocess
 import sys
 from urllib.parse import urlparse
 from urllib.request import build_opener, HTTPRedirectHandler, ProxyHandler
 from time import monotonic
+
+try:
+    import lhc_git_facts as facts
+except ImportError:
+    # The published package may not ship the reader of the repository yet.
+    # Git then answers every question, which is the answer it always gave.
+    facts = None
 
 MAX_BYTES = 8 * 1024 * 1024
 UI = re.compile(r"\.(?:html?|css|scss|sass|vue|svelte|jsx|tsx|qml|xaml|dart|swift|xml)$", re.I)
@@ -297,8 +305,13 @@ def head_token(repo):
 # ---------------------------------------------------------------------------
 
 
-def _index_paths(repo):
-    """The tracked paths of the repository, root relative.
+def _index_entries(repo):
+    """The entries of the index of the repository.
+
+    Every entry carries the mode and the object id of the file it names and
+    the stat of that file when the index was written.  The paths keep the
+    bytes of the index, so a path Git would spell in another encoding is
+    still the path of the index.
 
     Returns None when the index is not a shape this module reads, so that
     Git answers instead.
@@ -313,8 +326,8 @@ def _index_paths(repo):
         # A repository without an index has no tracked file at all, which is
         # what `git ls-files` reports for it.
         if stamp is None:
-            _INDEXES[key] = (stamp, [])
-            return []
+            _INDEXES[key] = (stamp, {})
+            return {}
         return None
     if len(data) < 12 or data[:4] != b"DIRC":
         return None
@@ -323,7 +336,7 @@ def _index_paths(repo):
         return None
     count = int.from_bytes(data[8:12], "big")
     offset = 12
-    paths = []
+    entries = {}
     for _ in range(count):
         start = offset
         if start + 62 > len(data):
@@ -331,11 +344,16 @@ def _index_paths(repo):
         flags = int.from_bytes(data[start + 60:start + 62], "big")
         if (flags >> 12) & 0x3:
             return None  # an unmerged path: Git lists it once per stage
+        if flags & 0x8000:
+            return None  # an assumed unchanged path: Git does not read it
         base = 62
         if flags & 0x4000:
             if version < 3:
                 return None
             base = 64
+            if int.from_bytes(data[start + 62:start + 64], "big"):
+                # Skip-worktree and intent-to-add change what Git compares.
+                return None
         offset = start + base
         length = flags & 0xFFF
         if length < 0xFFF:
@@ -346,19 +364,47 @@ def _index_paths(repo):
                 return None
         if end >= len(data) or data[end:end + 1] != b"\0":
             return None
-        name = data[offset:end].decode("utf-8", errors="replace")
-        if not name or "\0" in name or name.startswith("/"):
+        name = data[offset:end]
+        if not name or b"\0" in name or name.startswith(b"/"):
             return None
-        paths.append(name)
+        mode = int.from_bytes(data[start + 24:start + 28], "big")
+        if mode & 0o170000 == 0o160000:
+            return None  # a submodule: its content is another repository
+        entries[name] = (
+            mode,
+            data[start + 40:start + 60].hex(),
+            (
+                int.from_bytes(data[start + 8:start + 12], "big"),
+                int.from_bytes(data[start + 12:start + 16], "big"),
+                int.from_bytes(data[start + 0:start + 4], "big"),
+                int.from_bytes(data[start + 4:start + 8], "big"),
+                int.from_bytes(data[start + 20:start + 24], "big"),
+                int.from_bytes(data[start + 28:start + 32], "big"),
+                int.from_bytes(data[start + 32:start + 36], "big"),
+                int.from_bytes(data[start + 36:start + 40], "big"),
+            ),
+        )
         # Every entry is padded with NULs to a multiple of eight bytes.
         offset = start + ((base + length + 8) & ~7)
-    if len(paths) != count or paths != sorted(paths) or len(set(paths)) != count:
+    if len(entries) != count or list(entries) != sorted(entries):
         return None  # the entries did not add up: Git has to answer
     if _has_unsafe_extension(data, offset):
         return None
-    _INDEXES[key] = (stamp, paths)
+    _INDEXES[key] = (stamp, entries)
     _trim_cache(_INDEXES)
-    return paths
+    return entries
+
+
+def _index_paths(repo):
+    """The tracked paths of the repository, root relative.
+
+    Returns None when the index is not a shape this module reads, so that
+    Git answers instead.
+    """
+    entries = _index_entries(repo)
+    if entries is None:
+        return None
+    return [os.fsdecode(name) for name in entries]
 
 
 def _has_unsafe_extension(data, offset):
@@ -735,6 +781,304 @@ def changed_paths(repo, head):
 
 
 # ---------------------------------------------------------------------------
+# The comparison of the working tree
+#
+# Git answers "which paths differ" by comparing three states it keeps on
+# disk: the tree of a revision, the index and the files of the working
+# tree.  All three are read here, so the comparison starts no process.
+#
+# The answer is exact or it is not given at all.  A shape whose answer
+# cannot be reproduced byte for byte - a submodule, a conversion of the
+# content, a rename Git would pair, a revision this module cannot resolve
+# - leaves the question to Git, so the answer stays the answer of Git.
+# ---------------------------------------------------------------------------
+
+
+# The settings of the configuration this module reads for a repository.
+_CONFIG_KEYS = (("core", "autocrlf"), ("core", "filemode"), ("core", "symlinks"),
+                ("core", "attributesfile"), ("extensions", "objectformat"))
+
+
+def _repository_config(repo):
+    """The settings of the configuration Git reads for this repository.
+
+    None when a configuration file includes another one: the included file
+    may hold a setting this module cannot see, and then only Git knows it.
+    """
+    paths = [Path(repo.common) / "config", *_global_config_paths()]
+    worktree = Path(repo.gitdir) / "config.worktree"
+    try:
+        if worktree.exists():
+            paths.append(worktree)
+    except OSError:
+        pass
+    values = {}
+    for path in paths:
+        sections = _config_sections(path)
+        for name in sections:
+            if name == "include" or name.startswith("include "):
+                return None
+        for section, key in _CONFIG_KEYS:
+            found = _config_values(path, section, key)
+            if found:
+                values[(section, key)] = found[-1]
+    return values
+
+
+def _tree_entries(repo, commit):
+    """The paths of one revision with their mode and their object id.
+
+    None when the tree cannot be read, so that Git answers instead.
+    """
+    if facts is None or not _SHA.match(commit or ""):
+        return None
+    tree = facts.tree_entries(facts.Repository(repo.gitdir, repo.root, repo.common), commit)
+    if tree is None:
+        return None
+    return {os.fsencode(path): (mode, sha) for path, (mode, sha) in tree.items()}
+
+
+def _stat_matches(data, info):
+    """Whether the file on disk is the file the index recorded.
+
+    The same fields Git compares: the times of the file, its owner, its
+    number and its size.
+    """
+    (mtime_sec, mtime_nsec, ctime_sec, ctime_nsec, ino, uid, gid, size) = data
+    return (mtime_sec == info.st_mtime_ns // 1000000000
+            and mtime_nsec == info.st_mtime_ns % 1000000000
+            and ctime_sec == info.st_ctime_ns // 1000000000
+            and ctime_nsec == info.st_ctime_ns % 1000000000
+            and ino == info.st_ino
+            and uid == info.st_uid
+            and gid == info.st_gid
+            and size == info.st_size)
+
+
+def _is_racy(entry, index_stamp):
+    """Whether the entry of the index may be older than the file it names.
+
+    Git writes the index after the files it records.  An entry that is not
+    older than the index itself may hide a change of the same second, so
+    Git reads the content of such a file again instead of trusting the
+    entry.
+    """
+    if index_stamp is None:
+        return True
+    index_sec = index_stamp[0] // 1000000000
+    index_nsec = index_stamp[0] % 1000000000
+    return entry[0] >= index_sec and entry[1] >= index_nsec
+
+
+def _conversions_may_apply(repo, name, config):
+    """Whether Git may convert the content of one file before comparing it.
+
+    Git converts the content of a file with the rules of the attribute
+    files and of core.autocrlf before it compares the file with the blob
+    of the tree.  Then the bytes of the file are not the bytes of the
+    blob, and only Git can say what the comparison is.
+    """
+    if config.get(("core", "autocrlf"), "false").lower() == "true":
+        # Git converts the line endings of the content before it compares it.
+        return True
+    if config.get(("core", "attributesfile")) is not None:
+        return True
+    if (Path(repo.common) / "info" / "attributes").exists():
+        return True
+    home = Path.home()
+    xdg = os.environ.get("XDG_CONFIG_HOME") or str(home / ".config")
+    if (Path(xdg) / "git" / "attributes").exists() or (home / ".gitattributes").exists():
+        return True
+    directory = repo.root
+    for part in os.fsdecode(name).split("/")[:-1]:
+        directory = directory / part
+        if (directory / ".gitattributes").exists():
+            return True
+    return (repo.root / ".gitattributes").exists()
+
+
+def _blob_id(data, width):
+    """The object id Git gives to a content."""
+    header = b"blob %d\0" % len(data)
+    if width == 32:
+        return hashlib.sha256(header + data).hexdigest()
+    return hashlib.sha1(header + data).hexdigest()
+
+
+def _worktree_state(repo, name, entry, racy, config):
+    """The state of one file of the working tree.
+
+    The state is the mode and the object id of the content of the file, the
+    way the index records them.  None when the file cannot be read the way
+    Git reads it, so that Git answers instead.
+    """
+    full = Path(repo.root) / os.fsdecode(name)
+    try:
+        info = os.lstat(full)
+    except OSError:
+        return False, 0, ""
+    if stat.S_ISLNK(info.st_mode):
+        try:
+            target = os.readlink(full)
+        except OSError:
+            return None
+        return True, 0o120000, _blob_id(os.fsencode(target), _object_width(config))
+    if not stat.S_ISREG(info.st_mode):
+        return None
+    fresh = 0o100000 | (0o755 if info.st_mode & stat.S_IXUSR else 0o644)
+    if entry is not None and not racy and _stat_matches(entry[2], info):
+        # The file is the one the index recorded, so its content is the
+        # blob the index names.
+        return True, entry[0], entry[1]
+    if _conversions_may_apply(repo, name, config):
+        return None
+    try:
+        data = full.read_bytes()
+    except OSError:
+        return None
+    if config.get(("core", "filemode"), "true").lower() == "false":
+        # Git does not read the permission of a file when it is told not to.
+        fresh = (fresh & 0o170000) | (entry[0] & 0o777) if entry else fresh
+    return True, fresh, _blob_id(data, _object_width(config))
+
+
+def _object_width(config):
+    """The length of an object id of this repository."""
+    return 32 if config.get(("extensions", "objectformat")) == "sha256" else 20
+
+
+def _diff_against_tree(repo, tree, entries, config):
+    """The paths that differ between a tree and the working tree.
+
+    None when the answer is not certain, so that Git answers instead.
+    """
+    if config.get(("core", "symlinks"), "true").lower() == "false":
+        return None  # Git reads a symlink as a file: only Git can say what it sees
+    index_stamp = _stat(Path(repo.gitdir) / "index")
+    changed = []
+    deleted = []
+    added = []
+    for name in sorted(set(tree) | set(entries)):
+        entry = entries.get(name)
+        tree_entry = tree.get(name)
+        if tree_entry is None:
+            if entry is None:
+                continue  # a path neither the tree nor the index names
+            state = _worktree_state(repo, name, entry, _is_racy(entry[2], index_stamp), config)
+            if state is None:
+                return None
+            if state[0]:
+                changed.append(name)
+                added.append(name)
+            continue
+        if entry is None:
+            # The index does not name the path, so the file is gone from
+            # the working tree as far as Git is concerned.
+            changed.append(name)
+            deleted.append(name)
+            continue
+        state = _worktree_state(repo, name, entry, _is_racy(entry[2], index_stamp), config)
+        if state is None:
+            return None
+        exists, mode, sha = state
+        if not exists:
+            changed.append(name)
+            deleted.append(name)
+            continue
+        if mode != tree_entry[0] or sha != tree_entry[1]:
+            changed.append(name)
+    if deleted and added:
+        # Git pairs a deleted path with an added one when their content is
+        # similar, and then the listing names the new path alone.  Which
+        # pair Git picks is Git's own decision, so Git answers the question.
+        return None
+    return changed
+
+
+def _diff_between_trees(before, after):
+    """The paths that differ between two trees, or None.
+
+    None when Git would pair a deleted path with an added one, because
+    then the listing names the new path alone.
+    """
+    deleted = set(before) - set(after)
+    added = set(after) - set(before)
+    if deleted and added:
+        return None
+    return [name for name in sorted(set(before) | set(after))
+            if before.get(name) != after.get(name)]
+
+
+def _diff_against_index(tree, entries):
+    """The paths that differ between a tree and the index, or None."""
+    after = {name: (entry[0], entry[1]) for name, entry in entries.items()}
+    return _diff_between_trees(tree, after)
+
+
+def _diff_paths(repo, commit):
+    """The paths that differ between the working tree and one revision.
+
+    The answer is the one ``git diff --name-only -z <commit>`` gives.
+    None when the answer is not certain, so that Git answers instead.
+    """
+    tree = _tree_entries(repo, commit)
+    if tree is None:
+        return None
+    entries = _index_entries(repo)
+    if entries is None:
+        return None
+    config = _repository_config(repo)
+    if config is None:
+        return None
+    return _diff_against_tree(repo, tree, entries, config)
+
+
+def _diff_index_paths(repo):
+    """The paths that differ between the working tree and the index."""
+    entries = _index_entries(repo)
+    if entries is None:
+        return None
+    config = _repository_config(repo)
+    if config is None:
+        return None
+    if config.get(("core", "symlinks"), "true").lower() == "false":
+        return None
+    index_stamp = _stat(Path(repo.gitdir) / "index")
+    changed = []
+    for name in sorted(entries):
+        entry = entries[name]
+        state = _worktree_state(repo, name, entry, _is_racy(entry[2], index_stamp), config)
+        if state is None:
+            return None
+        exists, mode, sha = state
+        if not exists or mode != entry[0] or sha != entry[1]:
+            changed.append(name)
+    return changed
+
+
+def _diff_cached_paths(repo, commit):
+    """The paths that differ between the index and one revision."""
+    tree = _tree_entries(repo, commit)
+    if tree is None:
+        return None
+    entries = _index_entries(repo)
+    if entries is None:
+        return None
+    return _diff_against_index(tree, entries)
+
+
+def _diff_revision_paths(repo, base, commit):
+    """The paths that differ between two revisions."""
+    before = _tree_entries(repo, base)
+    if before is None:
+        return None
+    after = _tree_entries(repo, commit)
+    if after is None:
+        return None
+    return _diff_between_trees(before, after)
+
+
+# ---------------------------------------------------------------------------
 # The remotes
 # ---------------------------------------------------------------------------
 
@@ -777,6 +1121,58 @@ def _as_bytes(paths):
     return b"".join(path.encode("utf-8", errors="replace") + b"\0" for path in paths)
 
 
+def _revision(repo, name):
+    """The commit one revision names, or None when Git has to answer."""
+    if _SHA.match(name or ""):
+        return name
+    if name == "HEAD":
+        return head_sha(repo) or None
+    return None
+
+
+def _diff_answer(repo, args):
+    """The answer of one question about the changed paths, or None.
+
+    The question is the one ``git diff`` asks with ``--name-only``: which
+    paths differ.  The revision, the index and the working tree are read
+    from disk, so the answer starts no process.
+    """
+    if args[0] != "diff" or "--name-only" not in args:
+        return None
+    if "-z" not in args:
+        # Without -z Git spells a path it cannot print as it is, so the
+        # listing is not the listing of this module.
+        return None
+    cached = "--cached" in args
+    rest = [item for item in args[1:] if item not in ("--name-only", "-z", "--cached")]
+    if any(item.startswith("--") for item in rest):
+        return None  # an option this module does not model
+    if not rest:
+        if cached:
+            commit = _revision(repo, "HEAD")
+            if commit is None:
+                return None
+            paths = _diff_cached_paths(repo, commit)
+        else:
+            paths = _diff_index_paths(repo)
+    elif len(rest) == 1:
+        commit = _revision(repo, rest[0])
+        if commit is None:
+            return None
+        paths = _diff_cached_paths(repo, commit) if cached else _diff_paths(repo, commit)
+    elif len(rest) == 2:
+        base = _revision(repo, rest[0])
+        commit = _revision(repo, rest[1])
+        if base is None or commit is None:
+            return None
+        paths = _diff_revision_paths(repo, base, commit)
+    else:
+        return None
+    if paths is None:
+        return None
+    return b"".join(path + b"\0" for path in paths)
+
+
 def answer(cwd, args):
     """The answer to one Git question, read from disk when it is safe.
 
@@ -800,6 +1196,8 @@ def answer(cwd, args):
         if url is None:
             return None
         return url.encode() + b"\n"
+    if args and args[0] == "diff":
+        return _diff_answer(repo, args)
     return None
 
 
@@ -824,9 +1222,13 @@ def candidate_paths(cwd, head):
             return None
         token, changed = answer
         if changed is None:
-            changed = [path for path in
-                       git(cwd, "diff", "--name-only", "-z", head).decode("utf-8", errors="replace").split("\0")
-                       if path]
+            paths = _diff_paths(repo, head)
+            if paths is None:
+                changed = [path for path in
+                           git(cwd, "diff", "--name-only", "-z", head).decode("utf-8", errors="replace").split("\0")
+                           if path]
+            else:
+                changed = [os.fsdecode(path) for path in paths]
             _CHANGED[(repo.key, head)] = (token, changed)
             _trim_cache(_CHANGED)
         return _as_bytes(changed) + _as_bytes(untracked)

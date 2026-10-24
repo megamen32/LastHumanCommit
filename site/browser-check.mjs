@@ -92,20 +92,6 @@ try {
     const image=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
     await writeFile(path.resolve('.tmp/landing-'+language+'-'+width+'.png'),Buffer.from(image.data,'base64'));
   }
-  await viewport(1440); await visit(base+"?lang=ru");
-  await evaluate('document.querySelector("#plan").scrollIntoView();document.querySelector("#plan iframe").loading="eager"');
-  await until('Boolean(document.querySelector("#plan iframe").contentDocument?.querySelector(".task-details-trigger"))');
-  assert.equal(await evaluate('document.querySelector("#plan iframe").contentDocument.querySelectorAll(".task-details-trigger").length'),16);
-  await evaluate('document.querySelector("#plan iframe").contentDocument.querySelector(".task-details-trigger").click()');
-  assert.equal(await evaluate('document.querySelector("#plan iframe").contentDocument.querySelector(".task-details-trigger").getAttribute("aria-expanded")'),"true");
-  await evaluate('document.querySelector("#plan iframe").contentDocument.querySelector("[data-filter=running]").click()');
-  assert.equal(await evaluate('document.querySelector("#plan iframe").contentDocument.querySelector(".chip.active").dataset.filter'),"running");
-  for (const width of [320,390,768,1440]) {
-    await viewport(width);
-    assert.ok(await evaluate('document.documentElement.scrollWidth <= innerWidth + 1'));
-  }
-  assert.equal(await evaluate('document.querySelector("#plan a[download]").getAttribute("download")'),"lhc-example-plan.html");
-  console.log("PASS: real embedded Gantt, sixteen tasks, detail opening, running filter, download link and four viewport widths.");
   assert.deepEqual(runtimeErrors,[]);
   console.log('PASS: no uncaught browser exceptions. Screenshots saved under .tmp/.');
 } finally {

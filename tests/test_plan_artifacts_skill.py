@@ -23,9 +23,9 @@ The model gate belongs here too: below 20% remaining allowance no council, no
 frontier model and no adviser may be convened.
 """
 import re
-import subprocess
-import sys
 from pathlib import Path
+
+from _inprocess import load_module, run_cli
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILLS = ROOT / 'src/common/skills'
@@ -59,19 +59,24 @@ def front_matter(text: str) -> dict:
 def subcommands(tool: Path) -> set:
     """The real subcommands of a tool, as its own parser reports them."""
 
-    out = subprocess.run(
-        [sys.executable, str(tool), '--help'], capture_output=True, text=True,
-    )
+    out = run(tool, '--help')
     assert out.returncode == 0, f"{tool.name} --help failed: {out.stderr}"
     found = re.search(r"\{([\w,-]+)\}", out.stdout)
     assert found, f"{tool.name} --help names no subcommands"
     return set(found.group(1).split(','))
 
 
-def run(*args) -> subprocess.CompletedProcess:
-    return subprocess.run(
-        [sys.executable, *[str(a) for a in args]], capture_output=True, text=True,
-    )
+def run(*args):
+    """Run a tool of the suite as its own CLI, without a new interpreter.
+
+    The tool, its argument vector, its stdin, its stdout, its stderr and its
+    exit code are the ones the command line would have produced; only the
+    process boundary is saved.
+    """
+
+    tool = Path(args[0])
+    result = run_cli(load_module(tool), [str(item) for item in args[1:]])
+    return result
 
 
 def write_plan(root: Path, leaves: dict, plan: dict = None) -> Path:

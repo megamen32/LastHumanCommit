@@ -278,3 +278,45 @@ def test_git_snapshot_starts_only_the_two_git_processes_it_needs(tmp_path, git_s
     head = (repository / ".git" / "HEAD").read_text(encoding="utf-8").strip()
     branch = head.rsplit("/", 1)[-1] if head.startswith("ref:") else head
     assert f"Branch:\n{branch}" in snapshot
+
+
+def _load_reader():
+    """The reader of the layout of a repository, loaded from the canon."""
+
+    path = ROOT / "src/common/tools/lhc_gitlayout.py"
+    spec = importlib.util.spec_from_file_location("lhc_gitlayout_reader", path)
+    assert spec is not None and spec.loader is not None
+    reader = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(reader)
+    return reader
+
+
+def test_the_guard_asks_the_one_reader_of_the_layout(tmp_path) -> None:
+    """The guard has no layout of its own: it asks the reader of the canon.
+
+    The reader owns the answers about the layout of a repository.  A second
+    implementation inside the guard would drift from the answers of git, so
+    the answers of the guard are compared with the answers of git and with
+    the answers of the reader, for every shape of a repository.
+    """
+
+    reader = _load_reader()
+    main = _repository(tmp_path, "main")
+    linked = tmp_path / "linked"
+    _git("-C", str(main), "worktree", "add", "-q", str(linked), "-b", "feature")
+    detached = tmp_path / "detached"
+    _git("-C", str(main), "worktree", "add", "-q", "--detach", str(detached))
+    bare = tmp_path / "bare.git"
+    _git("init", "-q", "--bare", str(bare))
+
+    for directory in (main, linked, detached, bare):
+        assert TIME_GUARD._git_worktree_root(directory) == reader.worktree_root(directory)
+        assert TIME_GUARD._git_current_branch(directory) == reader.current_branch(directory)
+        assert TIME_GUARD._git_primary_worktree(directory) == reader.primary_worktree(directory)
+        common = reader.common_dir_of(directory)
+        assert (TIME_GUARD._git_worktree_list_porcelain(common)
+                == reader.worktree_list_porcelain(common))
+        assert _git_answer(directory, "rev-parse", "--show-toplevel") == \
+            _effective(TIME_GUARD._git_worktree_root(directory))
+        assert _git_answer(directory, "branch", "--show-current") == \
+            _effective(TIME_GUARD._git_current_branch(directory))

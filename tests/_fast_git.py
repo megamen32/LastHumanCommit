@@ -58,6 +58,7 @@ GIT_COMMANDS = (
 
 _FAST_GIT_DIRECTORY: str | None = None
 _FAST_GIT_RESOLVED = False
+_FAST_GIT_ENVIRONMENT: dict[str, str] = {}
 
 
 def _scratch_repository(root: Path) -> Path:
@@ -102,7 +103,7 @@ def fast_git_directory() -> str | None:
     stays in use.
     """
 
-    global _FAST_GIT_DIRECTORY, _FAST_GIT_RESOLVED
+    global _FAST_GIT_DIRECTORY, _FAST_GIT_RESOLVED, _FAST_GIT_ENVIRONMENT
     if _FAST_GIT_RESOLVED:
         return _FAST_GIT_DIRECTORY
     _FAST_GIT_RESOLVED = True
@@ -137,6 +138,7 @@ def fast_git_directory() -> str | None:
         return None
     (directory / "git").symlink_to(forwarded)
     _FAST_GIT_DIRECTORY = str(directory)
+    _FAST_GIT_ENVIRONMENT = {"PATH": str(directory) + os.pathsep + os.environ.get("PATH", "")}
     return _FAST_GIT_DIRECTORY
 
 
@@ -146,12 +148,27 @@ def git_environment() -> dict[str, str]:
     directory = fast_git_directory()
     if directory is None:
         return {}
-    return {"PATH": directory + os.pathsep + os.environ.get("PATH", "")}
+    return dict(_FAST_GIT_ENVIRONMENT)
+
+
+def git_path(path: str | None = None) -> str:
+    """The PATH a git call must see, with the forwarded binary in front."""
+
+    environment = git_environment()
+    if not environment:
+        return path if path is not None else os.environ.get("PATH", "")
+    if path is None:
+        return environment["PATH"]
+    return environment["PATH"].split(os.pathsep, 1)[0] + os.pathsep + path
 
 
 def use_fast_git() -> None:
     """Let every ``git`` of this process use the forwarded binary."""
 
     environment = git_environment()
-    if environment:
-        os.environ.update(environment)
+    if not environment:
+        return
+    path = os.environ.get("PATH", "")
+    if path.split(os.pathsep)[:1] == environment["PATH"].split(os.pathsep)[:1]:
+        return
+    os.environ.update(environment)

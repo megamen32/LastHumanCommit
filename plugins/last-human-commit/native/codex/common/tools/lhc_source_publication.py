@@ -12,13 +12,80 @@ from datetime import datetime
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
+try:
+    import lhc_git_facts as facts
+except ImportError:
+    # The published package does not ship the reader of the repository yet.
+    # Git then answers every question, which is the answer it always gave.
+    facts = None
+
+
+def _known_fact(root, args):
+    """The answer of one Git question, read from the repository on disk.
+
+    None means the repository does not hold that answer in a shape this
+    module reads, so Git itself is asked and the answer stays the one Git
+    gives.
+    """
+    if facts is None:
+        return None
+    repo = facts.discover(root)
+    if repo is None:
+        return None
+    if args == ("rev-parse", "HEAD"):
+        sha = facts.head_sha(repo)
+        return None if sha is None else (sha + "\n").encode()
+    if len(args) == 3 and args[:2] == ("cat-file", "-e"):
+        return b"" if facts.commit_exists(repo, args[2]) else None
+    if args[:4] == ("rev-list", "--parents", "-n", "1") and len(args) == 5:
+        parents = facts.commit_parents(repo, args[4])
+        if parents is None:
+            return None
+        return (" ".join([args[4], *parents]) + "\n").encode()
+    if args[:2] == ("diff", "--name-only"):
+        rest = [item for item in args[2:] if item != "--no-renames"]
+        if len(rest) != 2:
+            return None
+        paths = facts.changed_paths(repo, rest[0], rest[1],
+                                    no_renames="--no-renames" in args[2:])
+        if paths is None:
+            return None
+        return "".join(path + "\n" for path in paths).encode()
+    if len(args) == 2 and args[0] == "show" and ":" in args[1]:
+        commit, _, path = args[1].partition(":")
+        blob = facts.blob_at(repo, commit, path)
+        return None if blob is None else blob
+    if len(args) == 3 and args[0] == "ls-remote":
+        sha = facts.remote_ref(root, args[1], args[2])
+        if sha is None:
+            return None
+        return b"" if not sha else (sha + "\t" + args[2] + "\n").encode()
+    return None
+
 
 def _git(root, *args):
+    """Ask Git for one proof, unless the repository already holds it."""
+    known = _known_fact(root, args)
+    if known is not None:
+        return known
     result = subprocess.run(["git", "-C", str(root), *args], capture_output=True,
                             timeout=5)
     if result.returncode:
         raise ValueError("source-publication Git proof unavailable: " + " ".join(args[:2]))
     return result.stdout
+
+
+def _is_ancestor(root, ancestor, descendant):
+    """Whether one commit is an ancestor of another."""
+    if facts is not None:
+        repo = facts.discover(root)
+        if repo is not None:
+            answer = facts.is_ancestor(repo, ancestor, descendant)
+            if answer is not None:
+                return answer
+    return not subprocess.run(["git", "-C", str(root), "merge-base", "--is-ancestor",
+                               ancestor, descendant],
+                              capture_output=True, timeout=5).returncode
 
 
 def _sha(data):
@@ -139,8 +206,7 @@ def capture_contract(outcome, source, root, paths, remote, branch, repository,
         raise ValueError("source-publication base ref readback is missing or ambiguous")
     base = base_rows[0][0]
     _git(root, "cat-file", "-e", base + "^{commit}")
-    if subprocess.run(["git", "-C", str(root), "merge-base", "--is-ancestor", base, head],
-                      capture_output=True, timeout=5).returncode:
+    if not _is_ancestor(root, base, head):
         raise ValueError("source-publication candidate is not fast-forward from the current remote base")
     files = {}
     for name in paths:
@@ -437,8 +503,7 @@ def publication_readback(metadata, observations, root, outcome, floor, *, before
     if current_rows != [commit + "\t" + metadata["ref"]]:
         raise ValueError("source-publication remote ref changed after the native readback")
     base = metadata["base"]
-    if subprocess.run(["git", "-C", str(root), "merge-base", "--is-ancestor", base, commit],
-                      capture_output=True, timeout=5).returncode:
+    if not _is_ancestor(root, base, commit):
         raise ValueError("published source commit is not fast-forward from the bound current remote base")
     changed = set(_git(root, "diff", "--name-only", base, commit).decode().splitlines())
     if changed != set(metadata["owned_files"]):

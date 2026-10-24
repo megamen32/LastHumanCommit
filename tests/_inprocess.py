@@ -22,6 +22,14 @@ modules), so the state that actually leaks is the *process* state: argv,
 stdin, the environment and the working directory. ``reset_state()`` restores
 exactly that.
 
+**The git binary.**  The tools start git thousands of times per run, and on
+this machine ``/usr/bin/git`` is an ``xcrun`` stub that spends about 21 ms on
+every start, while the git it forwards to needs about 7 ms.  The lane uses
+the forwarded binary, but only after proving that it is the same git: the
+same version and byte identical answers for every git command the tools use
+(see ``tests/_fast_git.py``).  When no such binary can be proven, the git of
+the PATH stays in use.
+
 The helpers here are private to the fast lane. No other test file may depend
 on them.
 """
@@ -41,6 +49,8 @@ import sys
 import traceback
 from pathlib import Path
 
+from _fast_git import git_path, use_fast_git
+
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 TOOLS_DIR = REPO_ROOT / "src" / "common" / "tools"
@@ -51,6 +61,11 @@ TOOLS_DIR = REPO_ROOT / "src" / "common" / "tools"
 # validator) need it up front.
 if str(TOOLS_DIR) not in sys.path:
     sys.path.insert(0, str(TOOLS_DIR))
+
+
+# Every git the tools start in this lane must use the git that was proven to
+# be the same git; see the module docstring.
+use_fast_git()
 
 
 class CliResult:
@@ -188,6 +203,19 @@ def _exit_code(code) -> int:
     return 1
 
 
+def _with_fast_git(env):
+    """The environment of one call, with the proven git binary on the PATH.
+
+    A call that names its own PATH still gets the proven git in front of it;
+    a call that names none inherits the PATH of this process, which already
+    holds it.
+    """
+
+    if not env or "PATH" not in env:
+        return env
+    return {**env, "PATH": git_path(env["PATH"])}
+
+
 def run_cli(module, argv, *, env=None, cwd=None, stdin=None, program=None, text=True):
     """Run ``module.main()`` in-process and return its observable result.
 
@@ -208,7 +236,7 @@ def run_cli(module, argv, *, env=None, cwd=None, stdin=None, program=None, text=
     saved_argv = list(sys.argv)
     saved_stdin = sys.stdin
     try:
-        with _environment(env), _working_directory(cwd):
+        with _environment(_with_fast_git(env)), _working_directory(cwd):
             if stdin is not None:
                 sys.stdin = io.StringIO(stdin if isinstance(stdin, str) else stdin.decode())
             else:
