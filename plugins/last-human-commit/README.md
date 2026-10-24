@@ -11,6 +11,12 @@ fixtures and raw feedback retain their language.
 
 Native hooks load instructions at session start or context restoration and issue
 time-only 30-minute planning and hourly goal-check reminders.
+Codex also has an optional client-owned async progress adviser: once per due
+interval, a fresh read-only native Overseer compares bounded original user input,
+raw recent actions/results and candidate plan state, then returns one next action.
+The Lead acts/assigns it or rejects it with a concrete observed fact; advice never
+blocks delivery. Native hook trust and disablement remain in force. Other clients
+use the portable method manually; their automatic execution is not claimed.
 They do not classify conversation text, mutate task contracts, or block completion.
 Every 30 minutes the Lead updates the task note with roughly 15-minute steps,
 initial estimate versus actual effort, dependencies and parallel delegation.
@@ -53,9 +59,9 @@ available; scheduled inspection is required even when the current plan looks cor
 
 ## Package and installation
 
-The native Agent Plugin is `plugins/last-human-commit`, version 1.5.47, with the full
+The native Agent Plugin is `plugins/last-human-commit`, version 1.5.48, with the full
 optional skill set (validated by `scripts/validate.py`), instruction-only startup hooks
-and time-only reminders. Use the harness's native plugin manager.
+and time-only reminders, plus the Codex-specific async extension. Use the harness's native plugin manager.
 For clients whose plugin hooks are unavailable or still await trust, the package
 provides a supported user-instruction bootstrap:
 

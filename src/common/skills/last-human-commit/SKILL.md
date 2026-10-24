@@ -24,6 +24,14 @@ The full role description is `common/agents/Lead.md` in the package root (two le
 up from this skill in the installed package, `src/common/agents/Lead.md` in a source
 checkout).
 
+Native progress advice: when the optional trusted Codex async hook returns an
+Overseer recommendation, perform/assign its one useful next action or reject it
+with a concrete observed fact. Another ACK or report is not action. Advice is
+not a delivery gate or authority; preserve the user's Stop and exact scope.
+The next review checks subsequent actions. The 30-minute timer is only a due
+signal, never a semantic diagnosis. Other harnesses consult Overseer manually;
+portable Agent Plugins skills do not promise automatic hook execution.
+
 ## Read the router before any action
 
 Read the LHC package's own `AGENTS.md` — in the installed package it is the file

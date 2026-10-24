@@ -1,0 +1,31 @@
+{
+  "description": "Codex-only asynchronous LHC progress advice; other client adapters remain time-only",
+  "hooks": {
+    "PostToolUse": [{"hooks": [{
+      "type": "command",
+      "command": "python3 \"${PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}}/tools/lhc_progress_review.py\"",
+      "async": true,
+      "timeout": 90
+    }]}],
+    "UserPromptSubmit": [{"hooks": [{
+      "type": "command",
+      "command": "python3 \"${PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}}/tools/lhc_progress_review.py\" --invalidate",
+      "timeout": 3
+    }]}],
+    "Interrupt": [{"hooks": [{
+      "type": "command",
+      "command": "python3 \"${PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}}/tools/lhc_progress_review.py\" --invalidate",
+      "timeout": 3
+    }]}],
+    "Stop": [{"hooks": [{
+      "type": "command",
+      "command": "python3 \"${PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}}/tools/lhc_progress_review.py\" --invalidate",
+      "timeout": 3
+    }]}],
+    "SessionEnd": [{"hooks": [{
+      "type": "command",
+      "command": "python3 \"${PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}}/tools/lhc_progress_review.py\" --invalidate",
+      "timeout": 3
+    }]}]
+  }
+}

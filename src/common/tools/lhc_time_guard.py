@@ -1264,30 +1264,14 @@ def native_heartbeat(cwd: Path, runtime: str, session_id: str,
     reminders = []
     if any(item.startswith("plan:") for item in due):
         reminders.append(
-            "LHC 30-minute plan report: write the canonical live plan report now "
-            "(common/protocols/PLAN_REPORT.md). Two header lines — the goal and the "
-            "current business result — then the leaves: ✅ finished with start and "
-            "finish time, original estimate and actual minutes; 🔄 running with its "
-            "start, estimate, elapsed minutes and, whenever elapsed exceeds the "
-            "estimate, the reason it is behind; ⏳ queued with what it waits for, why "
-            "it cannot run in parallel, the approximate start and finish, and the "
-            "estimate. Show the report to the user and keep the same content under "
-            "`## Plan` in the canonical task record. The Overseer reads this report "
-            "against the original request and the business canary; it is not "
-            "completion of any gate. Then make the report and the task graph one "
-            "unit, in this order: (1) refresh the map from the report through the "
-            "CLI — `python3 <tools>/lhc_grid.py export <plan.report.md> -o "
-            "<objective>/plan.graph.json`; (2) build the unambiguous view on that "
-            "refreshed map — `python3 <tools>/lhc_grid.py render "
-            "<objective>/plan.graph.json -o <objective>/plan.html`, and the text "
-            "view — `python3 <tools>/lhc_grid.py status <objective>/plan.graph.json`; "
-            "(3) reconcile the report's tasks with the map's leaves — `python3 "
-            "<tools>/lhc_grid.py check-plan <plan.report.md> "
-            "<objective>/plan.graph.json` — and fix every divergence instead of "
-            "leaving it. The map comes first and the view second: the view is built "
-            "on the refreshed map, never on the report alone, so nothing can be "
-            "folded away or forgotten. This reminder tracks time and names the "
-            "calls only; it never estimates, reviews, judges or blocks."
+            "LHC 30-minute plan report: compare the original request and latest corrections "
+            "with actual useful progress. Update the existing plan only where facts changed "
+            "(common/protocols/PLAN_REPORT.md); refresh the map (lhc_grid.py export), "
+            "then the view (lhc_grid.py render, lhc_grid.py status), then reconcile "
+            "with lhc_grid.py check-plan and fix every divergence. A report is not the next business action. "
+            "When native async Overseer advice arrives, act/assign its concrete next step "
+            "or reject it with an observed fact. No gate, hold, new user status or extra "
+            "review is created by this reminder. Other harnesses use the method manually."
         )
         # The same checkpoint names the lanes that can start right now. It reads
         # the canonical graph and lists them; it never estimates or judges.

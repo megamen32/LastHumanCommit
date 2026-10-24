@@ -15,9 +15,10 @@ least-cost path to the user's accepted canary.
 - a 20-minute Worker checkpoint reports uncertainty or a shorter route.
 
 A trigger requires a control decision, not automatic cancellation or replacement.
-Repeated failures, material drift and maximum overruns require an independent
-Overseer re-audit after the initial audit. L can continue safe independent work
-while waiting, but must not continue the disputed failed route unchanged.
+Repeated failures, material drift and maximum overruns call for one concrete
+route correction, with a fresh read-only Overseer when useful. Advice is never
+a prerequisite or a permission receipt. Continue useful authorized work; do not
+replace a removable blocker with another report or unchanged repeated check.
 Use `REDECOMPOSE`, `CHANGE_MODEL`, `REFRESH_CONTEXT` or `COUNCIL` when the evidence
 points to task boundaries, model suitability, degraded context or an unresolved
 decision respectively. Ordinary technical choices remain Lead-owned.
@@ -46,3 +47,14 @@ The user-facing rethink contains the blocker, evidence, original estimate versus
 actual cost, business delta, genuinely different in-scope routes, and L's
 shortest recommendation. Do not silently continue the failed route by changing
 the estimate or terminology.
+
+On supported Codex installations, a trusted enabled async PostToolUse hook
+launches the existing Overseer at a due 30-minute boundary. It sees bounded
+native user messages, raw actions/results, candidate plans and previous advice.
+It returns one action/owner with `continue`, `redirect`, `wait_external` or
+`need_fact`. A healthy build, genuine wait or requested audit may continue;
+unknown progress is not no progress. The Lead acts/assigns that step or cites
+an observed fact for rejecting it. The next review checks actual subsequent
+behavior. No second review of the reviewer, new hold or gate is created.
+Native new input/Interrupt/Stop/SessionEnd invalidate stale work. No idle wakeup.
+Other harnesses retain the manual method, not an automatic-execution claim.

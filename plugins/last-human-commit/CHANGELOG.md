@@ -1,3 +1,13 @@
+# 1.5.48 - correct the route from actual progress
+
+- Codex: an optional trusted async hook invokes a fresh read-only Overseer at a
+  due work boundary and returns one concrete progress correction to the active turn.
+- Bound and redact native evidence, prevent recursive/duplicate reviews, honor
+  native stop/new-turn cancellation and hook disablement, and fail open.
+- Shorten report-only reminders. Other harnesses retain manual consultation.
+- Native fixture proof: actual callback redirected repeated SHA checks to local
+  installation and a successful consumer check. Only fixture timing was synthetic.
+
 # 1.5.47 - one answer about a repository, and no leftovers in the package
 
 **The last duplicate is gone.** The milestone module had grown its own search for

@@ -14,6 +14,7 @@ This script makes the projection a command instead of a ritual:
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
@@ -34,6 +35,8 @@ COPIES: tuple[tuple[str, str, tuple[tuple[bytes, bytes], ...]], ...] = (
     ("CLAUDE.md", "plugins/last-human-commit/native/codex/CLAUDE.md", COMMON),
     ("src/common/agents/Lead.md", "plugins/last-human-commit/common/agents/Lead.md", COMMON),
     ("src/common/agents/Worker.md", "plugins/last-human-commit/common/agents/Worker.md", COMMON),
+    ("src/common/agents/Overseer.md", "plugins/last-human-commit/common/agents/Overseer.md", COMMON),
+    ("src/common/agents/Overseer.md", "plugins/last-human-commit/native/codex/common/agents/Overseer.md", COMMON),
     (
         "src/common/agents/Lead.md",
         "plugins/last-human-commit/native/codex/common/agents/Lead.md",
@@ -43,6 +46,11 @@ COPIES: tuple[tuple[str, str, tuple[tuple[bytes, bytes], ...]], ...] = (
         "src/common/agents/Worker.md",
         "plugins/last-human-commit/native/codex/common/agents/Worker.md",
         COMMON,
+    ),
+    (
+        "src/common/skills/last-human-commit/SKILL.md",
+        "skills/last-human-commit/SKILL.md",
+        (),
     ),
     (
         "src/common/skills/last-human-commit/SKILL.md",
@@ -87,6 +95,7 @@ TOOL_COPIES = (
     "lhc_outcome_review.py",
     "lhc_milestone.py",
     "lhc_time_guard.py",
+    "lhc_progress_review.py",
     "lhc_active_time.py",
     "lhc_native_identity.py",
     "lhc_source_publication.py",
@@ -154,6 +163,16 @@ def main() -> int:
             print(f"нет источника: {source}", file=sys.stderr)
             continue
         write(ROOT / generated, project(source_path.read_bytes(), replacements))
+
+    # Native Codex extension: preserve the portable/time-only bundle for other
+    # clients and add only the explicitly supported async adapter here.
+    codex_hooks = json.loads((ROOT / "adapters/codex/hooks/hooks.json").read_text())
+    portable_hooks = json.loads((PACKAGE / "hooks/hooks.json").read_text())
+    for event, registrations in portable_hooks["hooks"].items():
+        codex_hooks["hooks"].setdefault(event, [])[:0] = registrations
+    hook_data = (json.dumps(codex_hooks, ensure_ascii=False, indent=2) + "\n").encode()
+    for prefix in (PACKAGE, NATIVE):
+        write(prefix / "com.openai/hooks/hooks.json", hook_data)
 
     # A projected tool without a source is a leftover of a module that was
     # merged into another one. It ships as dead weight and it breaks the
