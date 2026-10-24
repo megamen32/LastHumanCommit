@@ -84,9 +84,15 @@ Push своей ветки и fast-forward remote main завершились у
 Lead readback подтвердил обе ссылки на этот SHA. Основной checkout не менялся.
 Включён ранее переданный hosting commit f216a2a и nginx/README владельца без
 изменения. Код, план и разрешённый hosting source опубликованы; host работает.
-Native plugin manager installation/autoload не выполнялись: bare native
-manifest может не активировать mcp.json автоматически, это не заявляется как PASS.
-Подтверждён только фактический переносимый raw stdio transport и тот же CLI.
+После публикации Lead независимо проверил native manager в новом изолированном
+CODEX_HOME `.tmp/lhc-mcp-manager.rmBOB3`: `codex plugin marketplace add "$PWD"`,
+`plugin add lhc-plan@megamen32-plugins --json` установил 1.0.0.
+`codex mcp list --json` показал LhcPlan enabled=true, transport=stdio,
+command=python3, args указывают на установленный cache/scripts/plan_mcp.py,
+cwd — установленный root; PLUGIN_ROOT/PLUGIN_DATA предоставлены native manager.
+Таким образом portable mcp.json обнаружен native loader. Это независимый
+readback Lead, не повторный запуск Worker. Authentication/model run не нужны.
+Глобальные config/cache/hooks и уже работающие пользовательские сессии не менялись.
 
 Исходный реальный r001 HTML остаётся byte-identical:
 `bf3dd25661f3121acbf290a65769354891d7c09d8fc4a7d31c6b4b05e6870da0`.
