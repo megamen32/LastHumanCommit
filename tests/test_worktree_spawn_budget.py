@@ -36,6 +36,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
+import types
 
 import pytest
 
@@ -98,11 +99,20 @@ LAYOUT_ANSWERS = (
     "worktree_root",
     "current_branch",
     "discover_git_dir",
+    "discover",
 )
+
+# The class that names a repository.  It belongs to the reader of the layout
+# for the same reason the answers do.
+LAYOUT_CLASSES = ("Repository",)
+
+# The module that owns the answers about the layout.
+CANON_READER = "lhc_gitlayout.py"
 
 # The modules that answer questions about a repository.  A second
 # implementation of one of the answers in any of them is a copy that drifts.
-REPOSITORY_MODULES = ("lhc_gitlayout.py", "lhc_time_guard.py", "lhc_git_facts.py")
+REPOSITORY_MODULES = ("lhc_gitlayout.py", "lhc_time_guard.py", "lhc_git_facts.py",
+                      "lhc_milestone.py")
 
 
 @pytest.fixture
@@ -408,19 +418,88 @@ def test_the_tools_work_without_the_reader(tmp_path, spawns, monkeypatch) -> Non
     )
 
 
-def test_the_layout_answers_are_defined_once_in_the_canon() -> None:
+def _asks_the_reader(node: ast.FunctionDef, module) -> bool:
+    """Whether a definition only asks the reader of the layout for an answer.
+
+    A definition outside the reader is a request when it does nothing but
+    return the answer of the reader: its body is a docstring and one return,
+    and the return asks the reader for the very same answer.  A body with
+    any other statement is a second implementation of the answer.
+    """
+
+    body = list(node.body)
+    if (body and isinstance(body[0], ast.Expr) and isinstance(body[0].value, ast.Constant)
+            and isinstance(body[0].value.value, str)):
+        body = body[1:]
+    if len(body) != 1 or not isinstance(body[0], ast.Return):
+        return False
+    value = body[0].value
+    if isinstance(value, ast.IfExp):
+        # `return reader.answer(...) if reader is not None else None`
+        value = value.body
+    if not isinstance(value, ast.Call) or not isinstance(value.func, ast.Attribute):
+        return False
+    if value.func.attr != node.name:
+        return False
+    base = value.func.value
+    if not isinstance(base, ast.Name):
+        return False
+    reader = getattr(module, base.id, None)
+    if not isinstance(reader, types.ModuleType):
+        return False
+    return Path(getattr(reader, "__file__", "")).name == CANON_READER
+
+
+def test_the_layout_answers_are_defined_once_in_the_canon(tmp_path) -> None:
     """One canon, one implementation of the answers about the layout.
 
     The reader of the layout owns these answers.  A second definition in any
     other module of the canon is a copy that drifts from the answers of git,
-    so the canon does not carry one.
+    so the canon does not carry one: a module that needs an answer asks the
+    reader for it and returns what the reader answered.
     """
 
-    defined = []
     for name in REPOSITORY_MODULES:
+        module = _load(name.replace(".py", ""), f"lhc_consolidation_{name[:-3]}")
         tree = ast.parse((TOOLS / name).read_text(encoding="utf-8"))
         for node in ast.walk(tree):
+            if isinstance(node, ast.ClassDef) and node.name in LAYOUT_CLASSES:
+                assert name == CANON_READER, (
+                    f"{name} defines the class {node.name} itself; the canon has "
+                    f"one such class, in {CANON_READER}"
+                )
             if isinstance(node, ast.FunctionDef) and node.name in LAYOUT_ANSWERS:
-                defined.append((name, node.name))
+                if name == CANON_READER:
+                    continue
+                assert _asks_the_reader(node, module), (
+                    f"{name} answers {node.name} itself; the canon has one answer "
+                    f"for it, in {CANON_READER}"
+                )
 
-    assert sorted(defined) == sorted(("lhc_gitlayout.py", answer) for answer in LAYOUT_ANSWERS)
+    tree = ast.parse((TOOLS / CANON_READER).read_text(encoding="utf-8"))
+    defined = sorted(node.name for node in ast.walk(tree)
+                      if isinstance(node, ast.FunctionDef) and node.name in LAYOUT_ANSWERS)
+    assert defined == sorted(LAYOUT_ANSWERS), (
+        f"the reader of the layout must define every answer exactly once, it "
+        f"defines {defined}"
+    )
+    classes = sorted(node.name for node in ast.walk(tree)
+                     if isinstance(node, ast.ClassDef) and node.name in LAYOUT_CLASSES)
+    assert classes == sorted(LAYOUT_CLASSES), (
+        f"the reader of the layout must define the class of a repository, it "
+        f"defines {classes}"
+    )
+
+    # The repository the milestone works on is the repository of the reader,
+    # not a copy of it that answers the same questions on its own.
+    milestone = _load("lhc_milestone", "lhc_consolidation_milestone")
+    assert milestone.layout is not None, "the milestone must ask the reader of the layout"
+    assert Path(milestone.layout.__file__).name == CANON_READER
+    repository = _repository(tmp_path, "primary")
+    found = milestone.discover(repository)
+    assert found is not None
+    assert isinstance(found, milestone.layout.Repository), (
+        "the milestone must work on the repository of the reader, it works on "
+        f"{type(found).__name__}"
+    )
+    assert found.gitdir == repository / ".git"

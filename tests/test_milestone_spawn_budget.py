@@ -13,6 +13,7 @@ import contextlib
 import os
 from datetime import datetime
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 
@@ -85,6 +86,100 @@ def observe(root, state, event, **fields):
     payload = {"cwd": str(root), "session_id": "observer", **fields}
     return native.observe(state, payload, event, root, "observer",
                           datetime.now().astimezone())
+
+
+def _shapes(root):
+    """Every shape of a repository the observer has to answer for."""
+
+    main = repository(root / "main", commit=True)
+    nested = main / "nested" / "deeper"
+    nested.mkdir(parents=True)
+    git(main, "worktree", "add", str(root / "linked"), "-b", "feature")
+    git(main, "worktree", "add", "--detach", str(root / "detached"))
+    separate = root / "separate"
+    separate.mkdir()
+    git(root, "init", "-q", "--separate-git-dir", str(root / "separate.git"), str(separate))
+    bare = root / "bare.git"
+    git(root, "init", "-q", "--bare", str(bare))
+    unborn = repository(root / "unborn")
+    outside = root / "outside"
+    outside.mkdir()
+    return [("main", main), ("nested", nested), ("linked", root / "linked"),
+            ("detached", root / "detached"), ("separate", separate), ("bare", bare),
+            ("unborn", unborn), ("outside", outside)]
+
+
+def _git_candidates(root):
+    """The candidate paths Git lists for a directory."""
+
+    paths = git(root, "ls-files", "-z").decode().split("\0")
+    paths += git(root, "ls-files", "--others", "--exclude-standard", "-z").decode().split("\0")
+    return sorted(path for path in paths if path)
+
+
+def _candidates(answer):
+    """The candidate paths of an answer of the observer."""
+
+    return sorted(path for path in answer.decode().split("\0") if path)
+
+
+def test_the_observer_asks_the_canon_for_the_repository(tmp_path):
+    """The repository of the observer is the repository of the canon.
+
+    The canon answers where a repository lives in one place, the reader of
+    the layout.  The observer asks it, so the repository it works on is the
+    one of the canon and not a copy that answers the same questions on its
+    own.
+    """
+
+    root = repository(tmp_path / "repo", commit=True)
+
+    found = native.discover(root)
+
+    assert found is not None
+    assert isinstance(found, native.layout.Repository)
+    assert found.gitdir == (root / ".git").resolve()
+    assert found.root == root.resolve()
+
+
+def test_the_observer_follows_a_repointed_git_directory(tmp_path):
+    """A lookup must never answer from the layout of an earlier call.
+
+    The observer keeps nothing about the layout of a repository, so a
+    directory that starts to point at another git directory is answered from
+    the layout of the moment.
+    """
+
+    root = repository(tmp_path / "repo", commit=True)
+    other = repository(tmp_path / "other", commit=True)
+    before = native.discover(root)
+    assert before is not None
+    assert before.gitdir == (root / ".git").resolve()
+
+    shutil.rmtree(root / ".git")
+    (root / ".git").write_text(f"gitdir: {other / '.git'}\n", encoding="utf-8")
+
+    after = native.discover(root)
+    assert after is not None
+    assert after.gitdir == (other / ".git").resolve()
+    assert after.gitdir != before.gitdir
+
+
+def test_the_answers_of_the_observer_are_the_answers_of_git(tmp_path):
+    """Every shape of a repository answers exactly what Git answers."""
+
+    for name, root in _shapes(tmp_path):
+        assert native.git(root, "rev-parse", "--verify", "HEAD") == \
+            git(root, "rev-parse", "--verify", "HEAD"), name
+        assert native.git(root, "rev-parse", "--show-toplevel") == \
+            git(root, "rev-parse", "--show-toplevel"), name
+        answer = native.candidate_paths(root, "")
+        if name == "bare":
+            # A bare repository has no working tree, so Git answers it.
+            assert answer is None, name
+        else:
+            assert answer is not None, name
+            assert _candidates(answer) == _git_candidates(root), name
 
 
 def test_one_observation_starts_no_git_process(tmp_path):

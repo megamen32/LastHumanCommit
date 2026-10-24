@@ -155,6 +155,28 @@ def main() -> int:
             continue
         write(ROOT / generated, project(source_path.read_bytes(), replacements))
 
+    # A projected tool without a source is a leftover of a module that was
+    # merged into another one. It ships as dead weight and it breaks the
+    # bundle check, so it is reported instead of quietly staying.
+    orphans = []
+    for prefix in (
+        "plugins/last-human-commit/tools",
+        "plugins/last-human-commit/common/tools",
+        "plugins/last-human-commit/native/codex/tools",
+        "plugins/last-human-commit/native/codex/common/tools",
+    ):
+        directory = ROOT / prefix
+        if not directory.is_dir():
+            continue
+        for path in sorted(directory.glob("*.py")):
+            if not (ROOT / "src" / "common" / "tools" / path.name).is_file():
+                orphans.append(f"{prefix}/{path.name}")
+    if orphans:
+        print("осиротевшие проекции (нет источника в src/common/tools):", file=sys.stderr)
+        for orphan in orphans:
+            print(f"  {orphan}", file=sys.stderr)
+        raise SystemExit(1)
+
     # The rest of the projected tree is republished only where the package
     # already has the file: the package is curated, not a mirror, and this
     # script must never grow it.

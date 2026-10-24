@@ -58,6 +58,17 @@ class Repository:
         self.root = root
         self.common = common
 
+    @property
+    def key(self) -> str:
+        """The identity of the repository, the path of its git directory.
+
+        The git directory of a repository is the one place every answer about
+        it comes from, so a caller that remembers an answer can tell whether
+        the answer it holds belongs to the repository in front of it.
+        """
+
+        return str(self.gitdir)
+
 
 def read_text(path: Path, *, errors: str = "replace") -> str | None:
     """Read one text file, answering None when it cannot be read.

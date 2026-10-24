@@ -16,6 +16,7 @@ import argparse
 from datetime import datetime
 import fcntl
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -34,6 +35,42 @@ except ImportError:
     # The published package may not ship the reader of the repository yet.
     # Git then answers every question, which is the answer it always gave.
     facts = None
+
+
+def _load_git_layout():
+    """Load the reader of the layout of a repository from next to this file.
+
+    ``None`` means the reader is not there at all; every question about the
+    layout is then answered by the git binary, the way it was answered
+    before the reader existed.
+    """
+
+    try:
+        import lhc_gitlayout
+
+        return lhc_gitlayout
+    except ImportError:
+        pass
+    path = Path(__file__).resolve().with_name("lhc_gitlayout.py")
+    try:
+        spec = importlib.util.spec_from_file_location("lhc_gitlayout_sibling", path)
+        if spec is None or spec.loader is None:
+            return None
+        module = sys.modules.get(spec.name)
+        if module is None:
+            module = importlib.util.module_from_spec(spec)
+            sys.modules[spec.name] = module
+            spec.loader.exec_module(module)
+        return module
+    except Exception:  # noqa: BLE001 - a missing reader is answered by git
+        sys.modules.pop("lhc_gitlayout_sibling", None)
+        return None
+
+
+# The reader of the layout of a repository.  It is the one place of the canon
+# that answers where a repository lives, so this module asks it instead of
+# looking for the repository itself.
+layout = _load_git_layout()
 
 MAX_BYTES = 8 * 1024 * 1024
 UI = re.compile(r"\.(?:html?|css|scss|sass|vue|svelte|jsx|tsx|qml|xaml|dart|swift|xml)$", re.I)
@@ -83,13 +120,17 @@ PARTIAL = re.compile(r"\bpartial\b|not.tested|never (?:attempted|tested)|did not
 # ---------------------------------------------------------------------------
 
 
-# The environment variables that move the repository away from the working
-# tree.  When any of them is set this module does not guess where the
-# repository is; it lets Git answer.
-_ENVIRONMENT_OVERRIDES = (
-    "GIT_DIR", "GIT_COMMON_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE",
-    "GIT_OBJECT_DIRECTORY", "GIT_ALTERNATE_OBJECT_DIRECTORIES",
-    "GIT_CEILING_DIRECTORIES", "GIT_DISCOVERY_ACROSS_FILESYSTEM",
+# The environment variables that move the state Git reads away from the
+# working tree: the index, the objects and the configuration.  The facts of
+# this module are read from the disk, so they are the facts of Git only while
+# the environment keeps Git on the disk; otherwise the question is left to
+# Git.
+#
+# The variables that move the *repository* away from the working tree are the
+# business of the reader of the layout: it answers None for them, and Git
+# answers instead.
+_FACT_ENVIRONMENT_OVERRIDES = (
+    "GIT_INDEX_FILE", "GIT_OBJECT_DIRECTORY", "GIT_ALTERNATE_OBJECT_DIRECTORIES",
     "GIT_CONFIG_GLOBAL", "GIT_CONFIG_SYSTEM", "GIT_CONFIG_NOSYSTEM",
 )
 
@@ -102,7 +143,6 @@ _SHA = re.compile(r"\A(?:[0-9a-f]{40}|[0-9a-f]{64})\Z")
 # as the state it describes changes.
 _CACHE_LIMIT = 16
 
-_REPOSITORIES = {}
 _INDEXES = {}
 _CHANGED = {}
 _REMOTES = {}
@@ -138,80 +178,44 @@ def _trim_cache(cache):
 
 # ---------------------------------------------------------------------------
 # The repository
+#
+# The canon answers the questions about the layout of a repository in one
+# place: the reader of the layout.  This module asks it, so the repository
+# the facts below are read from is the repository Git would name, found the
+# way Git finds it and read at the moment of the question.  Nothing about the
+# layout is remembered, so a repository that moved between two questions is
+# never answered from the layout of an earlier one.  A layout the reader does
+# not model answers None and Git is asked instead.
 # ---------------------------------------------------------------------------
-
-
-class Repository:
-    """Where the repository lives and which files Git keeps for it."""
-
-    def __init__(self, gitdir, root, common):
-        self.gitdir = gitdir
-        self.root = root
-        self.common = common
-
-    @property
-    def key(self):
-        return str(self.gitdir)
-
-
-def _common_dir(gitdir):
-    """The shared directory of a repository, the gitdir itself by default.
-
-    A linked worktree keeps its own HEAD and index but shares the refs, the
-    config and the objects with the main worktree; the `commondir` file
-    says which directory that is.
-    """
-    text = _read_text(Path(gitdir) / "commondir")
-    if not text:
-        return Path(gitdir)
-    target = Path(text.strip())
-    if not target.is_absolute():
-        target = Path(gitdir) / target
-    return target
-
-
-def _gitdir_from_file(path):
-    """The gitdir a `.git` file points at, or None when it is not one."""
-    text = _read_text(path)
-    if not text or not text.startswith("gitdir:"):
-        return None
-    target = Path(text[len("gitdir:"):].strip())
-    if not str(target):
-        return None
-    if not target.is_absolute():
-        target = path.parent / target
-    return target
 
 
 def discover(cwd):
     """The repository that holds ``cwd``, or None when Git has to answer."""
-    if any(os.environ.get(name) for name in _ENVIRONMENT_OVERRIDES):
-        return None
-    try:
-        start = Path(cwd).resolve()
-    except OSError:
-        return None
-    cached = _REPOSITORIES.get(str(start))
-    if cached is not None:
-        return cached
-    found = None
-    for candidate in (start, *start.parents):
-        dotgit = candidate / ".git"
-        if dotgit.is_dir():
-            found = Repository(dotgit, candidate, _common_dir(dotgit))
-            break
-        if dotgit.is_file():
-            target = _gitdir_from_file(dotgit)
-            if target is None or not target.is_dir():
-                break
-            found = Repository(target, candidate, _common_dir(target))
-            break
-    if found is not None:
-        # A path that is not a repository yet may become one, so only a
-        # repository that was found is remembered.
-        _REPOSITORIES[str(start)] = found
-        _trim_cache(_REPOSITORIES)
-    return found
+
+    return layout.discover(Path(cwd)) if layout is not None else None
+
+
+def worktree_root(cwd):
+    """The work tree that holds ``cwd``, or None when Git has to answer.
+
+    The facts of this module are facts about a working tree.  A directory
+    without one - a bare repository - has none, so its questions are left to
+    Git.
+    """
+
+    return layout.worktree_root(Path(cwd)) if layout is not None else None
+
+
+def _facts_are_on_disk():
+    """Whether the facts of this module are the facts Git would read.
+
+    Some environment variables move the index, the objects or the
+    configuration of Git away from the working tree.  The facts below are
+    read from the disk, so they are the facts of Git only while the
+    environment keeps Git on the disk.
+    """
+
+    return not any(os.environ.get(name) for name in _FACT_ENVIRONMENT_OVERRIDES)
 
 
 # ---------------------------------------------------------------------------
@@ -832,7 +836,7 @@ def _tree_entries(repo, commit):
     """
     if facts is None or not _SHA.match(commit or ""):
         return None
-    tree = facts.tree_entries(facts.Repository(repo.gitdir, repo.root, repo.common), commit)
+    tree = facts.tree_entries(repo, commit)
     if tree is None:
         return None
     return {os.fsencode(path): (mode, sha) for path, (mode, sha) in tree.items()}
@@ -1179,6 +1183,8 @@ def answer(cwd, args):
     Returns None when the question is not one this module reads, so that
     the caller asks Git.
     """
+    if not _facts_are_on_disk():
+        return None
     repo = discover(cwd)
     if repo is None:
         return None
@@ -1190,13 +1196,19 @@ def answer(cwd, args):
         # with no output at all.
         return (sha + "\n").encode() if sha else b""
     if args[:2] == ("rev-parse", "--show-toplevel"):
-        return str(repo.root).encode() + b"\n"
+        root = worktree_root(cwd)
+        if root is None:
+            return None
+        return str(root).encode() + b"\n"
     if len(args) == 3 and args[:2] == ("remote", "get-url"):
         url = remote_url(repo, args[2])
         if url is None:
             return None
         return url.encode() + b"\n"
     if args and args[0] == "diff":
+        if worktree_root(cwd) is None:
+            # A directory without a work tree has no diff to read.
+            return None
         return _diff_answer(repo, args)
     return None
 
@@ -1207,6 +1219,11 @@ def candidate_paths(cwd, head):
     Returns None when this module cannot answer, so that the caller asks
     Git the way it always did.
     """
+    if not _facts_are_on_disk():
+        return None
+    if worktree_root(cwd) is None:
+        # A directory without a work tree has no paths to list.
+        return None
     repo = discover(cwd)
     if repo is None:
         return None

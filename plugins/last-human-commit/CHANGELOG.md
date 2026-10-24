@@ -1,38 +1,19 @@
-# 1.5.46 - the suite runs the tool in process, and the tool reads Git from disk
+# 1.5.47 - one answer about a repository, and no leftovers in the package
 
-**The suite runs the tool in process.** The cases that drove an external process
-now call the tool's own `main()` with the argument vector it would have received,
-and `git init` per case became a copy of one prepared template. 561 s became 30 s
-for 1320 cases on the development machine, and no gate was deleted: the number of
-tests and their names are the same as before. On server-100 the same suite takes
-97 s, where the machine is shared with other work and the suite waits on the disk
-rather than on processes.
+**The last duplicate is gone.** The milestone module had grown its own search for
+a repository next to the one the canon now holds. It asks the canon now, and the
+package ships one answer. The check that holds this parses the modules and
+requires that an answer exists only in the canon - outside it, an answer may only
+be a plain delegation, and the class that describes a repository is defined once.
+The check was proved by putting a duplicate back: it fails, and it names the file.
 
-**The tool stopped asking the operating system what it can read from disk.** The
-Git layout - where the git directory is, where the common directory is, which
-worktrees exist, what the index contains, which paths changed - is a fact about
-the filesystem, and the tool now reads it. Every answer is read at the moment of
-the question, so a stale read is impossible by construction; the real git stays
-the fallback for anything unusual, such as a revision expression only git can
-parse, or a rename that only git knows how to pair. The answers were compared
-against git on ten repository shapes, including a linked worktree, a separate git
-directory, a bare repository and a packed repository: no difference.
+**A leftover stopped shipping.** A module that was merged into another one had
+left its copy in the package, where it shipped as dead weight and broke the
+bundle check. The publisher now refuses to pass when a projected file has no
+source, and says which file it is.
 
-**One answer, one place.** Three modules had grown their own answers to the same
-questions about a repository - one of them was a byte-for-byte copy of another.
-There is now one implementation, and the test suite holds it there: the check
-parses the modules and fails if an answer is defined anywhere else.
-
-**What was found while measuring.** Comparing the disk answers with git turned up
-real defects in the tool itself - a changed path with the same name was not seen
-as changed, a revision was resolved too narrowly, a directory git does not
-recognise was accepted as a repository. They are fixed.
-
-**What is still a process, and why.** A rename, an addition together with a
-deletion, and a path under a `.gitattributes` conversion are questions git answers
-with its own rules; the module does not guess them. A revision expression that is
-not a hash - and a short hash, which the baseline reuse uses - is resolved by git
-as well.
+**The suite still runs in about half a minute.** 1323 cases, 31 s on the
+development machine; no gate was deleted.
 # 1.5.44 - the task opens where the owner taps it, the plan says what it is, and the suite is two lanes
 
 Three things the owner asked for, in the order he asked them.
