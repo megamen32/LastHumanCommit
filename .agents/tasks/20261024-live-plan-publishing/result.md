@@ -76,3 +76,19 @@ python3 src/common/tools/lhc_plan_publish.py revise PLAN --reason 'Измени�
 Установленный пользовательский native plugin/cache этой сессией не обновлялся;
 проверены переносимый пакет и native CLI, а не автозагрузка новой версии во всех
 живых harness-сессиях. estimate_cost явно unavailable без models CLI.
+
+## Опубликованный результат
+
+LHC 1.5.49: feature commit **ad1390727947c892084c8ba3b04d1eb10838a72f**.
+Push своей ветки и fast-forward remote main завершились успешно; независимый
+Lead readback подтвердил обе ссылки на этот SHA. Основной checkout не менялся.
+Включён ранее переданный hosting commit f216a2a и nginx/README владельца без
+изменения. Код, план и разрешённый hosting source опубликованы; host работает.
+Native plugin manager installation/autoload не выполнялись: bare native
+manifest может не активировать mcp.json автоматически, это не заявляется как PASS.
+Подтверждён только фактический переносимый raw stdio transport и тот же CLI.
+
+Исходный реальный r001 HTML остаётся byte-identical:
+`bf3dd25661f3121acbf290a65769354891d7c09d8fc4a7d31c6b4b05e6870da0`.
+Текущий бизнес-результат и L04 обновлены после remote publication; исходная
+ревизия и исходные оценки не переписаны. Дополнительного replan не было.

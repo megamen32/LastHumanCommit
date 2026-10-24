@@ -1,7 +1,7 @@
 {
   "id": "L04",
   "label": "Живая проверка, независимый review и передача исходников",
-  "status": "running",
+  "status": "done",
   "owner": "implementation-worker",
   "harness": "codex",
   "session": "01a16e15-c7a3-79e3-9272-0aa110e4dcbf",
@@ -10,13 +10,22 @@
   ],
   "estimate_minutes": 15,
   "note": "Проверить свой сайт и автономный HTML. Main merge и релиз выполняет координатор.",
-  "updated_at": "2026-10-24T16:45:25+03:00",
+  "updated_at": "2026-10-24T17:05:45+03:00",
   "progress_events": [
     {
       "at": "2026-10-24T16:45:25+03:00",
       "note": "Chrome открыл реальную HTTPS-страницу и автоматически подхватил изменение. Продолжаются проверки ревизий, автономного HTML и пакета.",
       "changes": {
         "status": "running"
+      },
+      "session": "01a16e15-c7a3-79e3-9272-0aa110e4dcbf",
+      "harness": "codex"
+    },
+    {
+      "at": "2026-10-24T17:05:45+03:00",
+      "note": "LHC 1.5.49 опубликован: main ad1390727947c892084c8ba3b04d1eb10838a72f подтверждён независимым readback. 88 проверок; Chrome auto-refresh без ручного reload, mobile390, offline HTML, CLI/MCP и реальный SSH проверены. Native user plugin/autoload не устанавливался.",
+      "changes": {
+        "status": "done"
       },
       "session": "01a16e15-c7a3-79e3-9272-0aa110e4dcbf",
       "harness": "codex"

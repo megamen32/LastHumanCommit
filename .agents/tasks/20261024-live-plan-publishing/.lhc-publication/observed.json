@@ -105,7 +105,7 @@
   },
   "L04": {
     "completed": [],
-    "last_seen": "2026-10-24T13:54:27+00:00",
+    "last_seen": "2026-10-24T14:05:45+00:00",
     "task": {
       "depends_on": [
         "L03"
@@ -128,12 +128,21 @@
           "harness": "codex",
           "note": "Chrome открыл реальную HTTPS-страницу и автоматически подхватил изменение. Продолжаются проверки ревизий, автономного HTML и пакета.",
           "session": "01a16e15-c7a3-79e3-9272-0aa110e4dcbf"
+        },
+        {
+          "at": "2026-10-24T17:05:45+03:00",
+          "changes": {
+            "status": "done"
+          },
+          "harness": "codex",
+          "note": "LHC 1.5.49 опубликован: main ad1390727947c892084c8ba3b04d1eb10838a72f подтверждён независимым readback. 88 проверок; Chrome auto-refresh без ручного reload, mobile390, offline HTML, CLI/MCP и реальный SSH проверены. Native user plugin/autoload не устанавливался.",
+          "session": "01a16e15-c7a3-79e3-9272-0aa110e4dcbf"
         }
       ],
       "session": "01a16e15-c7a3-79e3-9272-0aa110e4dcbf",
-      "status": "running",
+      "status": "done",
       "supersedes": [],
-      "updated_at": "2026-10-24T16:45:25+03:00"
+      "updated_at": "2026-10-24T17:05:45+03:00"
     }
   }
 }
