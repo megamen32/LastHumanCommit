@@ -28,11 +28,16 @@ Usage::
 from __future__ import annotations
 
 import argparse
+import contextlib
+import fcntl
+import hashlib
 import json
+import math
 import os
 import re
 import sys
 from pathlib import Path
+from datetime import datetime
 from typing import Any, Optional
 
 LEAVES_DIRNAME = "leaves"
@@ -122,6 +127,10 @@ LEAF_FIELDS = (
     "note",
     "wave",
     "updated_at",
+    "progress_events",
+    "supersedes",
+    "origin",
+    "duration_estimate_minutes",
 )
 
 # The plan-level fields. They belong to the plan, not to a leaf, so they live
@@ -136,6 +145,7 @@ PLAN_FIELDS = (
     "slots",
     "updated_at",
     "journal",
+    "planned_start_at",
 )
 
 CLOCK_RE = re.compile(r"^(?:[01]?\d|2[0-3]):[0-5]\d$")
@@ -195,7 +205,7 @@ def _minutes(value: Any, field: str, path: Path) -> Optional[float]:
         return None
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise LeafError(f"{path}: поле {field} должно быть числом минут")
-    if value < 0:
+    if not math.isfinite(value) or value < 0:
         raise LeafError(f"{path}: поле {field} не может быть отрицательным")
     return float(value)
 
@@ -253,7 +263,12 @@ def _clock(raw: dict[str, Any], field: str, path: Path) -> str:
     if not value:
         return ""
     if not CLOCK_RE.match(value):
-        raise LeafError(f"{path}: поле {field} должно быть «ЧЧ:ММ», получено «{value}»")
+        try:
+            stamp = datetime.fromisoformat(value.replace("Z", "+00:00"))
+            if stamp.tzinfo is None:
+                raise ValueError("timezone required")
+        except ValueError as error:
+            raise LeafError(f"{path}: {field}: нужен ЧЧ:ММ либо ISO timestamp с часовым поясом") from error
     return value
 
 
@@ -310,7 +325,7 @@ def task_from_leaf(raw: Any, path: Path) -> dict[str, Any]:
 
     for field in ("description", "acceptance", "owner", "session", "harness",
                   "model", "model_class", "note", "blocker",
-                  "estimate_unknown_reason"):
+                  "estimate_unknown_reason", "origin", "updated_at"):
         value = _text(raw, field, path)
         if value:
             task[field] = value
@@ -318,6 +333,16 @@ def task_from_leaf(raw: Any, path: Path) -> dict[str, Any]:
     affected = _string_list(raw, "affected_files", path)
     if affected:
         task["affected_files"] = affected
+    task["supersedes"] = _string_list(raw, "supersedes", path)
+    events = raw.get("progress_events", [])
+    if not isinstance(events, list) or any(
+        not isinstance(e, dict) or set(e) - {"at", "note", "changes", "session", "harness"}
+        or not isinstance(e.get("at"), str) or not isinstance(e.get("note", ""), str)
+        or not isinstance(e.get("changes", {}), dict) for e in events
+    ):
+        raise LeafError(f"{path}: неверный progress_events")
+    if events:
+        task["progress_events"] = events
 
     # `depends_on` is required per task by the graph contract and by the
     # offline checker, so it is always written - an empty list says "nothing
@@ -334,6 +359,9 @@ def task_from_leaf(raw: Any, path: Path) -> dict[str, Any]:
     actual = _minutes(raw.get("actual_minutes"), "actual_minutes", path)
     if actual is not None:
         task["actual_minutes"] = actual
+    duration_estimate = _minutes(raw.get("duration_estimate_minutes"), "duration_estimate_minutes", path)
+    if duration_estimate is not None:
+        task["duration_estimate_minutes"] = duration_estimate
 
     for field in ("started_at", "finished_at"):
         value = _clock(raw, field, path)
@@ -417,7 +445,7 @@ def _plan_fields(raw: dict[str, Any], path: Path) -> dict[str, Any]:
         )
     fields: dict[str, Any] = {}
     for field in ("title", "goal", "business_result", "current_progress",
-                  "external_waits", "updated_at"):
+                  "external_waits", "updated_at", "planned_start_at"):
         value = raw.get(field)
         if value is None:
             continue
@@ -585,6 +613,8 @@ def build_document(plan_dir: Path) -> dict[str, Any]:
     journal = metadata.get("journal")
     if journal:
         document["journal"] = journal
+    if metadata.get("planned_start_at"):
+        document["planned_start_at"] = metadata["planned_start_at"]
     return document
 
 
@@ -596,7 +626,75 @@ def build_graph(plan_dir: Path) -> Path:
     text = json.dumps(document, ensure_ascii=False, indent=2) + "\n"
     target = plan_dir / GRAPH_FILE
     _write_atomic(target, text)
+    auto_publish(plan_dir)
     return target
+
+
+def auto_publish(plan_dir: Path) -> None:
+    """Opt-in only; publishing failure never prevents the work being recorded."""
+    if not (Path(plan_dir) / ".lhc-publication/state.json").is_file():
+        return
+    try:
+        tool_dir = str(Path(__file__).resolve().parent)
+        if tool_dir not in sys.path:
+            sys.path.insert(0, tool_dir)
+        from lhc_plan_publish import publish
+        publish(Path(plan_dir), automatic=True)
+    except Exception as error:
+        print(f"LHC: публикация не обновлена: {error}", file=sys.stderr)
+
+
+@contextlib.contextmanager
+def file_lock(path: Path):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a") as stream:
+        fcntl.flock(stream, fcntl.LOCK_EX)
+        yield
+
+
+def update_leaf(plan_dir: Path, leaf_id: str, fields: dict, *, create=False,
+                note=None, expected_hash=None) -> dict:
+    """Serialized read/merge/validate/replace; stale optimistic writes fail."""
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,79}", leaf_id):
+        raise LeafError("небезопасный id листа")
+    if not isinstance(fields, dict) or "progress_events" in fields:
+        raise LeafError("fields: объект; историю меняет только progress")
+    path = Path(plan_dir) / LEAVES_DIRNAME / (leaf_id + ".json")
+    with file_lock(Path(plan_dir) / ".lhc-leaves.lock"):
+        if path.is_symlink():
+            raise LeafError("symlink листа запрещён")
+        if create and path.exists():
+            raise LeafError("лист уже существует")
+        before = path.read_bytes() if not create else b""
+        if expected_hash and hashlib.sha256(before).hexdigest() != expected_hash:
+            raise LeafError("конфликт: лист изменён, перечитайте его")
+        raw = json.loads(before) if before else {}
+        if "id" in fields and fields["id"] != leaf_id:
+            raise LeafError("id нельзя менять")
+        merged = {**raw, **fields, "id": leaf_id}
+        stamp = datetime.now().astimezone().isoformat(timespec="seconds")
+        # Only Codex's documented thread environment is auto-bound. Other
+        # harnesses pass explicit session/harness; no process-title inference.
+        if not merged.get("session"):
+            native = os.environ.get("CODEX_THREAD_ID", "")
+            if re.fullmatch(r"[0-9a-f-]{36}", native):
+                merged["session"], merged["harness"] = native, "codex"
+        merged["updated_at"] = stamp
+        events = list(raw.get("progress_events", []))
+        changes = {k: v for k, v in fields.items() if raw.get(k) != v}
+        events.append({"at": stamp, "note": note or "", "changes": changes,
+                       "session": merged.get("session", "unknown"),
+                       "harness": merged.get("harness", "unknown")})
+        merged["progress_events"] = events
+        candidate = task_from_leaf(merged, path)
+        tasks = [t for t in collect_leaves(plan_dir) if t["id"] != leaf_id] if (Path(plan_dir) / LEAVES_DIRNAME).is_dir() and any((Path(plan_dir) / LEAVES_DIRNAME).glob("*.json")) else []
+        tasks.append(candidate)
+        _order(tasks, {t["id"]: path.parent / (t["id"] + ".json") for t in tasks})
+        path.parent.mkdir(parents=True, exist_ok=True)
+        serialized = json.dumps(merged, ensure_ascii=False, indent=2) + "\n"
+        _write_atomic(path, serialized)
+        own_hash = hashlib.sha256(serialized.encode()).hexdigest()
+    return {"id": leaf_id, "sha256": own_hash}
 
 
 def _write_atomic(target: Path, text: str) -> None:
@@ -628,16 +726,39 @@ def main(argv: Optional[list[str]] = None) -> int:
     sub = parser.add_subparsers(dest="command", required=True)
     build = sub.add_parser("build", help="collect the leaves into plan.graph.json")
     build.add_argument("plan_dir", type=Path)
+    whole = sub.add_parser("build-plan", help="collect and render the same plan")
+    whole.add_argument("plan_dir", type=Path)
+    whole.add_argument("--report", type=Path)
+    whole.add_argument("--graph", type=Path)
     check = sub.add_parser("check", help="validate the leaves, write nothing")
     check.add_argument("plan_dir", type=Path)
+    for name in ("create-leaf", "update-leaf", "progress"):
+        edit = sub.add_parser(name)
+        edit.add_argument("plan_dir", type=Path)
+        edit.add_argument("leaf_id")
+        edit.add_argument("--fields", default="{}", help="JSON object")
+        edit.add_argument("--expected-hash")
+        edit.add_argument("--note")
     args = parser.parse_args(argv)
     try:
-        if args.command == "build":
+        if args.command == "build-plan":
+            import lhc_grid
+            graph = build_graph(args.plan_dir)
+            lhc_grid.main(["render", str(graph), "--out-dir", str(args.plan_dir)])
+            if args.report:
+                return lhc_grid.main(["check-plan", str(args.report), str(args.graph or graph)])
+        elif args.command == "build":
             print(str(build_graph(args.plan_dir)))
-        else:
+        elif args.command == "check":
             build_document(args.plan_dir)
             print(f"{args.plan_dir}: листы согласованы")
-    except (LeafError, OSError) as error:
+        else:
+            result = update_leaf(args.plan_dir, args.leaf_id, json.loads(args.fields),
+                                 create=args.command == "create-leaf", note=args.note,
+                                 expected_hash=args.expected_hash)
+            build_graph(args.plan_dir)
+            print(json.dumps(result, ensure_ascii=False))
+    except (ValueError, OSError) as error:
         print(f"LHC: {error}", file=sys.stderr)
         return 1
     return 0

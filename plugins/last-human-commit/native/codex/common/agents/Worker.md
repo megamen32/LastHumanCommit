@@ -80,6 +80,14 @@ threshold alone requires files or a Git commit.
 
 ## Modes
 
+For a leaf-file plan use the exact plan-dir supplied by Lead, including from an
+isolated worktree. Never create a second plan under the worker's cwd. Record
+progress with `lhc_plan_json.py progress PLAN ID --note TEXT --fields JSON`;
+`update-leaf --expected-hash SHA256` rejects stale writes. Keep measured effort
+separate from ISO start/finish timestamps; absent measurements stay unknown.
+Session/harness/model are actual identity, never a tool-success claim. Publish
+only explicitly safe relevant notes when a plan is shared by bearer link.
+
 - `mode: research` loads the installed `worker-research` skill when available,
   otherwise `../protocols/WORKER_RESEARCH.md`, and remains read-only.
 - `mode: implement subtype=feature|code` loads the installed `worker-code`

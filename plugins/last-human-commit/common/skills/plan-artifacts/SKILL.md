@@ -101,8 +101,10 @@ number are all accepted. A leaf that estimates only part of the work also carrie
 silent zero.
 
 `actual_minutes` is the summed effort of the executors; `started_at` and
-`finished_at` are the window on the clock, as `ЧЧ:ММ` on a 24-hour clock in the
-user's local time. 22 minutes of effort inside an 11 minute window means two
+`finished_at` are the window on the clock. Prefer ISO with timezone, for example
+`2026-10-24T23:55:00+03:00`, to measure across midnight or days. Legacy `ЧЧ:ММ`
+remains accepted; public comparison does not invent its date. 22 minutes of
+effort inside an 11 minute window means two
 executors worked in parallel — the dashboard shows both, as «усилие» and «по
 часам», and never one number quietly meaning the other.
 
@@ -119,7 +121,7 @@ acceptance, actual_minutes, affected_files, blocker, blocker_details,
 depends_on, description, estimate, estimate_max, estimate_min,
 estimate_minutes, estimate_unknown_reason, finished_at, harness, id, label,
 model, model_class, note, owner, parallel_with, session, started_at, status,
-updated_at, wave
+updated_at, wave, progress_events, origin, supersedes, duration_estimate_minutes
 ```
 
 An unknown field stops the collection and is named, like every other defect.
@@ -141,7 +143,8 @@ Plan-level facts are not a leaf's business. They live in `plan.json` next to
 ```
 
 `plan.json` may also carry `business_results`, `current_progress`,
-`external_waits` and `journal`. When it is absent the collector falls back to the
+`external_waits`, `journal` and `planned_start_at` (ISO with timezone, only when
+the intended start is known). When it is absent the collector falls back to the
 plan-level fields of an existing `plan.graph.json`, so a plan that already has a
 graph keeps its title, goal and business result.
 
@@ -366,3 +369,79 @@ button in it does not change the fleet — it only draws the plan.
 - They do not write the business result, the acceptance line or the blocker text.
 - They do not translate: the labels, the report and the dashboard are written in
   the user's own language by you.
+
+## 12. Public HTML, CLI first
+
+Use the actual shared plan-dir in every worker assignment. A worktree is not a
+new plan. For NEW plans, after writing the initial leaves, run the following
+initial publication whenever the host has configured `~/.config/lhc/publish.json`:
+
+```sh
+python3 "<tools>/lhc_plan_publish.py" publish-html <plan-dir> --autopublish
+```
+
+This workflow initialization binds only that new safe plan; never bulk-publish
+existing unbound plans. Existing plans require an explicit initial publish.
+The configuration is a host-local object:
+
+```json
+{"webroot":"/var/www/lhc","base_url":"https://lhc.bezrabotnyi.com"}
+```
+
+An optional `ssh_host` is an existing SSH alias; the same CLI copies the bundle
+using existing SSH credentials. No new key/token store. Use `--config FILE` to
+select a different target before first publication. The stable identity and
+binding stay in `<plan-dir>/.lhc-publication/state.json`; do not remove/reset this
+directory when rebuilding the graph. Keep it local and back it up with the plan.
+
+The first publish freezes r001. Source estimates, dependencies and original
+intent remain in that immutable snapshot. Status/notes do not create revisions.
+Planning edits are shown as unaccepted changes until the deliberate command:
+
+```sh
+python3 "<tools>/lhc_plan_publish.py" revise <plan-dir> --reason "Изменилась зависимость"
+```
+
+r002 links to r001; old HTML/JSON remain byte-identical, including facts known
+at that time. To split/remove tasks, keep stable IDs and record `origin` and
+`supersedes` (list of prior IDs). Removed tasks remain visible from snapshots.
+Measured effort is `actual_minutes`; independent scheduled duration can use
+`duration_estimate_minutes`. Without the latter the legacy estimate is an
+explicit scheduling assumption. No active minutes are inferred from mtime.
+
+```sh
+python3 "<tools>/lhc_plan_json.py" create-leaf <plan-dir> L01 --fields '{"label":"Проверить страницу","estimate_minutes":10}'
+python3 "<tools>/lhc_plan_json.py" progress <plan-dir> L01 --note "Страница открыта, проверка продолжается" --fields '{"status":"running"}'
+python3 "<tools>/lhc_plan_json.py" update-leaf <plan-dir> L01 --fields '{"status":"done"}' --expected-hash <sha256-from-previous-write>
+python3 "<tools>/lhc_plan_json.py" build-plan <plan-dir>
+```
+
+The CLI appends `progress_events`, atomically validates/replaces one leaf, and
+serializes writers with a plan-local lock. Direct file edits remain supported;
+use the CLI to preserve append-only history and optimistic conflict detection.
+Reliable Codex `CODEX_THREAD_ID` binds session/harness only when missing. Other
+harnesses pass actual identity explicitly; missing is unknown. The tool never
+invents model identity or turns a successful command into business acceptance.
+
+After opting in, collector builds and the normal leaf-write hook re-publish
+without MCP. Unchanged public inputs skip delivery; a short coalescing window
+bounds burst work. Failure logs a warning and leaves the last good page while
+leaf work continues. Do not re-enable globally disabled native hooks.
+
+The page is unlisted and gets a random suffix of at least 96 bits. Anyone with
+the link can read/copy/share it. `noindex` is NOT authentication. Publish only
+authorized safe plan metadata/notes: never credentials, transcripts or private
+project dumps. Paths and recognizable credential patterns are redacted as a
+best-effort backstop, not a security boundary. Configure the static host to deny
+directory listing/dotfiles and set no-store, no-referrer and noindex headers.
+
+The current page polls `version.json` with no-store every 12 seconds over HTTP,
+reloads only changed versions and restores scroll. Revision pages and downloaded
+HTML are standalone immutable snapshots. The badge reports missing connection
+or an old snapshot; it does not prove the worker is online. Delivery keeps the
+current and one previous generated bundle; revision files remain in each bundle.
+
+`plugins/lhc-plan` is the optional self-contained stdio facade. `create_leaf`,
+`update_leaf`, `update_progress`, `build_plan`, `publish_html`, `revise_plan` invoke
+the same CLIs. `estimate_cost` explicitly reports unavailable when the models
+CLI is absent. `scripts/setup_mcp.py` only prints registration; no global enable.

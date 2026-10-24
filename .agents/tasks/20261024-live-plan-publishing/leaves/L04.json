@@ -1,0 +1,25 @@
+{
+  "id": "L04",
+  "label": "Живая проверка, независимый review и передача исходников",
+  "status": "running",
+  "owner": "implementation-worker",
+  "harness": "codex",
+  "session": "01a16e15-c7a3-79e3-9272-0aa110e4dcbf",
+  "depends_on": [
+    "L03"
+  ],
+  "estimate_minutes": 15,
+  "note": "Проверить свой сайт и автономный HTML. Main merge и релиз выполняет координатор.",
+  "updated_at": "2026-10-24T16:45:25+03:00",
+  "progress_events": [
+    {
+      "at": "2026-10-24T16:45:25+03:00",
+      "note": "Chrome открыл реальную HTTPS-страницу и автоматически подхватил изменение. Продолжаются проверки ревизий, автономного HTML и пакета.",
+      "changes": {
+        "status": "running"
+      },
+      "session": "01a16e15-c7a3-79e3-9272-0aa110e4dcbf",
+      "harness": "codex"
+    }
+  ]
+}

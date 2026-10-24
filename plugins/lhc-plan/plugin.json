@@ -1,0 +1,1 @@
+{"$schema":"https://agent-plugins.org/schemas/1.0.0/plugin.schema.json","name":"lhc-plan","version":"1.0.0","description":"Optional stdio facade over the native LHC plan CLI; static HTML publication."}

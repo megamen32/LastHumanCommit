@@ -1,0 +1,139 @@
+{
+  "L01": {
+    "completed": [],
+    "last_seen": "2026-10-24T13:54:27+00:00",
+    "task": {
+      "depends_on": [],
+      "estimate_minutes": {
+        "maximum": 15.0,
+        "minimum": 15.0
+      },
+      "harness": "codex",
+      "id": "L01",
+      "label": "Атомарные листья и история прогресса",
+      "note": "Исходники написаны; проверяются конкурентные изменения и ISO-время. Начало и активное время не измерены.",
+      "owner": "implementation-worker",
+      "progress_events": [
+        {
+          "at": "2026-10-24T16:47:41+03:00",
+          "changes": {
+            "status": "done"
+          },
+          "harness": "codex",
+          "note": "Атомарные обновления, конфликт hash, конкурентная история и переход через полночь проверены. Активные минуты не измерялись.",
+          "session": "01a16e15-c7a3-79e3-9272-0aa110e4dcbf"
+        }
+      ],
+      "session": "01a16e15-c7a3-79e3-9272-0aa110e4dcbf",
+      "status": "done",
+      "supersedes": [],
+      "updated_at": "2026-10-24T16:47:41+03:00"
+    }
+  },
+  "L02": {
+    "completed": [],
+    "last_seen": "2026-10-24T13:54:27+00:00",
+    "task": {
+      "depends_on": [
+        "L01"
+      ],
+      "estimate_minutes": {
+        "maximum": 25.0,
+        "minimum": 25.0
+      },
+      "harness": "codex",
+      "id": "L02",
+      "label": "Снимки ревизий, сравнение и атомарная публикация",
+      "note": "Первый сквозной вариант написан вместе с L01; остались проверки реального сайта и исправления. Это частично перекрывающаяся работа одного исполнителя, а не параллельные активные минуты.",
+      "owner": "implementation-worker",
+      "progress_events": [
+        {
+          "at": "2026-10-24T16:42:12+03:00",
+          "changes": {},
+          "harness": "codex",
+          "note": "Публичная страница открыта через HTTPS в Chrome. Исправлены права файлов; 36 целевых проверок прошли. Проверяется автоматическое обновление этой заметки.",
+          "session": "01a16e15-c7a3-79e3-9272-0aa110e4dcbf"
+        },
+        {
+          "at": "2026-10-24T16:54:27+03:00",
+          "changes": {
+            "status": "done"
+          },
+          "harness": "codex",
+          "note": "Публикация через CLI и реальный SSH из переносимого пакета на Mac прошла. r001 сохранилась после r002 в отдельной синтетической проверке; исходный план задачи не перепланировался.",
+          "session": "01a16e15-c7a3-79e3-9272-0aa110e4dcbf"
+        }
+      ],
+      "session": "01a16e15-c7a3-79e3-9272-0aa110e4dcbf",
+      "status": "done",
+      "supersedes": [],
+      "updated_at": "2026-10-24T16:54:27+03:00"
+    }
+  },
+  "L03": {
+    "completed": [],
+    "last_seen": "2026-10-24T13:55:41+00:00",
+    "task": {
+      "depends_on": [
+        "L02"
+      ],
+      "estimate_minutes": {
+        "maximum": 15.0,
+        "minimum": 15.0
+      },
+      "harness": "codex",
+      "id": "L03",
+      "label": "MCP-фасад, переносимый пакет и регрессии",
+      "note": "CLI/stdIO-фасад написан. Первый прогон: 31 проверка прошла, одна ошибка последовательности в тесте parity исправляется.",
+      "owner": "implementation-worker",
+      "progress_events": [
+        {
+          "at": "2026-10-24T16:55:41+03:00",
+          "changes": {
+            "status": "done"
+          },
+          "harness": "codex",
+          "note": "CLI/MCP parity и stdio initialize/tools/list/tools/call проверены из отдельного пакета вне исходников. Пакет на Mac реально публикует по SSH. 87 целевых проверок прошли; ещё одна прошла после исправления тестового fixture.",
+          "session": "01a16e15-c7a3-79e3-9272-0aa110e4dcbf"
+        }
+      ],
+      "session": "01a16e15-c7a3-79e3-9272-0aa110e4dcbf",
+      "status": "done",
+      "supersedes": [],
+      "updated_at": "2026-10-24T16:55:41+03:00"
+    }
+  },
+  "L04": {
+    "completed": [],
+    "last_seen": "2026-10-24T13:54:27+00:00",
+    "task": {
+      "depends_on": [
+        "L03"
+      ],
+      "estimate_minutes": {
+        "maximum": 15.0,
+        "minimum": 15.0
+      },
+      "harness": "codex",
+      "id": "L04",
+      "label": "Живая проверка, независимый review и передача исходников",
+      "note": "Проверить свой сайт и автономный HTML. Main merge и релиз выполняет координатор.",
+      "owner": "implementation-worker",
+      "progress_events": [
+        {
+          "at": "2026-10-24T16:45:25+03:00",
+          "changes": {
+            "status": "running"
+          },
+          "harness": "codex",
+          "note": "Chrome открыл реальную HTTPS-страницу и автоматически подхватил изменение. Продолжаются проверки ревизий, автономного HTML и пакета.",
+          "session": "01a16e15-c7a3-79e3-9272-0aa110e4dcbf"
+        }
+      ],
+      "session": "01a16e15-c7a3-79e3-9272-0aa110e4dcbf",
+      "status": "running",
+      "supersedes": [],
+      "updated_at": "2026-10-24T16:45:25+03:00"
+    }
+  }
+}

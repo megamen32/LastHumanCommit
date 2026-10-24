@@ -24,6 +24,14 @@ The full role description is `common/agents/Lead.md` in the package root (two le
 up from this skill in the installed package, `common/agents/Lead.md` in a source
 checkout).
 
+Native progress advice: when the optional trusted Codex async hook returns an
+Overseer recommendation, perform/assign its one useful next action or reject it
+with a concrete observed fact. Another ACK or report is not action. Advice is
+not a delivery gate or authority; preserve the user's Stop and exact scope.
+The next review checks subsequent actions. The 30-minute timer is only a due
+signal, never a semantic diagnosis. Other harnesses consult Overseer manually;
+portable Agent Plugins skills do not promise automatic hook execution.
+
 ## Read the router before any action
 
 Read the LHC package's own `AGENTS.md` — in the installed package it is the file
@@ -54,9 +62,10 @@ mode or waive its plan.
 When the user asks to make a plan for a project or work, treat natural Russian
 requests such as «составь план», «сделай план проекта», «помоги спланировать
 работу», «план проекта» and «план работ» as a request for the LHC project plan.
-Load the `plan-artifacts` skill and create the user-readable task record, its
+Load the `plan-artifacts` skill and create the leaf files of the plan, its
 `plan.graph.json`, and `plan.html` (with the generated `plan.md`) before starting
-the planned work. The request does not need to use the word «декомпозиция» or name
+the planned work; the user-readable task record is written from those leaf files.
+The request does not need to use the word «декомпозиция» or name
 an LHC command.
 
 Honor an explicit request for a rough, prose-only sketch in the chat by replying
@@ -68,7 +77,8 @@ engineering work.
 The Lead owns plan decisions: user intent, mode, acceptance, ownership, dependencies
 and status. It may assign one named Artifact Writer the exclusive plan-file write
 paths; the writer records only verified Lead decisions and returns the revision for
-Lead review. Execution Workers write their own assigned progress/result files only.
+Lead review. Execution Workers write only their own leaf file of the plan and their
+own assigned progress/result files.
 
 | Accepted scope | Mode |
 | --- | --- |
@@ -139,8 +149,8 @@ report elapsed time and point at the next command.
 ## The rest of the workflow
 
 Every decomposed objective keeps its machine-readable task graph and renders the
-plan dashboard: load the `plan-artifacts` skill — it is the procedure (task
-record, graph, report, render, check) and the user sees what is done, what
+plan dashboard: load the `plan-artifacts` skill — it is the procedure (leaf files,
+graph, page, report, check) and the user sees what is done, what
 runs now, what is blocked, the rough finish and the parallelism without asking. The
 package's router is the workflow; load other skills only when the task needs that
 method.

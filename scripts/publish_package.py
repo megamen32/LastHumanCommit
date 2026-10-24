@@ -104,6 +104,9 @@ TOOL_COPIES = (
     "lhc_worktree.py",
     "lhc_chat.py",
     "lhc_plan_json.py",
+    "lhc_plan_publish.py",
+    "lhc_plan_transport.py",
+    "lhc_plan_mcp.py",
     "lhc_live.py",
     "lhc_git_facts.py",
     "lhc_gitlayout.py",
@@ -113,6 +116,11 @@ TREE_FOLDERS = (
     "protocols",
     "templates",
 )
+
+MCP_TOOL_COPIES = {
+    "lhc_grid.py", "lhc_product.py", "lhc_parallel.py", "lhc_live.py",
+    "lhc_plan_json.py", "lhc_plan_publish.py", "lhc_plan_transport.py", "lhc_plan_mcp.py",
+}
 
 
 def project(data: bytes, replacements: tuple[tuple[bytes, bytes], ...]) -> bytes:
@@ -146,6 +154,13 @@ def main() -> int:
         if not source.is_file():
             continue
         data = source.read_bytes()
+        mcp_copy = ROOT / "plugins" / "lhc-plan" / "common" / "tools" / name
+        if name in MCP_TOOL_COPIES:
+            write(mcp_copy, data)
+        elif mcp_copy.exists():
+            stale.append(str(mcp_copy.relative_to(ROOT)))
+            if not args.check:
+                mcp_copy.unlink()
         write(ROOT / "plugins" / "last-human-commit" / "tools" / name, data)
         write(ROOT / "plugins" / "last-human-commit" / "native" / "codex" / "tools" / name, data)
         rewritten = data.replace(

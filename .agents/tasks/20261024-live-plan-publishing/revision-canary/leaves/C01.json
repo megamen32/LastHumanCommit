@@ -1,0 +1,24 @@
+{
+  "id": "C01",
+  "label": "Искусственный лист: изменение статуса не создаёт ревизию",
+  "status": "done",
+  "estimate_minutes": 2,
+  "depends_on": [],
+  "note": "Синтетические данные; не использовать как отчёт об активном времени человека или агента.",
+  "actual_minutes": 3,
+  "session": "01a16e15-c7a3-79e3-9272-0aa110e4dcbf",
+  "harness": "codex",
+  "updated_at": "2026-10-24T16:53:27+03:00",
+  "progress_events": [
+    {
+      "at": "2026-10-24T16:53:27+03:00",
+      "note": "Синтетический статус: не измеренное время агента",
+      "changes": {
+        "status": "done",
+        "actual_minutes": 3
+      },
+      "session": "01a16e15-c7a3-79e3-9272-0aa110e4dcbf",
+      "harness": "codex"
+    }
+  ]
+}

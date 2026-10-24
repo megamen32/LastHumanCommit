@@ -1,0 +1,73 @@
+{
+  "C01": {
+    "completed": [
+      {
+        "actual_minutes": 3.0
+      }
+    ],
+    "last_seen": "2026-10-24T13:53:27+00:00",
+    "task": {
+      "actual_minutes": 3.0,
+      "depends_on": [],
+      "estimate_minutes": {
+        "maximum": 2.0,
+        "minimum": 2.0
+      },
+      "harness": "codex",
+      "id": "C01",
+      "label": "Искусственный лист: изменение статуса не создаёт ревизию",
+      "note": "Синтетические данные; не использовать как отчёт об активном времени человека или агента.",
+      "progress_events": [
+        {
+          "at": "2026-10-24T16:53:27+03:00",
+          "changes": {
+            "actual_minutes": 3,
+            "status": "done"
+          },
+          "harness": "codex",
+          "note": "Синтетический статус: не измеренное время агента",
+          "session": "01a16e15-c7a3-79e3-9272-0aa110e4dcbf"
+        }
+      ],
+      "session": "01a16e15-c7a3-79e3-9272-0aa110e4dcbf",
+      "status": "done",
+      "supersedes": [],
+      "updated_at": "2026-10-24T16:53:27+03:00"
+    }
+  },
+  "C02": {
+    "completed": [],
+    "last_seen": "2026-10-24T13:53:28+00:00",
+    "task": {
+      "depends_on": [
+        "C01"
+      ],
+      "estimate_minutes": {
+        "maximum": 1.0,
+        "minimum": 1.0
+      },
+      "harness": "codex",
+      "id": "C02",
+      "label": "Искусственный дополнительный лист r002",
+      "progress_events": [
+        {
+          "at": "2026-10-24T16:53:27+03:00",
+          "changes": {
+            "depends_on": [
+              "C01"
+            ],
+            "estimate_minutes": 1,
+            "label": "Искусственный дополнительный лист r002"
+          },
+          "harness": "codex",
+          "note": "",
+          "session": "01a16e15-c7a3-79e3-9272-0aa110e4dcbf"
+        }
+      ],
+      "session": "01a16e15-c7a3-79e3-9272-0aa110e4dcbf",
+      "status": "queued",
+      "supersedes": [],
+      "updated_at": "2026-10-24T16:53:27+03:00"
+    }
+  }
+}

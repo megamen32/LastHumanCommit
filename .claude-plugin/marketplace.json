@@ -9,7 +9,14 @@
       "name": "last-human-commit",
       "source": "./plugins/last-human-commit",
       "description": "Automatic workflow with the full optional skill set; isolated parallel work, shared file chat and PR integration.",
-      "version": "1.5.48",
+      "version": "1.5.49",
+      "category": "workflow"
+    },
+    {
+      "name": "lhc-plan",
+      "source": "./plugins/lhc-plan",
+      "description": "Optional stdio facade for native plan CLI and unlisted HTML publication.",
+      "version": "1.0.0",
       "category": "workflow"
     },
     {
