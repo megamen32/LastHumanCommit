@@ -131,6 +131,7 @@ TOOL_COPIES = (
     "lhc_plan_json.py",
     "lhc_plan_publish.py",
     "lhc_plan_transport.py",
+    "lhc_plan_mirror.py",
     "lhc_plan_mcp.py",
     "lhc_live.py",
     "lhc_git_facts.py",

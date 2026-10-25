@@ -374,6 +374,41 @@ button in it does not change the fleet — it only draws the plan.
 
 ## 12. Public HTML, CLI first
 
+### Local-first mirror (preferred when configured)
+
+The local `plan.json`, `leaves/*.json` and `.lhc-publication/` history are
+authoritative. A separate no-LLM observer automatically mirrors ordinary file
+saves. The server renders sanitized JSON; it never writes local source files.
+For plans in the configured observer roots, just save the files: no publish,
+build, MCP call or environment variable is needed for website updates.
+
+Configure the narrow scope once with `~/.config/lhc/plan-mirror/client.json`
+(`mode: "mirror"`, `endpoint`, `base_url`, protected `token_file`, `data_dir`,
+explicit `roots`/`plans`). Never scan the whole home or private transcripts.
+Deployment starts `lhc_plan_mirror.py watch --config CLIENT` as a user service
+or LaunchAgent, independent of agent hooks. `register PLAN --config CLIENT`
+can migrate a previously published plan: URL and immutable r001 remain.
+Registration/discovery stores a local binding in `.lhc-publication/mirror.json`;
+normal CLI/MCP publish/revise then use it automatically with zero network.
+The first stable source snapshot creates r001 locally. `revise --reason TEXT`
+stores the new immutable local revision even offline. Do not remove history
+or copy a registered plan to another owner and overwrite its URL.
+
+Only the observer uses HTTP. It keeps one durable latest pending snapshot with
+all revisions and observed facts, retries with backoff, and catches up after
+restart without an agent retry. Broken/partial/temporarily absent files retain
+the last valid replica. A server outage is never a leaf blocker or development
+gate. `lhc_plan_mirror.py status --config CLIENT` reports local file event,
+last successful sync, server receipt and error separately; missing means unknown.
+The private dashboard capability URL lists recent/reported-running plans.
+Freshness and a reported running leaf never prove that an agent is alive.
+
+The optional LhcPlan MCP edits the same local leaves and uses the same revision
+CLI. It is not a second planner. Local standalone rendering and the legacy
+publisher below remain available for unbound plans.
+
+### Legacy standalone publication
+
 Use the actual shared plan-dir in every worker assignment. A worktree is not a
 new plan. For NEW plans, after writing the initial leaves, run the following
 initial publication whenever the host has configured `~/.config/lhc/publish.json`:

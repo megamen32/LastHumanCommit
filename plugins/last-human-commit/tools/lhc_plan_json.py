@@ -1195,12 +1195,15 @@ def estimate_cap_findings(tasks: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 def auto_publish(plan_dir: Path) -> None:
     """Opt-in only; publishing failure never prevents the work being recorded."""
-    if not (Path(plan_dir) / ".lhc-publication/state.json").is_file():
-        return
     try:
         tool_dir = str(Path(__file__).resolve().parent)
         if tool_dir not in sys.path:
             sys.path.insert(0, tool_dir)
+        from lhc_plan_mirror import mark
+        if mark(plan_dir):
+            return
+        if not (Path(plan_dir) / ".lhc-publication/state.json").is_file():
+            return
         from lhc_plan_publish import publish
         publish(Path(plan_dir), automatic=True)
     except Exception as error:
@@ -1255,6 +1258,14 @@ def update_leaf(plan_dir: Path, leaf_id: str, fields: dict, *, create=False,
         serialized = json.dumps(merged, ensure_ascii=False, indent=2) + "\n"
         _write_atomic(path, serialized)
         own_hash = hashlib.sha256(serialized.encode()).hexdigest()
+    # A registered mirror records only local dirtiness. Legacy publication is
+    # still triggered by build_graph, as before, never by a bare leaf edit.
+    try:
+        from lhc_plan_mirror import binding, mark
+        if binding(plan_dir):
+            mark(plan_dir)
+    except Exception:
+        print('LHC: лист сохранён; локальную отметку зеркала проверит наблюдатель', file=sys.stderr)
     return {"id": leaf_id, "sha256": own_hash}
 
 

@@ -1,0 +1,78 @@
+{
+  "schema_version": 2,
+  "title": "Локальный план с автоматическим зеркалом",
+  "goal": "Обычное сохранение локальных JSON само появляется на сайте; отказ сервера не мешает разработке",
+  "business_result": "Автоматическое зеркало работает на server100 и Mac: обычные сохранения видны на сайте; offline ревизия и восстановление проверены, локальные файлы остаются главными",
+  "business_results": [
+    "Автоматическое зеркало работает на server100 и Mac: обычные сохранения видны на сайте; offline ревизия и восстановление проверены, локальные файлы остаются главными"
+  ],
+  "current_progress": "",
+  "external_waits": "",
+  "slots": 1,
+  "updated_at": "",
+  "tasks": [
+    {
+      "id": "L01",
+      "label": "Локальная история и независимая доставка",
+      "status": "done",
+      "owner": "source-worker",
+      "note": "Локальная привязка без env, durable pending, polling и retry; тест реального процесса observer прошёл. Активное время не измерено.",
+      "origin": "",
+      "supersedes": [],
+      "depends_on": [],
+      "estimate_minutes": {
+        "minimum": 15.0,
+        "maximum": 15.0
+      }
+    },
+    {
+      "id": "L02",
+      "label": "Серверное зеркало и приватная панель",
+      "status": "done",
+      "owner": "source-worker",
+      "note": "Очищенный JSON ingest, seq/owner/history conflicts, прежние URL/r001; обновляемый список с отдельной свежестью и неизвестной живостью агента. Активное время не измерено.",
+      "origin": "",
+      "supersedes": [],
+      "depends_on": [
+        "L01"
+      ],
+      "estimate_minutes": {
+        "minimum": 15.0,
+        "maximum": 15.0
+      }
+    },
+    {
+      "id": "L03",
+      "label": "Совместимость CLI/MCP и переносимого пакета",
+      "status": "done",
+      "owner": "source-worker",
+      "note": "123 целевые проверки прошли; после последнего delta ещё 9 mirror тестов прошли. Пакет и manifests1.5.53, plugin validator и проекции согласованы. Старый publisher1.5.52 offline при mirror binding проверен напрямую. Активное время не измерено.",
+      "origin": "",
+      "supersedes": [],
+      "depends_on": [
+        "L02"
+      ],
+      "estimate_minutes": {
+        "minimum": 15.0,
+        "maximum": 15.0
+      }
+    },
+    {
+      "id": "L04",
+      "label": "Живое обычное сохранение и восстановление после отказа",
+      "status": "done",
+      "owner": "source-worker",
+      "note": "Обычное сохранение проверяется через установленный наблюдатель: локальный файл остаётся главным. Source raw save HTTPS200 seq2=receipt2; Lead подтвердил discovery нового плана и mobile/browser панель. Hosting: Mac offline revise rc0 за0.131s,2ревизии, recovery seq3; отдельный Mac raw seq6. Финальный core926be5b5 установлен на обоих хостах, release0fc5ed06dfa31a30. Активное время не измерено.",
+      "origin": "",
+      "supersedes": [],
+      "depends_on": [
+        "L03"
+      ],
+      "estimate_minutes": {
+        "minimum": 15.0,
+        "maximum": 15.0
+      }
+    }
+  ],
+  "leaf_count": 4
+}

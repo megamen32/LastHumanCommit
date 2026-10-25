@@ -54,6 +54,20 @@ def deploy(webroot, project, name, identity, version, files):
             raise ValueError("generation collision")
         generation.chmod(0o755)
         for filename in files:
+            output = generation / filename
+            if output.is_symlink():
+                raise ValueError("bundle file must not be symlink")
+            if not output.exists():
+                # Repair missing derived output on an idempotent retry. Never
+                # rewrite an existing immutable revision snapshot.
+                fd, pending = tempfile.mkstemp(prefix=".repair-", dir=generation)
+                try:
+                    with os.fdopen(fd, "w", encoding="utf-8") as stream:
+                        stream.write(files[filename])
+                    os.replace(pending, output)
+                finally:
+                    if os.path.exists(pending):
+                        os.unlink(pending)
             (generation / filename).chmod(0o644)
         temporary = parent / (".link-" + identity)
         temporary.unlink(missing_ok=True)

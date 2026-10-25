@@ -344,6 +344,15 @@ def freeze(directory, document, reason, observed=None):
 
 def publish(plan_dir, config_path=None, *, autopublish=False, automatic=False, reason=None):
     plan_dir = Path(plan_dir).resolve()
+    from lhc_plan_mirror import binding, local_publish, mark
+    mirror_config = binding(plan_dir)
+    if config_path and json.loads(Path(config_path).expanduser().read_text()).get('mode') == 'mirror':
+        mirror_config = config_path
+    if mirror_config:
+        if automatic:
+            mark(plan_dir, mirror_config)
+            return {'local': True, 'sync': 'pending'}
+        return local_publish(plan_dir, mirror_config, reason)
     directory = plan_dir / STATE_DIR
     state_path = directory / "state.json"
     if automatic and not state_path.exists():
