@@ -1,0 +1,9 @@
+{
+  "id": "H01",
+  "label": "Проверить обычное сохранение файла на Mac",
+  "status": "running",
+  "owner": "hosting-worker",
+  "estimate_minutes": 5,
+  "depends_on": [],
+  "note": "Ожидается обычное сохранение без publish и без переменной окружения"
+}
