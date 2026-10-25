@@ -112,10 +112,32 @@ scaffold из трёх листов, связывает первый с реал
 работа начинается; MCP и сеть не вызываются. Повтор того же события не пишет
 дублирующий progress event.
 
-Проверено: `tests/test_native_instruction_hooks.py` и
-`tests/test_plan_mirror.py` — 36 passed. Тест вызывает штатную ветку CLI
+Проверено: `tests/test_native_instruction_hooks.py`,
+`tests/test_plan_mirror.py` и `tests/test_plan_mirror_installer.py` — 38 passed.
+Тест вызывает штатную ветку CLI
 `--event UserPromptSubmit --plan-entry` на изолированном Git worktree без
 mirror config, проверяет три листа, running/session binding, graph/HTML и
 идемпотентный повтор. Plugin validation, generated package parity и sync skills
-прошли. Это source/package evidence; установка LHC 1.5.62 и следующий новый
-реальный Codex session consumer readback ещё не выполнены.
+прошли.
+
+### Доставка и установленный consumer
+
+- Scoped commit `2de7edf` опубликован в `lhc/plan-home-sso-20261025`; после
+  повторного fetch `origin/main` оставался его предком и был продвинут обычным
+  fast-forward, без force. Main и назначенная ветка сейчас указывают на один SHA.
+- Codex marketplace `megamen32-plugins` обновлён; native plugin
+  `last-human-commit` 1.5.62 установлен. В установленной копии подтверждены
+  version 1.5.62 и `UserPromptSubmit --plan-entry` hook.
+- Установленный CLI вызван с синтетическим fullcycle event внутри disposable
+  Git repo: созданы три leaves, L01 стал `running` с переданным synthetic
+  session ID, graph/HTML собрались; использованные config path не существовал,
+  MCP и сеть не вызывались. Temp repo удалён.
+- Server100 и Mac mirror/observer runtime 1.5.62 активны. Config readback:
+  server `sso_enabled=true`, loopback:8769, сохранены 2 plans/4 roots/8 graphs;
+  Mac observer активен, сохранены 1 plan/3 roots/2 graphs.
+- После install публичный корень вернул `302` с точным существующим
+  `rd=https://lhc.bezrabotnyi.com/`; индивидуальный план вернул `200`.
+- Настоящая новая Codex-сессия не запускалась по прямому указанию пользователя;
+  owner login также не наблюдался. Поэтому подтверждены установка и synthetic
+  installed-hook consumer, но не факт будущего user session invocation и не
+  authenticated owner UI.

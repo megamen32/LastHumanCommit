@@ -11,10 +11,10 @@
     "Открыть опубликованный план на узком экране: видна одна цветная полоса статусов, рядом в том же блоке подписаны минимум, максимум и сейчас; временной status показывает прохождение ранней оценки и превышение верхней границы без второй длинной временной оси.",
     "Обычным Codex fullcycle запросом без ручной команды и mirror config создать/переиспользовать локальный план и связать готовый лист с настоящими session/worktree до первого ответа; проверить graph/HTML и повтор события без второго progress event. Для выбранного mirror-конфига observer после восстановления сети догоняет то же зеркало; исходный r001 и начало плана сохранены."
   ],
-  "current_progress": "Каталог: 22 плана в 10 группах; root-only SSO и публичные individual pages активны. LHC mirror/observer 1.5.61 переустановлен на server100 и Mac с сохранением конфигов; опубликованный план проверен headless Chrome при 320px и между min/max: один цветной bar, подписанные границы, нет второй оси/точки, статус времени корректен. 16 прежних plan identities сохраняют byte-identical r001. L01/L02 выполнены. L03 установленный consumer проверен на изолированной копии канонического 13-leaf Cloud Telethon плана: L03 был queued только в копии, текущая Luna session реально привязана, exact worktree зарегистрирован при пустом roots, offline raw save догнал прежний URL, r001 сохранён. Настоящий Cloud Telethon worktree/сессия не изменялись; при последнем чтении исходный L03 уже был done, поэтому не приписываем этому выпуску вмешательство в его работу. В L05 добавлен native Codex UserPromptSubmit auto-entry; 36 целевых hook/mirror тестов проходят без mirror config и сети. Пакет 1.5.62 собран и валидирован, но ещё не установлен. Остались scoped commit/push, native install и новая сессия/readback; прежний старт и active minutes до live-plan остаются неизвестны.",
+  "current_progress": "Каталог: 22 плана в 10 группах; root-only SSO и публичные individual pages активны. LHC mirror/observer 1.5.62 установлен на server100 и Mac с сохранением конфигов; server слушает loopback, sso_enabled=true; текущие plans/roots/8 graph sources сохранены, Mac 1 plan/3 roots/2 graph sources. Root отвечает точным existing SSO 302, индивидуальная plan page — 200. Codex marketplace обновлён, plugin last-human-commit 1.5.62 установлен. Установленный UserPromptSubmit CLI проверен на изолированном Git repo: три leaves, L01 running с synthetic session id, graph/HTML, no MCP/network. 38 целевых native hook/mirror/installer тестов проходят; plugin validation, package parity и sync skills проходят. Коммит 2de7edf опубликован в назначенную ветку и origin/main fast-forward без force. Новая настоящая Codex-сессия и owner login не создавались/не наблюдались по прямому ограничению; прежний старт и active minutes до live-plan остаются неизвестны.",
   "external_waits": "",
   "slots": 1,
-  "updated_at": "2026-10-25T22:45:24+03:00",
+  "updated_at": "2026-10-25T22:50:20+03:00",
   "tasks": [
     {
       "id": "L01",
@@ -266,9 +266,10 @@
     {
       "id": "L04",
       "label": "Доставить каталог/SSO и единую карточку прогресса в разрешённую ветку",
-      "status": "running",
+      "status": "done",
       "description": "Собрать проверенные и установленные каталог/SSO/UI изменения, оформить scoped commit/push и проверить интегрированный runtime без включения чужого WIP.",
       "acceptance": "Разрешённая LHC ветка опубликована без force и чужих путей; source/runtime 1.5.62 валиден, а selected native plugin или host reader установлен и прочитан обратно; root-only SSO и individual plan page отвечают ожидаемо. Текущая Codex UserPromptSubmit auto-entry включена для следующей обычной сессии; новый consumer session не создаётся в рамках запрета пользователя.",
+      "result": "Scoped LHC source/package commit 2de7edf published to assigned branch and advanced origin/main by ordinary fast-forward; no force. Codex marketplace now runs 1.5.62 and `last-human-commit` is installed/enabled. The installed UserPromptSubmit CLI canary in an isolated Git repo created three leaves, bound L01 to its synthetic session, built graph/HTML, and used no MCP/network. Server100 and Mac mirror/observer runtimes 1.5.62 read back active with preserved inventory/config counts. Public root still returns exact SSO 302 and an individual plan page 200. No new real Codex session or owner login was created/observed.",
       "owner": "roomhacker",
       "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
       "harness": "codex",
@@ -352,6 +353,16 @@
           "changes": {
             "status": "running",
             "acceptance": "Разрешённая LHC ветка опубликована без force и чужих путей; source/runtime 1.5.62 валиден, а selected native plugin или host reader установлен и прочитан обратно; root-only SSO и individual plan page отвечают ожидаемо. Текущая Codex UserPromptSubmit auto-entry включена для следующей обычной сессии; новый consumer session не создаётся в рамках запрета пользователя."
+          },
+          "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-10-25T22:50:20+03:00",
+          "note": "Установленный package/runtime readback завершён; новая Codex session намеренно не создавалась по прямому указанию владельца.",
+          "changes": {
+            "status": "done",
+            "result": "Scoped LHC source/package commit 2de7edf published to assigned branch and advanced origin/main by ordinary fast-forward; no force. Codex marketplace now runs 1.5.62 and `last-human-commit` is installed/enabled. The installed UserPromptSubmit CLI canary in an isolated Git repo created three leaves, bound L01 to its synthetic session, built graph/HTML, and used no MCP/network. Server100 and Mac mirror/observer runtimes 1.5.62 read back active with preserved inventory/config counts. Public root still returns exact SSO 302 and an individual plan page 200. No new real Codex session or owner login was created/observed."
           },
           "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
           "harness": "codex"
