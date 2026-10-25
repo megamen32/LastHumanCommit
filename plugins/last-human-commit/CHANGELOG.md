@@ -1,3 +1,10 @@
+# 1.5.65 — OpenCode следует за обновляемым LHC marketplace
+
+Для OpenCode global instructions, skills и LHC plugin теперь можно привязать к
+стабильному checkout `megamen32-plugins`. Ежедневный Codex marketplace refresh
+обновляет тот же источник; новые OpenCode-сессии загружают текущую версию без
+второго Fleet-снимка или отдельного таймера.
+
 # 1.5.64 — owner-only интеграция не блокирует владельца LHC
 
 Правило о владельце upstream main для Airlock-проектов больше не трактуется как

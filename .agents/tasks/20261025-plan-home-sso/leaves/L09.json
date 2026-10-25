@@ -1,0 +1,45 @@
+{
+  "label": "Сделать Codex и OpenCode автообновление одной LHC",
+  "description": "Использовать существующее ежедневное обновление megamen32-plugins для Codex и переключить OpenCode инструкции, skills и plugin на стабильный marketplace checkout, чтобы refresh обновлял их автоматически. Удалить только подтверждённые LHC-дубли fleet-lhc; остальные профили сохранить.",
+  "acceptance": "Codex на 100/44/88/Mac имеет ровно один enabled LHC из canonical megamen32-plugins; OpenCode на тех же узлах использует live LHC package из marketplace path, а не versioned Fleet snapshot; текущие daily marketplace refreshes обеспечивают будущие обновления без новых таймеров; установки переживают readback и target tests.",
+  "status": "running",
+  "estimate_minutes": {
+    "minimum": 15,
+    "maximum": 30
+  },
+  "affected_files": [
+    "plugins/last-human-commit/scripts/configure_opencode_marketplace.py",
+    "tests/test_opencode_marketplace_update.py",
+    "plugins/last-human-commit/CHANGELOG.md",
+    "docs/plugin-delivery.md"
+  ],
+  "id": "L09",
+  "created_at": "2026-10-26T00:14:44+03:00",
+  "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+  "harness": "codex",
+  "updated_at": "2026-10-26T00:14:44+03:00",
+  "progress_events": [
+    {
+      "at": "2026-10-26T00:14:44+03:00",
+      "note": "Сверил активные daily refreshes и подтвердил, что они обновляют Codex marketplace, но OpenCode/root и Fleet duplicate были pinned к 1.5.52.",
+      "changes": {
+        "label": "Сделать Codex и OpenCode автообновление одной LHC",
+        "description": "Использовать существующее ежедневное обновление megamen32-plugins для Codex и переключить OpenCode инструкции, skills и plugin на стабильный marketplace checkout, чтобы refresh обновлял их автоматически. Удалить только подтверждённые LHC-дубли fleet-lhc; остальные профили сохранить.",
+        "acceptance": "Codex на 100/44/88/Mac имеет ровно один enabled LHC из canonical megamen32-plugins; OpenCode на тех же узлах использует live LHC package из marketplace path, а не versioned Fleet snapshot; текущие daily marketplace refreshes обеспечивают будущие обновления без новых таймеров; установки переживают readback и target tests.",
+        "status": "running",
+        "estimate_minutes": {
+          "minimum": 15,
+          "maximum": 30
+        },
+        "affected_files": [
+          "plugins/last-human-commit/scripts/configure_opencode_marketplace.py",
+          "tests/test_opencode_marketplace_update.py",
+          "plugins/last-human-commit/CHANGELOG.md",
+          "docs/plugin-delivery.md"
+        ]
+      },
+      "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+      "harness": "codex"
+    }
+  ]
+}

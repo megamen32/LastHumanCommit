@@ -108,6 +108,24 @@ hermes plugins install megamen32/LastHumanCommit/plugins/last-human-commit --for
 gateway перезапустить штатным service manager, сохранив выбранный runtime и
 service overrides. На Mac gateway был остановлен и не запускался автоматически.
 
+## Автоматическое обновление Codex и OpenCode
+
+На Linux/macOS пользовательский ежедневный `codex-plugin-autoupdate` обновляет
+checkout marketplace `megamen32-plugins` и переустанавливает изменившийся Codex
+plugin. После однократного включения canonical LHC entry следует этой версии;
+старый Fleet entry (`last-human-commit@fleet-lhc`) этим job не обновляется и не
+должен оставаться включённым параллельно.
+
+OpenCode подключается к тому же стабильному checkout через
+`scripts/configure_opencode_marketplace.py --package-root <marketplace>/plugins/last-human-commit`.
+Скрипт сохраняет остальные OpenCode settings, меняет только LHC `instructions`
+и `skills.paths`, заменяет распознанный старый LHC loader на plugin entry,
+который ссылается на `opencode/lhc-v2.ts` в этом checkout, и сохраняет backups.
+Ежедневный marketplace refresh обновляет этот путь на месте; следующая новая
+OpenCode-сессия загружает актуальные router, skills и plugin без второго таймера.
+Уже открытые процессы не перезагружаются автоматически и сохраняют загруженный
+снимок до следующего старта.
+
 ## Приёмка 2026-09-05
 
 - Пакет 1.1.2 установлен Codex на 100, 44, 88 и Mac; все пять shell-hook событий

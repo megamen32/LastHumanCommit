@@ -14,7 +14,7 @@
   "current_progress": "Каталог: 22 плана в 10 группах; root-only SSO и публичные individual pages активны. LHC mirror/observer 1.5.62 установлен на server100 и Mac с сохранением конфигов; server слушает loopback, sso_enabled=true; текущие plans/roots/8 graph sources сохранены, Mac 1 plan/3 roots/2 graph sources. Root отвечает точным existing SSO 302, индивидуальная plan page — 200. Codex marketplace содержит включённые установки 1.5.62 и Fleet 1.5.58 на этом host. Установленный CLI доказал только узкий synthetic путь создания трёх листов по распознанному английскому Full-cycle prompt; он не доказывает безопасную общую авто-привязку. В последующей проверке: обычный русский Full-cycle prompt вернул classify=unknown без плана; нерелевантный запрос с единственным старым планом привязал его queued leaf. Эти два entry-дефекта не исправлены. L06 завершён: единый review целого Full-cycle результата после рабочих leaves, затем deploy→consumer test→push; timed Overseer advice не изменён. Целевые contract tests: 8 passed, generated package validation/parity прошли. Новая реальная Codex-сессия и owner login не создавались/не наблюдались по прямому ограничению; active minutes до live-plan неизвестны.",
   "external_waits": "",
   "slots": 1,
-  "updated_at": "2026-10-25T23:35:38+03:00",
+  "updated_at": "2026-10-26T00:14:44+03:00",
   "tasks": [
     {
       "id": "L01",
@@ -545,6 +545,53 @@
       "created_at": "2026-10-25T23:33:52+03:00"
     },
     {
+      "id": "L09",
+      "label": "Сделать Codex и OpenCode автообновление одной LHC",
+      "status": "running",
+      "description": "Использовать существующее ежедневное обновление megamen32-plugins для Codex и переключить OpenCode инструкции, skills и plugin на стабильный marketplace checkout, чтобы refresh обновлял их автоматически. Удалить только подтверждённые LHC-дубли fleet-lhc; остальные профили сохранить.",
+      "acceptance": "Codex на 100/44/88/Mac имеет ровно один enabled LHC из canonical megamen32-plugins; OpenCode на тех же узлах использует live LHC package из marketplace path, а не versioned Fleet snapshot; текущие daily marketplace refreshes обеспечивают будущие обновления без новых таймеров; установки переживают readback и target tests.",
+      "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+      "harness": "codex",
+      "origin": "",
+      "supersedes": [],
+      "progress_events": [
+        {
+          "at": "2026-10-26T00:14:44+03:00",
+          "note": "Сверил активные daily refreshes и подтвердил, что они обновляют Codex marketplace, но OpenCode/root и Fleet duplicate были pinned к 1.5.52.",
+          "changes": {
+            "label": "Сделать Codex и OpenCode автообновление одной LHC",
+            "description": "Использовать существующее ежедневное обновление megamen32-plugins для Codex и переключить OpenCode инструкции, skills и plugin на стабильный marketplace checkout, чтобы refresh обновлял их автоматически. Удалить только подтверждённые LHC-дубли fleet-lhc; остальные профили сохранить.",
+            "acceptance": "Codex на 100/44/88/Mac имеет ровно один enabled LHC из canonical megamen32-plugins; OpenCode на тех же узлах использует live LHC package из marketplace path, а не versioned Fleet snapshot; текущие daily marketplace refreshes обеспечивают будущие обновления без новых таймеров; установки переживают readback и target tests.",
+            "status": "running",
+            "estimate_minutes": {
+              "minimum": 15,
+              "maximum": 30
+            },
+            "affected_files": [
+              "plugins/last-human-commit/scripts/configure_opencode_marketplace.py",
+              "tests/test_opencode_marketplace_update.py",
+              "plugins/last-human-commit/CHANGELOG.md",
+              "docs/plugin-delivery.md"
+            ]
+          },
+          "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+          "harness": "codex"
+        }
+      ],
+      "affected_files": [
+        "plugins/last-human-commit/scripts/configure_opencode_marketplace.py",
+        "tests/test_opencode_marketplace_update.py",
+        "plugins/last-human-commit/CHANGELOG.md",
+        "docs/plugin-delivery.md"
+      ],
+      "depends_on": [],
+      "estimate_minutes": {
+        "minimum": 15.0,
+        "maximum": 30.0
+      },
+      "created_at": "2026-10-26T00:14:44+03:00"
+    },
+    {
       "id": "L04",
       "label": "Доставить каталог/SSO и единую карточку прогресса в разрешённую ветку",
       "status": "done",
@@ -667,7 +714,7 @@
       "wave": 2
     }
   ],
-  "leaf_count": 8,
+  "leaf_count": 9,
   "plan_origin": {
     "at": "2026-10-25T22:19:24+03:00",
     "source": "leaf_created_at",
