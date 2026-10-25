@@ -8,9 +8,11 @@ pending snapshot, server replica, HTML, dashboard. No uploaded code is executed.
 from __future__ import annotations
 
 import argparse
+from contextlib import nullcontext
 import hashlib
 import hmac
 import html
+import ipaddress
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
@@ -46,6 +48,11 @@ def config(path):
 
 
 def directory(plan):
+    if Path(plan).name == 'plan.graph.json':
+        # Explicit legacy sources stay read-only; history cannot collide with
+        # a native plan's .lhc-publication in the same directory.
+        path = Path(plan).resolve()
+        return path.parent / ('.lhc-graph-publication-' + hashlib.sha256(str(path).encode()).hexdigest()[:16])
     return Path(plan) / pub.STATE_DIR
 
 
@@ -83,7 +90,7 @@ def register(plan, config_path):
         state = read(directory(plan) / 'state.json')
         if state is None:
             identity = secrets.token_hex(12)
-            state = {'identity': identity, 'project': pub.project_slug(plan),
+            state = {'identity': identity, 'project': pub.project_slug(plan.parent if plan.name == 'plan.graph.json' else plan),
                      'name': time.strftime('plan-%Y%m%d-%H%M-') + identity,
                      'config': str(config_path), 'autopublish': False}
             pub.atomic(directory(plan) / 'state.json', state)
@@ -116,19 +123,20 @@ def mark(plan, config_path=None):
 
 def fingerprint(plan):
     plan = Path(plan)
-    paths = [plan / 'plan.json', *sorted((plan / 'leaves').glob('*.json'))]
-    if not paths[0].is_file() or len(paths) < 2:
+    graph_source = plan.name == 'plan.graph.json'
+    paths = [plan] if graph_source else [plan / 'plan.json', *sorted((plan / 'leaves').glob('*.json'))]
+    if not paths[0].is_file() or (not graph_source and len(paths) < 2):
         raise ValueError('source temporarily absent; preserving last good snapshot')
     result = []
     # Presentation migration: old unchanged source must be captured once too.
     result.append(('plan_origin_schema', 1))
     origin = plan / '.lhc-publication/plan-origin.json'
-    if origin.is_file():
+    if not graph_source and origin.is_file():
         paths.append(origin)
     for path in paths:
         if path.is_symlink() or path.stat().st_size > MAX_BYTES:
             raise ValueError('unsafe or oversized source')
-        result.append((str(path.relative_to(plan)), hashlib.sha256(path.read_bytes()).hexdigest()))
+        result.append((str(path.name if graph_source else path.relative_to(plan)), hashlib.sha256(path.read_bytes()).hexdigest()))
     return pub.digest(result)
 
 
@@ -150,10 +158,12 @@ def capture(plan, *, reason=None):
     plan = Path(plan)
     dest = directory(plan)
     with leaves.file_lock(dest / 'publish.lock'):
-        with leaves.file_lock(plan / '.lhc-leaves.lock'):
-            leaves.ensure_plan_origin(plan)
+        graph_source = plan.name == 'plan.graph.json'
+        with nullcontext() if graph_source else leaves.file_lock(plan / '.lhc-leaves.lock'):
+            if not graph_source:
+                leaves.ensure_plan_origin(plan)
             before = fingerprint(plan)
-            document = pub.public_document(leaves.build_document(plan))
+            document = valid_document(read(plan)) if graph_source else pub.public_document(leaves.build_document(plan))
             if before != fingerprint(plan):
                 raise ValueError('files changed during capture; retry after debounce')
         old = read(dest / 'mirror-state.json', {})
@@ -193,6 +203,11 @@ def discover(cfg):
     local = Path(cfg['data_dir']).expanduser()
     plans = set(read(local / 'registry.json', {}).get('plans', {}))
     plans.update(str(Path(p).expanduser().resolve()) for p in cfg.get('plans', []))
+    for source in cfg.get('graph_sources', []):
+        path = Path(source).expanduser()
+        if not path.is_absolute() or path.name != 'plan.graph.json':
+            raise ValueError('graph_sources requires absolute plan.graph.json paths')
+        plans.add(str(path.resolve()))
     # Explicit roots only, bounded depth, no symlink traversal or home scan.
     for root in cfg.get('roots', []):
         root = Path(root).expanduser().resolve()
@@ -279,6 +294,11 @@ def run_observer(config_path, once=False):
                         except (ValueError, OSError) as error:
                             capture_retries[plan] = (time.monotonic() + min(60, 2 ** min(capture_failures, 6)), capture_failures + 1)
                             record_error(plan, error)
+                            continue
+                    if capture_retries.get(plan, (0, 0))[1]:
+                        # A replay of the previous good snapshot must not clear
+                        # the current source error while capture is retrying.
+                        continue
                     state = read(directory(plan) / 'mirror-state.json', {})
                     deadline, failures = retries.get(plan, (0, 0))
                     if not failures and state.get('seq') != sent.get(plan):
@@ -441,27 +461,57 @@ class Replica:
             return receipt
 
     def dashboard(self):
-        entries = sorted(self.entries(), key=lambda x: x['snapshot']['last_file_event'], reverse=True)
+        entries = sorted(self.entries(), key=lambda x: pub.timestamp(x['snapshot']['last_file_event']), reverse=True)
         esc = lambda s: html.escape(str(s), quote=True)
-        rows = []
+        groups = {}
+        counts = {'active': 0, 'blocked': 0, 'completed': 0}
         for entry in entries:
             snap, receipt = entry['snapshot'], entry['receipt']
             age = time.time() - pub.timestamp(snap['last_file_event']).timestamp()
-            running = any(t.get('status') == 'running' for t in snap['document']['tasks'])
-            state = ('В плане: в работе' if running else 'В плане: нет работающих листов')
-            state += (' · данные устарели' if running else ' · давно не менялся') if age > 300 else ' · свежие данные'
-            rows.append(f'<article data-running="{str(running).lower()}"><h2><a href="{esc(receipt["url"])}">{esc(snap["document"].get("title", snap["name"]))}</a></h2><p>{state}. Живость агента: неизвестна.</p><p>Событие файла: {esc(snap["last_file_event"])}<br>Приём сервером: {esc(receipt["received_at"])}<br>Последняя успешная синхронизация на клиенте: неизвестна (известна локально).</p></article>')
-        return '''<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><meta name="robots" content="noindex,nofollow"><title>Мои планы</title>
-<style>body{font:16px/1.6 system-ui,sans-serif;background:#f3f5f9;color:#172136;max-width:960px;margin:auto;padding:24px}article{background:white;border:1px solid #dce3ee;border-radius:16px;margin:16px 0;padding:20px}article[data-running=true]{border-left:5px solid #3973cd}h1,h2{line-height:1.25}h2{font-size:21px;margin-top:0}a{color:#1858ae}p{overflow-wrap:anywhere}button{font:inherit;padding:8px 16px;border:1px solid #aabbd2;border-radius:8px;background:white;cursor:pointer}body.active article[data-running=false]{display:none}#connection{color:#52637c}</style>
-<body><h1>Мои планы</h1><p>Порядок — по событию исходного файла. Статус листа не доказывает активность агента.</p><button onclick="document.body.classList.toggle('active')">Только работающие / все недавние</button><p id="connection">Последний известный снимок</p><main>''' + ''.join(rows) + '''</main><script>
-if(/^https?:$/.test(location.protocol)){setInterval(async()=>{const badge=document.getElementById('connection');try{const r=await fetch(location.href,{cache:'no-store'});if(!r.ok)throw Error();const doc=new DOMParser().parseFromString(await r.text(),'text/html');const next=doc.querySelector('main');if(!next)throw Error();document.querySelector('main').replaceWith(next);badge.textContent='Связь есть · список проверен '+new Date().toLocaleTimeString();}catch(e){badge.textContent='Нет связи · сохранён последний известный список';}},12000);}
+            statuses = [t.get('status') for t in snap['document']['tasks']]
+            state = ('completed' if statuses and all(s == 'done' for s in statuses)
+                     else 'blocked' if any(s in {'blocked', 'waiting'} for s in statuses) else 'active')
+            counts[state] += 1
+            label = {'active': 'В плане: в работе', 'blocked': 'В плане: заблокировано',
+                     'completed': 'В плане: завершено'}[state]
+            freshness = 'данные устарели' if age > 300 else 'свежие данные'
+            title = snap['document'].get('title') or snap['name']
+            # Routes come from validated stable identifiers, never a client-supplied URL.
+            url = '/' + snap['project'] + '/' + snap['name'] + '/'
+            revision = snap['revisions'][-1]['id']
+            groups.setdefault(snap['project'], []).append(
+                f'<article data-state="{state}" data-search="{esc(snap["project"] + " " + title + " " + snap["name"])}">'
+                f'<div class="plan-heading"><h3><a href="{url}">{esc(title)}</a></h3>'
+                f'<span class="state {state}">{label}</span></div>'
+                f'<p class="meta">Событие файла: <time>{esc(snap["last_file_event"])}</time> · {freshness}<br>'
+                f'Приём сервером: <time>{esc(receipt["received_at"])}</time></p>'
+                f'<a class="revision" href="{url}view-{revision}.html">Ревизия {revision}</a></article>')
+        sections = ''.join(f'<section class="project"><h2>{esc(project)} <span>{len(rows)} пл.</span></h2>'
+                           + ''.join(rows) + '</section>' for project, rows in groups.items())
+        summary = (f'<div id="totals">Проектов: <b>{len(groups)}</b> · Планов: <b>{len(entries)}</b>'
+                   f'<span>В работе: {counts["active"]} · Заблокировано: {counts["blocked"]} · Завершено: {counts["completed"]}</span></div>')
+        empty = '<p class="empty">Пока нет синхронизированных планов. Они появятся после первой успешной синхронизации источника.</p>' if not entries else ''
+        return '''<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Проекты и планы · LHC</title>
+<style>
+*{box-sizing:border-box}body{font:15px/1.5 system-ui,sans-serif;background:#f5f6f8;color:#202938;max-width:1080px;margin:auto;padding:32px 24px}header{margin-bottom:24px}.brand{color:#657087;font-size:12px;letter-spacing:.14em}h1{font-size:32px;line-height:1.2;margin:8px 0 12px}h2{font-size:20px;margin:28px 0 10px;overflow-wrap:anywhere}h2 span{font-size:13px;font-weight:400;color:#657087}h3{font-size:17px;margin:0;overflow-wrap:anywhere}a{color:#255fa5;text-decoration:none}a:hover{text-decoration:underline}p{overflow-wrap:anywhere}.intro,.meta,#connection{color:#657087}.intro{max-width:780px}#totals{font-size:17px;margin-bottom:20px}#totals span{display:block;color:#657087;font-size:14px;margin-top:5px}.toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:center}input,select{font:inherit;padding:10px 12px;border:1px solid #bbc5d3;border-radius:8px;background:white;color:inherit}input{width:min(100%,420px)}label{display:flex;gap:8px;align-items:center}article{background:white;border:1px solid #dce1e8;border-radius:10px;padding:16px 20px;margin-bottom:8px}.plan-heading{display:flex;justify-content:space-between;align-items:baseline;gap:12px}.state{font-size:12px;white-space:nowrap;border-radius:5px;padding:3px 8px;background:#edf2f9;color:#315b8c}.blocked{background:#fff3df;color:#805912}.completed{background:#eaf3ef;color:#38664c}.meta{font-size:12px;margin:8px 0}.revision{font-size:12px}.empty{padding:24px;background:white;border:1px dashed #bbc5d3;border-radius:10px}[hidden]{display:none!important}#connection{font-size:13px;min-height:20px}#signin{font-weight:600}input:focus-visible,select:focus-visible,a:focus-visible{outline:2px solid #255fa5;outline-offset:3px}@media(max-width:600px){body{padding:20px 14px}h1{font-size:27px}.plan-heading{display:block}.state{display:inline-block;margin-top:8px}article{padding:14px}.toolbar,label,input,select{width:100%}label{flex-wrap:wrap}}
+</style></head><body><header><div class="brand">LAST HUMAN COMMIT</div><h1>Проекты и планы</h1><p class="intro">Все планы, принятые этим зеркалом. Проекты и планы упорядочены по последнему изменению исходного файла. Статус сообщает план. Живость агента: неизвестна.</p></header>
+<div class="toolbar"><label for="search">Поиск <input id="search" type="search" placeholder="Проект или план" autocomplete="off"></label><label for="scope">Показывать <select id="scope"><option value="all">Все</option><option value="active">В работе</option></select></label></div>
+<p id="connection" role="status" aria-live="polite">Последний известный снимок</p><a id="signin" href="/" hidden>Войти снова через SSO</a>
+<main data-lhc-catalog="1">''' + summary + sections + empty + '''</main><p id="no-matches" class="empty" hidden>По этому запросу планов нет. Измените поиск или выберите «Все».</p><script>
+const search=document.getElementById('search'),scope=document.getElementById('scope');
+function filter(){let visible=0;const query=search.value.trim().toLocaleLowerCase('ru');document.querySelectorAll('.project').forEach(group=>{let count=0;group.querySelectorAll('article').forEach(row=>{row.hidden=!(row.dataset.search.toLocaleLowerCase('ru').includes(query)&&(scope.value==='all'||row.dataset.state!=='completed'));if(!row.hidden)count++;});group.hidden=count===0;visible+=count;});document.getElementById('no-matches').hidden=visible>0||!document.querySelector('article');}
+search.addEventListener('input',filter);scope.addEventListener('change',filter);
+let refreshing=false;
+async function refresh(){if(refreshing)return;refreshing=true;const badge=document.getElementById('connection'),signin=document.getElementById('signin');try{const r=await fetch(location.href,{cache:'no-store',redirect:'manual'});if(r.status===401||r.status===403||r.status===0||r.type==='opaqueredirect'||r.status>=300&&r.status<400){signin.hidden=false;badge.textContent='Требуется вход · сохранён последний известный список';return;}if(!r.ok)throw Error();const doc=new DOMParser().parseFromString(await r.text(),'text/html');const next=doc.querySelector('main[data-lhc-catalog="1"]');if(!next){signin.hidden=false;badge.textContent='Требуется вход · сохранён последний известный список';return;}const y=window.scrollY;document.querySelector('main').replaceWith(next);filter();window.scrollTo(0,y);signin.hidden=true;badge.textContent='Связь есть · список проверен '+new Date().toLocaleTimeString();}catch(e){badge.textContent='Нет связи · сохранён последний известный список';}finally{refreshing=false;}}
+if(/^https?:$/.test(location.protocol))setInterval(refresh,12000);
 </script></body></html>'''
 
 
 def make_server(cfg):
     replica = Replica(cfg)
     write_token = secret(cfg['token_file'])
-    dashboard_key = secret(cfg['dashboard_key_file'])
+    sso_enabled = cfg.get('sso_enabled') is True
+    dashboard_key = secret(cfg['dashboard_key_file']) if cfg.get('dashboard_key_file') else None
     for entry in replica.entries():
         replica.render(entry)
         if not entry.get('rendered', True):
@@ -485,13 +535,25 @@ def make_server(cfg):
         def authorized(self):
             return hmac.compare_digest(self.headers.get('Authorization', ''), 'Bearer ' + write_token)
 
+        def proxy_authorized(self):
+            try:
+                loopback = ipaddress.ip_address(self.client_address[0]).is_loopback
+            except ValueError:
+                loopback = False
+            return (sso_enabled and loopback
+                    and self.headers.get_all('X-LHC-SSO-Verified') == ['1'])
+
         def do_GET(self):
             if self.path == '/health':
                 self.reply(200, {'status': 'ok'})
             elif self.path == '/v1/status' and self.authorized():
                 self.reply(200, {'plans': [e['receipt'] for e in replica.entries()]})
-            elif hmac.compare_digest(self.path, '/dashboard/' + dashboard_key + '/'):
-                self.reply(200, replica.dashboard(), 'text/html')
+            elif (self.path == '/' and sso_enabled or dashboard_key is not None
+                  and hmac.compare_digest(self.path, '/dashboard/' + dashboard_key + '/')):
+                if sso_enabled and not self.proxy_authorized():
+                    self.reply(401, {'error': 'SSO authentication required'})
+                else:
+                    self.reply(200, replica.dashboard(), 'text/html')
             else:
                 self.reply(404, {'error': 'not found'})
 
