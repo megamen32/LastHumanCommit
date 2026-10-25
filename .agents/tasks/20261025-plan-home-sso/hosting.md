@@ -96,3 +96,26 @@ native release с сохранением configs/данных; временны�
 Чужой WIP monorepo и shared LHC worktree сохранён. Пока шла работа,
 чужой ранее локальный коммит был независимо опубликован его владельцем;
 наша публикация стала обычным fast-forward без переноса/перезаписи его истории.
+
+## Корректировка маршрута и readback Luna — 25.10.2026
+
+Последующие прямые указания пользователя заменяют историческое широкое SSO
+правило выше: защищён только exact `/`. Приватный каталог открывается через
+existing personal auth. Индивидуальные планы, их revision HTML/JSON/archive и
+старый capability URL не требуют SSO, чтобы Codex-сессии читали их напрямую.
+Внешний `X-LHC-SSO-Verified: 1` вместе с invalid cookie не меняет redirect
+корня. Bearer API остаётся независимым.
+
+После root-only scoped apply и final source runtime readback: server100
+`sso_enabled=true`, `127.0.0.1:8769`, mirror/observer active, runtime 1.5.61;
+MacBook-Pro-User.local observer active на 1.5.61. Конфиги additive merge сохранил:
+server — 2 explicit plans, 4 roots и 8 graph sources; Mac — 1 plan, 3 roots,
+2 graph sources, включая `/Users/user/Documents/Apps`. Секретные файлы не
+читались/копировались в вывод. Каталог содержит 22 accepted plans / 10 project
+groups; эти числа относятся к фактическому mirror, а не ко всему флоту.
+
+Анонимный root возвращает 302 на existing auth с exact `rd`; spoof-header и
+invalid-cookie не обходят его. Проверенная индивидуальная plan page и `r001`
+возвращают 200 без SSO. Bearer GET `/v1/status` ранее подтвердил 200;
+неавторизованный POST snapshots — 401. Реальный валидный owner login не
+наблюдался, поэтому authenticated UI владельца не заявляется как проверенный.

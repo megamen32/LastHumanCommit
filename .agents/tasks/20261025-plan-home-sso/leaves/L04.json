@@ -1,0 +1,110 @@
+{
+  "label": "Доставить каталог/SSO и единую карточку прогресса в разрешённую ветку",
+  "status": "running",
+  "description": "Собрать проверенные и установленные каталог/SSO/UI изменения, оформить scoped commit/push и проверить интегрированный runtime без включения чужого WIP.",
+  "acceptance": "Разрешённая LHC ветка опубликована без force и чужих путей; source/runtime 1.5.62 валиден, а selected native plugin или host reader установлен и прочитан обратно; root-only SSO и individual plan page отвечают ожидаемо. Текущая Codex UserPromptSubmit auto-entry включена для следующей обычной сессии; новый consumer session не создаётся в рамках запрета пользователя.",
+  "affected_files": [
+    "plugins/last-human-commit/CHANGELOG.md",
+    "deploy/plan-mirror/README.md",
+    ".agents/tasks/20261025-plan-home-sso/RESULT.md"
+  ],
+  "estimate_minutes": {
+    "minimum": 15,
+    "maximum": 30
+  },
+  "depends_on": [
+    "L01",
+    "L02",
+    "L05"
+  ],
+  "wait_reason": "Ждёт автоматического Codex fullcycle prompt entry и установленной проверки этого lifecycle; затем scoped source delivery.",
+  "wave": 2,
+  "note": "Ждёт завершения L02 и L03; release пока не объявлен.",
+  "id": "L04",
+  "created_at": "2026-10-25T22:19:24+03:00",
+  "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+  "harness": "codex",
+  "updated_at": "2026-10-25T22:45:24+03:00",
+  "progress_events": [
+    {
+      "at": "2026-10-25T22:19:24+03:00",
+      "note": "Ожидает закрытия UI и lifecycle работы",
+      "changes": {
+        "label": "Опубликовать цельный результат и подтвердить установленный consumer",
+        "status": "queued",
+        "description": "Сгенерировать пакет, пройти затронутые проверки, установить на server100 и Mac без потери конфигов, проверить опубликованный каталог/план и live activation consumer, затем scoped commit/push разрешённых LHC путей.",
+        "acceptance": "Installed package/readback совпадают с source; root-only SSO, плановый UI и каталог доступны по реальным путям; активированный локальный план синхронизируется без replay; owned changes опубликованы без включения постороннего WIP.",
+        "affected_files": [
+          "plugins/last-human-commit/CHANGELOG.md",
+          "deploy/plan-mirror/README.md",
+          ".agents/tasks/20261025-plan-home-sso/RESULT.md"
+        ],
+        "estimate_minutes": {
+          "minimum": 15,
+          "maximum": 30
+        },
+        "depends_on": [
+          "L02",
+          "L03"
+        ],
+        "wait_reason": "Нужны окончательные UI и lifecycle поведенческие доказательства перед сборкой/установкой.",
+        "wave": 2,
+        "note": "Ждёт завершения L02 и L03; release пока не объявлен."
+      },
+      "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+      "harness": "codex"
+    },
+    {
+      "at": "2026-10-25T22:24:40+03:00",
+      "note": "Уточнена независимая область доставки; lifecycle остаётся отдельным листом",
+      "changes": {
+        "label": "Доставить каталог/SSO и единую карточку прогресса в разрешённую ветку",
+        "description": "Собрать проверенные и установленные каталог/SSO/UI изменения, оформить scoped commit/push и проверить интегрированный runtime без включения чужого WIP.",
+        "acceptance": "Разрешённая LHC ветка опубликована без force и чужих путей; native server100/Mac runtime 1.5.61 сохранён и прочитан обратно; root-only SSO и individual plan page отвечают ожидаемо. Leaf L03 lifecycle остаётся отдельной незавершённой приёмкой до настоящего canary.",
+        "depends_on": [
+          "L01",
+          "L02"
+        ],
+        "wait_reason": "Ожидает завершённой проверки единой карточки; lifecycle-canary не является зависимостью этой самостоятельной доставки."
+      },
+      "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+      "harness": "codex"
+    },
+    {
+      "at": "2026-10-25T22:24:40+03:00",
+      "note": "Начал scoped source delivery после installed readback; фактические минуты до plan capture неизвестны",
+      "changes": {
+        "status": "running",
+        "owner": "roomhacker"
+      },
+      "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+      "harness": "codex"
+    },
+    {
+      "at": "2026-10-25T22:41:30+03:00",
+      "note": "Переставил source delivery после исправления entry lifecycle по прямой поправке владельца; leaf L05 запущен.",
+      "changes": {
+        "status": "queued",
+        "depends_on": [
+          "L01",
+          "L02",
+          "L05"
+        ],
+        "wait_reason": "Ждёт автоматического Codex fullcycle prompt entry и установленной проверки этого lifecycle; затем scoped source delivery."
+      },
+      "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+      "harness": "codex"
+    },
+    {
+      "at": "2026-10-25T22:45:24+03:00",
+      "note": "Возобновил scoped delivery после source/CLI acceptance L05.",
+      "changes": {
+        "status": "running",
+        "acceptance": "Разрешённая LHC ветка опубликована без force и чужих путей; source/runtime 1.5.62 валиден, а selected native plugin или host reader установлен и прочитан обратно; root-only SSO и individual plan page отвечают ожидаемо. Текущая Codex UserPromptSubmit auto-entry включена для следующей обычной сессии; новый consumer session не создаётся в рамках запрета пользователя."
+      },
+      "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+      "harness": "codex"
+    }
+  ],
+  "owner": "roomhacker"
+}

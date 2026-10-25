@@ -20,7 +20,7 @@ def get(server, path='/', headers=None, data=None):
         return error.code, error.read().decode()
 
 
-def test_root_sso_and_capability_guard_machine_api_independent(fixture):
+def test_only_root_uses_sso_capability_and_machine_api_remain_independent(fixture):
     plan, client, cfg = fixture
     mirror.register(plan, client)
     mirror.capture(plan)
@@ -30,11 +30,14 @@ def test_root_sso_and_capability_guard_machine_api_independent(fixture):
     auth = {'Authorization': 'Bearer ' + 'a' * 32}
     capability = '/dashboard/' + 'b' * 32 + '/'
     try:
-        for path in ('/', capability):
-            assert get(server, path)[0] == 401
-            assert get(server, path, {'X-LHC-SSO-Verified': '0'})[0] == 401
-            assert get(server, path, auth)[0] == 401
-            assert get(server, path, verified)[0] == 200
+        assert get(server, '/')[0] == 401
+        assert get(server, '/', {'X-LHC-SSO-Verified': '0'})[0] == 401
+        assert get(server, '/', auth)[0] == 401
+        assert get(server, '/', verified)[0] == 200
+        # Agent-readable capability pages do not inherit the home page SSO gate.
+        assert get(server, capability)[0] == 200
+        assert get(server, capability, {'X-LHC-SSO-Verified': '0'})[0] == 200
+        assert get(server, capability, auth)[0] == 200
         # Forwarded IP does not influence the actual peer check.
         handler = server.RequestHandlerClass
         headers = Message()

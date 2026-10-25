@@ -23,6 +23,7 @@ Usage::
 
     python3 lhc_plan_json.py build <plan-dir>   # collect the leaves into plan.graph.json
     python3 lhc_plan_json.py check <plan-dir>   # validate the leaves, write nothing
+    python3 lhc_plan_json.py activate <plan-dir> <leaf-id>  # bind the selected live leaf offline
     python3 lhc_plan_json.py report <plan-dir>  # print the canonical «## Plan» block
     python3 lhc_plan_json.py report <plan-dir> --write   # rewrite it in task.md
 """
@@ -1439,6 +1440,17 @@ def main(argv: Optional[list[str]] = None) -> int:
     build.add_argument("plan_dir", type=Path)
     check = sub.add_parser("check", help="validate the leaves, write nothing")
     check.add_argument("plan_dir", type=Path)
+    activate = sub.add_parser(
+        "activate",
+        help="bind one explicitly selected plan leaf to this local session and observer",
+    )
+    activate.add_argument("plan_dir", type=Path)
+    activate.add_argument("leaf_id")
+    activate.add_argument("--config", type=Path, help="local mirror client config (defaults to the installed config)")
+    activate.add_argument("--session", help="actual current session id; Codex normally supplies CODEX_THREAD_ID")
+    activate.add_argument("--harness", help="actual harness when it cannot be inferred as Codex")
+    activate.add_argument("--owner", help="actual leaf owner; defaults to the current OS user")
+    activate.add_argument("--note", help="progress event note")
     for name in ("create-leaf", "update-leaf", "progress"):
         edit = sub.add_parser(name)
         edit.add_argument("plan_dir", type=Path)
@@ -1472,6 +1484,17 @@ def main(argv: Optional[list[str]] = None) -> int:
                 return lhc_grid.main(["check-plan", str(args.report), str(args.graph or graph)])
         elif args.command == "build":
             print(str(build_graph(args.plan_dir)))
+        elif args.command == "activate":
+            tool_dir = str(Path(__file__).resolve().parent)
+            if tool_dir not in sys.path:
+                sys.path.insert(0, tool_dir)
+            import lhc_plan_mirror
+            result = lhc_plan_mirror.activate(
+                args.plan_dir, args.leaf_id, config_path=args.config,
+                session=args.session, harness=args.harness, owner=args.owner,
+                note=args.note,
+            )
+            print(json.dumps(result, ensure_ascii=False))
         elif args.command in ("create-leaf", "update-leaf", "progress"):
             result = update_leaf(args.plan_dir, args.leaf_id, json.loads(args.fields),
                                  create=args.command == "create-leaf", note=args.note,

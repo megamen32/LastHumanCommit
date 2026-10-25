@@ -7,11 +7,18 @@
       "async": true,
       "timeout": 90
     }]}],
-    "UserPromptSubmit": [{"hooks": [{
-      "type": "command",
-      "command": "python3 \"${PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}}/tools/lhc_progress_review.py\" --invalidate",
-      "timeout": 3
-    }]}],
+    "UserPromptSubmit": [
+      {"hooks": [{
+        "type": "command",
+        "command": "python3 \"${CLAUDE_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${PLUGIN_ROOT:-${ZCODE_PLUGIN_ROOT:-$HOME/.codex/.tmp/marketplaces/megamen32-plugins/plugins/last-human-commit}}}}/tools/lhc_entry.py\" --event UserPromptSubmit --plan-entry || { printf '%s\\n' 'LHC local plan entry unavailable; message processing continues.' >&2; :; }",
+        "timeout": 5
+      }]},
+      {"hooks": [{
+        "type": "command",
+        "command": "python3 \"${PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}}/tools/lhc_progress_review.py\" --invalidate",
+        "timeout": 3
+      }]}
+    ],
     "Interrupt": [{"hooks": [{
       "type": "command",
       "command": "python3 \"${PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}}/tools/lhc_progress_review.py\" --invalidate",

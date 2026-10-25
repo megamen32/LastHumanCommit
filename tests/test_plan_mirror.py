@@ -165,6 +165,98 @@ def test_saved_leaf_success_when_mirror_bookkeeping_is_broken(fixture, monkeypat
     assert leaves.update_leaf(plan, 'A', {'note': 'Сохранён повторно'})['sha256']
 
 
+def test_activate_selected_codex_leaf_is_local_offline_and_preserves_r001(fixture, monkeypatch, capsys):
+    plan, client, cfg = fixture
+    for path in (plan / 'leaves').glob('*.json'):
+        path.unlink()
+    for index in range(1, 14):
+        leaf_id = f'L{index:02}'
+        write(plan / 'leaves' / (leaf_id + '.json'), {
+            'id': leaf_id, 'label': f'Работа {leaf_id}', 'status': 'queued',
+            'estimate_minutes': 15,
+        })
+    repo = plan.parents[1] / 'codex-worktree'
+    selected = repo / 'docs' / 'tasks' / 'cloud-telethon'
+    selected.parent.mkdir(parents=True)
+    shutil.copytree(plan, selected)
+    plan = selected
+    subprocess.run(['git', 'init', '-q', str(repo)], check=True)
+    settings = mirror.config(client)
+    settings['roots'] = []  # Exact activation, not a broad docs/tasks scan.
+    write(client, settings)
+    monkeypatch.setenv('CODEX_THREAD_ID', '01a17463-b099-7f62-b6d8-3194ce73ffe9')
+    monkeypatch.setenv('USER', 'codex-canary')
+
+    result = leaves.main(['activate', str(plan), 'L03', '--config', str(client)])
+    assert result == 0
+    activated = json.loads(capsys.readouterr().out)
+    leaf = json.loads((plan / 'leaves/L03.json').read_text())
+    assert leaf['status'] == 'running'
+    assert leaf['session'] == '01a17463-b099-7f62-b6d8-3194ce73ffe9'
+    assert leaf['harness'] == 'codex'
+    assert leaf['owner'] == 'codex-canary'
+    assert leaf['progress_events'][-1]['session'] == leaf['session']
+    sidecar = mirror.read(mirror.directory(plan) / 'mirror.json')
+    assert sidecar['activations']['L03']['worktree'] == str(repo)
+    assert sidecar['activations']['L03']['leaf_id'] == 'L03'
+    assert activated['sync'] == 'pending'
+    assert mirror.discover(mirror.config(client)) == [str(plan.resolve())]
+
+    baseline = (mirror.directory(plan) / 'revisions/r001.json').read_bytes()
+    pending = mirror.read(mirror.directory(plan) / 'mirror-state.json')['pending']
+    task = lambda document: next(item for item in document['tasks'] if item['id'] == 'L03')
+    assert len(pending['document']['tasks']) == 13
+    assert task(pending['revisions'][0]['document'])['status'] == 'queued'
+    assert task(pending['document'])['status'] == 'running'
+    assert (plan / 'plan.graph.json').is_file()
+    assert (plan / 'plan.html').is_file()
+
+    # A plain offline JSON save is picked up by the registered observer and
+    # refreshes both local projections without changing the frozen baseline.
+    raw = json.loads((plan / 'leaves/L03.json').read_text())
+    raw['note'] = 'Сохранено без сети'
+    (plan / 'leaves/L03.json').write_text(json.dumps(raw, ensure_ascii=False))
+    mirror.run_observer(client, once=True)
+    observed = mirror.read(mirror.directory(plan) / 'mirror-state.json')
+    assert task(observed['pending']['document'])['note'] == 'Сохранено без сети'
+    assert 'Сохранено без сети' in (plan / 'plan.graph.json').read_text()
+    assert 'Сохранено без сети' in (plan / 'plan.html').read_text()
+    assert (mirror.directory(plan) / 'revisions/r001.json').read_bytes() == baseline
+
+    server = start(cfg)
+    try:
+        connect(client, server)
+        mirror.run_observer(client, once=True)
+        state = mirror.read(mirror.directory(plan) / 'mirror-state.json')
+        url = state['server_receipt']['url']
+        target = dest(plan, cfg)
+        original_html = (target / 'r001.html').read_bytes()
+        assert state['error'] is None
+        assert 'Сохранено без сети' in (target / 'index.html').read_text()
+        assert 'В работе' in (target / 'index.html').read_text()
+        assert url == activated['url']
+
+        # A later raw edit is captured offline and reaches the same URL after
+        # the mirror service returns, with the original r001 HTML unchanged.
+        stop(server)
+        server = None
+        raw['note'] = 'Сеть вернулась'
+        (plan / 'leaves/L03.json').write_text(json.dumps(raw, ensure_ascii=False))
+        mirror.run_observer(client, once=True)
+        assert mirror.read(mirror.directory(plan) / 'mirror-state.json')['error']
+        server = start(cfg)
+        connect(client, server)
+        mirror.run_observer(client, once=True)
+        state = mirror.read(mirror.directory(plan) / 'mirror-state.json')
+        assert state['error'] is None
+        assert state['server_receipt']['url'] == url
+        assert 'Сеть вернулась' in (target / 'index.html').read_text()
+        assert (target / 'r001.html').read_bytes() == original_html
+    finally:
+        if server is not None:
+            stop(server)
+
+
 def test_registration_no_rewrites_and_same_seq_no_render(fixture, monkeypatch):
     plan, client, cfg = fixture
     mirror.register(plan, client)

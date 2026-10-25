@@ -5,42 +5,45 @@
 каталог release; `current` служит удобной ссылкой для CLI. Сервер разрешён
 только на Linux server100. Копировать весь tools, не один entrypoint.
 
+Повторная установка дополняет точные `plans`, `roots` и `graph_sources`,
+сохраняет прежние пути, секретные ссылки и остальные поля конфигурации.
+Добавленные пути сравниваются как точные значения. `--sso-enabled` действует
+только вместе с `--server` и закрывает существующим SSO только точный `/`.
+Плановые HTML, JSON, архивы и capability URL остаются доступны без SSO;
+`/v1/snapshots` и `/v1/status` по-прежнему требуют Bearer.
+
 На server100:
 
 ```sh
 python3 deploy/plan-mirror/install-native.py --tools src/common/tools --server \
-  --endpoint http://127.0.0.1:8769 \
-  --plan /ABSOLUTE/CURRENT-TASK \
-  --plan /ABSOLUTE/ORIGINAL-PUBLISHED-PLAN \
-  --root /home/roomhacker/.local/share/lhc-plan-mirror/plans
+  --endpoint http://127.0.0.1:8769 --sso-enabled \
+  --root /ABSOLUTE/SELECTED-PLAN-DIRECTORY \
+  --graph-source /ABSOLUTE/LEGACY-TASK/plan.graph.json
 ```
 
-Повторная установка сохраняет токен и ключ панели; список plans/roots заменяется
-явно переданным списком. `--prepare-only` создаёт только конфигурацию, не службы.
-Перед обновлением проверить, что выбран оригинальный plan_dir с прежним
-`.lhc-publication/state.json`, а не его tracked-копия из другого worktree.
+`--prepare-only` создаёт только конфигурацию, не службы. Выбирай исходные
+plan_dir/graphs, а не копии из worktree текущей поставки. Существующий
+`.lhc-publication/state.json` должен оставаться в своём каталоге.
 
-На Mac скопировать выбранный tools и installer в выделенный staging, передать
-существующий write-token прямым SCP в `~/.config/lhc/plan-mirror/write-token`.
-Значения не печатать. Выполнить:
+На Mac скопировать выбранный tools и installer в выделенный staging. Существующий
+`write-token` остаётся на месте и сохраняется; не переносить и не печатать его.
 
 ```sh
 /opt/homebrew/bin/python3 ~/.local/share/lhc-plan-mirror/staging/install-native.py \
   --tools ~/.local/share/lhc-plan-mirror/staging/tools \
-  --plan /Users/user/.local/share/lhc-plan-mirror/consumer-plan \
-  --root /Users/user/.local/share/lhc-plan-mirror/plans
+  --root /Users/user/Documents/Apps \
+  --root /Users/user/Documents/Apps/.agents/tasks
 ```
 
 `mac-consumer.py` меняет только отдельный синтетический fixture. `raw-edit`
 проверяет обычное сохранение, `verify` проверяет marker на реальной HTTPS-странице.
 `offline-revise` уже выполнен один раз; не повторять принятую ревизию ради отчёта.
 
-`nginx.conf` — точный payload установленного LHC vhost. Управляемый источник:
+`sso-nginx.conf` — текущий root-only SSO payload LHC vhost. Управляемый источник:
 `/home/roomhacker/nginx-dev/state/files/sites-available/lhc.bezrabotnyi.com`.
 После поддерживаемых refresh/check используется только
 `sudo nginxctl apply --site lhc.bezrabotnyi.com`. Общий apply запрещён этим scope.
-API `/v1/` и приватная `/dashboard/REDACTED/` направлены на 127.0.0.1:8769;
-остальные планы nginx обслуживает напрямую даже при выключенном сервере.
+Старый `nginx.conf` сохранён как исторический payload и применять его нельзя.
 Capability не записывается в access log.
 
 Проверять только systemd ActiveState/SubState/MainPID и launchctl state/pid/exit.

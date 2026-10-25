@@ -1,0 +1,385 @@
+{
+  "schema_version": 2,
+  "title": "Каталог, интерфейс и надёжное ведение живых планов LHC",
+  "goal": "Дать Codex-сессиям доступ к главному каталогу после существующего SSO и сделать локальный план честным источником состояния текущей работы в выбранном worktree.",
+  "business_result": "Владелец открывает приватный корень каталога через существующий SSO; индивидуальные страницы планов доступны по ссылке. В карточке плана видны статусы задач и min/max/сейчас без второй оси. При продолжении существующего leaf-плана текущая сессия локально привязывает точный worktree и лист; правки переживают offline и догоняют то же зеркало после восстановления сети.",
+  "business_results": [
+    "Владелец открывает приватный корень каталога через существующий SSO; индивидуальные страницы планов доступны по ссылке. В карточке плана видны статусы задач и min/max/сейчас без второй оси. При продолжении существующего leaf-плана текущая сессия локально привязывает точный worktree и лист; правки переживают offline и догоняют то же зеркало после восстановления сети."
+  ],
+  "acceptance_scenarios": [
+    "Анонимно открыть точный корень https://lhc.bezrabotnyi.com/ и получить редирект на существующий SSO; открыть индивидуальный план, ревизию и JSON без SSO; Bearer GET /v1/status остаётся доступен.",
+    "Открыть опубликованный план на узком экране: видна одна цветная полоса статусов, рядом в том же блоке подписаны минимум, максимум и сейчас; временной status показывает прохождение ранней оценки и превышение верхней границы без второй длинной временной оси.",
+    "Обычным Codex fullcycle запросом без ручной команды и mirror config создать/переиспользовать локальный план и связать готовый лист с настоящими session/worktree до первого ответа; проверить graph/HTML и повтор события без второго progress event. Для выбранного mirror-конфига observer после восстановления сети догоняет то же зеркало; исходный r001 и начало плана сохранены."
+  ],
+  "current_progress": "Каталог: 22 плана в 10 группах; root-only SSO и публичные individual pages активны. LHC mirror/observer 1.5.61 переустановлен на server100 и Mac с сохранением конфигов; опубликованный план проверен headless Chrome при 320px и между min/max: один цветной bar, подписанные границы, нет второй оси/точки, статус времени корректен. 16 прежних plan identities сохраняют byte-identical r001. L01/L02 выполнены. L03 установленный consumer проверен на изолированной копии канонического 13-leaf Cloud Telethon плана: L03 был queued только в копии, текущая Luna session реально привязана, exact worktree зарегистрирован при пустом roots, offline raw save догнал прежний URL, r001 сохранён. Настоящий Cloud Telethon worktree/сессия не изменялись; при последнем чтении исходный L03 уже был done, поэтому не приписываем этому выпуску вмешательство в его работу. В L05 добавлен native Codex UserPromptSubmit auto-entry; 36 целевых hook/mirror тестов проходят без mirror config и сети. Пакет 1.5.62 собран и валидирован, но ещё не установлен. Остались scoped commit/push, native install и новая сессия/readback; прежний старт и active minutes до live-plan остаются неизвестны.",
+  "external_waits": "",
+  "slots": 1,
+  "updated_at": "2026-10-25T22:45:24+03:00",
+  "tasks": [
+    {
+      "id": "L01",
+      "label": "Завершить каталог проектов, root-only SSO и локальный observer на server100 и Mac",
+      "status": "done",
+      "description": "Подключить выбранные canonical plans и graph-only источники к observer, установить root-only SSO и сохранить непрерывную локальную работу.",
+      "acceptance": "Каталог показывает все принятые зеркалом планы; только / требует существующий SSO; отдельные plan/archive JSON публичны, Bearer GET /v1/status работает.",
+      "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+      "harness": "codex",
+      "note": "Уже завершено до появления live plan. Исходные started_at/finished_at и фактические минуты не записывались; не восстановлены задним числом.",
+      "origin": "",
+      "supersedes": [],
+      "progress_events": [
+        {
+          "at": "2026-10-25T22:19:24+03:00",
+          "note": "Снимок проверенных завершённых фактов до live-plan; фактические минуты неизвестны",
+          "changes": {
+            "label": "Завершить каталог проектов, root-only SSO и локальный observer на server100 и Mac",
+            "status": "done",
+            "description": "Подключить выбранные canonical plans и graph-only источники к observer, установить root-only SSO и сохранить непрерывную локальную работу.",
+            "acceptance": "Каталог показывает все принятые зеркалом планы; только / требует существующий SSO; отдельные plan/archive JSON публичны, Bearer GET /v1/status работает.",
+            "affected_files": [
+              "src/common/tools/lhc_plan_mirror.py",
+              "deploy/plan-mirror/sso-nginx.conf",
+              "deploy/plan-mirror/install-native.py"
+            ],
+            "estimate_minutes": {
+              "minimum": 15,
+              "maximum": 30
+            },
+            "note": "Уже завершено до появления live plan. Исходные started_at/finished_at и фактические минуты не записывались; не восстановлены задним числом."
+          },
+          "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+          "harness": "codex"
+        }
+      ],
+      "affected_files": [
+        "src/common/tools/lhc_plan_mirror.py",
+        "deploy/plan-mirror/sso-nginx.conf",
+        "deploy/plan-mirror/install-native.py"
+      ],
+      "depends_on": [],
+      "estimate_minutes": {
+        "minimum": 15.0,
+        "maximum": 30.0
+      },
+      "created_at": "2026-10-25T22:19:24+03:00"
+    },
+    {
+      "id": "L02",
+      "label": "Объединить цветные статусы и временные границы в одну понятную карточку",
+      "status": "done",
+      "description": "Сохранить сегментированную полосу количества задач по статусам; убрать вторую длинную временную ось и подписи-точки представить понятно в том же блоке без смешения процентов задач и времени.",
+      "acceptance": "В реальном опубликованном плане на узком экране одна длинная полоса показывает только распределение задач; в той же карточке подписаны минимум/максимум/сейчас и статус между ними или превышение. Синяя точка не оторвана от подписи, второй конкурирующей оси нет.",
+      "owner": "roomhacker",
+      "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+      "harness": "codex",
+      "note": "Исходное время первых UI правок не было привязано к live leaf и остаётся неизвестным.",
+      "origin": "",
+      "supersedes": [],
+      "progress_events": [
+        {
+          "at": "2026-10-25T22:19:24+03:00",
+          "note": "Новая учётная задача; время прошлых UI правок не выдумывается",
+          "changes": {
+            "label": "Объединить цветные статусы и временные границы в одну понятную карточку",
+            "status": "queued",
+            "description": "Сохранить сегментированную полосу количества задач по статусам; убрать вторую длинную временную ось и подписи-точки представить понятно в том же блоке без смешения процентов задач и времени.",
+            "acceptance": "В реальном опубликованном плане на узком экране одна длинная полоса показывает только распределение задач; в той же карточке подписаны минимум/максимум/сейчас и статус между ними или превышение. Синяя точка не оторвана от подписи, второй конкурирующей оси нет.",
+            "affected_files": [
+              "src/common/tools/lhc_plan_ui.py",
+              "src/common/tools/lhc_grid.py",
+              "tests/test_plan_time_rail.py"
+            ],
+            "estimate_minutes": {
+              "minimum": 10,
+              "maximum": 20
+            },
+            "depends_on": [],
+            "note": "Исходное время первых UI правок не было привязано к live leaf и остаётся неизвестным."
+          },
+          "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-10-25T22:19:41+03:00",
+          "note": "Live tracking resumed now; earlier UI edits predate this plan and their exact start is unknown",
+          "changes": {
+            "status": "running",
+            "owner": "roomhacker"
+          },
+          "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-10-25T22:24:40+03:00",
+          "note": "1.5.61 установлен на server100 и Mac; published headless Chrome 320px, дата теста между min/max: одна цветная полоса, 0 временных осей и 0 точек, подписи 23:29/23:45/00:24 не переполняют карточку; status ранней оценки верен",
+          "changes": {
+            "status": "done"
+          },
+          "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+          "harness": "codex"
+        }
+      ],
+      "affected_files": [
+        "src/common/tools/lhc_plan_ui.py",
+        "src/common/tools/lhc_grid.py",
+        "tests/test_plan_time_rail.py"
+      ],
+      "depends_on": [],
+      "estimate_minutes": {
+        "minimum": 10.0,
+        "maximum": 20.0
+      },
+      "created_at": "2026-10-25T22:19:24+03:00"
+    },
+    {
+      "id": "L03",
+      "label": "Привязать продолжение существующего плана к текущему worktree, сессии и observer",
+      "status": "done",
+      "description": "Одна явная offline CLI-команда выбирает существующий leaf-план в docs/tasks текущего worktree, регистрирует только его, фиксирует baseline, session/harness/owner и переводит выбранный лист в running; observer обновляет локальные graph/HTML и догоняет то же зеркало после сети.",
+      "acceptance": "На тестовой копии 13-leaf docs/tasks плана команда активирует L03 с настоящим текущим Codex session id, статусом и progress event; source зарегистрирован без broad scan; raw offline save обновляет локальные graph/HTML; после сети существующий URL обновлён, r001 неизменен. Факт реального Cloud Telethon canary будет отмечен отдельно от изолированного consumer proof.",
+      "result": "На изолированной копии канонического 13-leaf Cloud Telethon плана (L03 восстановлен в queued только в копии) установленный 1.5.61 CLI с текущим Luna session id перевёл leaf в running; observer синхронизировал raw offline правки после возврата локального сервера по той же ссылке, r001 HTML байты совпали.",
+      "owner": "roomhacker",
+      "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+      "harness": "codex",
+      "note": "Реализация уже началась до live-plan; фактическое исходное начало и минуты не измерялись. Сейчас фиксируется только актуальный running статус.",
+      "origin": "",
+      "supersedes": [],
+      "progress_events": [
+        {
+          "at": "2026-10-25T22:19:24+03:00",
+          "note": "Новая учётная задача; фактическое начало до её создания неизвестно",
+          "changes": {
+            "label": "Привязать продолжение существующего плана к текущему worktree, сессии и observer",
+            "status": "queued",
+            "description": "Одна явная offline CLI-команда выбирает существующий leaf-план в docs/tasks текущего worktree, регистрирует только его, фиксирует baseline, session/harness/owner и переводит выбранный лист в running; observer обновляет локальные graph/HTML и догоняет то же зеркало после сети.",
+            "acceptance": "На тестовой копии 13-leaf docs/tasks плана команда активирует L03 с настоящим текущим Codex session id, статусом и progress event; source зарегистрирован без broad scan; raw offline save обновляет локальные graph/HTML; после сети существующий URL обновлён, r001 неизменен. Факт реального Cloud Telethon canary будет отмечен отдельно от изолированного consumer proof.",
+            "affected_files": [
+              "src/common/tools/lhc_plan_json.py",
+              "src/common/tools/lhc_plan_mirror.py",
+              "src/common/skills/plan-artifacts/SKILL.md",
+              "src/common/skills/last-human-commit/SKILL.md",
+              "tests/test_plan_mirror.py"
+            ],
+            "estimate_minutes": {
+              "minimum": 45,
+              "maximum": 75
+            },
+            "depends_on": [],
+            "note": "Реализация уже началась до live-plan; фактическое исходное начало и минуты не измерялись. Сейчас фиксируется только актуальный running статус."
+          },
+          "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-10-25T22:19:41+03:00",
+          "note": "Lifecycle implementation began before plan capture; exact start and active minutes were not recorded",
+          "changes": {
+            "status": "running",
+            "owner": "roomhacker"
+          },
+          "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-10-25T22:30:58+03:00",
+          "note": "Consumer canary: exact Cloud Telethon source read-only; copy only; installed runtime, actual current session id, empty roots + exact registration, offline catch-up and r001 preservation proven. Source was not altered.",
+          "changes": {
+            "status": "done",
+            "result": "На изолированной копии канонического 13-leaf Cloud Telethon плана (L03 восстановлен в queued только в копии) установленный 1.5.61 CLI с текущим Luna session id перевёл leaf в running; observer синхронизировал raw offline правки после возврата локального сервера по той же ссылке, r001 HTML байты совпали."
+          },
+          "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+          "harness": "codex"
+        }
+      ],
+      "affected_files": [
+        "src/common/tools/lhc_plan_json.py",
+        "src/common/tools/lhc_plan_mirror.py",
+        "src/common/skills/plan-artifacts/SKILL.md",
+        "src/common/skills/last-human-commit/SKILL.md",
+        "tests/test_plan_mirror.py"
+      ],
+      "depends_on": [],
+      "estimate_minutes": {
+        "minimum": 45.0,
+        "maximum": 75.0
+      },
+      "created_at": "2026-10-25T22:19:24+03:00"
+    },
+    {
+      "id": "L05",
+      "label": "Автоматически связывать новый fullcycle со своим локальным планом и листом",
+      "status": "done",
+      "description": "Встроить в обычный Codex prompt lifecycle офлайн-привязку: переиспользовать однозначный план текущего worktree или создать локальный scaffold до первого действия модели.",
+      "acceptance": "Синтетический native UserPromptSubmit для fullcycle без mirror config/MCP/сети создаёт или выбирает точный план, связывает лист с реальным session/worktree, сохраняет локальный graph/HTML и не дублирует прогресс при повторном событии.",
+      "result": "Codex UserPromptSubmit вызывает local fullcycle entry; тест штатной CLI-ветки без mirror config/MCP/сети подтвердил создание трёх листов, running/session binding, graph/HTML и отсутствие повторного progress event. 36 targeted hook/mirror tests и package validation прошли. Инсталляция LHC 1.5.62 и новый реальный session readback остаются за L04.",
+      "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+      "harness": "codex",
+      "origin": "",
+      "supersedes": [],
+      "progress_events": [
+        {
+          "at": "2026-10-25T22:41:30+03:00",
+          "note": "Начал работу над автоматическим входом; фактическое исходное время и active minutes до регистрации не измерены.",
+          "changes": {
+            "label": "Автоматически связывать новый fullcycle со своим локальным планом и листом",
+            "description": "Встроить в обычный Codex prompt lifecycle офлайн-привязку: переиспользовать однозначный план текущего worktree или создать локальный scaffold до первого действия модели.",
+            "acceptance": "Синтетический native UserPromptSubmit для fullcycle без mirror config/MCP/сети создаёт или выбирает точный план, связывает лист с реальным session/worktree, сохраняет локальный graph/HTML и не дублирует прогресс при повторном событии.",
+            "status": "running",
+            "estimate_minutes": {
+              "minimum": 25,
+              "maximum": 40
+            },
+            "affected_files": [
+              "src/common/tools/lhc_entry.py",
+              "src/common/tools/lhc_plan_mirror.py",
+              "adapters/codex/hooks/hooks.json",
+              "tests/test_native_instruction_hooks.py"
+            ]
+          },
+          "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-10-25T22:45:24+03:00",
+          "note": "Исходник и локальный CLI consumer проверены; installed runtime остаётся следующим листом.",
+          "changes": {
+            "status": "done",
+            "result": "Codex UserPromptSubmit вызывает local fullcycle entry; тест штатной CLI-ветки без mirror config/MCP/сети подтвердил создание трёх листов, running/session binding, graph/HTML и отсутствие повторного progress event. 36 targeted hook/mirror tests и package validation прошли. Инсталляция LHC 1.5.62 и новый реальный session readback остаются за L04."
+          },
+          "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+          "harness": "codex"
+        }
+      ],
+      "affected_files": [
+        "src/common/tools/lhc_entry.py",
+        "src/common/tools/lhc_plan_mirror.py",
+        "adapters/codex/hooks/hooks.json",
+        "tests/test_native_instruction_hooks.py"
+      ],
+      "depends_on": [],
+      "estimate_minutes": {
+        "minimum": 25.0,
+        "maximum": 40.0
+      },
+      "created_at": "2026-10-25T22:41:30+03:00"
+    },
+    {
+      "id": "L04",
+      "label": "Доставить каталог/SSO и единую карточку прогресса в разрешённую ветку",
+      "status": "running",
+      "description": "Собрать проверенные и установленные каталог/SSO/UI изменения, оформить scoped commit/push и проверить интегрированный runtime без включения чужого WIP.",
+      "acceptance": "Разрешённая LHC ветка опубликована без force и чужих путей; source/runtime 1.5.62 валиден, а selected native plugin или host reader установлен и прочитан обратно; root-only SSO и individual plan page отвечают ожидаемо. Текущая Codex UserPromptSubmit auto-entry включена для следующей обычной сессии; новый consumer session не создаётся в рамках запрета пользователя.",
+      "owner": "roomhacker",
+      "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+      "harness": "codex",
+      "note": "Ждёт завершения L02 и L03; release пока не объявлен.",
+      "wait_reason": "Ждёт автоматического Codex fullcycle prompt entry и установленной проверки этого lifecycle; затем scoped source delivery.",
+      "origin": "",
+      "supersedes": [],
+      "progress_events": [
+        {
+          "at": "2026-10-25T22:19:24+03:00",
+          "note": "Ожидает закрытия UI и lifecycle работы",
+          "changes": {
+            "label": "Опубликовать цельный результат и подтвердить установленный consumer",
+            "status": "queued",
+            "description": "Сгенерировать пакет, пройти затронутые проверки, установить на server100 и Mac без потери конфигов, проверить опубликованный каталог/план и live activation consumer, затем scoped commit/push разрешённых LHC путей.",
+            "acceptance": "Installed package/readback совпадают с source; root-only SSO, плановый UI и каталог доступны по реальным путям; активированный локальный план синхронизируется без replay; owned changes опубликованы без включения постороннего WIP.",
+            "affected_files": [
+              "plugins/last-human-commit/CHANGELOG.md",
+              "deploy/plan-mirror/README.md",
+              ".agents/tasks/20261025-plan-home-sso/RESULT.md"
+            ],
+            "estimate_minutes": {
+              "minimum": 15,
+              "maximum": 30
+            },
+            "depends_on": [
+              "L02",
+              "L03"
+            ],
+            "wait_reason": "Нужны окончательные UI и lifecycle поведенческие доказательства перед сборкой/установкой.",
+            "wave": 2,
+            "note": "Ждёт завершения L02 и L03; release пока не объявлен."
+          },
+          "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-10-25T22:24:40+03:00",
+          "note": "Уточнена независимая область доставки; lifecycle остаётся отдельным листом",
+          "changes": {
+            "label": "Доставить каталог/SSO и единую карточку прогресса в разрешённую ветку",
+            "description": "Собрать проверенные и установленные каталог/SSO/UI изменения, оформить scoped commit/push и проверить интегрированный runtime без включения чужого WIP.",
+            "acceptance": "Разрешённая LHC ветка опубликована без force и чужих путей; native server100/Mac runtime 1.5.61 сохранён и прочитан обратно; root-only SSO и individual plan page отвечают ожидаемо. Leaf L03 lifecycle остаётся отдельной незавершённой приёмкой до настоящего canary.",
+            "depends_on": [
+              "L01",
+              "L02"
+            ],
+            "wait_reason": "Ожидает завершённой проверки единой карточки; lifecycle-canary не является зависимостью этой самостоятельной доставки."
+          },
+          "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-10-25T22:24:40+03:00",
+          "note": "Начал scoped source delivery после installed readback; фактические минуты до plan capture неизвестны",
+          "changes": {
+            "status": "running",
+            "owner": "roomhacker"
+          },
+          "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-10-25T22:41:30+03:00",
+          "note": "Переставил source delivery после исправления entry lifecycle по прямой поправке владельца; leaf L05 запущен.",
+          "changes": {
+            "status": "queued",
+            "depends_on": [
+              "L01",
+              "L02",
+              "L05"
+            ],
+            "wait_reason": "Ждёт автоматического Codex fullcycle prompt entry и установленной проверки этого lifecycle; затем scoped source delivery."
+          },
+          "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-10-25T22:45:24+03:00",
+          "note": "Возобновил scoped delivery после source/CLI acceptance L05.",
+          "changes": {
+            "status": "running",
+            "acceptance": "Разрешённая LHC ветка опубликована без force и чужих путей; source/runtime 1.5.62 валиден, а selected native plugin или host reader установлен и прочитан обратно; root-only SSO и individual plan page отвечают ожидаемо. Текущая Codex UserPromptSubmit auto-entry включена для следующей обычной сессии; новый consumer session не создаётся в рамках запрета пользователя."
+          },
+          "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+          "harness": "codex"
+        }
+      ],
+      "affected_files": [
+        "plugins/last-human-commit/CHANGELOG.md",
+        "deploy/plan-mirror/README.md",
+        ".agents/tasks/20261025-plan-home-sso/RESULT.md"
+      ],
+      "depends_on": [
+        "L01",
+        "L02",
+        "L05"
+      ],
+      "estimate_minutes": {
+        "minimum": 15.0,
+        "maximum": 30.0
+      },
+      "created_at": "2026-10-25T22:19:24+03:00",
+      "wave": 2
+    }
+  ],
+  "leaf_count": 5,
+  "plan_origin": {
+    "at": "2026-10-25T22:19:24+03:00",
+    "source": "leaf_created_at",
+    "leaf_id": "L01",
+    "recorded_at": "2026-10-25T19:19:24.022665+00:00"
+  }
+}

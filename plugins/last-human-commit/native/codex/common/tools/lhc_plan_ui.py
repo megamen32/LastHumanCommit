@@ -18,14 +18,16 @@ def time_rail(frame):
              if frame["legacy_start"] else "Начало плана не зафиксировано")
     if qualifier:
         start += ' · ' + qualifier
-    end = frame["end_label"] + (" " + display_time(frame["end"]) if frame["end"] else "")
+    snapshot = display_time(frame["snapshot"]) if frame.get("snapshot") else "неизвестно"
     return ('<div class="time-rail" data-time-frame="' + escape(json.dumps(frame), quote=True) + '">'
-            '<div class="time-rail-ends"><span class="time-rail-start">' + escape(start) + '</span>'
-            '<span class="time-rail-end">' + escape(end) + '</span></div>'
-            '<div class="time-rail-clock">На момент снимка ' + escape(display_time(frame["snapshot"])) + '</div>'
-            '<div class="time-rail-track" hidden><span class="time-rail-marker"></span>'
-            '<span class="time-rail-dot"></span></div>'
-            '<div class="time-rail-note">Временная шкала; проценты выше — доля задач. Часовой пояс указан в датах.</div></div>')
+            '<div class="time-rail-start">' + escape(start) + '</div>'
+            '<div class="time-rail-times" aria-label="Временные границы плана">'
+            '<span class="time-rail-minimum">Минимум —</span>'
+            '<span class="time-rail-maximum">Максимум —</span>'
+            '<span class="time-rail-now">На момент снимка ' + escape(snapshot) + '</span></div>'
+            '<div class="time-rail-clock sr-only">На момент снимка ' + escape(snapshot) + '</div>'
+            '<div class="time-rail-status" role="status"></div>'
+            '<div class="time-rail-note">Время показано отдельно от доли выполненных задач; цветная полоса считает статусы. Часовой пояс указан в датах.</div></div>')
 
 SECTIONS = (("dashboard", "Дашборд"), ("outcome", "Цель и результат"),
             ("work-plan", "План работ"), ("comparison", "План и факт"),
@@ -49,16 +51,14 @@ body>footer{margin:0 36px 24px 240px;max-width:1324px;padding:12px 0;color:var(-
 .revision-strip a,.revision-strip span{flex:none;white-space:nowrap;padding:7px 13px;border:1px solid var(--line);border-radius:8px;color:var(--muted);font-size:12px;text-decoration:none}
 .revision-strip [aria-current=page]{color:var(--text);border-color:var(--accent);background:var(--panel);font-weight:650}
 body .progress-strip{position:relative;top:auto;margin:0 0 18px;box-shadow:none}
-.time-rail{border-top:1px solid var(--line);margin-top:12px;padding-top:10px;cursor:default;min-width:0}
-.time-rail-ends{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 20px;font-size:12px;line-height:1.5}
-.time-rail-ends>span{min-width:0;max-width:100%;overflow-wrap:anywhere}.time-rail-end{text-align:right;margin-left:auto}
-.time-rail-clock,.time-rail-note{font-size:11px;color:var(--muted);line-height:1.5;margin-top:6px}
-.time-rail-track{position:relative;height:42px;margin-top:6px;min-width:0}
-.time-rail-track:before{content:'';position:absolute;left:0;right:0;bottom:8px;height:2px;background:var(--line)}
-.time-rail-marker{position:absolute;top:0;font-size:11px;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
-.time-rail-dot{position:absolute;bottom:4px;width:10px;height:10px;border-radius:50%;background:var(--accent);transform:translateX(-50%)}
-.time-rail[data-overdue=true] .time-rail-clock{color:var(--text);font-weight:700}
-@media(max-width:650px){.time-rail-ends{flex-direction:column;gap:4px}.time-rail-end{margin-left:0;text-align:left}}
+.time-rail{margin-top:9px;cursor:default;min-width:0}
+.time-rail-start{font-size:11px;line-height:1.4;color:var(--muted);overflow-wrap:anywhere}
+.time-rail-times{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:7px;font-size:12px;line-height:1.4}
+.time-rail-times>span{min-width:0;overflow-wrap:anywhere}.time-rail-minimum{text-align:left;color:#687386}.time-rail-maximum{text-align:right;color:#687386}.time-rail-now{text-align:center;font-weight:700;color:var(--text)}
+.time-rail-clock.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.time-rail-note,.time-rail-status{font-size:12px;line-height:1.5;margin-top:7px}.time-rail-note{font-size:11px;color:var(--muted)}
+.time-rail-status{min-height:18px;color:var(--text);font-weight:600}.time-rail[data-state=early-passed] .time-rail-status{color:#9a6700}.time-rail[data-state=overdue] .time-rail-status{color:#b42318}
+@media(max-width:650px){.time-rail-times{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:5px}.time-rail-now{grid-column:1/-1;text-align:left}}
 body .kpis{grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:0 0 18px}
 body .kpi{padding:15px 16px;min-width:0;border-radius:12px}body .kpi-value{font-size:clamp(22px,2.5vw,32px)}body .kpi-hint{font-size:11px;line-height:1.4}
 body .panel{border-radius:14px;padding:20px;margin-bottom:16px}body .brief{gap:12px}body .brief-card{min-width:0}
@@ -83,28 +83,38 @@ const f=JSON.parse(rail.dataset.timeFrame),start=Date.parse(f.start),end=Date.pa
 const live=f.live&&/^https?:$/.test(location.protocol)&&!f.completed;
 const frozen=Date.parse(f.snapshot),zone=Intl.DateTimeFormat().resolvedOptions().timeZone;
 const fmt=n=>new Date(n).toLocaleString('ru-RU',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
+const fmtClock=n=>new Date(n).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit',hourCycle:'h23',timeZone:zone});
+const fmtDate=n=>new Date(n).toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',timeZone:zone});
+const duration=ms=>{const total=Math.max(0,Math.round(ms/60000)),h=Math.floor(total/60),m=total%60;return h?`${h}ч${String(m).padStart(2,'0')}мин`:`${m}мин`};
 const qualifier=({file_birthtime:'восстановлено по файлам',leaf_created_at:'создание первого листа',recorded_start:'по записанному началу работы'})[f.start_source];
 if(Number.isFinite(start))rail.querySelector('.time-rail-start').textContent='Начало плана: '+fmt(start)+(qualifier?' · '+qualifier:'');
-if(Number.isFinite(end))rail.querySelector('.time-rail-end').textContent=f.end_label+' '+(early!==end?fmt(early)+' — ':'')+fmt(end);
 const forecast=document.querySelector('[data-tile="forecast"] .kpi-value');
 if(forecast&&Number.isFinite(end))forecast.textContent=(f.completed?'Завершено: ':'≈ ')+(early!==end?fmt(early)+' — ':'')+fmt(end)+' · '+zone;
 const forecastHint=document.querySelector('[data-tile="forecast"] .kpi-hint');
 if(forecastHint&&f.anchor)forecastHint.textContent=(f.completed?'Фактический финиш записан':'Отсчёт от события '+fmt(Date.parse(f.anchor)))+' · '+zone;
-rail.querySelector('.time-rail-note').textContent='Временная шкала; проценты выше — доля задач. Часовой пояс: '+zone+(f.completed?' · Завершённый план':'');
+rail.querySelector('.time-rail-note').textContent='Цветная полоса показывает статусы задач; время указано под ней и не задаёт долю выполнения. Часовой пояс: '+zone+(f.completed?' · Завершённый план':'');
 function clock(){
 const now=live?Date.now():frozen,overdue=!f.completed&&Number.isFinite(end)&&now>end;
 const text=(live?'Сейчас ':'На момент снимка ')+fmt(now)+(overdue?' · Прогнозный срок прошёл':'');
 rail.dataset.overdue=String(overdue);rail.querySelector('.time-rail-clock').textContent=text;
-const track=rail.querySelector('.time-rail-track');
-const valid=Number.isFinite(start)&&Number.isFinite(end)&&end>start&&start<=now;
-track.hidden=!valid;if(!valid)return;
-const point=f.completed?end:now,p=Math.max(0,Math.min(1,(point-start)/(end-start)));
-const marker=rail.querySelector('.time-rail-marker'),dot=rail.querySelector('.time-rail-dot');
-marker.textContent=(live?'Сейчас ':'На момент снимка ')+new Date(now).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
-const width=track.clientWidth;dot.style.left=Math.max(5,Math.min(width-5,p*width))+'px';
-marker.style.left=Math.max(0,Math.min(width-marker.offsetWidth,p*width-marker.offsetWidth/2))+'px';
+const valid=Number.isFinite(end)&&end>0&&Number.isFinite(now);
+const status=rail.querySelector('.time-rail-status'),minLabel=rail.querySelector('.time-rail-minimum'),maxLabel=rail.querySelector('.time-rail-maximum'),nowLabel=rail.querySelector('.time-rail-now');
+const endText=f.end_label||'Прогноз неизвестен';
+nowLabel.textContent=(live?'Сейчас ':'На момент снимка ')+fmt(now);
+if(!valid){
+minLabel.textContent='Минимум не оценён';maxLabel.textContent='Максимум не оценён';
+rail.dataset.state='unknown';status.textContent=endText;return;
 }
-clock();window.addEventListener('resize',clock,{signal});
+const min=Number.isFinite(early)?Math.min(early,end):end;
+minLabel.textContent='Минимум ≈'+fmtClock(min)+' · '+fmtDate(min);
+maxLabel.textContent=(f.completed?'Финиш ':'Максимум ≈')+fmtClock(end)+' · '+fmtDate(end);
+nowLabel.title=fmt(now)+' · '+zone;
+if(f.completed){status.textContent='План завершён · '+fmt(end);rail.dataset.state='complete';}
+else if(now<min){status.textContent='До ранней оценки '+duration(min-now)+' · до верхней границы '+duration(end-now);rail.dataset.state='before';}
+else if(now<=end){status.textContent='Ранняя оценка пройдена на '+duration(now-min)+' · до верхней границы '+duration(end-now);rail.dataset.state='early-passed';}
+else{status.textContent='Верхняя оценка превышена на '+duration(now-end);rail.dataset.state='overdue';}
+}
+clock();
 if(live){const timer=setInterval(clock,15000);signal.addEventListener('abort',()=>clearInterval(timer),{once:true})}
 }
 const sections=[...document.querySelectorAll('.plan-section')];

@@ -1,0 +1,56 @@
+{
+  "label": "Автоматически связывать новый fullcycle со своим локальным планом и листом",
+  "description": "Встроить в обычный Codex prompt lifecycle офлайн-привязку: переиспользовать однозначный план текущего worktree или создать локальный scaffold до первого действия модели.",
+  "acceptance": "Синтетический native UserPromptSubmit для fullcycle без mirror config/MCP/сети создаёт или выбирает точный план, связывает лист с реальным session/worktree, сохраняет локальный graph/HTML и не дублирует прогресс при повторном событии.",
+  "status": "done",
+  "estimate_minutes": {
+    "minimum": 25,
+    "maximum": 40
+  },
+  "affected_files": [
+    "src/common/tools/lhc_entry.py",
+    "src/common/tools/lhc_plan_mirror.py",
+    "adapters/codex/hooks/hooks.json",
+    "tests/test_native_instruction_hooks.py"
+  ],
+  "id": "L05",
+  "created_at": "2026-10-25T22:41:30+03:00",
+  "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+  "harness": "codex",
+  "updated_at": "2026-10-25T22:45:24+03:00",
+  "progress_events": [
+    {
+      "at": "2026-10-25T22:41:30+03:00",
+      "note": "Начал работу над автоматическим входом; фактическое исходное время и active minutes до регистрации не измерены.",
+      "changes": {
+        "label": "Автоматически связывать новый fullcycle со своим локальным планом и листом",
+        "description": "Встроить в обычный Codex prompt lifecycle офлайн-привязку: переиспользовать однозначный план текущего worktree или создать локальный scaffold до первого действия модели.",
+        "acceptance": "Синтетический native UserPromptSubmit для fullcycle без mirror config/MCP/сети создаёт или выбирает точный план, связывает лист с реальным session/worktree, сохраняет локальный graph/HTML и не дублирует прогресс при повторном событии.",
+        "status": "running",
+        "estimate_minutes": {
+          "minimum": 25,
+          "maximum": 40
+        },
+        "affected_files": [
+          "src/common/tools/lhc_entry.py",
+          "src/common/tools/lhc_plan_mirror.py",
+          "adapters/codex/hooks/hooks.json",
+          "tests/test_native_instruction_hooks.py"
+        ]
+      },
+      "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+      "harness": "codex"
+    },
+    {
+      "at": "2026-10-25T22:45:24+03:00",
+      "note": "Исходник и локальный CLI consumer проверены; installed runtime остаётся следующим листом.",
+      "changes": {
+        "status": "done",
+        "result": "Codex UserPromptSubmit вызывает local fullcycle entry; тест штатной CLI-ветки без mirror config/MCP/сети подтвердил создание трёх листов, running/session binding, graph/HTML и отсутствие повторного progress event. 36 targeted hook/mirror tests и package validation прошли. Инсталляция LHC 1.5.62 и новый реальный session readback остаются за L04."
+      },
+      "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+      "harness": "codex"
+    }
+  ],
+  "result": "Codex UserPromptSubmit вызывает local fullcycle entry; тест штатной CLI-ветки без mirror config/MCP/сети подтвердил создание трёх листов, running/session binding, graph/HTML и отсутствие повторного progress event. 36 targeted hook/mirror tests и package validation прошли. Инсталляция LHC 1.5.62 и новый реальный session readback остаются за L04."
+}

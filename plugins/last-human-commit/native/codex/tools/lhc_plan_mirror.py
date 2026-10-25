@@ -13,6 +13,7 @@ import hashlib
 import hmac
 import html
 import ipaddress
+import contextlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
@@ -54,6 +55,17 @@ def directory(plan):
         path = Path(plan).resolve()
         return path.parent / ('.lhc-graph-publication-' + hashlib.sha256(str(path).encode()).hexdigest()[:16])
     return Path(plan) / pub.STATE_DIR
+
+
+def worktree_root(plan):
+    """Return the nearest explicit Git worktree containing this plan source."""
+    path = Path(plan).expanduser().resolve()
+    start = path.parent if path.name == 'plan.graph.json' else path
+    for candidate in (start, *start.parents):
+        marker = candidate / '.git'
+        if marker.is_dir() or marker.is_file():
+            return candidate
+    return None
 
 
 def binding(plan, explicit=None):
@@ -104,6 +116,11 @@ def register(plan, config_path):
             state['autopublish'] = False
             pub.atomic(directory(plan) / 'state.json', state)
         link = {'config': str(config_path), 'owner': owner}
+        worktree = worktree_root(plan)
+        if worktree:
+            link['worktree'] = str(worktree)
+        if saved.get('activations'):
+            link['activations'] = saved['activations']
         if saved != link:
             pub.atomic(directory(plan) / 'mirror.json', link)
     return {'url': cfg['base_url'].rstrip('/') + '/' + state['project'] + '/' + state['name'] + '/', 'owner': owner}
@@ -169,6 +186,11 @@ def capture(plan, *, reason=None):
         old = read(dest / 'mirror-state.json', {})
         if old.get('source_hash') == before and not reason:
             return old
+        if not graph_source:
+            graph = leaves.build_graph(plan)
+            import lhc_grid
+            with open(os.devnull, 'w') as sink, contextlib.redirect_stdout(sink):
+                lhc_grid.main(['render', str(graph), '--out-dir', str(plan)])
         stamp = pub.now()
         observed = observe(document, read(dest / 'observed.json', {}), stamp)
         pub.atomic(dest / 'observed.json', observed)
@@ -188,6 +210,61 @@ def capture(plan, *, reason=None):
         # One atomic durable latest snapshot includes the entire revision history.
         pub.atomic(dest / 'mirror-state.json', result)
         return result
+
+
+def activate(plan, leaf_id, *, config_path=None, session=None, harness=None,
+             owner=None, note=None):
+    """Bind one explicitly selected leaf to this local session and observer."""
+    plan = Path(plan).expanduser().resolve()
+    if not plan.is_dir() or not (plan / 'plan.json').is_file() or not (plan / 'leaves').is_dir():
+        raise ValueError('activate requires one selected plan directory with plan.json and leaves/')
+    session = session or os.environ.get('CODEX_THREAD_ID', '')
+    if not re.fullmatch(r'[A-Za-z0-9._:-]{1,200}', session or ''):
+        raise ValueError('provide the actual session id with CODEX_THREAD_ID or --session')
+    harness = harness or ('codex' if os.environ.get('CODEX_THREAD_ID') else '')
+    if not re.fullmatch(r'[A-Za-z0-9._-]{1,40}', harness or ''):
+        raise ValueError('provide the actual harness with --harness')
+    owner = owner or os.environ.get('USER') or os.environ.get('USERNAME') or ''
+    if not owner.strip():
+        raise ValueError('provide the actual owner with --owner')
+    root = worktree_root(plan)
+    if root is None:
+        raise ValueError('selected plan is not inside a Git worktree; refusing to guess its workspace')
+    leaf_path = plan / 'leaves' / (leaf_id + '.json')
+    leaf = read(leaf_path)
+    if not isinstance(leaf, dict) or leaf.get('id') != leaf_id:
+        raise ValueError('selected leaf does not exist in this plan')
+    if leaf.get('status') in {'done', 'deferred', 'blocked', 'waiting'}:
+        raise ValueError('selected leaf is not ready to start; resolve its recorded state first')
+
+    config_path = Path(config_path or os.environ.get('LHC_PLAN_MIRROR_CONFIG', CONFIG)).expanduser().resolve()
+    # The local plan lifecycle must remain usable when mirror configuration is
+    # absent. Registration is an optional projection; it is never the source of
+    # truth and never a prerequisite for starting work.
+    link = register(plan, config_path) if config_path.is_file() else None
+    if link:
+        capture(plan)  # Freeze the selected plan's baseline before changing the leaf.
+    stamp = pub.now()
+    active = {'session': session, 'harness': harness, 'owner': owner.strip(),
+              'worktree': str(root), 'leaf_id': leaf_id, 'updated_at': stamp}
+    if link:
+        sidecar = directory(plan) / 'mirror.json'
+        with leaves.file_lock(directory(plan) / 'publish.lock'):
+            saved = read(sidecar, {})
+            activations = saved.get('activations', {})
+            activations[leaf_id] = active
+            saved['activations'] = activations
+            pub.atomic(sidecar, saved)
+    leaves.update_leaf(plan, leaf_id,
+                       {'status': 'running', 'session': session, 'harness': harness,
+                        'owner': owner.strip()},
+                       note=note or 'Начал работу в текущей сессии')
+    if link:
+        capture(plan)
+    return {'plan': str(plan), 'leaf_id': leaf_id, 'status': 'running',
+            'session': session, 'harness': harness, 'owner': owner.strip(),
+            'worktree': str(root), 'url': link['url'] if link else None,
+            'sync': 'pending' if link else 'local-only'}
 
 
 def local_publish(plan, config_path=None, reason=None):
@@ -548,12 +625,14 @@ def make_server(cfg):
                 self.reply(200, {'status': 'ok'})
             elif self.path == '/v1/status' and self.authorized():
                 self.reply(200, {'plans': [e['receipt'] for e in replica.entries()]})
-            elif (self.path == '/' and sso_enabled or dashboard_key is not None
-                  and hmac.compare_digest(self.path, '/dashboard/' + dashboard_key + '/')):
+            elif self.path == '/' and sso_enabled:
                 if sso_enabled and not self.proxy_authorized():
                     self.reply(401, {'error': 'SSO authentication required'})
                 else:
                     self.reply(200, replica.dashboard(), 'text/html')
+            elif (dashboard_key is not None
+                  and hmac.compare_digest(self.path, '/dashboard/' + dashboard_key + '/')):
+                self.reply(200, replica.dashboard(), 'text/html')
             else:
                 self.reply(404, {'error': 'not found'})
 

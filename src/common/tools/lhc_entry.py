@@ -27,6 +27,144 @@ if str(Path(__file__).resolve().parent) not in sys.path:
 CONTEXT_EVENTS = {"SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "PreModel"}
 QUIET_EVENTS = {"Interrupt", "SessionEnd", "PermissionRequest", "ToolFailure", "session.error"}
 
+
+def _fullcycle_plan_entry(event, root):
+    """Create or bind a local leaf on the ordinary Codex prompt path.
+
+    This is deliberately local and synchronous: it never contacts the mirror
+    service. A missing mirror config only skips remote registration; the plan,
+    leaf, graph and HTML still exist in the current worktree.
+    """
+    prompt = str(event.get("prompt") or "").strip()
+    cwd = Path(event.get("cwd") or ".").expanduser().resolve()
+    session = str(event.get("session_id") or event.get("sessionID") or "").strip()
+    if not prompt or not session:
+        return None
+    tools = method_root(Path(root).resolve()) / "tools"
+    outcome = sibling_tool(tools, "lhc_outcome.py")
+    if outcome is None or outcome.classify(prompt) != "fullcycle":
+        return None
+    git = sibling_tool(tools, "lhc_gitlayout.py")
+    repo = git.worktree_root(cwd) if git and hasattr(git, "worktree_root") else None
+    repo = Path(repo or cwd).resolve()
+    if not (repo / ".git").exists():
+        return None
+    mirror = sibling_tool(tools, "lhc_plan_mirror.py")
+    leaves = sibling_tool(tools, "lhc_plan_json.py")
+    grid = sibling_tool(tools, "lhc_grid.py")
+    if not all((mirror, leaves, grid)):
+        return None
+
+    # Search only the current repository's conventional task roots. Never walk
+    # the home directory or a configured fleet root from a prompt hook.
+    candidates = []
+    for base in (repo / ".agents" / "tasks", repo / "docs" / "tasks"):
+        if base.is_dir():
+            candidates.extend(p.parent.parent for p in list(base.glob("*/leaves/*.json"))[:400]
+                              if (p.parent.parent / "plan.json").is_file())
+    candidates = sorted(set(p.resolve() for p in candidates))
+    words = set(re.findall(r"[\w-]{3,}", prompt.lower()))
+
+    def score(plan):
+        metadata = mirror.read(plan / "plan.json", {})
+        text = " ".join(str(metadata.get(k, "")) for k in ("title", "goal", "business_result"))
+        for leaf_path in sorted((plan / "leaves").glob("*.json")):
+            leaf = mirror.read(leaf_path, {})
+            text += " " + str(leaf.get("label", "")) + " " + str(leaf.get("description", ""))
+        terms = set(re.findall(r"[\w-]{3,}", text.lower()))
+        return len(words & terms)
+
+    selected = None
+    created = False
+    if candidates:
+        ranked = sorted(((score(plan), plan) for plan in candidates), key=lambda row: (-row[0], str(row[1])))
+        if len(ranked) == 1 or (ranked[0][0] > 0 and (len(ranked) == 1 or ranked[0][0] > ranked[1][0])):
+            selected = ranked[0][1]
+    now = datetime.now().astimezone().isoformat(timespec="seconds")
+
+    def write_json(path, value):
+        leaves._write_atomic(path, json.dumps(value, ensure_ascii=False, indent=2) + "\n")
+
+    if selected is None:
+        # The model can refine this scaffold in the same turn; the hook has
+        # already guaranteed a real, linked local plan before implementation.
+        title = " ".join(prompt.split())[:72].strip(" .,:;-") or "Fullcycle"
+        slug = re.sub(r"[^a-z0-9а-яё]+", "-", title.lower()).strip("-")[:48] or "fullcycle"
+        digest = hashlib.sha256((session + "\0" + prompt).encode()).hexdigest()[:8]
+        plan = repo / ".agents" / "tasks" / (datetime.now().strftime("%Y%m%d") + "-" + slug + "-" + digest)
+        if plan.exists():
+            selected = plan
+        else:
+            (plan / "leaves").mkdir(parents=True, exist_ok=True)
+            write_json(plan / "plan.json", {
+                "title": title, "goal": prompt,
+                "business_result": "Выполнить запрос пользователя и проверить результат на указанном потребительском пути.",
+                "acceptance_scenarios": ["Выполнить исходный запрос и проверить наблюдаемый результат на реальном потребительском пути."],
+                "current_progress": "План автоматически создан локальным LHC prompt hook; декомпозиция уточняется в текущем fullcycle.",
+                "slots": 1,
+            })
+            bootstrap_leaves = [
+                {"id": "L01", "label": "Уточнить план и выполнить рабочий срез",
+                 "description": "Уточнить ожидаемый результат и декомпозицию по исходному запросу, затем начать основную реализацию.",
+                 "acceptance": "Появился работающий первый срез с проверяемым результатом.", "status": "queued", "estimate_minutes": 15},
+                {"id": "L02", "label": "Проверить результат на потребительском пути",
+                 "description": "Проверить наблюдаемое поведение в исходном сценарии и исправить найденные дефекты.",
+                 "acceptance": "Исходный сценарий проходит; ограничения проверки записаны.", "status": "queued", "estimate_minutes": 15, "depends_on": ["L01"]},
+                {"id": "L03", "label": "Завершить интеграцию и подтверждение результата",
+                 "description": "Довести согласованную доставку и сохранить фактическое подтверждение результата.",
+                 "acceptance": "Результат доступен в согласованной точке потребления и подтверждён readback.", "status": "queued", "estimate_minutes": 15, "depends_on": ["L02"]},
+            ]
+            for leaf in bootstrap_leaves:
+                write_json(plan / "leaves" / (leaf["id"] + ".json"), leaf)
+            selected = plan
+            created = True
+    # Reuse a leaf already bound to this session; otherwise select the unique
+    # running leaf or the only queued leaf. Ambiguity is surfaced, never guessed.
+    document = leaves.build_document(selected)
+    tasks = document.get("tasks", [])
+    active = next((t for t in tasks if t.get("session") == session and t.get("status") == "running"), None)
+    if active:
+        leaf_id = active["id"]
+    else:
+        running = [t for t in tasks if t.get("status") == "running"]
+        queued = [t for t in tasks if t.get("status") == "queued"]
+        pool = running if len(running) == 1 and not running[0].get("session") else queued
+        if created:
+            leaf_id = "L01"
+        elif not pool:
+            return None
+        elif len(pool) == 1:
+            leaf_id = pool[0]["id"]
+        else:
+            ranked = sorted(((len(words & set(re.findall(r"[\w-]{3,}",
+                                (str(t.get("label", "")) + " " + str(t.get("description", ""))).lower()))), t)
+                             for t in pool), key=lambda row: (-row[0], row[1]["id"]))
+            if not ranked[0][0] or ranked[0][0] == ranked[1][0]:
+                return None
+            leaf_id = ranked[0][1]["id"]
+        try:
+            mirror.activate(selected, leaf_id, session=session, harness="codex",
+                            owner=os.environ.get("USER") or "codex",
+                            note="Автоматическая привязка на старте fullcycle")
+        except (OSError, ValueError, KeyError, TypeError):
+            # The observer config is optional. Preserve the local start even if
+            # registration/bookkeeping is unavailable or malformed.
+            leaves.update_leaf(selected, leaf_id,
+                               {"status": "running", "session": session,
+                                "harness": "codex", "owner": os.environ.get("USER") or "codex"},
+                               note="Автоматическая локальная привязка fullcycle; observer пока не зарегистрирован")
+    graph = leaves.build_graph(selected)
+    with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+        grid.main(["render", str(graph), "--out-dir", str(selected)])
+    url = None
+    sidecar = mirror.read(mirror.directory(selected) / "mirror.json", {})
+    if sidecar.get("activations"):
+        try:
+            url = mirror.register(selected, sidecar.get("config"))["url"]
+        except (OSError, ValueError, KeyError, TypeError):
+            pass
+    return {"plan": str(selected), "leaf_id": leaf_id, "url": url, "created": created}
+
 def context_for(event, root):
     root = Path(root).resolve()
     return f"LHC: read {root/'AGENTS.md'} for current instructions."
@@ -629,6 +767,8 @@ def main():
                         help="emit the source AGENTS.md pointer without reading or changing session state")
     parser.add_argument("--heartbeat-only", action="store_true",
                         help="record only an isolated wall-time reminder at PostToolUse")
+    parser.add_argument("--plan-entry", action="store_true",
+                        help="automatically bind/create the local plan on UserPromptSubmit")
     parser.add_argument("--session", action="store_true",
                         help="explicit agent command: observe one stateful session event "
                              "(business anchor, outcome and milestone state). Never used by "
@@ -724,6 +864,32 @@ def main():
             print(json.dumps({"hookSpecificOutput": {
                 "hookEventName": "PostToolUse",
                 "additionalContext": "\n\n".join(prompts),
+            }}, ensure_ascii=False))
+        return
+    if args.plan_entry:
+        if args.event != "UserPromptSubmit":
+            return
+        try:
+            raw = sys.stdin.read(8 * 1024 * 1024 + 1)
+            if len(raw) > 8 * 1024 * 1024:
+                return
+            event = json.loads(raw or "{}")
+            if not isinstance(event, dict):
+                return
+            result = _fullcycle_plan_entry(event, args.root or Path(__file__).resolve().parents[1])
+        except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError,
+                PlanBuildError, subprocess.SubprocessError):
+            result = None
+        if result:
+            details = f"план {result['plan']}, активный лист {result['leaf_id']}"
+            if result.get("url"):
+                details += f", зеркало {result['url']}"
+            context = f"LHC: fullcycle автоматически связан с локальным {details}. Используй этот источник, не создавай дубликат."
+            if result.get("created"):
+                context += " Это начальный scaffold: уточни цель и разложи её на конкретные рабочие листья в этом плане до основной реализации."
+            print(json.dumps({"hookSpecificOutput": {
+                "hookEventName": "UserPromptSubmit",
+                "additionalContext": context,
             }}, ensure_ascii=False))
         return
     # Native hooks only activate the project instructions. Stateful outcome,

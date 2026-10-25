@@ -1,0 +1,73 @@
+{
+  "label": "Привязать продолжение существующего плана к текущему worktree, сессии и observer",
+  "status": "done",
+  "description": "Одна явная offline CLI-команда выбирает существующий leaf-план в docs/tasks текущего worktree, регистрирует только его, фиксирует baseline, session/harness/owner и переводит выбранный лист в running; observer обновляет локальные graph/HTML и догоняет то же зеркало после сети.",
+  "acceptance": "На тестовой копии 13-leaf docs/tasks плана команда активирует L03 с настоящим текущим Codex session id, статусом и progress event; source зарегистрирован без broad scan; raw offline save обновляет локальные graph/HTML; после сети существующий URL обновлён, r001 неизменен. Факт реального Cloud Telethon canary будет отмечен отдельно от изолированного consumer proof.",
+  "affected_files": [
+    "src/common/tools/lhc_plan_json.py",
+    "src/common/tools/lhc_plan_mirror.py",
+    "src/common/skills/plan-artifacts/SKILL.md",
+    "src/common/skills/last-human-commit/SKILL.md",
+    "tests/test_plan_mirror.py"
+  ],
+  "estimate_minutes": {
+    "minimum": 45,
+    "maximum": 75
+  },
+  "depends_on": [],
+  "note": "Реализация уже началась до live-plan; фактическое исходное начало и минуты не измерялись. Сейчас фиксируется только актуальный running статус.",
+  "id": "L03",
+  "created_at": "2026-10-25T22:19:24+03:00",
+  "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+  "harness": "codex",
+  "updated_at": "2026-10-25T22:30:58+03:00",
+  "progress_events": [
+    {
+      "at": "2026-10-25T22:19:24+03:00",
+      "note": "Новая учётная задача; фактическое начало до её создания неизвестно",
+      "changes": {
+        "label": "Привязать продолжение существующего плана к текущему worktree, сессии и observer",
+        "status": "queued",
+        "description": "Одна явная offline CLI-команда выбирает существующий leaf-план в docs/tasks текущего worktree, регистрирует только его, фиксирует baseline, session/harness/owner и переводит выбранный лист в running; observer обновляет локальные graph/HTML и догоняет то же зеркало после сети.",
+        "acceptance": "На тестовой копии 13-leaf docs/tasks плана команда активирует L03 с настоящим текущим Codex session id, статусом и progress event; source зарегистрирован без broad scan; raw offline save обновляет локальные graph/HTML; после сети существующий URL обновлён, r001 неизменен. Факт реального Cloud Telethon canary будет отмечен отдельно от изолированного consumer proof.",
+        "affected_files": [
+          "src/common/tools/lhc_plan_json.py",
+          "src/common/tools/lhc_plan_mirror.py",
+          "src/common/skills/plan-artifacts/SKILL.md",
+          "src/common/skills/last-human-commit/SKILL.md",
+          "tests/test_plan_mirror.py"
+        ],
+        "estimate_minutes": {
+          "minimum": 45,
+          "maximum": 75
+        },
+        "depends_on": [],
+        "note": "Реализация уже началась до live-plan; фактическое исходное начало и минуты не измерялись. Сейчас фиксируется только актуальный running статус."
+      },
+      "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+      "harness": "codex"
+    },
+    {
+      "at": "2026-10-25T22:19:41+03:00",
+      "note": "Lifecycle implementation began before plan capture; exact start and active minutes were not recorded",
+      "changes": {
+        "status": "running",
+        "owner": "roomhacker"
+      },
+      "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+      "harness": "codex"
+    },
+    {
+      "at": "2026-10-25T22:30:58+03:00",
+      "note": "Consumer canary: exact Cloud Telethon source read-only; copy only; installed runtime, actual current session id, empty roots + exact registration, offline catch-up and r001 preservation proven. Source was not altered.",
+      "changes": {
+        "status": "done",
+        "result": "На изолированной копии канонического 13-leaf Cloud Telethon плана (L03 восстановлен в queued только в копии) установленный 1.5.61 CLI с текущим Luna session id перевёл leaf в running; observer синхронизировал raw offline правки после возврата локального сервера по той же ссылке, r001 HTML байты совпали."
+      },
+      "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+      "harness": "codex"
+    }
+  ],
+  "owner": "roomhacker",
+  "result": "На изолированной копии канонического 13-leaf Cloud Telethon плана (L03 восстановлен в queued только в копии) установленный 1.5.61 CLI с текущим Luna session id перевёл leaf в running; observer синхронизировал raw offline правки после возврата локального сервера по той же ссылке, r001 HTML байты совпали."
+}

@@ -3094,12 +3094,11 @@ def render_html(
     segments = []
     for status in STATUSES:
         count = headline.get(status, 0)
-        if not count:
-            continue
-        segments.append(
-            f'<div class="seg" style="width:{100.0 * count / max(headline_total, 1):.4f}%;'
-            f'background:{STATUS_CSS_VARS[status]}" title="{STATUS_LABELS[status]}: {count}"></div>'
-        )
+        if count:
+            segments.append(
+                f'<div class="seg" style="width:{100.0 * count / max(headline_total, 1):.4f}%;'
+                f'background:{STATUS_CSS_VARS[status]}" title="{STATUS_LABELS[status]}: {count}"></div>'
+            )
     legend = "".join(
         f'<span class="legend-item"><i style="background:{STATUS_CSS_VARS[status]}"></i>'
         f"{STATUS_LABELS[status]} · {headline.get(status, 0)}</span>"
@@ -3202,7 +3201,8 @@ def render_html(
         '<div class="progress-strip" id="lhc-progress-strip" role="button" tabindex="0" '
         'data-tile="all" aria-label="Степень прогресса — показать все задачи">'
         f'<div class="progress-strip-line">{"".join(strip_parts)}</div>'
-        f'<div class="progress-strip-bar">{"".join(segments)}</div>'
+        f'<div class="progress-strip-bar" aria-label="Распределение задач по статусам">{"".join(segments)}</div>'
+        f'<div class="legend">{legend}</div>'
         + lhc_plan_ui.time_rail(metrics["time_frame"])
         +
         "</div>"
@@ -4009,7 +4009,6 @@ def render_html(
         palette=palette_css(),
         cards=card_html,
         secondary_cards=secondary_cards,
-        segments="".join(segments),
         legend=legend,
         brief=brief_html,
         brief_details_open=" open" if graph.current_progress else "",
@@ -4416,10 +4415,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <div class="panel panel-blocking" id="lhc-blocking">
   <h2>Что блокирует</h2>
   {blocking}
-</div>
-<div class="panel panel-progress">
-  <div class="progress">{segments}</div>
-  <div class="legend">{legend}</div>
 </div>
 </section>
 <section id="outcome" class="plan-section" aria-label="Цель и результат">

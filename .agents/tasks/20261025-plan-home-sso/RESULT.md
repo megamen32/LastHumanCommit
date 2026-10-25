@@ -60,3 +60,62 @@ Graph-тест проходит offline → restart → raw edit → malformed �
 В worktree появились чужие hosting-файлы (например deploy/plan-mirror/sso-nginx.conf);
 они не входят в source commit. Primary checkout не изменялся. Новые исполнители
 не создавались, runtime не перезапускался, main не публиковался.
+
+## Проверенный итог Luna — 1.5.61, 25.10.2026
+
+- Актуальный пользовательский контракт: SSO требуется только для точного `/`;
+  individual plan HTML/JSON/archive и capability URL не закрываются SSO.
+  `/v1/status` остаётся Bearer API. Анонимный `/` уходит на точный existing
+  auth `rd`; проверенная страница плана отвечает 200. Положительный owner-login
+  не наблюдался, cookies не извлекались.
+- После bounded source inventory зеркало содержит 22 плана в 10 группах.
+  Server100 mirror/observer и Mac observer установлены как 1.5.61; server
+  слушает loopback, `sso_enabled=true`. Текущие plans/roots/8 graph sources,
+  Mac Apps root и 2 Mac graph sources сохранены. Mac write-token не копировался.
+- UI теперь имеет один длинный цветной status bar; min/max/сейчас и временной
+  результат находятся в той же карточке без второй длинной оси/точки. Проверено
+  на опубликованной странице в headless Chrome при ширине 320 px и времени
+  23:45 между границами 23:29 и 00:24: status «Ранняя оценка пройдена на
+  15мин · до верхней границы 40мин», все labels помещаются.
+- По SHA-256 сравнены прежние 31 сохранённые generation paths: это 16 уникальных
+  plan identities; все 16 текущих `r001.html` совпадают байт-в-байт.
+- В эту задачу добавлен собственный canonical live LHC plan, привязанный к
+  текущей session/worktree. L03 lifecycle-поведение проверено на изолированной
+  копии canonical Cloud Telethon 13-leaf `docs/tasks` плана с установленным
+  runtime 1.5.61 и текущим Luna session id: точная регистрация при пустом
+  `roots`, running/session/progress event, offline raw save, catch-up по тому же
+  URL и неизменный `r001`.
+- Реальную Cloud Telethon рабочую копию не изменяли. В ней при последнем чтении
+  L03 уже имел status `done`; это состояние не приписывается нашему canary.
+  Изолированный canary доказывает безопасный consumer-путь, но не выдаётся за
+  вмешательство в ту сессию. Старый capability не открывали и секрет не читали.
+- `LHC_UI_BROWSER_TESTS=1 python3 -m pytest -q tests/test_plan_time_rail.py
+  tests/test_plan_mirror.py` — 25 passed; `test_plugin_version_parity.py` —
+  4 passed; `plugins/last-human-commit/scripts/validate.py`,
+  `publish_package.py --check` и `sync_skills.py --check` прошли.
+
+Следующий/оставшийся шаг: scoped commit/push LHC branch и integrated readback.
+Managed nginx site-scoped apply уже действует; дальнейшая публикация managed
+source должна исключить несвязанный локальный `ServersAdministartion` commit.
+
+## Исправление входа fullcycle — 1.5.62 (в работе)
+
+Причина: существующий Codex `UserPromptSubmit` lifecycle не запускал LHC entry
+для создания/привязки локального плана; активация была только ручным CLI
+действием. Поэтому обычный старт зависел от того, вспомнит ли модель команду.
+
+Исправление в исходнике: Codex hook теперь вызывает локальный `lhc_entry.py`
+перед ответом модели. Для fullcycle он в пределах текущего Git worktree
+переиспользует точный подходящий план/готовый leaf либо создаёт локальный
+scaffold из трёх листов, связывает первый с реальным session ID, создаёт graph
+и HTML. Если конфигурации mirror нет, локальные файлы всё равно создаются и
+работа начинается; MCP и сеть не вызываются. Повтор того же события не пишет
+дублирующий progress event.
+
+Проверено: `tests/test_native_instruction_hooks.py` и
+`tests/test_plan_mirror.py` — 36 passed. Тест вызывает штатную ветку CLI
+`--event UserPromptSubmit --plan-entry` на изолированном Git worktree без
+mirror config, проверяет три листа, running/session binding, graph/HTML и
+идемпотентный повтор. Plugin validation, generated package parity и sync skills
+прошли. Это source/package evidence; установка LHC 1.5.62 и следующий новый
+реальный Codex session consumer readback ещё не выполнены.

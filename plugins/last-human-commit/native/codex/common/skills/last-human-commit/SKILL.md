@@ -80,6 +80,17 @@ paths; the writer records only verified Lead decisions and returns the revision 
 Lead review. Execution Workers write only their own leaf file of the plan and their
 own assigned progress/result files.
 
+When a fullcycle or existing assignment already has a matching leaf plan, reuse
+the authoritative plan in the current worktree; do not create another copy.
+Codex's native `UserPromptSubmit` hook automatically reuses the matching local
+plan or creates a local fullcycle scaffold, binds a ready leaf to the actual
+session/worktree, and rebuilds its graph and HTML before the model acts. This
+works without MCP, network, SSO, or publication; mirror registration is an
+optional local projection. Other harnesses keep using the local activation API
+with their actual session id. Later status changes use the leaf CLI so they
+append to the same history. A skill read, child launch, raw note, generated
+graph, or stale dashboard does not mean the current leaf has started.
+
 | Accepted scope | Mode |
 | --- | --- |
 | One bounded fix inside existing code, no architecture decision, contained risk | quickfix |

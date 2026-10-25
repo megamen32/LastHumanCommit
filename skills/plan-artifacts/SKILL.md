@@ -453,6 +453,22 @@ MCP remains optional; local files and CLI remain usable without it.
 It is not a second planner. Local standalone rendering and the legacy
 publisher below remain available for unbound plans.
 
+When continuing an existing plan from a new Codex session/worktree, reuse that
+plan; do not create a duplicate. The native `UserPromptSubmit` hook automatically
+binds an unambiguous ready leaf in the current worktree, records the actual
+session/owner and one progress event, then rebuilds the local graph and HTML.
+When no matching source exists it creates a local fullcycle scaffold before the
+model starts. This path does not require a command, MCP, network, SSO, or server
+availability. If a mirror config is installed, only the selected local plan is
+registered there; otherwise local plan files remain the source of truth and can
+be synced later. The worktree root and session binding stay in the local
+`.lhc-publication/mirror.json`, not in the public plan. For non-Codex harnesses,
+use the local activation API with an actual session id; never invent one. Keep
+using the leaf CLI for later status changes so progress history is retained; raw
+saves remain supported, and the observer rebuilds local graph/HTML when it detects
+them. Do not make MCP, network, SSO, or public publication a prerequisite for
+local execution.
+
 ### Legacy standalone publication
 
 Use the actual shared plan-dir in every worker assignment. A worktree is not a
