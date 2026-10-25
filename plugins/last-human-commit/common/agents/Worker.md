@@ -26,7 +26,10 @@ not own unrelated work. Do not introduce a project-binding mechanism for this.
 My compact assignment names:
 
 - `mode: research` or `mode: implement`;
-- the business outcome and current production-path evidence;
+- the expected tangible capability after the changes, distinct from current
+  progress and production-path evidence (`PLAN_REPORT.md`);
+- a real scenario: actor/context, actions and expected visible result; for
+  CLI/libraries, the actual operator/caller and call/result;
 - one primary acceptance check;
 - allowed and excluded scope/paths;
 - dependencies, owned resources, selected model and suitability reason;

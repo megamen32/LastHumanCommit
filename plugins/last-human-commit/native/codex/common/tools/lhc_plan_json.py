@@ -182,6 +182,7 @@ PLAN_FIELDS = (
     "goal",
     "business_result",
     "business_results",
+    "acceptance_scenarios",
     "current_progress",
     "external_waits",
     "slots",
@@ -612,6 +613,11 @@ def _plan_fields(raw: dict[str, Any], path: Path) -> dict[str, Any]:
         values = [item.strip() for item in results if item.strip()]
         if values:
             fields["business_results"] = values
+    scenarios = raw.get("acceptance_scenarios")
+    if scenarios is not None:
+        if not isinstance(scenarios, list) or not all(isinstance(item, str) for item in scenarios):
+            raise LeafError(f"{path}: поле acceptance_scenarios должно быть списком строк")
+        fields["acceptance_scenarios"] = [item.strip() for item in scenarios if item.strip()]
     slots = raw.get("slots")
     if slots is not None:
         if isinstance(slots, bool) or not isinstance(slots, int) or slots < 1:
@@ -654,6 +660,9 @@ def plan_metadata(plan_dir: Path) -> dict[str, Any]:
                 if isinstance(value, str) and value.strip():
                     fields[field] = value.strip()
             results = raw.get("business_results")
+            scenarios = raw.get("acceptance_scenarios")
+            if isinstance(scenarios, list) and all(isinstance(item, str) for item in scenarios):
+                fields["acceptance_scenarios"] = [item.strip() for item in scenarios if item.strip()]
             if isinstance(results, list):
                 values = [
                     item.strip()
@@ -758,6 +767,7 @@ def build_document(plan_dir: Path) -> dict[str, Any]:
         "goal": str(metadata.get("goal") or ""),
         "business_result": business_result,
         "business_results": results,
+        "acceptance_scenarios": list(metadata.get("acceptance_scenarios") or []),
         "current_progress": str(metadata.get("current_progress") or ""),
         "external_waits": str(metadata.get("external_waits") or ""),
         "slots": int(metadata.get("slots") or 1),
@@ -1066,6 +1076,8 @@ def report_block_of(document: dict[str, Any]) -> str:
         results = [str(document["business_result"]).strip()]
     for result in results:
         lines.append(f"Бизнес-результат: {result}")
+    for scenario in document.get('acceptance_scenarios', []):
+        lines.append(f"Как проверим: {scenario}")
     lines.append(
         "Декомпозиция: {leaves} · {parallel} параллельно · {waves} · слотов: {slots}".format(
             leaves=grid.count_russian(len(document["tasks"]), "лист", "листа", "листьев"),

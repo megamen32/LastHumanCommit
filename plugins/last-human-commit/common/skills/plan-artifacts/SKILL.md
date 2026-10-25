@@ -42,7 +42,7 @@ A plan lives in one directory. Every leaf of the plan is one JSON file in the
 `leaves/` subdirectory, named after the leaf:
 
 ```text
-<plan-dir>/plan.json          plan-level facts: title, goal, business result, slots
+<plan-dir>/plan.json          purpose, expected capabilities, scenarios, current progress, slots
 <plan-dir>/leaves/L01.json    one leaf — one file — one owner
 <plan-dir>/leaves/L02.json
 <plan-dir>/plan.graph.json    collected from the leaves; never written by hand
@@ -135,12 +135,30 @@ Plan-level facts are not a leaf's business. They live in `plan.json` next to
 ```json
 {
   "title": "План поставки",
-  "goal": "Чего хочет пользователь.",
-  "business_result": "Что пользователь может использовать уже сейчас.",
+  "goal": "Пользователь хочет следить за ходом работы по одной ссылке.",
+  "business_result": "После сохранения локального листа новая заметка появится по прежней ссылке в течение установленного интервала.",
+  "acceptance_scenarios": ["Оператор открывает страницу, меняет note обычным сохранением и проверяет появление новой заметки по прежней ссылке без publish."],
+  "current_progress": "Сценарий определён; обновление страницы ещё не проверено.",
   "slots": 2,
   "updated_at": "2026-10-23T22:04"
 }
 ```
+
+`business_result` and optional `business_results` keep their legacy storage names
+but describe future tangible capabilities, displayed as «Что будет работать».
+`goal` explains why the person needs them. Optional `acceptance_scenarios`
+(`list[str]`, «Как проверим») names actor/context, actions and expected visible
+results for testers on the real surface. For CLI/libraries, use the actual
+operator/caller and call/result instead of requiring commercial language.
+`current_progress` (for display, «Что уже сделано») and evidence record current
+facts separately: tests, commits and publication are not the expected capability.
+A pending result is not a false claim; an achieved result requires evidence.
+See `common/protocols/PLAN_REPORT.md` for the full distinction and recovery example.
+
+New and updated plans use this contract. Keep historical reports, revisions and
+user messages untouched; old fields are legacy declarations and never imply
+fulfillment. Accept the old Markdown heading «Бизнес-результат» as well as the new
+visible label. Do not add regex semantic classifiers or gates for wording.
 
 `plan.json` may also carry `business_results`, `current_progress`,
 `external_waits`, `journal` and `planned_start_at` (ISO with timezone, only when
@@ -234,7 +252,7 @@ language):
 
 ```text
 Цель: <какой человек выполняет какую задачу, на какой обычной поверхности и с какими главными границами>
-Бизнес-результат: <что пользователь может использовать уже сейчас — достигнутый факт>
+Что будет работать: <какая осязаемая возможность появится у пользователя после изменений>
 Декомпозиция: <N> листьев · <P> параллельно · <W> волн(а) · слотов: <S>
 
 ✅ (описание листа) начата 14:02 закончена 14:09, оценка 15 минут, факт 7 минут

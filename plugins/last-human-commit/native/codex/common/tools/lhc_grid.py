@@ -420,6 +420,7 @@ class Graph:
     # user can touch by hand and check on its own; they are not merged into one
     # and they are not the commits and the internal stages.
     business_results: list[str] = field(default_factory=list)
+    acceptance_scenarios: list[str] = field(default_factory=list)
     current_progress: str = ""
     external_waits: str = ""
     leaves: list[Leaf] = field(default_factory=list)
@@ -565,7 +566,7 @@ def now_clock() -> int:
 # --------------------------------------------------------------------------
 
 
-HEADER_RE = re.compile(r"^\s*(Цель|Бизнес-результат|Декомпозиция)\s*:\s*(.+?)\s*$")
+HEADER_RE = re.compile(r"^\s*(Цель|Бизнес-результат|Что будет работать|Как проверим|Декомпозиция)\s*:\s*(.+?)\s*$")
 # A leaf id is the letter L, digits, and optionally a letter suffix of any
 # length: one executor may hold an "a" and a "b" leaf of the same number at the
 # same time ("L02b", "L05a"), and the file leaves/L02b.json is the leaf "L02b".
@@ -709,7 +710,9 @@ def parse_plan_report(text: str) -> Optional[Graph]:
             key, value = header.group(1), header.group(2)
             if key == "Цель":
                 graph.goal = value.strip()
-            elif key == "Бизнес-результат":
+            elif key == "Как проверим":
+                graph.acceptance_scenarios.append(value.strip())
+            elif key in ("Бизнес-результат", "Что будет работать"):
                 # Several results are allowed in one task: the line may be
                 # repeated, and every repeat is a result of its own.
                 result = value.strip()
@@ -930,7 +933,7 @@ def parse_legacy_plan(text: str) -> Optional[Graph]:
     goal = re.search(r"\*\*Цель:?\*\*\s*(.+)", text)
     if goal:
         graph.goal = normalize(goal.group(1))
-    result = re.search(r"\*\*Бизнес-результат:?\*\*\s*(.+)", text)
+    result = re.search(r"\*\*(?:Бизнес-результат|Что будет работать):?\*\*\s*(.+)", text)
     if result:
         graph.business_result = normalize(result.group(1))
     for match in DECOMP_LEAVES_RE.finditer(text):
@@ -1160,6 +1163,10 @@ def parse_graph_json(document: Any) -> Graph:
         graph.business_results = [str(item).strip() for item in declared_results if str(item).strip()]
     elif graph.business_result:
         graph.business_results = [graph.business_result]
+    scenarios = document.get("acceptance_scenarios", [])
+    if not isinstance(scenarios, list) or not all(isinstance(item, str) for item in scenarios):
+        raise ValueError("acceptance_scenarios должно быть списком строк")
+    graph.acceptance_scenarios = list(scenarios)
     graph.current_progress = str(document.get("current_progress") or "")
     graph.external_waits = str(document.get("external_waits") or "")
     graph.updated_at = str(document.get("updated_at") or "")
@@ -2802,12 +2809,14 @@ def render_html(
     # duration shows its known part, a plan with known durations shows the
     # remainder. A wait makes the horizon imprecise, not the duration.
     partly_unknown = bool(metrics["unknown_estimate_pending"])
-    remaining_label = "Известная часть работы" if partly_unknown else "Осталось по плану"
+    remaining_label = "Известная часть работы" if partly_unknown else "Остаток по плану"
     remaining_value = (
         f"от {fmt_minutes(metrics['remaining_minutes_min'])} "
         f"до {fmt_minutes(metrics['remaining_minutes_max'])}"
     )
-    remaining_hint = remaining_value
+    if metrics['remaining_minutes_min'] == metrics['remaining_minutes_max']:
+        remaining_value = fmt_minutes(metrics['remaining_minutes_max'])
+    remaining_hint = "Оценка оставшихся работ"
     uncertainties = []
     if metrics["unknown_estimate_pending"]:
         uncertainties.append(
@@ -2835,6 +2844,10 @@ def render_html(
     if metrics["eta_overdue"]:
         eta_hint = f"срок прошёл, остаток не начался · {eta_hint}"
     eta_range = _eta_range_text(metrics)
+    if metrics['unfinished'] == 0:
+        eta_range = "Работы по плану завершены"
+        finished = [leaf.finished_at for leaf in leaves if leaf.finished_at]
+        eta_hint = ("Последний записанный финиш: " + max(finished)) if finished else "Фактический финиш не зафиксирован"
     # The peak of the plan is a schedule number: without a duration on every
     # leaf the scheduler has nothing to overlap, so the peak is unknown and
     # not "0".
@@ -2875,6 +2888,8 @@ def render_html(
          eta_hint, STATUS_DONE, False, "forecast"),
         ("Усилие", effort_value, effort_hint, STATUS_QUEUED, False, "effort"),
     ]
+    priority = {key: n for n, key in enumerate(("remaining", "forecast", "parallel", "unfinished", "done", "running", "blocked", "queued", "deferred", "effort"))}
+    cards.sort(key=lambda card: priority[card[-1]])
     # Every tile knows the tasks behind it: the owner clicks a number and
     # wants to see them, without leaving the page.
     by_status: dict[str, list[str]] = {}
@@ -2936,6 +2951,10 @@ def render_html(
         "</div>"
         for label, value, hint, tone, is_status, key in cards
     )
+    # Keep the four decision cards on the first screen, on every viewport.
+    secondary_at = card_html.index('<div class="kpi kpi-tile" data-tile="done"')
+    secondary_cards = card_html[secondary_at:]
+    card_html = card_html[:secondary_at]
     leaf_index = {
         leaf.id: {
             "id": leaf.id,
@@ -3762,14 +3781,14 @@ def render_html(
     for index, result in enumerate(
         graph.business_results or ([graph.business_result] if graph.business_result else [])
     ):
-        heading = "Ожидаемый бизнес-результат" if index == 0 else f"Бизнес-результат {index + 1}"
+        heading = "Что будет работать" if index == 0 else f"Что будет работать · {index + 1}"
         why_cards.append(
             f'<article class="brief-card brief-result"><h2>{escape(heading)}</h2>'
             f"<p>{escape(result)}</p></article>"
         )
     if graph.current_progress:
         detail_cards.append(
-            f'<article class="brief-card"><h2>Подтверждённый прогресс</h2>'
+            f'<article class="brief-card"><h2>Что уже сделано</h2>'
             f"<p>{escape(graph.current_progress)}</p></article>"
         )
     if graph.external_waits:
@@ -3778,12 +3797,15 @@ def render_html(
             f"<p>{escape(graph.external_waits)}</p></article>"
         )
     why_html = f'<div class="brief brief-why">{"".join(why_cards)}</div>' if why_cards else ""
+    scenarios = ''.join(f'<li>{escape(item)}</li>' for item in graph.acceptance_scenarios)
+    why_html += '<article class="panel acceptance-scenarios"><h2>Как проверим</h2>' + (f'<ul>{scenarios}</ul>' if scenarios else '<p>Сценарии проверки ещё не описаны</p>') + '</article>'
+    why_html += '<p class="hint">Это декларация плана. Статус задач сам по себе не подтверждает приёмку результата.</p>'
     brief_html = f'<div class="brief">{"".join(detail_cards)}</div>' if detail_cards else ""
     why_panel = ""
     if why_html:
         why_panel = (
             '<details class="panel brief-details brief-why-details" open>\n'
-            "  <summary>Цель и ожидаемый бизнес-результат</summary>\n"
+            "  <summary>Цель и результат</summary>\n"
             f"  {why_html}\n"
             "</details>"
         )
@@ -3836,9 +3858,7 @@ def render_html(
             "<header>"
             "<div>"
             f"<h1>{escape(graph.title)}</h1>"
-            f'<div class="sub">LHC · {escape(graph.source_kind)} · план обновлён '
-            f"{escape(graph.updated_at.replace('T', ' ')) or 'неизвестно'} · ревизия "
-            f"{escape(graph_revision(graph))} · собран {escape(generated)}</div>"
+            f'<div class="sub">План обновлён {escape(graph.updated_at.replace("T", " ")) or "неизвестно"}</div>'
             "</div>"
             '<div class="head-actions">'
             '<button type="button" class="theme-toggle" id="theme-toggle" '
@@ -3870,6 +3890,7 @@ def render_html(
         snapshot=escape(SNAPSHOT_NOTE),
         palette=palette_css(),
         cards=card_html,
+        secondary_cards=secondary_cards,
         segments="".join(segments),
         legend=legend,
         brief=brief_html,
@@ -3899,7 +3920,8 @@ def render_html(
         html = live_module().inject_live(html)
     except Exception:  # pragma: no cover - a page without the poller is still a page
         pass
-    return html
+    import lhc_plan_ui
+    return lhc_plan_ui.decorate(html)
 
 
 HTML_TEMPLATE = """<!DOCTYPE html>
@@ -4257,15 +4279,14 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 </head>
 <body>
 <div class="page">
-{progress_strip}
-
 {header}
-
-{nav}
-
-<p class="snapshot-note">{snapshot}</p>
-
+<!-- plan-revisions -->
+<main id="plan-content">
+<section id="dashboard" class="plan-section" aria-label="Дашборд">
+{progress_strip}
+<p class="hint acceptance-note">Прогресс задач не означает приёмку пользовательского результата.</p>
 <div class="kpis" id="lhc-state">{cards}</div>
+<details class="panel status-details"><summary>Статусы задач и усилие</summary><div class="kpis secondary-kpis">{secondary_cards}</div></details>
 
 <div class="tile-card" id="lhc-tile-card" hidden></div>
 {tile_island}
@@ -4278,25 +4299,22 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   <h2>Что блокирует</h2>
   {blocking}
 </div>
-
-{why_panel}
-
-{cost}
-
-{product_plan}
-
 <div class="panel panel-progress">
   <div class="progress">{segments}</div>
   <div class="legend">{legend}</div>
 </div>
-
+</section>
+<section id="outcome" class="plan-section" aria-label="Цель и результат">
+{why_panel}
 <details class="panel brief-details"{brief_details_open}>
-  <summary>Подтверждённый прогресс и внешние ожидания</summary>
+  <summary>Текущий факт и внешние ожидания</summary>
   {brief}
 </details>
 
 {evidence_fold}
-
+{product_plan}
+</section>
+<section id="work-plan" class="plan-section" aria-label="План работ">
 <div class="panel panel-gantt" id="lhc-plan-gantt"{plan_gantt_hidden}>
   <h2>Гант · листья и параллельные волны</h2>
   {gantt_note}
@@ -4305,10 +4323,15 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     {gantt}
   </div></div>
 </div>
-
-<div class="grid">
+</section>
+<section id="comparison" class="plan-section" aria-label="План и факт">
+<!-- plan-comparison -->
+<p class="comparison-empty panel">Сравнение ревизий доступно в опубликованном плане. Этот файл содержит один снимок.</p>
+{cost}
+</section>
+<section id="tasks" class="plan-section" aria-label="Задачи">
   <div class="panel panel-leaves" id="lhc-leaves">
-    <h2>Листья</h2>
+    <h2>Задачи</h2>
     {layer_hint}
     <div class="toolbar">
       <input id="search" type="search" placeholder="Поиск по листу, id, владельцу, сессии или модели…">
@@ -4321,6 +4344,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     {leaves_table}
     {leaves_details}
   </div>
+</section>
+<section id="history" class="plan-section" aria-label="История">
+<!-- plan-publication -->
+<p class="snapshot-note">{snapshot}</p>
   <div>
     <div class="panel">
       <h2>Технические привязки</h2>
@@ -4344,7 +4371,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       </details>
     </div>
   </div>
-</div>
+</section>
+</main>
 </div>
 
 <footer>
@@ -4695,10 +4723,14 @@ def render_print_html(graph: Graph, metrics: dict[str, Any]) -> str:
     business = ""
     if graph.business_result:
         business += (
-            f"<p><b>Бизнес-результат:</b> {escape(graph.business_result)}</p>\n"
+            f"<p><b>Что будет работать:</b> {escape(graph.business_result)}</p>\n"
         )
     for item in graph.business_results:
         business += f"<p class='small muted'>{escape(item)}</p>\n"
+    business += '<h2>Как проверим</h2>'
+    business += ('<ul>' + ''.join(f'<li>{escape(item)}</li>' for item in graph.acceptance_scenarios) + '</ul>') if graph.acceptance_scenarios else '<p>Сценарии проверки ещё не описаны</p>'
+    if graph.current_progress:
+        business += f'<p><b>Что уже сделано:</b> {escape(graph.current_progress)}</p>'
 
     def row_html(leaf: Leaf) -> str:
         """One leaf as one row of the paper table."""
@@ -4966,6 +4998,8 @@ def render_text(graph: Graph, metrics: dict[str, Any]) -> str:
         lines.append(f"Цель: {graph.goal}")
     for result in (graph.business_results or ([graph.business_result] if graph.business_result else [])):
         lines.append(f"Бизнес-результат: {result}")
+    for scenario in graph.acceptance_scenarios:
+        lines.append(f"Как проверим: {scenario}")
     # The shape of the work is part of the report, so the projection carries
     # it too — computed from this graph, never copied from an older claim.
     shape_parallel, shape_waves, shape_slots = plan_shape(graph, metrics)
@@ -5180,6 +5214,7 @@ def export_graph(graph: Graph) -> dict[str, Any]:
         "goal": graph.goal,
         "business_result": graph.business_result,
         "business_results": list(graph.business_results),
+        "acceptance_scenarios": list(graph.acceptance_scenarios),
         "current_progress": graph.current_progress,
         "external_waits": graph.external_waits,
         "slots": graph.slots,
@@ -5841,7 +5876,7 @@ def merge_attribution(
             )
             if missing and source.get(field) is not None:
                 task[field] = source[field]
-    for field in ("current_progress", "external_waits"):
+    for field in ("current_progress", "external_waits", "acceptance_scenarios"):
         if not document.get(field) and previous.get(field):
             document[field] = previous[field]
     # The title of the plan is the first line of the report. A title that was

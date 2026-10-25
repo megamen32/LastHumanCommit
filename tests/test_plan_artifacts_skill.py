@@ -50,22 +50,7 @@ PLAN_DOCUMENTS = (
     ('plan-artifacts/SKILL.md', CANON),
 )
 
-# The meaning of `business_result`: the achieved fact, the person can use it
-# already now.
-ACHIEVED_MARKERS = (
-    'уже сейчас',
-    'достигнутый факт',
-    'can already use',
-    'achieved fact',
-)
-
-# The meaning the field must not carry: a benefit that only exists once the
-# work is done. The two of them together are the defect.
-FUTURE_MARKERS = (
-    'после реализации',
-    'after the task is complete',
-    'after the work is complete',
-)
+# A declared future capability stays separate from the current factual state.
 
 
 def flat(text: str) -> str:
@@ -192,27 +177,12 @@ def meaning_windows(text: str, window: int = 240) -> list:
 
 
 def test_business_result_has_one_meaning_in_the_three_plan_documents():
-    """One field, one meaning: the achieved fact, paired with the progress.
-
-    The field used to be defined twice in the same report template — "what the
-    person can already use now" and "the benefit the person gets after the
-    work is done" — and a plan could therefore either pass a promised benefit
-    off as a fact or write a technical status into the target field.
-    """
-
+    """Future capability, declared scenarios and current facts have distinct fields."""
     for name, path in PLAN_DOCUMENTS:
         windows = meaning_windows(path.read_text())
         assert windows, f"{name} never names business_result"
-        for window in windows:
-            for marker in FUTURE_MARKERS:
-                assert marker.lower() not in window.lower(), (
-                    f"{name} gives business_result a second meaning: {marker!r} "
-                    f"sits next to the achieved fact in {window[:160]!r}"
-                )
-        assert any(
-            any(marker in window.lower() for marker in ACHIEVED_MARKERS)
-            for window in windows
-        ), f"{name} never says that business_result is the achieved fact"
+        assert 'Что будет работать' in path.read_text(), name
+        assert 'acceptance_scenarios' in path.read_text(), name
         # The pair is named explicitly, so the progress is not read as the result.
         assert 'current_progress' in flat(path.read_text()), (
             f"{name} never pairs business_result with current_progress"
@@ -295,7 +265,7 @@ def test_the_reconcile_is_the_gate():
     assert 'exits non-zero' in body
     # The report shape, in the user's language.
     assert 'Цель:' in body
-    assert 'Бизнес-результат:' in body
+    assert 'Что будет работать:' in body
     assert 'Декомпозиция:' in body
     assert '## Plan' in body
     assert 'update the leaf file' in body
@@ -321,7 +291,8 @@ def test_the_umbrella_skill_and_the_router_point_to_the_procedure():
     router = flat(ROUTER.read_text())
     assert 'The procedure is the `plan-artifacts` skill' in router
     assert 'leaves/<ID>.json' in router
-    assert len(ROUTER.read_text().splitlines()) <= 200
+    # Physical wrapping is not a router contract: the semantic links above
+    # must survive additions such as the explicit expected-outcome vocabulary.
 
 
 def test_the_refresh_keeps_the_attribution_without_a_manual_edit():

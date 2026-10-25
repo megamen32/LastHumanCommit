@@ -56,9 +56,10 @@ fields are optional there.
 {
   "schema_version": 2,
   "title": "ExManager → Board integration",
-  "goal": "the outcome the person wants; it may still be open",
-  "business_result": "what the person can already use now — the achieved fact",
-  "current_progress": "what is already proven on the way, apart from the business result",
+  "goal": "why the person wants the changes",
+  "business_result": "the tangible capability the person will have after the changes",
+  "acceptance_scenarios": ["Actor/context, ordinary actions, expected visible result on the real surface."],
+  "current_progress": "what is actually done or checked now, with verification limits",
   "external_waits": "pending human or platform waits, outside the active work",
   "slots": 4,
   "updated_at": "2026-10-21T06:16:00",
@@ -132,13 +133,18 @@ unknown estimate is a choice, never a demand.
   from active work. If it is nonempty, the renderer withholds a clock ETA and
   labels the finish time unknown; it still shows the bounded active-work
   subtotal.
-- Top-level `goal` is the outcome the person wants; it may still be open. Top-
-  level `business_result` is what the person can already use now: the achieved
-  fact. "Nothing has changed for the person yet" is a valid value; the benefit
-  promised for a future delivery is not. Top-level `current_progress` states
-  what is already proven on the way to the goal, apart from the business
-  result. The dashboard keeps the three apart: the wanted outcome, the
-  achieved fact and the confirmed progress are different things.
+- Top-level `goal` states the user's purpose. `business_result` and optional
+  `business_results` keep legacy storage names but declare future tangible
+  capabilities («Что будет работать»). Optional `acceptance_scenarios` is a
+  `list[str]`: actor/context, actions and expected visible result for testers on
+  the real surface. `current_progress` records only current facts («Что уже
+  сделано»); evidence supports observations, not the declaration itself. For
+  CLI/libraries, name the actual operator/caller and call/result. A pending
+  expectation is valid; claiming achievement requires real-scenario evidence.
+  New/updated plans follow `PLAN_REPORT.md`; historical reports/revisions stay
+  untouched, and loading legacy declarations never invents fulfillment. The old
+  «Бизнес-результат» heading remains accepted. This is a meaning contract, not a
+  regex semantic classifier or a new gate.
 - `actual_minutes` is the summed effort of the executors on the leaf. If it was not
   measured, leave it out instead of inventing a number. The window on the clock is
   `started_at` and `finished_at`, and it is a different number: 22 minutes of effort

@@ -60,7 +60,7 @@ language: the user reads the leaves, not the plan.
 
 ```text
 Цель: <чего хочет пользователь — столько, сколько нужно>
-Бизнес-результат: <что пользователь может использовать уже сейчас — достигнутый факт — столько, сколько нужно>
+Что будет работать: <какая осязаемая возможность появится у пользователя после изменений — столько, сколько нужно>
 Декомпозиция: <N> листьев · <P> параллельно · <W> волн(а) · слотов: <S>
 
 ✅ (описание листа) начата 14:02 закончена 14:09, оценка 15 минут, факт 7 минут
@@ -79,17 +79,39 @@ language: the user reads the leaves, not the plan.
 ⏸ (описание листа) владелец отложил лист, оценка 15 минут
 ```
 
-The header lines carry three different facts, and no line borrows another
-line's wording:
+Keep purpose, expected capability, verification scenario and current facts distinct:
 
-- `Цель` — the outcome the person wants. It may still be open: it is the
-  target of the delivery, not a status.
-- `Бизнес-результат` — what the person can already use **now**: the achieved
-  fact. «пока ничего не изменилось для юзера» is a valid and useful answer;
-  the benefit promised for a future delivery is not.
-- `current_progress` — what is already proven on the way to the goal, apart
-  from the business result. It lives in `plan.json` and in the graph, not in
-  the header of this report.
+- `goal` / `Цель` — why the person wants the changes, their desired purpose.
+- `business_result` / `business_results` / `Что будет работать` — future tangible
+  capabilities the person will have after the changes, observable in a real
+  scenario. Keep these legacy storage names. The old Markdown heading
+  `Бизнес-результат:` remains accepted with the same expected-result meaning.
+- Optional `acceptance_scenarios` (`list[str]`) / `Как проверим` — who acts and
+  in what context, the actions they take, and the expected visible result.
+  Testers use these real scenarios to attempt the capability, not to repeat an
+  author's verdict or implementation steps. Include meaningful failure/recovery
+  cases within the authorized fixture when the expected capability covers them.
+- `current_progress` / `Что уже сделано` — what has actually been done or checked
+  now, with its verification limits. It lives in `plan.json` and the graph,
+  separate from the expected-result header. Evidence supports observed facts;
+  tests, commits and publication receipts are means or evidence, not the capability.
+
+A pending expected result is a valid plan declaration. Claiming it has been
+achieved requires evidence from the relevant real scenario. For CLI/library work,
+the user can be the operator or caller: name the actual call and observable result;
+customer or commercial language is not required. Judge meaning in context, not
+with regex semantic classification or new gates.
+
+Updated and new plans use this contract. Leave historical task reports, revisions
+and user messages untouched. Load old fields as legacy declarations without
+inventing fulfillment; their presence alone proves no current capability.
+
+For example, an expected result is «Пользователь сохранит локальный лист; в течение
+установленного интервала новая заметка появится по прежней ссылке, даже после
+восстановления сервера». A scenario is «Открыть страницу, изменить note обычным
+сохранением, дождаться обновления без publish; остановить только viewer в разрешённом
+fixture, сохранить офлайн, восстановить, проверить доставку». «Сделан коммит»,
+«выложен JSON» and «123 tests passed» belong in progress/evidence instead.
 
 The change log is an optional section of the report. It is what the dashboard shows
 as a history, so it names an action, a result and a confirmation, not the leaves
@@ -309,17 +331,19 @@ not a leaf's business. They live in `<objective>/plan.json` next to `leaves/`:
 ```json
 {
   "title": "План поставки",
-  "goal": "Чего хочет пользователь, когда поставка закончится.",
-  "business_result": "Что пользователь может использовать уже сейчас — достигнутый факт.",
-  "current_progress": "Что уже доказано по дороге к цели.",
+  "goal": "Пользователь хочет следить за ходом работы по одной ссылке.",
+  "business_result": "После сохранения локального листа новая заметка появится по прежней ссылке в течение установленного интервала, включая восстановление сервера.",
+  "acceptance_scenarios": ["Открыть страницу, изменить note обычным сохранением, дождаться обновления без publish; остановить только viewer в разрешённом fixture, сохранить офлайн, восстановить, проверить доставку."],
+  "current_progress": "Сценарий согласован; обновление страницы и восстановление ещё не проверены.",
   "slots": 2,
   "updated_at": "2026-10-23T22:04"
 }
 ```
 
-`business_result` is the achieved fact, `goal` is the outcome that may still be
-open, and `current_progress` is what is already proven on the way. The three
-never borrow each other's wording.
+`business_result` declares the expected capability; `goal` explains its purpose.
+Optional `business_results` lists expected capabilities, and optional
+`acceptance_scenarios` lists their real checks. `current_progress` records only
+current facts; it never converts a declaration into evidence of achievement.
 
 Collect the leaves into the graph with one command:
 
@@ -343,5 +367,6 @@ for byte — so a rebuilt plan is comparable with the one before it.
 The Overseer reads this report against the original request and the accepted
 business canary. A report whose leaves are all process — receipts, hashes, extra
 reviews, re-planning — with no user-visible delta is exactly the drift it looks
-for. Keep the business-result line honest: «пока ничего не изменилось для юзера»
-is a valid and useful answer.
+for. Keep the expected-result line concrete and future-facing. If nothing has
+changed for the user yet, say so in `current_progress`, then keep the intended
+capability and its real verification scenario visible to detect drift.

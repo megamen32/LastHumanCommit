@@ -16,7 +16,7 @@ def deploy(webroot, project, name, identity, version, files):
             raise ValueError("unsafe publication identifier")
     if not Path(webroot).is_absolute():
         raise ValueError("webroot must be absolute")
-    if any(not re.fullmatch(r"(?:index\.html|version\.json|r[0-9]{3,}\.html)", n) for n in files):
+    if any(not re.fullmatch(r"(?:index\.html|version\.json|(?:view-)?r[0-9]{3,}\.html)", n) for n in files):
         raise ValueError("unsafe bundle filename")
     root = Path(webroot).resolve()
     parent = root / project

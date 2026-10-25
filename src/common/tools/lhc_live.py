@@ -56,6 +56,10 @@ _SCRIPT_TEMPLATE = """
   function swap(parsed) {
     if (!parsed || !parsed.body) { return false; }
     var body = document.body;
+    window.dispatchEvent(new Event('lhc-before-swap'));
+    // Inline presentation belongs to the same generation as the new body.
+    Array.prototype.slice.call(document.head.querySelectorAll('style')).forEach(function (style) { style.remove(); });
+    Array.prototype.slice.call(parsed.head.querySelectorAll('style')).forEach(function (style) { document.head.appendChild(document.importNode(style, true)); });
     var scripts = [];
     Array.prototype.slice.call(parsed.body.querySelectorAll('script')).forEach(
       function (old) { scripts.push(old); }

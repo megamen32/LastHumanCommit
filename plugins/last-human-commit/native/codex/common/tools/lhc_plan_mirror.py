@@ -366,7 +366,7 @@ class Replica:
         self.data.mkdir(parents=True, exist_ok=True)
         self.lock = threading.Lock()
         self.renderer = pub.digest({name: Path(pub.__file__).with_name(name).read_text()
-                                    for name in ('lhc_plan_publish.py', 'lhc_plan_transport.py', 'lhc_grid.py')})
+                                    for name in ('lhc_plan_publish.py', 'lhc_plan_transport.py', 'lhc_grid.py', 'lhc_plan_ui.py')})
 
     def entries(self):
         return [read(p) for p in self.data.glob('*.json')]
@@ -379,6 +379,7 @@ class Replica:
         files = {}
         for i, rev in enumerate(revisions):
             files[rev['id'] + '.html'] = pub.page(revisions[0]['document'], rev['document'], rev['document'], revisions[:i+1], rev['id'], rev['created_at'], False, observed=rev.get('observed'))
+            files['view-' + rev['id'] + '.html'] = pub.page(revisions[0]['document'], rev['document'], rev['document'], revisions, rev['id'], rev['created_at'], False, observed=rev.get('observed'))
         files['index.html'] = pub.page(revisions[0]['document'], doc, doc, revisions, revisions[-1]['id'], snapshot['last_file_event'], True, version, observed)
         files['version.json'] = pub.encoded({'version': version, 'updated_at': snapshot['last_file_event'], 'revision': revisions[-1]['id'], 'server_receipt': entry['receipt']})
         # Preserve already published immutable HTML, including a legacy renderer.
@@ -386,7 +387,7 @@ class Replica:
         if target.is_symlink() and (target / '.lhc-owner').read_text() == snapshot['identity']:
             for name in files:
                 if re.fullmatch(r'r[0-9]+\.html', name) and (target / name).is_file():
-                    files[name] = (target / name).read_text()
+                    files[name] = (target / name).read_bytes().decode('utf-8')
         transport.deploy(self.cfg['webroot'], snapshot['project'], snapshot['name'], snapshot['identity'], version, files)
 
     def ingest(self, snapshot):
@@ -407,7 +408,7 @@ class Replica:
                     if pub.digest(snapshot) != pub.digest(old):
                         raise Conflict('sequence reused for different data')
                     target = Path(self.cfg['webroot']) / old['project'] / old['name']
-                    required_files = ['index.html', 'version.json', *[r['id'] + '.html' for r in old['revisions']]]
+                    required_files = ['index.html', 'version.json', *[prefix + r['id'] + '.html' for r in old['revisions'] for prefix in ('', 'view-')]]
                     if not previous.get('rendered', True) or not all((target / name).is_file() for name in required_files):
                         self.render(previous)
                         previous['rendered'] = True

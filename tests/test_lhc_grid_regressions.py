@@ -424,10 +424,10 @@ def test_confirmed_progress_is_visible_without_tap():
     )
     assert folded, "свёрнутый блок технической части не найден"
     assert folded.group(1), "непустой подтверждённый прогресс должен быть виден сразу"
-    assert "Подтверждённый прогресс" in folded.group(2)
-    assert "Подтверждённый прогресс" in body
+    assert "Текущий факт" in folded.group(2)
+    assert "Что уже сделано" in body
     assert "Контракт принят, приёмка в доске" in body
-    assert body.find("Подтверждённый прогресс") > body.find("kpis"), (
+    assert body.find("Что уже сделано") > body.find("kpis"), (
         "техническая часть остаётся ниже состояния"
     )
 
@@ -638,7 +638,7 @@ def test_done_leaf_and_technical_progress_do_not_claim_user_acceptance():
                    "status": "done", "depends_on": [], "acceptance": "Сборка завершается без ошибок."}],
     })
     html = lhc.render_html(graph, lhc.build_metrics(graph))
-    assert "Ожидаемый бизнес-результат" in html
+    assert "Что будет работать" in html
     assert "Покупатель видит итоговую цену и может подтвердить заказ." in html
     assert "Сборка и модульные проверки завершены" in html
     assert "Исходники опубликованы, сборка и модульные проверки прошли." in html

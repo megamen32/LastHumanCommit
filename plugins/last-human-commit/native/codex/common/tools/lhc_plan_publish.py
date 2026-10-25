@@ -126,7 +126,7 @@ def safe_text(value):
 
 
 def public_document(document):
-    plan_keys = {"schema_version", "title", "goal", "business_result", "business_results", "current_progress", "external_waits", "slots", "updated_at", "leaf_count", "planned_start_at"}
+    plan_keys = {"schema_version", "title", "goal", "business_result", "business_results", "acceptance_scenarios", "current_progress", "external_waits", "slots", "updated_at", "leaf_count", "planned_start_at"}
     task_keys = set(leaves.LEAF_FIELDS) - {"affected_files", "blocker_details"}
     def clean(value):
         if isinstance(value, str):
@@ -199,6 +199,8 @@ def schedule_document(doc):
 def planning_facts(doc):
     keys = {"id", "label", "description", "acceptance", "depends_on", "estimate_minutes", "duration_estimate_minutes", "estimate_unknown_reason", "origin", "supersedes"}
     return {"goal": doc.get("goal"), "slots": doc.get("slots"), "planned_start_at": doc.get("planned_start_at"),
+            "business_result": doc.get("business_result") or "", "business_results": doc.get("business_results") or [],
+            "acceptance_scenarios": doc.get("acceptance_scenarios") or [],
             "tasks": [{k: v for k, v in t.items() if k in keys} for t in doc["tasks"]]}
 
 
@@ -298,13 +300,20 @@ def page(baseline, selected, current, revisions, revision_id, updated, live, ver
     result = lhc_grid.render_html(graph, lhc_grid.build_metrics(graph))
     # Replace the existing self-HTML poller with metadata polling, HTTP only.
     result = re.sub(r'<script[^>]*id="lhc-live"[^>]*>.*?</script>', "", result, flags=re.S)
-    links = '<a href="./">Текущий факт</a>' + ''.join(f'<a href="{r["id"]}.html">{r["id"]} · {html.escape(r["reason"])}</a>' for r in revisions)
-    pending = planning_facts(current) != planning_facts(revisions[-1]["document"])
+    links = '<a href="./"' + (' aria-current="page"' if live else '') + '>Текущий план</a>' + ''.join(f'<a href="view-{r["id"]}.html"' + (' aria-current="page"' if not live and r['id'] == revision_id else '') + f' title="{html.escape(r["reason"], quote=True)}">{r["id"]}</a>' for r in revisions)
+    # Navigation may know later revisions; historical facts must not know them.
+    fact_revisions = revisions if live else revisions[:next(i + 1 for i, rev in enumerate(revisions) if rev['id'] == revision_id)]
+    if not live:
+        observed = fact_revisions[-1].get('observed', {})
+    originals = ''.join(f'<a href="{r["id"]}.html">Оригинал {r["id"]}</a> ' for r in fact_revisions)
+    pending = live and planning_facts(current) != planning_facts(revisions[-1]["document"])
     pending_text = " · Есть изменения плана без новой ревизии" if pending else ""
     heading = ("Текущий план и факт · последняя ревизия " if live else "Снимок ") + revision_id
-    panel = f'<section id="publication"><b>{heading}{pending_text}</b><p>{links}</p>Обновлено: <time id="publication-time">{html.escape(updated)}</time> · <span id="live-state">Снимок / офлайн</span><p>Доступ по ссылке: её получатель может передать её другим. Скрытие от поиска не является авторизацией.</p></section>'
+    panel = f'<section id="publication"><b>{heading}{pending_text}</b><p>Обновлено: <time id="publication-time">{html.escape(updated)}</time> · <span id="live-state">Снимок / офлайн</span></p><p>Доступ по ссылке: её получатель может передать её другим. Скрытие от поиска не является авторизацией.</p><p>Ревизии показаны новым интерфейсом по неизменяемым данным. Исходные архивные страницы: {originals}</p></section>'
     result = result.replace("</head>", '<meta name="robots" content="noindex,nofollow,noarchive">' + STYLE + "</head>")
-    result = result.replace("<body>", "<body>" + panel + comparison(baseline, selected, current, revisions, updated, observed), 1)
+    result = re.sub(r'<nav class="revision-strip".*?</nav>', '<nav class="revision-strip" aria-label="Ревизии плана">' + links + '</nav>', result, count=1, flags=re.S)
+    result = result.replace('<!-- plan-publication -->', panel, 1)
+    result = result.replace('<!-- plan-comparison -->', comparison(baseline, selected, current if live else selected, fact_revisions, updated, observed), 1)
     if live:
         result = result.replace("</body>", POLLER.replace("__VERSION__", version) + "</body>")
     return result
@@ -399,13 +408,15 @@ def publish(plan_dir, config_path=None, *, autopublish=False, automatic=False, r
         elif reason:
             freeze(directory, document, reason, observed)
         revisions = load_revisions(directory)
-        renderer_version = digest({p: Path(__file__).with_name(p).read_text() for p in ("lhc_plan_publish.py", "lhc_plan_transport.py", "lhc_grid.py")})
+        renderer_version = digest({p: Path(__file__).with_name(p).read_text() for p in ("lhc_plan_publish.py", "lhc_plan_transport.py", "lhc_grid.py", "lhc_plan_ui.py")})
         version = digest({"document": document, "revisions": revisions, "renderer": renderer_version, "observed": observed})
         url = f'{base_url}/{state["project"]}/{state["name"]}/'
         if state.get("published_version") == version:
             return {"url": url, "version": version, "changed": False}
         updated = now()
-        files = {p.name: p.read_text() for p in (directory / "revisions").glob("r*.html")}
+        files = {p.name: p.read_bytes().decode('utf-8') for p in (directory / "revisions").glob("r*.html")}
+        for rev in revisions:
+            files['view-' + rev['id'] + '.html'] = page(revisions[0]['document'], rev['document'], rev['document'], revisions, rev['id'], rev['created_at'], False, observed=rev.get('observed'))
         files["index.html"] = page(revisions[0]["document"], document, document, revisions, revisions[-1]["id"], updated, True, version, observed)
         files["version.json"] = encoded({"version": version, "updated_at": updated, "revision": revisions[-1]["id"]})
         payload = dict(webroot=config["webroot"], project=state["project"], name=state["name"], identity=state["identity"], version=version, files=files)

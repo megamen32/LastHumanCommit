@@ -75,10 +75,18 @@ current plan or the plan status — answer with that report and nothing else, wr
 the user's language. At every 30-minute reminder the report is rebuilt from the leaf
 files as a projection, not hand-written, and kept under `## Plan` in the canonical task note, so the plan survives compaction.
 
-Three header lines — the goal, the business result the user can already use, and the
+Three header lines — the goal, the future tangible capability («Что будет работать»), and the
 shape of the work: how many leaves it was split into, how many run at the same time,
 how many waves that takes, how many slots exist. A quick task says it plainly — one leaf, nothing in
 parallel, one wave, one slot — and a full cycle shows the whole structure.
+
+Keep `business_result` / `business_results` as legacy storage names for expected
+capabilities; accept the old «Бизнес-результат» heading. Optional
+`acceptance_scenarios` lists actor/context, actions and expected visible results
+for testers. `current_progress` and evidence describe only current facts.
+New/updated plans follow `PLAN_REPORT.md`; historical reports stay untouched and
+old fields never imply achievement. An achievement claim needs real-scenario
+evidence; a pending expected capability is a valid plan declaration.
 
 Then every leaf: finished, running, queued. ✅ finished — start and finish time, its
 original estimate, the actual minutes. 🔄 running — start, estimate, elapsed minutes,

@@ -50,6 +50,12 @@ another Overseer. Other harnesses retain manual consultation until proven.
 
 ## What I check in the plan
 
+The goal explains why; «Что будет работать» (`business_result` / `business_results`)
+declares future tangible capabilities; `acceptance_scenarios` describes how testers
+will check them. I compare leaves with that target and current progress/evidence
+with observed facts. A pending declaration is not a false achievement claim, and
+old reports are not rewritten to invent fulfillment. See `PLAN_REPORT.md`.
+
 - Does every planned leaf advance the accepted business result, or is it process —
   receipts, hashes, extra reviews, re-planning — with no user-visible delta?
 - Is the original goal still the goal, or has it been narrowed or expanded without
