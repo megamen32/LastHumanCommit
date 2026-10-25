@@ -126,7 +126,7 @@ def safe_text(value):
 
 
 def public_document(document):
-    plan_keys = {"schema_version", "title", "goal", "business_result", "business_results", "acceptance_scenarios", "current_progress", "external_waits", "slots", "updated_at", "leaf_count", "planned_start_at"}
+    plan_keys = {"schema_version", "title", "goal", "business_result", "business_results", "acceptance_scenarios", "current_progress", "external_waits", "slots", "updated_at", "leaf_count", "planned_start_at", "started_at", "finished_at"}
     task_keys = set(leaves.LEAF_FIELDS) - {"affected_files", "blocker_details"}
     def clean(value):
         if isinstance(value, str):
@@ -297,6 +297,8 @@ def page(baseline, selected, current, revisions, revision_id, updated, live, ver
     graph = lhc_grid.parse_graph_json(schedule_document(selected))
     graph.resolve_dependencies()
     graph.source_path = "Публичный снимок плана"
+    graph.time_live = live
+    graph.snapshot_at = updated if not live else ""
     result = lhc_grid.render_html(graph, lhc_grid.build_metrics(graph))
     # Replace the existing self-HTML poller with metadata polling, HTTP only.
     result = re.sub(r'<script[^>]*id="lhc-live"[^>]*>.*?</script>', "", result, flags=re.S)

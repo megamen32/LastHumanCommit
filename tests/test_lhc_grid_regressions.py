@@ -263,7 +263,9 @@ def test_forecast_is_anchored_at_the_last_confirmed_event():
     assert metrics["eta_overdue"] is True
     html = lhc.render_html(graph, metrics)
     assert "отсчёт от последнего события 15:19" in html
-    assert "срок прошёл" in html
+    # A recorded clock without its date cannot prove an absolute overrun.
+    assert "дата не записана" in html
+    assert "Прогноз неизвестен" in html
 
 
 def test_completed_plan_does_not_render_an_overdue_forecast():

@@ -1,5 +1,27 @@
 """Shared, dependency-free navigation for standalone and published plan views."""
 
+import json
+from html import escape
+from datetime import datetime, timezone
+
+
+def display_time(value):
+    return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(timezone.utc).strftime("%d.%m.%Y %H:%M UTC")
+
+
+def time_rail(frame):
+    start = ("Начало: " + display_time(frame["start"]) if frame["start"] else
+             "Начало: " + frame["legacy_start"] + " · дата не записана"
+             if frame["legacy_start"] else "Начало не зафиксировано")
+    end = frame["end_label"] + (" " + display_time(frame["end"]) if frame["end"] else "")
+    return ('<div class="time-rail" data-time-frame="' + escape(json.dumps(frame), quote=True) + '">'
+            '<div class="time-rail-ends"><span class="time-rail-start">' + escape(start) + '</span>'
+            '<span class="time-rail-end">' + escape(end) + '</span></div>'
+            '<div class="time-rail-clock">На момент снимка ' + escape(display_time(frame["snapshot"])) + '</div>'
+            '<div class="time-rail-track" hidden><span class="time-rail-marker"></span>'
+            '<span class="time-rail-dot"></span></div>'
+            '<div class="time-rail-note">Временная шкала; проценты выше — доля задач. Часовой пояс указан в датах.</div></div>')
+
 SECTIONS = (("dashboard", "Дашборд"), ("outcome", "Цель и результат"),
             ("work-plan", "План работ"), ("comparison", "План и факт"),
             ("tasks", "Задачи"), ("history", "История"))
@@ -22,6 +44,16 @@ body>footer{margin:0 36px 24px 240px;max-width:1324px;padding:12px 0;color:var(-
 .revision-strip a,.revision-strip span{flex:none;white-space:nowrap;padding:7px 13px;border:1px solid var(--line);border-radius:8px;color:var(--muted);font-size:12px;text-decoration:none}
 .revision-strip [aria-current=page]{color:var(--text);border-color:var(--accent);background:var(--panel);font-weight:650}
 body .progress-strip{position:relative;top:auto;margin:0 0 18px;box-shadow:none}
+.time-rail{border-top:1px solid var(--line);margin-top:12px;padding-top:10px;cursor:default;min-width:0}
+.time-rail-ends{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 20px;font-size:12px;line-height:1.5}
+.time-rail-ends>span{min-width:0;max-width:100%;overflow-wrap:anywhere}.time-rail-end{text-align:right;margin-left:auto}
+.time-rail-clock,.time-rail-note{font-size:11px;color:var(--muted);line-height:1.5;margin-top:6px}
+.time-rail-track{position:relative;height:42px;margin-top:6px;min-width:0}
+.time-rail-track:before{content:'';position:absolute;left:0;right:0;bottom:8px;height:2px;background:var(--line)}
+.time-rail-marker{position:absolute;top:0;font-size:11px;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.time-rail-dot{position:absolute;bottom:4px;width:10px;height:10px;border-radius:50%;background:var(--accent);transform:translateX(-50%)}
+.time-rail[data-overdue=true] .time-rail-clock{color:var(--text);font-weight:700}
+@media(max-width:650px){.time-rail-ends{flex-direction:column;gap:4px}.time-rail-end{margin-left:0;text-align:left}}
 body .kpis{grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:0 0 18px}
 body .kpi{padding:15px 16px;min-width:0;border-radius:12px}body .kpi-value{font-size:clamp(22px,2.5vw,32px)}body .kpi-hint{font-size:11px;line-height:1.4}
 body .panel{border-radius:14px;padding:20px;margin-bottom:16px}body .brief{gap:12px}body .brief-card{min-width:0}
@@ -40,6 +72,35 @@ body #publication a{color:var(--accent)}body .comparison td,body .comparison th{
 SCRIPT = '''<script id="plan-app">
 (()=>{
 if(window.__lhcUI)window.__lhcUI.abort();window.__lhcUI=new AbortController();const signal=window.__lhcUI.signal;
+const rail=document.querySelector('.time-rail');
+if(rail){
+const f=JSON.parse(rail.dataset.timeFrame),start=Date.parse(f.start),end=Date.parse(f.end),early=Date.parse(f.end_min);
+const live=f.live&&/^https?:$/.test(location.protocol)&&!f.completed;
+const frozen=Date.parse(f.snapshot),zone=Intl.DateTimeFormat().resolvedOptions().timeZone;
+const fmt=n=>new Date(n).toLocaleString('ru-RU',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
+if(Number.isFinite(start))rail.querySelector('.time-rail-start').textContent='Начало: '+fmt(start);
+if(Number.isFinite(end))rail.querySelector('.time-rail-end').textContent=f.end_label+' '+(early!==end?fmt(early)+' — ':'')+fmt(end);
+const forecast=document.querySelector('[data-tile="forecast"] .kpi-value');
+if(forecast&&Number.isFinite(end))forecast.textContent=(f.completed?'Завершено: ':'≈ ')+(early!==end?fmt(early)+' — ':'')+fmt(end)+' · '+zone;
+const forecastHint=document.querySelector('[data-tile="forecast"] .kpi-hint');
+if(forecastHint&&f.anchor)forecastHint.textContent=(f.completed?'Фактический финиш записан':'Отсчёт от события '+fmt(Date.parse(f.anchor)))+' · '+zone;
+rail.querySelector('.time-rail-note').textContent='Временная шкала; проценты выше — доля задач. Часовой пояс: '+zone+(f.completed?' · Завершённый план':'');
+function clock(){
+const now=live?Date.now():frozen,overdue=!f.completed&&Number.isFinite(end)&&now>end;
+const text=(live?'Сейчас ':'На момент снимка ')+fmt(now)+(overdue?' · Прогнозный срок прошёл':'');
+rail.dataset.overdue=String(overdue);rail.querySelector('.time-rail-clock').textContent=text;
+const track=rail.querySelector('.time-rail-track');
+const valid=Number.isFinite(start)&&Number.isFinite(end)&&end>start&&start<=now;
+track.hidden=!valid;if(!valid)return;
+const point=f.completed?end:now,p=Math.max(0,Math.min(1,(point-start)/(end-start)));
+const marker=rail.querySelector('.time-rail-marker'),dot=rail.querySelector('.time-rail-dot');
+marker.textContent=(live?'Сейчас ':'На момент снимка ')+new Date(now).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
+const width=track.clientWidth;dot.style.left=Math.max(5,Math.min(width-5,p*width))+'px';
+marker.style.left=Math.max(0,Math.min(width-marker.offsetWidth,p*width-marker.offsetWidth/2))+'px';
+}
+clock();window.addEventListener('resize',clock,{signal});
+if(live){const timer=setInterval(clock,15000);signal.addEventListener('abort',()=>clearInterval(timer),{once:true})}
+}
 const sections=[...document.querySelectorAll('.plan-section')];
 const links=[...document.querySelectorAll('.plan-sidebar a')];
 const key='lhc-ui:'+location.pathname;let saved={};

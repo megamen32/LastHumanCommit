@@ -190,6 +190,8 @@ PLAN_FIELDS = (
     "updated_at",
     "journal",
     "planned_start_at",
+    "started_at",
+    "finished_at",
 )
 
 CLOCK_RE = re.compile(r"^(?:[01]?\d|2[0-3]):[0-5]\d$")
@@ -595,7 +597,7 @@ def _plan_fields(raw: dict[str, Any], path: Path) -> dict[str, Any]:
         )
     fields: dict[str, Any] = {}
     for field in ("title", "goal", "business_result", "current_progress",
-                  "external_waits", "updated_at", "planned_start_at"):
+                  "external_waits", "updated_at", "planned_start_at", "started_at", "finished_at"):
         value = raw.get(field)
         if value is None:
             continue
@@ -604,6 +606,9 @@ def _plan_fields(raw: dict[str, Any], path: Path) -> dict[str, Any]:
         value = value.strip()
         if value:
             fields[field] = value
+    for field in ("started_at", "finished_at"):
+        if fields.get(field):
+            _clock(fields, field, path)
     results = raw.get("business_results")
     if results is not None:
         if not isinstance(results, list) or not all(
@@ -655,7 +660,7 @@ def plan_metadata(plan_dir: Path) -> dict[str, Any]:
         if isinstance(raw, dict):
             fields: dict[str, Any] = {}
             for field in ("title", "goal", "business_result", "current_progress",
-                          "external_waits", "updated_at", "planned_start_at"):
+                          "external_waits", "updated_at", "planned_start_at", "started_at", "finished_at"):
                 value = raw.get(field)
                 if isinstance(value, str) and value.strip():
                     fields[field] = value.strip()
@@ -749,12 +754,17 @@ def build_document(plan_dir: Path) -> dict[str, Any]:
     tasks = _order(tasks, sources)
     metadata = plan_metadata(plan_dir)
 
-    stamp = ""
-    for value in stamps.values():
-        if value and (not stamp or value > stamp):
-            stamp = value
-    if not stamp:
-        stamp = str(metadata.get("updated_at") or "")
+    candidates = [*stamps.values(), str(metadata.get("updated_at") or "")]
+    absolute_stamps = []
+    for value in candidates:
+        try:
+            parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+            if parsed.tzinfo is not None:
+                absolute_stamps.append((parsed, value))
+        except ValueError:
+            pass
+    # Compare instants, not strings: offsets and midnight change lexical order.
+    stamp = max(absolute_stamps)[1] if absolute_stamps else max(candidates, default="")
 
     results = list(metadata.get("business_results") or [])
     business_result = str(metadata.get("business_result") or "")
@@ -784,6 +794,9 @@ def build_document(plan_dir: Path) -> dict[str, Any]:
     anchor = str(metadata.get("planned_start_at") or "")
     if anchor:
         document["planned_start_at"] = anchor
+    for field in ("started_at", "finished_at"):
+        if metadata.get(field):
+            document[field] = _clock(metadata, field, plan_dir / PLAN_FILE)
     return document
 
 

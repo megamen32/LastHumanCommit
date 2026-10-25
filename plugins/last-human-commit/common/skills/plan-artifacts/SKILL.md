@@ -166,6 +166,15 @@ the intended start is known). When it is absent the collector falls back to the
 plan-level fields of an existing `plan.graph.json`, so a plan that already has a
 graph keeps its title, goal and business result.
 
+Optional plan-level `started_at` and `finished_at` record actual execution,
+preferably ISO with timezone. Record the start when real execution begins;
+never backfill a guessed date from publication, mtime or a planned start.
+Keep existing valid times. Missing historical times remain unknown. The upper
+card shows a separate time rail: its forecast is anchored to the last confirmed
+absolute source event, while task percentages still count tasks. Browser clocks
+use the explicitly labelled local timezone; archived/downloaded pages say
+«На момент снимка» and freeze time. Unknown waits/estimates withhold a full ETA.
+
 ## 2. Collect the leaves into the graph
 
 Do not hand-write the graph. The collector reads the leaf files, validates them

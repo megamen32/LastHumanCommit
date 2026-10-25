@@ -47,7 +47,7 @@ import sys
 import tempfile
 import webbrowser
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Iterable, Optional
 
@@ -434,6 +434,11 @@ class Graph:
     declared_waves: Optional[int] = None
     declared_slots: Optional[int] = None
     updated_at: str = ""
+    started_at: str = ""
+    finished_at: str = ""
+    # Render context only; never written back into historical source plans.
+    snapshot_at: str = ""
+    time_live: bool = True
     source_path: str = ""
     source_kind: str = ""
     live_items: list[dict[str, Any]] = field(default_factory=list)
@@ -1170,6 +1175,8 @@ def parse_graph_json(document: Any) -> Graph:
     graph.current_progress = str(document.get("current_progress") or "")
     graph.external_waits = str(document.get("external_waits") or "")
     graph.updated_at = str(document.get("updated_at") or "")
+    graph.started_at = str(document.get("started_at") or "")
+    graph.finished_at = str(document.get("finished_at") or "")
     graph.slots = int(document.get("slots") or 1)
     graph.declared_parallel = document.get("parallel")
     graph.declared_leaves = document.get("leaf_count")
@@ -1692,7 +1699,7 @@ def build_metrics(graph: Graph) -> dict[str, Any]:
         eta_imprecise_reasons.append("срок внешнего ожидания не подтверждён")
     unfinished = max(0, headline_total - done - deferred)
 
-    return {
+    metrics = {
         "total": total,
         "live_total": live_total,
         "use_live": use_live,
@@ -1757,6 +1764,85 @@ def build_metrics(graph: Graph) -> dict[str, Any]:
         "schedule_min": schedule_min,
         "pending": pending_max,
     }
+    metrics["time_frame"] = plan_time_frame(graph, metrics)
+    frame = metrics["time_frame"]
+    # Keep the forecast card on the same absolute anchor as the time rail.
+    if frame["anchor"]:
+        anchor_dt = absolute_time(frame["anchor"])
+        reference = absolute_time(frame["reference"])
+        metrics["eta_anchor_clock"] = anchor_dt.isoformat(timespec="minutes")
+        metrics["eta_anchor_idle_minutes"] = max(0, (reference - anchor_dt).total_seconds() / 60)
+        metrics["eta_clock_min"] = frame["end_min"]
+        metrics["eta_clock_max"] = frame["end"]
+        metrics["eta_overdue"] = bool(frame["end"] and not frame["completed"]
+                                       and absolute_time(frame["end"]) < reference)
+    return metrics
+
+
+def absolute_time(value: str) -> Optional[datetime]:
+    """Only an absolute, timezone-aware source timestamp is a time anchor."""
+    try:
+        stamp = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        return stamp if stamp.tzinfo is not None else None
+    except (ValueError, TypeError, AttributeError):
+        return None
+
+
+def plan_time_frame(graph: Graph, metrics: dict[str, Any]) -> dict[str, Any]:
+    reference = absolute_time(graph.snapshot_at) or datetime.now(timezone.utc)
+    snapshot = absolute_time(graph.snapshot_at) or absolute_time(graph.updated_at) or reference
+    active = [leaf for leaf in graph.leaves if leaf.status != STATUS_DEFERRED]
+    completed = bool(active) and all(leaf.status == STATUS_DONE for leaf in active)
+    starts = [absolute_time(leaf.started_at) for leaf in graph.leaves]
+    starts = [stamp for stamp in starts if stamp and stamp <= reference]
+    start = absolute_time(graph.started_at) if graph.started_at else min(starts, default=None)
+    if start and start > reference:
+        start = None
+    legacy = graph.started_at if re.fullmatch(r"\d{1,2}:\d{2}", graph.started_at) else ""
+    if not graph.started_at and not start:
+        legacy_starts = [leaf.started_at for leaf in graph.leaves
+                         if re.fullmatch(r"\d{1,2}:\d{2}", leaf.started_at)]
+        legacy = min(legacy_starts, default="")
+    events = [absolute_time(graph.updated_at), absolute_time(graph.started_at)]
+    events += [absolute_time(value) for leaf in graph.leaves
+               for value in (leaf.started_at, leaf.finished_at)]
+    anchor = max((stamp for stamp in events if stamp and stamp <= reference), default=None)
+    finish = absolute_time(graph.finished_at)
+    if completed and not finish:
+        finishes = [absolute_time(leaf.finished_at) for leaf in active]
+        if all(finishes):
+            finish = max(finishes)
+            if any(absolute_time(leaf.started_at) and end < absolute_time(leaf.started_at)
+                   for leaf, end in zip(active, finishes)):
+                finish = None
+    if finish and (finish > reference or (start and finish < start)):
+        finish = None
+    end_min = end = None
+    if completed:
+        end_min = end = finish
+    elif anchor and metrics["eta_exact"]:
+        try:
+            end_min = anchor + timedelta(minutes=metrics["remaining_minutes_min"])
+            end = anchor + timedelta(minutes=metrics["remaining_minutes_max"])
+        except (OverflowError, ValueError):
+            pass
+    if end and start and end <= start:
+        end_min = end = None
+    if completed:
+        end_label = "Завершено" if finish else "Завершено; время не записано"
+    elif metrics["external_wait_unknown"]:
+        end_label = "Прогноз неизвестен: срок внешнего ожидания не подтверждён"
+    elif metrics["unknown_estimate_pending"]:
+        end_label = "Прогноз частичный: есть задачи без оценки"
+    elif not end:
+        end_label = "Прогноз неизвестен: нет достоверной даты события"
+    else:
+        end_label = "Прогноз ≈"
+    iso = lambda stamp: stamp.isoformat() if stamp else ""
+    return {"start": iso(start), "legacy_start": legacy, "end_min": iso(end_min),
+            "end": iso(end), "anchor": iso(anchor), "reference": iso(reference),
+            "snapshot": iso(snapshot), "completed": completed, "live": graph.time_live,
+            "end_label": end_label}
 
 
 def _plan_anchor(graph: Graph) -> Optional[int]:
@@ -2686,6 +2772,8 @@ def graph_revision(graph: Graph) -> str:
         ]
         for leaf in sorted(graph.leaves, key=lambda item: item.id)
     ]
+    if graph.started_at or graph.finished_at:
+        payload.append(["plan_times", graph.started_at, graph.finished_at])
     document = json.dumps(payload, ensure_ascii=False, sort_keys=True, default=str)
     return hashlib.sha256(document.encode("utf-8")).hexdigest()[:12]
 
@@ -2843,11 +2931,24 @@ def render_html(
         eta_hint = "остаток стартует сейчас"
     if metrics["eta_overdue"]:
         eta_hint = f"срок прошёл, остаток не начался · {eta_hint}"
+    import lhc_plan_ui
     eta_range = _eta_range_text(metrics)
+    frame = metrics["time_frame"]
+    if not frame["end"]:
+        eta_range = "Срок неизвестен"
+        eta_hint = frame["end_label"]
+    else:
+        eta_range = ("Завершено: " if frame["completed"] else "≈ ") + lhc_plan_ui.display_time(frame["end"])
+        if frame["end_min"] != frame["end"]:
+            eta_range = "≈ " + lhc_plan_ui.display_time(frame["end_min"]) + " — " + lhc_plan_ui.display_time(frame["end"])
+    if not frame["anchor"]:
+        eta_hint = (("отсчёт от последнего события " + metrics["eta_anchor_clock"] + " · дата не записана; ")
+                    if metrics["eta_anchor_clock"] else "") + frame["end_label"]
+    elif not frame["completed"]:
+        eta_hint = "Отсчёт от события " + lhc_plan_ui.display_time(frame["anchor"])
     if metrics['unfinished'] == 0:
         eta_range = "Работы по плану завершены"
-        finished = [leaf.finished_at for leaf in leaves if leaf.finished_at]
-        eta_hint = ("Последний записанный финиш: " + max(finished)) if finished else "Фактический финиш не зафиксирован"
+        eta_hint = ("Фактический финиш: " + lhc_plan_ui.display_time(frame["end"])) if frame["end"] else "Фактический финиш не зафиксирован"
     # The peak of the plan is a schedule number: without a duration on every
     # leaf the scheduler has nothing to overlap, so the peak is unknown and
     # not "0".
@@ -3087,6 +3188,8 @@ def render_html(
         'data-tile="all" aria-label="Степень прогресса — показать все задачи">'
         f'<div class="progress-strip-line">{"".join(strip_parts)}</div>'
         f'<div class="progress-strip-bar">{"".join(segments)}</div>'
+        + lhc_plan_ui.time_rail(metrics["time_frame"])
+        +
         "</div>"
     )
 
@@ -5218,11 +5321,14 @@ def export_graph(graph: Graph) -> dict[str, Any]:
         "current_progress": graph.current_progress,
         "external_waits": graph.external_waits,
         "slots": graph.slots,
-        "updated_at": datetime.now().isoformat(timespec="seconds"),
+        "updated_at": graph.updated_at,
         "tasks": tasks,
     }
     if graph.budget_usd is not None:
         document["budget_usd"] = graph.budget_usd
+    for field in ("started_at", "finished_at"):
+        if getattr(graph, field):
+            document[field] = getattr(graph, field)
     if metrics["total"]:
         document["leaf_count"] = metrics["total"]
     return document
@@ -5876,7 +5982,7 @@ def merge_attribution(
             )
             if missing and source.get(field) is not None:
                 task[field] = source[field]
-    for field in ("current_progress", "external_waits", "acceptance_scenarios"):
+    for field in ("current_progress", "external_waits", "acceptance_scenarios", "started_at", "finished_at", "updated_at"):
         if not document.get(field) and previous.get(field):
             document[field] = previous[field]
     # The title of the plan is the first line of the report. A title that was
