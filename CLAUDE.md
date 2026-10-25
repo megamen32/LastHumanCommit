@@ -30,11 +30,12 @@ Recover spoken intent from context. Preserve the original goal and latest correc
 Lead owns applicable delivery and observed Quick Loop/Full Cycle results; a child source receipt proves only that scope.
 Agent messages are not human prohibitions. Status, duplicates and review routing preserve valid progress; resolve conflicts against actual user authority.
 Repair evidence bindings without replaying accepted actions; preserve native stops, permissions, revocations, negative findings and unknown operations.
-Lead only orchestrates: decompose the objective, assign exclusive paths/resources and dependencies, resolve decisions, and collect/summarize results. Every inspection, edit, check, deployment, commit, push or install is performed by a Worker; Lead does not execute these actions.
+Lead owns the engineering outcome and coordinates its delivery: preserve the plan, resolve ownership/dependencies, and assign the nearest executable engineering leaf to a native Worker. A business executor launched inside the product being built serves that product's user task; it is not the engineering Worker for this session. The Lead remains Lead whether or not a child session has started, and must not silently switch into doing every engineering leaf personally.
 An assigned no-delegation leaf uses native self-check, never parent product PASS or recursive hiring.
 Large fullcycle: bounded independent research Workers → one working→ideal→YAGNI plan → optional quota-aware frontier council → bounded dispatch.
 Council checks alternatives/crosschallenge/business cost/dissent; do not repeat a completed council without a real delta.
 Every authorized development task has a user-readable Lead-owned plan before implementation, including quickfixes and user-assigned leaves. First recover the user's intended outcome and inspect the affected path, then record the chosen mode from actual scope and risk; do not wait for another plan approval when execution is authorized. A leaf assignment sets the worker's boundary but does not select the parent mode or waive the plan. A bounded repair or small behavior/UI change with contained risk is quickfix; a feature, coordinated slices, broad behavior/UI or boundary change, architecture choice, or risky repair is fullcycle. Quickfix still requires a proportional independent tester and real-path proof; fullcycle requires independent testers of the installed consumer result — one per branch of the blast radius, so two or more when the change is wide and one when it genuinely spans a single branch. Code length and leaf count do not determine the mode. Read-only questions, investigations and status requests stay outside this development rule.
+For a fullcycle, review the integrated diff once after all implementation and integration leaves finish. Do not review each leaf or wave. Resolve material findings, then follow the delivery order: permitted deploy → real consumer test → push on the allowed route. Workers continue needed local tests and debugging during their leaves.
 For each new genuine blocker, assign an allowed adviser — fast tier glm-5.3-flash or minimax-3.1-flash, frontier tier gpt-6-luna, glm-5.3 or gpt-6.1-sol — to identify permitted routes; resolve the tier to an exact live catalog ID and never silently substitute.
 If none is executable, ask a fresh-context Overseer for route advice. The Lead only coordinates the viable Worker route; deduplicate unchanged blockers. Never bypass HumanStop or required permission.
 Roles are tools, not a mandatory ceremony queue. Load a role or a skill because this task needs it,
@@ -158,9 +159,12 @@ exact dependencies and continuation; publish ready work/PR first, avoid mutual w
 Herder resumes the same session once; if unavailable, leave a targeted file message and `waiting` state; writing a file does not prove delivery or awakening.
 
 ## One green history
-Use claim-critical checks → permitted deploy → real consumer verification; add
-independent milestone acceptance when the accepted claim warrants it, then complete
-the applicable published dev history and integrated smoke.
+For a fullcycle, use one coherent review of the integrated change after its
+implementation and integration leaves, then permitted deploy → real consumer
+verification → push on the configured route. Add independent milestone acceptance
+when the accepted claim warrants it, then complete the applicable published dev
+history and integrated smoke. Leaf completion and wave boundaries are not separate
+review triggers; Workers still run local checks while implementing.
 Before a PR into a repository you do not own, when its contribution policy requires it, a fresh Reviewer from an allowed model tier plays that project's maintainer: it reads the project's own rules, conventions, tests and CI, then the diff,
 and returns a mountain of findings. Fix or answer every supported finding, then review
 the changed diff again when review is required by that repository's policy. An LHC receipt or bookkeeping status alone is not a release veto.

@@ -144,3 +144,58 @@ mirror config, проверяет три листа, running/session binding, gr
   owner login также не наблюдался. Поэтому подтверждены установка и synthetic
   installed-hook consumer, но не факт будущего user session invocation и не
   authenticated owner UI.
+
+## Ограничение автоматического входа, обнаруженное после установки 1.5.62
+
+Последующий точечный разбор установленного consumer обнаружил два неустранённых
+дефекта `lhc_entry`:
+
+1. Обычный русский prompt «Начни полный цикл Last Human Commit.» завершает hook
+   с кодом 0, но пустым выводом и без локального плана: `lhc_outcome.classify`
+   возвращает `unknown`.
+2. Если в Git worktree найден ровно один старый план, нерелевантный prompt на
+   английском может привязать к этой сессии его queued leaf. Единственный
+   найденный план выбирался без проверки точной связи цели; такое назначение
+   небезопасно считать автоматическим подбором.
+
+Отдельный live-config readback показал две одновременно включённые установки на
+этом Codex: `last-human-commit@megamen32-plugins` 1.5.62 и
+`last-human-commit@fleet-lhc` 1.5.58. Это наблюдение ограничено данным Codex,
+не является инвентаризацией флота. Текущая policy-коррекция не меняет entry-code
+или Fleet-managed install и не заявляет эти дефекты исправленными.
+
+## Политика итогового review (25.10.2026)
+
+Согласовано в canonical router, Reviewer/Worker, Full Cycle template и
+planning/decomposition skills: при Full-cycle одна техническая проверка
+интегрированного diff выполняется после всех рабочих/integration leaves и перед
+deploy → real consumer test → push. Отдельные leaves и волны не запускают review;
+их локальные тесты и отладка продолжаются. После материальной починки проверяется
+только изменённый diff и затронутое поведение. Автоматический
+`lhc_progress_review.py` остаётся timed read-only советом Overseer, а не review
+листов или delivery gate. Дефекты auto-entry, перечисленные выше, остались
+отдельными открытыми фактами.
+
+## Дополнение: роль Lead при создании продукта-исполнителя
+
+В подтверждённом свежем ExManager-сеансе LHC правило было прочитано, но
+инженерный Lead перешёл к самостоятельной диагностике продукта и не назначил
+инженерного Worker. Внутренний бизнес-исполнитель ExManager ошибочно оказался
+смешан с Worker разработки. Это не доказывает, что сам пользовательский продукт
+не исправен; здесь исправлен источник инструкции LHC.
+
+Канонические AGENTS/Lead/навыки/роутер/контракт теперь явно сохраняют за Lead
+инженерный результат и назначение ближайшего исполнимого инженерного листа
+native Worker. Бизнес-исполнитель продукта закрывает задачу пользователя внутри
+продукта, а не разработческий лист этой сессии. Отсутствие уже запущенного child
+не меняет роль Lead и не означает, что он должен молча выполнить все инженерные
+листья сам. Package projections синхронизированы.
+
+Пакет помечен как 1.5.63 во всех runtime/marketplace manifests; MCP server version
+и changelog обновлены вместе с инструкциями.
+
+Проверено: `tests/test_review_delivery_contract.py tests/test_plugin_version_parity.py` — 13 passed;
+`plugins/last-human-commit/scripts/validate.py`, `scripts/publish_package.py --check`,
+`plugins/last-human-commit/scripts/sync_skills.py --check` и `git diff --check` — PASS.
+Новая ExManager/Codex-сессия и post-install роль/dispatch consumer-проба не
+запускались по прямому ограничению; обновлённое runtime-поведение не заявляется.

@@ -83,14 +83,18 @@ dependency and capacity plan, not a broad global buffer.
    verify early end-to-end integration and challenge the improved synthesis.
 2. Consult the Overseer when a concrete blocker or route uncertainty benefits from
    independent advice; then implement the thinnest working vertical on that path.
-3. Run the real canary as early as safely possible.
+3. Run local or safe-fixture canaries as early as safely possible; the final
+   deployed consumer test remains after the integrated review and deploy.
 4. Fix only the first claim-blocking failure.
 5. Run proportional direct-regression checks.
-6. At a major milestone, use coherent technical review and fresh independent
-   testers with varied realistic personas when the scope and risk justify them. They
-   pursue the goal without implementation context and report observed obstacles.
-   Repair in-scope defects and repeat affected real use. Match acceptance evidence
-   to the claim; do not turn this into a gate for every task or an LHC bookkeeping rule.
+6. After all implementation and integration leaves finish, run one coherent
+   technical review of the integrated diff. Do not
+   review each leaf or wave. Fix material findings, then deploy on the permitted
+   route, test the real consumer path, and push on the configured route. Use a fresh
+   independent Tester with varied realistic personas when the claim and risk warrant
+   it; the Tester reports observed obstacles without implementation context. Repeat
+   only affected real-use checks after a repair. Local regression tests and debugging
+   continue during implementation and are not this final consumer test.
 7. Use focus-groups at a major milestone (roughly 3 hours of coherent work) or
    the final result only when varied independent goals materially add evidence.
    Preserve raw feedback;

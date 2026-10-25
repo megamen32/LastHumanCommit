@@ -363,8 +363,12 @@ intent/permission parser. Only GitHub remotes are currently supported for this
 automatic integration close. Dev branch names must be confirmed by native scope;
 unknown targets never inherit main. Shared/external main is rejected. Airlock worktrees
 branch from and converge on megamen32-dev. Final upstream main PR is only the
-agreed handoff, not a mandatory worker PR. Lead only orchestrates; assign every execution step, including small tasks, to a
-Worker. Add an independent Reviewer only when the claim and risk warrant it. An
+agreed handoff, not a mandatory worker PR. Lead owns the engineering outcome and
+assigns every engineering step, including small tasks, to a native Worker. A
+business executor inside the product being built handles that product's user task;
+it is not the engineering Worker for this session. The Lead role does not depend on
+whether a child has started and must not silently switch into doing every engineering
+step personally. Add an independent Reviewer only when the claim and risk warrant it. An
 already assigned leaf does not recursively hire and its self-check remains separate
 from parent acceptance.
 

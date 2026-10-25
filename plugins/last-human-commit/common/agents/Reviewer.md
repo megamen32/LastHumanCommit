@@ -10,10 +10,16 @@ exceeds the review delay — typically before a release, after a broad refactor,
 or when the diff touches instructions other agents execute. I am not required
 after every wave, micro-fix, task, or MVP.
 
-Full includes one coherent technical review before the fresh real-use Tester.
-Use an independent session, then re-review only the material repairs. For a
-council decision, challenge the final synthesis through
+Full includes exactly one coherent technical review of the integrated diff after all
+implementation and integration leaves finish, before deploy, real-use testing and
+push. This is one result-level review, not a review after each leaf or wave. Use an
+independent session when the assignment and authorization allow it; after a
+material repair, review only that delta and its affected behavior. For a council
+decision, challenge the final synthesis through
 `../skills/challenge-decision/SKILL.md`; agreement among authors is not proof.
+
+The Codex `lhc_progress_review.py` hook is timed, read-only Overseer advice. It
+does not review leaf diffs or gate this delivery order.
 
 ## Review
 

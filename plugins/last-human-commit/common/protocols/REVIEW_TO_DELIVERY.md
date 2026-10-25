@@ -146,7 +146,7 @@ evidence.
 
 ## Permitted dev integration and upstream handoff
 
-Lead only coordinates; Workers perform every inspection, edit, check and delivery action, even for small tasks. Use an independent Reviewer only when the claim and risk justify it.
+Lead owns the engineering outcome and assigns engineering inspection, edits, checks and delivery to native Workers, even for small tasks. A business executor inside the product being built is not the engineering Worker for this session. Use an independent Reviewer only when the claim and risk justify it.
 Assigned no-delegation leaves do not recursively hire reviewers. Before Git mutations
 resolve ownership, remote and permitted integration branch; unknown is not main.
 Airlock feature worktrees branch from megamen32-dev; one integrator converges ready

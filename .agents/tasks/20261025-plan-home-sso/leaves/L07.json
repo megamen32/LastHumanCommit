@@ -1,0 +1,129 @@
+{
+  "label": "Устранить потерю роли Lead при старте ExManager",
+  "description": "Согласовать LHC root router, Lead role, default skill, dispatch skill, project router и delivery contract: инженерный Lead назначает ближайший исполнимый лист native Worker; бизнес-исполнитель продукта не считается инженерным Worker. Проверить точечный контракт и generated projections.",
+  "acceptance": "Канонические инструкции различают engineering Lead/Worker и product business executor, сохраняют Lead role при отсутствии уже созданного child и не разрешают молча перебирать все инженерные листья самому; целевой contract test и package validators проходят.",
+  "status": "done",
+  "estimate_minutes": {
+    "minimum": 10,
+    "maximum": 20
+  },
+  "affected_files": [
+    "AGENTS.md",
+    ".claude-plugin/marketplace.json",
+    "src/common/agents/Lead.md",
+    "src/common/skills/last-human-commit/SKILL.md",
+    "src/common/skills/decompose-and-dispatch/SKILL.md",
+    "src/common/skills/planning/SKILL.md",
+    "src/common/skills/business-delivery/SKILL.md",
+    "src/common/templates/project-router.md",
+    "src/common/protocols/OUTCOME_CONTRACT.md",
+    "src/common/protocols/REVIEW_TO_DELIVERY.md",
+    "src/common/tools/lhc_plan_mcp.py",
+    "plugins/last-human-commit/CHANGELOG.md",
+    "plugins/last-human-commit/plugin.json",
+    "plugins/last-human-commit/plugin.yaml",
+    "plugins/last-human-commit/.claude-plugin/plugin.json",
+    "plugins/last-human-commit/.codex-plugin/plugin.json",
+    "plugins/last-human-commit/.zcode-plugin/plugin.json",
+    "plugins/last-human-commit/native/codex/.codex-plugin/plugin.json",
+    "adapters/hermes/plugin/plugin.yaml",
+    "tests/test_review_delivery_contract.py",
+    "tests/test_plugin_version_parity.py"
+  ],
+  "id": "L07",
+  "created_at": "2026-10-25T23:22:32+03:00",
+  "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+  "harness": "codex",
+  "updated_at": "2026-10-25T23:25:27+03:00",
+  "progress_events": [
+    {
+      "at": "2026-10-25T23:22:32+03:00",
+      "note": "Начал исправление свежего ExManager случая потери роли L; существующая продуктовая бизнес-сессия не заменяет engineering Worker.",
+      "changes": {
+        "label": "Устранить потерю роли Lead при старте ExManager",
+        "description": "Согласовать LHC root router, Lead role, default skill, dispatch skill, project router и delivery contract: инженерный Lead назначает ближайший исполнимый лист native Worker; бизнес-исполнитель продукта не считается инженерным Worker. Проверить точечный контракт и generated projections.",
+        "acceptance": "Канонические инструкции различают engineering Lead/Worker и product business executor, сохраняют Lead role при отсутствии уже созданного child и не разрешают молча перебирать все инженерные листья самому; целевой contract test и package validators проходят.",
+        "status": "running",
+        "estimate_minutes": {
+          "minimum": 10,
+          "maximum": 20
+        },
+        "affected_files": [
+          "AGENTS.md",
+          "src/common/agents/Lead.md",
+          "src/common/skills/last-human-commit/SKILL.md",
+          "src/common/skills/decompose-and-dispatch/SKILL.md",
+          "src/common/templates/project-router.md",
+          "src/common/protocols/OUTCOME_CONTRACT.md",
+          "tests/test_review_delivery_contract.py"
+        ]
+      },
+      "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+      "harness": "codex"
+    },
+    {
+      "at": "2026-10-25T23:22:49+03:00",
+      "note": "Канонические правила согласованы; целевой контракт и проекции зелёные.",
+      "changes": {
+        "status": "done",
+        "result": "LHC root router, Lead role, primary skill, decomposition skill, project router and delivery contract distinguish the engineering Lead/Worker from the business executor inside the product. Role stays Lead whether or not a child has started; engineering leaves remain assigned to native Workers. Generated package synchronized; focused role/review contract test 9 passed; plugin validation and projections pass."
+      },
+      "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+      "harness": "codex"
+    },
+    {
+      "at": "2026-10-25T23:24:03+03:00",
+      "note": "Итоговый целевой тест прошёл после устранения оставшегося противоречия в workflow source.",
+      "changes": {
+        "affected_files": [
+          "AGENTS.md",
+          "src/common/agents/Lead.md",
+          "src/common/skills/last-human-commit/SKILL.md",
+          "src/common/skills/decompose-and-dispatch/SKILL.md",
+          "src/common/skills/planning/SKILL.md",
+          "src/common/skills/business-delivery/SKILL.md",
+          "src/common/templates/project-router.md",
+          "src/common/protocols/OUTCOME_CONTRACT.md",
+          "src/common/protocols/REVIEW_TO_DELIVERY.md",
+          "tests/test_review_delivery_contract.py"
+        ],
+        "result": "LHC root router, Lead role, primary/decomposition/planning/business-delivery skills, project router and delivery contracts distinguish engineering Lead/Worker from product business executor. Role persists without a started child; engineering leaves remain assigned to native Workers. Generated package synchronized; targeted tests 9 passed; plugin validation and package projections pass."
+      },
+      "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+      "harness": "codex"
+    },
+    {
+      "at": "2026-10-25T23:25:27+03:00",
+      "note": "Точечные policy/version checks, package validation and projections passed.",
+      "changes": {
+        "affected_files": [
+          "AGENTS.md",
+          ".claude-plugin/marketplace.json",
+          "src/common/agents/Lead.md",
+          "src/common/skills/last-human-commit/SKILL.md",
+          "src/common/skills/decompose-and-dispatch/SKILL.md",
+          "src/common/skills/planning/SKILL.md",
+          "src/common/skills/business-delivery/SKILL.md",
+          "src/common/templates/project-router.md",
+          "src/common/protocols/OUTCOME_CONTRACT.md",
+          "src/common/protocols/REVIEW_TO_DELIVERY.md",
+          "src/common/tools/lhc_plan_mcp.py",
+          "plugins/last-human-commit/CHANGELOG.md",
+          "plugins/last-human-commit/plugin.json",
+          "plugins/last-human-commit/plugin.yaml",
+          "plugins/last-human-commit/.claude-plugin/plugin.json",
+          "plugins/last-human-commit/.codex-plugin/plugin.json",
+          "plugins/last-human-commit/.zcode-plugin/plugin.json",
+          "plugins/last-human-commit/native/codex/.codex-plugin/plugin.json",
+          "adapters/hermes/plugin/plugin.yaml",
+          "tests/test_review_delivery_contract.py",
+          "tests/test_plugin_version_parity.py"
+        ],
+        "result": "LHC 1.5.63 canonical instructions and generated package distinguish engineering Lead/Worker from product business executor. Lead role persists without a started child; engineering leaves remain assigned to native Workers. Version/manifests/changelog align. Targeted policy and version tests 13 passed; plugin validation and projections pass."
+      },
+      "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+      "harness": "codex"
+    }
+  ],
+  "result": "LHC 1.5.63 canonical instructions and generated package distinguish engineering Lead/Worker from product business executor. Lead role persists without a started child; engineering leaves remain assigned to native Workers. Version/manifests/changelog align. Targeted policy and version tests 13 passed; plugin validation and projections pass."
+}

@@ -1,16 +1,19 @@
 ---
 name: last-human-commit
-description: Automatically handle normal engineering requests, including rough voice transcripts, from intent to tested delivery. Use for code, architecture, bugfixes, parallel work, and requests to составить план, сделать план проекта, or спланировать работу; the user does not need to invoke a command. You are the Lead: you orchestrate only and every execution step belongs to a Worker. The mode comes from the accepted scope, never from a skill's description. The user is answered in their own language.
+description: Automatically handle normal engineering requests, including rough voice transcripts, from intent to tested delivery. Use for code, architecture, bugfixes, parallel work, and requests to составить план, сделать план проекта, or спланировать работу; the user does not need to invoke a command. You are the Lead for the engineering outcome and assign engineering leaves to Workers; distinguish them from business executors inside the product. The mode comes from the accepted scope, never from a skill's description. The user is answered in their own language.
 ---
 
 # Last Human Commit
 
-You are the Lead. The Lead only orchestrates: understand the objective, choose
-the route, assign ownership, resolve decisions, collect and summarise results.
-Every inspection, edit, check, deployment, commit, push or install is performed
-by a Worker. For one concrete assignment with one expected result, assign one
-Worker directly. The user does not need to ask separately for an agent, and the
-Worker does not create a child just to pass the same deliverable along.
+You are the Lead for the engineering outcome: understand the objective, own the
+plan and route, assign engineering leaves, resolve ownership and dependencies, and
+integrate the results. Assign the nearest executable engineering leaf to a native
+Worker, including a single-leaf task. A business executor launched inside the
+product being built handles that product's user task; it does not replace the
+engineering Worker for this session. The Lead role does not depend on whether a
+child has started, and the Lead must not silently switch into doing every engineering
+leaf personally. The user does not need to ask separately for an agent, and a Worker
+does not create a child just to pass the same deliverable along.
 
 A child session is useful only when it produces a concrete benefit that
 outweighs the added context transfer, coordination and review — for example,
@@ -95,7 +98,7 @@ graph, or stale dashboard does not mean the current leaf has started.
 | --- | --- |
 | One bounded fix inside existing code, no architecture decision, contained risk | quickfix |
 | Small behavior/UI change with contained risk | quickfix |
-| Several slices over existing code, one integration, an independent review, a real-surface proof | fullcycle |
+| Several slices over existing code, one integration, one final coherent review of the joined result, a real-surface proof | fullcycle |
 | New feature, broad behavior/UI or boundary change, architecture decision, or risky repair | fullcycle |
 | A new project, a new service, a repository, an architecture or design decision | **fullcycle** — research Workers, one working→ideal→YAGNI plan, an optional quota-aware frontier council, then bounded dispatch |
 | Only tests, only a benchmark, only a verification | testing |
@@ -165,8 +168,9 @@ graph, page, report, check) and the user sees what is done, what
 runs now, what is blocked, the rough finish and the parallelism without asking. The
 package's router is the workflow; load other skills only when the task needs that
 method.
-Lead only coordinates. Assign one Worker directly for a specific task with one
-expected result, even when the task is small. Use an independent allowed-model
+Lead owns the engineering outcome and assigns one native Worker directly for a
+specific task with one expected result, even when small. The business executor
+inside a product is not the engineering Worker for this session. Use an independent allowed-model
 Reviewer only when the claim and risk justify the added work. A Worker does not
 delegate by default; a child requires the Lead's explicit, bounded authorization
 and a concrete benefit that justifies its total added cost. Internal messages may

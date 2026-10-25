@@ -66,6 +66,45 @@ def test_reviewer_has_no_second_receipt_or_hidden_test_pass():
     for term in ("native response is the review result", "not a second JSON receipt", "unexecuted", "metadata-only", "known reviewed source", "dependencies", "existing release gates"):
         assert term in text
     assert "material repairs" in text
+    assert "after all" in text and "not a review after each leaf or wave" in text
+    assert "before deploy, real-use testing and" in text
+
+def test_fullcycle_delivery_reviews_the_join_once_before_deploy_test_push():
+    sources = [
+        ROOT / "AGENTS.md",
+        ROOT / "src/common/agents/Reviewer.md",
+        ROOT / "templates/FULL_CYCLE.md",
+        ROOT / "src/common/skills/planning/SKILL.md",
+        ROOT / "src/common/skills/task-decomposition/SKILL.md",
+        ROOT / "src/common/skills/decompose-and-dispatch/SKILL.md",
+        ROOT / "src/common/skills/last-human-commit/SKILL.md",
+        ROOT / "src/common/agents/Worker.md",
+    ]
+    combined = "\n".join(path.read_text() for path in sources)
+    assert "after all implementation and integration leaves" in combined
+    assert "Do not review each leaf or wave" in combined
+    assert "deploy" in combined and "test" in combined and "push" in combined
+
+def test_lead_role_separates_engineering_worker_from_product_business_executor():
+    sources = [
+        ROOT / "AGENTS.md",
+        ROOT / "src/common/agents/Lead.md",
+        ROOT / "src/common/skills/last-human-commit/SKILL.md",
+        ROOT / "src/common/skills/decompose-and-dispatch/SKILL.md",
+        ROOT / "src/common/protocols/OUTCOME_CONTRACT.md",
+        ROOT / "src/common/protocols/REVIEW_TO_DELIVERY.md",
+        ROOT / "src/common/templates/project-router.md",
+        ROOT / "src/common/skills/planning/SKILL.md",
+        ROOT / "src/common/skills/business-delivery/SKILL.md",
+        ROOT / "src/common/skills/last-human-commit/SKILL.md",
+    ]
+    combined = "\n".join(path.read_text() for path in sources)
+    assert "business executor" in combined
+    assert "engineering Worker" in combined
+    assert "whether or not a child has started" in combined
+    assert "silently" in combined
+    assert "Lead only orchestrates:" not in combined
+    assert "Every inspection, edit, check, deployment, commit, push or install is performed" not in combined
 
 def test_policy_preserves_business_testing_and_uncertainty():
     text=(ROOT/"src/common/protocols/REVIEW_TO_DELIVERY.md").read_text()

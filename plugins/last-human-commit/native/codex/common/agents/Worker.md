@@ -65,6 +65,13 @@ hardening, refactors, observability, docs, and exhaustive edge cases are out of
 scope unless explicitly requested, required by the present claim, or exposed as
 the shortest blocker by the real canary.
 
+Run the local tests and debugging needed to complete this leaf; do not wait for a
+technical review or create a Reviewer task for each leaf. Any warranted Full-cycle
+review covers the integrated result after implementation and integration leaves
+finish. Pass the leaf result to its next dependent owner without a separate review
+ceremony. The delivery owner then follows review → permitted deploy → real consumer
+test → push; this does not replace local checks during implementation.
+
 ## Workspace and evidence
 
 Follow `../protocols/SHARED_WORKTREE.md`. Use the Lead-assigned canonical branch,

@@ -8,7 +8,7 @@ description: Let the human-selected Lead coordinate a goal into coherent model-a
 Use before substantial dispatch and whenever execution reveals a bad boundary.
 `<tools>` below is the tools directory of the active package root:
 `common/tools/` in the installed package, `common/tools/` in a source checkout.
-The Lead only coordinates; assign every execution step to a Worker, even when small. Use independent review only when the claim and risk justify it. Allowed Worker, Adviser, Reviewer and Tester models come from the allowed tiers: fast tier glm-5.3-flash or minimax-3.1-flash, frontier tier gpt-6-luna, glm-5.3 or gpt-6.1-sol; resolve exact live catalog IDs before dispatch, with no silent fallback. An assigned leaf does not recursively hire.
+The Lead owns the engineering outcome and assigns each engineering leaf, even when small, to a native Worker. A business executor running inside the product being built handles that product's user task and is not the engineering Worker for this session. Keep the Lead role whether or not a child has started; do not silently take over every engineering leaf. Use independent review only when the claim and risk justify it. Allowed Worker, Adviser, Reviewer and Tester models come from the allowed tiers: fast tier glm-5.3-flash or minimax-3.1-flash, frontier tier gpt-6-luna, glm-5.3 or gpt-6.1-sol; resolve exact live catalog IDs before dispatch, with no silent fallback. An assigned leaf does not recursively hire.
 Keep its graph compact. An already delegated leaf with no-delegation does not hire recursively.
 
 ## Resolve uncertainty before distributing it
@@ -28,9 +28,12 @@ Estimate each node from its actual work and verification: minimum/maximum minute
 known steps or comparable evidence, and the specific uncertainty widening the
 range. Plan small, independently useful pieces around 15 minutes, including verification;
 this is planning granularity, never an actual execution cutoff or rejection rule.
-Split larger work at meaningful proof boundaries before dispatch, including
-Worker-owned execution, review and testing work. Twenty minutes remains a checkpoint, not
-a duration target. Do not manufacture arbitrary time boxes or an overall range.
+Split larger work at meaningful proof boundaries before dispatch. Keep implementation
+leaves independently useful; add one result-level review after their integration
+join for Full-cycle, then deploy, test the real consumer and push on the
+configured route. Do not create a review leaf per worker or wave. Local tests remain
+part of implementation. Twenty minutes remains a checkpoint, not a duration target.
+Do not manufacture arbitrary time boxes or an overall range.
 
 ## Parallelism with joins
 
