@@ -203,3 +203,24 @@ native Worker. Бизнес-исполнитель продукта закрыв
 проектами и явно признают прямое распоряжение владельца LHC на обычный fast-forward.
 Новые сессии не запускались; runtime поведение Lead после следующего запуска
 потребителя отдельно не проверялось.
+
+## Дополнение: owner-only integration и реальный установленный Codex loader
+
+Ограничение «Oleg owns main» ошибочно применялось к самому
+`megamen32/LastHumanCommit`. Исправлены корневой router, `OUTCOME_CONTRACT` и
+`REVIEW_TO_DELIVERY`: правило Oleg/Airlock остаётся для этих проектов, а прямое
+распоряжение владельца LastHumanCommit разрешает scoped fast-forward его `main`.
+
+LHC package version 1.5.64 установлен через native Codex plugin manager из
+обновлённого `megamen32-plugins`. Readback показывает одну enabled установку
+`last-human-commit@megamen32-plugins` версии 1.5.64; старая enabled копия
+`fleet-lhc` 1.5.58 снята с установки, её marketplace и rollout-файлы не менялись.
+Установленные Lead.md и основной LHC skill содержат исправленное различие.
+Остальные 1.5.0 записи принадлежат старым disabled test marketplaces и остаются
+disabled.
+
+Итоговый кодовый коммит 4fb6666 опубликован в назначенную ветку и обычным
+fast-forward доставлен в `origin/main`; remote readback обеих ссылок совпал.
+Проверено: policy/version tests — 14 passed; package validator, projection checks
+и `git diff --check` — PASS. Новая сессия не создавалась; реальный model dispatch
+после запуска новой Codex-сессии не наблюдался.
