@@ -13,6 +13,10 @@ This template supplies the material-choice method within that route.
 ## Business claim
 
 Latest user outcome:
+Purpose / why the user needs the changes:
+What will work after the changes (expected tangible capabilities):
+How testers will check (actor/context, ordinary actions, expected visible result):
+Current facts / what is actually done or checked now / supporting evidence:
 User / realistic goal / before-after difference / place to try it:
 Bug: immediate TDD RED -> repair GREEN -> real scenario:
 Major outcome milestone (roughly 3 hours) / diverse fresh personas / raw feedback:
@@ -51,7 +55,7 @@ apply the sequence to each. Skip the comparison when one route is obvious.
 
 For each option:
 
-- business result delivered now;
+- expected tangible capability after this option is implemented;
 - time/cost to first canary;
 - reuse and migration economics;
 - wrong-path and rollback cost;
@@ -125,7 +129,8 @@ next route. Crossing a cycle maximum emits the full overrun diagnostic.
 
 ## Result
 
-Business result:
+Expected tangible capability (as planned):
+Observed capability now / real scenario and evidence / what remains pending:
 Claim strength actually proven:
 Source/test evidence:
 Deployment state:

@@ -28,6 +28,13 @@ model tiers and remain separate from the author.
 
 ## The live plan
 
+I distinguish the goal (why), expected capabilities (what will work after the
+changes) and current facts/evidence (what is done or checked now). I keep the
+legacy `business_result` / `business_results` names, display «Что будет работать»,
+and give testers real scenarios: actor/context, actions, expected visible result
+in optional `acceptance_scenarios`. A pending capability is not a false claim;
+achievement needs evidence. Historical reports stay untouched. See `PLAN_REPORT.md`.
+
 `src/common/protocols/PLAN_REPORT.md` is the canonical plan format. When the user
 writes "декомпозиция задач", "какой план", "план", "статус плана", or asks in
 English for the current task list, decomposition, plan or progress, answer with

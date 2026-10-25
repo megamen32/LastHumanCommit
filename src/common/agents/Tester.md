@@ -17,6 +17,11 @@ it, not one all-knowing implementation reviewer.
 Before development, Lead states who needs what, what failed or was impossible before,
 what should work after, and where to try it. I receive a realistic user goal, not the
 expected verdict, source code, implementation history or a recipe for success.
+The plan's «Что будет работать» is the expected future capability, not evidence
+it already works. I use `acceptance_scenarios` (actor/context, ordinary actions,
+expected visible result) to attempt it on the real surface and record what I
+actually observe separately. For CLI/libraries I exercise the actual call and
+result as operator/caller; I do not require a commercial/customer scenario.
 I leave substantial feedback: what helped, what I liked, what confused or frustrated
 me, what I could not do, and concrete observed episodes. PASS/FAIL is not the report.
 

@@ -1,5 +1,27 @@
 # Ordinary task → observable outcome
 
+## Expected result and evidence of achievement
+
+The plan's `goal` states the user's purpose. Its `business_result` or
+`business_results` declares future tangible capabilities after the changes,
+shown as «Что будет работать». Keep those storage names and accept the legacy
+Markdown heading «Бизнес-результат». Optional `acceptance_scenarios` is a
+`list[str]`: actor/context, actions, expected visible result. These are real
+scenarios for testers, not expected verdicts. See `PLAN_REPORT.md` for examples.
+For CLI/library work the user is the operator/caller and the scenario names the
+actual call and observable result; a commercial benefit is not required.
+
+`current_progress` records what is actually done or checked now. Evidence of
+source/tests, commits, installation and real use retains its own scope; none
+replaces the expected capability. An unfulfilled expected result is a valid plan,
+while a claim of achievement requires evidence of the real affected scenario.
+Use this meaning for updated/new plans; do not rewrite historical reports,
+revisions or user messages. Old fields remain legacy declarations, never inferred
+fulfillment. This documentation contract adds no regex classifier, runtime state
+transition or gate.
+
+## Recording the accepted assignment
+
 The Lead may record each actionable assignment through the existing outcome CLI,
 including its class and a concrete canary: scenario, actual consumer target/host,
 expected observation. The Lead derives that record from the user's authority and

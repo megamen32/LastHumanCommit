@@ -22,6 +22,14 @@ protocols or different destinations. Both follow this lifecycle:
 Recover the requested result and its latest corrections. Name who benefits,
 what changes, what failed before, and where the result can be tried.
 
+The goal explains why the changes matter. Expected results name future tangible
+capabilities («Что будет работать»), with real tester scenarios: actor/context,
+actions and expected visible result. For CLI/libraries the user is the operator
+or caller and the scenario is the actual call/result. Current progress and
+evidence record what is done or checked now; tests and commits are not the
+capability. A pending expectation is valid; claiming achievement requires proof.
+`src/common/protocols/PLAN_REPORT.md` keeps legacy field names and historical reports compatible.
+
 <!-- lhc-workflow-step:route -->
 ### Choose the shortest responsible route
 
