@@ -137,6 +137,9 @@ mirror config, проверяет три листа, running/session binding, gr
   Mac observer активен, сохранены 1 plan/3 roots/2 graphs.
 - После install публичный корень вернул `302` с точным существующим
   `rd=https://lhc.bezrabotnyi.com/`; индивидуальный план вернул `200`.
+- Последний fetch прежней страницы собственного live plan вернул `200` и
+  отобразил завершённый delivery leaf и auto-entry leaf; адрес mirror не
+  записывается в исходники.
 - Настоящая новая Codex-сессия не запускалась по прямому указанию пользователя;
   owner login также не наблюдался. Поэтому подтверждены установка и synthetic
   installed-hook consumer, но не факт будущего user session invocation и не
