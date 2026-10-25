@@ -63,6 +63,15 @@ native st_birthtime с отклонением менее 1 мс; atomic update �
 Native M02 автоматически получил timezone-aware created_at, progress его
 сохранил; локальные операции не требовали сети или регистрации.
 
+Git-доставка: source/package commit `49dd22dc1f1af7836925e7e8accc97b66d6a040f`
+опубликован сначала в собственной feature-ветке, затем fast-forward в remote
+main с `b12935d`. `git ls-remote` подтвердил оба указателя. Чужой dirty primary
+не изменялся; локальный указатель checked-out primary main не двигался вручную.
+Final payload кода остаётся `829f5d3f632234b8`; последующие task-артефакты
+не меняют его. Локальные origin/lock этого task-плана не публикуются в Git.
+Затронутые исходники проходят diff whitespace check; у generated HTML есть
+пустые строки с пробелами из штатного renderer, сохранённого без форматирования.
+
 Ограничения: файловая система без birthtime не позволяет восстановить старую
 дату. Скопированный legacy-план без sidecar/graph-origin требует честной
 пометки восстановления по доступным локальным файлам; точность исходного
