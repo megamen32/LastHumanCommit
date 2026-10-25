@@ -4286,7 +4286,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 {progress_strip}
 <p class="hint acceptance-note">Прогресс задач не означает приёмку пользовательского результата.</p>
 <div class="kpis" id="lhc-state">{cards}</div>
-<details class="panel status-details"><summary>Статусы задач и усилие</summary><div class="kpis secondary-kpis">{secondary_cards}</div></details>
+<section class="panel status-details"><h2>Статусы задач и усилие</h2><div class="kpis secondary-kpis">{secondary_cards}</div></section>
 
 <div class="tile-card" id="lhc-tile-card" hidden></div>
 {tile_island}

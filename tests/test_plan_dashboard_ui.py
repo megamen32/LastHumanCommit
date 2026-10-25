@@ -33,7 +33,12 @@ def test_standalone_default_order_and_sections():
     assert 'Что будет работать' in page and 'Как проверим' in page
     assert 'Владелец открывает план и видит срок' in page
     assert 'Статус задач сам по себе не подтверждает приёмку' in page
-    assert '.plan-section[hidden]{display:block!important}' in page
+    assert 's.hidden=s.id!==id' not in page
+    assert '.plan-section[hidden]' not in page
+    assert 'aria-current\',\'location' in page
+    assert '<details class="panel status-details">' not in page
+    assert '<section class="panel status-details"><h2>Статусы задач и усилие</h2>' in page
+    assert 'body .panel-blocking:has(.empty){display:none}' not in page
     assert 'lhc-before-swap' in page and 'ArrowRight' in page
     assert grid.export_graph(graph)['acceptance_scenarios'] == document()['acceptance_scenarios']
 
@@ -98,7 +103,7 @@ def test_completed_plan_does_not_forecast_an_unstarted_remainder():
     assert 'Фактический финиш не зафиксирован' in page
     assert 'остаток стартует сейчас' not in page
     assert page.index('data-tile="remaining"') < page.index('data-tile="forecast"') < page.index('data-tile="parallel"')
-    assert page.index('data-tile="parallel"') < page.index('<summary>Статусы задач и усилие')
+    assert page.index('data-tile="parallel"') < page.index('<h2>Статусы задач и усилие')
 
 
 def test_historical_view_has_all_tabs_but_only_selected_revision_facts():
@@ -143,3 +148,10 @@ def test_renderer_only_update_preserves_receipt_sequence_and_archive(tmp_path):
     assert '<a href="view-r001.html" aria-current="page"' in derived
     assert 'id="lhc-publication-live"' not in derived
     assert 'id="lhc-live"' not in derived
+
+
+def test_publication_reload_handoff_has_one_owner_and_hash_identity():
+    import lhc_plan_ui as ui
+    assert "JSON.stringify({scroll:scrollY,hash:location.hash})" in pub.POLLER
+    assert "scrollTo(0,Number(saved))" not in pub.POLLER
+    assert "publication.hash===location.hash" in ui.SCRIPT

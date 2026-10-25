@@ -326,8 +326,7 @@ const stamp=Date.parse(document.getElementById('publication-time').textContent);
 let lastOK=0;
 function status(){badge.textContent=!lastOK?'Проверка связи…':Date.now()-lastOK>30000?'Нет связи · сохранённый снимок':Date.now()-stamp>300000?'Давно не обновлялся · связь есть':'Связь есть';}
 async function poll(){try{const r=await fetch('version.json',{cache:'no-store'});if(!r.ok)throw Error();const m=await r.json();lastOK=Date.now();
-if(version!==m.version){try{sessionStorage.setItem('lhc-scroll:'+location.pathname,String(scrollY));}catch(e){}location.reload();return;}status();}catch(e){badge.textContent='Нет связи · сохранённый снимок';}}
-try{const saved=sessionStorage.getItem('lhc-scroll:'+location.pathname);if(saved!==null){scrollTo(0,Number(saved));sessionStorage.removeItem('lhc-scroll:'+location.pathname);}}catch(e){}
+if(version!==m.version){try{sessionStorage.setItem('lhc-scroll:'+location.pathname,JSON.stringify({scroll:scrollY,hash:location.hash}));}catch(e){}location.reload();return;}status();}catch(e){badge.textContent='Нет связи · сохранённый снимок';}}
 poll();setInterval(poll,12000);setInterval(status,15000);})();
 </script>'''
 
