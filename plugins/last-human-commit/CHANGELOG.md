@@ -1,3 +1,27 @@
+# 1.5.52 - the suite says what it spends, the gate proves itself, and the tool stops asking git twice
+
+**The suite says what it spends.** The full run started about a thousand processes
+and most of its wall clock went into waiting for them. The repositories the cases
+need are now prepared once and copied, so a case receives a real Git checkout -
+the same branch, the same identity, the same committed files, the same answers to
+every Git question - without every case paying for the build again. The gate that
+counts the processes is green again, and a new case proves the gate still bites: a
+session over the budget fails and says so.
+
+**The gate proves itself.** A budget that nothing ever exceeded is not a gate, it
+is a comment. The suite now runs a session on purpose, over the budget, and
+requires that the session fails and names the budget - and that the same session
+within the budget passes.
+
+**The tool stops asking Git twice.** The publication tool learned the name of a
+project from a Git process; it now reads it from the disk with the same reader
+every other tool of the package uses, and falls back to the Git binary for a
+layout the reader does not model.
+
+**The copies are lighter.** The sample hooks `git init` writes are inert, no case
+ever runs them, and they were four times heavier than the rest of the repository
+they travelled in.
+
 # 1.5.51 - the page prints, the core keeps its promises, and a row without an id says so
 
 **A report row says how its leaf was matched.** A row without an id is never

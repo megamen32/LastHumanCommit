@@ -26,6 +26,8 @@ from pathlib import Path
 
 import pytest
 
+from _repos import prepared_repo
+
 
 ROOT = Path(__file__).resolve().parents[1]
 TOOL = ROOT / "src/common/tools/lhc_time_guard.py"
@@ -95,17 +97,20 @@ def git_spawns(monkeypatch) -> list[list[str]]:
 
 
 def _repository(root: Path, name: str) -> Path:
-    """Create one plain repository with a committed head."""
+    """Create one plain repository with a committed head.
 
-    repository = root / name
-    repository.mkdir(parents=True)
-    _git("init", "-q", str(repository))
-    _git("-C", str(repository), "config", "user.name", "Fixture")
-    _git("-C", str(repository), "config", "user.email", "fixture@example.test")
-    (repository / "owned.py").write_text("value = 1\n", encoding="utf-8")
-    _git("-C", str(repository), "add", "-A")
-    _git("-C", str(repository), "commit", "-qm", "fixture")
-    return repository
+    The checkout is a copy of a prepared template: the same branch, the same
+    identity and the same committed head a checkout built by hand would have
+    had, without every case paying for the build again.
+    """
+
+    return prepared_repo(
+        root / name,
+        config=(("user.name", "Fixture"),
+                ("user.email", "fixture@example.test")),
+        files=(("owned.py", "value = 1\n"),),
+        message="fixture",
+    )
 
 
 def _remove_git_directory(repository: Path) -> None:

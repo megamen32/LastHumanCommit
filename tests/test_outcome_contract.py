@@ -196,6 +196,15 @@ def repo_template():
         template = Path(tempfile.mkdtemp(prefix='lhc-outcome-repo-'))
         atexit.register(shutil.rmtree, template, True)
         subprocess.run(['git', 'init', '-q', str(template)], check=True)
+        # ``git init`` writes fourteen sample hooks that no case ever runs,
+        # and this repository is copied once per case.  They are four times
+        # heavier than the rest of it; the default ignore rules in
+        # ``info/exclude`` stay untouched, so the checkout behaves exactly as
+        # before.
+        hooks = template / '.git' / 'hooks'
+        if hooks.is_dir():
+            for sample in hooks.glob('*.sample'):
+                sample.unlink()
         _REPO_TEMPLATE = template
     return _REPO_TEMPLATE
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import html
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -44,7 +45,67 @@ def slug(value):
     return result or "project"
 
 
+_GIT_LAYOUT = None
+_GIT_LAYOUT_LOADED = False
+
+
+def git_layout():
+    """The reader of the layout of a repository, loaded from next to this file.
+
+    The tool is loaded by path in the tests and as a neighbour in the package,
+    so the neighbour cannot be found by a plain import in every environment.
+    ``None`` means the neighbour is not there at all; every question is then
+    answered by the git binary, the way it was answered before the reader
+    existed.
+    """
+    global _GIT_LAYOUT, _GIT_LAYOUT_LOADED
+    if not _GIT_LAYOUT_LOADED:
+        _GIT_LAYOUT = _load_git_layout()
+        _GIT_LAYOUT_LOADED = True
+    return _GIT_LAYOUT
+
+
+def _load_git_layout():
+    """Load the reader of the layout of a repository from next to this file."""
+
+    try:
+        import lhc_gitlayout
+
+        return lhc_gitlayout
+    except ImportError:
+        pass
+    path = Path(__file__).resolve().with_name("lhc_gitlayout.py")
+    try:
+        spec = importlib.util.spec_from_file_location("lhc_gitlayout_sibling", path)
+        if spec is None or spec.loader is None:
+            return None
+        module = sys.modules.get(spec.name)
+        if module is None:
+            module = importlib.util.module_from_spec(spec)
+            sys.modules[spec.name] = module
+            spec.loader.exec_module(module)
+        return module
+    except Exception:  # noqa: BLE001 - a missing reader is answered by git
+        sys.modules.pop("lhc_gitlayout_sibling", None)
+        return None
+
+
 def project_slug(cwd):
+    """The slug of the project that owns a directory.
+
+    The name of the project is the name of the directory that holds the
+    repository, and that is a fact about the directories on the disk, so it is
+    read from there by the same reader every other tool of this package uses.
+    A layout the reader does not model is answered by the git binary.
+    """
+    layout = git_layout()
+    if layout is not None:
+        try:
+            common = layout.common_dir_of(Path(cwd))
+        except OSError:
+            common = None
+        if common is not None:
+            return slug(common.parent.name)
     try:
         result = subprocess.run(["git", "-C", str(cwd), "rev-parse", "--path-format=absolute", "--git-common-dir"], capture_output=True, text=True, timeout=3, check=True)
         return slug(Path(result.stdout.strip()).parent.name)

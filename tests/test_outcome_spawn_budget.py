@@ -29,6 +29,7 @@ if str(TOOLS) not in sys.path:
     sys.path.insert(0, str(TOOLS))
 
 from _inprocess_lane import prepare_git_template  # noqa: E402  (the suite prepares its own checkouts)
+from _repos import head_of, prepared_repo  # noqa: E402
 
 import lhc_git_facts as facts  # noqa: E402  (the tools import each other by name)
 import lhc_outcome as outcome  # noqa: E402
@@ -77,28 +78,73 @@ def own_config(tmp_path, monkeypatch):
     return path
 
 
-# One prepared product checkout and one prepared bare remote, copied per
-# case.  The history and the identity of the fixture are fixed, so `git
-# init`, both `git config` calls, `git add` and `git commit` all become a
-# copy; only the real publication work stays a real Git call.
-_REPO_TEMPLATE: Path | None = None
+# The identity of every checkout of the fixture.
+IDENTITY = (("user.email", "publisher@example.test"), ("user.name", "Publisher"))
+
+# The files the base commit of the fixture holds.
+BASE = (("owned.py", "print('base')\n"),)
+
+# The candidate commit of the fixture: the files it holds and its message.
+CANDIDATE = ((("owned.py", "print('candidate')\n"),), "candidate")
+
+# The commit of many similar lines: the files it holds and its message.
+LINES = (tuple(("line%d.txt" % index, "the same line over and over\n" * 40)
+                for index in range(12)), "many similar lines")
+
+# The two commits of the nested paths of the fixture.
+NESTED_BASE = ((("sub/nested.py", "print('nested base')\n"),), "nested base")
+NESTED_CANDIDATE = ((("sub/nested.py", "print('nested candidate')\n"),
+                     ("owned.py", "print('candidate')\n")), "candidate")
+
+# The prepared checkouts of this process, keyed by the history they hold.
+_TEMPLATES: dict[str, Path] = {}
+
+# The commits of the prepared checkouts, keyed by the name of the checkout.
+_COMMITS: dict[str, list[str]] = {}
+
+# The prepared bare remote of this process.
 _BARE_TEMPLATE: Path | None = None
 
 
-def _repo_template() -> Path:
-    global _REPO_TEMPLATE
-    if _REPO_TEMPLATE is None:
-        root = Path(tempfile.mkdtemp(prefix="lhc-outcome-budget-repo-"))
+def _template(name: str) -> Path:
+    """The directory of one prepared checkout of this process."""
+    root = _TEMPLATES.get(name)
+    if root is None:
+        root = Path(tempfile.mkdtemp(prefix="lhc-outcome-budget-" + name + "-"))
         atexit.register(shutil.rmtree, root, True)
-        git(root, "init", "-q")
-        git(root, "config", "user.email", "publisher@example.test")
-        git(root, "config", "user.name", "Publisher")
-        (root / "owned.py").write_text("print('base')\n")
-        git(root, "add", "owned.py")
-        git(root, "commit", "-qm", "base")
-        prepare_git_template(root)
-        _REPO_TEMPLATE = root
-    return _REPO_TEMPLATE
+        _TEMPLATES[name] = root
+    return root
+
+
+def _prepared(name: str, *commits) -> list[str]:
+    """The commits of one prepared checkout of this process, built once.
+
+    The base commit of the fixture is the first of them.  Every other commit
+    is a pair of the files it holds and the message it carries; its files are
+    written over the files of the commit before it.
+    """
+    held = _COMMITS.get(name)
+    if held is not None:
+        return held
+    root = _template(name)
+    prepared_repo(root, config=IDENTITY, files=BASE, message="base")
+    held = [head_of(root)]
+    known = {path for path, _ in BASE}
+    for files, message in commits:
+        for path, text in files:
+            target = root / path
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(text, encoding="utf-8")
+        if all(path in known for path, _ in files):
+            # Every file of the step Git already knows: one commit is enough.
+            git(root, "commit", "-aqm", message)
+        else:
+            git(root, "add", "-A")
+            git(root, "commit", "-qm", message)
+        known.update(path for path, _ in files)
+        held.append(head_of(root))
+    _COMMITS[name] = held
+    return held
 
 
 def _bare_template() -> Path:
@@ -107,18 +153,23 @@ def _bare_template() -> Path:
         root = Path(tempfile.mkdtemp(prefix="lhc-outcome-budget-bare-"))
         atexit.register(shutil.rmtree, root, True)
         subprocess.run(["git", "init", "--bare", "-q", str(root)], check=True)
+        prepare_git_template(root)
         _BARE_TEMPLATE = root
     return _BARE_TEMPLATE
 
 
-def repository(path, *, remote=None):
-    """A Git checkout with one commit, the way the tools meet one."""
+def repository(path, name="base", *commits):
+    """The checkout of one case: a copy of a prepared checkout and its commits.
+
+    The history and the identity of the fixture are fixed, so `git init`,
+    both `git config` calls, `git add` and `git commit` all become a copy;
+    only the real publication work stays a real Git call.
+    """
+    held = _prepared(name, *commits)
     root = Path(path)
     root.mkdir(parents=True, exist_ok=True)
-    shutil.copytree(_repo_template(), root, dirs_exist_ok=True)
-    if remote is not None:
-        git(root, "remote", "add", "origin", str(remote))
-    return root
+    shutil.copytree(_template(name), root, dirs_exist_ok=True)
+    return root, held
 
 
 def bare_remote(path):
@@ -130,11 +181,14 @@ def bare_remote(path):
 
 
 def commit_of(root, message, content):
-    """One commit with the given content of the owned file."""
+    """One commit with the given content of the owned file.
+
+    The owned file is the only file the commit changes, so the commit takes
+    the change of the working tree as it is.
+    """
     (root / "owned.py").write_text(content)
-    git(root, "add", "owned.py")
-    git(root, "commit", "-qm", message)
-    return git(root, "rev-parse", "HEAD").decode().strip()
+    git(root, "commit", "-aqm", message)
+    return head_of(root)
 
 
 def metadata_for(base, commit, root):
@@ -146,9 +200,7 @@ def metadata_for(base, commit, root):
 
 def test_the_historical_publication_proof_starts_no_git_process(tmp_path, own_config):
     """Every fact of the proof is a fact the repository already holds."""
-    root = repository(tmp_path / "product")
-    base = git(root, "rev-parse", "HEAD").decode().strip()
-    commit = commit_of(root, "candidate", "print('candidate')\n")
+    root, (base, commit) = repository(tmp_path / "product", "candidate", CANDIDATE)
     metadata = metadata_for(base, commit, root)
 
     with git_processes() as started:
@@ -159,7 +211,7 @@ def test_the_historical_publication_proof_starts_no_git_process(tmp_path, own_co
 
 def test_the_source_publication_contract_starts_no_git_process(tmp_path, own_config):
     """The contract reads the head, the remote and the ancestry from disk."""
-    root = repository(tmp_path / "product")
+    root, _ = repository(tmp_path / "product")
     remote = bare_remote(tmp_path / "remote.git")
     git(root, "remote", "add", "origin", str(remote))
     git(root, "push", "-q", "-u", "origin", "HEAD:main")
@@ -179,7 +231,7 @@ def test_the_source_publication_contract_starts_no_git_process(tmp_path, own_con
 
 def test_the_remote_binding_starts_no_git_process(tmp_path, own_config):
     """The repository of a remote is read from the configuration, not from Git."""
-    root = repository(tmp_path / "product")
+    root, _ = repository(tmp_path / "product")
     git(root, "remote", "add", "origin", "https://github.com/owned/project.git")
 
     with git_processes() as started:
@@ -190,7 +242,7 @@ def test_the_remote_binding_starts_no_git_process(tmp_path, own_config):
 
 def test_the_remote_url_is_the_one_git_reports_after_the_insteadof_rule(tmp_path, own_config):
     """Git rewrites the URL of a remote while it reads it; the raw value is not the answer."""
-    root = repository(tmp_path / "product")
+    root, _ = repository(tmp_path / "product")
     git(root, "remote", "add", "origin", "https://github.com/owned/project.git")
     own_config.write_text('[url "ssh://git@example.com/"]\n\tinsteadOf = https://github.com/\n')
 
@@ -200,9 +252,7 @@ def test_the_remote_url_is_the_one_git_reports_after_the_insteadof_rule(tmp_path
 
 def test_the_answers_are_the_answers_of_git(tmp_path, own_config):
     """Every fact read from the disk is the fact Git prints."""
-    root = repository(tmp_path / "product")
-    base = git(root, "rev-parse", "HEAD").decode().strip()
-    commit = commit_of(root, "candidate", "print('candidate')\n")
+    root, (base, commit) = repository(tmp_path / "product", "candidate", CANDIDATE)
     repo = facts.discover(root)
 
     assert facts.head_sha(repo) == git(root, "rev-parse", "HEAD").decode().strip()
@@ -220,17 +270,8 @@ def test_the_answers_are_the_answers_of_git(tmp_path, own_config):
 
 def test_the_changed_paths_are_the_paths_git_prints(tmp_path, own_config):
     """The paths of a difference are the paths Git lists, nested ones included."""
-    root = repository(tmp_path / "product")
-    (root / "sub").mkdir()
-    (root / "sub" / "nested.py").write_text("print('nested base')\n")
-    git(root, "add", "sub/nested.py")
-    git(root, "commit", "-qm", "nested base")
-    base = git(root, "rev-parse", "HEAD").decode().strip()
-    (root / "sub" / "nested.py").write_text("print('nested candidate')\n")
-    (root / "owned.py").write_text("print('candidate')\n")
-    git(root, "add", "-A")
-    git(root, "commit", "-qm", "candidate")
-    commit = git(root, "rev-parse", "HEAD").decode().strip()
+    root, (_, base, commit) = repository(tmp_path / "product", "nested",
+                                         NESTED_BASE, NESTED_CANDIDATE)
     repo = facts.discover(root)
 
     assert facts.changed_paths(repo, base, commit, no_renames=True) == \
@@ -240,8 +281,7 @@ def test_the_changed_paths_are_the_paths_git_prints(tmp_path, own_config):
 
 def test_a_moved_head_is_not_served_from_a_stale_read(tmp_path, own_config):
     """A HEAD that moved is a different revision, with a different answer."""
-    root = repository(tmp_path / "product")
-    base = git(root, "rev-parse", "HEAD").decode().strip()
+    root, (base,) = repository(tmp_path / "product")
     repo = facts.discover(root)
     assert facts.head_sha(repo) == base
 
@@ -251,9 +291,7 @@ def test_a_moved_head_is_not_served_from_a_stale_read(tmp_path, own_config):
 
 def test_a_candidate_that_changed_is_not_served_from_a_stale_read(tmp_path, own_config):
     """The blob of the published commit is read now, not from an earlier read."""
-    root = repository(tmp_path / "product")
-    base = git(root, "rev-parse", "HEAD").decode().strip()
-    commit = commit_of(root, "candidate", "print('candidate')\n")
+    root, (base, commit) = repository(tmp_path / "product", "candidate", CANDIDATE)
     metadata = metadata_for(base, commit, root)
     assert source_pub.historical_publication_commit_matches(metadata, root) is True
 
@@ -265,12 +303,7 @@ def test_a_candidate_that_changed_is_not_served_from_a_stale_read(tmp_path, own_
 
 def test_a_packed_repository_is_answered_the_same_way(tmp_path, own_config):
     """A repository whose objects are packed holds the same facts on disk."""
-    root = repository(tmp_path / "product")
-    for index in range(12):
-        (root / f"line{index}.txt").write_text("the same line over and over\n" * 40)
-    git(root, "add", "-A")
-    git(root, "commit", "-qm", "many similar lines")
-    base = git(root, "rev-parse", "HEAD").decode().strip()
+    root, (_, base) = repository(tmp_path / "product", "lines", LINES)
     commit = commit_of(root, "candidate", "print('candidate')\n")
     metadata = metadata_for(base, commit, root)
     git(root, "gc", "-q")
@@ -295,7 +328,7 @@ def test_the_repository_the_facts_read_is_the_repository_git_names(tmp_path, own
     of the facts has to name the same directories Git names, for every shape
     of a repository.
     """
-    root = repository(tmp_path / "product")
+    root, _ = repository(tmp_path / "product")
     linked = tmp_path / "linked"
     git(root, "worktree", "add", "-q", str(linked), "-b", "feature")
     bare = bare_remote(tmp_path / "bare.git")

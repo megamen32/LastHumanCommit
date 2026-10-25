@@ -6,7 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from _inprocess_lane import git_repo, run_tool
+from _inprocess_lane import run_tool
+from _repos import prepared_repo
 
 TOOL = Path(__file__).resolve().parents[1] / "src/common/tools/lhc_worktree.py"
 
@@ -18,12 +19,14 @@ def git(repo, *args):
 @pytest.fixture
 def repo(tmp_path):
     root = tmp_path / "primary"
-    root.mkdir()
-    git_repo(root, branch="main", config=(("user.name", "Fixture"),
-                                          ("user.email", "fixture@example.invalid")))
-    (root / ".gitignore").write_text(".worktrees/\n")
-    git(root, "add", ".gitignore")
-    git(root, "commit", "-m", "base")
+    # The checkout is a copy of a prepared template: the same branch, the same
+    # identity and the same committed .gitignore a checkout built by hand would
+    # have had, without every case paying for the build again.
+    prepared_repo(root, branch="main",
+                  config=(("user.name", "Fixture"),
+                          ("user.email", "fixture@example.invalid")),
+                  files=((".gitignore", ".worktrees/\n"),),
+                  message="base")
     return root
 
 

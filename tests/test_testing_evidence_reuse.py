@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src/common/tools')
 import lhc_outcome_review as review
 
 from _inprocess_lane import anchored_outcome, outcome_cli
+from _repos import head_of, prepared_repo
 
 
 def call(cmd, ident='operation', output='observed', index=2):
@@ -237,28 +238,40 @@ def test_quoted_examples_are_never_browser_sources(tmp_path,script):
 def test_historical_revision_difference_needs_report_only_git_delta(tmp_path,monkeypatch,product_edit_state,later_report_refresh,report_changed,baseline_present):
     import subprocess
     import lhc_outcome as outcomes
+    # The case works in a checkout of its own. The baseline commit is the one
+    # the prepared template carries, so the case neither builds that commit
+    # with processes of its own nor asks Git for the commit it holds. The
+    # checkout comes first, because the reuse fixture builds its own state
+    # on top of it.
+    prepared_repo(tmp_path,
+                  config=(('user.name','Fixture'),('user.email','fixture@example.test')),
+                  files=(('total.py','print(0)\n'),('.agents/tasks/feedback.md','before')),
+                  message='fixture baseline')
     outcome,manifest,binding,source=reuse_fixture(tmp_path,monkeypatch)
     report_path='.agents/tasks/feedback.md'
     (tmp_path/'.agents/tasks').mkdir(parents=True,exist_ok=True)
     (tmp_path/report_path).write_text('before')
     def git(*args):
         return subprocess.check_output(['git','-c','user.name=Fixture','-c','user.email=fixture@example.test',*args],cwd=tmp_path,text=True).strip()
-    git('add','total.py',report_path);git('commit','-qm','fixture baseline')
-    baseline=git('rev-parse','HEAD')
+    baseline=head_of(tmp_path)
     outcome['owned_paths']=[report_path]
     old_revision=outcomes.scope_revision(outcome,tmp_path)
     if report_changed:
         (tmp_path/report_path).write_text('actual testing feedback')
     if product_edit_state != 'none':
         (tmp_path/'total.py').write_text('changed product')
-    if report_changed:
-        git('add',report_path)
-    if product_edit_state in {'committed','staged'}:
-        git('add','total.py')
+    # Git stages the changed tracked paths itself when a commit asks it to,
+    # and a report-only commit takes the report from the working tree, so
+    # only the staged product state needs an add of its own. Every state is
+    # the one the explicit adds left behind: the same index, the same commit.
     if product_edit_state == 'committed':
-        git('commit','-qm','fixture report and product changes')
+        git('commit','-qam','fixture report and product changes')
     elif report_changed:
+        if product_edit_state == 'staged':
+            git('add','total.py')
         git('commit','--only','-m','fixture report-only change','--',report_path)
+    elif product_edit_state == 'staged':
+        git('add','total.py')
     outcome['revision']=outcomes.scope_revision(outcome,tmp_path)
     rows=[json.loads(line) for line in source.read_text().splitlines()]
     original=json.loads(rows[3]['payload']['output']);original.update(owned_paths=[report_path],revision=old_revision)

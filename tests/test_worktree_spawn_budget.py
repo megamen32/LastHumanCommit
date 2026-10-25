@@ -40,6 +40,8 @@ import types
 
 import pytest
 
+from _repos import prepared_repo
+
 
 ROOT = Path(__file__).resolve().parents[1]
 TOOLS = ROOT / "src/common/tools"
@@ -146,17 +148,21 @@ def _interpreter_spawns(started: list[list[str]]) -> list[list[str]]:
 
 
 def _repository(root: Path, name: str) -> Path:
-    """Create one plain repository with a committed head."""
+    """Create one plain repository with a committed head.
 
-    repository = root / name
-    repository.mkdir(parents=True)
-    _git("init", "-q", "-b", "main", str(repository))
-    _git("-C", str(repository), "config", "user.name", "Fixture")
-    _git("-C", str(repository), "config", "user.email", "fixture@example.test")
-    (repository / "owned.py").write_text("value = 1\n", encoding="utf-8")
-    _git("-C", str(repository), "add", "-A")
-    _git("-C", str(repository), "commit", "-qm", "fixture")
-    return repository
+    The checkout is a copy of a prepared template: the same branch, the same
+    identity and the same committed head a checkout built by hand would have
+    had, without every case paying for the build again.
+    """
+
+    return prepared_repo(
+        root / name,
+        branch="main",
+        config=(("user.name", "Fixture"),
+                ("user.email", "fixture@example.test")),
+        files=(("owned.py", "value = 1\n"),),
+        message="fixture",
+    )
 
 
 def _repository_shapes(root: Path) -> list[tuple[str, Path]]:

@@ -40,6 +40,8 @@ from pathlib import Path
 
 import pytest
 
+from _inprocess_lane import run_tool
+
 ROOT = Path(__file__).resolve().parents[1]
 PLUGIN = ROOT / "plugins" / "last-human-commit"
 SCRIPTS = PLUGIN / "scripts"
@@ -418,10 +420,29 @@ def test_unknown_tool_and_unknown_argument_are_reported_as_jsonrpc_errors():
 # --------------------------------------------------------------------------
 
 
+#: The CLI files of the canon, by the name the lane runs them under.
+CLI_BY_NAME = {path.stem: path for path in (PLAN_JSON, GRID, MODELS)}
+
+
 def run_cli_direct(argv: list[str]) -> tuple[str, str, int]:
-    """The same command a human types, run by hand."""
-    completed = subprocess.run(argv, capture_output=True, text=True, check=False)
-    return completed.stdout, completed.stderr, completed.returncode
+    """The same command a human types, run by hand.
+
+    The command is the one the facade ran - the very file of the CLI, with the
+    very argument vector - and the lane runs it in this process instead of
+    paying for an interpreter start.  The lane keeps the observable contract:
+    the argument vector, the stdout, the stderr and the exit code are the ones
+    the process would have produced (see ``tests/_inprocess_lane.py``).
+
+    The facade side of the comparison keeps spawning the real CLI, so the two
+    sides still answer the same question: the answer of the facade is the
+    answer of that CLI.
+    """
+
+    program = Path(str(argv[1]))
+    assert CLI_BY_NAME.get(program.stem) == program, (
+        "the hand must run the very CLI file the facade ran: %s" % program)
+    result = run_tool(program.stem, [str(item) for item in argv[2:]])
+    return result.stdout, result.stderr, result.returncode
 
 
 def write_catalog(path: Path) -> Path:

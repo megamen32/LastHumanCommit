@@ -19,6 +19,8 @@ import sys
 
 import pytest
 
+from _repos import head_of, prepared_repo
+
 
 TOOLS = Path(__file__).resolve().parents[1] / "src" / "common" / "tools"
 if str(TOOLS) not in sys.path:
@@ -66,20 +68,34 @@ def git(root, *args):
 
 
 def repository(path, *, commit=False):
-    """A Git checkout of its own, the way the observer meets one."""
+    """A Git checkout of its own, the way the observer meets one.
+
+    The checkout is a copy of a prepared template: the same branch, the same
+    identity and the same committed files a checkout built by hand would have
+    had, without every case paying for the build again.
+    """
+
+    return prepared_repo(
+        path,
+        config=(("user.email", "observer@example.test"),
+                ("user.name", "Observer")),
+        files=(("page.html", "<main><button>Go</button></main>"),) if commit else (),
+        message="first",
+    )
+
+
+def _unborn_repository(path):
+    """A repository whose HEAD is unborn: no commit, so no revision.
+
+    A special shape, used once per run: it is made the way ``git init``
+    makes it, so the repository keeps the shape the cases expect of it.
+    """
+
     path.mkdir(parents=True, exist_ok=True)
     git(path, "init", "-q")
     git(path, "config", "user.email", "observer@example.test")
     git(path, "config", "user.name", "Observer")
-    if commit:
-        (path / "page.html").write_text("<main><button>Go</button></main>")
-        git(path, "add", "-A")
-        git(path, "commit", "-qm", "first")
     return path
-
-
-def head_of(root):
-    return git(root, "rev-parse", "--verify", "HEAD").decode().strip()
 
 
 def observe(root, state, event, **fields):
@@ -101,7 +117,7 @@ def _shapes(root):
     git(root, "init", "-q", "--separate-git-dir", str(root / "separate.git"), str(separate))
     bare = root / "bare.git"
     git(root, "init", "-q", "--bare", str(bare))
-    unborn = repository(root / "unborn")
+    unborn = _unborn_repository(root / "unborn")
     outside = root / "outside"
     outside.mkdir()
     return [("main", main), ("nested", nested), ("linked", root / "linked"),

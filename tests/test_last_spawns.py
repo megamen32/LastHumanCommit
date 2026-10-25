@@ -123,6 +123,14 @@ def build_base(path):
     write(root, "page.html", "<main>one</main>")
     write(root, "app.js", "const a = 1;")
     commit_all(root)
+    # ``git init`` writes fourteen sample hooks that no case ever runs, and
+    # this repository is copied once per shape.  They are four times heavier
+    # than the rest of it; the default ignore rules in ``info/exclude`` stay
+    # untouched, so the checkout behaves exactly as before.
+    hooks = Path(root) / ".git" / "hooks"
+    if hooks.is_dir():
+        for sample in hooks.glob("*.sample"):
+            sample.unlink()
     return root
 
 
