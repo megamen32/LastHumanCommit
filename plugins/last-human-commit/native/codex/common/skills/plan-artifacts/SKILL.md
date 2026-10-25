@@ -444,7 +444,13 @@ The private dashboard capability URL lists recent/reported-running plans.
 Freshness and a reported running leaf never prove that an agent is alive.
 
 The optional LhcPlan MCP edits the same local leaves and uses the same revision
-CLI. It is not a second planner. Local standalone rendering and the legacy
+CLI. The default `scripts/plan_mcp.py` exposes create_leaf, update_leaf,
+update_progress, build_plan, estimate_cost, publish_html and revise_plan.
+All invoke one canonical implementation; the deprecated plan_publish_mcp.py
+launcher delegates to the same server and is not registered separately.
+The old four-tool/default and seven-tool/publishing split is removed.
+MCP remains optional; local files and CLI remain usable without it.
+It is not a second planner. Local standalone rendering and the legacy
 publisher below remain available for unbound plans.
 
 ### Legacy standalone publication
@@ -518,7 +524,11 @@ HTML are standalone immutable snapshots. The badge reports missing connection
 or an old snapshot; it does not prove the worker is online. Delivery keeps the
 current and one previous generated bundle; revision files remain in each bundle.
 
-`plugins/lhc-plan` is the optional self-contained stdio facade. `create_leaf`,
-`update_leaf`, `update_progress`, `build_plan`, `publish_html`, `revise_plan` invoke
-the same CLIs. `estimate_cost` explicitly reports unavailable when the models
-CLI is absent. `scripts/setup_mcp.py` only prints registration; no global enable.
+`plugins/last-human-commit` is the single self-contained package. Its optional
+LhcPlan server starts with `scripts/plan_mcp.py` and exposes `create_leaf`,
+`update_leaf`, `update_progress`, `build_plan`, `estimate_cost`, `publish_html`
+and `revise_plan` through the same canonical CLIs. Native plugin discovery
+registers that one server; clients without native discovery can use
+`scripts/setup_plan_mcp.py` (dry-run by default). The deprecated
+`scripts/plan_publish_mcp.py` is an alias for the same implementation, not a
+second registration. Local CLI and offline mirror workflows need no MCP.

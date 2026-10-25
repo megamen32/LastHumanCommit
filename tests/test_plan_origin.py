@@ -139,13 +139,13 @@ def test_migration_unchanged_source_preserves_old_revision_and_r002(tmp_path):
 
 
 def test_mcp_native_create_has_same_automatic_creation(tmp_path):
-    import subprocess
     import lhc_plan_mcp as mcp
     root = plan(tmp_path)
-    result = subprocess.run(mcp.command('create_leaf', {'plan_dir': str(root),
-                            'leaf': {'id': 'A', 'label': 'Через MCP'}}),
-                            capture_output=True, text=True)
-    assert result.returncode == 0, result.stderr
+    response = mcp.handle({'jsonrpc': '2.0', 'id': 1, 'method': 'tools/call',
+                          'params': {'name': 'create_leaf', 'arguments': {
+                              'plan_dir': str(root), 'leaf': {'id': 'A', 'label': 'Через MCP'}}}})
+    assert 'error' not in response, response
+    assert not response['result']['isError'], response
     native = json.loads((root / 'leaves/A.json').read_text())
     assert leaves.origin_time(native['created_at']) is not None
     assert leaves.build_document(root)['plan_origin']['at'] == native['created_at']

@@ -49,11 +49,6 @@ COPIES: tuple[tuple[str, str, tuple[tuple[bytes, bytes], ...]], ...] = (
         "plugins/last-human-commit/native/codex/.mcp.json",
         (),
     ),
-    (
-        "plugins/last-human-commit/.mcp.json",
-        "plugins/last-human-commit/mcp.json",
-        (),
-    ),
     ("AGENTS.md", "plugins/last-human-commit/AGENTS.md", COMMON),
     ("AGENTS.md", "plugins/last-human-commit/CLAUDE.md", COMMON),
     ("AGENTS.md", "plugins/last-human-commit/native/codex/AGENTS.md", COMMON),

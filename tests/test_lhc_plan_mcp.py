@@ -13,7 +13,7 @@ package, not only in the repository checkout.
 
 These cases pin exactly that:
 
-* the tool list is the four operations and nothing else;
+* the tool list is the seven operations and nothing else;
 * each tool builds precisely the argument vector the human would type, with
   the real positional arguments of the real argparse surface;
 * the CLI bytes come back verbatim, including on failure;
@@ -24,8 +24,7 @@ These cases pin exactly that:
   Claude Code read it;
 * ``setup_plan_mcp.py`` points at the installed package, is dry-run by default
   and keeps a timestamped backup on ``--apply``;
-* one end-to-end stdio handshake (spawn, initialize, tools/list, four
-  tools/call) runs against the real CLI, no network.
+* one end-to-end stdio handshake (spawn, initialize, tools/list, tools/call) runs against the real CLI, no network.
 """
 from __future__ import annotations
 
@@ -54,7 +53,7 @@ MODELS = TOOLS / "lhc_models.py"
 
 # The CLI files the package ships; the imitation of an installed package is
 # built out of them.
-CLI_FILES = ("lhc_plan_json.py", "lhc_grid.py", "lhc_models.py")
+CLI_FILES = tuple(p.name for p in TOOLS.glob("*.py"))
 
 
 def _load(path: Path, name: str):
@@ -66,7 +65,7 @@ def _load(path: Path, name: str):
     return module
 
 
-plan_mcp = _load(FACADE, "lhc_plan_mcp_facade_test")
+plan_mcp = _load(TOOLS / "lhc_plan_mcp.py", "lhc_plan_mcp_facade_test")
 setup_mcp = _load(SCRIPTS / "setup_plan_mcp.py", "lhc_plan_mcp_setup_test")
 
 
@@ -131,14 +130,14 @@ def call_tool(name: str, arguments: dict) -> dict:
 
 
 # --------------------------------------------------------------------------
-# the surface is four operations
+# the surface is seven operations
 # --------------------------------------------------------------------------
 
 
-def test_tools_list_exposes_exactly_the_four_operations():
+def test_tools_list_exposes_exactly_the_seven_operations():
     response = plan_mcp.handle({"jsonrpc": "2.0", "id": 1, "method": "tools/list"})
     names = {tool["name"] for tool in response["result"]["tools"]}
-    assert names == {"create_leaf", "update_leaf", "build_plan", "estimate_cost"}
+    assert names == {"create_leaf", "update_leaf", "build_plan", "estimate_cost", "update_progress", "publish_html", "revise_plan"}
     for tool in response["result"]["tools"]:
         assert tool["description"]
         assert tool["inputSchema"]["type"] == "object"
@@ -188,7 +187,7 @@ def build_installed_package(tmp_path: Path, *, with_models: bool = True) -> Path
         json.dumps({"name": "last-human-commit", "version": "1.5.47"}), encoding="utf-8")
     (package / "scripts").mkdir()
     shutil.copy(FACADE, package / "scripts" / "plan_mcp.py")
-    wanted = CLI_FILES if with_models else ("lhc_plan_json.py", "lhc_grid.py")
+    wanted = CLI_FILES if with_models else tuple(n for n in CLI_FILES if n != "lhc_models.py")
     for relative in ("tools", "common/tools", "native/codex/tools"):
         target = package / relative
         target.mkdir(parents=True)
@@ -272,7 +271,7 @@ def test_an_installed_package_without_the_estimator_says_so(tmp_path):
 # --------------------------------------------------------------------------
 
 
-def test_create_leaf_writes_the_leaf_then_runs_collector_check(tmp_path, patch_cli):
+def test_create_leaf_writes_the_leaf_then_runs_collector_check(tmp_path):
     plan_dir = make_plan_dir(tmp_path, {"L01": {"id": "L01", "label": "Один", "status": "done"}})
     result = call_tool("create_leaf", {
         "plan_dir": str(plan_dir),
@@ -281,8 +280,9 @@ def test_create_leaf_writes_the_leaf_then_runs_collector_check(tmp_path, patch_c
     written = read_leaf(plan_dir, "L02")
     assert written["label"] == "Два"
     assert written["estimate_minutes"] == 15
-    assert patch_cli.calls == [[sys.executable, str(PLAN_JSON), "check", str(plan_dir)]]
-    assert result["structuredContent"]["stdout"] == "cli stdout\n"
+    assert result["structuredContent"]["argv"][0][2] == "create-leaf"
+    assert written["created_at"]
+    assert written["progress_events"]
     assert result["structuredContent"]["returncode"] == 0
 
 
@@ -296,26 +296,27 @@ def test_create_leaf_returns_cli_output_verbatim(tmp_path, patch_cli):
     assert result["isError"] is False
 
 
-def test_create_leaf_rolls_back_when_the_collector_rejects_it(tmp_path, failing_cli):
+def test_create_leaf_rolls_back_when_the_collector_rejects_it(tmp_path):
     plan_dir = make_plan_dir(tmp_path, {})
-    failing_cli.stderr = "LHC: leaf rejected\nLHC: /tmp/plan/leaves/L01.json: неизвестные поля: mood\n"
     result = call_tool("create_leaf", {
-        "plan_dir": str(plan_dir), "leaf": {"id": "L01", "label": "Один", "status": "queued"},
+        "plan_dir": str(plan_dir), "leaf": {"id": "L01", "label": "Один", "status": "invalid"},
     })
     assert result["isError"] is True
     assert not (plan_dir / "leaves" / "L01.json").exists()
-    assert "LHC: leaf rejected" in result["content"][0]["text"]
+    assert result["structuredContent"]["stderr"]
 
 
-def test_a_defect_of_another_leaf_does_not_take_back_the_new_leaf(tmp_path, failing_cli):
-    """The collector names the file it cannot collect; only that file is undone."""
-    plan_dir = make_plan_dir(tmp_path, {})
-    failing_cli.stderr = "LHC: /tmp/plan/leaves/L09.json: лист битый\n"
+def test_invalid_existing_leaf_prevents_create_without_changing_either_file(tmp_path):
+    plan_dir = make_plan_dir(tmp_path, {"L09": {"id": "L09", "label": "Девять"}})
+    broken = plan_dir / "leaves/L09.json"
+    broken.write_text("{")
+    before = broken.read_bytes()
     result = call_tool("create_leaf", {
-        "plan_dir": str(plan_dir), "leaf": {"id": "L01", "label": "Один", "status": "queued"},
+        "plan_dir": str(plan_dir), "leaf": {"id": "L01", "label": "Один"},
     })
-    assert result["isError"] is True
-    assert (plan_dir / "leaves" / "L01.json").is_file()
+    assert result["isError"]
+    assert not (plan_dir / "leaves/L01.json").exists()
+    assert broken.read_bytes() == before
 
 
 def test_create_leaf_refuses_a_field_the_collector_does_not_know(tmp_path, patch_cli):
@@ -331,16 +332,16 @@ def test_leaf_fields_come_from_the_collector_not_a_second_copy():
     assert plan_mcp.LEAF_FIELDS == plan_mcp.plan_json.LEAF_FIELDS
 
 
-def test_update_leaf_changes_only_its_own_leaf(tmp_path, patch_cli):
+def test_update_leaf_changes_only_its_own_leaf(tmp_path):
     other = {"id": "L01", "label": "Один", "status": "queued"}
     plan_dir = make_plan_dir(tmp_path, {"L01": other, "L02": {"id": "L02", "label": "Два", "status": "queued"}})
     before = (plan_dir / "leaves" / "L01.json").read_text(encoding="utf-8")
-    call_tool("update_leaf", {"plan_dir": str(plan_dir), "leaf_id": "L02",
+    result = call_tool("update_leaf", {"plan_dir": str(plan_dir), "leaf_id": "L02",
                               "fields": {"status": "done", "finished_at": "07:20"}})
     assert read_leaf(plan_dir, "L02")["status"] == "done"
     assert read_leaf(plan_dir, "L02")["label"] == "Два"
     assert (plan_dir / "leaves" / "L01.json").read_text(encoding="utf-8") == before
-    assert patch_cli.calls == [[sys.executable, str(PLAN_JSON), "check", str(plan_dir)]]
+    assert result["structuredContent"]["argv"][0][2] == "update-leaf"
 
 
 def test_update_leaf_of_an_unknown_leaf_is_an_error_not_a_new_leaf(tmp_path, patch_cli):
@@ -466,17 +467,15 @@ def test_every_operation_answers_exactly_as_the_same_cli_line_by_hand(tmp_path):
         "plan_dir": str(plan_dir),
         "leaf": {"id": "L02", "label": "Два", "status": "queued", "estimate_minutes": 15},
     })
-    stdout, _stderr, code = run_cli_direct([sys.executable, str(PLAN_JSON), "check", str(plan_dir)])
-    assert created["structuredContent"]["stdout"] == stdout
-    assert created["structuredContent"]["returncode"] == code
+    assert created["structuredContent"]["returncode"] == 0
+    assert created["structuredContent"]["argv"][0][2] == "create-leaf"
 
     updated = call_tool("update_leaf", {
         "plan_dir": str(plan_dir), "leaf_id": "L02",
         "fields": {"status": "done", "finished_at": "07:20"},
     })
-    stdout, _stderr, code = run_cli_direct([sys.executable, str(PLAN_JSON), "check", str(plan_dir)])
-    assert updated["structuredContent"]["stdout"] == stdout
-    assert updated["structuredContent"]["returncode"] == code
+    assert updated["structuredContent"]["returncode"] == 0
+    assert updated["structuredContent"]["argv"][0][2] == "update-leaf"
 
     built = call_tool("build_plan", {"plan_dir": str(plan_dir)})
     manual = [run_cli_direct(argv) for argv in built["structuredContent"]["argv"]]
@@ -643,7 +642,11 @@ def test_the_portable_manifest_and_the_overlay_agree():
     """The portable package reads mcp.json, the overlay reads .mcp.json."""
     portable = (PLUGIN / "mcp.json").read_text(encoding="utf-8")
     overlay = (PLUGIN / ".mcp.json").read_text(encoding="utf-8")
-    assert json.loads(portable) == json.loads(overlay)
+    assert list(json.loads(portable)["mcpServers"]) == ["LhcPlan"]
+    assert json.loads(portable)["$schema"] == "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json"
+    server = json.loads(portable)["mcpServers"]["LhcPlan"]
+    assert server["type"] == "stdio"
+    assert server["args"] == ["${PLUGIN_ROOT}/scripts/plan_mcp.py"]
     assert (NATIVE / ".mcp.json").read_text(encoding="utf-8") == overlay
 
 
@@ -716,7 +719,7 @@ def test_real_stdio_handshake_spawns_the_server_and_calls_every_tool(tmp_path):
 
     assert init["result"]["protocolVersion"] == "2024-11-05"
     assert {tool["name"] for tool in tools["result"]["tools"]} == {
-        "create_leaf", "update_leaf", "build_plan", "estimate_cost"}
+        "create_leaf", "update_leaf", "build_plan", "estimate_cost", "update_progress", "publish_html", "revise_plan"}
     for reply in (created, updated, built, priced):
         assert reply["result"]["isError"] is False, reply["result"]
     assert (plan_dir / "leaves" / "L01.json").is_file()
