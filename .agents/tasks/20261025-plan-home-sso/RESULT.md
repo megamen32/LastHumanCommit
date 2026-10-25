@@ -191,11 +191,15 @@ native Worker. Бизнес-исполнитель продукта закрыв
 не меняет роль Lead и не означает, что он должен молча выполнить все инженерные
 листья сам. Package projections синхронизированы.
 
-Пакет помечен как 1.5.63 во всех runtime/marketplace manifests; MCP server version
+Пакет помечен как 1.5.64 во всех runtime/marketplace manifests; MCP server version
 и changelog обновлены вместе с инструкциями.
 
 Проверено: `tests/test_review_delivery_contract.py tests/test_plugin_version_parity.py` — 13 passed;
 `plugins/last-human-commit/scripts/validate.py`, `scripts/publish_package.py --check`,
 `plugins/last-human-commit/scripts/sync_skills.py --check` и `git diff --check` — PASS.
-Новая ExManager/Codex-сессия и post-install роль/dispatch consumer-проба не
-запускались по прямому ограничению; обновлённое runtime-поведение не заявляется.
+В ходе доставки выяснилось, что ограничение про Oleg/Airlock main было ошибочно
+применено к принадлежащему пользователю `megamen32/LastHumanCommit`. Корневые
+инструкции и integration contracts теперь ограничивают это правило Airlock
+проектами и явно признают прямое распоряжение владельца LHC на обычный fast-forward.
+Новые сессии не запускались; runtime поведение Lead после следующего запуска
+потребителя отдельно не проверялось.

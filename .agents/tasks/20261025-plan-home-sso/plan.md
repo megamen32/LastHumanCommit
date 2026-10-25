@@ -1,18 +1,18 @@
 Граф задач: Каталог, интерфейс и надёжное ведение живых планов LHC
-Ревизия плана: dd088da0f8c7
+Ревизия плана: 0ddec5c1c2e0
 Это снимок плана, а не панель управления: фактическое состояние работы приходит из API владельцев, а не из пересказа агента в графе.
 Цель: Дать Codex-сессиям доступ к главному каталогу после существующего SSO и сделать локальный план честным источником состояния текущей работы в выбранном worktree.
 Бизнес-результат: Владелец открывает приватный корень каталога через существующий SSO; индивидуальные страницы планов доступны по ссылке. В карточке плана видны статусы задач и min/max/сейчас без второй оси. При продолжении существующего leaf-плана текущая сессия локально привязывает точный worktree и лист; правки переживают offline и догоняют то же зеркало после восстановления сети.
 Как проверим: Анонимно открыть точный корень https://lhc.bezrabotnyi.com/ и получить редирект на существующий SSO; открыть индивидуальный план, ревизию и JSON без SSO; Bearer GET /v1/status остаётся доступен.
 Как проверим: Открыть опубликованный план на узком экране: видна одна цветная полоса статусов, рядом в том же блоке подписаны минимум, максимум и сейчас; временной status показывает прохождение ранней оценки и превышение верхней границы без второй длинной временной оси.
 Как проверим: Обычным Codex fullcycle запросом без ручной команды и mirror config создать/переиспользовать локальный план и связать готовый лист с настоящими session/worktree до первого ответа; проверить graph/HTML и повтор события без второго progress event. Для выбранного mirror-конфига observer после восстановления сети догоняет то же зеркало; исходный r001 и начало плана сохранены.
-Декомпозиция: 7 листьев · 1 параллельно · 3 волны · слотов: 1
-Прогресс (по листьям графа): 7/7 готово (100.0%) · в работе 0 · заблокировано 0 · ждёт листа 0 · ждёт исполнителя 0 · осталось 0
-Смета плана: нет посчитанных денег — 7 листьев без цены
+Декомпозиция: 8 листьев · 1 параллельно · 3 волны · слотов: 1
+Прогресс (по листьям графа): 7/8 готово (87.5%) · в работе 1 · заблокировано 0 · ждёт листа 0 · ждёт исполнителя 0 · осталось 1
+Смета плана: нет посчитанных денег — 8 листьев без цены
 доля frontier не вычисляется: нет посчитанных денег
 остатку к запуску: нет посчитанных денег
 бюджет не задан
-без цены 7: L01, L02, L03, L05, L06, L07, L04
+без цены 8: L01, L02, L03, L05, L06, L07, L08, L04
 ПРЕВЫШЕН ПРЕДЕЛ ОЦЕНКИ ЛИСТА (15 мин) — длинную работу надо разбить на два листа, либо записать в листе estimate_over_limit_reason, почему он сознательно больше:
   - лист L01: оценка 30 мин при пределе 15 мин — чего не хватает: разбиения или причины превышения
   - лист L02: оценка 20 мин при пределе 15 мин — чего не хватает: разбиения или причины превышения
@@ -20,12 +20,12 @@
   - лист L05: оценка 40 мин при пределе 15 мин — чего не хватает: разбиения или причины превышения
   - лист L07: оценка 20 мин при пределе 15 мин — чего не хватает: разбиения или причины превышения
   - лист L04: оценка 30 мин при пределе 15 мин — чего не хватает: разбиения или причины превышения
-Листьев в графе: 7 · слотов: 1 · волн: 3
-Параллельность: сейчас 0 из 1 слотов, пик по плану 1
-Исполнители: занято 0 из 1 слотов · ждёт листа: 0 · ждёт исполнителя: 0 · готово к запуску: 0
-Прогноз: осталось 0 мин (от 0 мин), финиш . отсчёт от последнего события 2026-10-25T23:25+03:00 · простой 0 мин
+Листьев в графе: 8 · слотов: 1 · волн: 3
+Параллельность: сейчас 1 из 1 слотов, пик по плану 1
+Исполнители: занято 1 из 1 слотов · ждёт листа: 0 · ждёт исполнителя: 0 · готово к запуску: 0
+Прогноз: осталось 15 мин (от 8 мин), финиш 2026-10-25T23:41:52+03:00–2026-10-25T23:48:52+03:00. отсчёт от последнего события 2026-10-25T23:33+03:00 · простой 0 мин
 Критический путь: Привязать продолжение существующего плана к текущему worktree, сессии и observer
-Листья плана (7):
+Листья плана (8):
   - L01 · ✅ Готово · (Завершить каталог проектов, root-only SSO и локальный observer на server100 и Mac) · оценка 15 мин–30 мин · усилие не измерено · волна 1 · зависит: — · стоимость — модель не выбрана · лист не назвал ни модель, ни класс
       Описание задачи: Подключить выбранные canonical plans и graph-only источники к observer, установить root-only SSO и сохранить непрерывную локальную работу.
       Приёмка: Каталог показывает все принятые зеркалом планы; только / требует существующий SSO; отдельные plan/archive JSON публичны, Bearer GET /v1/status работает.
@@ -54,6 +54,10 @@
       Приёмка: Канонические инструкции различают engineering Lead/Worker и product business executor, сохраняют Lead role при отсутствии уже созданного child и не разрешают молча перебирать все инженерные листья самому; целевой contract test и package validators проходят.
       Затрагиваемые файлы: `AGENTS.md`, `.claude-plugin/marketplace.json`, `src/common/agents/Lead.md`, `src/common/skills/last-human-commit/SKILL.md`, `src/common/skills/decompose-and-dispatch/SKILL.md`, `src/common/skills/planning/SKILL.md`, `src/common/skills/business-delivery/SKILL.md`, `src/common/templates/project-router.md`, `src/common/protocols/OUTCOME_CONTRACT.md`, `src/common/protocols/REVIEW_TO_DELIVERY.md`, `src/common/tools/lhc_plan_mcp.py`, `plugins/last-human-commit/CHANGELOG.md`, `plugins/last-human-commit/plugin.json`, `plugins/last-human-commit/plugin.yaml`, `plugins/last-human-commit/.claude-plugin/plugin.json`, `plugins/last-human-commit/.codex-plugin/plugin.json`, `plugins/last-human-commit/.zcode-plugin/plugin.json`, `plugins/last-human-commit/native/codex/.codex-plugin/plugin.json`, `adapters/hermes/plugin/plugin.yaml`, `tests/test_review_delivery_contract.py`, `tests/test_plugin_version_parity.py`
       Результат: LHC 1.5.63 canonical instructions and generated package distinguish engineering Lead/Worker from product business executor. Lead role persists without a started child; engineering leaves remain assigned to native Workers. Version/manifests/changelog align. Targeted policy and version tests 13 passed; plugin validation and projections pass.
+  - L08 · 🔄 В работе · (Исправить область owner-only интеграции для владельца LHC) · оценка 8 мин–15 мин · усилие не измерено · волна 1 · зависит: — · стоимость — модель не выбрана · лист не назвал ни модель, ни класс
+      Описание задачи: Уточнить root router и integration contracts: правило Oleg/Airlock относится к Airlock внешним проектам, не блокирует прямую авторизацию владельца megamen32/LastHumanCommit на fast-forward main. Сохранить защиту shared/external main.
+      Приёмка: Тест фиксирует отличие owner-controlled LHC main от Airlock owner handoff; package version/manifests aligned; relevant tests pass; owned branch fast-forwarded to origin/main without force under direct owner authorization.
+      Затрагиваемые файлы: `AGENTS.md`, `src/common/protocols/OUTCOME_CONTRACT.md`, `src/common/protocols/REVIEW_TO_DELIVERY.md`, `tests/test_review_delivery_contract.py`, `plugins/last-human-commit/CHANGELOG.md`, `plugins/last-human-commit/plugin.json`, `plugins/last-human-commit/plugin.yaml`, `adapters/hermes/plugin/plugin.yaml`
   - L04 · ✅ Готово · (Доставить каталог/SSO и единую карточку прогресса в разрешённую ветку) · оценка 15 мин–30 мин · усилие не измерено · волна 2 · зависит: L01, L02, L05 · стоимость — модель не выбрана · лист не назвал ни модель, ни класс
       Описание задачи: Собрать проверенные и установленные каталог/SSO/UI изменения, оформить scoped commit/push и проверить интегрированный runtime без включения чужого WIP.
       Приёмка: Разрешённая LHC ветка опубликована без force и чужих путей; source/runtime 1.5.62 валиден, а selected native plugin или host reader установлен и прочитан обратно; root-only SSO и individual plan page отвечают ожидаемо. Текущая Codex UserPromptSubmit auto-entry включена для следующей обычной сессии; новый consumer session не создаётся в рамках запрета пользователя.

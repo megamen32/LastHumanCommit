@@ -151,8 +151,10 @@ Assigned no-delegation leaves do not recursively hire reviewers. Before Git muta
 resolve ownership, remote and permitted integration branch; unknown is not main.
 Airlock feature worktrees branch from megamen32-dev; one integrator converges ready
 commits there. PR per worker is optional; unified published dev history and integrated
-smoke are mandatory. External/shared upstream main is never auto-merged/pushed;
-Oleg owns final main integration, and a main PR is only agreed handoff. Main CI stays
+smoke are mandatory for Airlock projects. External/shared upstream main is never
+auto-merged/pushed; Oleg owns final main integration there. This rule does not
+prohibit an ordinary fast-forward on owner-controlled `megamen32/LastHumanCommit`
+when the owner directly authorizes the scoped change. Main CI stays
 GitHub-hosted, not ARC/K3s; do not expand App privileges or weaken checks/protection.
 Authorized owned LHC main merge remains available after gates. Canary plus permitted
 dev delivery complete is separate from release_handoff awaiting-owner: leaving Oleg's

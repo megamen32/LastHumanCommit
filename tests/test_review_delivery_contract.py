@@ -106,6 +106,17 @@ def test_lead_role_separates_engineering_worker_from_product_business_executor()
     assert "Lead only orchestrates:" not in combined
     assert "Every inspection, edit, check, deployment, commit, push or install is performed" not in combined
 
+def test_owner_only_main_rule_is_scoped_to_airlock_not_owned_lhc():
+    sources = [
+        ROOT / "AGENTS.md",
+        ROOT / "src/common/protocols/OUTCOME_CONTRACT.md",
+        ROOT / "src/common/protocols/REVIEW_TO_DELIVERY.md",
+    ]
+    combined = "\n".join(path.read_text() for path in sources)
+    assert "owner-controlled `megamen32/LastHumanCommit`" in combined
+    assert "directly authorizes the scoped change" in combined
+    assert "Oleg owns final main integration there" in combined
+
 def test_policy_preserves_business_testing_and_uncertainty():
     text=(ROOT/"src/common/protocols/REVIEW_TO_DELIVERY.md").read_text()
     for term in ("unknown", "PostgreSQL", "Zero Knowledge", "deployment", "Never bypass", "machine fields", "build a service"):

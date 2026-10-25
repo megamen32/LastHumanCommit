@@ -14,7 +14,7 @@
   "current_progress": "Каталог: 22 плана в 10 группах; root-only SSO и публичные individual pages активны. LHC mirror/observer 1.5.62 установлен на server100 и Mac с сохранением конфигов; server слушает loopback, sso_enabled=true; текущие plans/roots/8 graph sources сохранены, Mac 1 plan/3 roots/2 graph sources. Root отвечает точным existing SSO 302, индивидуальная plan page — 200. Codex marketplace содержит включённые установки 1.5.62 и Fleet 1.5.58 на этом host. Установленный CLI доказал только узкий synthetic путь создания трёх листов по распознанному английскому Full-cycle prompt; он не доказывает безопасную общую авто-привязку. В последующей проверке: обычный русский Full-cycle prompt вернул classify=unknown без плана; нерелевантный запрос с единственным старым планом привязал его queued leaf. Эти два entry-дефекта не исправлены. L06 завершён: единый review целого Full-cycle результата после рабочих leaves, затем deploy→consumer test→push; timed Overseer advice не изменён. Целевые contract tests: 8 passed, generated package validation/parity прошли. Новая реальная Codex-сессия и owner login не создавались/не наблюдались по прямому ограничению; active minutes до live-plan неизвестны.",
   "external_waits": "",
   "slots": 1,
-  "updated_at": "2026-10-25T23:25:27+03:00",
+  "updated_at": "2026-10-25T23:33:52+03:00",
   "tasks": [
     {
       "id": "L01",
@@ -461,6 +461,61 @@
       "created_at": "2026-10-25T23:22:32+03:00"
     },
     {
+      "id": "L08",
+      "label": "Исправить область owner-only интеграции для владельца LHC",
+      "status": "running",
+      "description": "Уточнить root router и integration contracts: правило Oleg/Airlock относится к Airlock внешним проектам, не блокирует прямую авторизацию владельца megamen32/LastHumanCommit на fast-forward main. Сохранить защиту shared/external main.",
+      "acceptance": "Тест фиксирует отличие owner-controlled LHC main от Airlock owner handoff; package version/manifests aligned; relevant tests pass; owned branch fast-forwarded to origin/main without force under direct owner authorization.",
+      "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+      "harness": "codex",
+      "origin": "",
+      "supersedes": [],
+      "progress_events": [
+        {
+          "at": "2026-10-25T23:33:52+03:00",
+          "note": "Исправляю неправильно применённый внешний Airlock owner-only запрет в правилах самого LHC repo.",
+          "changes": {
+            "label": "Исправить область owner-only интеграции для владельца LHC",
+            "description": "Уточнить root router и integration contracts: правило Oleg/Airlock относится к Airlock внешним проектам, не блокирует прямую авторизацию владельца megamen32/LastHumanCommit на fast-forward main. Сохранить защиту shared/external main.",
+            "acceptance": "Тест фиксирует отличие owner-controlled LHC main от Airlock owner handoff; package version/manifests aligned; relevant tests pass; owned branch fast-forwarded to origin/main without force under direct owner authorization.",
+            "status": "running",
+            "estimate_minutes": {
+              "minimum": 8,
+              "maximum": 15
+            },
+            "affected_files": [
+              "AGENTS.md",
+              "src/common/protocols/OUTCOME_CONTRACT.md",
+              "src/common/protocols/REVIEW_TO_DELIVERY.md",
+              "tests/test_review_delivery_contract.py",
+              "plugins/last-human-commit/CHANGELOG.md",
+              "plugins/last-human-commit/plugin.json",
+              "plugins/last-human-commit/plugin.yaml",
+              "adapters/hermes/plugin/plugin.yaml"
+            ]
+          },
+          "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+          "harness": "codex"
+        }
+      ],
+      "affected_files": [
+        "AGENTS.md",
+        "src/common/protocols/OUTCOME_CONTRACT.md",
+        "src/common/protocols/REVIEW_TO_DELIVERY.md",
+        "tests/test_review_delivery_contract.py",
+        "plugins/last-human-commit/CHANGELOG.md",
+        "plugins/last-human-commit/plugin.json",
+        "plugins/last-human-commit/plugin.yaml",
+        "adapters/hermes/plugin/plugin.yaml"
+      ],
+      "depends_on": [],
+      "estimate_minutes": {
+        "minimum": 8.0,
+        "maximum": 15.0
+      },
+      "created_at": "2026-10-25T23:33:52+03:00"
+    },
+    {
       "id": "L04",
       "label": "Доставить каталог/SSO и единую карточку прогресса в разрешённую ветку",
       "status": "done",
@@ -583,7 +638,7 @@
       "wave": 2
     }
   ],
-  "leaf_count": 7,
+  "leaf_count": 8,
   "plan_origin": {
     "at": "2026-10-25T22:19:24+03:00",
     "source": "leaf_created_at",

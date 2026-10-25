@@ -173,7 +173,7 @@ early branch push, record a staging exception with reason/native refs; it is nei
 final acceptance nor main merge. Testing completes its coverage/raw observations,
 including product defects, without mandatory code/deploy/hiring. Required but unavailable
 merge is blocked, not N/A. The portable rule is the project's configured integration route
-(`docs/PRODUCT_CONCEPT.md`): push, PR and merge only where that route permits it. This repository's own setting is Airlock megamen32-dev, where upstream main belongs to Oleg and is never auto-merged — an owner prohibition of these repositories, not a portable default and not another project's setting. Main CI uses GitHub-hosted runners, not ARC.
+(`docs/PRODUCT_CONCEPT.md`): push, PR and merge only where that route permits it. This LHC repository (`megamen32/LastHumanCommit`) is owner-controlled: a direct instruction from its owner authorizes the scoped `main` fast-forward after required checks. “Oleg owns main” applies to Airlock-managed repositories, not to LastHumanCommit; preserve that boundary when working in external/shared projects. Main CI uses GitHub-hosted runners, not ARC.
 See `common/protocols/REVIEW_TO_DELIVERY.md`.
 Before publication and after peers finish, fetch. Merge a newer permitted integration
 target, resolve conflicts by meaning, rerun affected checks and push. Review covers
