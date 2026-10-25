@@ -100,6 +100,19 @@ number are all accepted. A leaf that estimates only part of the work also carrie
 `estimate_unknown_reason`, so the forecast shows an unknown deadline instead of a
 silent zero.
 
+Full Cycle planning is real elapsed work: creating the plan is its first task,
+so the upper rail «Начало плана» includes planning, not only coding/execution.
+Native creation automatically records timezone-aware `created_at` on each leaf;
+native updates preserve it. No manual timestamp is required. Build and the local
+source observer freeze `plan_origin` once in `.lhc-publication/plan-origin.json`.
+For legacy leaves the source host may recover filesystem birthtime, labelled
+«восстановлено по файлам»; earlier recorded work takes precedence. Without birth
+data or an absolute recorded start, the beginning remains explicitly unknown.
+Neither mtime/ctime nor mirror receipt/render time is creation evidence. Edits,
+deletion, splitting and new revisions retain this origin; copies retain its
+metadata. Mirrors only consume provenance sent by the source. Read-only check
+does not create metadata; historical snapshots are never rewritten.
+
 `actual_minutes` is the summed effort of the executors; `started_at` and
 `finished_at` are the window on the clock. Prefer ISO with timezone, for example
 `2026-10-24T23:55:00+03:00`, to measure across midnight or days. Legacy `ЧЧ:ММ`
@@ -117,7 +130,7 @@ update time.
 The complete set of fields a leaf file may carry is exactly:
 
 ```text
-acceptance, actual_minutes, affected_files, blocker, blocker_details, complexity, cost_source, cost_usd
+acceptance, actual_minutes, affected_files, blocker, blocker_details, complexity, cost_source, cost_usd, created_at
 depends_on, description, duration_estimate_minutes, estimate, estimate_max, estimate_min, estimate_minutes, estimate_over_limit_reason
 estimate_unknown_reason, finished_at, harness, id, label, model, model_class, note
 origin, owner, parallel_with, planned_finish, planned_start, progress_events, result, session

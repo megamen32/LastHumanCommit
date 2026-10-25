@@ -258,6 +258,7 @@ class Leaf:
     planned_finish: str = ""
     actual_minutes: Optional[float] = None
     started_at: str = ""
+    created_at: str = ""
     finished_at: str = ""
     blocker: str = ""
     blocker_details: dict[str, str] = field(default_factory=dict)
@@ -438,6 +439,7 @@ class Graph:
     finished_at: str = ""
     # Render context only; never written back into historical source plans.
     snapshot_at: str = ""
+    plan_origin: dict[str, Any] = field(default_factory=dict)
     time_live: bool = True
     source_path: str = ""
     source_kind: str = ""
@@ -1176,6 +1178,7 @@ def parse_graph_json(document: Any) -> Graph:
     graph.external_waits = str(document.get("external_waits") or "")
     graph.updated_at = str(document.get("updated_at") or "")
     graph.started_at = str(document.get("started_at") or "")
+    graph.plan_origin = document.get('plan_origin') or {}
     graph.finished_at = str(document.get("finished_at") or "")
     graph.slots = int(document.get("slots") or 1)
     graph.declared_parallel = document.get("parallel")
@@ -1234,6 +1237,7 @@ def parse_graph_json(document: Any) -> Graph:
             depends_on=[str(item) for item in (task.get("depends_on") or [])],
             parallel_with=[str(item) for item in (task.get("parallel_with") or [])],
             started_at=str(task.get("started_at") or ""),
+            created_at=str(task.get("created_at") or ""),
             finished_at=str(task.get("finished_at") or ""),
             blocker=normalize(str(task.get("blocker") or "")),
             blocker_details={
@@ -1798,6 +1802,15 @@ def plan_time_frame(graph: Graph, metrics: dict[str, Any]) -> dict[str, Any]:
     start = absolute_time(graph.started_at) if graph.started_at else min(starts, default=None)
     if start and start > reference:
         start = None
+    origin = absolute_time(graph.plan_origin.get('at', ''))
+    start_source = 'recorded_start' if start else ''
+    if origin and origin <= reference:
+        # Keep earlier known work even if an imported/replaced file was born later.
+        earlier = min([s for s in [start, *starts] if s], default=None)
+        if earlier and earlier < origin:
+            start, start_source = earlier, 'recorded_start'
+        else:
+            start, start_source = origin, graph.plan_origin.get('source', '')
     legacy = graph.started_at if re.fullmatch(r"\d{1,2}:\d{2}", graph.started_at) else ""
     if not graph.started_at and not start:
         legacy_starts = [leaf.started_at for leaf in graph.leaves
@@ -1839,7 +1852,7 @@ def plan_time_frame(graph: Graph, metrics: dict[str, Any]) -> dict[str, Any]:
     else:
         end_label = "Прогноз ≈"
     iso = lambda stamp: stamp.isoformat() if stamp else ""
-    return {"start": iso(start), "legacy_start": legacy, "end_min": iso(end_min),
+    return {"start": iso(start), "start_source": start_source, "legacy_start": legacy, "end_min": iso(end_min),
             "end": iso(end), "anchor": iso(anchor), "reference": iso(reference),
             "snapshot": iso(snapshot), "completed": completed, "live": graph.time_live,
             "end_label": end_label}
@@ -2774,6 +2787,8 @@ def graph_revision(graph: Graph) -> str:
     ]
     if graph.started_at or graph.finished_at:
         payload.append(["plan_times", graph.started_at, graph.finished_at])
+    if graph.plan_origin:
+        payload.append(['plan_origin', graph.plan_origin])
     document = json.dumps(payload, ensure_ascii=False, sort_keys=True, default=str)
     return hashlib.sha256(document.encode("utf-8")).hexdigest()[:12]
 
@@ -5272,6 +5287,8 @@ def export_graph(graph: Graph) -> dict[str, Any]:
             task["actual_minutes"] = leaf.actual_minutes
         if leaf.started_at:
             task["started_at"] = leaf.started_at
+        if leaf.created_at:
+            task['created_at'] = leaf.created_at
         if leaf.finished_at:
             task["finished_at"] = leaf.finished_at
         if leaf.owner:
@@ -5326,6 +5343,8 @@ def export_graph(graph: Graph) -> dict[str, Any]:
     }
     if graph.budget_usd is not None:
         document["budget_usd"] = graph.budget_usd
+    if graph.plan_origin:
+        document['plan_origin'] = graph.plan_origin
     for field in ("started_at", "finished_at"):
         if getattr(graph, field):
             document[field] = getattr(graph, field)
@@ -5982,7 +6001,7 @@ def merge_attribution(
             )
             if missing and source.get(field) is not None:
                 task[field] = source[field]
-    for field in ("current_progress", "external_waits", "acceptance_scenarios", "started_at", "finished_at", "updated_at"):
+    for field in ("current_progress", "external_waits", "acceptance_scenarios", "started_at", "finished_at", "updated_at", "plan_origin"):
         if not document.get(field) and previous.get(field):
             document[field] = previous[field]
     # The title of the plan is the first line of the report. A title that was

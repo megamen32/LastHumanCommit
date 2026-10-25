@@ -120,6 +120,11 @@ def fingerprint(plan):
     if not paths[0].is_file() or len(paths) < 2:
         raise ValueError('source temporarily absent; preserving last good snapshot')
     result = []
+    # Presentation migration: old unchanged source must be captured once too.
+    result.append(('plan_origin_schema', 1))
+    origin = plan / '.lhc-publication/plan-origin.json'
+    if origin.is_file():
+        paths.append(origin)
     for path in paths:
         if path.is_symlink() or path.stat().st_size > MAX_BYTES:
             raise ValueError('unsafe or oversized source')
@@ -146,6 +151,7 @@ def capture(plan, *, reason=None):
     dest = directory(plan)
     with leaves.file_lock(dest / 'publish.lock'):
         with leaves.file_lock(plan / '.lhc-leaves.lock'):
+            leaves.ensure_plan_origin(plan)
             before = fingerprint(plan)
             document = pub.public_document(leaves.build_document(plan))
             if before != fingerprint(plan):
@@ -267,7 +273,8 @@ def run_observer(config_path, once=False):
                     if once or (attempted.get(plan) != current and time.monotonic() >= capture_deadline and time.monotonic() - since >= max(.05, cfg.get('debounce_seconds', 1))):
                         try:
                             capture(plan)
-                            attempted[plan] = current
+                            attempted[plan] = fingerprint(plan)
+                            seen[plan] = (attempted[plan], time.monotonic())
                             capture_retries[plan] = (0, 0)
                         except (ValueError, OSError) as error:
                             capture_retries[plan] = (time.monotonic() + min(60, 2 ** min(capture_failures, 6)), capture_failures + 1)
@@ -297,6 +304,8 @@ def valid_document(value):
     if not all(isinstance(task, dict) for task in value['tasks']):
         raise ValueError('invalid task object')
     clean = pub.public_document(value)
+    if 'plan_origin' in clean:
+        leaves.validate_plan_origin(clean['plan_origin'])
     for task in clean['tasks']:
         if not isinstance(task.get('id'), str) or not IDENT.fullmatch(task['id']):
             raise ValueError('invalid task identity')

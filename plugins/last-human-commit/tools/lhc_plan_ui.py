@@ -10,9 +10,14 @@ def display_time(value):
 
 
 def time_rail(frame):
-    start = ("Начало: " + display_time(frame["start"]) if frame["start"] else
-             "Начало: " + frame["legacy_start"] + " · дата не записана"
-             if frame["legacy_start"] else "Начало не зафиксировано")
+    qualifier = {'file_birthtime': 'восстановлено по файлам',
+                 'leaf_created_at': 'создание первого листа',
+                 'recorded_start': 'по записанному началу работы'}.get(frame.get('start_source'), '')
+    start = ("Начало плана: " + display_time(frame["start"]) if frame["start"] else
+             "Начало плана: " + frame["legacy_start"] + " · дата не записана"
+             if frame["legacy_start"] else "Начало плана не зафиксировано")
+    if qualifier:
+        start += ' · ' + qualifier
     end = frame["end_label"] + (" " + display_time(frame["end"]) if frame["end"] else "")
     return ('<div class="time-rail" data-time-frame="' + escape(json.dumps(frame), quote=True) + '">'
             '<div class="time-rail-ends"><span class="time-rail-start">' + escape(start) + '</span>'
@@ -78,7 +83,8 @@ const f=JSON.parse(rail.dataset.timeFrame),start=Date.parse(f.start),end=Date.pa
 const live=f.live&&/^https?:$/.test(location.protocol)&&!f.completed;
 const frozen=Date.parse(f.snapshot),zone=Intl.DateTimeFormat().resolvedOptions().timeZone;
 const fmt=n=>new Date(n).toLocaleString('ru-RU',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
-if(Number.isFinite(start))rail.querySelector('.time-rail-start').textContent='Начало: '+fmt(start);
+const qualifier=({file_birthtime:'восстановлено по файлам',leaf_created_at:'создание первого листа',recorded_start:'по записанному началу работы'})[f.start_source];
+if(Number.isFinite(start))rail.querySelector('.time-rail-start').textContent='Начало плана: '+fmt(start)+(qualifier?' · '+qualifier:'');
 if(Number.isFinite(end))rail.querySelector('.time-rail-end').textContent=f.end_label+' '+(early!==end?fmt(early)+' — ':'')+fmt(end);
 const forecast=document.querySelector('[data-tile="forecast"] .kpi-value');
 if(forecast&&Number.isFinite(end))forecast.textContent=(f.completed?'Завершено: ':'≈ ')+(early!==end?fmt(early)+' — ':'')+fmt(end)+' · '+zone;

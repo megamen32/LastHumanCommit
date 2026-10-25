@@ -33,13 +33,15 @@ import argparse
 import contextlib
 import fcntl
 import hashlib
-from datetime import datetime
+from datetime import datetime, timezone
 import difflib
 import importlib.util
 import json
 import os
 import re
 import sys
+import ctypes
+import struct
 from pathlib import Path
 from typing import Any, Optional
 
@@ -162,6 +164,7 @@ LEAF_FIELDS = (
     "planned_start",
     "planned_finish",
     "actual_minutes",
+    "created_at",
     "started_at",
     "finished_at",
     "blocker",
@@ -515,6 +518,10 @@ def task_from_leaf(raw: Any, path: Path) -> dict[str, Any]:
     if actual is not None:
         task["actual_minutes"] = actual
 
+    if raw.get("created_at"):
+        if origin_time(raw["created_at"]) is None:
+            raise LeafError(f"{path}: created_at требует ISO с часовым поясом")
+        task["created_at"] = raw["created_at"]
     for field in ("started_at", "finished_at", "planned_start", "planned_finish"):
         value = _clock(raw, field, path)
         if value:
@@ -746,6 +753,112 @@ def _order(
     )
 
 
+def origin_time(value):
+    try:
+        stamp = datetime.fromisoformat(value.replace('Z', '+00:00'))
+        return stamp if stamp.tzinfo is not None else None
+    except (ValueError, TypeError, AttributeError):
+        return None
+
+
+def file_birthtime(path):
+    """Source host only. Never substitute modification or inode change time."""
+    try:
+        birth = getattr(path.stat(), 'st_birthtime', None)
+        if birth is None and sys.platform.startswith('linux'):
+            # Linux UAPI statx is a fixed 256-byte structure; btime is at 80.
+            # Request only STATX_BTIME and check the returned mask.
+            libc = ctypes.CDLL(None, use_errno=True)
+            statx = libc.statx
+            statx.argtypes = [ctypes.c_int, ctypes.c_char_p, ctypes.c_int,
+                             ctypes.c_uint, ctypes.c_void_p]
+            statx.restype = ctypes.c_int
+            data = ctypes.create_string_buffer(256)
+            if statx(-100, os.fsencode(path), 0, 0x800, data) == 0:
+                if struct.unpack_from('=I', data.raw)[0] & 0x800:
+                    seconds, nanos = struct.unpack_from('=qI', data.raw, 80)
+                    birth = seconds + nanos / 1_000_000_000
+        if birth and birth > 0:
+            return datetime.fromtimestamp(birth, timezone.utc).isoformat()
+    except (OSError, ValueError, OverflowError, AttributeError):
+        pass
+    return ''
+
+
+def validate_plan_origin(value):
+    if not isinstance(value, dict) or value.get('source') not in {
+            'leaf_created_at', 'file_birthtime', 'recorded_start', 'unknown'}:
+        raise LeafError('неверный источник начала плана')
+    if value.get('at') and origin_time(value['at']) is None:
+        raise LeafError('неверная дата начала плана')
+    if value.get('source') != 'unknown' and not value.get('at'):
+        raise LeafError('источник начала плана требует дату')
+    if not re.fullmatch(r'[A-Za-z0-9_-]{0,80}', value.get('leaf_id', '')):
+        raise LeafError('неверный id источника начала плана')
+    return value
+
+
+def read_plan_origin(plan_dir):
+    path = Path(plan_dir) / '.lhc-publication/plan-origin.json'
+    if path.exists():
+        value = _read_json(path)
+        return validate_plan_origin(value)
+    # Import/copy carrying graph metadata retains the source's provenance.
+    graph_path = Path(plan_dir) / GRAPH_FILE
+    if graph_path.is_file():
+        value = _read_json(graph_path).get('plan_origin')
+        if value is not None:
+            return validate_plan_origin(value)
+    return None
+
+
+def ensure_plan_origin(plan_dir):
+    """Freeze once on SOURCE, independent of publication/network and revisions.
+
+    Separate lock avoids reentering leaves/publish locks held by callers.
+    A sidecar copied with a plan remains authoritative, even after leaf deletion.
+    """
+    plan_dir = Path(plan_dir)
+    dest = plan_dir / '.lhc-publication'
+    with file_lock(dest / 'origin.lock'):
+        fixed = read_plan_origin(plan_dir)
+        if fixed is not None:
+            if not (dest / 'plan-origin.json').exists():
+                _write_atomic(dest / 'plan-origin.json', json.dumps(fixed, ensure_ascii=False, indent=2) + '\n')
+            return fixed
+        tasks, sources, _ = _collect(plan_dir)
+        candidates = []
+        def add(value, source, leaf_id=''):
+            stamp = origin_time(value)
+            if stamp and stamp <= datetime.now(timezone.utc):
+                candidates.append((stamp, value, source, leaf_id))
+        for task in tasks:
+            leaf_id = task['id']
+            if task.get('created_at'):
+                add(task['created_at'], 'leaf_created_at', leaf_id)
+            else:
+                add(file_birthtime(sources[leaf_id]), 'file_birthtime', leaf_id)
+            add(task.get('started_at'), 'recorded_start', leaf_id)
+        add(plan_metadata(plan_dir).get('started_at'), 'recorded_start')
+        # Historical graph/observations can retain earlier work after a raw edit.
+        for path in (plan_dir / GRAPH_FILE, dest / 'observed.json'):
+            if path.is_file():
+                data = _read_json(path)
+                if path.name == GRAPH_FILE:
+                    add(data.get('started_at'), 'recorded_start')
+                    facts = data.get('tasks', [])
+                else:
+                    facts = [fact for item in data.values()
+                             for fact in [item.get('task', {}), *item.get('completed', [])]]
+                for fact in facts:
+                    add(fact.get('started_at'), 'recorded_start', fact.get('id', ''))
+        _, at, source, leaf_id = min(candidates, key=lambda item: item[0]) if candidates else (None, '', 'unknown', '')
+        fixed = {'at': at, 'source': source, 'leaf_id': leaf_id,
+                 'recorded_at': datetime.now(timezone.utc).isoformat()}
+        _write_atomic(dest / 'plan-origin.json', json.dumps(fixed, ensure_ascii=False, indent=2) + '\n')
+        return fixed
+
+
 def build_document(plan_dir: Path) -> dict[str, Any]:
     """The graph document of a plan, collected from its leaf files."""
 
@@ -797,6 +910,9 @@ def build_document(plan_dir: Path) -> dict[str, Any]:
     for field in ("started_at", "finished_at"):
         if metadata.get(field):
             document[field] = _clock(metadata, field, plan_dir / PLAN_FILE)
+    fixed = read_plan_origin(plan_dir)
+    if fixed is not None:
+        document['plan_origin'] = fixed
     return document
 
 
@@ -804,6 +920,7 @@ def build_graph(plan_dir: Path) -> Path:
     """Collect the leaves of a plan into its plan.graph.json."""
 
     plan_dir = Path(plan_dir)
+    ensure_plan_origin(plan_dir)
     document = build_document(plan_dir)
     text = json.dumps(document, ensure_ascii=False, indent=2) + "\n"
     target = plan_dir / GRAPH_FILE
@@ -1258,10 +1375,14 @@ def update_leaf(plan_dir: Path, leaf_id: str, fields: dict, *, create=False,
         if expected_hash and hashlib.sha256(before).hexdigest() != expected_hash:
             raise LeafError("конфликт: лист изменён, перечитайте его")
         raw = json.loads(before) if before else {}
+        if 'created_at' in fields and fields['created_at'] != raw.get('created_at'):
+            raise LeafError('created_at устанавливается автоматически и не меняется')
         if "id" in fields and fields["id"] != leaf_id:
             raise LeafError("id нельзя менять")
         merged = {**raw, **fields, "id": leaf_id}
         stamp = datetime.now().astimezone().isoformat(timespec="seconds")
+        if create:
+            merged['created_at'] = stamp
         # Only Codex's documented thread environment is auto-bound. Other
         # harnesses pass explicit session/harness; no process-title inference.
         if not merged.get("session"):
@@ -1279,10 +1400,20 @@ def update_leaf(plan_dir: Path, leaf_id: str, fields: dict, *, create=False,
         tasks = [t for t in collect_leaves(plan_dir) if t["id"] != leaf_id] if (Path(plan_dir) / LEAVES_DIRNAME).is_dir() and any((Path(plan_dir) / LEAVES_DIRNAME).glob("*.json")) else []
         tasks.append(candidate)
         _order(tasks, {t["id"]: path.parent / (t["id"] + ".json") for t in tasks})
+        # Recover legacy birth BEFORE atomic replacement destroys that evidence.
+        if before:
+            try:
+                ensure_plan_origin(plan_dir)
+            except (OSError, ValueError) as error:
+                print(f'LHC: начало плана пока не зафиксировано: {error}', file=sys.stderr)
         path.parent.mkdir(parents=True, exist_ok=True)
         serialized = json.dumps(merged, ensure_ascii=False, indent=2) + "\n"
         _write_atomic(path, serialized)
         own_hash = hashlib.sha256(serialized.encode()).hexdigest()
+        try:
+            ensure_plan_origin(plan_dir)
+        except (OSError, ValueError) as error:
+            print(f'LHC: лист сохранён; начало плана пока не зафиксировано: {error}', file=sys.stderr)
     # A registered mirror records only local dirtiness. Legacy publication is
     # still triggered by build_graph, as before, never by a bare leaf edit.
     try:

@@ -137,6 +137,9 @@ def public_document(document):
             return {k: clean(v) for k, v in value.items() if k not in {"affected_files", "blocker_details"} and not re.search(r"(?i)password|secret|credential|authorization|token|api.?key", k)}
         return value
     result = {k: clean(v) for k, v in document.items() if k in plan_keys}
+    if isinstance(document.get('plan_origin'), dict):
+        result['plan_origin'] = {k: clean(v) for k, v in document['plan_origin'].items()
+                                 if k in {'at', 'source', 'leaf_id', 'recorded_at'}}
     result["tasks"] = []
     for task in document["tasks"]:
         public_task = {k: clean(v) for k, v in task.items() if k in task_keys and k != "progress_events"}
@@ -382,6 +385,7 @@ def publish(plan_dir, config_path=None, *, autopublish=False, automatic=False, r
         base_url = config["base_url"].rstrip("/")
         if not re.fullmatch(r"https?://[A-Za-z0-9.:-]+", base_url):
             raise ValueError("base_url must be an HTTP(S) origin")
+        leaves.ensure_plan_origin(plan_dir)
         document = public_document(leaves.build_document(plan_dir))
         if state is None:
             identity = secrets.token_hex(12)
