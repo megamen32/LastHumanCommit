@@ -10,17 +10,17 @@ Hosting владеет deploy/plan-mirror/** и этим документом; c
 файлы, восстановимая центральная проекция. Расширение флота отложено.
 
 Полный digest Python tools:
-`b21a6ef3194581914fa733978cf38e6de4ca8d01b60e48f0e8ddcc141afc1fea`.
+`0fc5ed06dfa31a30ff93a58647a638f2ab2810f56590792598ba882ee982d6d6`.
 SHA256 lhc_plan_mirror.py:
-`6412a2146a8612303f4e0027a77a6caedb68bdf231f7394b61fb7863223f5508`.
+`926be5b5c6fd545206d1b0d53fac2161189dddd93554acc55b3d55e4394a16ff`.
 
-- server100 runtime: /home/roomhacker/.local/share/lhc-plan-mirror/releases/b21a6ef319458191/tools/.
-- Mac runtime: /Users/user/.local/share/lhc-plan-mirror/releases/b21a6ef319458191/tools/.
+- server100 runtime: /home/roomhacker/.local/share/lhc-plan-mirror/releases/0fc5ed06dfa31a30/tools/.
+- Mac runtime: /Users/user/.local/share/lhc-plan-mirror/releases/0fc5ed06dfa31a30/tools/.
 - На каждом хосте ~/.local/share/lhc-plan-mirror/current указывает на release.
 - Linux ~/.config/systemd/user/lhc-plan-mirror.service и lhc-plan-observer.service:
   enabled, active/running. Запускаются от roomhacker, bind 127.0.0.1:8769.
 - Mac ~/Library/LaunchAgents/com.lhc.plan-observer.plist:
-  gui/501/com.lhc.plan-observer, running, pid94592 при финальном readback.
+  gui/501/com.lhc.plan-observer, running, pid2631 при последнем readback.
   Python /opt/homebrew/opt/python@3.14/bin/python3.14.
 - Серверные данные: /home/roomhacker/.local/share/lhc-plan-mirror/server/.
 - Клиентские очередь/registry: ~/.local/share/lhc-plan-mirror/client/.
@@ -137,3 +137,29 @@ revision_count=2. SHA256 core на Mac совпал с указанным выш
 повторно не выполнялась. Перед commit проверены семь собственных staged файлов
 и 41 файл реплик/HTML: совпадений с двумя раскрытыми значениями и с новыми
 runtime token/dashboard key нет. Значения при сравнении не выводились.
+
+## Последний refresh по точному финальному core
+
+Оба runtime повторно установлены тем же installer из текущего
+`src/common/tools/` назначенного worktree; SHA core сверена отдельно на Linux
+и Mac и совпадает с указанной в начале документа. Финальный delta: durable seq
+до render, восстановление interrupted render при same-seq retry, HTTP400 для
+malformed task objects и renderer signature в generation hash. Изменение
+register с legacy autopublish=false также включено.
+
+После этого refresh: Linux обе службы active/running; Mac observer running,
+last exit never exited. Приватная панель HTTP200. Last-good static Mac fixture
+HTTP200 и содержит уже принятый marker MAC-153-20261025-1131.
+Новых raw-save, outage, revise и браузерных проверок не выполнялось;
+предыдущие доказательства сохранены с их фактическими payload и seq.
+Browser proof Lead (390/1280, active filter, refresh, JS errors) — отдельное
+доказательство Lead; hosting его не переисполнял.
+
+Архивные state.json и mirror.json ошибочной копии проверены против server replica:
+identity/project/name и owner совпали. Перемещён **только**
+`server/9b7898f7c50384c219b8e5e4.json` в
+`server/retired/9b7898f7c50384c219b8e5e4.json` внутри server data_dir.
+Исходники, история и HTML сохранены. Панель не перечисляет retired JSON;
+дубль отсутствует, оригинальная identity присутствует. Старый r001.html снова
+подтверждён HTTP200 с прежним SHA256 bf3dd256…6870da0.
+Секреты, capability и остальные replica JSON не менялись. nginx не применялся.
