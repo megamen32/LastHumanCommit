@@ -2,7 +2,7 @@
   "label": "Сделать Codex и OpenCode автообновление одной LHC",
   "description": "Использовать существующее ежедневное обновление megamen32-plugins для Codex и переключить OpenCode инструкции, skills и plugin на стабильный marketplace checkout, чтобы refresh обновлял их автоматически. Удалить только подтверждённые LHC-дубли fleet-lhc; остальные профили сохранить.",
   "acceptance": "Codex на 100/44/88/Mac имеет ровно один enabled LHC из canonical megamen32-plugins; OpenCode на тех же узлах использует live LHC package из marketplace path, а не versioned Fleet snapshot; текущие daily marketplace refreshes обеспечивают будущие обновления без новых таймеров; установки переживают readback и target tests.",
-  "status": "running",
+  "status": "done",
   "estimate_minutes": {
     "minimum": 15,
     "maximum": 30
@@ -11,13 +11,21 @@
     "plugins/last-human-commit/scripts/configure_opencode_marketplace.py",
     "tests/test_opencode_marketplace_update.py",
     "plugins/last-human-commit/CHANGELOG.md",
-    "docs/plugin-delivery.md"
+    "docs/plugin-delivery.md",
+    "plugins/last-human-commit/plugin.json",
+    "plugins/last-human-commit/plugin.yaml",
+    "plugins/last-human-commit/.codex-plugin/plugin.json",
+    "plugins/last-human-commit/.claude-plugin/plugin.json",
+    "plugins/last-human-commit/.zcode-plugin/plugin.json",
+    "plugins/last-human-commit/native/codex/.codex-plugin/plugin.json",
+    "adapters/hermes/plugin/plugin.yaml",
+    "src/common/tools/lhc_plan_mcp.py"
   ],
   "id": "L09",
   "created_at": "2026-10-26T00:14:44+03:00",
   "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
   "harness": "codex",
-  "updated_at": "2026-10-26T00:14:44+03:00",
+  "updated_at": "2026-10-26T00:22:25+03:00",
   "progress_events": [
     {
       "at": "2026-10-26T00:14:44+03:00",
@@ -40,6 +48,31 @@
       },
       "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
       "harness": "codex"
+    },
+    {
+      "at": "2026-10-26T00:22:25+03:00",
+      "note": "1.5.65 live readback complete on 100/44/88/Mac M1; Windows remains unreachable.",
+      "changes": {
+        "status": "done",
+        "affected_files": [
+          "plugins/last-human-commit/scripts/configure_opencode_marketplace.py",
+          "tests/test_opencode_marketplace_update.py",
+          "plugins/last-human-commit/CHANGELOG.md",
+          "docs/plugin-delivery.md",
+          "plugins/last-human-commit/plugin.json",
+          "plugins/last-human-commit/plugin.yaml",
+          "plugins/last-human-commit/.codex-plugin/plugin.json",
+          "plugins/last-human-commit/.claude-plugin/plugin.json",
+          "plugins/last-human-commit/.zcode-plugin/plugin.json",
+          "plugins/last-human-commit/native/codex/.codex-plugin/plugin.json",
+          "adapters/hermes/plugin/plugin.yaml",
+          "src/common/tools/lhc_plan_mcp.py"
+        ],
+        "result": "LHC 1.5.65 now uses existing daily megamen32-plugins refresh for Codex and OpenCode. Server-100, 44, 88 and Mac M1 read back exactly one enabled Codex LHC at 1.5.65; their OpenCode instructions, skills and plugin link point to the same stable marketplace checkout; old Fleet LHC entries and paths are removed, with local backups retained. Daily updater timers remain active; already-running sessions are not restarted. Windows is not confirmed because SSH to 192.168.2.190 returned No route to host directly and via 44; its scheduled Codex updater is sourced from the public marketplace only."
+      },
+      "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+      "harness": "codex"
     }
-  ]
+  ],
+  "result": "LHC 1.5.65 now uses existing daily megamen32-plugins refresh for Codex and OpenCode. Server-100, 44, 88 and Mac M1 read back exactly one enabled Codex LHC at 1.5.65; their OpenCode instructions, skills and plugin link point to the same stable marketplace checkout; old Fleet LHC entries and paths are removed, with local backups retained. Daily updater timers remain active; already-running sessions are not restarted. Windows is not confirmed because SSH to 192.168.2.190 returned No route to host directly and via 44; its scheduled Codex updater is sourced from the public marketplace only."
 }

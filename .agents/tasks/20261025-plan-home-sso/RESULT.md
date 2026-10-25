@@ -224,3 +224,35 @@ fast-forward доставлен в `origin/main`; remote readback обеих с�
 Проверено: policy/version tests — 14 passed; package validator, projection checks
 и `git diff --check` — PASS. Новая сессия не создавалась; реальный model dispatch
 после запуска новой Codex-сессии не наблюдался.
+
+## Дополнение: автоматическое обновление LHC в Codex и OpenCode
+
+Причина отставания: ежедневный Codex updater обновлял marketplace-копию
+`megamen32-plugins`, но активными оставались отдельные `fleet-lhc` Codex
+установки. OpenCode `instructions`, `skills` и plugin loader также указывали на
+закреплённый Fleet rollout 1.5.52. Эти пути не следовали за marketplace refresh.
+
+Пакет поднят до 1.5.65. Добавлен idempotent `configure_opencode_marketplace.py`:
+он сохраняет остальные OpenCode config entries, переключает только LHC router и
+skills на стабильный локальный checkout `megamen32-plugins`, заменяет распознанный
+старый LHC plugin loader на ссылку к текущему `opencode/lhc-v2.ts` в том же
+checkout и сохраняет backups прежних настроек/loader. Existing daily Codex
+marketplace refresh обновляет checkout на месте; следующая новая OpenCode-сессия
+получает актуальные инструкции, skills и plugin без отдельного таймера.
+
+Native readback на server-100, server-44, server-88 и Mac M1: одна enabled
+Codex установка `last-human-commit@megamen32-plugins` 1.5.65, `fleet-lhc` не
+установлен. OpenCode на каждом хосте ссылается на тот же package root для
+instructions/skills; `plugins/last-human-commit.ts` ссылается на marketplace
+source; старых Fleet путей в OpenCode config не осталось. Ежедневные updater
+механизмы на Linux и Mac остаются активны. Уже запущенные сессии не перезапускались.
+
+Проверено: targeted marketplace migration/version tests — 7 passed; package
+validator, projections and `git diff --check` — PASS. Commit `3483497` опубликован
+в `main`; remote readback совпал.
+
+Windows `.190` не доступен по SSH ни напрямую с server-100, ни через server-44
+(`No route to host`), поэтому его Codex installation и расписание не проверены.
+Текущий доступный source scheduled updater Windows нацелен на `megamen32-public`,
+а не на canonical `megamen32-plugins`; требуется восстановить доступ к самому
+Windows host, прежде чем подтвердить или изменить его установку.
