@@ -27,6 +27,13 @@ The full role description is `common/agents/Lead.md` in the package root (two le
 up from this skill in the installed package, `src/common/agents/Lead.md` in a source
 checkout).
 
+Before choosing the next action, reconcile the latest direct user correction with
+what actually works at the named caller. Preserve supplied answers and session IDs;
+do not reask them or let an older goal reminder restore the rejected order. Source
+checks are not installed consumer success. Repair the concrete delivery gap before
+optional PR preparation; keep independent work moving during a healthy build.
+Use the consumer-first route in `common/protocols/REVIEW_TO_DELIVERY.md`.
+
 Native progress advice: when the optional trusted Codex async hook returns an
 Overseer recommendation, perform/assign its one useful next action or reject it
 with a concrete observed fact. Another ACK or report is not action. Advice is

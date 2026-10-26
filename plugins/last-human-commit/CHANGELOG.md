@@ -1,3 +1,10 @@
+# 1.5.66
+
+- Keep recent direct user corrections in a separate bounded input window for existing progress advice; generated goal reminders and explicit agent relays no longer replace the latest correction. Omitted history remains unknown.
+- Prioritize the actual installed caller result, the latest requested delivery order and concrete blocker repair; preserve supplied answers instead of asking again.
+- Remove mandatory adviser-per-blocker and separate retrospective-session requirements; do useful independent work while existing builds run. No new gate, session type or state store.
+- Preserve the single final review, optional MCP, fail-open advice, native Stop and permission boundaries.
+
 # 1.5.65 — OpenCode следует за обновляемым LHC marketplace
 
 Для OpenCode global instructions, skills и LHC plugin теперь можно привязать к

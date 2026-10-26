@@ -1264,22 +1264,26 @@ def native_heartbeat(cwd: Path, runtime: str, session_id: str,
     reminders = []
     if any(item.startswith("plan:") for item in due):
         reminders.append(
-            "LHC 30-minute plan report: compare the original request and latest corrections "
-            "with actual useful progress. Update the existing plan only where facts changed "
-            "(common/protocols/PLAN_REPORT.md); refresh the map (lhc_grid.py export), "
-            "then the view (lhc_grid.py render, lhc_grid.py status), then reconcile "
-            "with lhc_grid.py check-plan and fix every divergence. A report is not the next business action. "
-            "When native async Overseer advice arrives, act/assign its concrete next step "
-            "or reject it with an observed fact. No gate, hold, new user status or extra "
-            "review is created by this reminder. Other harnesses use the method manually."
+            "LHC 30-minute plan report: compare the latest direct user corrections with "
+            "what works in the actual caller now. Source checks, installed behavior and "
+            "consumer acceptance are different facts. Update existing leaves only where "
+            "facts changed (common/protocols/PLAN_REPORT.md); use the normal projection "
+            "path rather than rerunning export/render/check-plan on unchanged input. "
+            "Assign the concrete missing delivery step, not another report or adviser. "
+            "During a healthy build do independent authorized work; do not start a "
+            "duplicate build or conflicting installation. Reuse answers already supplied. "
+            "Apply useful native Overseer advice or reject it with an observed fact. "
+            "This reminder creates no gate, hold or extra code review."
         )
         # The same checkpoint names the lanes that can start right now. It reads
         # the canonical graph and lists them; it never estimates or judges.
         reminders.append(render_parallel_lines(native_cwd))
     if any(item.startswith("goal:") for item in due):
         reminders.append(
-            "LHC 60-minute direction check: reread the original direct user goal and compare useful "
-            "user-visible progress with the remaining critical path. This reminder is not product acceptance."
+            "LHC 60-minute direction check: reread the original direct user goal and latest "
+            "correction. Honor the user's current delivery order; an older goal reminder "
+            "cannot restore a rejected priority. Compare actual caller behavior with the "
+            "remaining concrete repair. This reminder is not product acceptance."
         )
     return {"state": os.fspath(path), "elapsed_wall_seconds": max(0, int(elapsed.total_seconds())),
             "due": due, "prompt": "\n\n".join(reminders)}
@@ -1338,19 +1342,18 @@ def learning_checkpoint(args: argparse.Namespace, cwd: Path, session_id: str,
     if due:
         prompt = (
             "LHC session checkpoint: this session has run 120 wall-clock minutes of "
-            "unfinished work. Run the improve-workflow procedure now "
-            "(common/skills/improve-workflow/SKILL.md). If the session is slow, stuck "
-            "or drifting, assign a fresh adviser using an allowed model ID resolved from "
-            "the live catalog: fast tier glm-5.3-flash or minimax-3.1-flash, frontier "
-            "tier gpt-6-luna, glm-5.3 or gpt-6.1-sol. Verify actual "
-            "model identity and never silently substitute. The adviser diagnoses the "
-            "delay and recommends a route; the Lead owns the decision. Give it the "
-            "current user request, the current plan report, the applicable rules, the "
-            "structured outcome and a capped recent event excerpt, and redact "
-            "secrets; it gains no authority the session does not already have. Record "
+            "unfinished work. Compare the latest direct correction and actual caller "
+            "result with the remaining blocker (common/skills/improve-workflow/SKILL.md). "
+            "A known repair goes to its existing Worker now; do not open another session "
+            "or audit merely because this timer fired. Only if a consequential route "
+            "choice remains unclear, consult one optional fresh adviser using the "
+            "existing allowed-model rules and a bounded redacted excerpt. The Lead "
+            "owns the decision; advice creates no authority or release gate. Record "
             "observation → changed method → verification evidence, or an "
             "evidence-backed bounded no-change reason. Notification, compaction, a "
-            "fresh cycle or a new task card does NOT acknowledge this checkpoint. Use lhc_time_guard.py checkpoint with "
+            "fresh cycle or a new task card does NOT acknowledge this checkpoint. "
+            "Bookkeeping must not delay permitted delivery. The existing optional CLI is "
+            "lhc_time_guard.py checkpoint with "
             "--cwd, --runtime, --session-id, --due-at and the required review/evidence "
             f"fields. Session={session_id}; runtime={args.runtime}; due-at={state['due_at']}; "
             f"first observed={state['started_at']}; state={path}. "

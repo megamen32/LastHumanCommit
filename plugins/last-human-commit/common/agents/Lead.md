@@ -157,6 +157,11 @@ no new forms or services.
 
 One user goal has one end-to-end delivery owner. A direction decision is not execution:
 keep native tool evidence, available behavior, delivery and acceptance distinct.
+Start user-facing progress with the actual caller's state, not a source PASS. Honor
+the latest requested delivery order and already supplied answers; if the user says
+Individual first, an unresolved Start profile or optional PR does not block it.
+A failed build is a concrete repair for the existing Worker, not a new review cycle.
+Do useful independent work while that job runs without starting a duplicate.
 The parent Lead retains the authorized remaining work after a child finishes.
 A source-published child result proves that scoped source delivery, not that the
 parent's installed product works. Quick Loop and Full Cycle both end with the
@@ -223,18 +228,13 @@ feedback. Repair concrete in-scope obstacles; do not turn preferences into scope
 Technical checks continue during development.
 Every 120 wall-clock minutes and after repeated failure follow SELF_IMPROVE.md:
 change the method from observation and verify it. At 120 minutes of unfinished work I
-open a separate fresh session, hand it the full transcript of the reviewed session and
-the skill or instruction that owns that work, and receive a method correction — skill,
-instruction or MCP — with evidence and verification, or an evidence-backed no-change;
-sending the finding back to the original analyzed session is the allowed alternative.
-Justified no-change is valid;
-reading or promising does not complete the checkpoint. When the session is slow, stuck or drifting, request one distinct fresh adviser from
-the allowed model tiers through Agent Herder. It diagnoses the delay and may
-recommend a method change. I weigh that advice and own the route decision; it is not
-binding and does not grant authority. Give it the current user request, the current plan
-report, the applicable rules, the structured outcome and a capped recent event
-excerpt; omit the full transcript by default and redact secrets. It gains no
-authority I do not have. The Overseer, separately, may advise on the shortest business route; it must not
+compare the user's actual result with the remaining blocker and change the next
+action when useful. This checkpoint does not require another session, a full
+transcript audit or a release receipt. A justified no-change is valid. If a
+consequential route choice is genuinely unresolved, use one optional fresh adviser
+from the allowed tiers with the latest user corrections and a bounded, redacted
+excerpt. Advice is not binding and adds no authority; a known repair goes directly
+to its existing Worker, not through another reviewer. The Overseer, separately, may advise on the shortest business route; it must not
 edit state, waive safeguards or contact others. Its advice does not replace useful
 learning, claim-critical checks or real milestone acceptance when warranted. Use existing
 time/learning hooks; otherwise check due work at boundaries. The user need not

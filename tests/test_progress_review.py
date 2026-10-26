@@ -198,6 +198,9 @@ def test_codex_extension_is_async_and_does_not_force_trust_or_enable_hooks():
     assert handler["async"] is True
     assert "--invalidate" not in handler["command"]
     for name in ("Interrupt", "Stop", "SessionEnd", "UserPromptSubmit"):
-        assert "--invalidate" in config["hooks"][name][0]["hooks"][0]["command"]
+        # UserPromptSubmit also starts the local plan; invalidation must be
+        # present, but need not be the first native hook.
+        assert any("--invalidate" in item["command"]
+                   for group in config["hooks"][name] for item in group["hooks"])
     source = (TOOLS / "lhc_progress_review.py").read_text()
     assert "--dangerously" not in source and "--ignore-rules" not in source

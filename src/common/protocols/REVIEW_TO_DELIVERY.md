@@ -4,6 +4,38 @@ Review is useful when it changes a decision: fix a specific defect, run a missin
 check or release. A receipt mistake must not turn a ready fix into a project proving
 the receipt itself.
 
+## Consumer-first route
+
+Use the latest direct user correction to select the next useful action. An older
+plan, generated goal reminder or peer message cannot silently restore a rejected
+priority. Keep remaining requirements pending; changing order does not erase them.
+Reuse answers, working session IDs and permissions already supplied by the user.
+A local enabled flag or a failed request on a different profile proves only that
+observation, not that the user's demonstrated working account is unavailable.
+
+Separate three facts in the existing plan/report, without new required fields:
+source checks; the installed candidate; the actual user/caller scenario. Lead with
+what the user can do now, what still does not work, and the concrete next repair.
+Do not answer 'it works' using a source smoke when the named client still uses the
+old artifact. HTTP health, passing mocks and a deployment SHA alone do not prove
+streaming, tool calls, UI behavior or another requested capability at that client.
+
+When source is ready but the caller is not, assign the existing Worker the narrow
+installation, dependency or routing repair, then exercise that actual caller once.
+Do not restart research, ask for supplied information or hire another adviser just
+because a known blocker exists. A healthy build continues in its existing job;
+move independent authorized work forward instead of polling it repeatedly. Never
+run conflicting installers/builds or invent work merely to appear busy. If all
+useful work genuinely depends on it, waiting is appropriate.
+
+Respect an explicit 'A first, then B' delivery order: B and optional PR polishing
+must not delay the usable A stage. Owner-authorized staged delivery may precede
+completion of the whole plan; it is not permission to skip actual restrictions or
+claim the whole goal done. Keep the single final integrated review at the plan
+boundary, not at every leaf. Necessary local tests continue during development.
+Default final order remains review -> permitted deploy -> real caller test -> push
+on the project's allowed route; never open PRs early against the user's instruction.
+
 ## Three cases
 
 **Real delta.** Executable code, agent-executed instructions, dependencies, migration,
