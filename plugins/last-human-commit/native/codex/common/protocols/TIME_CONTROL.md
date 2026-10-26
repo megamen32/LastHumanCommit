@@ -1,3 +1,5 @@
+> Background reference. Load only when the task needs this mechanism. `AGENTS.md` wins on any conflict: its finish line, blocker lists, escalation chain and delivery rules override this file.
+
 # Business time control
 
 ## One objective, one cumulative clock

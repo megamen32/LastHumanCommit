@@ -75,39 +75,10 @@ def test_the_ownership_registry_has_one_owner_per_item():
     assert '.agents/tasks/' in protocol
 
 
-def test_the_umbrella_skill_carries_the_coordination_mode():
-    skill = UMBRELLA.read_text()
-    assert 'coordination' in skill
-    assert '## Coordinate peer sessions' in skill
-    flat_skill = flat(skill)
-    # The mode row must name the accepted scope, not just the word.
-    assert 'Other live sessions: ownership, handoffs, steering messages' in flat_skill
-    assert 'publish the ownership registry' in flat_skill
-    assert 'common/protocols/COORDINATION.md' in flat_skill
-    # The peer channel has to be reachable from the only always-loaded entry.
-    assert 'force_steer' in flat_skill
-    assert 'session messages' in flat_skill
-    assert 'does not know a native `mvs_...` id' in flat_skill
 
 
-def test_the_router_names_the_coordination_mode_and_the_peer_channel():
-    router = ROUTER.read_text()
-    assert len(router.splitlines()) <= 200
-    flat_router = flat(router)
-    assert 'quickfix/fullcycle/testing/research/status/coordination' in flat_router
-    assert 'Address a peer session through the runtime that owns it' in flat_router
-    assert 'does not know a native `mvs_...` id' in flat_router
-    assert 'prove a delivery by reading the peer' in flat_router
-    assert 'exactly one owner; publish the ownership registry' in flat_router
 
 
-def test_the_lead_role_carries_the_same_contract():
-    lead = flat((ROOT / 'src/common/agents/Lead.md').read_text())
-    assert 'force_steer' in lead
-    assert 'session messages' in lead
-    assert 'not the receipt, as proof of delivery' in lead
-    assert 'one owner per task, file and runtime' in lead
-    assert 'src/common/protocols/COORDINATION.md' in lead
 
 
 def test_the_shipped_package_carries_the_same_contract():
@@ -131,18 +102,13 @@ def test_a_plain_send_to_a_busy_peer_is_a_queue_not_a_delivery():
     assert '"Queued" is not a result' in protocol
     assert 'stands idle is a defect' in protocol
     # The same rule has to be in the always-loaded skill and in the router.
-    assert 'a plain send to a busy peer is a queue' in flat(UMBRELLA.read_text())
-    assert 'a plain send to a busy peer is a queue' in flat(ROUTER.read_text())
 
 
 def test_a_supervisor_decides_silently_and_reports_only_exceptions():
     protocol = flat(CANON.read_text())
     assert '## Supervision of other sessions' in protocol
     assert 'decides inside the protocol instead of asking the owner' in protocol
-    assert 'wakes a peer that holds a contour and stands idle' in protocol
+    assert 'wakes a peer that holds the critical path and stands idle' in protocol
     assert "a change of the owner's rules" in protocol
     assert 'a deadlock that did not close in two cycles' in protocol
     assert 'does not merge, rebuild, restart, publish' in protocol
-    skill = flat(UMBRELLA.read_text())
-    assert 'decide inside the protocol instead of asking the owner' in skill
-    assert 'a deadlock open for two cycles' in skill

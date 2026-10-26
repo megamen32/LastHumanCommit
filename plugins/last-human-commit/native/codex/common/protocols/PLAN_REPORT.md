@@ -1,3 +1,5 @@
+> Background reference. Load only when the task needs this mechanism. `AGENTS.md` wins on any conflict: its finish line, blocker lists, escalation chain and delivery rules override this file.
+
 # The live plan report
 
 One live plan per objective. It is the session's working memory: what is finished,

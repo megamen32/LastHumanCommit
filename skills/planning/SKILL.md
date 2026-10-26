@@ -39,7 +39,8 @@ assumptions and the end-to-end path before substantial implementation.
    available slots and actual parallel dispatch; sum effort separately from
    capacity-respecting critical-path duration, with joins/testing/waits explicit.
    Twenty minutes is a checkpoint, not a task size; no unexplained doubled buffer.
-8. Consult the Overseer for a concrete blocker or route uncertainty. For Full-cycle,
+8. For a blocker follow the escalation chain in `AGENTS.md` (L → Adviser →
+   Overseer → owner). For Full-cycle,
    review the integrated diff once after all implementation/integration leaves and
    before deploy. Then deploy on the permitted
    route, test the real consumer, and push on the configured route. Workers still run

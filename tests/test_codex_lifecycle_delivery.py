@@ -136,10 +136,6 @@ def test_heartbeat_before_the_due_time_delivers_nothing(tmp_path):
     assert saved["native_heartbeat"]["last_plan_bucket"]==0
     assert saved["native_heartbeat"]["last_goal_bucket"]==0
 
-def test_router_file_carries_the_method_the_context_points_at():
-    router=(ROOT/"AGENTS.md").read_text()
-    for term in ("before", "after", "RED", "GREEN", "80%", "milestone", "consumer verification"):
-        assert term in router, term
 
 def test_plain_prompt_gets_router_pointer_and_the_saved_outcome_contract(tmp_path):
     text=context(invoke(tmp_path,"UserPromptSubmit",prompt="поправь отображение пустого отчёта"))

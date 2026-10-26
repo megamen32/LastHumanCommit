@@ -48,7 +48,8 @@ no phase for choosing the design, and the decision gets made blind.
 - Every round's fixes are their own commits, so any round is revertible and the
   history reads as the loop it was.
 - A finding that survives two fix attempts is a design decision, not a bug:
-  stop fixing, present two compressed variants to the user (AskHuman when away).
+  stop fixing, ask the Adviser for one choice, take it and record the other
+  variant for the owner; do not wait for an answer.
 - Sandbox discipline: workers and testers never touch real user-data paths —
   sed-copied scripts, env-overridden homes, temp trees. Only an explicitly scoped Worker performs an authorized live run.
 - A reviewer or tester that could not execute (no shell, no write) must say so

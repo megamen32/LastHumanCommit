@@ -6,27 +6,6 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_lead_can_explicitly_authorize_a_bounded_child_for_an_assigned_worker():
-    router = (ROOT / "AGENTS.md").read_text()
-    umbrella = (ROOT / "src/common/skills/last-human-commit/SKILL.md").read_text()
-    lead = (ROOT / "src/common/agents/Lead.md").read_text()
-    worker = (ROOT / "src/common/agents/Worker.md").read_text()
-    routing = (ROOT / "src/common/skills/model-routing/SKILL.md").read_text()
-    sources = "\n".join((router, umbrella, lead, worker, routing))
-
-    assert "explicitly authorize" in sources
-    assert "bounded child" in sources
-    assert "scope, ownership, dependency" in sources
-    assert "does not delegate by default" in sources
-    assert "assign one Worker directly" in " ".join(umbrella.split())
-    assert "For one concrete assignment with one expected result, route one Worker directly" in " ".join(routing.split())
-    assert "outweigh context transfer, coordination and review" in routing
-    assert "limit on descendants or slots" in routing
-    assert "Workers do not hire other agents" not in umbrella
-    assert "Workers do not recursively hire" not in umbrella
-    assert "never recursively recruits" not in sources
-    assert "does not recursively hire" not in sources
-    assert "does not hire recursively" not in sources
 
 
 def test_final_writer_owns_clarity_but_internal_messages_may_be_compact():

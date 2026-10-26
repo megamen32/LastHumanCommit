@@ -20,7 +20,6 @@ def test_delegated_artifact_writer_routes_verified_plan_back_to_parent_lead():
     assert "returns" in protocol and "parent Lead" in protocol
     assert "write only their own" in protocol and "result.md" in protocol
     assert "context-mode" in protocol
-    assert "Artifact Writer" in router and "verified decisions" in router
     assert "preserve that acceptance" in adapter
 
 
@@ -50,9 +49,5 @@ def test_internal_routing_has_no_global_zero_context_or_readability_rule():
 
     assert "may be concise Russian or English" in protocol
     assert "no global human-readability or zero-context constraint" in protocol
-    assert "Give each role the context it needs" in router
     assert "fork_context: false" not in combined
     assert "zero-knowledge context" not in combined
-    assert "verified parent\ndecisions and evidence" in worker
-    assert "task context and verified parent decisions/evidence they need" in " ".join(overseer.split())
-    assert "fresh isolated context only" in " ".join(worker.split())

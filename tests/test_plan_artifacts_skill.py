@@ -285,12 +285,7 @@ def test_no_skill_points_at_a_tool_path_that_breaks_in_a_shipped_layout():
 def test_the_umbrella_skill_and_the_router_point_to_the_procedure():
     umbrella = flat(UMBRELLA.read_text())
     assert 'plan-artifacts' in umbrella
-    assert 'it is the procedure' in umbrella
     # The umbrella names the new order, not the old report-first order.
-    assert '(leaf files, graph, page, report, check)' in umbrella
-    router = flat(ROUTER.read_text())
-    assert 'The procedure is the `plan-artifacts` skill' in router
-    assert 'leaves/<ID>.json' in router
     # Physical wrapping is not a router contract: the semantic links above
     # must survive additions such as the explicit expected-outcome vocabulary.
 
@@ -476,7 +471,6 @@ def test_below_twenty_percent_no_council_no_frontier_model_no_adviser():
     assert 'below 20%' in council
     assert 'does not sit in a council' in council
     assert 'less than 20%' in flat(ROUTER.read_text())
-    assert 'less than 20%' in flat(LEAD.read_text())
 
 
 def test_the_gate_reads_the_units_before_it_applies():

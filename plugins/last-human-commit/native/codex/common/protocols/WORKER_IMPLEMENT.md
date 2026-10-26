@@ -1,48 +1,16 @@
 # Worker implementation protocol
 
-Use only for `Worker(mode=implement)`. The Lead coordinates and assigns; this Worker
-executes the scoped work without recursively hiring. Load `../profiles/Code.md` for code and
-`../profiles/Test.md` when tests add claim-relevant value.
+Fallback for `Worker(mode=implement)` when the `worker-code` or `worker-bugfix`
+skill is not installed. `common/agents/Worker.md` applies.
 
-Prefer the installed `worker-code` skill for feature/code work and
-`worker-bugfix` for behavior fixes. Use this file as the portable fallback when
-skills are unavailable.
+1. Confirm the accepted claim and the real consumer path.
+2. Locate the code with targeted `rg`; current source beats any map or index.
+3. Bugfix: write a focused test that fails for the reported behavior (RED), make
+   the smallest fix, rerun it (GREEN), then the original scenario.
+4. Feature: build a usable vertical slice before horizontal completeness.
+5. Rerun the proof and the narrowest regression checks. Stop when the claim is
+   proven; no unrelated abstractions, hardening, logging, docs or edge cases.
+6. Report by minute 20 and at handoff as `Worker.md` says. One cheap attempt at
+   another route, then return blockers to L with a recommended default.
 
-## Common route
-
-1. Confirm the latest accepted business claim and actual production consumer
-   path.
-2. Reuse fresh verified code-map findings, but confirm decisive locations with
-   targeted `rg`; current source wins over graph/index/map history.
-3. For every bugfix, use mandatory TDD: before changing production source,
-   write and run a focused regression that fails for the reported behavior.
-   Record the exact failing command and its Red result, then rerun it Green
-   after the smallest coherent vertical change on the real path.
-4. Reproduce or observe the shortest safe consumer canary when it adds claim-
-   relevant evidence.
-5. Re-run the same proof and the narrowest direct-regression checks.
-6. Update a reusable code-map key only when the change affects a durable path,
-   owner, config, or recurring failure shield.
-7. Stop as soon as the assigned claim is proven.
-
-For a bugfix, the focused failing regression is mandatory; a black-box canary
-adds consumer evidence and never replaces Red → Green. For a feature, implement a usable vertical slice before
-horizontal completeness. Do not add unrelated abstractions, hardening, logging,
-cleanup, docs, compatibility, or edge-case completeness.
-
-At every 20 active minutes report progress, business delta, blocker, and the
-shortest next action. The checkpoint is not a lifetime limit. Remain available
-for L to continue, redirect, or resume. Stop independently only for active harm,
-foreign-write collision, lost authority, unavoidable scope decision, or a
-concrete unrecoverable capability failure.
-
-Ask L at every decision boundary that needs its broader user/session context.
-Use a non-blocking parent transport with evidence, recommendation, proposed
-default, parallel-safe work, and the exact action that must wait. Continue only
-work valid under every plausible answer until L decides.
-
-Respect dependency contracts and test integration joins, not only isolated
-helpers. Use an independent Tester when the claim and risk warrant real-user-path evidence;
-review or outcome-ledger bookkeeping is not a universal release gate. When blocked,
-use `STOP_RETHINK.md` to distinguish model, context, tooling and decomposition
-failures before repeating the same approach.
+Load `common/profiles/Code.md` for code and `Test.md` when tests matter.

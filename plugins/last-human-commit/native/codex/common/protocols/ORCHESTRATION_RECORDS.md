@@ -1,3 +1,5 @@
+> Background reference. Load only when the task needs this mechanism. `AGENTS.md` wins on any conflict: its finish line, blocker lists, escalation chain and delivery rules override this file.
+
 # Durable task and worker records
 
 The task record is the durable source of the assignment, current plan and Lead

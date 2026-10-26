@@ -1,7 +1,9 @@
-# MEMORY — mandatory durable knowledge preservation (degradation order)
+> Background reference. Load only when the task needs this mechanism. `AGENTS.md` wins on any conflict: its finish line, blocker lists, escalation chain and delivery rules override this file.
 
-Each cycle producing durable knowledge must save it through the degradation order.
-Closing with new durable knowledge and no memory record leaves the cycle incomplete.
+# MEMORY — durable knowledge preservation (degradation order)
+
+When a cycle produces durable knowledge, save it through the degradation order.
+Saving it is part of finishing well; it never blocks delivery of the result.
 
 ## Degradation order
 

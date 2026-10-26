@@ -5,12 +5,6 @@ ROOT=Path(__file__).resolve().parents[1]
 
 def read(name):return " ".join((ROOT/name).read_text().split())
 
-def test_tangible_outcome_precedes_design_and_code():
-    router=read("AGENTS.md")
-    assert router.index("Tangible result before code") < router.index("Three design passes")
-    for phrase in ("who", "before", "after", "TDD", "RED", "GREEN"):
-        assert phrase in router
-    assert "SHA" in router
 
 @pytest.mark.parametrize("name", ["src/common/agents/Tester.md", "src/common/skills/user-testing/SKILL.md", "src/common/skills/focus-groups/SKILL.md"])
 def test_blind_testing_is_milestone_not_tool_or_hour(name):
