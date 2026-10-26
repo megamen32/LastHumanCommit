@@ -1,0 +1,58 @@
+{
+  "schema_version": 2,
+  "title": "LHC · граф задач",
+  "goal": "Проверить сохранение двух обязательных зависимостей.",
+  "business_result": "Сборка начинается только после готовности интерфейса и обработчика.",
+  "business_results": [
+    "Сборка начинается только после готовности интерфейса и обработчика."
+  ],
+  "current_progress": "",
+  "external_waits": "",
+  "slots": 2,
+  "updated_at": "2026-10-24T05:19:27",
+  "tasks": [
+    {
+      "id": "L01",
+      "label": "Подготовить интерфейс",
+      "status": "running",
+      "depends_on": [],
+      "estimate_minutes": {
+        "minimum": 10.0,
+        "maximum": 10.0
+      },
+      "actual_minutes": 2.0,
+      "started_at": "10:00"
+    },
+    {
+      "id": "L02",
+      "label": "Подготовить обработчик",
+      "status": "running",
+      "depends_on": [],
+      "parallel_with": [
+        "L01"
+      ],
+      "estimate_minutes": {
+        "minimum": 15.0,
+        "maximum": 15.0
+      },
+      "actual_minutes": 2.0,
+      "started_at": "10:00"
+    },
+    {
+      "id": "L03",
+      "label": "Соединить интерфейс и обработчик",
+      "status": "queued",
+      "depends_on": [
+        "L01",
+        "L02"
+      ],
+      "estimate_minutes": {
+        "minimum": 10.0,
+        "maximum": 10.0
+      },
+      "started_at": "10:15",
+      "finished_at": "10:25"
+    }
+  ],
+  "leaf_count": 3
+}

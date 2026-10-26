@@ -1,23 +1,21 @@
 """Behavioral regressions for compulsory original-goal reviews, not file-count checks."""
 import argparse
-import importlib.util
 import json
+import sys
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
-import subprocess
-import sys
 
 import pytest
 
+from _inprocess import git_repo, load_module, run_cli
+
 ROOT = Path(__file__).resolve().parents[1]
-SPEC = importlib.util.spec_from_file_location("business_guard_test", ROOT/"src/common/tools/lhc_time_guard.py")
-guard = importlib.util.module_from_spec(SPEC)
-SPEC.loader.exec_module(guard)
+guard = load_module(ROOT/"src/common/tools/lhc_time_guard.py", name="business_guard_test")
 START = datetime(2026,10,17,tzinfo=timezone.utc)
 
 @pytest.fixture
 def clock(tmp_path, monkeypatch):
-    subprocess.run(["git","init","-q",str(tmp_path)],check=True)
+    git_repo(tmp_path)
     moment = [0]
     monkeypatch.setattr(guard,"business_clock_sample",lambda: {
         "monotonic_ns":(100000+moment[0])*10**9,
@@ -281,15 +279,15 @@ def test_blind_review_is_not_fed_the_implementers_answer():
 
 
 def test_native_session_command_reports_hourly_and_learning_without_task_card(tmp_path):
-    subprocess.run(["git","init","-q",str(tmp_path)],check=True)
+    git_repo(tmp_path)
     package=ROOT/"plugins/last-human-commit"
-    entry=package/"tools/lhc_entry.py"
+    entry=load_module(package/"tools/lhc_entry.py", name="lhc_entry_session_test")
     payload={"cwd":str(tmp_path),"session_id":"native-cli","prompt":"Use existing report"}
     def run(event):
         # The session command is the explicit path that advances the stateful
         # lifecycle; the hook templates stay time-only.
-        result=subprocess.run([sys.executable,str(entry),"--event",event,"--runtime","codex","--session"],
-            input=json.dumps(payload),capture_output=True,text=True,check=True)
+        result=run_cli(entry,["--event",event,"--runtime","codex","--session"],stdin=json.dumps(payload))
+        assert result.returncode==0, result.stderr
         return result.stdout
     run("UserPromptSubmit")
     state_path=next((tmp_path/".agents/shared-session/learning").glob("*.json"))
@@ -369,13 +367,13 @@ def test_unavailable_milestone_tester_does_not_block_hourly_direction(tmp_path,c
 
 
 def test_real_cli_records_direction_without_zk_flags(tmp_path):
-    subprocess.run(["git","init","-q",str(tmp_path)],check=True)
-    tool=ROOT/"src/common/tools/lhc_time_guard.py"
+    git_repo(tmp_path)
+    tool=load_module(ROOT/"src/common/tools/lhc_time_guard.py", name="lhc_time_guard_cli_test")
     payload={"cwd":str(tmp_path),"session_id":"native-direction","prompt":"Open the actual report"}
     def cli(*arguments, data=None):
-        result=subprocess.run([sys.executable,str(tool),*map(str,arguments)],
-            input=json.dumps(data) if data is not None else None,
-            capture_output=True,text=True,check=True,timeout=10)
+        result=run_cli(tool,list(map(str,arguments)),
+            stdin=json.dumps(data) if data is not None else None)
+        assert result.returncode==0, result.stderr
         return json.loads(result.stdout) if result.stdout.strip() else None
     cli("hook","--runtime","codex","--event","UserPromptSubmit",data=payload)
     path=next((tmp_path/".agents/shared-session/learning").glob("*.json"))

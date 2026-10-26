@@ -35,6 +35,43 @@ def plain(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
+POLICY_HEAD = re.compile(
+    r"^(Inherit the current router language policy"
+    r"|Optional method reference\."
+    r"|Internal reasoning and coordination)",
+    re.IGNORECASE,
+)
+POLICY_FINGERPRINT = ("language", "russian-speaking", "user-facing")
+
+
+def is_language_policy(paragraph: str) -> bool:
+    """True for the router language policy in any wording, canonical or reworded.
+
+    A future reworded copy (like the ones Lead.md and Worker.md carry) must never
+    be published as a role definition, so recognition is by fingerprint, not by
+    exact sentence. A genuine role definition does not talk about all three of
+    internal language, the Russian-speaking reader and user-facing answers at once.
+    """
+    if POLICY_HEAD.match(paragraph):
+        return True
+    lowered = paragraph.lower()
+    return all(hint in lowered for hint in POLICY_FINGERPRINT)
+
+
+def truncate_at_boundary(text: str, limit: int) -> str:
+    """Shorten to the last complete sentence inside the limit; never leave a dangling clause."""
+    if len(text) <= limit:
+        return text
+    window = text[:limit]
+    sentences = list(re.finditer(r"[.!?](?=\s|$)", window))
+    if sentences:
+        return window[: sentences[-1].end()].strip()
+    cut = window.rfind(" ")
+    if cut > 0:
+        return window[:cut].rstrip(" ,;:-") + "…"
+    return window.rstrip(" ,;:-") + "…"
+
+
 def first_paragraph(
     body: str,
     limit: int = 420,
@@ -52,11 +89,7 @@ def first_paragraph(
         paragraph = plain(" ".join(lines))
         if len(paragraph) < 25:
             continue
-        if skip_policy and re.match(
-            r"^(Inherit the current router language policy|Optional method reference\.)",
-            paragraph,
-            re.IGNORECASE,
-        ):
+        if skip_policy and is_language_policy(paragraph):
             continue
         if skip_compatibility_note and re.match(
             r"^(Existing adapters may dispatch this name|This is a compatibility alias)\b",
@@ -65,7 +98,7 @@ def first_paragraph(
         ):
             continue
         if len(paragraph) > limit:
-            paragraph = paragraph[:limit].rsplit(" ", 1)[0] + "…"
+            paragraph = truncate_at_boundary(paragraph, limit)
         return paragraph
     return ""
 
@@ -133,6 +166,12 @@ def role_data(path: Path, sha: str) -> dict:
     }
 
 
+role_order = {
+    "Lead": 0, "Worker": 1, "Adviser": 2, "Critic": 3,
+    "Reviewer": 4, "Tester": 5, "Overseer": 6, "Maintainer": 7,
+}
+
+
 def build() -> dict:
     sha = git("rev-parse", "HEAD")
     if sha == "unknown":
@@ -157,7 +196,6 @@ def build() -> dict:
     role_paths = sorted((ROOT / "src" / "common" / "agents").glob("*.md"))
     if not role_paths:
         raise ValueError("No agent roles found; refusing to publish stale role data")
-    role_order = {"Lead": 0, "Worker": 1, "Adviser": 2, "Critic": 3, "Reviewer": 4, "Tester": 5, "Overseer": 6}
     roles = sorted((role_data(p, sha) for p in role_paths), key=lambda r: (role_order.get(r["name"], 99), r["name"]))
     plugin = json.loads((ROOT / "plugins/last-human-commit/plugin.json").read_text(encoding="utf-8"))
     role_text = "".join(p.read_text(encoding="utf-8") for p in role_paths)

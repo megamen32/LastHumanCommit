@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import fcntl
 import hashlib
+import importlib.util
 import json
 import os
 import re
@@ -564,14 +565,16 @@ def find_agents_root(cwd: Path) -> Path | None:
 def git_snapshot(cwd: Path) -> str:
     """Return bounded branch/HEAD/changed-file continuity evidence."""
 
-    commands = (
-        ("Repository", ["git", "rev-parse", "--show-toplevel"]),
-        ("Branch", ["git", "branch", "--show-current"]),
+    repository = _git_worktree_root(cwd)
+    branch = _git_current_branch(cwd)
+    lines: list[str] = [
+        f"Repository:\n{repository if repository is not None else 'unavailable'}",
+        f"Branch:\n{branch if branch is not None else 'unavailable'}",
+    ]
+    for label, command in (
         ("HEAD", ["git", "rev-parse", "--short=12", "HEAD"]),
         ("Changed paths", ["git", "status", "--short"]),
-    )
-    lines: list[str] = []
-    for label, command in commands:
+    ):
         completed = subprocess.run(
             command,
             cwd=cwd,
@@ -994,6 +997,130 @@ def compaction_hook(
     }
 
 
+# --------------------------------------------------------------------------
+# Git layout answers
+#
+# The guard resolves the owner of the learning state from the repository
+# layout.  That answer is a filesystem fact, so it is read from disk instead
+# of paying for two git processes on every lookup.  The canon answers the
+# questions about the layout of a repository in one place, the reader of the
+# layout, and this module asks it.  Every answer is read at the moment of the
+# call and nothing is cached, so a worktree that changed between two calls is
+# never answered from a stale value.  A layout the reader does not model
+# answers None and the git binary is asked instead.
+# --------------------------------------------------------------------------
+
+_GIT_LAYOUT = None
+_GIT_LAYOUT_LOADED = False
+
+
+def git_layout():
+    """The reader of the layout of a repository, loaded from next to this file.
+
+    ``None`` means the reader is not there at all; every question is then
+    answered by the git binary, the way it was answered before the reader
+    existed.
+    """
+
+    global _GIT_LAYOUT, _GIT_LAYOUT_LOADED
+    if not _GIT_LAYOUT_LOADED:
+        _GIT_LAYOUT = _load_git_layout()
+        _GIT_LAYOUT_LOADED = True
+    return _GIT_LAYOUT
+
+
+def _load_git_layout():
+    """Load the reader of the layout of a repository from next to this file."""
+
+    try:
+        import lhc_gitlayout
+
+        return lhc_gitlayout
+    except ImportError:
+        pass
+    path = Path(__file__).resolve().with_name("lhc_gitlayout.py")
+    try:
+        spec = importlib.util.spec_from_file_location("lhc_gitlayout_sibling", path)
+        if spec is None or spec.loader is None:
+            return None
+        module = sys.modules.get(spec.name)
+        if module is None:
+            module = importlib.util.module_from_spec(spec)
+            sys.modules[spec.name] = module
+            spec.loader.exec_module(module)
+        return module
+    except Exception:  # noqa: BLE001 - a missing reader is answered by git
+        sys.modules.pop("lhc_gitlayout_sibling", None)
+        return None
+
+
+def _git_common_dir_of(cwd: Path) -> Path | None:
+    """Answer ``git rev-parse --path-format=absolute --git-common-dir``."""
+
+    layout = git_layout()
+    return layout.common_dir_of(cwd) if layout is not None else None
+
+
+def _git_worktree_list_porcelain(common_dir: Path) -> str | None:
+    """Answer ``git --git-dir <common> worktree list --porcelain``.
+
+    The output is byte for byte the output of git for the layouts the reader
+    models.  ``None`` means the layout is not modelled and the git binary has
+    to answer.
+    """
+
+    layout = git_layout()
+    return layout.worktree_list_porcelain(common_dir) if layout is not None else None
+
+
+def _git_primary_worktree(cwd: Path) -> Path | None:
+    """Return the primary worktree of the repository that owns a directory.
+
+    The answer is read from the repository layout at the moment of the call.
+    ``None`` means the layout is not modelled and the git binary has to answer.
+    """
+
+    layout = git_layout()
+    return layout.primary_worktree(cwd) if layout is not None else None
+
+
+def _git_worktree_root(cwd: Path) -> Path | None:
+    """Answer ``git rev-parse --show-toplevel`` for a directory.
+
+    The work tree of a repository is the directory that holds its git
+    directory.  ``None`` means the directory is not inside a work tree, or the
+    layout is not one this code models, and the git binary has to answer.
+    """
+
+    layout = git_layout()
+    return layout.worktree_root(cwd) if layout is not None else None
+
+
+def _git_current_branch(cwd: Path) -> str | None:
+    """Answer ``git branch --show-current`` for a directory.
+
+    The current branch is the branch the HEAD of the work tree points at.  An
+    empty answer is a detached HEAD, which git reports as an empty branch.
+    ``None`` means the directory is not in a repository, the HEAD points
+    outside ``refs/heads``, or the layout is not one this code models.
+    """
+
+    layout = git_layout()
+    return layout.current_branch(cwd) if layout is not None else None
+
+
+def _primary_worktree(cwd: Path) -> Path | None:
+    """Return the primary worktree of the repository that owns a directory.
+
+    The answer is read from the repository layout on disk at the moment of the
+    call, so a worktree that changed between two calls is never answered from
+    a stale value.  ``None`` means the layout is not one the code below models
+    and the git binary has to answer.
+    """
+
+    return _git_primary_worktree(cwd)
+
+
 def learning_path(cwd: Path, runtime: str, session_id: str) -> Path:
     """Keep the parent clock independent of cards, cycle ids and handoffs."""
 
@@ -1009,17 +1136,19 @@ def learning_path(cwd: Path, runtime: str, session_id: str) -> Path:
     agents = find_agents_root(cwd) or cwd / ".agents"
     git_root = next((root for root in (cwd, *cwd.parents) if (root / ".git").exists()), None)
     if git_root is not None:
-        common = subprocess.run(
-            ["git", "-C", str(cwd), "rev-parse", "--path-format=absolute", "--git-common-dir"],
-            capture_output=True, text=True, check=True, timeout=2,
-        ).stdout.strip()
-        # Git's first worktree is the primary checkout, including separate git dirs.
-        worktrees = subprocess.run(
-            ["git", "--git-dir", common, "worktree", "list", "--porcelain"],
-            capture_output=True, text=True, check=True, timeout=2,
-        ).stdout.splitlines()
-        primary = next(line.removeprefix("worktree ") for line in worktrees
-                       if line.startswith("worktree "))
+        primary = _primary_worktree(cwd)
+        if primary is None:
+            common = subprocess.run(
+                ["git", "-C", str(cwd), "rev-parse", "--path-format=absolute", "--git-common-dir"],
+                capture_output=True, text=True, check=True, timeout=2,
+            ).stdout.strip()
+            # Git's first worktree is the primary checkout, including separate git dirs.
+            worktrees = subprocess.run(
+                ["git", "--git-dir", common, "worktree", "list", "--porcelain"],
+                capture_output=True, text=True, check=True, timeout=2,
+            ).stdout.splitlines()
+            primary = next(line.removeprefix("worktree ") for line in worktrees
+                           if line.startswith("worktree "))
         agents = Path(primary) / ".agents"
     return agents / suffix
 
@@ -1135,38 +1264,26 @@ def native_heartbeat(cwd: Path, runtime: str, session_id: str,
     reminders = []
     if any(item.startswith("plan:") for item in due):
         reminders.append(
-            "LHC 30-minute plan report: write the canonical live plan report now "
-            "(common/protocols/PLAN_REPORT.md). Two header lines — the goal and the "
-            "current business result — then the leaves: ✅ finished with start and "
-            "finish time, original estimate and actual minutes; 🔄 running with its "
-            "start, estimate, elapsed minutes and, whenever elapsed exceeds the "
-            "estimate, the reason it is behind; ⏳ queued with what it waits for, why "
-            "it cannot run in parallel, the approximate start and finish, and the "
-            "estimate. Show the report to the user and keep the same content under "
-            "`## Plan` in the canonical task record. The Overseer reads this report "
-            "against the original request and the business canary; it is not "
-            "completion of any gate. Then make the report and the task graph one "
-            "unit, in this order: (1) refresh the map from the report through the "
-            "CLI — `python3 <tools>/lhc_grid.py export <plan.report.md> -o "
-            "<objective>/plan.graph.json`; (2) build the unambiguous view on that "
-            "refreshed map — `python3 <tools>/lhc_grid.py render "
-            "<objective>/plan.graph.json -o <objective>/plan.html`, and the text "
-            "view — `python3 <tools>/lhc_grid.py status <objective>/plan.graph.json`; "
-            "(3) reconcile the report's tasks with the map's leaves — `python3 "
-            "<tools>/lhc_grid.py check-plan <plan.report.md> "
-            "<objective>/plan.graph.json` — and fix every divergence instead of "
-            "leaving it. The map comes first and the view second: the view is built "
-            "on the refreshed map, never on the report alone, so nothing can be "
-            "folded away or forgotten. This reminder tracks time and names the "
-            "calls only; it never estimates, reviews, judges or blocks."
+            "LHC 30-minute plan report: compare the latest direct user corrections with "
+            "what works in the actual caller now. Source checks, installed behavior and "
+            "consumer acceptance are different facts. Update existing leaves only where "
+            "facts changed (common/protocols/PLAN_REPORT.md); use the normal projection "
+            "path rather than rerunning export/render/check-plan on unchanged input. "
+            "Assign the concrete missing delivery step, not another report or adviser. "
+            "During a healthy build do independent authorized work; do not start a "
+            "duplicate build or conflicting installation. Reuse answers already supplied. "
+            "Apply useful native Overseer advice or reject it with an observed fact. "
+            "This reminder creates no gate, hold or extra code review."
         )
         # The same checkpoint names the lanes that can start right now. It reads
         # the canonical graph and lists them; it never estimates or judges.
         reminders.append(render_parallel_lines(native_cwd))
     if any(item.startswith("goal:") for item in due):
         reminders.append(
-            "LHC 60-minute direction check: reread the original direct user goal and compare useful "
-            "user-visible progress with the remaining critical path. This reminder is not product acceptance."
+            "LHC 60-minute direction check: reread the original direct user goal and latest "
+            "correction. Honor the user's current delivery order; an older goal reminder "
+            "cannot restore a rejected priority. Compare actual caller behavior with the "
+            "remaining concrete repair. This reminder is not product acceptance."
         )
     return {"state": os.fspath(path), "elapsed_wall_seconds": max(0, int(elapsed.total_seconds())),
             "due": due, "prompt": "\n\n".join(reminders)}
@@ -1225,19 +1342,18 @@ def learning_checkpoint(args: argparse.Namespace, cwd: Path, session_id: str,
     if due:
         prompt = (
             "LHC session checkpoint: this session has run 120 wall-clock minutes of "
-            "unfinished work. Run the improve-workflow procedure now "
-            "(common/skills/improve-workflow/SKILL.md). If the session is slow, stuck "
-            "or drifting, assign a fresh adviser using an allowed model ID resolved from "
-            "the live catalog: fast tier glm-5.3-flash or minimax-3.1-flash, frontier "
-            "tier gpt-6-luna, glm-5.3 or gpt-6.1-sol. Verify actual "
-            "model identity and never silently substitute. The adviser diagnoses the "
-            "delay and recommends a route; the Lead owns the decision. Give it the "
-            "current user request, the current plan report, the applicable rules, the "
-            "structured outcome and a capped recent event excerpt, and redact "
-            "secrets; it gains no authority the session does not already have. Record "
+            "unfinished work. Compare the latest direct correction and actual caller "
+            "result with the remaining blocker (common/skills/improve-workflow/SKILL.md). "
+            "A known repair goes to its existing Worker now; do not open another session "
+            "or audit merely because this timer fired. Only if a consequential route "
+            "choice remains unclear, consult one optional fresh adviser using the "
+            "existing allowed-model rules and a bounded redacted excerpt. The Lead "
+            "owns the decision; advice creates no authority or release gate. Record "
             "observation → changed method → verification evidence, or an "
             "evidence-backed bounded no-change reason. Notification, compaction, a "
-            "fresh cycle or a new task card does NOT acknowledge this checkpoint. Use lhc_time_guard.py checkpoint with "
+            "fresh cycle or a new task card does NOT acknowledge this checkpoint. "
+            "Bookkeeping must not delay permitted delivery. The existing optional CLI is "
+            "lhc_time_guard.py checkpoint with "
             "--cwd, --runtime, --session-id, --due-at and the required review/evidence "
             f"fields. Session={session_id}; runtime={args.runtime}; due-at={state['due_at']}; "
             f"first observed={state['started_at']}; state={path}. "
@@ -1782,21 +1898,20 @@ def cycle_hook(args: argparse.Namespace, payload: dict[str, Any],
     interval_report = None
     measurement_note = ""
     if interval_state.exists():
-        measured = subprocess.run(
-            [sys.executable, str(Path(__file__).with_name("lhc_active_time.py")),
-             "status", "--state", str(interval_state)],
-            capture_output=True, text=True, timeout=3, check=False,
-        )
+        # The ledger answers the same report from this process, so the report
+        # is read here instead of starting a second interpreter for it.  A
+        # missing, malformed or cross-boot ledger is unavailable measurement,
+        # never zero.
         try:
-            candidate = json.loads(measured.stdout)
-            if (measured.returncode == 0 and isinstance(candidate, dict)
-                    and actor != "unknown-session"
-                    and candidate.get("actor") == actor
-                    and candidate.get("task") == card.stem
-                    and candidate.get("status") in {"running", "paused"}):
-                interval_report = candidate
-        except ValueError:
-            pass
+            candidate = active_tool().status(str(interval_state))
+        except (OSError, ValueError, KeyError, TypeError):
+            candidate = None
+        if (isinstance(candidate, dict)
+                and actor != "unknown-session"
+                and candidate.get("actor") == actor
+                and candidate.get("task") == card.stem
+                and candidate.get("status") in {"running", "paused"}):
+            interval_report = candidate
     if interval_report is None:
         measurement_note = (
             "Active interval accounting is missing or unavailable. Historical unknown time "

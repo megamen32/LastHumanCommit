@@ -2,16 +2,15 @@
 
 from __future__ import annotations
 
-import importlib.util
 import json
 import re
-import subprocess
-import sys
 import tempfile
 import unittest
 from unittest.mock import patch
 from pathlib import Path
 import pytest
+
+from _inprocess import load_module, run_cli
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -20,33 +19,19 @@ VALIDATOR = ROOT / 'scripts' / 'lhc_validate_graph.py'
 
 
 def load_tool():
-    spec = importlib.util.spec_from_file_location('lhc_grid', TOOL)
-    module = importlib.util.module_from_spec(spec)
-    assert spec.loader is not None
-    sys.modules[spec.name] = module
-    spec.loader.exec_module(module)
-    return module
+    return load_module(TOOL, name='lhc_grid')
 
 
 def load_validator():
-    spec = importlib.util.spec_from_file_location('lhc_validate_graph', VALIDATOR)
-    module = importlib.util.module_from_spec(spec)
-    assert spec.loader is not None
-    sys.modules[spec.name] = module
-    spec.loader.exec_module(module)
-    return module
+    return load_module(VALIDATOR, name='lhc_validate_graph')
 
 
 def run_tool(*args):
-    return subprocess.run(
-        [sys.executable, str(TOOL), *args], capture_output=True, text=True,
-    )
+    return run_cli(lhc, args)
 
 
 def run_validator(*args):
-    return subprocess.run(
-        [sys.executable, str(VALIDATOR), *args], capture_output=True, text=True,
-    )
+    return run_cli(validator, args)
 
 
 lhc = load_tool()
@@ -234,7 +219,13 @@ class GraphJsonTests(unittest.TestCase):
         self.assertIn('отсчёт от последнего события 15:19', html)
         self.assertIn('срок прошёл', html)
 
-    def test_external_wait_withholds_clock_eta_and_round_trips(self):
+    def test_a_declared_external_wait_makes_the_horizon_imprecise(self):
+        """A declared wait is a note; a leaf that waits is what hides the clock.
+
+        The owner asked for the known number with a note that it is imprecise,
+        instead of "the duration is unknown" while the task is already closed.
+        A wait that no open leaf carries any more must not freeze the horizon.
+        """
         graph = lhc.parse_graph_json({
             'schema_version': 2,
             'external_waits': 'Ждём подтверждения владельца; срок неизвестен.',
@@ -243,11 +234,25 @@ class GraphJsonTests(unittest.TestCase):
         })
         with patch.object(lhc, 'now_clock', return_value=17 * 60):
             metrics = lhc.build_metrics(graph)
-        self.assertEqual(metrics['eta_clock_max'], '')
-        self.assertTrue(metrics['external_wait_unknown'])
-        self.assertIn('неизвестен из-за внешнего ожидания', lhc.render_text(graph, metrics).lower())
+        self.assertTrue(metrics['external_wait_declared'])
+        self.assertFalse(metrics['external_wait_unknown'])
+        self.assertNotEqual(metrics['eta_clock_max'], '')
+        self.assertIn('срок внешнего ожидания не подтверждён', lhc.render_text(graph, metrics).lower())
         self.assertEqual(lhc.parse_graph_json(lhc.export_graph(graph)).external_waits,
                          'Ждём подтверждения владельца; срок неизвестен.')
+
+    def test_a_leaf_that_waits_still_withholds_the_clock(self):
+        """When the plan really waits, the finish time is unknown - and says so."""
+        graph = lhc.parse_graph_json({
+            'schema_version': 2,
+            'external_waits': 'Ждём подтверждения владельца.',
+            'tasks': [{'id': 'wait', 'label': 'Wait', 'status': 'waiting', 'depends_on': [],
+                       'estimate_minutes': {'minimum': 5, 'maximum': 5}}],
+        })
+        with patch.object(lhc, 'now_clock', return_value=17 * 60):
+            metrics = lhc.build_metrics(graph)
+        self.assertEqual(metrics['eta_clock_max'], '')
+        self.assertTrue(metrics['external_wait_unknown'])
 
     def test_declared_model_class_survives_the_round_trip(self):
         graph = lhc.parse_graph_json({
@@ -746,7 +751,9 @@ class HonestLeafStatesTests(unittest.TestCase):
     REPORT = (
         'Цель: довести интеграцию до результата\n'
         'Бизнес-результат: карточка принимается\n'
-        'Декомпозиция: 4 листа · 2 параллельно · 2 волны · слотов: 2\n'
+        # The graph of this fixture has no dependency between its leaves, so
+        # the honest shape is one wave; the deferred leaf takes no place in it.
+        'Декомпозиция: 4 листа · 2 параллельно · 1 волна · слотов: 2\n'
         '\n'
         '✅ (контракт источника) начата 14:02 закончена 14:09, оценка 15 минут\n'
         '⌛ (ответ поставщика) ждём ответа поставщика, оценка 20 минут\n'

@@ -1,13 +1,14 @@
 {
   "name": "last-human-commit",
-  "version": "1.5.43",
+  "version": "1.5.66",
   "description": "Automatic engineering workflow with isolated parallel work, shared file messages, and verified PR integration.",
   "author": {
     "name": "megamen32",
     "url": "https://github.com/megamen32"
   },
   "skills": "./skills/",
-  "hooks": "./hooks/hooks.json",
+  "hooks": "./com.openai/hooks/hooks.json",
+  "mcpServers": "./.mcp.json",
   "interface": {
     "displayName": "Last Human Commit",
     "shortDescription": "Reviewed workflow skills for engineering delivery",

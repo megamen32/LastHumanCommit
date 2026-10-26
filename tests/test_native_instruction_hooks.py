@@ -12,6 +12,8 @@ from pathlib import Path
 
 import pytest
 
+from _inprocess import git_repo, load_module, run_cli
+
 
 ROOT = Path(__file__).resolve().parents[1]
 ENTRY = ROOT / "src/common/tools/lhc_entry.py"
@@ -23,6 +25,8 @@ SUPPLEMENTAL_HOOK_CONFIGS = (
     ROOT / "plugins/last-human-commit/hooks/zcode-hooks.json",
     ROOT / "plugins/last-human-commit/native/codex/hooks/zcode-hooks.json",
 )
+
+entry = load_module(ENTRY, name="lhc_entry_instructions_test")
 
 
 @pytest.mark.parametrize("config_path", HOOK_CONFIGS)
@@ -49,6 +53,45 @@ def test_zcode_hook_templates_allow_only_instruction_and_time_events(config_path
     assert "--heartbeat-only" in hooks["PostToolUse"][0]["hooks"][0]["command"]
 
 
+def test_codex_fullcycle_prompt_hook_creates_and_binds_local_plan_offline(tmp_path: Path, monkeypatch) -> None:
+    repo = git_repo(tmp_path / "repo")
+    config = tmp_path / "missing-mirror-config.json"
+    monkeypatch.setenv("LHC_PLAN_MIRROR_CONFIG", str(config))
+    monkeypatch.setenv("USER", "codex-canary")
+    event = {
+        "cwd": str(repo), "session_id": "codex-fullcycle-session",
+        "prompt": "Implement a full new feature across several modules and verify it.",
+    }
+    args = ["--root", str(ROOT), "--event", "UserPromptSubmit", "--plan-entry"]
+    first = run_cli(entry, args, cwd=repo,
+                    env={"LHC_PLAN_MIRROR_CONFIG": str(config), "USER": "codex-canary"},
+                    stdin=json.dumps(event))
+    assert first.returncode == 0, first.stderr
+    message = json.loads(first.stdout)["hookSpecificOutput"]["additionalContext"]
+    result = entry._fullcycle_plan_entry(event, ROOT)
+    assert result and result["leaf_id"] == "L01" and result["url"] is None
+    assert "автоматически связан" in message
+    plan = Path(result["plan"])
+    assert plan.is_relative_to(repo / ".agents" / "tasks")
+    leaves = sorted((plan / "leaves").glob("*.json"))
+    assert [path.stem for path in leaves] == ["L01", "L02", "L03"]
+    active = json.loads((plan / "leaves/L01.json").read_text())
+    assert active["status"] == "running"
+    assert active["session"] == event["session_id"]
+    assert active["harness"] == "codex"
+    assert (plan / "plan.graph.json").is_file()
+    assert (plan / "plan.html").is_file()
+    before = len(active["progress_events"])
+    entry._fullcycle_plan_entry(event, ROOT)
+    assert len(json.loads((plan / "leaves/L01.json").read_text())["progress_events"]) == before
+
+
+def test_codex_user_prompt_hook_invokes_automatic_local_plan_entry() -> None:
+    hooks = json.loads((ROOT / "adapters/codex/hooks/hooks.json").read_text())["hooks"]
+    commands = [item["hooks"][0]["command"] for item in hooks["UserPromptSubmit"]]
+    assert any("lhc_entry.py" in command and "--plan-entry" in command for command in commands)
+
+
 def test_opencode_compatibility_adapters_are_inert_and_config_is_skills_only(tmp_path: Path) -> None:
     import importlib.util
 
@@ -73,18 +116,20 @@ def test_opencode_compatibility_adapters_are_inert_and_config_is_skills_only(tmp
 
 
 def test_legacy_opencode_migration_removes_but_never_readds_lhc_adapter(tmp_path: Path) -> None:
-    import subprocess
-
     home = tmp_path / "home"
     config = home / ".config/opencode/opencode.json"
     config.parent.mkdir(parents=True)
     config.write_text(json.dumps({"plugin": ["/old/lhc-time-guard.ts", "other-plugin"]}), encoding="utf-8")
-    subprocess.run([
-        sys.executable,
-        str(ROOT / "plugins/last-human-commit/scripts/migrate_registration.py"),
-        "--plugin-root", str(ROOT / "plugins/last-human-commit"),
-        "--home", str(home), "--backup-root", str(tmp_path / "backup"), "--apply",
-    ], check=True, capture_output=True, text=True)
+    migration = load_module(
+        ROOT / "plugins/last-human-commit/scripts/migrate_registration.py",
+        name="lhc_migrate_registration_test",
+    )
+    result = run_cli(
+        migration,
+        ["--plugin-root", str(ROOT / "plugins/last-human-commit"),
+         "--home", str(home), "--backup-root", str(tmp_path / "backup"), "--apply"],
+    )
+    assert result.returncode == 0, result.stderr
     migrated = json.loads(config.read_text(encoding="utf-8"))
     assert migrated["plugin"] == ["other-plugin"]
 
@@ -114,17 +159,14 @@ def test_hermes_keeps_only_explicit_role_middleware() -> None:
 
 
 def _time_guard():
-    spec = importlib.util.spec_from_file_location("lhc_time_guard_heartbeat_test", ROOT / "src/common/tools/lhc_time_guard.py")
-    assert spec is not None and spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+    return load_module(
+        ROOT / "src/common/tools/lhc_time_guard.py",
+        name="lhc_time_guard_heartbeat_test",
+    )
 
 
 def test_native_heartbeat_initializes_only_its_timer_record_and_deduplicates_due_ids(tmp_path: Path) -> None:
-    import subprocess
-
-    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    git_repo(tmp_path)
     guard = _time_guard()
     start = datetime(2026, 10, 21, 10, 0, tzinfo=timezone.utc)
 
@@ -158,9 +200,7 @@ def test_native_heartbeat_initializes_only_its_timer_record_and_deduplicates_due
 
 
 def test_native_heartbeat_combines_overdue_reminders_and_preserves_outcome_and_hold(tmp_path: Path) -> None:
-    import subprocess
-
-    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    git_repo(tmp_path)
     guard = _time_guard()
     start = datetime(2026, 10, 21, 10, 0, tzinfo=timezone.utc)
     initial = guard.native_heartbeat(tmp_path, "codex", "sid-2", now=start)
@@ -214,9 +254,7 @@ def test_native_heartbeat_rejects_unvalidated_identity_without_state(cwd: Path, 
 
 
 def test_native_heartbeat_rejects_cwd_mismatch_and_malformed_existing_state(tmp_path: Path) -> None:
-    import subprocess
-
-    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    git_repo(tmp_path)
     guard = _time_guard()
     start = datetime(2026, 10, 21, 10, 0, tzinfo=timezone.utc)
     initial = guard.native_heartbeat(tmp_path, "codex", "sid-cwd", now=start)
@@ -226,7 +264,7 @@ def test_native_heartbeat_rejects_cwd_mismatch_and_malformed_existing_state(tmp_
 
     malformed = tmp_path / "malformed"
     malformed.mkdir()
-    subprocess.run(["git", "init", "-q", str(malformed)], check=True)
+    git_repo(malformed)
     path = guard.learning_path(malformed, "codex", "sid-bad-json")
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("{not-json", encoding="utf-8")
@@ -273,15 +311,8 @@ def test_instruction_only_branch_does_not_import_or_touch_state(tmp_path: Path, 
 
 
 def test_post_compact_instruction_only_uses_the_same_side_effect_free_path(tmp_path: Path) -> None:
-    import subprocess
-
-    completed = subprocess.run(
-        [sys.executable, str(ENTRY), "--root", str(tmp_path), "--event", "PostCompact", "--instructions-only"],
-        input="{}",
-        text=True,
-        capture_output=True,
-        check=True,
-    )
+    completed = run_cli(entry, ["--root", str(tmp_path), "--event", "PostCompact", "--instructions-only"], stdin="{}")
+    assert completed.returncode == 0, completed.stderr
     result = json.loads(completed.stdout)
     assert result["hookSpecificOutput"]["hookEventName"] == "PostCompact"
     assert result["hookSpecificOutput"]["additionalContext"] == f"LHC: read {tmp_path.resolve() / 'AGENTS.md'} for current instructions."
@@ -289,16 +320,10 @@ def test_post_compact_instruction_only_uses_the_same_side_effect_free_path(tmp_p
 
 
 def test_post_tool_heartbeat_cli_creates_only_validated_timer_state(tmp_path: Path) -> None:
-    import subprocess
-
-    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
-    completed = subprocess.run(
-        [sys.executable, str(ENTRY), "--root", str(tmp_path), "--event", "PostToolUse", "--heartbeat-only"],
-        input=json.dumps({"cwd": str(tmp_path), "session_id": "native-sid"}),
-        text=True,
-        capture_output=True,
-        check=True,
-    )
+    git_repo(tmp_path)
+    completed = run_cli(entry, ["--root", str(tmp_path), "--event", "PostToolUse", "--heartbeat-only"],
+                        stdin=json.dumps({"cwd": str(tmp_path), "session_id": "native-sid"}))
+    assert completed.returncode == 0, completed.stderr
     assert completed.stdout == ""
     states = list((tmp_path / ".agents/shared-session/learning").glob("*.json"))
     assert len(states) == 1
@@ -312,13 +337,13 @@ def test_post_tool_heartbeat_cli_creates_only_validated_timer_state(tmp_path: Pa
 
 
 def test_post_tool_heartbeat_reports_the_due_reminder_after_elapsed_time(tmp_path: Path) -> None:
-    import subprocess
     from datetime import datetime, timedelta, timezone
 
-    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
-    command = [sys.executable, str(ENTRY), "--root", str(tmp_path), "--event", "PostToolUse", "--heartbeat-only"]
+    git_repo(tmp_path)
+    command = ["--root", str(tmp_path), "--event", "PostToolUse", "--heartbeat-only"]
     payload = json.dumps({"cwd": str(tmp_path), "session_id": "native-sid"})
-    subprocess.run(command, input=payload, text=True, capture_output=True, check=True)
+    first = run_cli(entry, command, stdin=payload)
+    assert first.returncode == 0, first.stderr
 
     state_path = next((tmp_path / ".agents/shared-session/learning").glob("*.json"))
     state = json.loads(state_path.read_text(encoding="utf-8"))
@@ -327,7 +352,8 @@ def test_post_tool_heartbeat_reports_the_due_reminder_after_elapsed_time(tmp_pat
     state["native_heartbeat"]["last_seen_at"] = past
     state_path.write_text(json.dumps(state), encoding="utf-8")
 
-    completed = subprocess.run(command, input=payload, text=True, capture_output=True, check=True)
+    completed = run_cli(entry, command, stdin=payload)
+    assert completed.returncode == 0, completed.stderr
     result = json.loads(completed.stdout)
     context = result["hookSpecificOutput"]["additionalContext"]
     assert "LHC 30-minute plan report" in context
@@ -338,15 +364,9 @@ def test_post_tool_heartbeat_reports_the_due_reminder_after_elapsed_time(tmp_pat
 
 @pytest.mark.parametrize("event", ["UserPromptSubmit", "PreToolUse", "PostToolUse", "Stop", "Interrupt", "SessionEnd"])
 def test_legacy_control_event_invocation_is_inert_without_flag(tmp_path: Path, event: str) -> None:
-    import subprocess
-
-    completed = subprocess.run(
-        [sys.executable, str(ENTRY), "--root", str(tmp_path), "--event", event],
-        input=json.dumps({"cwd": str(tmp_path), "session_id": "legacy-session", "prompt": "Build and deploy an app"}),
-        text=True,
-        capture_output=True,
-        check=True,
-    )
+    completed = run_cli(entry, ["--root", str(tmp_path), "--event", event],
+                        stdin=json.dumps({"cwd": str(tmp_path), "session_id": "legacy-session", "prompt": "Build and deploy an app"}))
+    assert completed.returncode == 0, completed.stderr
     assert completed.stdout == ""
     assert list(tmp_path.iterdir()) == []
 

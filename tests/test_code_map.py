@@ -4,23 +4,23 @@
 from __future__ import annotations
 
 import json
-import subprocess
-import sys
 from pathlib import Path
 import pytest
+
+from _inprocess import load_module, run_cli
 
 
 ROOT = Path(__file__).resolve().parents[1]
 TOOL = ROOT / "skills/worker-research/scripts/code_map.py"
 
+code_map = load_module(TOOL, name="lhc_code_map_test")
 
-def run_tool(project: Path, *args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        [sys.executable, str(TOOL), "--root", str(project), *args],
-        check=check,
-        capture_output=True,
-        text=True,
-    )
+
+def run_tool(project: Path, *args: str, check: bool = True):
+    result = run_cli(code_map, ["--root", str(project), *args])
+    if check and result.returncode != 0:
+        raise AssertionError(result.stderr)
+    return result
 
 
 def project(tmp_path: Path) -> Path:

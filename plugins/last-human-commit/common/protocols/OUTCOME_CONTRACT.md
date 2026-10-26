@@ -1,5 +1,27 @@
 # Ordinary task → observable outcome
 
+## Expected result and evidence of achievement
+
+The plan's `goal` states the user's purpose. Its `business_result` or
+`business_results` declares future tangible capabilities after the changes,
+shown as «Что будет работать». Keep those storage names and accept the legacy
+Markdown heading «Бизнес-результат». Optional `acceptance_scenarios` is a
+`list[str]`: actor/context, actions, expected visible result. These are real
+scenarios for testers, not expected verdicts. See `PLAN_REPORT.md` for examples.
+For CLI/library work the user is the operator/caller and the scenario names the
+actual call and observable result; a commercial benefit is not required.
+
+`current_progress` records what is actually done or checked now. Evidence of
+source/tests, commits, installation and real use retains its own scope; none
+replaces the expected capability. An unfulfilled expected result is a valid plan,
+while a claim of achievement requires evidence of the real affected scenario.
+Use this meaning for updated/new plans; do not rewrite historical reports,
+revisions or user messages. Old fields remain legacy declarations, never inferred
+fulfillment. This documentation contract adds no regex classifier, runtime state
+transition or gate.
+
+## Recording the accepted assignment
+
 The Lead may record each actionable assignment through the existing outcome CLI,
 including its class and a concrete canary: scenario, actual consumer target/host,
 expected observation. The Lead derives that record from the user's authority and
@@ -242,8 +264,12 @@ For fullcycle, the applicable sequence is implementation/tests → authorized de
 configured permitted dev branch → integrated smoke. PR per worker is optional;
 one published dev history is mandatory. Explicit original no-deploy/no-push/external PR-only boundaries make only
 those operations N/A, with their scope source retained. Missing required access
-is blocked, not N/A. State does not grant permission. Airlock converges on `megamen32-dev`; Oleg owns final upstream main integration.
-External/shared upstream main is never auto-merged. Main CI stays GitHub-hosted,
+is blocked, not N/A. State does not grant permission. Airlock converges on
+`megamen32-dev`; Oleg owns final upstream main integration for those projects.
+That rule does not apply to the owner-controlled `megamen32/LastHumanCommit` repo:
+the user's direct scoped instruction authorizes an ordinary fast-forward of its
+`main`, after the relevant checks. External/shared upstream main remains owner-only.
+Main CI stays GitHub-hosted,
 not ARC/K3s; do not change GitHub App privileges, checks or branch protection. Local checkpoint commits may precede deployment. A genuine CI
 branch-push dependency may precede deployment only as a recorded staging-push
 exception (branch, reason, dependent stage, native refs); it is not final acceptance.
@@ -331,18 +357,24 @@ Git controller; the record itself grants no permission:
 
 `contract ... --scope-source <native-user-source> --integration-branch megamen32-dev --integration-remote origin --integration-ownership shared --release-owner Oleg`
 
-For an owned LHC repository, main also needs `--integration-permission-quote`
-with the unchanged affirmative native user clause naming its actual GitHub owner
-and repository (or camel-case acronym). `owned` or GH write access alone is not
-consent. The helper resolves the actual remote repository, binds it to this scope
-and rejects changed remotes. Missing/ambiguous consent stays pending/owner handoff;
+For an owned LHC repository, a direct owner instruction to integrate its `main`
+is valid authorization; do not turn the Oleg/Airlock owner rule into a prohibition
+against the repository owner. When using the integration helper, record the exact
+native user clause with `--integration-permission-quote`; `owned` or GH write access
+alone is not consent. The helper resolves the actual remote repository, binds it to
+this scope and rejects changed remotes. Missing/ambiguous consent stays pending/owner handoff;
 this is a bounded source floor plus independent semantic review, not a universal
 intent/permission parser. Only GitHub remotes are currently supported for this
 automatic integration close. Dev branch names must be confirmed by native scope;
 unknown targets never inherit main. Shared/external main is rejected. Airlock worktrees
-branch from and converge on megamen32-dev. Final upstream main PR is only the
-agreed handoff, not a mandatory worker PR. Lead only orchestrates; assign every execution step, including small tasks, to a
-Worker. Add an independent Reviewer only when the claim and risk warrant it. An
+branch from and converge on megamen32-dev; that route and Oleg's ownership do not
+override direct owner authorization in LastHumanCommit itself. Final upstream main PR
+is only the agreed handoff for Airlock work. Lead owns the engineering outcome and
+assigns every engineering step, including small tasks, to a native Worker. A
+business executor inside the product being built handles that product's user task;
+it is not the engineering Worker for this session. The Lead role does not depend on
+whether a child has started and must not silently switch into doing every engineering
+step personally. Add an independent Reviewer only when the claim and risk warrant it. An
 already assigned leaf does not recursively hire and its self-check remains separate
 from parent acceptance.
 
@@ -353,7 +385,7 @@ integration requires actual integrated consumer smoke after that readback,
 whether or not the optional release-owner name was supplied,
 covered in the same original review's integration evidence calls. Canary and
 permitted dev delivery can then be complete while `release_handoff.status` is
-`awaiting-owner`; Oleg's future upstream main action is not an unmet dev task.
+`awaiting-owner`; Oleg's future Airlock main action is not an unmet dev task.
 Missing dev publication/smoke stays pending. Neither refs nor handoff bypass
 independent milestone, human-stop, external-action or authorization gates.
 Use the existing HQ workspace validation (`go run ./automation/cmd/hq validate

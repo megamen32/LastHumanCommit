@@ -1,0 +1,258 @@
+# READY — исходники корневого каталога, версия 1.5.59
+
+Владелец доставки: Codex Luna `01a1744b-71ee-70e0-a4ef-06d54c6aac70`.
+Worktree: `/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/plan-home-sso-20261025`.
+Ветка: `lhc/plan-home-sso-20261025`, исходная база `a886c1e` (1.5.58).
+
+## Готово в исходниках
+
+- `/` показывает «Проекты и планы» при `sso_enabled: true`, loopback TCP peer и
+  единственном `X-LHC-SSO-Verified: 1`. Без SSO корень закрыт. Старый capability
+  в SSO режиме имеет ту же защиту; в прежних установках работает как раньше.
+- Все принятые снимки группируются по стабильному `snapshot.project`, сортируются
+  по исходному событию. Есть счётчики, статусы, поиск проекта/плана, все/в работе,
+  мобильная раскладка, ссылка на текущий план и ревизию. Примечания листов на
+  обзор не попадают. Живость агента явно неизвестна.
+- Обновление каждые 12 секунд сохраняет поиск, фильтр и позицию. Истёкший вход,
+  redirect, 401/403 или HTML входа сохраняют данные и предлагают войти снова.
+- `graph_sources` читает явно заданные абсолютные plan.graph.json тем же
+  наблюдателем, без записи в граф и без создания листов. Sidecar с историей
+  рядом с графом; исходные временные поля/неизвестные actuals сохранены.
+  Дубли разрешённого пути объединяются; проект определяется по Git root.
+- Повреждение/удаление графа не заменяет последний хороший снимок. Исправлен
+  проверенный дефект: успешная пересылка старого снимка больше не стирает ошибку
+  нового повреждённого источника во время retry capture.
+- Bearer API независим от SSO; observer/offline/revisions используют прежний путь.
+- Обновлены manifests/MCP version до 1.5.59, проекции получены генераторами.
+
+## Проверено
+
+`LHC_UI_BROWSER_TESTS=1 python3 -m pytest -q tests/test_plugin_version_parity.py tests/test_plan_home.py tests/test_plan_graph_sources.py tests/test_plan_mirror.py`
+
+20 passed, включая настоящий изолированный Chrome: 36 планов / 12 проектов,
+поиск/фильтр, мобильная ширина, настоящее fetch-обновление, истечение SSO.
+HTTP-тесты проверяют root/capability/proxy-header/peer и Bearer read/write.
+Graph-тест проходит offline → restart → raw edit → malformed → missing → recovery,
+проверяя неизменность исходных байтов, стабильный URL и baseline.
+
+`python3 -m pytest -q tests/test_plan_origin.py tests/test_single_plan_mcp.py tests/test_plan_dashboard_ui.py`
+
+23 passed: прежние origin, единый MCP и интерфейс плана сохранены.
+
+`python3 plugins/last-human-commit/scripts/sync_skills.py --check`,
+`python3 scripts/publish_package.py --check`,
+`python3 plugins/last-human-commit/scripts/validate.py` — PASS.
+Полный suite намеренно не запускался; native consumer и SSO live здесь не проверялись.
+
+## Точный следующий шаг Luna / hosting
+
+1. Сохранить существующий runtime client/server config при установке;
+   hosting владеет install-native.py (preserve-config/sso flags), sso*, hosting.md.
+2. Установить source runtime из этой ветки, включить server `sso_enabled: true`,
+   nginx должен перезаписать заголовок после existing personal SSO auth_request.
+   Защитить все браузерные пути, включая JSON/архивы и capability. Контракт — interface.md.
+3. Добавить собранные Lead canonical roots/plans и legacy graph_sources в существующий
+   client config. Каталог показывает только реально принятые зеркалом источники;
+   фактический инвентарь всего флота этим source receipt не доказан.
+4. Проверить установленный корень через SSO, закрытый внешний доступ и синхронизацию
+   без браузерного входа. Интеграция/push/release остаются у Luna.
+
+В worktree появились чужие hosting-файлы (например deploy/plan-mirror/sso-nginx.conf);
+они не входят в source commit. Primary checkout не изменялся. Новые исполнители
+не создавались, runtime не перезапускался, main не публиковался.
+
+## Проверенный итог Luna — 1.5.61, 25.10.2026
+
+- Актуальный пользовательский контракт: SSO требуется только для точного `/`;
+  individual plan HTML/JSON/archive и capability URL не закрываются SSO.
+  `/v1/status` остаётся Bearer API. Анонимный `/` уходит на точный existing
+  auth `rd`; проверенная страница плана отвечает 200. Положительный owner-login
+  не наблюдался, cookies не извлекались.
+- После bounded source inventory зеркало содержит 22 плана в 10 группах.
+  Server100 mirror/observer и Mac observer установлены как 1.5.61; server
+  слушает loopback, `sso_enabled=true`. Текущие plans/roots/8 graph sources,
+  Mac Apps root и 2 Mac graph sources сохранены. Mac write-token не копировался.
+- UI теперь имеет один длинный цветной status bar; min/max/сейчас и временной
+  результат находятся в той же карточке без второй длинной оси/точки. Проверено
+  на опубликованной странице в headless Chrome при ширине 320 px и времени
+  23:45 между границами 23:29 и 00:24: status «Ранняя оценка пройдена на
+  15мин · до верхней границы 40мин», все labels помещаются.
+- По SHA-256 сравнены прежние 31 сохранённые generation paths: это 16 уникальных
+  plan identities; все 16 текущих `r001.html` совпадают байт-в-байт.
+- В эту задачу добавлен собственный canonical live LHC plan, привязанный к
+  текущей session/worktree. L03 lifecycle-поведение проверено на изолированной
+  копии canonical Cloud Telethon 13-leaf `docs/tasks` плана с установленным
+  runtime 1.5.61 и текущим Luna session id: точная регистрация при пустом
+  `roots`, running/session/progress event, offline raw save, catch-up по тому же
+  URL и неизменный `r001`.
+- Реальную Cloud Telethon рабочую копию не изменяли. В ней при последнем чтении
+  L03 уже имел status `done`; это состояние не приписывается нашему canary.
+  Изолированный canary доказывает безопасный consumer-путь, но не выдаётся за
+  вмешательство в ту сессию. Старый capability не открывали и секрет не читали.
+- `LHC_UI_BROWSER_TESTS=1 python3 -m pytest -q tests/test_plan_time_rail.py
+  tests/test_plan_mirror.py` — 25 passed; `test_plugin_version_parity.py` —
+  4 passed; `plugins/last-human-commit/scripts/validate.py`,
+  `publish_package.py --check` и `sync_skills.py --check` прошли.
+
+Следующий/оставшийся шаг: scoped commit/push LHC branch и integrated readback.
+Managed nginx site-scoped apply уже действует; дальнейшая публикация managed
+source должна исключить несвязанный локальный `ServersAdministartion` commit.
+
+## Исправление входа fullcycle — 1.5.62 (в работе)
+
+Причина: существующий Codex `UserPromptSubmit` lifecycle не запускал LHC entry
+для создания/привязки локального плана; активация была только ручным CLI
+действием. Поэтому обычный старт зависел от того, вспомнит ли модель команду.
+
+Исправление в исходнике: Codex hook теперь вызывает локальный `lhc_entry.py`
+перед ответом модели. Для fullcycle он в пределах текущего Git worktree
+переиспользует точный подходящий план/готовый leaf либо создаёт локальный
+scaffold из трёх листов, связывает первый с реальным session ID, создаёт graph
+и HTML. Если конфигурации mirror нет, локальные файлы всё равно создаются и
+работа начинается; MCP и сеть не вызываются. Повтор того же события не пишет
+дублирующий progress event.
+
+Проверено: `tests/test_native_instruction_hooks.py`,
+`tests/test_plan_mirror.py` и `tests/test_plan_mirror_installer.py` — 38 passed.
+Тест вызывает штатную ветку CLI
+`--event UserPromptSubmit --plan-entry` на изолированном Git worktree без
+mirror config, проверяет три листа, running/session binding, graph/HTML и
+идемпотентный повтор. Plugin validation, generated package parity и sync skills
+прошли.
+
+### Доставка и установленный consumer
+
+- Scoped commit `2de7edf` опубликован в `lhc/plan-home-sso-20261025`; после
+  повторного fetch `origin/main` оставался его предком и был продвинут обычным
+  fast-forward, без force. Main и назначенная ветка сейчас указывают на один SHA.
+- Codex marketplace `megamen32-plugins` обновлён; native plugin
+  `last-human-commit` 1.5.62 установлен. В установленной копии подтверждены
+  version 1.5.62 и `UserPromptSubmit --plan-entry` hook.
+- Установленный CLI вызван с синтетическим fullcycle event внутри disposable
+  Git repo: созданы три leaves, L01 стал `running` с переданным synthetic
+  session ID, graph/HTML собрались; использованные config path не существовал,
+  MCP и сеть не вызывались. Temp repo удалён.
+- Server100 и Mac mirror/observer runtime 1.5.62 активны. Config readback:
+  server `sso_enabled=true`, loopback:8769, сохранены 2 plans/4 roots/8 graphs;
+  Mac observer активен, сохранены 1 plan/3 roots/2 graphs.
+- После install публичный корень вернул `302` с точным существующим
+  `rd=https://lhc.bezrabotnyi.com/`; индивидуальный план вернул `200`.
+- Последний fetch прежней страницы собственного live plan вернул `200` и
+  отобразил завершённый delivery leaf и auto-entry leaf; адрес mirror не
+  записывается в исходники.
+- Настоящая новая Codex-сессия не запускалась по прямому указанию пользователя;
+  owner login также не наблюдался. Поэтому подтверждены установка и synthetic
+  installed-hook consumer, но не факт будущего user session invocation и не
+  authenticated owner UI.
+
+## Ограничение автоматического входа, обнаруженное после установки 1.5.62
+
+Последующий точечный разбор установленного consumer обнаружил два неустранённых
+дефекта `lhc_entry`:
+
+1. Обычный русский prompt «Начни полный цикл Last Human Commit.» завершает hook
+   с кодом 0, но пустым выводом и без локального плана: `lhc_outcome.classify`
+   возвращает `unknown`.
+2. Если в Git worktree найден ровно один старый план, нерелевантный prompt на
+   английском может привязать к этой сессии его queued leaf. Единственный
+   найденный план выбирался без проверки точной связи цели; такое назначение
+   небезопасно считать автоматическим подбором.
+
+Отдельный live-config readback показал две одновременно включённые установки на
+этом Codex: `last-human-commit@megamen32-plugins` 1.5.62 и
+`last-human-commit@fleet-lhc` 1.5.58. Это наблюдение ограничено данным Codex,
+не является инвентаризацией флота. Текущая policy-коррекция не меняет entry-code
+или Fleet-managed install и не заявляет эти дефекты исправленными.
+
+## Политика итогового review (25.10.2026)
+
+Согласовано в canonical router, Reviewer/Worker, Full Cycle template и
+planning/decomposition skills: при Full-cycle одна техническая проверка
+интегрированного diff выполняется после всех рабочих/integration leaves и перед
+deploy → real consumer test → push. Отдельные leaves и волны не запускают review;
+их локальные тесты и отладка продолжаются. После материальной починки проверяется
+только изменённый diff и затронутое поведение. Автоматический
+`lhc_progress_review.py` остаётся timed read-only советом Overseer, а не review
+листов или delivery gate. Дефекты auto-entry, перечисленные выше, остались
+отдельными открытыми фактами.
+
+## Дополнение: роль Lead при создании продукта-исполнителя
+
+В подтверждённом свежем ExManager-сеансе LHC правило было прочитано, но
+инженерный Lead перешёл к самостоятельной диагностике продукта и не назначил
+инженерного Worker. Внутренний бизнес-исполнитель ExManager ошибочно оказался
+смешан с Worker разработки. Это не доказывает, что сам пользовательский продукт
+не исправен; здесь исправлен источник инструкции LHC.
+
+Канонические AGENTS/Lead/навыки/роутер/контракт теперь явно сохраняют за Lead
+инженерный результат и назначение ближайшего исполнимого инженерного листа
+native Worker. Бизнес-исполнитель продукта закрывает задачу пользователя внутри
+продукта, а не разработческий лист этой сессии. Отсутствие уже запущенного child
+не меняет роль Lead и не означает, что он должен молча выполнить все инженерные
+листья сам. Package projections синхронизированы.
+
+Пакет помечен как 1.5.64 во всех runtime/marketplace manifests; MCP server version
+и changelog обновлены вместе с инструкциями.
+
+Проверено: `tests/test_review_delivery_contract.py tests/test_plugin_version_parity.py` — 13 passed;
+`plugins/last-human-commit/scripts/validate.py`, `scripts/publish_package.py --check`,
+`plugins/last-human-commit/scripts/sync_skills.py --check` и `git diff --check` — PASS.
+В ходе доставки выяснилось, что ограничение про Oleg/Airlock main было ошибочно
+применено к принадлежащему пользователю `megamen32/LastHumanCommit`. Корневые
+инструкции и integration contracts теперь ограничивают это правило Airlock
+проектами и явно признают прямое распоряжение владельца LHC на обычный fast-forward.
+Новые сессии не запускались; runtime поведение Lead после следующего запуска
+потребителя отдельно не проверялось.
+
+## Дополнение: owner-only integration и реальный установленный Codex loader
+
+Ограничение «Oleg owns main» ошибочно применялось к самому
+`megamen32/LastHumanCommit`. Исправлены корневой router, `OUTCOME_CONTRACT` и
+`REVIEW_TO_DELIVERY`: правило Oleg/Airlock остаётся для этих проектов, а прямое
+распоряжение владельца LastHumanCommit разрешает scoped fast-forward его `main`.
+
+LHC package version 1.5.64 установлен через native Codex plugin manager из
+обновлённого `megamen32-plugins`. Readback показывает одну enabled установку
+`last-human-commit@megamen32-plugins` версии 1.5.64; старая enabled копия
+`fleet-lhc` 1.5.58 снята с установки, её marketplace и rollout-файлы не менялись.
+Установленные Lead.md и основной LHC skill содержат исправленное различие.
+Остальные 1.5.0 записи принадлежат старым disabled test marketplaces и остаются
+disabled.
+
+Итоговый кодовый коммит 4fb6666 опубликован в назначенную ветку и обычным
+fast-forward доставлен в `origin/main`; remote readback обеих ссылок совпал.
+Проверено: policy/version tests — 14 passed; package validator, projection checks
+и `git diff --check` — PASS. Новая сессия не создавалась; реальный model dispatch
+после запуска новой Codex-сессии не наблюдался.
+
+## Дополнение: автоматическое обновление LHC в Codex и OpenCode
+
+Причина отставания: ежедневный Codex updater обновлял marketplace-копию
+`megamen32-plugins`, но активными оставались отдельные `fleet-lhc` Codex
+установки. OpenCode `instructions`, `skills` и plugin loader также указывали на
+закреплённый Fleet rollout 1.5.52. Эти пути не следовали за marketplace refresh.
+
+Пакет поднят до 1.5.65. Добавлен idempotent `configure_opencode_marketplace.py`:
+он сохраняет остальные OpenCode config entries, переключает только LHC router и
+skills на стабильный локальный checkout `megamen32-plugins`, заменяет распознанный
+старый LHC plugin loader на ссылку к текущему `opencode/lhc-v2.ts` в том же
+checkout и сохраняет backups прежних настроек/loader. Existing daily Codex
+marketplace refresh обновляет checkout на месте; следующая новая OpenCode-сессия
+получает актуальные инструкции, skills и plugin без отдельного таймера.
+
+Native readback на server-100, server-44, server-88 и Mac M1: одна enabled
+Codex установка `last-human-commit@megamen32-plugins` 1.5.65, `fleet-lhc` не
+установлен. OpenCode на каждом хосте ссылается на тот же package root для
+instructions/skills; `plugins/last-human-commit.ts` ссылается на marketplace
+source; старых Fleet путей в OpenCode config не осталось. Ежедневные updater
+механизмы на Linux и Mac остаются активны. Уже запущенные сессии не перезапускались.
+
+Проверено: targeted marketplace migration/version tests — 7 passed; package
+validator, projections and `git diff --check` — PASS. Commit `3483497` опубликован
+в `main`; remote readback совпал.
+
+Windows `.190` не доступен по SSH ни напрямую с server-100, ни через server-44
+(`No route to host`), поэтому его Codex installation и расписание не проверены.
+Текущий доступный source scheduled updater Windows нацелен на `megamen32-public`,
+а не на canonical `megamen32-plugins`; требуется восстановить доступ к самому
+Windows host, прежде чем подтвердить или изменить его установку.

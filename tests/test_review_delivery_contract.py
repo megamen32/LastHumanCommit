@@ -2,25 +2,26 @@
 
 These verify the instructions actually delivered, not future model compliance.
 """
-import importlib.util
 import json
 from pathlib import Path
-import subprocess
-import sys
+
+from _inprocess import git_repo, load_module, run_cli
 
 ROOT=Path(__file__).resolve().parents[1]
 ENTRY=ROOT/"src/common/tools/lhc_entry.py"
+entry=load_module(ENTRY,name="lhc_entry_review_delivery_test")
 
 def invoke(root,event,**payload):
     value={"cwd":str(root),"session_id":"review-delivery-test",**payload}
     # --session is the explicit agent command that advances the stateful
     # lifecycle. The native hook templates stay time-only and never block.
-    result=subprocess.run([sys.executable,str(ENTRY),"--root",str(ROOT),"--runtime","codex","--event",event,"--session"],input=json.dumps(value),text=True,capture_output=True,check=True,timeout=8)
+    result=run_cli(entry,["--root",str(ROOT),"--runtime","codex","--event",event,"--session"],stdin=json.dumps(value))
+    assert result.returncode==0, result.stderr
     data=json.loads(result.stdout) if result.stdout.strip() else {}
     return data, data.get("hookSpecificOutput",{}).get("additionalContext","")
 
 def prepare(root):
-    subprocess.run(["git","init","-q",str(root)],check=True)
+    git_repo(root)
 
 def delivery_protocol():
     return (ROOT/"src/common/protocols/REVIEW_TO_DELIVERY.md").read_text()
@@ -65,6 +66,56 @@ def test_reviewer_has_no_second_receipt_or_hidden_test_pass():
     for term in ("native response is the review result", "not a second JSON receipt", "unexecuted", "metadata-only", "known reviewed source", "dependencies", "existing release gates"):
         assert term in text
     assert "material repairs" in text
+    assert "after all" in text and "not a review after each leaf or wave" in text
+    assert "before deploy, real-use testing and" in text
+
+def test_fullcycle_delivery_reviews_the_join_once_before_deploy_test_push():
+    sources = [
+        ROOT / "AGENTS.md",
+        ROOT / "src/common/agents/Reviewer.md",
+        ROOT / "templates/FULL_CYCLE.md",
+        ROOT / "src/common/skills/planning/SKILL.md",
+        ROOT / "src/common/skills/task-decomposition/SKILL.md",
+        ROOT / "src/common/skills/decompose-and-dispatch/SKILL.md",
+        ROOT / "src/common/skills/last-human-commit/SKILL.md",
+        ROOT / "src/common/agents/Worker.md",
+    ]
+    combined = "\n".join(path.read_text() for path in sources)
+    assert "after all implementation and integration leaves" in combined
+    assert "Do not review each leaf or wave" in combined
+    assert "deploy" in combined and "test" in combined and "push" in combined
+
+def test_lead_role_separates_engineering_worker_from_product_business_executor():
+    sources = [
+        ROOT / "AGENTS.md",
+        ROOT / "src/common/agents/Lead.md",
+        ROOT / "src/common/skills/last-human-commit/SKILL.md",
+        ROOT / "src/common/skills/decompose-and-dispatch/SKILL.md",
+        ROOT / "src/common/protocols/OUTCOME_CONTRACT.md",
+        ROOT / "src/common/protocols/REVIEW_TO_DELIVERY.md",
+        ROOT / "src/common/templates/project-router.md",
+        ROOT / "src/common/skills/planning/SKILL.md",
+        ROOT / "src/common/skills/business-delivery/SKILL.md",
+        ROOT / "src/common/skills/last-human-commit/SKILL.md",
+    ]
+    combined = "\n".join(path.read_text() for path in sources)
+    assert "business executor" in combined
+    assert "engineering Worker" in combined
+    assert "whether or not a child has started" in combined
+    assert "silently" in combined
+    assert "Lead only orchestrates:" not in combined
+    assert "Every inspection, edit, check, deployment, commit, push or install is performed" not in combined
+
+def test_owner_only_main_rule_is_scoped_to_airlock_not_owned_lhc():
+    sources = [
+        ROOT / "AGENTS.md",
+        ROOT / "src/common/protocols/OUTCOME_CONTRACT.md",
+        ROOT / "src/common/protocols/REVIEW_TO_DELIVERY.md",
+    ]
+    combined = "\n".join(path.read_text() for path in sources)
+    assert "owner-controlled `megamen32/LastHumanCommit`" in combined
+    assert "directly authorizes the scoped change" in combined
+    assert "Oleg owns final main integration there" in combined
 
 def test_policy_preserves_business_testing_and_uncertainty():
     text=(ROOT/"src/common/protocols/REVIEW_TO_DELIVERY.md").read_text()
@@ -91,9 +142,7 @@ def test_review_obligation_is_recorded_by_the_explicit_cli_not_by_a_hook():
             assert "business-review" not in command, command
             assert "checkpoint" not in command, command
     # The review itself is recorded by the explicit time-guard CLI.
-    guard=ROOT/"src/common/tools/lhc_time_guard.py"
-    spec=importlib.util.spec_from_file_location("review_delivery_guard",guard)
-    module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+    module=load_module(ROOT/"src/common/tools/lhc_time_guard.py",name="review_delivery_guard")
     args=module.parser().parse_args(["business-review","--cwd",str(ROOT),"--runtime","codex",
         "--session-id","review-delivery-test","--review-id","business-1",
         "--source-ref","original request","--business-result","Report opens",

@@ -1,6 +1,9 @@
 """Bounded source-only candidate and publication proof regressions."""
+import atexit
+import shutil
 import subprocess
 import sys
+import tempfile
 import hashlib
 import json
 from datetime import datetime, timedelta, timezone
@@ -15,25 +18,69 @@ import lhc_outcome_review as review
 import lhc_outcome as outcome
 import lhc_time_guard as guard
 
+from _inprocess_lane import prepare_git_template
+from _repos import head_of, prepared_repo
+
 
 def git(root, *args):
     return subprocess.run(["git", "-C", str(root), *args], check=True,
                           capture_output=True, text=True).stdout.strip()
 
 
+# One prepared product checkout and one prepared bare remote, copied per case.
+# The history and the identity of the fixture are fixed, so `git init`, both
+# `git config` calls, `git add`, `git commit` and the bare `git init` all
+# become a copy; only the real publication work stays a real Git call.
+#
+# The remote and the branch it carries are part of the prepared checkout as
+# well: `git remote add` and `git push -u` are a copy too, so the case only
+# has to name the bare remote it copied in the configuration of its checkout.
+_REPO_TEMPLATE: Path | None = None
+_BARE_TEMPLATE: Path | None = None
+
+
+def _templates() -> tuple[Path, Path]:
+    """The prepared product checkout and the prepared bare remote."""
+    global _REPO_TEMPLATE, _BARE_TEMPLATE
+    if _REPO_TEMPLATE is None:
+        root = Path(tempfile.mkdtemp(prefix="lhc-source-publication-"))
+        atexit.register(shutil.rmtree, root, True)
+        bare = root / "remote.git"
+        subprocess.run(["git", "init", "--bare", "-q", str(bare)], check=True)
+        prepare_git_template(bare)
+        product = prepared_repo(
+            root / "product",
+            config=(("user.email", "test@example.invalid"),
+                    ("user.name", "Test")),
+            files=(("owned.py", "print('base')\n"),), message="base")
+        git(product, "remote", "add", "origin", str(bare))
+        git(product, "push", "-q", "-u", "origin", "HEAD:main")
+        _BARE_TEMPLATE = bare
+        _REPO_TEMPLATE = product
+    return _REPO_TEMPLATE, _BARE_TEMPLATE
+
+
+def _name_own_remote(root: Path, bare: Path, template: Path) -> None:
+    """Name the bare remote of this case in the configuration of its checkout.
+
+    ``git remote add`` writes the URL of the remote into the configuration of
+    the repository.  The prepared checkout carries that section already, with
+    the URL of the prepared remote; the case names the bare remote it copied.
+    """
+    config = root / ".git" / "config"
+    text = config.read_text(encoding="utf-8")
+    assert text.count(str(template)) == 1, text
+    config.write_text(text.replace(str(template), str(bare)), encoding="utf-8")
+
+
 def repository(tmp_path):
     root = tmp_path / "product"
     root.mkdir()
-    git(root, "init", "-q")
-    git(root, "config", "user.email", "test@example.invalid")
-    git(root, "config", "user.name", "Test")
-    (root / "owned.py").write_text("print('base')\n")
-    git(root, "add", "owned.py")
-    git(root, "commit", "-qm", "base")
+    template, bare_template = _templates()
+    shutil.copytree(template, root, dirs_exist_ok=True)
     bare = tmp_path / "remote.git"
-    subprocess.run(["git", "init", "--bare", "-q", str(bare)], check=True)
-    git(root, "remote", "add", "origin", str(bare))
-    git(root, "push", "-q", "-u", "origin", "HEAD:main")
+    shutil.copytree(bare_template, bare, dirs_exist_ok=True)
+    _name_own_remote(root, bare, bare_template)
     return root, bare
 
 
@@ -138,10 +185,9 @@ def test_publication_needs_native_push_then_current_ref_and_exact_blobs(tmp_path
     root, bare = repository(tmp_path)
     (root / "owned.py").write_text("print('candidate')\n")
     metadata = capture(root, bare)
-    git(root, "add", "owned.py")
-    git(root, "commit", "-qm", "candidate")
+    git(root, "commit", "-aqm", "candidate")
     git(root, "push", "-q", "origin", "HEAD:main")
-    commit = git(root, "rev-parse", "HEAD")
+    commit = head_of(root)
     native_path = tmp_path / "publisher.jsonl"
     native_path.write_text("\n".join([
         '{"type":"session_meta","payload":{"id":"publisher","cwd":"' + str(root) + '"}}',
@@ -504,15 +550,14 @@ def test_public_cli_contract_review_keeps_publication_pending_then_completes(tmp
     reject_manifest(reviewer_manifest("later-negative", later_negative=True))
     assert current["canary"]["status"] == "pending"
 
-    git(product_root, "add", "owned.py")
-    git(product_root, "commit", "-qm", "candidate source")
+    git(product_root, "commit", "-aqm", "candidate source")
     git(product_root, "push", "-q", "origin", "HEAD:refs/heads/main")
     push_time = datetime.now(timezone.utc) + timedelta(seconds=2)
     with publisher_path.open("a") as stream:
         stream.write(json.dumps({"type": "event_msg", "timestamp": push_time.isoformat(),
             "payload": {"type": "item_completed", "item": {"type": "CommandExecution", "id": "publisher-push",
             "exit_code": 0, "cwd": str(product_root), "command": ["git", "push", "origin", "HEAD:refs/heads/main"]}}}) + "\n")
-    commit = git(product_root, "rev-parse", "HEAD")
+    commit = head_of(product_root)
     published_manifest = reviewer_manifest("reviewer-published", include_remote=True, include_readiness=False,
         final=(f"APPROVE BOUNDED; scope covered; source-published outcome {current['id']} candidate "
                f"{current['source_publication']['candidate_fingerprint']}. Published commit {commit} at refs/heads/main."))

@@ -21,6 +21,8 @@ import sys
 from datetime import datetime, timezone, timedelta
 import pytest
 
+from _inprocess_lane import git_repo, run_tool
+
 ROOT=Path(__file__).resolve().parents[1]
 ENTRY=ROOT/"src/common/tools/lhc_entry.py"
 PLUGIN=ROOT/"plugins/last-human-commit"
@@ -28,22 +30,24 @@ HARNESS_RUNTIMES=("codex","claude","opencode","zcode")
 
 @pytest.fixture(autouse=True)
 def isolated_git_root(tmp_path):
-    subprocess.run(["git","init","-q",str(tmp_path)],check=True)
+    git_repo(tmp_path)
 
 def invoke(root,event,**fields):
     payload={"cwd":str(root),"session_id":"existing-thread","turn_id":"turn-one",**fields}
     # --session is the explicit agent command that advances the stateful
     # lifecycle. The native hook templates stay time-only and never block.
-    result=subprocess.run([sys.executable,str(ENTRY),"--root",str(ROOT),"--runtime","codex","--event",event,"--session"],
-        input=json.dumps(payload),capture_output=True,text=True,check=True,timeout=8)
+    result=run_tool("lhc_entry",["--root",str(ROOT),"--runtime","codex","--event",event,"--session"],
+        stdin=json.dumps(payload))
+    result.check_returncode()
     return json.loads(result.stdout) if result.stdout.strip() else {}
 
 def heartbeat(root,runtime="codex",session="heartbeat-thread"):
     """Run the installed time-only PostToolUse hook exactly as the harness does."""
     payload={"cwd":str(root),"session_id":session}
-    result=subprocess.run([sys.executable,str(ENTRY),"--root",str(ROOT),"--runtime",runtime,
+    result=run_tool("lhc_entry",["--root",str(ROOT),"--runtime",runtime,
                            "--event","PostToolUse","--heartbeat-only"],
-        input=json.dumps(payload),capture_output=True,text=True,check=True,timeout=8)
+        stdin=json.dumps(payload))
+    result.check_returncode()
     return result.stdout
 
 def state_file(root):return next((root/".agents/shared-session/learning").glob("*.json"))
@@ -88,8 +92,9 @@ def test_native_hook_bundle_is_time_only_and_never_observes_the_stateful_lifecyc
 def test_retired_hook_events_are_inert_and_create_no_state(tmp_path,event):
     # A retired hook event delivers nothing and leaves no trace on disk.
     payload={"cwd":str(tmp_path),"session_id":"legacy-thread","prompt":"Build and deploy the report"}
-    result=subprocess.run([sys.executable,str(ENTRY),"--root",str(ROOT),"--runtime","codex","--event",event],
-        input=json.dumps(payload),capture_output=True,text=True,check=True,timeout=8)
+    result=run_tool("lhc_entry",["--root",str(ROOT),"--runtime","codex","--event",event],
+        stdin=json.dumps(payload))
+    result.check_returncode()
     assert result.stdout.strip()=="", "a retired hook event must not observe the lifecycle"
     assert not (tmp_path/".agents").exists()
     assert sorted(p.name for p in tmp_path.iterdir())==[".git"]
@@ -171,10 +176,11 @@ def test_rejection_and_contract_acceptance_each_refresh_notice_once(tmp_path):
     unchanged=context(invoke(tmp_path,"UserPromptSubmit",prompt=prompt))
     assert "LHC outcome: quickfix" not in unchanged
     assert "Contract rejection (exact)" not in unchanged
-    contract=subprocess.run([sys.executable,str(ROOT/"src/common/tools/lhc_outcome.py"),
-        "--cwd",str(tmp_path),"--runtime","codex","--session-id","existing-thread","contract",
+    contract=run_tool("lhc_outcome",
+        ["--cwd",str(tmp_path),"--runtime","codex","--session-id","existing-thread","contract",
         "--scenario","Empty basket total","--target","python3 total.py","--expected","0",
-        "--owned-path","total.py"],capture_output=True,text=True,check=True)
+        "--owned-path","total.py"])
+    contract.check_returncode()
     accepted=context(invoke(tmp_path,"UserPromptSubmit",prompt=prompt))
     assert "Contract confirmed" in accepted and "Next stage: technical" in accepted
     assert error not in accepted and "contract --help" not in accepted
@@ -259,7 +265,7 @@ def test_stop_learning_checkpoint_wording_when_business_review_is_not_due(tmp_pa
 def test_repeated_stop_reblocks_only_for_changed_progress_or_due_identity(tmp_path):
     def start_case(name,prompt):
         root=tmp_path/name
-        subprocess.run(["git","init","-q",str(root)],check=True)
+        git_repo(root)
         invoke(root,"UserPromptSubmit",session_id=name,turn_id=f"{name}-start",prompt=prompt)
         due(root)
         first=invoke(root,"Stop",session_id=name,turn_id=f"{name}-stop",stop_hook_active=False)
@@ -327,8 +333,9 @@ def test_large_native_tool_result_keeps_exact_session_clock(tmp_path):
 
 
 def test_bad_native_input_is_reported_not_recorded_as_an_unknown_session(tmp_path):
-    result=subprocess.run([sys.executable,str(ENTRY),"--root",str(ROOT),"--runtime","codex","--event","PostToolUse","--session"],
-        cwd=tmp_path,input='{"session_id":',capture_output=True,text=True,check=True)
+    result=run_tool("lhc_entry",["--root",str(ROOT),"--runtime","codex","--event","PostToolUse","--session"],
+        cwd=tmp_path,stdin='{"session_id":')
+    result.check_returncode()
     output=json.loads(result.stdout)
     assert "systemMessage" in output
     assert not (tmp_path/".agents/shared-session/learning").exists()

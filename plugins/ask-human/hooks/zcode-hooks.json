@@ -1,0 +1,17 @@
+{
+  "description": "Ask Human for ZCode: intercept the question the harness asks the human, send it through the Notice Place human-request intake, and return the answer to the harness.",
+  "hooks": {
+    "PermissionRequest": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${PLUGIN_ROOT:-${ZCODE_PLUGIN_ROOT:-$HOME/.codex/.tmp/marketplaces/megamen32-plugins/plugins/ask-human}}}}/scripts/ask_human_hook.py\" --event PermissionRequest",
+            "timeoutMs": 120000,
+            "statusMessage": "Asking the human"
+          }
+        ]
+      }
+    ]
+  }
+}

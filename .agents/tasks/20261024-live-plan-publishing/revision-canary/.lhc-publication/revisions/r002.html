@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>СИНТЕТИЧЕСКАЯ ПРОВЕРКА РЕВИЗИЙ — не реальная работа · LHC</title>
+<style>
+  :root, :root[data-theme="dark"] { --bg: #0d1117; --panel: #151b26; --panel-2: #1b2331; --line: #26303f; --text: #e6edf6; --muted: #9fb0c6; --accent: #6ea8fe; --ok: #2ecc71; --warn: #f0a742; --bad: #f25f74; --st-done: #2ecc71; --st-running: #4f9cf9; --st-blocked: #f25f74; --st-waiting: #f0a742; --st-deferred: #b08ce8; --st-queued: #8fa0b8; }
+  :root[data-theme="light"] { --bg: #f4f6f9; --panel: #ffffff; --panel-2: #eaeef4; --line: #d3dae3; --text: #15202c; --muted: #58677a; --accent: #1a62cc; --ok: #1a7f37; --warn: #8a6100; --bad: #c02b38; --st-done: #1a7f37; --st-running: #1a62cc; --st-blocked: #c02b38; --st-waiting: #8a6100; --st-deferred: #6b4fa8; --st-queued: #5a6b7f; }
+  * { box-sizing: border-box; }
+  /* The page background lives on the canvas itself. No overlay element is
+     painted over the content, so nothing can ever hide a block of the
+     dashboard behind an opaque layer. */
+  html { background: var(--bg); }
+  body {
+    margin: 0; background: var(--bg);
+    background-image: radial-gradient(1500px 760px at 12% -12%, #1b2b45 0%, rgba(13,17,23,0) 62%);
+    background-repeat: no-repeat;
+    color: var(--text);
+    font: 14px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, "Helvetica Neue", Arial, sans-serif;
+    padding: 22px clamp(12px, 3vw, 40px) 56px;
+    min-height: 100%;
+    overflow-x: hidden;
+  }
+  a { color: var(--accent); }
+  .page { max-width: 2200px; margin: 0 auto; }
+
+  /* ---- header ---- */
+  header { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between;
+    margin-bottom: 16px; }
+  h1 { font-size: 23px; margin: 0; letter-spacing: -0.3px; overflow-wrap: anywhere; }
+  header > div { min-width: 0; max-width: 100%; }
+  .sub { color: var(--muted); font-size: 12.5px; overflow-wrap: anywhere; }
+  .head-count { display: flex; align-items: baseline; gap: 8px; background: var(--panel);
+    border: 1px solid var(--line); border-radius: 12px; padding: 8px 14px; }
+  .head-count b { font-size: 22px; font-weight: 650; letter-spacing: -0.4px; }
+  .head-count span { color: var(--muted); font-size: 12px; }
+  .theme-toggle { background: var(--panel); border: 1px solid var(--line); color: var(--muted);
+    border-radius: 10px; padding: 8px 12px; cursor: pointer; font: inherit; font-size: 12.5px;
+    min-height: 44px; min-width: 44px; }
+  .theme-toggle:hover { color: var(--text); }
+  .head-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  /* The progress stays in sight while the page scrolls. */
+  /* A number you can click: the tasks behind it. */
+  .kpi-tile { cursor: pointer; }
+  .kpi-tile:hover { border-color: var(--accent); }
+  .kpi-tile:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .progress-strip { cursor: pointer; }
+  .tile-card { margin: 0 0 14px; padding: 10px 12px; border: 1px solid var(--line);
+    border-radius: 10px; background: var(--panel-2); }
+  .tile-card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    margin-bottom: 8px; }
+  .tile-card-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .tile-card-item { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px;
+    padding: 6px 0; border-top: 1px solid var(--line); cursor: pointer; }
+  .tile-card-item:hover .row-name { color: var(--accent); }
+  .tile-card-close, .tile-card-back { min-height: 44px; padding: 4px 10px; border-radius: 8px;
+    border: 1px solid var(--line); background: transparent; color: var(--muted); cursor: pointer; }
+  .journal-fold summary { cursor: pointer; list-style: none; }
+  .journal-fold summary::-webkit-details-marker { display: none; }
+  .journal-fold summary h2 { margin: 0; font-size: 12px; text-transform: uppercase;
+    letter-spacing: .08em; color: var(--muted); }
+  .journal-fold[open] summary h2 { color: var(--text); }
+  .evidence-fold { margin: 0 0 14px; border: 1px solid var(--line); border-radius: 10px;
+    background: var(--panel); }
+  .evidence-fold > summary { cursor: pointer; padding: 10px 12px; color: var(--muted);
+    font-size: 12.5px; }
+  .evidence-fold[open] > summary { color: var(--text); border-bottom: 1px solid var(--line); }
+  .evidence-fold > *:not(summary) { margin-left: 12px; margin-right: 12px; }
+  .blocking-group { display: grid; gap: 8px; }
+  .blocking-group h3 { margin: 0 0 2px; font-size: 11px; text-transform: uppercase;
+    letter-spacing: .08em; color: var(--muted); }
+  .blocker-owner { border-left-color: var(--warn); }
+  /* The progress strip sticks to the top, so an anchor jump must not land
+     a section under it. */
+  section, .panel, .kpis, [id^="lhc-"] { scroll-margin-top: 76px; }
+  .progress-strip { position: sticky; top: 0; z-index: 40; margin: 0 0 12px;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; }
+  .progress-strip-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; }
+  .progress-strip-title { font-size: 11px; text-transform: uppercase; letter-spacing: .08em;
+    color: var(--muted); }
+  .progress-strip-value { font-size: 15px; font-weight: 700; color: var(--text); }
+  .progress-strip-percent { font-size: 13px; font-weight: 600; color: var(--accent); }
+  .progress-strip-hint { font-size: 12px; color: var(--muted); }
+  .progress-strip-bar { display: flex; height: 6px; margin-top: 7px; border-radius: 999px;
+    overflow: hidden; background: var(--panel-2); }
+  .progress-strip-bar .seg { height: 100%; }
+  .snapshot-note { color: var(--muted); font-size: 12.5px; margin: 0 0 14px; padding: 8px 12px;
+    border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 10px;
+    background: var(--panel); overflow-wrap: anywhere; }
+
+  /* ---- panels ---- */
+  .panel { background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
+    border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; margin-bottom: 16px; min-width: 0; }
+  .panel h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .09em; color: var(--muted);
+    margin: 0 0 12px; font-weight: 600; }
+  .panel-head { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+  .panel-head h2 { margin: 0; }
+
+  /* ---- brief: goal and business result ---- */
+  .brief { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-bottom: 16px; }
+  /* The technical wording is a confirmation, not the first thing to read. */
+  .brief-details { margin-bottom: 16px; }
+  .brief-details > summary { cursor: pointer; color: var(--muted); font-size: 12.5px;
+    min-height: 44px; display: flex; align-items: center; }
+  .brief-details[open] > summary { margin-bottom: 12px; color: var(--text); }
+  .brief-card { background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
+    border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 12px; padding: 14px 16px;
+    min-width: 0; }
+  .brief-card h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted);
+    margin: 0 0 6px; font-weight: 600; }
+  .brief-card p { margin: 0; overflow-wrap: anywhere; }
+  .brief-goal { border-left-color: var(--accent); }
+  .brief-result { border-left-color: var(--ok); }
+  .brief-wait { border-left-color: var(--warn); }
+  /* The why-panel is open on the first screen; it may be folded by the owner. */
+  .brief-why-details { margin-bottom: 16px; }
+  .brief-why-details > summary { color: var(--text); }
+  .brief-why { margin-bottom: 0; }
+
+  /* ---- KPI strip ---- */
+  .kpis { display: grid; gap: 10px; grid-template-columns: repeat(5, minmax(0, 1fr)); margin-bottom: 14px; }
+  .kpi { background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
+    border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 12px; padding: 11px 13px;
+    min-width: 0; }
+  .kpi-label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .07em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .kpi-value { font-size: 25px; font-weight: 650; margin: 3px 0 2px; letter-spacing: -0.6px; line-height: 1.15;
+    overflow-wrap: anywhere; }
+  .kpi-hint { color: var(--muted); font-size: 11.5px; overflow-wrap: anywhere; }
+
+  /* ---- progress and legend ---- */
+  .progress { display: flex; height: 12px; border-radius: 999px; overflow: hidden; background: #0b1018;
+    border: 1px solid var(--line); }
+  .seg { height: 100%; }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 10px; color: var(--muted); font-size: 12px; }
+  .legend-item i { display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-right: 6px; }
+
+  /* ---- what to do now ---- */
+  .slots-badge { font-size: 12.5px; color: var(--muted); background: var(--panel-2);
+    border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px; }
+  .slots-badge b { color: var(--text); font-size: 14px; }
+  .now-grid { display: grid; gap: 14px; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 14px;
+    align-items: start; }
+  .now-col { background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px;
+    min-width: 0; }
+  .now-col h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted);
+    margin: 0 0 10px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+  .now-count { margin-left: auto; background: #0e141d; border: 1px solid var(--line); border-radius: 999px;
+    padding: 0 8px; color: var(--text); font-size: 11.5px; }
+  .now-subtitle { color: var(--muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: .06em;
+    margin: 12px 0 6px; }
+  .now-list { list-style: none; margin: 0; padding: 0; }
+  .now-item { padding: 8px 0; border-bottom: 1px solid #232c3a; }
+  .now-item:last-child { border-bottom: 0; }
+  .now-head { display: flex; gap: 8px; align-items: baseline; min-width: 0; }
+  .now-id { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11.5px;
+    color: var(--accent); flex: none; max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .now-name { min-width: 0; overflow-wrap: anywhere; }
+  .now-meta { color: var(--muted); font-size: 11.5px; margin-top: 2px; overflow-wrap: anywhere; }
+  .now-item.deferred { opacity: .75; }
+  .now-item.blocked .now-id { color: var(--bad); }
+  .now-empty { color: var(--muted); font-style: italic; font-size: 12.5px; }
+  .wait-list { display: flex; flex-wrap: wrap; gap: 6px; }
+  .wait-chip { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11.5px;
+    color: var(--muted); background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px;
+    padding: 2px 7px; white-space: nowrap; }
+  .wait-more { color: var(--muted); font-size: 11.5px; align-self: center; }
+
+  /* ---- gantt ---- */
+  .gantt { overflow-x: auto; max-width: 100%; }
+  .gantt-inner { min-width: 760px; }
+  .gantt-axis-row, .gantt-row { display: grid; grid-template-columns: minmax(240px, 320px) minmax(360px, 1fr);
+    gap: 10px; min-width: 680px; }
+  .gantt-axis-spacer { min-width: 0; }
+  .gantt-axis { position: relative; height: 22px; min-width: 0; border-bottom: 1px solid var(--line); }
+  .gantt-axis-note { font-size: 11px; color: var(--muted); line-height: 22px; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis; }
+  .gantt-noduration { color: var(--muted); font-size: 13px; line-height: 26px; opacity: .8; }
+  .tick { position: absolute; top: 2px; transform: translateX(-50%); font-size: 11px; color: var(--muted);
+    white-space: nowrap; }
+  .tick-0 { transform: none; }
+  .tick-6 { transform: translateX(-100%); }
+  .gantt-row { align-items: center; border-bottom: 1px solid #1e2632; }
+  .gantt-row:hover { background: #18202d; }
+  .gantt-label { display: flex; flex-direction: column; gap: 1px; padding: 5px 0; min-width: 0; overflow: hidden; }
+  .gantt-line { display: flex; align-items: center; gap: 7px; min-width: 0; }
+  .gantt-id { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11px;
+    color: var(--muted); flex: none; max-width: 34%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .gantt-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .gantt-meta { gap: 8px; }
+  .gantt-status { font-size: 11px; color: var(--muted); white-space: nowrap; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex: none; }
+  .crit { color: #f0a742; font-size: 10.5px; white-space: nowrap; }
+  .gantt-track { position: relative; height: 26px; min-width: 0; }
+  .bar { position: absolute; top: 6px; height: 15px; border-radius: 5px; min-width: 3px;
+    box-shadow: 0 0 0 1px rgba(0,0,0,.25) inset; }
+  .wave-row { display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    margin-top: 14px; padding: 8px 12px; background: var(--panel-2); border: 1px solid var(--line);
+    border-left: 3px solid var(--accent); border-radius: 10px; color: var(--muted);
+    font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+  .wave-count { text-transform: none; letter-spacing: 0; }
+
+  /* ---- two column work area ---- */
+  .grid { display: grid; gap: 16px; grid-template-columns: minmax(0, 1.35fr) minmax(0, .65fr);
+    align-items: start; }
+  .grid > * { min-width: 0; }
+  @media (max-width: 1000px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+  @media (min-width: 1700px) {
+    .gantt-axis-row, .gantt-row { grid-template-columns: minmax(340px, 460px) minmax(360px, 1fr); }
+  }
+  @media (max-width: 1800px) { .kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  @media (max-width: 1200px) { .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (max-width: 1100px) {
+    .now-grid { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 900px) {
+    .brief { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 700px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .blocker { background: var(--panel-2); border: 1px solid #3a2530; border-left: 3px solid var(--bad);
+    border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; }
+  .blocker-head { display: flex; gap: 8px; align-items: center; margin-bottom: 4px; }
+  .blocker-reason { color: #d7e0ec; }
+  .blocker-meta { color: var(--muted); font-size: 12px; margin-top: 4px; }
+  .badge { font-size: 11px; font-weight: 700; color: #0d1117; border-radius: 5px; padding: 1px 6px; }
+  .facts { margin: 0; padding-left: 18px; color: var(--muted); }
+  .facts li { margin-bottom: 6px; }
+  .facts b { color: var(--text); }
+  .live { list-style: none; margin: 0; padding: 0; }
+  .live li { display: flex; gap: 8px; padding: 6px 0; border-bottom: 1px solid #1e2632; align-items: baseline; }
+  .live-text { flex: 1; }
+  .live-at { color: #8aa0b8; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .live-result { color: var(--text); font-size: 12.5px; }
+  .live-evidence { color: #8aa0b8; font-size: 12px; white-space: nowrap; }
+  .leaf-tag { color: var(--muted); font-size: 11px; border: 1px solid var(--line); border-radius: 5px;
+    padding: 0 5px; min-width: 0; white-space: normal; overflow-wrap: anywhere; }
+  .cell-sub { display: block; color: var(--muted); font-size: 11px; }
+  .table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .table th { text-align: left; color: var(--muted); font-weight: 600; font-size: 11px;
+    text-transform: uppercase; letter-spacing: .05em; padding: 6px 8px; border-bottom: 1px solid var(--line);
+    background: var(--panel); }
+  .table td { padding: 6px 8px; border-bottom: 1px solid #1c2431; vertical-align: top; }
+  /* The leaves are read as a table, so the panel takes the whole width
+     of the page instead of one column of a two-column grid. */
+  .panel-leaves { grid-column: 1 / -1; }
+  .table-leaves { min-width: 920px; width: 100%; table-layout: fixed; }
+  .table-scroll { max-width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; }
+  .table-leaves th:nth-child(1) { width: 42%; }
+  .table-leaves th:nth-child(2) { width: 120px; }
+  .table-leaves th:nth-child(3), .table-leaves th:nth-child(4) { width: 110px; }
+  .table-leaves th:nth-child(5) { width: 120px; }
+  .task-title { font-weight: 550; overflow-wrap: anywhere; }
+  .row-id { display: inline-block; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 11px; color: var(--muted); margin-right: 7px; vertical-align: 1px; }
+  .table-leaves .status { white-space: nowrap; }
+  .task-details-trigger, .task-details-close { color: var(--accent); background: transparent; border: 1px solid var(--line);
+    border-radius: 6px; cursor: pointer; font: inherit; padding: 3px 7px; }
+  .task-details-host { position: static; width: 100%; margin-top: 12px; }
+  /* The leaf row is the control: the owner taps the task, and the task opens
+     right under itself, where the finger already is. */
+  .leaf-row { cursor: pointer; }
+  .leaf-row:hover .row-name { color: var(--accent); }
+  .leaf-row:focus-within { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .task-details-row > td { padding: 0; border: none; background: transparent; }
+  .task-details-row .task-details-card { margin: 0 0 10px; }
+  .row-meta { display: block; margin-top: 2px; color: var(--muted); font-size: 12px;
+    overflow-wrap: anywhere; }
+  .details-cell { text-align: right; }
+  .task-details-card { width: 100%; min-width: 0; background: var(--panel-2); border: 1px solid var(--line);
+    border-radius: 10px; padding: 12px; }
+  .task-details-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+  .task-details-head h3 { min-width: 0; margin: 0; font-size: 14px; overflow-wrap: anywhere; }
+  .task-details { display: grid; grid-template-columns: minmax(110px, auto) minmax(0, 1fr); gap: 3px 12px; margin: 8px 0 2px; }
+  .task-details dt { color: var(--muted); }
+  .task-details dd { margin: 0; min-width: 0; width: 100%; overflow-wrap: anywhere; word-break: break-word; }
+  details > summary { color: var(--accent); cursor: pointer; }
+  .technical { font-size: 12px; }
+  .status { color: var(--c); font-weight: 600; white-space: nowrap; }
+  /* The overrun of the plan and the plan itself are two facts with two
+     colors, and both colors come from the palette of the theme: the planned
+     time is green, everything above it is yellow. */
+  .over { color: var(--warn); }
+  .plan-time { display: block; color: var(--ok); font-weight: 600; }
+  .plan-over { color: var(--warn); font-weight: 600; }
+  .plan-none { color: var(--muted); }
+  .plan-value { color: var(--ok); font-weight: 600; }
+  .plan-over-value { color: var(--warn); font-weight: 600; }
+  .cell-plan { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; }
+  .row-times { display: block; margin-top: 2px; color: var(--muted); font-size: 12px;
+    font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  .empty { color: var(--muted); font-style: italic; }
+  .notes { color: var(--muted); margin: 0; padding-left: 18px; }
+  .hint { color: var(--muted); font-size: 12px; margin: 10px 0 0; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .toolbar input { background: #0e141d; border: 1px solid var(--line); color: var(--text); border-radius: 8px;
+    padding: 6px 10px; min-width: 200px; font: inherit; }
+  .chip { background: #0e141d; border: 1px solid var(--line); color: var(--muted); border-radius: 999px;
+    padding: 4px 11px; cursor: pointer; font: inherit; font-size: 12px; }
+  .chip.active { background: var(--accent); color: #0d1117; border-color: var(--accent); font-weight: 600; }
+  footer { color: var(--muted); font-size: 11.5px; margin-top: 22px; border-top: 1px solid var(--line);
+    padding-top: 12px; }
+  /* The phone layout comes last, so it wins over every base rule above. */
+  @media (max-width: 640px) {
+    /* The state and the action come first; the Gantt opens on its own,
+       below the table that carries the same leaves. */
+    .page { display: flex; flex-direction: column; }
+    /* A flex item keeps its content width by default, so the wide Gantt
+       would push the whole page sideways. The panels have to be allowed to
+       shrink and scroll inside. */
+    .page > * { min-width: 0; max-width: 100%; }
+    .panel, .grid > *, .kpis { min-width: 0; }
+    .panel-gantt { order: 8; }
+    footer { order: 9; }
+    body { padding: 14px 10px 36px; }
+    .panel { padding: 12px; border-radius: 11px; }
+    h1 { font-size: 19px; }
+    /* The cards become compact rows: on a phone the state and the action
+       have to be visible without a grid of boxes. */
+    .kpis { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+    .kpi { padding: 8px 10px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; }
+    .kpi-label { order: 1; flex: 0 0 auto; }
+    .kpi-value { order: 2; font-size: 19px; margin: 0; }
+    .kpi-hint { order: 3; flex: 1 1 100%; font-size: 11px; }
+    .toolbar input { min-width: 0; width: 100%; }
+    /* Every touch target is at least 44 CSS px. */
+    .chip, .task-details-trigger, .task-details-close, .toolbar input, .toolbar select { min-height: 44px; min-width: 44px; }
+    .task-details { grid-template-columns: minmax(0, 1fr); gap: 0; }
+    .task-details dd { margin-bottom: 8px; }
+    /* The leaf table becomes one compact row per leaf instead of a wide
+       table that has to be scrolled sideways. */
+    .table-leaves { min-width: 0; display: block; }
+    .table-leaves thead { display: none; }
+    .table-leaves tbody { display: block; }
+    .table-leaves tr { display: block; padding: 8px 0; border-bottom: 1px solid var(--line); }
+    .table-leaves td { display: flex; gap: 10px; justify-content: space-between; align-items: baseline;
+      border: none; padding: 2px 0; text-align: right; }
+    .table-leaves td::before { content: attr(data-label); color: var(--muted); font-size: 11px;
+      text-transform: uppercase; letter-spacing: .05em; text-align: left; flex: 0 0 auto; }
+    .table-leaves td.task-title { display: block; text-align: left; }
+    .table-leaves td.task-title::before { content: none; }
+    /* The plan cell keeps its lines stacked and flush right on a phone. */
+    .table-leaves td .cell-plan { align-items: flex-end; }
+    .table-leaves td:last-child { justify-content: flex-start; }
+    .table-leaves td:last-child::before { content: none; }
+    .table-scroll { overflow-x: visible; }
+    /* The opened task is a card under its own row, not another table cell. */
+    .table-leaves tr.task-details-row { display: block; padding: 0; border: none; }
+    .table-leaves tr.task-details-row > td { display: block; padding: 0; text-align: left; }
+    .table-leaves tr.task-details-row > td::before { content: none; }
+  }
+
+</style>
+<meta name="robots" content="noindex,nofollow,noarchive"><style>#publication,#plan-comparison{margin:24px auto;padding:24px;max-width:1400px;border:1px solid #64748b55;border-radius:18px;background:#101b30;color:#e2e8f0;font:15px/1.6 system-ui}#publication a{color:#7dd3fc;margin-right:14px}.compare-scroll{overflow:auto}.comparison{width:100%;border-collapse:collapse}.comparison td,.comparison th{padding:16px;text-align:left;vertical-align:top;border-bottom:1px solid #64748b55;min-width:190px}.compare-bar{border-radius:5px;padding:3px 7px;margin:6px 0;min-width:110px;color:#fff;font-size:12px}.baseline{background:#475569}.revised{background:#2563eb}.actual{background:#0f766e}#live-state{font-weight:600}#plan-comparison li{overflow-wrap:anywhere}.comparison td:first-child{overflow-wrap:anywhere}</style></head>
+<body><section id="publication"><b>Снимок r002</b><p><a href="./">Текущий факт</a><a href="r001.html">r001 · Исходный план</a><a href="r002.html">r002 · Синтетическая проверка нового листа и ссылки r002 на r001</a></p>Обновлено: <time id="publication-time">2026-10-24T13:53:28+00:00</time> · <span id="live-state">Снимок / офлайн</span><p>Доступ по ссылке: её получатель может передать её другим. Скрытие от поиска не является авторизацией.</p></section><section id="plan-comparison"><h1>Исходный план → работа по факту</h1>
+<p>Исходная цель: Проверить неизменность r001 при публикации r002. Все оценки и факты в этом плане — искусственные тестовые данные.</p>
+<p>Прогноз исходного снимка: длительность 2 мин, остаток 2 мин; плановый финиш 2026-10-24T10:02:00+00:00<br>Прогноз выбранной ревизии: длительность 3 мин, остаток 1 мин; плановый финиш 2026-10-24T10:03:00+00:00<br>Текущий прогноз: длительность 3 мин, остаток 1 мин; плановый финиш 2026-10-24T10:03:00+00:00<br>Измеренная длительность всей поставки: неизвестно</p>
+<p>Усилие — измеренное время работы. По часам — от начала до конца, с ожиданиями; параллельные окна не складываются. Если отдельная длительность не задана, расписание опирается на оценку работы. Без дат время неизвестно.</p>
+<div class="compare-scroll"><table class="comparison"><thead><tr><th>Работа / исполнитель</th><th>Оценки и время</th><th>Факт и отклонение от r001</th><th>Прогресс / ожидание</th></tr></thead><tbody><tr><td><b>C01 · Искусственный лист: изменение статуса не создаёт ревизию</b><br>готово
+<br>неизвестно · codex · 01a16e15-c7a3-79e3-9272-0aa110e4dcbf
+<br>неизвестно<br>Зависит от: —
+<br>Происхождение:  </td>
+<td><div class="compare-bar baseline" style="width:100.00%">Оценка r001: 2 мин</div><div class="compare-bar revised" style="width:100.00%">Выбранный план: 2 мин</div><small>r001: +0 мин → +2 мин<br>Текущий график: +0 мин → +2 мин</small><br><small>Исходный старт/финиш: 2026-10-24T10:00:00+00:00 → 2026-10-24T10:02:00+00:00; опоздание старта: неизвестно</small></td><td>Усилие: 3 мин<br>По часам: неизвестно
+<br>Ошибка оценки усилия: 1 мин<br>Превышение длительности: неизвестно
+<br> → </td>
+<td>Синтетические данные; не использовать как отчёт об активном времени человека или агента.<br><p class="latest-progress">Последнее событие: Синтетический статус: не измеренное время агента</p><details><summary>История изменений</summary><ul><li>2026-10-24T16:53:27+03:00: Синтетический статус: не измеренное время агента</li></ul></details><p>Сохранённый завершённый факт: усилие 3 мин, по часам неизвестно, ошибка исходной оценки 1 мин.</p></td></tr><tr><td><b>C02 · Искусственный дополнительный лист r002</b><br>в очереди · добавлен после исходного плана
+<br>неизвестно · codex · 01a16e15-c7a3-79e3-9272-0aa110e4dcbf
+<br>неизвестно<br>Зависит от: C01
+<br>Происхождение:  </td>
+<td><div class="compare-bar revised" style="width:100.00%">Выбранный план: 1 мин</div><small>r001: +неизвестно → +неизвестно<br>Текущий график: +2 мин → +3 мин</small><br><small>Исходный старт/финиш: не заданы → не задан; опоздание старта: неизвестно</small></td><td>Усилие: неизвестно<br>По часам: неизвестно
+<br>Ошибка оценки усилия: неизвестно<br>Превышение длительности: неизвестно
+<br> → </td>
+<td><br><details><summary>История изменений</summary><ul><li>2026-10-24T16:53:27+03:00: {
+  &quot;depends_on&quot;: [
+    &quot;C01&quot;
+  ],
+  &quot;estimate_minutes&quot;: 1,
+  &quot;label&quot;: &quot;Искусственный дополнительный лист r002&quot;
+}
+</li></ul></details></td></tr></tbody></table></div></section>
+<div class="page">
+<div class="progress-strip" id="lhc-progress-strip" role="button" tabindex="0" data-tile="all" aria-label="Степень прогресса — показать все задачи"><div class="progress-strip-line"><span class="progress-strip-title">Степень прогресса</span><span class="progress-strip-value">1 / 2</span><span class="progress-strip-percent">50%</span><span class="progress-strip-hint">от 1 мин до 1 мин</span></div><div class="progress-strip-bar"><div class="seg" style="width:50.0000%;background:var(--st-done)" title="Готово: 1"></div><div class="seg" style="width:50.0000%;background:var(--st-queued)" title="В очереди: 1"></div></div></div>
+
+<header><div><h1>СИНТЕТИЧЕСКАЯ ПРОВЕРКА РЕВИЗИЙ — не реальная работа</h1><div class="sub">LHC · graph-json · план обновлён 2026-10-24 16:53:27+03:00 · ревизия 3bf95f741779 · собран 24.10.2026 16:53</div></div><div class="head-actions"><button type="button" class="theme-toggle" id="theme-toggle" aria-label="Переключить тему">Тема: как в системе</button><div class="head-count"><b>2</b><span>задач в графе</span></div></div></header>
+
+
+
+<p class="snapshot-note">Это снимок плана, а не панель управления: фактическое состояние работы приходит из API владельцев, а не из пересказа агента в графе.</p>
+
+<div class="kpis" id="lhc-state"><div class="kpi kpi-tile" data-tile="done" role="button" tabindex="0" aria-label="Готово: 1 / 2 — показать задачи" style="--accent:var(--st-done)"><div class="kpi-label" title="Готово">✅ Готово</div><div class="kpi-value">1 / 2</div><div class="kpi-hint">50.0% листьев</div></div><div class="kpi kpi-tile" data-tile="running" role="button" tabindex="0" aria-label="В работе: 0 — показать задачи" style="--accent:var(--st-running)"><div class="kpi-label" title="В работе">🔄 В работе</div><div class="kpi-value">0</div><div class="kpi-hint">сейчас выполняется</div></div><div class="kpi kpi-tile" data-tile="blocked" role="button" tabindex="0" aria-label="Заблокировано: 0 — показать задачи" style="--accent:var(--st-blocked)"><div class="kpi-label" title="Заблокировано">⛔ Заблокировано</div><div class="kpi-value">0</div><div class="kpi-hint">нужен внешний ход</div></div><div class="kpi kpi-tile" data-tile="queued" role="button" tabindex="0" aria-label="В очереди: 1 — показать задачи" style="--accent:var(--st-queued)"><div class="kpi-label" title="В очереди">⋯ В очереди</div><div class="kpi-value">1</div><div class="kpi-hint">ждут своего слота</div></div><div class="kpi kpi-tile" data-tile="deferred" role="button" tabindex="0" aria-label="Отложено владельцем: 0 — показать задачи" style="--accent:var(--st-deferred)"><div class="kpi-label" title="Отложено владельцем">⏸ Отложено владельцем</div><div class="kpi-value">0</div><div class="kpi-hint">ответа не ждём, вне остатка</div></div><div class="kpi kpi-tile" data-tile="unfinished" role="button" tabindex="0" aria-label="Осталось: 1 — показать задачи" style="--accent:var(--st-queued)"><div class="kpi-label" title="Осталось">⋯ Осталось</div><div class="kpi-value">1</div><div class="kpi-hint">не завершено · отложено владельцем: 0 (в остаток не входит)</div></div><div class="kpi kpi-tile" data-tile="parallel" role="button" tabindex="0" aria-label="Параллельность: 0 / 1 — показать задачи" style="--accent:var(--st-running)"><div class="kpi-label" title="Параллельность">Параллельность</div><div class="kpi-value">0 / 1</div><div class="kpi-hint">пик по плану 1</div></div><div class="kpi kpi-tile" data-tile="remaining" role="button" tabindex="0" aria-label="Осталось по плану: от 1 мин до 1 мин — показать задачи" style="--accent:var(--st-waiting)"><div class="kpi-label" title="Осталось по плану">Осталось по плану</div><div class="kpi-value">от 1 мин до 1 мин</div><div class="kpi-hint">от 1 мин до 1 мин</div></div><div class="kpi kpi-tile" data-tile="forecast" role="button" tabindex="0" aria-label="Прогноз финиша: 16:54 — показать задачи" style="--accent:var(--st-done)"><div class="kpi-label" title="Прогноз финиша">Прогноз финиша</div><div class="kpi-value">16:54</div><div class="kpi-hint">остаток стартует сейчас</div></div><div class="kpi kpi-tile" data-tile="effort" role="button" tabindex="0" aria-label="Усилие: 3 мин — показать задачи" style="--accent:var(--st-queued)"><div class="kpi-label" title="Усилие">Усилие</div><div class="kpi-value">3 мин</div><div class="kpi-hint">критический путь 3 мин</div></div></div>
+
+<div class="tile-card" id="lhc-tile-card" hidden></div>
+<template id="lhc-tile-index">{"tiles": {"all": ["C01", "C02"], "done": ["C01"], "running": [], "blocked": [], "queued": ["C02"], "deferred": [], "unfinished": ["C02"], "parallel": ["C01"], "remaining": ["C02"], "forecast": ["C02"], "effort": ["C01", "C02"]}, "titles": {"done": "Готово", "running": "В работе", "blocked": "Заблокировано", "queued": "В очереди", "deferred": "Отложено владельцем", "unfinished": "Осталось", "parallel": "Параллельность", "remaining": "Осталось по плану", "forecast": "Прогноз финиша", "effort": "Усилие", "all": "Все задачи плана"}, "leaves": {"C01": {"id": "C01", "template": 0, "label": "Искусственный лист: изменение статуса не создаёт ревизию", "status": "done", "status_label": "Готово", "owner": "", "estimate": "2 мин"}, "C02": {"id": "C02", "template": 1, "label": "Искусственный дополнительный лист r002", "status": "queued", "status_label": "В очереди", "owner": "", "estimate": "1 мин"}}}</template>
+
+<div class="panel panel-now">
+  <div class="panel-head"><h2>Что делать сейчас</h2><div class="slots-badge">Свободных слотов: <b>1 из 1</b></div></div><div class="now-grid"><section class="now-col"><h3><span class="now-glyph">🔄</span> В работе <span class="now-count">0</span></h3><div class="now-empty">Сейчас не идёт ни одна линия.</div></section><section class="now-col"><h3><span class="now-glyph">🚀</span> Готовы к запуску <span class="now-count">1</span></h3><ul class="now-list"><li class="now-item"><div class="now-head"><span class="now-id">C02</span><span class="now-name">Искусственный дополнительный лист r002</span></div><div class="now-meta">оценка 1 мин · никого не разблокирует</div></li></ul></section><section class="now-col"><h3><span class="now-glyph">⛔</span> Заблокированы <span class="now-count">0</span></h3><div class="now-empty">Активных блокеров нет.</div></section></div><div class="hint">Источник расчёта: lhc_parallel.</div>
+</div>
+
+<div class="panel panel-blocking" id="lhc-blocking">
+  <h2>Что блокирует</h2>
+  <div class="empty">Ничего не блокировано и от меня ничего не нужно.</div>
+</div>
+
+<details class="panel brief-details brief-why-details" open>
+  <summary>Цель и ожидаемый бизнес-результат</summary>
+  <div class="brief brief-why"><article class="brief-card brief-goal"><h2>Цель</h2><p>Проверить неизменность r001 при публикации r002. Все оценки и факты в этом плане — искусственные тестовые данные.</p></article><article class="brief-card brief-result"><h2>Ожидаемый бизнес-результат</h2><p>Контрольная страница проверки механизма ревизий</p></article></div>
+</details>
+
+
+
+<div class="panel panel-progress">
+  <div class="progress"><div class="seg" style="width:50.0000%;background:var(--st-done)" title="Готово: 1"></div><div class="seg" style="width:50.0000%;background:var(--st-queued)" title="В очереди: 1"></div></div>
+  <div class="legend"><span class="legend-item"><i style="background:var(--st-done)"></i>Готово · 1</span><span class="legend-item"><i style="background:var(--st-queued)"></i>В очереди · 1</span></div>
+</div>
+
+<details class="panel brief-details">
+  <summary>Подтверждённый прогресс и внешние ожидания</summary>
+  
+</details>
+
+
+
+<div class="panel panel-gantt" id="lhc-plan-gantt">
+  <h2>Гант · листья и параллельные волны</h2>
+  
+  <div class="gantt"><div class="gantt-inner">
+    <div class="gantt-axis-row"><div class="gantt-axis-spacer"></div><div class="gantt-axis"><div class="tick tick-0" style="left:0.0000%">0 мин</div><div class="tick tick-1" style="left:16.6667%">0 мин</div><div class="tick tick-2" style="left:33.3333%">1 мин</div><div class="tick tick-3" style="left:50.0000%">1 мин</div><div class="tick tick-4" style="left:66.6667%">2 мин</div><div class="tick tick-5" style="left:83.3333%">2 мин</div><div class="tick tick-6" style="left:100.0000%">3 мин</div></div></div>
+    <div class="wave-row"><span>Волна 1</span><span class="wave-count">1 листьев</span></div><div class="gantt-row" data-status="done" data-leaf="C01"><div class="gantt-label" title="Искусственный лист: изменение статуса не создаёт ревизию"><span class="gantt-line"><span class="dot" style="background:var(--st-done)"></span><span class="gantt-id" title="C01">C01</span><span class="gantt-text">Искусственный лист: изменение статуса не создаёт ревизию</span></span><span class="gantt-line gantt-meta"><span class="gantt-status">✅ Готово</span><span class="crit" title="критический путь">◆ критический путь</span></span></div><div class="gantt-track"><div class="bar" style="left:0.0000%;width:66.6667%;background:var(--st-done)" title="C01 · Искусственный лист: изменение статуса не создаёт ревизию
+статус: Готово
+оценка: 2 мин
+усилие (суммарно): 3 мин
+план: 2 мин
+на критическом пути"></div></div></div><div class="wave-row"><span>Волна 2</span><span class="wave-count">1 листьев</span></div><div class="gantt-row" data-status="queued" data-leaf="C02"><div class="gantt-label" title="Искусственный дополнительный лист r002"><span class="gantt-line"><span class="dot" style="background:var(--st-queued)"></span><span class="gantt-id" title="C02">C02</span><span class="gantt-text">Искусственный дополнительный лист r002</span></span><span class="gantt-line gantt-meta"><span class="gantt-status">⋯ В очереди</span><span class="crit" title="критический путь">◆ критический путь</span></span></div><div class="gantt-track"><div class="bar" style="left:66.6667%;width:33.3333%;background:var(--st-queued)" title="C02 · Искусственный дополнительный лист r002
+статус: В очереди
+оценка: 1 мин
+план: 1 мин
+зависит: Искусственный лист: изменение статуса не создаёт ревизию
+на критическом пути"></div></div></div>
+  </div></div>
+</div>
+
+<div class="grid">
+  <div class="panel panel-leaves" id="lhc-leaves">
+    <h2>Листья</h2>
+    <div class="hint">граф: 2 листьев · слотов: 1 · пик параллельности 1</div>
+    <div class="toolbar">
+      <input id="search" type="search" placeholder="Поиск по листу, id, владельцу, сессии или модели…">
+      <button class="chip active" data-filter="all">все</button>
+      <button class="chip" data-filter="done">готово</button>
+      <button class="chip" data-filter="running">в работе</button>
+      <button class="chip" data-filter="blocked">блокеры</button>
+      <button class="chip" data-filter="queued">в очереди</button>
+    </div>
+    <div class='table-scroll'><table class='table table-leaves'><thead><tr><th>Задача</th><th>Статус</th><th>Оценка</th><th>Усилие</th><th>Детали</th></tr></thead><tbody><tr data-status="done" data-text="c01 искусственный лист: изменение статуса не создаёт ревизию 01a16e15-c7a3-79e3-9272-0aa110e4dcbf codex синтетические данные; не использовать как отчёт об активном времени человека или агента." data-details-id='0' class='leaf-row'><td class='task-title'><span class='row-id'>C01</span><span class='row-name'>Искусственный лист: изменение статуса не создаёт ревизию</span><span class='row-times'>время не зафиксировано</span><span class='row-meta'>сессия: 01a16e15-c7a3-79e3-9272-0aa110e4dcbf</span></td><td data-label="Статус"><span class="status" style="--c:var(--st-done)">✅ Готово</span></td><td data-label="Оценка"><div class='cell-plan'><span class='plan-time'>план 2 мин</span></div></td><td data-label="Усилие" class="over">3 мин</td><td class='details-cell'><button type='button' class='task-details-trigger' data-details-id='0' aria-expanded='false' aria-label='Подробнее: Искусственный лист: изменение статуса не создаёт ревизию'>Подробнее</button></td></tr><tr data-status="queued" data-text="c02 искусственный дополнительный лист r002 01a16e15-c7a3-79e3-9272-0aa110e4dcbf codex" data-details-id='1' class='leaf-row'><td class='task-title'><span class='row-id'>C02</span><span class='row-name'>Искусственный дополнительный лист r002</span><span class='row-times'>время не зафиксировано</span><span class='row-meta'>сессия: 01a16e15-c7a3-79e3-9272-0aa110e4dcbf</span></td><td data-label="Статус"><span class="status" style="--c:var(--st-queued)">⋯ В очереди</span></td><td data-label="Оценка"><div class='cell-plan'><span class='plan-time'>план 1 мин</span></div></td><td data-label="Усилие" class="">не измерено</td><td class='details-cell'><button type='button' class='task-details-trigger' data-details-id='1' aria-expanded='false' aria-label='Подробнее: Искусственный дополнительный лист r002'>Подробнее</button></td></tr></tbody></table></div>
+    <div id='task-details-host' class='task-details-host' hidden></div><template id='task-details-template-0'><div class='task-details-card'><div class='task-details-head'><h3>Искусственный лист: изменение статуса не создаёт ревизию</h3><button type='button' class='task-details-close'>Закрыть</button></div><dl class='task-details'><dt>Код</dt><dd>C01</dd><dt>Примечание</dt><dd>Синтетические данные; не использовать как отчёт об активном времени человека или агента.</dd><dt>Владелец</dt><dd>—</dd><dt>Зависит от</dt><dd>—</dd><dt>Параллельно с</dt><dd>—</dd><dt>Сессия</dt><dd>01a16e15-c7a3-79e3-9272-0aa110e4dcbf</dd><dt>Рантайм</dt><dd>codex</dd><dt>Усилие (суммарно)</dt><dd>3 мин</dd><dt>Длительность по часам</dt><dd>—</dd><dt>План</dt><dd class='plan-value'>2 мин</dd><dt>Сверх плана</dt><dd>длительность не измерена</dd><dt>Начало</dt><dd>не зафиксировано</dd><dt>Конец</dt><dd>не зафиксировано</dd></dl></div></template><template id='task-details-template-1'><div class='task-details-card'><div class='task-details-head'><h3>Искусственный дополнительный лист r002</h3><button type='button' class='task-details-close'>Закрыть</button></div><dl class='task-details'><dt>Код</dt><dd>C02</dd><dt>Владелец</dt><dd>—</dd><dt>Зависит от</dt><dd>Искусственный лист: изменение статуса не создаёт ревизию</dd><dt>Параллельно с</dt><dd>—</dd><dt>Сессия</dt><dd>01a16e15-c7a3-79e3-9272-0aa110e4dcbf</dd><dt>Рантайм</dt><dd>codex</dd><dt>Усилие (суммарно)</dt><dd>не измерено</dd><dt>Длительность по часам</dt><dd>—</dd><dt>План</dt><dd class='plan-value'>1 мин</dd><dt>Сверх плана</dt><dd>длительность не измерена</dd><dt>Начало</dt><dd>не зафиксировано</dd><dt>Конец</dt><dd>не зафиксировано</dd></dl></div></template>
+  </div>
+  <div>
+    <div class="panel">
+      <h2>Технические привязки</h2>
+      <details class="technical"><summary>Владельцы, сессии, harness и модели</summary>
+        <div class='table-scroll'><table class='table'><thead><tr><th>ID</th><th>Лист</th><th>Владелец</th><th>Сессия</th><th>Harness</th><th>Модель</th><th>Статус</th></tr></thead><tbody><tr><td><span class="dot" style="background:var(--st-done)"></span>C01</td><td>Искусственный лист: изменение статуса не создаёт ревизию</td><td>—</td><td>01a16e15-c7a3-79e3-9272-0aa110e4dcbf</td><td>codex</td><td>—</td><td>Готово</td></tr><tr><td><span class="dot" style="background:var(--st-queued)"></span>C02</td><td>Искусственный дополнительный лист r002</td><td>—</td><td>01a16e15-c7a3-79e3-9272-0aa110e4dcbf</td><td>codex</td><td>—</td><td>В очереди</td></tr></tbody></table></div>
+      </details>
+    </div>
+    <div class="panel" id="lhc-forecast">
+      <h2>Прогноз</h2>
+      <ul class='facts'><li><b>Усилие</b> (сумма известных оценок): 3 мин</li><li><b>Длительность (план с 1 слотами): 3 мин</li><li><b>Осталось</b> (без завершённых): 1 мин</li><li><b>Пик параллельности</b> по плану: 1 из 1 слотов</li><li><b>Критический путь</b>: Искусственный лист: изменение статуса не создаёт ревизию → Искусственный дополнительный лист r002</li><li><b>Заблокировано</b> работы: 0 мин</li></ul>
+      
+    </div>
+    <div class="panel journal-fold" id="lhc-journal">
+      <details>
+        <summary><h2>Журнал изменений</h2></summary>
+
+      <h2>Журнал изменений</h2>
+      <ul class="live"><li><span class="dot" style="background:var(--st-done)"></span><span class="live-text">Искусственный лист: изменение статуса не создаёт ревизию</span><span class="leaf-tag">Искусственный лист: изменение статуса не создаёт ревизию</span></li><li><span class="dot" style="background:var(--st-queued)"></span><span class="live-text">Искусственный дополнительный лист r002</span><span class="leaf-tag">Искусственный дополнительный лист r002</span></li></ul>
+
+      </details>
+    </div>
+  </div>
+</div>
+</div>
+
+<footer>
+  LHC task graph · ревизия 3bf95f741779 · один файл, без внешних зависимостей · собран 24.10.2026 16:53
+  <details class="technical"><summary>Путь исходного плана</summary><code>Публичный снимок плана</code></details>
+</footer>
+
+<script>
+(function () {
+  // The theme is the reader's choice, remembered between openings. Without a
+  // stored choice the dashboard follows the system.
+  var root = document.documentElement;
+  var stored = null;
+  try { stored = window.localStorage.getItem('lhc-theme'); } catch (error) { stored = null; }
+  function systemPrefersLight() {
+    return !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches);
+  }
+  function applyTheme(state) {
+    if (state === 'light' || state === 'dark') {
+      root.setAttribute('data-theme', state);
+    } else {
+      // "as the system": no attribute, and the light scheme of the system wins.
+      root.removeAttribute('data-theme');
+      if (systemPrefersLight()) { root.setAttribute('data-theme', 'light'); }
+    }
+  }
+  function currentTheme() {
+    var value = null;
+    try { value = window.localStorage.getItem('lhc-theme'); } catch (error) { value = null; }
+    return value === 'light' || value === 'dark' ? value : 'auto';
+  }
+  applyTheme(currentTheme());
+  var toggle = document.getElementById('theme-toggle');
+  if (toggle) {
+    var order = ['auto', 'light', 'dark'];
+    var names = { auto: 'Тема: как в системе', light: 'Тема: светлая', dark: 'Тема: тёмная' };
+    function label() { toggle.textContent = names[currentTheme()]; }
+    label();
+    toggle.addEventListener('click', function () {
+      var next = order[(order.indexOf(currentTheme()) + 1) % order.length];
+      applyTheme(next);
+      try {
+        if (next === 'auto') { window.localStorage.removeItem('lhc-theme'); }
+        else { window.localStorage.setItem('lhc-theme', next); }
+      } catch (error) { /* no storage */ }
+      label();
+    });
+  }
+})();
+(function () {
+  var chips = Array.prototype.slice.call(document.querySelectorAll('.chip'));
+  var rows = Array.prototype.slice.call(document.querySelectorAll('.table-leaves tbody tr'));
+  var input = document.getElementById('search');
+  var activeDetailsRow = null;
+  var filter = 'all';
+  function apply() {
+    var query = (input && input.value || '').trim().toLowerCase();
+    rows.forEach(function (row) {
+      var okFilter = filter === 'all' || row.dataset.status === filter;
+      var okQuery = !query || (row.dataset.text || '').indexOf(query) !== -1;
+      row.style.display = (okFilter && okQuery) ? '' : 'none';
+    });
+  }
+  chips.forEach(function (chip) {
+    chip.addEventListener('click', function () {
+      chips.forEach(function (other) { other.classList.remove('active'); });
+      chip.classList.add('active');
+      filter = chip.dataset.filter;
+      apply();
+    });
+  });
+  if (input) { input.addEventListener('input', apply); }
+  // The task opens where the owner taps it. The card used to open in a host
+  // below the whole table, which on a phone is thousands of pixels away from
+  // the finger that asked for it.
+  function closeDetails() {
+    if (!activeDetailsRow) { return; }
+    if (activeDetailsRow.previousElementSibling) {
+      var previousButton = activeDetailsRow.previousElementSibling.querySelector('.task-details-trigger');
+      if (previousButton) { previousButton.setAttribute('aria-expanded', 'false'); }
+    }
+    activeDetailsRow.remove();
+    activeDetailsRow = null;
+  }
+  function openDetails(row, id) {
+    var template = document.getElementById('task-details-template-' + id);
+    if (!template || !row) { return; }
+    closeDetails();
+    var detailsRow = document.createElement('tr');
+    detailsRow.className = 'task-details-row';
+    var cell = document.createElement('td');
+    cell.colSpan = 5;
+    cell.appendChild(template.content.cloneNode(true));
+    detailsRow.appendChild(cell);
+    row.after(detailsRow);
+    activeDetailsRow = detailsRow;
+    var button = row.querySelector('.task-details-trigger');
+    if (button) { button.setAttribute('aria-expanded', 'true'); }
+    var close = detailsRow.querySelector('.task-details-close');
+    if (close) {
+      close.addEventListener('click', function () { closeDetails(); });
+      close.focus({ preventScroll: true });
+    }
+    detailsRow.scrollIntoView({ block: 'nearest' });
+  }
+  document.querySelectorAll('.task-details-trigger').forEach(function (button) {
+    button.addEventListener('click', function (event) {
+      event.stopPropagation();
+      var row = button.closest('tr');
+      openDetails(row, button.dataset.detailsId);
+    });
+  });
+  rows.forEach(function (row) {
+    if (!row.dataset.detailsId) { return; }
+    row.addEventListener('click', function () {
+      openDetails(row, row.dataset.detailsId);
+    });
+  });
+  // Every number of the page can be opened: the tile shows the tasks behind
+  // it, and a task in that list opens its full card.
+  var tileIndex = null;
+  try {
+    var island = document.getElementById('lhc-tile-index');
+    tileIndex = island ? JSON.parse(island.content.textContent) : null;
+  } catch (error) { tileIndex = null; }
+  var tileCard = document.getElementById('lhc-tile-card');
+  var currentTile = null;
+  function tileTitle(key) {
+    return (tileIndex && tileIndex.titles && tileIndex.titles[key]) || 'Задачи';
+  }
+  function renderTileList(key) {
+    if (!tileIndex || !tileCard) { return; }
+    var ids = (tileIndex.tiles && tileIndex.tiles[key]) || [];
+    var head = document.createElement('div');
+    head.className = 'tile-card-head';
+    var title = document.createElement('b');
+    title.textContent = tileTitle(key) + ' · ' + ids.length;
+    var close = document.createElement('button');
+    close.type = 'button'; close.className = 'tile-card-close'; close.textContent = 'Закрыть';
+    close.addEventListener('click', function () {
+      tileCard.hidden = true; tileCard.replaceChildren(); currentTile = null;
+    });
+    head.appendChild(title); head.appendChild(close);
+    var list = document.createElement('ul');
+    list.className = 'tile-card-list';
+    ids.forEach(function (id) {
+      var leaf = (tileIndex.leaves && tileIndex.leaves[id]) || {};
+      var item = document.createElement('li');
+      item.className = 'tile-card-item';
+      var code = document.createElement('span'); code.className = 'row-id'; code.textContent = id;
+      var name = document.createElement('span'); name.className = 'row-name';
+      name.textContent = leaf.label || id;
+      var meta = document.createElement('span'); meta.className = 'row-meta';
+      meta.textContent = [leaf.status_label, leaf.owner, leaf.estimate].filter(Boolean).join(' · ');
+      item.appendChild(code); item.appendChild(name); item.appendChild(meta);
+      item.addEventListener('click', function () { openLeafInTile(id); });
+      list.appendChild(item);
+    });
+    if (!ids.length) {
+      var empty = document.createElement('div');
+      empty.className = 'empty'; empty.textContent = 'Задач нет.';
+      list.appendChild(empty);
+    }
+    tileCard.replaceChildren(head, list);
+    tileCard.hidden = false;
+  }
+  function openLeafInTile(id) {
+    if (!tileIndex || !tileCard) { return; }
+    var leaf = (tileIndex.leaves && tileIndex.leaves[id]) || {};
+    var template = document.getElementById('task-details-template-' + leaf.template);
+    if (!template) { return; }
+    var back = document.createElement('button');
+    back.type = 'button'; back.className = 'tile-card-back'; back.textContent = '← ко всем задачам';
+    back.addEventListener('click', function () { renderTileList(currentTile); });
+    var card = template.content.cloneNode(true);
+    tileCard.replaceChildren(back, card);
+    tileCard.hidden = false;
+    var progressStrip = document.getElementById('lhc-progress-strip');
+    var stickySpace = progressStrip ? progressStrip.getBoundingClientRect().height + 12 : 76;
+    tileCard.style.scrollMarginTop = Math.max(76, Math.ceil(stickySpace)) + 'px';
+    tileCard.scrollIntoView({ block: 'start' });
+    var close = tileCard.querySelector('.task-details-close');
+    if (close) {
+      close.addEventListener('click', function () { renderTileList(currentTile); });
+    }
+  }
+  document.querySelectorAll('[data-tile]').forEach(function (tile) {
+    tile.addEventListener('click', function () {
+      currentTile = tile.dataset.tile;
+      renderTileList(currentTile);
+    });
+    tile.addEventListener('keydown', function (event) {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        tile.click();
+      }
+    });
+  });
+  apply();
+})();
+
+</script>
+
+</body>
+</html>

@@ -1,10 +1,25 @@
 {
   "name": "ask-human",
-  "version": "0.3.0",
-  "description": "Deliver genuinely important information to the human via the connected AskHuman/notify MCP.",
+  "version": "1.0.0",
+  "description": "Ask Human: forward the harness's own permission question to the human through the Notice Place human-request intake, and hand the answer back to the harness.",
   "author": {
     "name": "megamen32",
     "url": "https://github.com/megamen32"
   },
-  "commands": "./commands/"
+  "commands": "./commands/",
+  "hooks": "./hooks/hooks.json",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Ask Human",
+    "shortDescription": "Ask a human through the harness's own question channel.",
+    "longDescription": "Ask Human intercepts the moment the harness asks a human for permission, sends that question through the Notice Place human-request intake the AskHuman MCP already uses, waits for the answer, and returns it to the harness.",
+    "developerName": "megamen32",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive"
+    ],
+    "defaultPrompt": [
+      "Ask me one blocking question and wait for my answer."
+    ]
+  }
 }

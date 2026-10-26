@@ -1,0 +1,11 @@
+{
+  "name": "ask-human",
+  "version": "1.0.0",
+  "description": "Ask Human: forward the harness's own permission question to the human through the Notice Place human-request intake, and hand the answer back to the harness.",
+  "author": {
+    "name": "megamen32",
+    "url": "https://github.com/megamen32"
+  },
+  "commands": "./commands/",
+  "hooks": "./hooks/hooks.json"
+}

@@ -71,8 +71,13 @@ Use the TIME_CONTROL protocol's `lhc_task_budget.py` to validate leaf bounds and
 sum effort. Its dependency-only duration bounds exclude capacity/resources/waits;
 Lead must supply the actual feasible schedule before quoting elapsed delivery.
 
-Make integration, review and real-use verification visible where they are needed;
-do not hide them in a doubled global buffer. For each bound, show its formula.
+Make the integration join, one final review of the integrated Full-cycle result,
+and real-use verification visible where needed; quickfix review stays risk-triggered.
+Do not create a review task for every
+worker leaf or wave, or hide release work in a doubled global buffer. Workers keep
+running local checks during implementation. The final sequence is review → permitted
+deploy → real consumer test → push on the configured route. For each bound, show its
+formula.
 Do not quote a naked 60–120 minute range or mechanically double a minimum.
 If a wide range comes from an unresolved fact, name that fact and run the cheapest
 discriminating probe before expanding implementation. If a proof cannot yet be

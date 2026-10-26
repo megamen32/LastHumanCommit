@@ -1,0 +1,21 @@
+{
+  "id": "L08b",
+  "label": "Операционные правила стоимости в навыках и протоколах",
+  "status": "done",
+  "description": "model-routing/SKILL.md: удалить строку 157 «No fixed cheap-token quota» и добавить таблицу «сложность листа → подходящий класс модели». TIME_CONTROL.md: сделать lhc_task_budget.py обязательным вместо «Optionally check» и слить два накладывающихся 60-минутных обзора в один. BUSINESS_CHECKPOINT.md привести в соответствие с этими правилами.",
+  "acceptance": "В SKILL.md нет строки об отсутствии фиксированной квоты и есть таблица соответствия; в TIME_CONTROL.md бюджет обязателен и 60-минутный обзор единственный; ссылки протоколов друг на друга не противоречат тексту.",
+  "affected_files": [
+    "src/common/skills/model-routing/SKILL.md",
+    "src/common/protocols/TIME_CONTROL.md",
+    "src/common/protocols/BUSINESS_CHECKPOINT.md"
+  ],
+  "owner": "worker-l08b",
+  "depends_on": [
+    "L03"
+  ],
+  "estimate_minutes": 15,
+  "finished_at": "09:57",
+  "note": "Правила стоимости опираются на оценщик L03; сам оценщик не меняется этим листом. Класс модели объявлен Lead’ом 06:50: fast — правка формулировок в навыках и протоколах под уже реализованное поведение инструмента; критерий — тесты, пинованные фразы, а не архитектура.",
+  "updated_at": "2026-10-24T09:57",
+  "model_class": "fast"
+}

@@ -1,0 +1,1 @@
+{"id":"L02","label":"Серверное зеркало и приватная панель","status":"done","estimate_minutes":15,"depends_on":["L01"],"owner":"source-worker","note":"Очищенный JSON ingest, seq/owner/history conflicts, прежние URL/r001; обновляемый список с отдельной свежестью и неизвестной живостью агента. Активное время не измерено."}

@@ -1,0 +1,757 @@
+{
+  "schema_version": 2,
+  "title": "Каталог, интерфейс и надёжное ведение живых планов LHC",
+  "goal": "Дать Codex-сессиям доступ к главному каталогу после существующего SSO и сделать локальный план честным источником состояния текущей работы в выбранном worktree.",
+  "business_result": "Владелец открывает приватный корень каталога через существующий SSO; индивидуальные страницы планов доступны по ссылке. В карточке плана видны статусы задач и min/max/сейчас без второй оси. При продолжении существующего leaf-плана текущая сессия локально привязывает точный worktree и лист; правки переживают offline и догоняют то же зеркало после восстановления сети.",
+  "business_results": [
+    "Владелец открывает приватный корень каталога через существующий SSO; индивидуальные страницы планов доступны по ссылке. В карточке плана видны статусы задач и min/max/сейчас без второй оси. При продолжении существующего leaf-плана текущая сессия локально привязывает точный worktree и лист; правки переживают offline и догоняют то же зеркало после восстановления сети."
+  ],
+  "acceptance_scenarios": [
+    "Анонимно открыть точный корень https://lhc.bezrabotnyi.com/ и получить редирект на существующий SSO; открыть индивидуальный план, ревизию и JSON без SSO; Bearer GET /v1/status остаётся доступен.",
+    "Открыть опубликованный план на узком экране: видна одна цветная полоса статусов, рядом в том же блоке подписаны минимум, максимум и сейчас; временной status показывает прохождение ранней оценки и превышение верхней границы без второй длинной временной оси.",
+    "Обычным Codex fullcycle запросом без ручной команды и mirror config создать/переиспользовать локальный план и связать готовый лист с настоящими session/worktree до первого ответа; проверить graph/HTML и повтор события без второго progress event. Для выбранного mirror-конфига observer после восстановления сети догоняет то же зеркало; исходный r001 и начало плана сохранены."
+  ],
+  "current_progress": "Каталог: 22 плана в 10 группах; root-only SSO и публичные individual pages активны. LHC mirror/observer 1.5.62 установлен на server100 и Mac с сохранением конфигов; server слушает loopback, sso_enabled=true; текущие plans/roots/8 graph sources сохранены, Mac 1 plan/3 roots/2 graph sources. Root отвечает точным existing SSO 302, индивидуальная plan page — 200. Codex marketplace содержит включённые установки 1.5.62 и Fleet 1.5.58 на этом host. Установленный CLI доказал только узкий synthetic путь создания трёх листов по распознанному английскому Full-cycle prompt; он не доказывает безопасную общую авто-привязку. В последующей проверке: обычный русский Full-cycle prompt вернул classify=unknown без плана; нерелевантный запрос с единственным старым планом привязал его queued leaf. Эти два entry-дефекта не исправлены. L06 завершён: единый review целого Full-cycle результата после рабочих leaves, затем deploy→consumer test→push; timed Overseer advice не изменён. Целевые contract tests: 8 passed, generated package validation/parity прошли. Новая реальная Codex-сессия и owner login не создавались/не наблюдались по прямому ограничению; active minutes до live-plan неизвестны.",
+  "external_waits": "",
+  "slots": 1,
+  "updated_at": "2026-10-26T00:22:25+03:00",
+  "tasks": [
+    {
+      "id": "L01",
+      "label": "Завершить каталог проектов, root-only SSO и локальный observer на server100 и Mac",
+      "status": "done",
+      "description": "Подключить выбранные canonical plans и graph-only источники к observer, установить root-only SSO и сохранить непрерывную локальную работу.",
+      "acceptance": "Каталог показывает все принятые зеркалом планы; только / требует существующий SSO; отдельные plan/archive JSON публичны, Bearer GET /v1/status работает.",
+      "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+      "harness": "codex",
+      "note": "Уже завершено до появления live plan. Исходные started_at/finished_at и фактические минуты не записывались; не восстановлены задним числом.",
+      "origin": "",
+      "supersedes": [],
+      "progress_events": [
+        {
+          "at": "2026-10-25T22:19:24+03:00",
+          "note": "Снимок проверенных завершённых фактов до live-plan; фактические минуты неизвестны",
+          "changes": {
+            "label": "Завершить каталог проектов, root-only SSO и локальный observer на server100 и Mac",
+            "status": "done",
+            "description": "Подключить выбранные canonical plans и graph-only источники к observer, установить root-only SSO и сохранить непрерывную локальную работу.",
+            "acceptance": "Каталог показывает все принятые зеркалом планы; только / требует существующий SSO; отдельные plan/archive JSON публичны, Bearer GET /v1/status работает.",
+            "affected_files": [
+              "src/common/tools/lhc_plan_mirror.py",
+              "deploy/plan-mirror/sso-nginx.conf",
+              "deploy/plan-mirror/install-native.py"
+            ],
+            "estimate_minutes": {
+              "minimum": 15,
+              "maximum": 30
+            },
+            "note": "Уже завершено до появления live plan. Исходные started_at/finished_at и фактические минуты не записывались; не восстановлены задним числом."
+          },
+          "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+          "harness": "codex"
+        }
+      ],
+      "affected_files": [
+        "src/common/tools/lhc_plan_mirror.py",
+        "deploy/plan-mirror/sso-nginx.conf",
+        "deploy/plan-mirror/install-native.py"
+      ],
+      "depends_on": [],
+      "estimate_minutes": {
+        "minimum": 15.0,
+        "maximum": 30.0
+      },
+      "created_at": "2026-10-25T22:19:24+03:00"
+    },
+    {
+      "id": "L02",
+      "label": "Объединить цветные статусы и временные границы в одну понятную карточку",
+      "status": "done",
+      "description": "Сохранить сегментированную полосу количества задач по статусам; убрать вторую длинную временную ось и подписи-точки представить понятно в том же блоке без смешения процентов задач и времени.",
+      "acceptance": "В реальном опубликованном плане на узком экране одна длинная полоса показывает только распределение задач; в той же карточке подписаны минимум/максимум/сейчас и статус между ними или превышение. Синяя точка не оторвана от подписи, второй конкурирующей оси нет.",
+      "owner": "roomhacker",
+      "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+      "harness": "codex",
+      "note": "Исходное время первых UI правок не было привязано к live leaf и остаётся неизвестным.",
+      "origin": "",
+      "supersedes": [],
+      "progress_events": [
+        {
+          "at": "2026-10-25T22:19:24+03:00",
+          "note": "Новая учётная задача; время прошлых UI правок не выдумывается",
+          "changes": {
+            "label": "Объединить цветные статусы и временные границы в одну понятную карточку",
+            "status": "queued",
+            "description": "Сохранить сегментированную полосу количества задач по статусам; убрать вторую длинную временную ось и подписи-точки представить понятно в том же блоке без смешения процентов задач и времени.",
+            "acceptance": "В реальном опубликованном плане на узком экране одна длинная полоса показывает только распределение задач; в той же карточке подписаны минимум/максимум/сейчас и статус между ними или превышение. Синяя точка не оторвана от подписи, второй конкурирующей оси нет.",
+            "affected_files": [
+              "src/common/tools/lhc_plan_ui.py",
+              "src/common/tools/lhc_grid.py",
+              "tests/test_plan_time_rail.py"
+            ],
+            "estimate_minutes": {
+              "minimum": 10,
+              "maximum": 20
+            },
+            "depends_on": [],
+            "note": "Исходное время первых UI правок не было привязано к live leaf и остаётся неизвестным."
+          },
+          "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-10-25T22:19:41+03:00",
+          "note": "Live tracking resumed now; earlier UI edits predate this plan and their exact start is unknown",
+          "changes": {
+            "status": "running",
+            "owner": "roomhacker"
+          },
+          "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-10-25T22:24:40+03:00",
+          "note": "1.5.61 установлен на server100 и Mac; published headless Chrome 320px, дата теста между min/max: одна цветная полоса, 0 временных осей и 0 точек, подписи 23:29/23:45/00:24 не переполняют карточку; status ранней оценки верен",
+          "changes": {
+            "status": "done"
+          },
+          "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+          "harness": "codex"
+        }
+      ],
+      "affected_files": [
+        "src/common/tools/lhc_plan_ui.py",
+        "src/common/tools/lhc_grid.py",
+        "tests/test_plan_time_rail.py"
+      ],
+      "depends_on": [],
+      "estimate_minutes": {
+        "minimum": 10.0,
+        "maximum": 20.0
+      },
+      "created_at": "2026-10-25T22:19:24+03:00"
+    },
+    {
+      "id": "L03",
+      "label": "Привязать продолжение существующего плана к текущему worktree, сессии и observer",
+      "status": "done",
+      "description": "Одна явная offline CLI-команда выбирает существующий leaf-план в docs/tasks текущего worktree, регистрирует только его, фиксирует baseline, session/harness/owner и переводит выбранный лист в running; observer обновляет локальные graph/HTML и догоняет то же зеркало после сети.",
+      "acceptance": "На тестовой копии 13-leaf docs/tasks плана команда активирует L03 с настоящим текущим Codex session id, статусом и progress event; source зарегистрирован без broad scan; raw offline save обновляет локальные graph/HTML; после сети существующий URL обновлён, r001 неизменен. Факт реального Cloud Telethon canary будет отмечен отдельно от изолированного consumer proof.",
+      "result": "На изолированной копии канонического 13-leaf Cloud Telethon плана (L03 восстановлен в queued только в копии) установленный 1.5.61 CLI с текущим Luna session id перевёл leaf в running; observer синхронизировал raw offline правки после возврата локального сервера по той же ссылке, r001 HTML байты совпали.",
+      "owner": "roomhacker",
+      "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+      "harness": "codex",
+      "note": "Реализация уже началась до live-plan; фактическое исходное начало и минуты не измерялись. Сейчас фиксируется только актуальный running статус.",
+      "origin": "",
+      "supersedes": [],
+      "progress_events": [
+        {
+          "at": "2026-10-25T22:19:24+03:00",
+          "note": "Новая учётная задача; фактическое начало до её создания неизвестно",
+          "changes": {
+            "label": "Привязать продолжение существующего плана к текущему worktree, сессии и observer",
+            "status": "queued",
+            "description": "Одна явная offline CLI-команда выбирает существующий leaf-план в docs/tasks текущего worktree, регистрирует только его, фиксирует baseline, session/harness/owner и переводит выбранный лист в running; observer обновляет локальные graph/HTML и догоняет то же зеркало после сети.",
+            "acceptance": "На тестовой копии 13-leaf docs/tasks плана команда активирует L03 с настоящим текущим Codex session id, статусом и progress event; source зарегистрирован без broad scan; raw offline save обновляет локальные graph/HTML; после сети существующий URL обновлён, r001 неизменен. Факт реального Cloud Telethon canary будет отмечен отдельно от изолированного consumer proof.",
+            "affected_files": [
+              "src/common/tools/lhc_plan_json.py",
+              "src/common/tools/lhc_plan_mirror.py",
+              "src/common/skills/plan-artifacts/SKILL.md",
+              "src/common/skills/last-human-commit/SKILL.md",
+              "tests/test_plan_mirror.py"
+            ],
+            "estimate_minutes": {
+              "minimum": 45,
+              "maximum": 75
+            },
+            "depends_on": [],
+            "note": "Реализация уже началась до live-plan; фактическое исходное начало и минуты не измерялись. Сейчас фиксируется только актуальный running статус."
+          },
+          "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-10-25T22:19:41+03:00",
+          "note": "Lifecycle implementation began before plan capture; exact start and active minutes were not recorded",
+          "changes": {
+            "status": "running",
+            "owner": "roomhacker"
+          },
+          "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-10-25T22:30:58+03:00",
+          "note": "Consumer canary: exact Cloud Telethon source read-only; copy only; installed runtime, actual current session id, empty roots + exact registration, offline catch-up and r001 preservation proven. Source was not altered.",
+          "changes": {
+            "status": "done",
+            "result": "На изолированной копии канонического 13-leaf Cloud Telethon плана (L03 восстановлен в queued только в копии) установленный 1.5.61 CLI с текущим Luna session id перевёл leaf в running; observer синхронизировал raw offline правки после возврата локального сервера по той же ссылке, r001 HTML байты совпали."
+          },
+          "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+          "harness": "codex"
+        }
+      ],
+      "affected_files": [
+        "src/common/tools/lhc_plan_json.py",
+        "src/common/tools/lhc_plan_mirror.py",
+        "src/common/skills/plan-artifacts/SKILL.md",
+        "src/common/skills/last-human-commit/SKILL.md",
+        "tests/test_plan_mirror.py"
+      ],
+      "depends_on": [],
+      "estimate_minutes": {
+        "minimum": 45.0,
+        "maximum": 75.0
+      },
+      "created_at": "2026-10-25T22:19:24+03:00"
+    },
+    {
+      "id": "L05",
+      "label": "Автоматически связывать новый fullcycle со своим локальным планом и листом",
+      "status": "done",
+      "description": "Встроить в обычный Codex prompt lifecycle офлайн-привязку: переиспользовать однозначный план текущего worktree или создать локальный scaffold до первого действия модели.",
+      "acceptance": "Синтетический native UserPromptSubmit для fullcycle без mirror config/MCP/сети создаёт или выбирает точный план, связывает лист с реальным session/worktree, сохраняет локальный graph/HTML и не дублирует прогресс при повторном событии.",
+      "result": "Codex UserPromptSubmit вызывает local fullcycle entry; тест штатной CLI-ветки без mirror config/MCP/сети подтвердил создание трёх листов, running/session binding, graph/HTML и отсутствие повторного progress event. 36 targeted hook/mirror tests и package validation прошли. Инсталляция LHC 1.5.62 и новый реальный session readback остаются за L04.",
+      "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+      "harness": "codex",
+      "origin": "",
+      "supersedes": [],
+      "progress_events": [
+        {
+          "at": "2026-10-25T22:41:30+03:00",
+          "note": "Начал работу над автоматическим входом; фактическое исходное время и active minutes до регистрации не измерены.",
+          "changes": {
+            "label": "Автоматически связывать новый fullcycle со своим локальным планом и листом",
+            "description": "Встроить в обычный Codex prompt lifecycle офлайн-привязку: переиспользовать однозначный план текущего worktree или создать локальный scaffold до первого действия модели.",
+            "acceptance": "Синтетический native UserPromptSubmit для fullcycle без mirror config/MCP/сети создаёт или выбирает точный план, связывает лист с реальным session/worktree, сохраняет локальный graph/HTML и не дублирует прогресс при повторном событии.",
+            "status": "running",
+            "estimate_minutes": {
+              "minimum": 25,
+              "maximum": 40
+            },
+            "affected_files": [
+              "src/common/tools/lhc_entry.py",
+              "src/common/tools/lhc_plan_mirror.py",
+              "adapters/codex/hooks/hooks.json",
+              "tests/test_native_instruction_hooks.py"
+            ]
+          },
+          "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-10-25T22:45:24+03:00",
+          "note": "Исходник и локальный CLI consumer проверены; installed runtime остаётся следующим листом.",
+          "changes": {
+            "status": "done",
+            "result": "Codex UserPromptSubmit вызывает local fullcycle entry; тест штатной CLI-ветки без mirror config/MCP/сети подтвердил создание трёх листов, running/session binding, graph/HTML и отсутствие повторного progress event. 36 targeted hook/mirror tests и package validation прошли. Инсталляция LHC 1.5.62 и новый реальный session readback остаются за L04."
+          },
+          "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+          "harness": "codex"
+        }
+      ],
+      "affected_files": [
+        "src/common/tools/lhc_entry.py",
+        "src/common/tools/lhc_plan_mirror.py",
+        "adapters/codex/hooks/hooks.json",
+        "tests/test_native_instruction_hooks.py"
+      ],
+      "depends_on": [],
+      "estimate_minutes": {
+        "minimum": 25.0,
+        "maximum": 40.0
+      },
+      "created_at": "2026-10-25T22:41:30+03:00"
+    },
+    {
+      "id": "L06",
+      "label": "Уточнить один итоговый review и порядок release для полного цикла",
+      "status": "done",
+      "description": "Согласовать корневой router, Reviewer/Worker, FULL_CYCLE, planning и decomposition: один технический review объединённого результата после рабочих листьев, затем deploy, реальный consumer test и push; per-leaf review не требуется.",
+      "acceptance": "Канонические инструкции однозначно задают одну финальную review точку и порядок review→deploy→test→push; локальная отладка продолжается в leaves; автоматический Overseer review остаётся advisory; целевой contract test проходит.",
+      "result": "Canonical root router, Reviewer/Worker, Full Cycle template and planning/decomposition skills now define one coherent integrated-diff review after all implementation/integration leaves, followed by permitted deploy, real consumer test and push. Local worker checks continue during implementation; no per-leaf/wave review is created. Codex progress-review hook was read-only Overseer advice and was left unchanged. Targeted test_review_delivery_contract.py: 8 passed; package validation and projections passed. Three previously found 1.5.62 auto-entry/install facts are recorded separately and remain unfixed by this policy change.",
+      "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+      "harness": "codex",
+      "origin": "",
+      "supersedes": [],
+      "progress_events": [
+        {
+          "at": "2026-10-25T23:13:58+03:00",
+          "note": "Начал короткую policy коррекцию по прямому поручению; review не дробится на leaves.",
+          "changes": {
+            "label": "Уточнить один итоговый review и порядок release для полного цикла",
+            "description": "Согласовать корневой router, Reviewer/Worker, FULL_CYCLE, planning и decomposition: один технический review объединённого результата после рабочих листьев, затем deploy, реальный consumer test и push; per-leaf review не требуется.",
+            "acceptance": "Канонические инструкции однозначно задают одну финальную review точку и порядок review→deploy→test→push; локальная отладка продолжается в leaves; автоматический Overseer review остаётся advisory; целевой contract test проходит.",
+            "status": "running",
+            "estimate_minutes": {
+              "minimum": 8,
+              "maximum": 15
+            },
+            "affected_files": [
+              "AGENTS.md",
+              "src/common/agents/Reviewer.md",
+              "src/common/agents/Worker.md",
+              "templates/FULL_CYCLE.md",
+              "src/common/skills/planning/SKILL.md",
+              "src/common/skills/task-decomposition/SKILL.md",
+              "src/common/skills/decompose-and-dispatch/SKILL.md",
+              "tests/test_review_delivery_contract.py"
+            ]
+          },
+          "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-10-25T23:19:06+03:00",
+          "note": "Final integrated instruction diff reviewed once in this session; generated package published, targeted test and validators pass.",
+          "changes": {
+            "status": "done",
+            "result": "Canonical root router, Reviewer/Worker, Full Cycle template and planning/decomposition skills now define one coherent integrated-diff review after all implementation/integration leaves, followed by permitted deploy, real consumer test and push. Local worker checks continue during implementation; no per-leaf/wave review is created. Codex progress-review hook was read-only Overseer advice and was left unchanged. Targeted test_review_delivery_contract.py: 8 passed; package validation and projections passed. Three previously found 1.5.62 auto-entry/install facts are recorded separately and remain unfixed by this policy change."
+          },
+          "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+          "harness": "codex"
+        }
+      ],
+      "affected_files": [
+        "AGENTS.md",
+        "src/common/agents/Reviewer.md",
+        "src/common/agents/Worker.md",
+        "templates/FULL_CYCLE.md",
+        "src/common/skills/planning/SKILL.md",
+        "src/common/skills/task-decomposition/SKILL.md",
+        "src/common/skills/decompose-and-dispatch/SKILL.md",
+        "tests/test_review_delivery_contract.py"
+      ],
+      "depends_on": [],
+      "estimate_minutes": {
+        "minimum": 8.0,
+        "maximum": 15.0
+      },
+      "created_at": "2026-10-25T23:13:58+03:00"
+    },
+    {
+      "id": "L07",
+      "label": "Устранить потерю роли Lead при старте ExManager",
+      "status": "done",
+      "description": "Согласовать LHC root router, Lead role, default skill, dispatch skill, project router и delivery contract: инженерный Lead назначает ближайший исполнимый лист native Worker; бизнес-исполнитель продукта не считается инженерным Worker. Проверить точечный контракт и generated projections.",
+      "acceptance": "Канонические инструкции различают engineering Lead/Worker и product business executor, сохраняют Lead role при отсутствии уже созданного child и не разрешают молча перебирать все инженерные листья самому; целевой contract test и package validators проходят.",
+      "result": "LHC 1.5.63 canonical instructions and generated package distinguish engineering Lead/Worker from product business executor. Lead role persists without a started child; engineering leaves remain assigned to native Workers. Version/manifests/changelog align. Targeted policy and version tests 13 passed; plugin validation and projections pass.",
+      "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+      "harness": "codex",
+      "origin": "",
+      "supersedes": [],
+      "progress_events": [
+        {
+          "at": "2026-10-25T23:22:32+03:00",
+          "note": "Начал исправление свежего ExManager случая потери роли L; существующая продуктовая бизнес-сессия не заменяет engineering Worker.",
+          "changes": {
+            "label": "Устранить потерю роли Lead при старте ExManager",
+            "description": "Согласовать LHC root router, Lead role, default skill, dispatch skill, project router и delivery contract: инженерный Lead назначает ближайший исполнимый лист native Worker; бизнес-исполнитель продукта не считается инженерным Worker. Проверить точечный контракт и generated projections.",
+            "acceptance": "Канонические инструкции различают engineering Lead/Worker и product business executor, сохраняют Lead role при отсутствии уже созданного child и не разрешают молча перебирать все инженерные листья самому; целевой contract test и package validators проходят.",
+            "status": "running",
+            "estimate_minutes": {
+              "minimum": 10,
+              "maximum": 20
+            },
+            "affected_files": [
+              "AGENTS.md",
+              "src/common/agents/Lead.md",
+              "src/common/skills/last-human-commit/SKILL.md",
+              "src/common/skills/decompose-and-dispatch/SKILL.md",
+              "src/common/templates/project-router.md",
+              "src/common/protocols/OUTCOME_CONTRACT.md",
+              "tests/test_review_delivery_contract.py"
+            ]
+          },
+          "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-10-25T23:22:49+03:00",
+          "note": "Канонические правила согласованы; целевой контракт и проекции зелёные.",
+          "changes": {
+            "status": "done",
+            "result": "LHC root router, Lead role, primary skill, decomposition skill, project router and delivery contract distinguish the engineering Lead/Worker from the business executor inside the product. Role stays Lead whether or not a child has started; engineering leaves remain assigned to native Workers. Generated package synchronized; focused role/review contract test 9 passed; plugin validation and projections pass."
+          },
+          "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-10-25T23:24:03+03:00",
+          "note": "Итоговый целевой тест прошёл после устранения оставшегося противоречия в workflow source.",
+          "changes": {
+            "affected_files": [
+              "AGENTS.md",
+              "src/common/agents/Lead.md",
+              "src/common/skills/last-human-commit/SKILL.md",
+              "src/common/skills/decompose-and-dispatch/SKILL.md",
+              "src/common/skills/planning/SKILL.md",
+              "src/common/skills/business-delivery/SKILL.md",
+              "src/common/templates/project-router.md",
+              "src/common/protocols/OUTCOME_CONTRACT.md",
+              "src/common/protocols/REVIEW_TO_DELIVERY.md",
+              "tests/test_review_delivery_contract.py"
+            ],
+            "result": "LHC root router, Lead role, primary/decomposition/planning/business-delivery skills, project router and delivery contracts distinguish engineering Lead/Worker from product business executor. Role persists without a started child; engineering leaves remain assigned to native Workers. Generated package synchronized; targeted tests 9 passed; plugin validation and package projections pass."
+          },
+          "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-10-25T23:25:27+03:00",
+          "note": "Точечные policy/version checks, package validation and projections passed.",
+          "changes": {
+            "affected_files": [
+              "AGENTS.md",
+              ".claude-plugin/marketplace.json",
+              "src/common/agents/Lead.md",
+              "src/common/skills/last-human-commit/SKILL.md",
+              "src/common/skills/decompose-and-dispatch/SKILL.md",
+              "src/common/skills/planning/SKILL.md",
+              "src/common/skills/business-delivery/SKILL.md",
+              "src/common/templates/project-router.md",
+              "src/common/protocols/OUTCOME_CONTRACT.md",
+              "src/common/protocols/REVIEW_TO_DELIVERY.md",
+              "src/common/tools/lhc_plan_mcp.py",
+              "plugins/last-human-commit/CHANGELOG.md",
+              "plugins/last-human-commit/plugin.json",
+              "plugins/last-human-commit/plugin.yaml",
+              "plugins/last-human-commit/.claude-plugin/plugin.json",
+              "plugins/last-human-commit/.codex-plugin/plugin.json",
+              "plugins/last-human-commit/.zcode-plugin/plugin.json",
+              "plugins/last-human-commit/native/codex/.codex-plugin/plugin.json",
+              "adapters/hermes/plugin/plugin.yaml",
+              "tests/test_review_delivery_contract.py",
+              "tests/test_plugin_version_parity.py"
+            ],
+            "result": "LHC 1.5.63 canonical instructions and generated package distinguish engineering Lead/Worker from product business executor. Lead role persists without a started child; engineering leaves remain assigned to native Workers. Version/manifests/changelog align. Targeted policy and version tests 13 passed; plugin validation and projections pass."
+          },
+          "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+          "harness": "codex"
+        }
+      ],
+      "affected_files": [
+        "AGENTS.md",
+        ".claude-plugin/marketplace.json",
+        "src/common/agents/Lead.md",
+        "src/common/skills/last-human-commit/SKILL.md",
+        "src/common/skills/decompose-and-dispatch/SKILL.md",
+        "src/common/skills/planning/SKILL.md",
+        "src/common/skills/business-delivery/SKILL.md",
+        "src/common/templates/project-router.md",
+        "src/common/protocols/OUTCOME_CONTRACT.md",
+        "src/common/protocols/REVIEW_TO_DELIVERY.md",
+        "src/common/tools/lhc_plan_mcp.py",
+        "plugins/last-human-commit/CHANGELOG.md",
+        "plugins/last-human-commit/plugin.json",
+        "plugins/last-human-commit/plugin.yaml",
+        "plugins/last-human-commit/.claude-plugin/plugin.json",
+        "plugins/last-human-commit/.codex-plugin/plugin.json",
+        "plugins/last-human-commit/.zcode-plugin/plugin.json",
+        "plugins/last-human-commit/native/codex/.codex-plugin/plugin.json",
+        "adapters/hermes/plugin/plugin.yaml",
+        "tests/test_review_delivery_contract.py",
+        "tests/test_plugin_version_parity.py"
+      ],
+      "depends_on": [],
+      "estimate_minutes": {
+        "minimum": 10.0,
+        "maximum": 20.0
+      },
+      "created_at": "2026-10-25T23:22:32+03:00"
+    },
+    {
+      "id": "L08",
+      "label": "Исправить область owner-only интеграции для владельца LHC",
+      "status": "done",
+      "description": "Уточнить root router и integration contracts: правило Oleg/Airlock относится к Airlock внешним проектам, не блокирует прямую авторизацию владельца megamen32/LastHumanCommit на fast-forward main. Сохранить защиту shared/external main.",
+      "acceptance": "Тест фиксирует отличие owner-controlled LHC main от Airlock owner handoff; package version/manifests aligned; relevant tests pass; owned branch fast-forwarded to origin/main without force under direct owner authorization.",
+      "result": "Owner-only integration wording is scoped to Airlock, and direct owner permission applies to owned LastHumanCommit main. Relevant policy/version checks passed (14 tests), package validation and projections passed. Commit 4fb6666 was pushed to the task branch and ordinary fast-forwarded to origin/main without force. Native Codex marketplace installed LHC 1.5.64 enabled; fleet-lhc duplicate is not installed; only one LHC plugin is enabled. Installed Lead role/skill text read back correctly; no new session launched.",
+      "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+      "harness": "codex",
+      "origin": "",
+      "supersedes": [],
+      "progress_events": [
+        {
+          "at": "2026-10-25T23:33:52+03:00",
+          "note": "Исправляю неправильно применённый внешний Airlock owner-only запрет в правилах самого LHC repo.",
+          "changes": {
+            "label": "Исправить область owner-only интеграции для владельца LHC",
+            "description": "Уточнить root router и integration contracts: правило Oleg/Airlock относится к Airlock внешним проектам, не блокирует прямую авторизацию владельца megamen32/LastHumanCommit на fast-forward main. Сохранить защиту shared/external main.",
+            "acceptance": "Тест фиксирует отличие owner-controlled LHC main от Airlock owner handoff; package version/manifests aligned; relevant tests pass; owned branch fast-forwarded to origin/main without force under direct owner authorization.",
+            "status": "running",
+            "estimate_minutes": {
+              "minimum": 8,
+              "maximum": 15
+            },
+            "affected_files": [
+              "AGENTS.md",
+              "src/common/protocols/OUTCOME_CONTRACT.md",
+              "src/common/protocols/REVIEW_TO_DELIVERY.md",
+              "tests/test_review_delivery_contract.py",
+              "plugins/last-human-commit/CHANGELOG.md",
+              "plugins/last-human-commit/plugin.json",
+              "plugins/last-human-commit/plugin.yaml",
+              "adapters/hermes/plugin/plugin.yaml"
+            ]
+          },
+          "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-10-25T23:35:38+03:00",
+          "note": "Direct owner-authorized fast-forward and native Codex installation/readback completed.",
+          "changes": {
+            "status": "done",
+            "affected_files": [
+              "AGENTS.md",
+              "src/common/protocols/OUTCOME_CONTRACT.md",
+              "src/common/protocols/REVIEW_TO_DELIVERY.md",
+              "plugins/last-human-commit/CHANGELOG.md",
+              "plugins/last-human-commit/plugin.json",
+              "plugins/last-human-commit/plugin.yaml",
+              "plugins/last-human-commit/.codex-plugin/plugin.json",
+              "plugins/last-human-commit/.claude-plugin/plugin.json",
+              "plugins/last-human-commit/.zcode-plugin/plugin.json",
+              "plugins/last-human-commit/native/codex/.codex-plugin/plugin.json",
+              "adapters/hermes/plugin/plugin.yaml",
+              "tests/test_review_delivery_contract.py"
+            ],
+            "result": "Owner-only integration wording is scoped to Airlock, and direct owner permission applies to owned LastHumanCommit main. Relevant policy/version checks passed (14 tests), package validation and projections passed. Commit 4fb6666 was pushed to the task branch and ordinary fast-forwarded to origin/main without force. Native Codex marketplace installed LHC 1.5.64 enabled; fleet-lhc duplicate is not installed; only one LHC plugin is enabled. Installed Lead role/skill text read back correctly; no new session launched."
+          },
+          "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+          "harness": "codex"
+        }
+      ],
+      "affected_files": [
+        "AGENTS.md",
+        "src/common/protocols/OUTCOME_CONTRACT.md",
+        "src/common/protocols/REVIEW_TO_DELIVERY.md",
+        "plugins/last-human-commit/CHANGELOG.md",
+        "plugins/last-human-commit/plugin.json",
+        "plugins/last-human-commit/plugin.yaml",
+        "plugins/last-human-commit/.codex-plugin/plugin.json",
+        "plugins/last-human-commit/.claude-plugin/plugin.json",
+        "plugins/last-human-commit/.zcode-plugin/plugin.json",
+        "plugins/last-human-commit/native/codex/.codex-plugin/plugin.json",
+        "adapters/hermes/plugin/plugin.yaml",
+        "tests/test_review_delivery_contract.py"
+      ],
+      "depends_on": [],
+      "estimate_minutes": {
+        "minimum": 8.0,
+        "maximum": 15.0
+      },
+      "created_at": "2026-10-25T23:33:52+03:00"
+    },
+    {
+      "id": "L09",
+      "label": "Сделать Codex и OpenCode автообновление одной LHC",
+      "status": "done",
+      "description": "Использовать существующее ежедневное обновление megamen32-plugins для Codex и переключить OpenCode инструкции, skills и plugin на стабильный marketplace checkout, чтобы refresh обновлял их автоматически. Удалить только подтверждённые LHC-дубли fleet-lhc; остальные профили сохранить.",
+      "acceptance": "Codex на 100/44/88/Mac имеет ровно один enabled LHC из canonical megamen32-plugins; OpenCode на тех же узлах использует live LHC package из marketplace path, а не versioned Fleet snapshot; текущие daily marketplace refreshes обеспечивают будущие обновления без новых таймеров; установки переживают readback и target tests.",
+      "result": "LHC 1.5.65 now uses existing daily megamen32-plugins refresh for Codex and OpenCode. Server-100, 44, 88 and Mac M1 read back exactly one enabled Codex LHC at 1.5.65; their OpenCode instructions, skills and plugin link point to the same stable marketplace checkout; old Fleet LHC entries and paths are removed, with local backups retained. Daily updater timers remain active; already-running sessions are not restarted. Windows is not confirmed because SSH to 192.168.2.190 returned No route to host directly and via 44; its scheduled Codex updater is sourced from the public marketplace only.",
+      "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+      "harness": "codex",
+      "origin": "",
+      "supersedes": [],
+      "progress_events": [
+        {
+          "at": "2026-10-26T00:14:44+03:00",
+          "note": "Сверил активные daily refreshes и подтвердил, что они обновляют Codex marketplace, но OpenCode/root и Fleet duplicate были pinned к 1.5.52.",
+          "changes": {
+            "label": "Сделать Codex и OpenCode автообновление одной LHC",
+            "description": "Использовать существующее ежедневное обновление megamen32-plugins для Codex и переключить OpenCode инструкции, skills и plugin на стабильный marketplace checkout, чтобы refresh обновлял их автоматически. Удалить только подтверждённые LHC-дубли fleet-lhc; остальные профили сохранить.",
+            "acceptance": "Codex на 100/44/88/Mac имеет ровно один enabled LHC из canonical megamen32-plugins; OpenCode на тех же узлах использует live LHC package из marketplace path, а не versioned Fleet snapshot; текущие daily marketplace refreshes обеспечивают будущие обновления без новых таймеров; установки переживают readback и target tests.",
+            "status": "running",
+            "estimate_minutes": {
+              "minimum": 15,
+              "maximum": 30
+            },
+            "affected_files": [
+              "plugins/last-human-commit/scripts/configure_opencode_marketplace.py",
+              "tests/test_opencode_marketplace_update.py",
+              "plugins/last-human-commit/CHANGELOG.md",
+              "docs/plugin-delivery.md"
+            ]
+          },
+          "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-10-26T00:22:25+03:00",
+          "note": "1.5.65 live readback complete on 100/44/88/Mac M1; Windows remains unreachable.",
+          "changes": {
+            "status": "done",
+            "affected_files": [
+              "plugins/last-human-commit/scripts/configure_opencode_marketplace.py",
+              "tests/test_opencode_marketplace_update.py",
+              "plugins/last-human-commit/CHANGELOG.md",
+              "docs/plugin-delivery.md",
+              "plugins/last-human-commit/plugin.json",
+              "plugins/last-human-commit/plugin.yaml",
+              "plugins/last-human-commit/.codex-plugin/plugin.json",
+              "plugins/last-human-commit/.claude-plugin/plugin.json",
+              "plugins/last-human-commit/.zcode-plugin/plugin.json",
+              "plugins/last-human-commit/native/codex/.codex-plugin/plugin.json",
+              "adapters/hermes/plugin/plugin.yaml",
+              "src/common/tools/lhc_plan_mcp.py"
+            ],
+            "result": "LHC 1.5.65 now uses existing daily megamen32-plugins refresh for Codex and OpenCode. Server-100, 44, 88 and Mac M1 read back exactly one enabled Codex LHC at 1.5.65; their OpenCode instructions, skills and plugin link point to the same stable marketplace checkout; old Fleet LHC entries and paths are removed, with local backups retained. Daily updater timers remain active; already-running sessions are not restarted. Windows is not confirmed because SSH to 192.168.2.190 returned No route to host directly and via 44; its scheduled Codex updater is sourced from the public marketplace only."
+          },
+          "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+          "harness": "codex"
+        }
+      ],
+      "affected_files": [
+        "plugins/last-human-commit/scripts/configure_opencode_marketplace.py",
+        "tests/test_opencode_marketplace_update.py",
+        "plugins/last-human-commit/CHANGELOG.md",
+        "docs/plugin-delivery.md",
+        "plugins/last-human-commit/plugin.json",
+        "plugins/last-human-commit/plugin.yaml",
+        "plugins/last-human-commit/.codex-plugin/plugin.json",
+        "plugins/last-human-commit/.claude-plugin/plugin.json",
+        "plugins/last-human-commit/.zcode-plugin/plugin.json",
+        "plugins/last-human-commit/native/codex/.codex-plugin/plugin.json",
+        "adapters/hermes/plugin/plugin.yaml",
+        "src/common/tools/lhc_plan_mcp.py"
+      ],
+      "depends_on": [],
+      "estimate_minutes": {
+        "minimum": 15.0,
+        "maximum": 30.0
+      },
+      "created_at": "2026-10-26T00:14:44+03:00"
+    },
+    {
+      "id": "L04",
+      "label": "Доставить каталог/SSO и единую карточку прогресса в разрешённую ветку",
+      "status": "done",
+      "description": "Собрать проверенные и установленные каталог/SSO/UI изменения, оформить scoped commit/push и проверить интегрированный runtime без включения чужого WIP.",
+      "acceptance": "Разрешённая LHC ветка опубликована без force и чужих путей; source/runtime 1.5.62 валиден, а selected native plugin или host reader установлен и прочитан обратно; root-only SSO и individual plan page отвечают ожидаемо. Текущая Codex UserPromptSubmit auto-entry включена для следующей обычной сессии; новый consumer session не создаётся в рамках запрета пользователя.",
+      "result": "Scoped LHC source/package commit 2de7edf published to assigned branch and advanced origin/main by ordinary fast-forward; no force. Codex marketplace now runs 1.5.62 and `last-human-commit` is installed/enabled. The installed UserPromptSubmit CLI canary in an isolated Git repo created three leaves, bound L01 to its synthetic session, built graph/HTML, and used no MCP/network. Server100 and Mac mirror/observer runtimes 1.5.62 read back active with preserved inventory/config counts. Public root still returns exact SSO 302 and an individual plan page 200. No new real Codex session or owner login was created/observed.",
+      "owner": "roomhacker",
+      "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+      "harness": "codex",
+      "note": "Ждёт завершения L02 и L03; release пока не объявлен.",
+      "wait_reason": "Ждёт автоматического Codex fullcycle prompt entry и установленной проверки этого lifecycle; затем scoped source delivery.",
+      "origin": "",
+      "supersedes": [],
+      "progress_events": [
+        {
+          "at": "2026-10-25T22:19:24+03:00",
+          "note": "Ожидает закрытия UI и lifecycle работы",
+          "changes": {
+            "label": "Опубликовать цельный результат и подтвердить установленный consumer",
+            "status": "queued",
+            "description": "Сгенерировать пакет, пройти затронутые проверки, установить на server100 и Mac без потери конфигов, проверить опубликованный каталог/план и live activation consumer, затем scoped commit/push разрешённых LHC путей.",
+            "acceptance": "Installed package/readback совпадают с source; root-only SSO, плановый UI и каталог доступны по реальным путям; активированный локальный план синхронизируется без replay; owned changes опубликованы без включения постороннего WIP.",
+            "affected_files": [
+              "plugins/last-human-commit/CHANGELOG.md",
+              "deploy/plan-mirror/README.md",
+              ".agents/tasks/20261025-plan-home-sso/RESULT.md"
+            ],
+            "estimate_minutes": {
+              "minimum": 15,
+              "maximum": 30
+            },
+            "depends_on": [
+              "L02",
+              "L03"
+            ],
+            "wait_reason": "Нужны окончательные UI и lifecycle поведенческие доказательства перед сборкой/установкой.",
+            "wave": 2,
+            "note": "Ждёт завершения L02 и L03; release пока не объявлен."
+          },
+          "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-10-25T22:24:40+03:00",
+          "note": "Уточнена независимая область доставки; lifecycle остаётся отдельным листом",
+          "changes": {
+            "label": "Доставить каталог/SSO и единую карточку прогресса в разрешённую ветку",
+            "description": "Собрать проверенные и установленные каталог/SSO/UI изменения, оформить scoped commit/push и проверить интегрированный runtime без включения чужого WIP.",
+            "acceptance": "Разрешённая LHC ветка опубликована без force и чужих путей; native server100/Mac runtime 1.5.61 сохранён и прочитан обратно; root-only SSO и individual plan page отвечают ожидаемо. Leaf L03 lifecycle остаётся отдельной незавершённой приёмкой до настоящего canary.",
+            "depends_on": [
+              "L01",
+              "L02"
+            ],
+            "wait_reason": "Ожидает завершённой проверки единой карточки; lifecycle-canary не является зависимостью этой самостоятельной доставки."
+          },
+          "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-10-25T22:24:40+03:00",
+          "note": "Начал scoped source delivery после installed readback; фактические минуты до plan capture неизвестны",
+          "changes": {
+            "status": "running",
+            "owner": "roomhacker"
+          },
+          "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-10-25T22:41:30+03:00",
+          "note": "Переставил source delivery после исправления entry lifecycle по прямой поправке владельца; leaf L05 запущен.",
+          "changes": {
+            "status": "queued",
+            "depends_on": [
+              "L01",
+              "L02",
+              "L05"
+            ],
+            "wait_reason": "Ждёт автоматического Codex fullcycle prompt entry и установленной проверки этого lifecycle; затем scoped source delivery."
+          },
+          "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-10-25T22:45:24+03:00",
+          "note": "Возобновил scoped delivery после source/CLI acceptance L05.",
+          "changes": {
+            "status": "running",
+            "acceptance": "Разрешённая LHC ветка опубликована без force и чужих путей; source/runtime 1.5.62 валиден, а selected native plugin или host reader установлен и прочитан обратно; root-only SSO и individual plan page отвечают ожидаемо. Текущая Codex UserPromptSubmit auto-entry включена для следующей обычной сессии; новый consumer session не создаётся в рамках запрета пользователя."
+          },
+          "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-10-25T22:50:20+03:00",
+          "note": "Установленный package/runtime readback завершён; новая Codex session намеренно не создавалась по прямому указанию владельца.",
+          "changes": {
+            "status": "done",
+            "result": "Scoped LHC source/package commit 2de7edf published to assigned branch and advanced origin/main by ordinary fast-forward; no force. Codex marketplace now runs 1.5.62 and `last-human-commit` is installed/enabled. The installed UserPromptSubmit CLI canary in an isolated Git repo created three leaves, bound L01 to its synthetic session, built graph/HTML, and used no MCP/network. Server100 and Mac mirror/observer runtimes 1.5.62 read back active with preserved inventory/config counts. Public root still returns exact SSO 302 and an individual plan page 200. No new real Codex session or owner login was created/observed."
+          },
+          "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+          "harness": "codex"
+        }
+      ],
+      "affected_files": [
+        "plugins/last-human-commit/CHANGELOG.md",
+        "deploy/plan-mirror/README.md",
+        ".agents/tasks/20261025-plan-home-sso/RESULT.md"
+      ],
+      "depends_on": [
+        "L01",
+        "L02",
+        "L05"
+      ],
+      "estimate_minutes": {
+        "minimum": 15.0,
+        "maximum": 30.0
+      },
+      "created_at": "2026-10-25T22:19:24+03:00",
+      "wave": 2
+    }
+  ],
+  "leaf_count": 9,
+  "plan_origin": {
+    "at": "2026-10-25T22:19:24+03:00",
+    "source": "leaf_created_at",
+    "leaf_id": "L01",
+    "recorded_at": "2026-10-25T19:19:24.022665+00:00"
+  }
+}

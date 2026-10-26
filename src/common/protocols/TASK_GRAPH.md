@@ -41,9 +41,11 @@ The report's task list and the graph's leaf list are one set: the same ids, the
 same statuses, no task without a leaf and no leaf without a task. The command
 prints every divergence and exits non-zero when the two disagree.
 
-The graph is the canonical artifact. The dashboard, the text view and the plan
-section of a compaction handoff are all rendered from this file, so a stale
-report never becomes the plan of record.
+The graph is not the canonical artifact — the leaf files are. The graph is
+collected from `leaves/<ID>.json`, and the dashboard, the text view and the plan
+section of a compaction handoff are all rendered from it, so a stale report
+never becomes the plan of record and a hand-edited graph never becomes the
+source either. One leaf file, one owner; the graph is its projection.
 
 ## Format
 
@@ -54,9 +56,10 @@ fields are optional there.
 {
   "schema_version": 2,
   "title": "ExManager → Board integration",
-  "goal": "one accepted business outcome",
-  "business_result": "the observable benefit the person will get after the task is complete",
-  "current_progress": "what is already proven now, not what is planned",
+  "goal": "why the person wants the changes",
+  "business_result": "the tangible capability the person will have after the changes",
+  "acceptance_scenarios": ["Actor/context, ordinary actions, expected visible result on the real surface."],
+  "current_progress": "what is actually done or checked now, with verification limits",
   "external_waits": "pending human or platform waits, outside the active work",
   "slots": 4,
   "updated_at": "2026-10-21T06:16:00",
@@ -130,9 +133,18 @@ unknown estimate is a choice, never a demand.
   from active work. If it is nonempty, the renderer withholds a clock ETA and
   labels the finish time unknown; it still shows the bounded active-work
   subtotal.
-- Top-level `current_progress` states what is already proven, apart from the
-  planned `business_result`. The dashboard keeps the two apart: the expected
-  outcome is not the confirmed progress.
+- Top-level `goal` states the user's purpose. `business_result` and optional
+  `business_results` keep legacy storage names but declare future tangible
+  capabilities («Что будет работать»). Optional `acceptance_scenarios` is a
+  `list[str]`: actor/context, actions and expected visible result for testers on
+  the real surface. `current_progress` records only current facts («Что уже
+  сделано»); evidence supports observations, not the declaration itself. For
+  CLI/libraries, name the actual operator/caller and call/result. A pending
+  expectation is valid; claiming achievement requires real-scenario evidence.
+  New/updated plans follow `PLAN_REPORT.md`; historical reports/revisions stay
+  untouched, and loading legacy declarations never invents fulfillment. The old
+  «Бизнес-результат» heading remains accepted. This is a meaning contract, not a
+  regex semantic classifier or a new gate.
 - `actual_minutes` is the summed effort of the executors on the leaf. If it was not
   measured, leave it out instead of inventing a number. The window on the clock is
   `started_at` and `finished_at`, and it is a different number: 22 minutes of effort
@@ -173,13 +185,16 @@ unknown estimate is a choice, never a demand.
 
 1. Write the graph when the objective is decomposed, before dispatch. A
    decomposition without a graph is not finished.
-2. Update the graph and the report together at every plan boundary. A graph that
-   says `queued` while the report says `done` is wrong in both directions.
-   The order is fixed: refresh the graph from the report, then build the view
-   on the refreshed graph, then reconcile the two with `check-plan`.
-3. The report's tasks and the graph's leaves are one set. No task without a
-   leaf, no leaf without a task, no two places claiming a different status for
-   the same task. `check-plan` prints the divergence and exits non-zero.
+2. Update the leaf file at every plan boundary; the graph, the report and the
+   page are projections of it. A projection that says `queued` while the leaf
+   file says `done` is wrong in both directions. The order is fixed: write the
+   leaf file, build the graph from the leaf files (`lhc_plan_json.py build`),
+   then build the view on the built graph, then reconcile the projections with
+   `check-plan`.
+3. The leaf files, the report's tasks and the graph's leaves are one set. No task
+   without a leaf, no leaf without a task, no two places claiming a different
+   status for the same task. `check-plan` prints the divergence and exits
+   non-zero.
 4. Estimate from the work and its proof, in minutes, with the named uncertainty.
    An unknown estimate is honest; a padded one is not.
 5. Record the real blocker text, not "waiting" or "later".

@@ -32,6 +32,47 @@ import time
 import uuid
 
 
+def kernel_boot_time():
+    """Read the boot time of the kernel without starting a process.
+
+    macOS keeps the boot time in the ``kern.boottime`` system control.  The
+    ``sysctl`` program only prints what the kernel already holds, so the same
+    value is read here through libc, inside the calling process.  ``None``
+    means the value could not be read and the caller has to ask the program.
+
+    The seconds are the raw epoch seconds of the boot time: the very number
+    the ``sysctl`` program prints as ``sec``.  No time zone is involved - the
+    program renders only its trailing date in local time, and that date is not
+    part of the boot identity.
+    """
+
+    if sys.platform != "darwin":
+        return None
+    try:
+        import ctypes
+    except ImportError:
+        return None
+    try:
+        libc = ctypes.CDLL(None, use_errno=True)
+        buffer = (ctypes.c_char * 64)()
+        length = ctypes.c_size_t(ctypes.sizeof(buffer))
+        if libc.sysctlbyname(b"kern.boottime", ctypes.byref(buffer),
+                             ctypes.byref(length), None, 0) != 0:
+            return None
+    except (AttributeError, OSError, ValueError):
+        return None
+    raw = bytes(buffer)[:length.value]
+    if len(raw) >= 12:
+        # A 64 bit kernel answers with 64 bit seconds and 32 bit microseconds.
+        return (int.from_bytes(raw[0:8], sys.byteorder),
+                int.from_bytes(raw[8:12], sys.byteorder))
+    if len(raw) >= 8:
+        # A 32 bit kernel answers with 32 bit seconds and 32 bit microseconds.
+        return (int.from_bytes(raw[0:4], sys.byteorder),
+                int.from_bytes(raw[4:8], sys.byteorder))
+    return None
+
+
 def boot_identity():
     """Prefer a kernel boot UUID; disclose weaker native boot-time evidence."""
     try:
@@ -49,6 +90,13 @@ def boot_identity():
     except OSError:
         pass
     if sys.platform == "darwin":
+        # The kernel holds the boot time; read it in this process first.
+        boot = kernel_boot_time()
+        if boot is not None:
+            return {"id": socket.gethostname() + ":" + ":".join(str(part) for part in boot),
+                    "source": "sysctl kern.boottime + hostname (fallback)",
+                    "limitations": ["Fallback boot identity uses kernel boot time and hostname, not a boot UUID."]}
+        # The kernel refused the question: ask the program that owns it.
         try:
             result = subprocess.run(["/usr/sbin/sysctl", "-n", "kern.boottime"],
                                     capture_output=True, text=True, timeout=2, check=True)

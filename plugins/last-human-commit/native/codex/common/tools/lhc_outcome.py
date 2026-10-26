@@ -20,6 +20,12 @@ from urllib.parse import unquote, urlsplit
 if str(Path(__file__).resolve().parent) not in sys.path:
     sys.path.insert(0, str(Path(__file__).resolve().parent))
 import lhc_milestone as native
+try:
+    import lhc_git_facts as facts
+except ImportError:
+    # The published package does not ship the reader of the repository yet.
+    # Git then answers every question, which is the answer it always gave.
+    facts = None
 
 STAGES = ('technical', 'deploy', 'consumer', 'publication', 'integration')
 VERIFICATION_KINDS = ('standard', 'source-publication')
@@ -841,7 +847,13 @@ def scope_revision(outcome, cwd):
 
 
 def remote_binding(cwd, remote):
-    value = native.git(cwd, 'remote', 'get-url', remote).decode().strip()
+    # Git rewrites the URL of a remote with the insteadOf rules of the
+    # configuration while it reads it, so the raw value of the config is
+    # not the answer. The answer is read from the configuration the way Git
+    # reads it; Git itself answers the cases that are not certain.
+    value = facts.remote_url(cwd, remote) if facts is not None else None
+    if value is None:
+        value = native.git(cwd, 'remote', 'get-url', remote).decode().strip()
     # Keep credentials out of state/logs. Only resolved GitHub repository IDs
     # are supported for automatic upstream-main close, not arbitrary remotes.
     match = re.fullmatch(r'(?:https://github.com/|git@github.com:)([\w.-]+/[\w.-]+?)(?:\.git)?', value)

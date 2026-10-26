@@ -14,6 +14,25 @@ sys.path.insert(0, str(ROOT / "src/common/tools"))
 import lhc_entry
 import lhc_time_guard as guard
 
+from _inprocess import load_module, run_cli
+
+ENTRY = ROOT / "src/common/tools/lhc_entry.py"
+
+
+def entry_cli(arguments, payload):
+    """The entry CLI, with its own stdin, stdout, stderr and exit code.
+
+    The command line the tool would have received, the payload it would have
+    read from stdin and the answers it would have written are the ones the
+    process gives; only the interpreter start is saved.
+    """
+    result = run_cli(load_module(ENTRY), list(arguments), stdin=payload)
+    if result.returncode:
+        # The command line asked for a zero exit code; a failing tool must say so.
+        raise subprocess.CalledProcessError(result.returncode, result.args,
+                                           result.stdout, result.stderr)
+    return result
+
 
 def read(relative: str) -> str:
     return (ROOT / relative).read_text(encoding="utf-8")
@@ -49,9 +68,10 @@ def test_router_points_to_the_report_and_stays_english():
     assert "in any language" in router
     assert "Overseer reads that report against the original request" in router
     assert "it never blocks delivery" in router
-    # The English instruction policy forbids Cyrillic in the router itself.
+    # The English router includes two canonical Russian legacy report headings.
     import re
-    assert not re.search("[А-Яа-яЁё]", read("AGENTS.md"))
+    router_source = read("AGENTS.md").replace("Что будет работать", "").replace("Бизнес-результат", "")
+    assert not re.search("[А-Яа-яЁё]", router_source)
 
 
 def test_task_template_carries_the_same_report_shape():
@@ -127,10 +147,8 @@ def test_post_tool_use_hook_emits_both_reminders(tmp_path):
     subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
     payload = json.dumps({"cwd": str(tmp_path), "session_id": "sid-hook",
                            "tool_name": "exec_command"})
-    result = subprocess.run(
-        [sys.executable, str(ROOT / "src/common/tools/lhc_entry.py"),
-         "--root", str(ROOT), "--runtime", "codex", "--event", "PostToolUse", "--heartbeat-only"],
-        input=payload, text=True, capture_output=True, check=True)
+    result = entry_cli(["--root", str(ROOT), "--runtime", "codex", "--event",
+                         "PostToolUse", "--heartbeat-only"], payload)
     output = json.loads(result.stdout or "{}")
     context = output.get("hookSpecificOutput", {}).get("additionalContext", "")
     # A fresh session has no 30-minute plan reminder yet, and the 120-minute
@@ -142,8 +160,6 @@ def test_post_tool_use_hook_emits_both_reminders(tmp_path):
 
 def test_entry_keeps_conversation_hooks_inert():
     payload = json.dumps({"cwd": "/tmp", "session_id": "sid-inert", "prompt": "hi"})
-    result = subprocess.run(
-        [sys.executable, str(ROOT / "src/common/tools/lhc_entry.py"),
-         "--root", str(ROOT), "--runtime", "codex", "--event", "UserPromptSubmit"],
-        input=payload, text=True, capture_output=True, check=True)
+    result = entry_cli(["--root", str(ROOT), "--runtime", "codex", "--event",
+                        "UserPromptSubmit"], payload)
     assert result.stdout.strip() == ""

@@ -1,3 +1,240 @@
+# 1.5.66
+
+- Keep recent direct user corrections in a separate bounded input window for existing progress advice; generated goal reminders and explicit agent relays no longer replace the latest correction. Omitted history remains unknown.
+- Prioritize the actual installed caller result, the latest requested delivery order and concrete blocker repair; preserve supplied answers instead of asking again.
+- Remove mandatory adviser-per-blocker and separate retrospective-session requirements; do useful independent work while existing builds run. No new gate, session type or state store.
+- Preserve the single final review, optional MCP, fail-open advice, native Stop and permission boundaries.
+
+# 1.5.65 — OpenCode следует за обновляемым LHC marketplace
+
+Для OpenCode global instructions, skills и LHC plugin теперь можно привязать к
+стабильному checkout `megamen32-plugins`. Ежедневный Codex marketplace refresh
+обновляет тот же источник; новые OpenCode-сессии загружают текущую версию без
+второго Fleet-снимка или отдельного таймера.
+
+# 1.5.64 — owner-only интеграция не блокирует владельца LHC
+
+Правило о владельце upstream main для Airlock-проектов больше не трактуется как
+запрет владельцу репозитория LastHumanCommit. Прямое распоряжение владельца на
+scoped fast-forward `main` разрешает интеграцию после соответствующих проверок.
+
+# 1.5.63 — инженерный Lead не теряет роль продукта-исполнителя
+
+На старте LHC Lead назначает ближайший исполнимый инженерный лист native Worker.
+Бизнес-исполнитель внутри разрабатываемого продукта не подменяет Worker LHC;
+отсутствие уже созданного child не меняет роль Lead. Протоколы, навыки, корневой
+роутер и package projections согласованы.
+
+# 1.5.62 — автоматический старт локального fullcycle-плана
+
+- Codex автоматически связывает fullcycle запрос с локальным планом/листом при UserPromptSubmit.
+- При отсутствии плана создаёт локальный scaffold и обновляет graph/HTML без MCP и сети.
+# 1.5.61 — один прогресс-бар и привязка активного leaf-плана
+
+Цветная полоса статусов, число задач и временные границы собраны в одной
+карточке: цветная полоса считает задачи, подписи минимума/максимума/сейчас
+описывают время отдельно, без второй длинной оси и плавающей синей точки.
+
+Для продолжения выбранного плана добавлена локальная `lhc_plan_json.py activate`:
+она привязывает точный plan-dir в текущем Git worktree и реальную сессию,
+фиксирует исходный снимок до старта листа, оставляет работу offline и включает
+observer для дальнейших локальных сохранений.
+
+# 1.5.60 — главная под SSO и одна временная шкала плана
+
+Существующий личный SSO защищает только корень каталога. Страницы планов,
+JSON, архивы и старые capability-ссылки доступны агентским сессиям; запись и
+статус наблюдателя по-прежнему требуют Bearer.
+
+В карточке плана остался один временной график с минимумом, максимумом,
+текущей отметкой и явной оценкой превышения ранней или поздней границы.
+Прогресс задач остаётся числом с процентом и счётчиками статусов.
+
+# 1.5.59 — проекты и планы под существующим SSO
+
+Корневая страница показывает все принятые зеркалом планы, сгруппированные по
+проекту, с поиском, фильтром, статусами и свежестью данных. Обновление сохраняет
+поиск и список при истечении входа. Корень принимает только подтверждённый
+loopback proxy SSO; старый capability URL при включённом SSO защищён так же.
+Запись и синхронизация через Bearer API не зависят от браузерного входа.
+Явные `graph_sources` добавляют существующие графы в тот же observer без
+перезаписи исходных графов; ошибка чтения сохраняет последний хороший снимок.
+
+# 1.5.58 — один LhcPlan MCP
+
+Один стандартный вход с семью инструментами вместо двух реализаций с разными
+возможностями. Изменения листов проходят через канонический CLI, сохраняя время
+создания, начало плана и историю. Пакет переносим; MCP остаётся необязательным,
+локальные файлы и офлайн-зеркало сохраняют прежнюю роль.
+
+# 1.5.57 — начало плана с первого листа
+
+Время Full Cycle включает создание плана. Native-листы автоматически получают
+неизменяемый created_at; локальный источник сохраняет начало один раз, включая
+восстановление birthtime старых файлов с явной пометкой. Зеркало передаёт это
+происхождение без пересчёта по копиям. Редактирование, удаление первого листа и
+новые ревизии не сдвигают начало; старые архивные страницы сохраняются.
+
+# 1.5.55 — единая страница плана
+
+Боковое оглавление прокручивает непрерывную страницу к разделам; активный
+пункт следует за чтением. Статусы задач и отсутствие блокировок видны сразу.
+Обновление страницы сохраняет фильтры и положение чтения; ревизии и архивы
+сохраняют прежнюю семантику.
+
+# 1.5.53 — локальные планы с автоматическим зеркалом
+
+Локальные `plan.json`, `leaves/*.json` и история ревизий остаются источником
+истины. Отдельный наблюдатель отслеживает обычные сохранения в выбранных
+каталогах, хранит последний снимок и догоняет сервер после восстановления
+связи. CLI и MCP используют сохранённую локальную привязку без публикации
+по сети; для зарегистрированных планов отключается также старый autopublish
+клиентов 1.5.52. Прежние ссылки и исходные снимки сохраняются.
+
+Сервер принимает очищенный JSON, проверяет владельца, последовательность и
+неизменяемую историю, использует существующий renderer и хранит только
+восстанавливаемую реплику. Приватная панель показывает недавние и заявленные
+работающие планы; свежесть файла, receipt и неизвестная живость агента
+различаются. Обычные локальные renderer и legacy publisher сохранены.
+
+# 1.5.52 - the suite says what it spends, the gate proves itself, and the tool stops asking git twice
+
+**The suite says what it spends.** The full run started about a thousand processes
+and most of its wall clock went into waiting for them. The repositories the cases
+need are now prepared once and copied, so a case receives a real Git checkout -
+the same branch, the same identity, the same committed files, the same answers to
+every Git question - without every case paying for the build again. The gate that
+counts the processes is green again, and a new case proves the gate still bites: a
+session over the budget fails and says so.
+
+**The gate proves itself.** A budget that nothing ever exceeded is not a gate, it
+is a comment. The suite now runs a session on purpose, over the budget, and
+requires that the session fails and names the budget - and that the same session
+within the budget passes.
+
+**The tool stops asking Git twice.** The publication tool learned the name of a
+project from a Git process; it now reads it from the disk with the same reader
+every other tool of the package uses, and falls back to the Git binary for a
+layout the reader does not model.
+
+**The copies are lighter.** The sample hooks `git init` writes are inert, no case
+ever runs them, and they were four times heavier than the rest of the repository
+they travelled in.
+
+# 1.5.51 - the page prints, the core keeps its promises, and a row without an id says so
+
+**A report row says how its leaf was matched.** A row without an id is never
+silently fitted by position: `check-plan` prints "matched by position, not by
+id", and a wrong order is a divergence with both sides named.
+
+**The core keeps its promises.** The fifteen-minute limit on a leaf lived only
+in prose; the kernel now names every leaf above it - in `validate`, in
+`status`, in the plan and on the page - unless the leaf records why it is
+deliberately longer. A waiting leaf shows why it waits and when it is planned
+to start and finish, and a leaf without a reason says so instead of staying
+silent. The planned times of a queued leaf are no longer read as a work
+window. A running leaf shows how long it has been running and whether it is
+behind.
+
+**The page prints.** `render --print` writes a printable page without the
+interactive parts - one wave per sheet - and the PDF command either produces a
+file or names the renderer that is missing, with exit code 2. No PDF writer of
+its own: a file from a hand-written encoder would be a different document than
+the browser's.
+# 1.5.50 - the plan prices itself, the report is generated, and the harness can ask the human
+
+**The plan says what it costs.** A leaf declares its model class and its complexity; the
+plan kernel adds the model, the token estimate and the price from the live catalogue -
+without a model in the loop. Every figure carries its source, measured or provisional,
+and a leaf without a chosen model says so instead of showing zero.
+
+**The report is generated from the leaves.** The `## Plan` block of the task record is a
+projection of the leaf files: change a status in the leaf and the block changes with the
+rebuild, and a doctored header is caught with the named mismatch. The numbers in the
+header come from the same code the page uses, so the record and the graph cannot drift
+apart silently. `check-plan` on the live plan now says that the tasks of the report and
+the leaves of the graph agree and exits zero.
+
+**The plan CLI answers over MCP - from inside this package.** Four operations: create a
+leaf, edit a leaf, rebuild the plan, price a leaf. Each one is a call of the existing CLI
+and returns its output verbatim. The facade is part of the Last Human Commit package, not
+a second plugin: the separate plan plugin is gone and the facade travels with the package
+to every host.
+
+**Ask Human is a plugin of this marketplace.** Asking a human is a standard thing for
+every harness, so it ships as its own plugin inside the same marketplace: a hook catches
+the question the harness itself asks - the permission request - and forwards it to the
+human through the human-request intake; the answer comes back to the harness. A harness
+with no answer within the timeout is not blocked.
+
+**One meaning per field.** `business_result` is one thing in the three documents that
+define it, and the source of the plan is named once: the leaf files are the source, the
+graph and the page are projections of them. The plan-artifacts skill names every field a
+leaf may carry, and the path it documents really builds the graph and the page.
+
+**The suite stays green, and the package ships what it claims.** The model resolver and
+the facade travel with the package instead of being left behind in the source tree.
+# 1.5.48 - correct the route from actual progress
+
+- Codex: an optional trusted async hook invokes a fresh read-only Overseer at a
+  due work boundary and returns one concrete progress correction to the active turn.
+- Bound and redact native evidence, prevent recursive/duplicate reviews, honor
+  native stop/new-turn cancellation and hook disablement, and fail open.
+- Shorten report-only reminders. Other harnesses retain manual consultation.
+- Native fixture proof: actual callback redirected repeated SHA checks to local
+  installation and a successful consumer check. Only fixture timing was synthetic.
+
+# 1.5.47 - one answer about a repository, and no leftovers in the package
+
+**The last duplicate is gone.** The milestone module had grown its own search for
+a repository next to the one the canon now holds. It asks the canon now, and the
+package ships one answer. The check that holds this parses the modules and
+requires that an answer exists only in the canon - outside it, an answer may only
+be a plain delegation, and the class that describes a repository is defined once.
+The check was proved by putting a duplicate back: it fails, and it names the file.
+
+**A leftover stopped shipping.** A module that was merged into another one had
+left its copy in the package, where it shipped as dead weight and broke the
+bundle check. The publisher now refuses to pass when a projected file has no
+source, and says which file it is.
+
+**The suite still runs in about half a minute.** 1323 cases, 31 s on the
+development machine; no gate was deleted.
+# 1.5.44 - the task opens where the owner taps it, the plan says what it is, and the suite is two lanes
+
+Three things the owner asked for, in the order he asked them.
+
+**The plan says what the work is for, and how much of it is known.** The
+remainder of a plan is not "unknown" because one leaf has no duration: the
+known part is stated, and the imprecision is named next to it. A wait that no
+open leaf carries any more is a note on a known horizon, not a reason to hide
+the number. A leaf that really waits - blocked or waiting - still withholds the
+clock, because the time of the answer is unknown whatever the durations are.
+
+**Several business results in one task.** A task may deliver more than one
+capability the user can touch by hand and check on its own. The report may
+repeat the line "Бизнес-результат:", and every repeat is a result of its own:
+the graph carries the list, the dashboard shows a card per result, and the text
+view prints them one per line. The means - the commits, the internal stages -
+are not results.
+
+**The plan is an instrument, not an archive.** A plan does not grow
+directories: no receipts per leaf, no consumer-test matrices, no research or
+reviews folders, no second copy of the plan in another shape. What a leaf needs
+in order to be understood lives in the leaf. A test earns its place by a
+measured defect; a test that only restates the implementation is ballast.
+
+**The suite is two lanes.** The work loop must finish in seconds. The cases
+that drive an external process - a CLI subprocess, a git operation, a live
+reviewer chain - are the long lane and run on the schedule: 1190 cases in 553
+seconds before, 616 cases in 38 seconds now, and no gate was deleted. The
+marker `nightly` already existed in pytest.ini; it was never applied to the
+cases that needed it.
+
+**The projection is a command.** `scripts/publish_package.py` republishes the
+generated package copies from the canonical sources, so a change in the canon no
+longer leaves the package stale and the projection gate red.
+
 # 1.5.43 - unknown durations are named, not drawn as zero
 
 A plan whose leaves carry no estimate no longer shows a minute axis on the Gantt, and the effort, critical path, remainder and planned peak say "unknown" instead of "0 min". The known subtotal and the count of the missing estimates are kept, and the counts that are really known stay exact.

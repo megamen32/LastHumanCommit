@@ -1,0 +1,45 @@
+{
+  "label": "Завершить каталог проектов, root-only SSO и локальный observer на server100 и Mac",
+  "status": "done",
+  "description": "Подключить выбранные canonical plans и graph-only источники к observer, установить root-only SSO и сохранить непрерывную локальную работу.",
+  "acceptance": "Каталог показывает все принятые зеркалом планы; только / требует существующий SSO; отдельные plan/archive JSON публичны, Bearer GET /v1/status работает.",
+  "affected_files": [
+    "src/common/tools/lhc_plan_mirror.py",
+    "deploy/plan-mirror/sso-nginx.conf",
+    "deploy/plan-mirror/install-native.py"
+  ],
+  "estimate_minutes": {
+    "minimum": 15,
+    "maximum": 30
+  },
+  "note": "Уже завершено до появления live plan. Исходные started_at/finished_at и фактические минуты не записывались; не восстановлены задним числом.",
+  "id": "L01",
+  "created_at": "2026-10-25T22:19:24+03:00",
+  "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+  "harness": "codex",
+  "updated_at": "2026-10-25T22:19:24+03:00",
+  "progress_events": [
+    {
+      "at": "2026-10-25T22:19:24+03:00",
+      "note": "Снимок проверенных завершённых фактов до live-plan; фактические минуты неизвестны",
+      "changes": {
+        "label": "Завершить каталог проектов, root-only SSO и локальный observer на server100 и Mac",
+        "status": "done",
+        "description": "Подключить выбранные canonical plans и graph-only источники к observer, установить root-only SSO и сохранить непрерывную локальную работу.",
+        "acceptance": "Каталог показывает все принятые зеркалом планы; только / требует существующий SSO; отдельные plan/archive JSON публичны, Bearer GET /v1/status работает.",
+        "affected_files": [
+          "src/common/tools/lhc_plan_mirror.py",
+          "deploy/plan-mirror/sso-nginx.conf",
+          "deploy/plan-mirror/install-native.py"
+        ],
+        "estimate_minutes": {
+          "minimum": 15,
+          "maximum": 30
+        },
+        "note": "Уже завершено до появления live plan. Исходные started_at/finished_at и фактические минуты не записывались; не восстановлены задним числом."
+      },
+      "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+      "harness": "codex"
+    }
+  ]
+}

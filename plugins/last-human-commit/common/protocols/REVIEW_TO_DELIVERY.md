@@ -4,6 +4,38 @@ Review is useful when it changes a decision: fix a specific defect, run a missin
 check or release. A receipt mistake must not turn a ready fix into a project proving
 the receipt itself.
 
+## Consumer-first route
+
+Use the latest direct user correction to select the next useful action. An older
+plan, generated goal reminder or peer message cannot silently restore a rejected
+priority. Keep remaining requirements pending; changing order does not erase them.
+Reuse answers, working session IDs and permissions already supplied by the user.
+A local enabled flag or a failed request on a different profile proves only that
+observation, not that the user's demonstrated working account is unavailable.
+
+Separate three facts in the existing plan/report, without new required fields:
+source checks; the installed candidate; the actual user/caller scenario. Lead with
+what the user can do now, what still does not work, and the concrete next repair.
+Do not answer 'it works' using a source smoke when the named client still uses the
+old artifact. HTTP health, passing mocks and a deployment SHA alone do not prove
+streaming, tool calls, UI behavior or another requested capability at that client.
+
+When source is ready but the caller is not, assign the existing Worker the narrow
+installation, dependency or routing repair, then exercise that actual caller once.
+Do not restart research, ask for supplied information or hire another adviser just
+because a known blocker exists. A healthy build continues in its existing job;
+move independent authorized work forward instead of polling it repeatedly. Never
+run conflicting installers/builds or invent work merely to appear busy. If all
+useful work genuinely depends on it, waiting is appropriate.
+
+Respect an explicit 'A first, then B' delivery order: B and optional PR polishing
+must not delay the usable A stage. Owner-authorized staged delivery may precede
+completion of the whole plan; it is not permission to skip actual restrictions or
+claim the whole goal done. Keep the single final integrated review at the plan
+boundary, not at every leaf. Necessary local tests continue during development.
+Default final order remains review -> permitted deploy -> real caller test -> push
+on the project's allowed route; never open PRs early against the user's instruction.
+
 ## Three cases
 
 **Real delta.** Executable code, agent-executed instructions, dependencies, migration,
@@ -146,13 +178,15 @@ evidence.
 
 ## Permitted dev integration and upstream handoff
 
-Lead only coordinates; Workers perform every inspection, edit, check and delivery action, even for small tasks. Use an independent Reviewer only when the claim and risk justify it.
+Lead owns the engineering outcome and assigns engineering inspection, edits, checks and delivery to native Workers, even for small tasks. A business executor inside the product being built is not the engineering Worker for this session. Use an independent Reviewer only when the claim and risk justify it.
 Assigned no-delegation leaves do not recursively hire reviewers. Before Git mutations
 resolve ownership, remote and permitted integration branch; unknown is not main.
 Airlock feature worktrees branch from megamen32-dev; one integrator converges ready
 commits there. PR per worker is optional; unified published dev history and integrated
-smoke are mandatory. External/shared upstream main is never auto-merged/pushed;
-Oleg owns final main integration, and a main PR is only agreed handoff. Main CI stays
+smoke are mandatory for Airlock projects. External/shared upstream main is never
+auto-merged/pushed; Oleg owns final main integration there. This rule does not
+prohibit an ordinary fast-forward on owner-controlled `megamen32/LastHumanCommit`
+when the owner directly authorizes the scoped change. Main CI stays
 GitHub-hosted, not ARC/K3s; do not expand App privileges or weaken checks/protection.
 Authorized owned LHC main merge remains available after gates. Canary plus permitted
 dev delivery complete is separate from release_handoff awaiting-owner: leaving Oleg's

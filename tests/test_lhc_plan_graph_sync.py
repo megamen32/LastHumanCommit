@@ -13,13 +13,14 @@ Three properties are protected here:
 from __future__ import annotations
 
 import json
-import subprocess
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+
+from _inprocess import git_repo, load_module, run_cli
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -42,10 +43,11 @@ REPORT = """Цель: закрыть интеграцию источника
 """
 
 
-def run_grid(*args: str) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        [sys.executable, str(GRID), *args], capture_output=True, text=True
-    )
+grid = load_module(GRID, name="lhc_grid_plan_sync")
+
+
+def run_grid(*args: str):
+    return run_cli(grid, args)
 
 
 def write_report_and_graph(base: Path, report: str = REPORT) -> tuple[Path, Path]:
@@ -153,7 +155,7 @@ def test_check_plan_refuses_an_unreadable_report(tmp_path: Path) -> None:
 def test_heartbeat_names_the_map_then_the_view_then_the_reconciliation(
     tmp_path: Path,
 ) -> None:
-    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    git_repo(tmp_path)
     start = datetime(2026, 10, 21, 10, 0, tzinfo=timezone.utc)
     guard.native_heartbeat(tmp_path, "codex", "sid-plan-graph", now=start)
     due = guard.native_heartbeat(
@@ -177,7 +179,7 @@ def test_heartbeat_names_the_map_then_the_view_then_the_reconciliation(
 
 
 def test_compaction_handoff_carries_the_plan_as_text_not_as_json(tmp_path: Path) -> None:
-    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    git_repo(tmp_path)
     write_report_and_graph(tmp_path / ".agents/tasks/objective-demo")
     handoff = compact(tmp_path)
     section = plan_section(handoff)
@@ -195,7 +197,7 @@ def test_compaction_handoff_carries_the_plan_as_text_not_as_json(tmp_path: Path)
 def test_compaction_handoff_reads_the_canonical_graph_not_the_report(
     tmp_path: Path,
 ) -> None:
-    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    git_repo(tmp_path)
     objective = tmp_path / ".agents/tasks/objective-demo"
     _report_path, graph_path = write_report_and_graph(objective)
     document = json.loads(graph_path.read_text(encoding="utf-8"))
@@ -208,7 +210,7 @@ def test_compaction_handoff_reads_the_canonical_graph_not_the_report(
 
 
 def test_compaction_handoff_says_when_the_map_is_missing(tmp_path: Path) -> None:
-    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    git_repo(tmp_path)
     (tmp_path / ".agents/tasks").mkdir(parents=True)
     handoff = compact(tmp_path)
     assert "Plan graph not found" in handoff
@@ -218,7 +220,7 @@ def test_compaction_handoff_says_when_the_map_is_missing(tmp_path: Path) -> None
 def test_compaction_handoff_keeps_the_plan_section_inside_its_budget(
     tmp_path: Path,
 ) -> None:
-    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    git_repo(tmp_path)
     objective = tmp_path / ".agents/tasks/objective-big"
     leaves = "\n".join(
         f"⏳ (задача номер {index} с достаточно длинным названием) оценка 15 минут"
@@ -242,14 +244,14 @@ def test_a_nested_project_never_borrows_the_outer_projects_plan_graph(
     tmp_path: Path,
 ) -> None:
     outer = tmp_path / "outer-project"
-    subprocess.run(["git", "init", "-q", str(outer)], check=True)
+    git_repo(outer)
     objective = outer / ".agents/tasks/objective-outer"
     _report_path, graph_path = write_report_and_graph(objective)
     assert graph_path.is_file()
 
     nested = outer / "service"
     nested.mkdir()
-    subprocess.run(["git", "init", "-q", str(nested)], check=True)
+    git_repo(nested)
 
     # The nested repository has its own task records and no graph of its own.
     assert guard.find_plan_graph(nested) is None

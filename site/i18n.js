@@ -26,7 +26,7 @@
     "role.kind.role": ["ROLE", "РОЛЬ"],
     "role.kind.method-reference": ["METHOD REFERENCE", "МЕТОДИКА"],
     "role.kind.compatibility-alias": ["COMPATIBILITY ALIAS", "СОВМЕСТИМЫЙ ПСЕВДОНИМ"],
-    "roleCount": ["{count} ROLES / CURRENT REVISION", "РОЛЕЙ: {count} / АКТУАЛЬНАЯ ВЕРСИЯ"],
+    "roleCount": ["{roles} ROLES + {methods} METHOD REFERENCES + {aliases} COMPATIBILITY ALIAS / CURRENT REVISION", "РОЛИ: {roles} · МЕТОДИКИ: {methods} · ПСЕВДОНИМ: {aliases} / АКТУАЛЬНАЯ ВЕРСИЯ"],
     "role.summaryLabel": ["ROLE SUMMARY", "КРАТКО О РОЛИ"],
     "role.Lead.summary": ["Own the user outcome and delivery: choose the route, organize needed work, verify the real scenario and integrate changes.", "Отвечает за результат для пользователя: выбирает путь, организует нужную работу, проверяет реальный сценарий и интеграцию изменений."],
     "role.Worker.summary": ["Complete one bounded contribution to the result and report the verified change, limits and blockers to Lead.", "Выполняет ограниченную часть общей задачи и сообщает Lead о проверенном изменении, его границах и препятствиях."],

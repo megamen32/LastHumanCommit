@@ -1,9 +1,6 @@
-"""Local clock-logic regressions plus a real, separate-process CLI canary."""
-import importlib.util
+"""Local clock-logic regressions plus a real CLI canary."""
 import json
 from pathlib import Path
-import subprocess
-import sys
 import tempfile
 import time
 import unittest
@@ -11,11 +8,11 @@ from unittest.mock import patch
 
 import pytest
 
+from _inprocess import load_module, run_cli
+
 ROOT = Path(__file__).resolve().parents[1]
 TOOL = ROOT / "src/common/tools/lhc_active_time.py"
-spec = importlib.util.spec_from_file_location("active_time", TOOL)
-timer = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(timer)
+timer = load_module(TOOL, name="active_time")
 
 
 def sample(mono, wall=1000, boot="boot-a"):
@@ -122,10 +119,10 @@ class ActiveTimeTest(unittest.TestCase):
         with tempfile.TemporaryDirectory(dir=ROOT / ".tmp") as folder:
             path = Path(folder) / "timer.json"
             def run(command, ok=True):
-                args = [sys.executable, "-B", str(TOOL), command, "--state", str(path)]
+                args = [command, "--state", str(path)]
                 if command == "start":
                     args += ["--actor", "test-lead", "--task", "cli-canary"]
-                proc = subprocess.run(args, capture_output=True, text=True)
+                proc = run_cli(timer, args)
                 self.assertEqual(proc.returncode, 0 if ok else 2, proc.stderr)
                 return json.loads(proc.stdout)
             run("start")

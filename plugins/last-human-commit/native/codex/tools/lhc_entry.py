@@ -5,9 +5,12 @@ No process is started here. Native Interrupt/permission events never resume work
 Codex compact hooks only preserve state: SessionStart(source=compact) delivers it.
 """
 import argparse
+import contextlib
 from datetime import datetime
 import fcntl
 import hashlib
+import importlib.util
+import io
 import json
 import os
 import re
@@ -23,6 +26,144 @@ if str(Path(__file__).resolve().parent) not in sys.path:
 
 CONTEXT_EVENTS = {"SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "PreModel"}
 QUIET_EVENTS = {"Interrupt", "SessionEnd", "PermissionRequest", "ToolFailure", "session.error"}
+
+
+def _fullcycle_plan_entry(event, root):
+    """Create or bind a local leaf on the ordinary Codex prompt path.
+
+    This is deliberately local and synchronous: it never contacts the mirror
+    service. A missing mirror config only skips remote registration; the plan,
+    leaf, graph and HTML still exist in the current worktree.
+    """
+    prompt = str(event.get("prompt") or "").strip()
+    cwd = Path(event.get("cwd") or ".").expanduser().resolve()
+    session = str(event.get("session_id") or event.get("sessionID") or "").strip()
+    if not prompt or not session:
+        return None
+    tools = method_root(Path(root).resolve()) / "tools"
+    outcome = sibling_tool(tools, "lhc_outcome.py")
+    if outcome is None or outcome.classify(prompt) != "fullcycle":
+        return None
+    git = sibling_tool(tools, "lhc_gitlayout.py")
+    repo = git.worktree_root(cwd) if git and hasattr(git, "worktree_root") else None
+    repo = Path(repo or cwd).resolve()
+    if not (repo / ".git").exists():
+        return None
+    mirror = sibling_tool(tools, "lhc_plan_mirror.py")
+    leaves = sibling_tool(tools, "lhc_plan_json.py")
+    grid = sibling_tool(tools, "lhc_grid.py")
+    if not all((mirror, leaves, grid)):
+        return None
+
+    # Search only the current repository's conventional task roots. Never walk
+    # the home directory or a configured fleet root from a prompt hook.
+    candidates = []
+    for base in (repo / ".agents" / "tasks", repo / "docs" / "tasks"):
+        if base.is_dir():
+            candidates.extend(p.parent.parent for p in list(base.glob("*/leaves/*.json"))[:400]
+                              if (p.parent.parent / "plan.json").is_file())
+    candidates = sorted(set(p.resolve() for p in candidates))
+    words = set(re.findall(r"[\w-]{3,}", prompt.lower()))
+
+    def score(plan):
+        metadata = mirror.read(plan / "plan.json", {})
+        text = " ".join(str(metadata.get(k, "")) for k in ("title", "goal", "business_result"))
+        for leaf_path in sorted((plan / "leaves").glob("*.json")):
+            leaf = mirror.read(leaf_path, {})
+            text += " " + str(leaf.get("label", "")) + " " + str(leaf.get("description", ""))
+        terms = set(re.findall(r"[\w-]{3,}", text.lower()))
+        return len(words & terms)
+
+    selected = None
+    created = False
+    if candidates:
+        ranked = sorted(((score(plan), plan) for plan in candidates), key=lambda row: (-row[0], str(row[1])))
+        if len(ranked) == 1 or (ranked[0][0] > 0 and (len(ranked) == 1 or ranked[0][0] > ranked[1][0])):
+            selected = ranked[0][1]
+    now = datetime.now().astimezone().isoformat(timespec="seconds")
+
+    def write_json(path, value):
+        leaves._write_atomic(path, json.dumps(value, ensure_ascii=False, indent=2) + "\n")
+
+    if selected is None:
+        # The model can refine this scaffold in the same turn; the hook has
+        # already guaranteed a real, linked local plan before implementation.
+        title = " ".join(prompt.split())[:72].strip(" .,:;-") or "Fullcycle"
+        slug = re.sub(r"[^a-z0-9а-яё]+", "-", title.lower()).strip("-")[:48] or "fullcycle"
+        digest = hashlib.sha256((session + "\0" + prompt).encode()).hexdigest()[:8]
+        plan = repo / ".agents" / "tasks" / (datetime.now().strftime("%Y%m%d") + "-" + slug + "-" + digest)
+        if plan.exists():
+            selected = plan
+        else:
+            (plan / "leaves").mkdir(parents=True, exist_ok=True)
+            write_json(plan / "plan.json", {
+                "title": title, "goal": prompt,
+                "business_result": "Выполнить запрос пользователя и проверить результат на указанном потребительском пути.",
+                "acceptance_scenarios": ["Выполнить исходный запрос и проверить наблюдаемый результат на реальном потребительском пути."],
+                "current_progress": "План автоматически создан локальным LHC prompt hook; декомпозиция уточняется в текущем fullcycle.",
+                "slots": 1,
+            })
+            bootstrap_leaves = [
+                {"id": "L01", "label": "Уточнить план и выполнить рабочий срез",
+                 "description": "Уточнить ожидаемый результат и декомпозицию по исходному запросу, затем начать основную реализацию.",
+                 "acceptance": "Появился работающий первый срез с проверяемым результатом.", "status": "queued", "estimate_minutes": 15},
+                {"id": "L02", "label": "Проверить результат на потребительском пути",
+                 "description": "Проверить наблюдаемое поведение в исходном сценарии и исправить найденные дефекты.",
+                 "acceptance": "Исходный сценарий проходит; ограничения проверки записаны.", "status": "queued", "estimate_minutes": 15, "depends_on": ["L01"]},
+                {"id": "L03", "label": "Завершить интеграцию и подтверждение результата",
+                 "description": "Довести согласованную доставку и сохранить фактическое подтверждение результата.",
+                 "acceptance": "Результат доступен в согласованной точке потребления и подтверждён readback.", "status": "queued", "estimate_minutes": 15, "depends_on": ["L02"]},
+            ]
+            for leaf in bootstrap_leaves:
+                write_json(plan / "leaves" / (leaf["id"] + ".json"), leaf)
+            selected = plan
+            created = True
+    # Reuse a leaf already bound to this session; otherwise select the unique
+    # running leaf or the only queued leaf. Ambiguity is surfaced, never guessed.
+    document = leaves.build_document(selected)
+    tasks = document.get("tasks", [])
+    active = next((t for t in tasks if t.get("session") == session and t.get("status") == "running"), None)
+    if active:
+        leaf_id = active["id"]
+    else:
+        running = [t for t in tasks if t.get("status") == "running"]
+        queued = [t for t in tasks if t.get("status") == "queued"]
+        pool = running if len(running) == 1 and not running[0].get("session") else queued
+        if created:
+            leaf_id = "L01"
+        elif not pool:
+            return None
+        elif len(pool) == 1:
+            leaf_id = pool[0]["id"]
+        else:
+            ranked = sorted(((len(words & set(re.findall(r"[\w-]{3,}",
+                                (str(t.get("label", "")) + " " + str(t.get("description", ""))).lower()))), t)
+                             for t in pool), key=lambda row: (-row[0], row[1]["id"]))
+            if not ranked[0][0] or ranked[0][0] == ranked[1][0]:
+                return None
+            leaf_id = ranked[0][1]["id"]
+        try:
+            mirror.activate(selected, leaf_id, session=session, harness="codex",
+                            owner=os.environ.get("USER") or "codex",
+                            note="Автоматическая привязка на старте fullcycle")
+        except (OSError, ValueError, KeyError, TypeError):
+            # The observer config is optional. Preserve the local start even if
+            # registration/bookkeeping is unavailable or malformed.
+            leaves.update_leaf(selected, leaf_id,
+                               {"status": "running", "session": session,
+                                "harness": "codex", "owner": os.environ.get("USER") or "codex"},
+                               note="Автоматическая локальная привязка fullcycle; observer пока не зарегистрирован")
+    graph = leaves.build_graph(selected)
+    with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+        grid.main(["render", str(graph), "--out-dir", str(selected)])
+    url = None
+    sidecar = mirror.read(mirror.directory(selected) / "mirror.json", {})
+    if sidecar.get("activations"):
+        try:
+            url = mirror.register(selected, sidecar.get("config"))["url"]
+        except (OSError, ValueError, KeyError, TypeError):
+            pass
+    return {"plan": str(selected), "leaf_id": leaf_id, "url": url, "created": created}
 
 def context_for(event, root):
     root = Path(root).resolve()
@@ -470,6 +611,12 @@ def handle(event, name, runtime, root):
     return output
 
 PLAN_FILES = ("plan.graph.json", "plan.report.md")
+# The leaf files of a plan: one file per leaf, named after the leaf.
+LEAVES_DIRNAME = "leaves"
+
+
+class PlanBuildError(ValueError):
+    """The leaves of a plan cannot be collected into one graph."""
 
 
 def written_paths(event):
@@ -495,33 +642,117 @@ def written_paths(event):
     return found
 
 
+def leaf_plan_dir(path):
+    """The plan directory of a leaf file, or None when the path is not a leaf."""
+    if path.suffix.lower() != ".json" or path.parent.name != LEAVES_DIRNAME:
+        return None
+    return path.parent.parent
+
+
+# The sibling tools this entry runs in its own process instead of starting an
+# interpreter for them.  One entry per path, so a tool is loaded once.
+_TOOLS = {}
+
+
+def sibling_tool(tools, name):
+    """One sibling tool of the canon, loaded into this process.
+
+    The tool is loaded by the path it has in the package, the way the
+    command line would have run it, so the answer of the process is the
+    answer of this process.  None when the tool cannot be loaded, and then
+    the caller keeps the answer it had.
+    """
+    key = str(Path(tools) / name)
+    cached = _TOOLS.get(key)
+    if cached is not None:
+        return cached
+    path = Path(key)
+    if not path.is_file():
+        return None
+    try:
+        spec = importlib.util.spec_from_file_location("lhc_entry_%s_sibling" % path.stem, path)
+        if spec is None or spec.loader is None:
+            return None
+        module = importlib.util.module_from_spec(spec)
+        # The module is known to the interpreter before it runs: a tool that
+        # declares its own types looks itself up while it is loaded.
+        sys.modules[spec.name] = module
+        spec.loader.exec_module(module)
+    except Exception:
+        sys.modules.pop("lhc_entry_%s_sibling" % path.stem, None)
+        return None
+    _TOOLS[key] = module
+    return module
+
+
+def rebuild_plan_graph(plan_dir, tools):
+    """Collect the leaves of one plan into its plan.graph.json.
+
+    The leaf files are the source of truth of a plan, so the graph is rebuilt
+    from them before the page is rendered. A leaf that cannot be read is named
+    and the build stops: a broken leaf never becomes a missing leaf.
+    """
+    collector = Path(tools) / "lhc_plan_json.py"
+    if not collector.is_file() or not (Path(plan_dir) / LEAVES_DIRNAME).is_dir():
+        return None
+    module = sibling_tool(tools, "lhc_plan_json.py")
+    if module is None:
+        raise PlanBuildError(f"{plan_dir}: сборщик листов не запустился: нет сборщика листов")
+    try:
+        module.build_graph(Path(plan_dir))
+    except (OSError, ValueError) as error:
+        # The collector names the leaf it cannot collect; the answer of the
+        # command line is that name, and this process gives the same name.
+        raise PlanBuildError(f"LHC: {error}") from error
+    return Path(plan_dir) / "plan.graph.json"
+
+
 def render_written_plan(event, root):
     """Rebuild the page of the plan that has just been written.
 
     The agent writes the plan; the page is generated from it by this hook. The
     agent does not have to remember a command, and the page can never describe
     a plan that is older than the plan itself.
+
+    A leaf file is the source of truth of its leaf, so writing one rebuilds the
+    graph of the whole plan from the leaves and then rebuilds the page. The
+    chain never loops: the hook reacts to the files the agent wrote, and the
+    files the hook writes are not part of that event.
+
+    The root arrives as a Path or as plain text — a caller that reads it from
+    a config value must not pay a TypeError for it.
     """
-    tools = Path(root) / "tools" if (Path(root) / "tools" / "lhc_grid.py").is_file() else method_root(root) / "tools"
+    root = Path(root)
+    tools = root / "tools" if (root / "tools" / "lhc_grid.py").is_file() else method_root(root) / "tools"
     tool = tools / "lhc_grid.py"
     if not tool.is_file():
         return None
     base = Path(event.get("cwd") or ".").expanduser() if isinstance(event, dict) else Path(".")
     for raw in written_paths(event):
-        if not raw.endswith(PLAN_FILES):
-            continue
         path = Path(raw).expanduser()
         if not path.is_absolute():
             path = base / path
-        directory = path.parent
-        graph = directory / "plan.graph.json"
-        if not graph.is_file():
+        directory = leaf_plan_dir(path)
+        if directory is not None:
+            graph = rebuild_plan_graph(directory, tools)
+            if graph is None:
+                continue
+        elif path.name in PLAN_FILES:
+            directory = path.parent
+            graph = directory / "plan.graph.json"
+            if not graph.is_file():
+                continue
+        else:
             continue
+        module = sibling_tool(tools, "lhc_grid.py")
+        if module is None:
+            return None
         try:
-            subprocess.run(
-                [sys.executable, str(tool), "render", str(graph), "--out-dir", str(directory)],
-                capture_output=True, timeout=20, check=False,
-            )
+            # The renderer names the files it wrote; the command line of the
+            # renderer kept that answer to itself, and this process does the
+            # same.
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                module.main(["render", str(graph), "--out-dir", str(directory)])
         except (OSError, subprocess.SubprocessError, ValueError):
             return None
         return directory
@@ -536,6 +767,8 @@ def main():
                         help="emit the source AGENTS.md pointer without reading or changing session state")
     parser.add_argument("--heartbeat-only", action="store_true",
                         help="record only an isolated wall-time reminder at PostToolUse")
+    parser.add_argument("--plan-entry", action="store_true",
+                        help="automatically bind/create the local plan on UserPromptSubmit")
     parser.add_argument("--session", action="store_true",
                         help="explicit agent command: observe one stateful session event "
                              "(business anchor, outcome and milestone state). Never used by "
@@ -588,15 +821,25 @@ def main():
                 session_id += ":subagent:" + str(event["agent_id"])
             # The page of the plan is rebuilt before the heartbeat: the plan is
             # the owner's artefact, the reminder is the agent's.
+            build_error = None
             try:
                 hook_root = (args.root or Path(__file__).resolve().parents[1]).resolve()
                 rendered = render_written_plan(event, hook_root)
+            except PlanBuildError as error:
+                # A leaf that cannot be collected is named: a broken leaf must
+                # not pass as a missing one.
+                rendered = None
+                build_error = str(error)
             except (OSError, ValueError, KeyError, TypeError, NameError, AttributeError,
                     subprocess.SubprocessError):
                 rendered = None
             if rendered is not None:
                 print(json.dumps({"systemMessage":
                                   f"LHC: страница плана пересобрана из {rendered.name}"},
+                                 ensure_ascii=False))
+            elif build_error:
+                print(json.dumps({"systemMessage":
+                                  f"LHC: план не пересобран: {build_error}"},
                                  ensure_ascii=False))
             import lhc_time_guard
             project = Path(cwd_value).expanduser()
@@ -621,6 +864,32 @@ def main():
             print(json.dumps({"hookSpecificOutput": {
                 "hookEventName": "PostToolUse",
                 "additionalContext": "\n\n".join(prompts),
+            }}, ensure_ascii=False))
+        return
+    if args.plan_entry:
+        if args.event != "UserPromptSubmit":
+            return
+        try:
+            raw = sys.stdin.read(8 * 1024 * 1024 + 1)
+            if len(raw) > 8 * 1024 * 1024:
+                return
+            event = json.loads(raw or "{}")
+            if not isinstance(event, dict):
+                return
+            result = _fullcycle_plan_entry(event, args.root or Path(__file__).resolve().parents[1])
+        except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError,
+                PlanBuildError, subprocess.SubprocessError):
+            result = None
+        if result:
+            details = f"план {result['plan']}, активный лист {result['leaf_id']}"
+            if result.get("url"):
+                details += f", зеркало {result['url']}"
+            context = f"LHC: fullcycle автоматически связан с локальным {details}. Используй этот источник, не создавай дубликат."
+            if result.get("created"):
+                context += " Это начальный scaffold: уточни цель и разложи её на конкретные рабочие листья в этом плане до основной реализации."
+            print(json.dumps({"hookSpecificOutput": {
+                "hookEventName": "UserPromptSubmit",
+                "additionalContext": context,
             }}, ensure_ascii=False))
         return
     # Native hooks only activate the project instructions. Stateful outcome,

@@ -22,12 +22,23 @@ protocols or different destinations. Both follow this lifecycle:
 Recover the requested result and its latest corrections. Name who benefits,
 what changes, what failed before, and where the result can be tried.
 
+The goal explains why the changes matter. Expected results name future tangible
+capabilities («Что будет работать»), with real tester scenarios: actor/context,
+actions and expected visible result. For CLI/libraries the user is the operator
+or caller and the scenario is the actual call/result. Current progress and
+evidence record what is done or checked now; tests and commits are not the
+capability. A pending expectation is valid; claiming achievement requires proof.
+`src/common/protocols/PLAN_REPORT.md` keeps legacy field names and historical reports compatible.
+
 <!-- lhc-workflow-step:route -->
 ### Choose the shortest responsible route
 
 Use current project evidence to choose the smallest route that can prove the
-result. Work directly when the path is clear; investigate or compare options
-when an unresolved choice could materially change the outcome or cost.
+result. Work directly when the path is clear: "direct" is the shortest route
+through one assigned executor — an executor still performs every edit, check and
+deployment — never the planner doing the work instead of delegating. Investigate
+or compare options when an unresolved choice could materially change the outcome
+or cost.
 
 <!-- lhc-workflow-step:execute -->
 ### Do the work with the right boundaries

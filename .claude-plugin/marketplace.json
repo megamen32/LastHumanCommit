@@ -9,7 +9,14 @@
       "name": "last-human-commit",
       "source": "./plugins/last-human-commit",
       "description": "Automatic workflow with the full optional skill set; isolated parallel work, shared file chat and PR integration.",
-      "version": "1.5.43",
+      "version": "1.5.66",
+      "category": "workflow"
+    },
+    {
+      "name": "ask-human",
+      "source": "./plugins/ask-human",
+      "description": "Ask Human: forward the harness's own permission question to the human through the Notice Place human-request intake, and hand the answer back to the harness.",
+      "version": "1.0.0",
       "category": "workflow"
     },
     {

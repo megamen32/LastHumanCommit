@@ -1,0 +1,23 @@
+{
+  "id": "L09",
+  "label": "MCP-фасад над плановым CLI: создать лист, изменить лист, пересобрать план, оценить стоимость",
+  "status": "done",
+  "description": "Владелец просил, чтобы умение создавать и править задачу и пересобирать план было доступно через MCP, а не только через хуки, потому что хуки поддерживаются не всеми harness-ами: автопересборка плана зарегистрирована только для Claude, Codex и Zcode, и Qoder среди них нет. Фасад тонкий ровно так, как это разрешено в §13 философии: каждая операция вызывает существующий CLI той же строкой аргументов, которой её вызывает человек, и возвращает его stdout, stderr и код возврата. Никакой новой логики плана, никакого второго хранилища и никакого собственного состояния: единственный источник правды остаётся leaves/<ID>.json.\n\nОбразец уже есть в репозитории: plugins/ask-human/scripts/setup_mcp.py регистрирует MCP-эндпоинт в конфиг harness-а (codex правится автоматически с timestamped backup, остальные получают тот же snippet на dry-run) и не изобретает второй транспорт. От него берутся форма регистрации, dry-run по умолчанию и --apply как отдельное разрешение на запись чужого конфига.\n\nОперации ровно четыре, каждая равна одному вызову CLI: create_leaf (пишет новый leaves/<ID>.json по схеме коллектора), update_leaf (меняет поля своего листа и только своего), build_plan (lhc_plan_json.py build плюс check) и estimate_cost (та операция оценщика, которую вводит L03). render в список не входит намеренно: страница перегенерируется сборкой, и пятая операция просто продублировала бы четвёртую.",
+  "acceptance": "Через фасад человек создаёт лист, правит в нём статус, пересобирает план и получает оценку стоимости, и каждый раз результат совпадает с тем, что даёт тот же CLI, вызванный вручную той же командой: сверяются stdout и код возврата, а не «на глаз». Регистрация: dry-run ничего не пишет и печатает snippet; --apply правит ~/.codex/config.toml с timestamped backup. Страж: python3 tests/validate.py проходит; тест фасада подменяет вызов CLI и требует ровно те аргументы, что задокументированы, без сети и без новых полей в схеме листа.",
+  "affected_files": [
+    "plugins/lhc-plan/scripts/setup_mcp.py",
+    "plugins/lhc-plan/scripts/plan_mcp.py",
+    "plugins/lhc-plan/.codex-plugin/plugin.json",
+    "tests/test_lhc_plan_mcp.py"
+  ],
+  "owner": "",
+  "depends_on": [
+    "L03"
+  ],
+  "estimate_minutes": 15,
+  "note": "Сделано и доказано. Фасад plugins/lhc-plan/scripts/plan_mcp.py починен: падение NameError на LEAF_FIELDS устранено — схема листа, имя каталога leaves, имя файла графа и набор тиров читаются из сборщика lhc_plan_json.py, а не копируются в фасад (plan_json, LEAF_FIELDS, collector_name(), estimator_tiers()). Операции ровно четыре, каждая равна вызову существующего CLI: create_leaf — пишет leaves/<ID>.json, затем `python3 src/common/tools/lhc_plan_json.py check <plan_dir>` (файл забирается назад только если ответ сборщика называет именно этот файл: дефект чужого листа не удаляет мой лист); update_leaf — меняет только свой лист, затем тот же check; build_plan — `lhc_plan_json.py build <plan_dir>`, затем `lhc_grid.py render <plan_dir>/plan.graph.json --out-dir <plan_dir>`, затем `lhc_plan_json.py check <plan_dir>` (страница перегенерируется сборкой, поэтому отдельной операции render нет); estimate_cost — `lhc_models.py [--offline] [--catalog FILE] cost --model M --minutes N [--tier T]`, фасад цену не считает. Доказательства: (1) живой MCP-хендшейк — сервер запущен, initialize, notifications/initialized, tools/list, 4 вызова tools/call; транскрипт .tmp/l09/handshake.json: stdout и код возврата каждой операции побайтово совпали с ручным вызовом той же команды (create_leaf 0=0, update_leaf 0=0, build_plan 1=1 — код 1 даёт сам план: восемь листьев свыше предела 15 минут, estimate_cost 0=0); (2) регистрация: dry-run не пишет (sha ~/.codex/config.toml не меняется, snippet печатается), --apply правит ~/.codex/config.toml с timestamped backup config.toml.bak-lhc-mcp-20261024135618, чужие секции сохранены; (3) deliberate-break: подмена --out-dir на <plan_dir>/render поймана ассертом patch_cli.calls (1 failed, 23 passed), после возврата — 24 passed; (4) tests/test_lhc_plan_mcp.py — 24 passed. Осталось: плановая интеграция стоимости в ядре (validate/status/render показывают стоимость листа и плана) — лист L03, он running, фасад её не дублирует; tests/validate.py падает только на чужой проекции lhc_entry.py.",
+  "updated_at": "2026-10-24T13:58",
+  "model_class": "frontier",
+  "started_at": "13:31",
+  "finished_at": "13:58"
+}

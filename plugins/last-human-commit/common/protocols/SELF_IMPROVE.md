@@ -70,10 +70,10 @@ It gains no authority it did not have: no new publication, deployment,
 destructive-action or memory permission, and no bypass of HumanStop or the user's
 constraints.
 
-Do this at the 120-minute learning checkpoint and after repeated failure. The Lead
-runs that checkpoint by opening a separate fresh session; a newly
-discovered genuine blocker also gets an allowed-model adviser; consult the Overseer
-for route advice if that adviser finds no executable route. No extra review queue is created.
+At the 120-minute checkpoint and after repeated failure, the Lead chooses the
+shortest concrete correction. A fresh adviser is optional only when the route is
+unclear. A new blocker, elapsed timer or finished leaf does not require another
+session or review. Known repairs go to the existing Worker; no adviser queue is created.
 
 ## Mandatory checkpoint, bounded to useful work
 
@@ -84,13 +84,11 @@ overrun means that decision's bounded continuation also misses its limit or the
 accepted delivery forecast is no longer credible. Do not wait two hours after
 an earlier trigger.
 
-The checkpoint is the Lead's. At 120 minutes of unfinished work the Lead opens a
-separate fresh session and hands it the full transcript of the reviewed session plus
-the skill or instruction that owns that work. That separate session analyzes what was
-slow and returns a method correction — skill, instruction or MCP — with evidence and
-verification. Sending the finding back to the original analyzed session is the
-allowed alternative. Other roles report their learning evidence to the Lead; they do
-not start this session themselves.
+The checkpoint is the Lead's: inspect the actual remaining blocker and latest
+user correction, not a new whole-transcript audit. Prefer removing a redundant
+step or assigning the known repair immediately. Other roles report useful findings
+to the same Lead; they do not start their own retrospective sessions. A short
+existing note is sufficient; the user's delivery must not wait for bookkeeping.
 
 First reread the original user request/documents and latest direct corrections,
 not just the agent-authored plan or summary. Compare the original accepted outcome, cumulative elapsed time and total

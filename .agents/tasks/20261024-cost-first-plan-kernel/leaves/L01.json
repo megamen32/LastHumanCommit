@@ -1,0 +1,24 @@
+{
+  "id": "L01",
+  "label": "Запись задачи и доказательство цепочки листья → график → страница",
+  "status": "done",
+  "description": "Завести каноническую запись задачи .agents/tasks/20261024-cost-first-plan-kernel/ с task.md, plan.json и четырьмя JSON-листьями, затем пройти документированным путём 1.5.45: lhc_plan_json.py build собирает plan.graph.json, lhc_grid.py render делает plan.html, lhc_grid.py check-plan сверяет отчёт с графиком. Отдельно проверить, что сборка детерминирована (два build дают побайтово один файл) и что хук перестраивает график и страницу без команды после записи файла листа. Найденные расхождения между документом и поведением не заглаживаются, а заносятся в отчёт как дефекты продукта.",
+  "acceptance": "Человек открывает .agents/tasks/20261024-cost-first-plan-kernel/plan.html в браузере и видит четыре листа с их статусами, число волн и слотов; рядом лежат task.md, plan.json, plan.graph.json и leaves/L01..L04.json, собранные двумя командами без ручного редактирования графика. Команды build, render и check-plan завершаются с кодом 0, а повторный build не меняет файл графика ни на байт.",
+  "affected_files": [
+    ".agents/tasks/20261024-cost-first-plan-kernel/task.md",
+    ".agents/tasks/20261024-cost-first-plan-kernel/plan.json",
+    ".agents/tasks/20261024-cost-first-plan-kernel/leaves/L01.json",
+    ".agents/tasks/20261024-cost-first-plan-kernel/leaves/L02.json",
+    ".agents/tasks/20261024-cost-first-plan-kernel/leaves/L03.json",
+    ".agents/tasks/20261024-cost-first-plan-kernel/leaves/L04.json"
+  ],
+  "owner": "worker-l01",
+  "harness": "qoder",
+  "model_class": "fast",
+  "depends_on": [],
+  "estimate_minutes": {"minimum": 15, "maximum": 25},
+  "started_at": "05:08",
+  "finished_at": "05:13",
+  "note": "Этот лист — одновременно первый лист собственного плана и проверка механизма, введённого в 1.5.45. Если цепочка работает не так, как обещано документом, это продукт-дефект для последующих листьев, а не повод править документ под факт. Активное время листа не измерялось, известен только часовой интервал 05:08–05:13.",
+  "updated_at": "2026-10-24T05:13"
+}

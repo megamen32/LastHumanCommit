@@ -8,14 +8,13 @@ readings of the plan: neither estimates, reviews, judges or blocks.
 
 from __future__ import annotations
 
-import importlib.util
 import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-import subprocess
-import sys
 
 import pytest
+
+from _inprocess import git_repo, load_module, run_cli
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -25,25 +24,16 @@ ENTRY = ROOT / "src/common/tools/lhc_entry.py"
 
 
 def load_tool():
-    spec = importlib.util.spec_from_file_location("lhc_parallel", TOOL)
-    module = importlib.util.module_from_spec(spec)
-    assert spec.loader is not None
-    sys.modules[spec.name] = module
-    spec.loader.exec_module(module)
-    return module
+    return load_module(TOOL, name="lhc_parallel")
 
 
 def load_guard():
-    spec = importlib.util.spec_from_file_location("lhc_time_guard_parallel", GUARD)
-    module = importlib.util.module_from_spec(spec)
-    assert spec.loader is not None
-    sys.modules[spec.name] = module
-    spec.loader.exec_module(module)
-    return module
+    return load_module(GUARD, name="lhc_time_guard_parallel")
 
 
 lhc = load_tool()
 guard = load_guard()
+entry = load_module(ENTRY, name="lhc_entry_parallel_test")
 
 
 def write_graph(path: Path, tasks: list[dict], **extra) -> Path:
@@ -57,7 +47,7 @@ def write_graph(path: Path, tasks: list[dict], **extra) -> Path:
 
 
 def run_tool(*args):
-    return subprocess.run([sys.executable, str(TOOL), *args], capture_output=True, text=True)
+    return run_cli(lhc, args)
 
 
 # --------------------------------------------------------------------------
@@ -366,7 +356,7 @@ def project_with_graph(tmp_path: Path, tasks: list[dict], **extra) -> Path:
 
     project = tmp_path / "project"
     write_graph(project / ".agents" / "tasks" / "objective" / "plan.graph.json", tasks, **extra)
-    subprocess.run(["git", "init", "-q", str(project)], check=True)
+    git_repo(project)
     return project
 
 
@@ -374,10 +364,10 @@ def heartbeat_context(project: Path, session_id: str) -> str:
     """Run the live heartbeat hook and return the additional context."""
 
     payload = {"cwd": str(project), "session_id": session_id, "tool_name": "exec_command"}
-    result = subprocess.run(
-        [sys.executable, str(ENTRY), "--root", str(ROOT), "--runtime", "codex",
-         "--event", "PostToolUse", "--heartbeat-only"],
-        input=json.dumps(payload, ensure_ascii=False), text=True, capture_output=True, check=True)
+    result = run_cli(entry, ["--root", str(ROOT), "--runtime", "codex",
+                             "--event", "PostToolUse", "--heartbeat-only"],
+                     stdin=json.dumps(payload, ensure_ascii=False))
+    assert result.returncode == 0, result.stderr
     return json.loads(result.stdout or "{}").get("hookSpecificOutput", {}).get("additionalContext", "")
 
 
@@ -443,7 +433,7 @@ def test_the_reminder_is_delivered_by_the_live_heartbeat(tmp_path):
 def test_the_reminder_says_nothing_when_the_plan_graph_is_missing(tmp_path):
     project = tmp_path / "no-plan"
     project.mkdir()
-    subprocess.run(["git", "init", "-q", str(project)], check=True)
+    git_repo(project)
 
     context = guard.render_parallel_lines(project)
 

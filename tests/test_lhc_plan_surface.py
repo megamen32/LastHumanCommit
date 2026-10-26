@@ -5,28 +5,23 @@ the page on a phone:
 
 * the progress is at the very top and stays in sight while the page scrolls;
 * every number on the page can be opened and shows the tasks behind it;
-* the wording of a plan has a budget, so the plan stays a plan.
-"""
+* """
 from __future__ import annotations
 
-import importlib.util
 import json
-import subprocess
 import sys
 from pathlib import Path
+
+from _inprocess import load_module, run_cli
 
 ROOT = Path(__file__).resolve().parent.parent
 TOOL = ROOT / "src" / "common" / "tools" / "lhc_grid.py"
 ENTRY = ROOT / "plugins" / "last-human-commit" / "tools" / "lhc_entry.py"
+entry = load_module(ENTRY, name="lhc_entry_plan_surface_test")
 
 
 def load(name: str, path: Path):
-    spec = importlib.util.spec_from_file_location(name, path)
-    module = importlib.util.module_from_spec(spec)
-    assert spec.loader is not None
-    sys.modules[name] = module
-    spec.loader.exec_module(module)
-    return module
+    return load_module(path, name=name)
 
 
 def sample_graph():
@@ -88,20 +83,21 @@ def test_what_blocks_and_what_needs_the_owner_are_told_apart():
 
 
 # ------------------------------------------------------------ no text cap
-def test_long_plan_and_task_descriptions_are_not_rejected_by_short_caps():
+def test_long_plan_and_task_descriptions_are_never_capped():
+    """The wording of a human is not capped: a long, precise text is better."""
     lhc, graph = sample_graph()
     graph.goal = "Д" * 400
     graph.business_result = "Р" * 800
+    graph.business_results = [graph.business_result]
     graph.leaves[0].description = "Описание с контекстом, действием и ожидаемым результатом. " * 120
-    assert lhc.check_text_budget(graph) == []
+    html = lhc.render_html(graph, lhc.build_metrics(graph))
+    assert "Д" * 400 in html
+    assert "Р" * 800 in html
+    # No cap function survives in the renderer.
+    assert not hasattr(lhc, "check_text_budget")
 
 
-def test_a_lean_plan_passes_the_budget():
-    lhc, graph = sample_graph()
-    assert lhc.check_text_budget(graph) == []
 
-
-# ---------------------------------------------------------------- the hook
 def test_writing_the_plan_rebuilds_the_page(tmp_path):
     """The agent writes the plan; the page is generated from it."""
     plan_dir = tmp_path / "plan"
@@ -117,9 +113,45 @@ def test_writing_the_plan_rebuilds_the_page(tmp_path):
     assert not page.exists()
 
     event = {"cwd": str(plan_dir), "session_id": "s", "tool_input": {"file_path": str(graph_path)}}
-    proc = subprocess.run(
-        [sys.executable, str(ENTRY), "--event", "PostToolUse", "--heartbeat-only"],
-        input=json.dumps(event).encode(), capture_output=True, timeout=60,
-    )
+    proc = run_cli(entry, ["--event", "PostToolUse", "--heartbeat-only"],
+                   stdin=json.dumps(event), text=False)
     assert page.exists(), f"страница не пересобрана: {proc.stdout!r} {proc.stderr!r}"
     assert "пересобрана" in proc.stdout.decode("utf-8", "replace")
+
+
+def test_a_task_may_carry_several_business_results():
+    """The owner's rule: two or more results, each checkable on its own.
+
+    A task may deliver more than one capability the user can touch by hand.
+    The results are not merged into one, and the means are not results.
+    """
+    import importlib.util
+    import sys as _sys
+    from pathlib import Path as _Path
+
+    tool = _Path(__file__).resolve().parents[1] / "src" / "common" / "tools" / "lhc_grid.py"
+    spec = importlib.util.spec_from_file_location("lhc_grid_results", tool)
+    lhc = importlib.util.module_from_spec(spec)
+    _sys.modules[spec.name] = lhc
+    spec.loader.exec_module(lhc)
+
+    report = (
+        "Цель: Связать Herder с Mavis на Mac M1.\n"
+        "Бизнес-результат: Herder находит сессии Mavis на Mac M1 и будит их.\n"
+        "Бизнес-результат: Поиск сессий через MCP и API отвечает быстро.\n"
+        "Декомпозиция: 2 листа · 1 параллельно · 1 волна(а) · слотов: 1\n\n"
+        "✅ (первое) начата 10:00 закончена 10:20, оценка 20 минут, факт 20 минут\n"
+        "✅ (второе) начата 10:20 закончена 10:40, оценка 20 минут, факт 20 минут\n"
+    )
+    graph = lhc.parse_plan_report(report)
+    assert len(graph.business_results) == 2, graph.business_results
+    assert graph.business_results[0].startswith("Herder находит сессии")
+    assert graph.business_results[1].startswith("Поиск сессий")
+    html = lhc.render_html(graph, lhc.build_metrics(graph))
+    assert "Ожидаемый бизнес-результат" in html
+    assert "Бизнес-результат 2" in html
+    assert "Herder находит сессии Mavis" in html
+    assert "Поиск сессий через MCP и API отвечает быстро." in html
+    # The results survive the round trip through the graph JSON.
+    again = lhc.parse_graph_json(lhc.export_graph(graph))
+    assert again.business_results == graph.business_results

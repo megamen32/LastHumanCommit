@@ -10,6 +10,8 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src/common/tools"))
 
+from _inprocess_lane import git_repo
+
 def module():
     import lhc_chat
     return lhc_chat
@@ -51,10 +53,12 @@ def test_recipient_and_malformed_files(tmp_path):
 def test_worktrees_share_project_chat(tmp_path):
     chat = module()
     project = tmp_path/"project"
-    project.mkdir()
+    # The repository is prepared once: a copy of a ready-made repository costs
+    # a fraction of a `git init` and produces the same checkout.
+    git_repo(project, branch="main", config=(("user.email", "test@example.invalid"),
+                                             ("user.name", "Test")))
     def git(*args):
         return subprocess.run(["git", "-C", str(project), *args], check=True, capture_output=True, text=True)
-    git("init", "-b", "main"); git("config", "user.email", "test@example.invalid"); git("config", "user.name", "Test")
     (project/"README").write_text("base"); git("add", "README"); git("commit", "-m", "base")
     worktree = tmp_path/"worker"
     git("worktree", "add", "-b", "worker", str(worktree))

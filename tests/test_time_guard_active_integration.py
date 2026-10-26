@@ -20,6 +20,8 @@ import tempfile
 import time
 import unittest
 
+from _inprocess_lane import git_repo, run_tool
+
 
 ROOT = Path(__file__).resolve().parents[1]
 GUARD = ROOT / "src/common/tools/lhc_time_guard.py"
@@ -32,8 +34,7 @@ class TimeGuardActiveIntegrationTest(unittest.TestCase):
         self.directory = tempfile.TemporaryDirectory(dir=ROOT / ".tmp")
         self.addCleanup(self.directory.cleanup)
         self.project = Path(self.directory.name)
-        subprocess.run(["git", "init", "-q", str(self.project)], check=True,
-                       capture_output=True, text=True)
+        git_repo(self.project)
         self.card = self.project / ".agents/tasks/work-real-active.md"
         self.card.parent.mkdir(parents=True)
         self.started = datetime.now(timezone.utc) - timedelta(seconds=2)
@@ -61,22 +62,23 @@ class TimeGuardActiveIntegrationTest(unittest.TestCase):
         )
 
     def ledger_command(self, command, actor=None, task=None):
-        argv = [sys.executable, "-B", str(LEDGER), command, "--state", str(self.ledger)]
+        argv = [command, "--state", str(self.ledger)]
         if command == "start":
             argv += ["--actor", actor or self.session_id, "--task", task or self.card.stem]
-        completed = subprocess.run(argv, check=True, capture_output=True, text=True,
-                                   cwd=self.project, timeout=10)
+        completed = run_tool("lhc_active_time", argv, cwd=self.project)
+        completed.check_returncode()
         return json.loads(completed.stdout)
 
     def hook(self, session_id=None):
-        completed = subprocess.run(
-            [sys.executable, "-B", str(GUARD), "hook", "--runtime", "codex",
-             "--event", "UserPromptSubmit"],
-            input=json.dumps({"cwd": str(self.project), "session_id": session_id or self.session_id,
+        completed = run_tool(
+            "lhc_time_guard",
+            ["hook", "--runtime", "codex", "--event", "UserPromptSubmit"],
+            stdin=json.dumps({"cwd": str(self.project), "session_id": session_id or self.session_id,
                               "hook_event_name": "UserPromptSubmit",
                               "prompt": "Report actual active time and coverage."}),
-            capture_output=True, text=True, check=True, cwd=self.project, timeout=10,
+            cwd=self.project,
         )
+        completed.check_returncode()
         self.assertTrue(completed.stdout.strip(), completed.stderr)
         result = json.loads(completed.stdout)["hookSpecificOutput"]
         self.assertEqual(result["hookEventName"], "UserPromptSubmit")

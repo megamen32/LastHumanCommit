@@ -1,0 +1,64 @@
+{
+  "label": "Уточнить один итоговый review и порядок release для полного цикла",
+  "description": "Согласовать корневой router, Reviewer/Worker, FULL_CYCLE, planning и decomposition: один технический review объединённого результата после рабочих листьев, затем deploy, реальный consumer test и push; per-leaf review не требуется.",
+  "acceptance": "Канонические инструкции однозначно задают одну финальную review точку и порядок review→deploy→test→push; локальная отладка продолжается в leaves; автоматический Overseer review остаётся advisory; целевой contract test проходит.",
+  "status": "done",
+  "estimate_minutes": {
+    "minimum": 8,
+    "maximum": 15
+  },
+  "affected_files": [
+    "AGENTS.md",
+    "src/common/agents/Reviewer.md",
+    "src/common/agents/Worker.md",
+    "templates/FULL_CYCLE.md",
+    "src/common/skills/planning/SKILL.md",
+    "src/common/skills/task-decomposition/SKILL.md",
+    "src/common/skills/decompose-and-dispatch/SKILL.md",
+    "tests/test_review_delivery_contract.py"
+  ],
+  "id": "L06",
+  "created_at": "2026-10-25T23:13:58+03:00",
+  "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+  "harness": "codex",
+  "updated_at": "2026-10-25T23:19:06+03:00",
+  "progress_events": [
+    {
+      "at": "2026-10-25T23:13:58+03:00",
+      "note": "Начал короткую policy коррекцию по прямому поручению; review не дробится на leaves.",
+      "changes": {
+        "label": "Уточнить один итоговый review и порядок release для полного цикла",
+        "description": "Согласовать корневой router, Reviewer/Worker, FULL_CYCLE, planning и decomposition: один технический review объединённого результата после рабочих листьев, затем deploy, реальный consumer test и push; per-leaf review не требуется.",
+        "acceptance": "Канонические инструкции однозначно задают одну финальную review точку и порядок review→deploy→test→push; локальная отладка продолжается в leaves; автоматический Overseer review остаётся advisory; целевой contract test проходит.",
+        "status": "running",
+        "estimate_minutes": {
+          "minimum": 8,
+          "maximum": 15
+        },
+        "affected_files": [
+          "AGENTS.md",
+          "src/common/agents/Reviewer.md",
+          "src/common/agents/Worker.md",
+          "templates/FULL_CYCLE.md",
+          "src/common/skills/planning/SKILL.md",
+          "src/common/skills/task-decomposition/SKILL.md",
+          "src/common/skills/decompose-and-dispatch/SKILL.md",
+          "tests/test_review_delivery_contract.py"
+        ]
+      },
+      "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+      "harness": "codex"
+    },
+    {
+      "at": "2026-10-25T23:19:06+03:00",
+      "note": "Final integrated instruction diff reviewed once in this session; generated package published, targeted test and validators pass.",
+      "changes": {
+        "status": "done",
+        "result": "Canonical root router, Reviewer/Worker, Full Cycle template and planning/decomposition skills now define one coherent integrated-diff review after all implementation/integration leaves, followed by permitted deploy, real consumer test and push. Local worker checks continue during implementation; no per-leaf/wave review is created. Codex progress-review hook was read-only Overseer advice and was left unchanged. Targeted test_review_delivery_contract.py: 8 passed; package validation and projections passed. Three previously found 1.5.62 auto-entry/install facts are recorded separately and remain unfixed by this policy change."
+      },
+      "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+      "harness": "codex"
+    }
+  ],
+  "result": "Canonical root router, Reviewer/Worker, Full Cycle template and planning/decomposition skills now define one coherent integrated-diff review after all implementation/integration leaves, followed by permitted deploy, real consumer test and push. Local worker checks continue during implementation; no per-leaf/wave review is created. Codex progress-review hook was read-only Overseer advice and was left unchanged. Targeted test_review_delivery_contract.py: 8 passed; package validation and projections passed. Three previously found 1.5.62 auto-entry/install facts are recorded separately and remain unfixed by this policy change."
+}

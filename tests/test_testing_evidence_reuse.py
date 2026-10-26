@@ -8,6 +8,9 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src/common/tools'))
 import lhc_outcome_review as review
 
+from _inprocess_lane import anchored_outcome, outcome_cli
+from _repos import head_of, prepared_repo
+
 
 def call(cmd, ident='operation', output='observed', index=2):
     return ({'name': 'exec_command', 'call_id': ident, 'arguments': json.dumps({'cmd': cmd}),
@@ -99,13 +102,12 @@ def reuse_fixture(root, monkeypatch, live=False):
     state and the native transcript describe one and the same contract and the
     reuse binding can be driven by the explicit review command.
     """
-    import test_outcome_contract as fixtures
     from datetime import datetime, timedelta, timezone
     import lhc_outcome as outcomes
     goal = ('Read-only testing: test cabinet switching on https://example.test; '
             'report actual defects.')
     if live:
-        outcome = fixtures.anchored(root, goal=goal, coverage=('cabinet switching',),
+        outcome = anchored_outcome(root, goal=goal, coverage=('cabinet switching',),
                                     canary=('Switch cabinets', 'https://example.test',
                                             'Cabinet switches and failures are reported'))
         # The saved contract time is the floor for the original native source
@@ -116,7 +118,7 @@ def reuse_fixture(root, monkeypatch, live=False):
         report_at = (base + timedelta(seconds=3)).isoformat()
         authorization_at = (base + timedelta(seconds=4)).isoformat()
     else:
-        outcome = fixtures.anchored(root, goal=goal, coverage=('cabinet switching',))
+        outcome = anchored_outcome(root, goal=goal, coverage=('cabinet switching',))
         outcome['canary'].update(target='https://example.test', scenario='Switch cabinets', expected='Cabinet switches and failures are reported')
         outcome['coverage'] = ['cabinet switching']
         outcome['owned_paths'] = []
@@ -236,28 +238,40 @@ def test_quoted_examples_are_never_browser_sources(tmp_path,script):
 def test_historical_revision_difference_needs_report_only_git_delta(tmp_path,monkeypatch,product_edit_state,later_report_refresh,report_changed,baseline_present):
     import subprocess
     import lhc_outcome as outcomes
+    # The case works in a checkout of its own. The baseline commit is the one
+    # the prepared template carries, so the case neither builds that commit
+    # with processes of its own nor asks Git for the commit it holds. The
+    # checkout comes first, because the reuse fixture builds its own state
+    # on top of it.
+    prepared_repo(tmp_path,
+                  config=(('user.name','Fixture'),('user.email','fixture@example.test')),
+                  files=(('total.py','print(0)\n'),('.agents/tasks/feedback.md','before')),
+                  message='fixture baseline')
     outcome,manifest,binding,source=reuse_fixture(tmp_path,monkeypatch)
     report_path='.agents/tasks/feedback.md'
     (tmp_path/'.agents/tasks').mkdir(parents=True,exist_ok=True)
     (tmp_path/report_path).write_text('before')
     def git(*args):
         return subprocess.check_output(['git','-c','user.name=Fixture','-c','user.email=fixture@example.test',*args],cwd=tmp_path,text=True).strip()
-    git('add','total.py',report_path);git('commit','-qm','fixture baseline')
-    baseline=git('rev-parse','HEAD')
+    baseline=head_of(tmp_path)
     outcome['owned_paths']=[report_path]
     old_revision=outcomes.scope_revision(outcome,tmp_path)
     if report_changed:
         (tmp_path/report_path).write_text('actual testing feedback')
     if product_edit_state != 'none':
         (tmp_path/'total.py').write_text('changed product')
-    if report_changed:
-        git('add',report_path)
-    if product_edit_state in {'committed','staged'}:
-        git('add','total.py')
+    # Git stages the changed tracked paths itself when a commit asks it to,
+    # and a report-only commit takes the report from the working tree, so
+    # only the staged product state needs an add of its own. Every state is
+    # the one the explicit adds left behind: the same index, the same commit.
     if product_edit_state == 'committed':
-        git('commit','-qm','fixture report and product changes')
+        git('commit','-qam','fixture report and product changes')
     elif report_changed:
+        if product_edit_state == 'staged':
+            git('add','total.py')
         git('commit','--only','-m','fixture report-only change','--',report_path)
+    elif product_edit_state == 'staged':
+        git('add','total.py')
     outcome['revision']=outcomes.scope_revision(outcome,tmp_path)
     rows=[json.loads(line) for line in source.read_text().splitlines()]
     original=json.loads(rows[3]['payload']['output']);original.update(owned_paths=[report_path],revision=old_revision)
@@ -309,16 +323,15 @@ def test_explicit_review_command_routes_the_reuse_binding_into_the_live_outcome(
     actually reads --testing-reuse-bindings and that the reuse is what closes
     the consumer stage.
     """
-    import test_outcome_contract as fixtures
     outcome,manifest,binding,source=reuse_fixture(tmp_path,monkeypatch,live=True)
     bindings=tmp_path/'reuse-bindings.json'
     bindings.write_text(json.dumps(binding))
     # Without the explicit binding the same own-native source cannot close:
     # the reuse grant is the only route to the original consumer evidence.
-    rejected=fixtures.cli(tmp_path,'review','--manifest',str(manifest),ok=False)
+    rejected=outcome_cli(tmp_path,'review','--manifest',str(manifest),ok=False)
     assert 'assigned coverage needs its actual native consumer observations' in rejected, rejected
-    result=fixtures.cli(tmp_path,'review','--manifest',str(manifest),
-                         '--testing-reuse-bindings',str(bindings))
+    result=outcome_cli(tmp_path,'review','--manifest',str(manifest),
+                        '--testing-reuse-bindings',str(bindings))
     assert result['finish_verdict']=='complete'
     assert result['verification_level']=='self-check'
     assert result['product_verdict']=='changes-required'

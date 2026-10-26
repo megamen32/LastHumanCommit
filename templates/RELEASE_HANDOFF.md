@@ -4,7 +4,9 @@ Use only when a consequential release/deploy/publication action remains.
 
 ## Accepted claim
 
-Current business result:
+Expected tangible capability after the action:
+Tester scenario (actor/context, actions, expected visible result):
+Current progress / observed facts and supporting evidence:
 Exact target/action:
 Artifact or commit:
 Active-harness policy state:

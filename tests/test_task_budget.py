@@ -1,12 +1,13 @@
-"""Behavioral and real-process checks for JSON task-plan budgets."""
+"""Behavioral and real-CLI checks for JSON task-plan budgets."""
 
 import importlib.util
 import json
 from pathlib import Path
-import subprocess
 import sys
 
 import pytest
+
+from _inprocess import load_module, run_cli as run_cli_tool
 
 
 TOOL = Path(__file__).resolve().parents[1] / "src/common/tools/lhc_task_budget.py"
@@ -90,8 +91,14 @@ def test_invalid_plan_rejected(plan, reason):
 
 
 def run_cli(payload, *args):
-    return subprocess.run([sys.executable, "-B", str(TOOL), *args],
-                          input=payload, text=True, capture_output=True, timeout=10)
+    """The CLI of the tool, with its own stdin, stdout, stderr and exit code.
+
+    The command line the tool would have received, the payload it would have
+    read from stdin and the answers it would have written are the ones the
+    process gives; only the interpreter start is saved.
+    """
+    return run_cli_tool(load_module(TOOL), [str(arg) for arg in args],
+                        stdin=payload)
 
 
 def test_real_cli_stdin():

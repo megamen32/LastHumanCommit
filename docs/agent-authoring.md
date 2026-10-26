@@ -1,6 +1,8 @@
 # Authoring agent instructions
 
-`AGENTS.md` and `CLAUDE.md` are byte-identical marker-delimited routers.
+`AGENTS.md` is the authored marker-delimited router. `CLAUDE.md` is no longer a
+second hand-maintained copy: it is generated from the bytes of `AGENTS.md` by
+`python3 scripts/publish_package.py` and is never edited directly.
 `src/common/agents/Lead.md` owns business routing. Overseer is the supreme route
 controller, Tester is the mandatory real-surface final gate, and Reviewer reviews a
 coherent Full diff or is otherwise risk-triggered. Adviser is optional independent
@@ -11,7 +13,8 @@ reasoning; Critic is its compatibility alias, not another gate.
 1. Latest user outcome and accepted MVP Definition of Done.
 2. Actual production consumer path.
 3. Shortest real business canary and cheapest sufficient proof.
-4. Least-cost execution: direct Lead or delegated Worker.
+4. Least-cost execution: the shortest route through one assigned executor; the
+   planner never performs the inspection, edit or check itself.
 5. Earliest safe canary.
 6. Only observed blocker fixes and proportional direct-regression checks.
 7. Full technical review and fresh independent real-use Tester, repair and
@@ -24,8 +27,8 @@ decision or risk-reduction value is lower than its cost.
 
 ## Role semantics
 
-- Lead may research and implement directly when delegation costs more than the
-  next proof.
+- The Lead never inspects, edits or checks the repository itself: the cheapest
+  sufficient proof is still handed to one assigned Worker.
 - Every implementation starts from a three-line minimal path: result, shortest
   real canary, smallest YAGNI vertical slice, discard list.
 - Worker receives a coherent outcome lane and an expected total range that may
@@ -100,6 +103,10 @@ Both product repairs and LHC method improvements need their own evidence and
 applicable reuse; a retrospective entry alone does not close either loop.
 
 When changing instructions, update the owning source and semantic validators,
-then regenerate the canonical plugin package and its native metadata. Require ordering and forbidden old behavior, not mere
+then regenerate the canonical plugin package and its native metadata. After any
+edit to the router `AGENTS.md`, run `python3 scripts/publish_package.py`: it
+rewrites `CLAUDE.md` and the package router copies from its bytes.
+`python3 tests/validate.py` fails while `CLAUDE.md` differs from `AGENTS.md` and
+names that command. Require ordering and forbidden old behavior, not mere
 phrase presence. Run `git diff --check`, the business-first regression, and
 `python3 tests/validate.py`.

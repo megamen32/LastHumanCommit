@@ -1,0 +1,82 @@
+{
+  "label": "Исправить область owner-only интеграции для владельца LHC",
+  "description": "Уточнить root router и integration contracts: правило Oleg/Airlock относится к Airlock внешним проектам, не блокирует прямую авторизацию владельца megamen32/LastHumanCommit на fast-forward main. Сохранить защиту shared/external main.",
+  "acceptance": "Тест фиксирует отличие owner-controlled LHC main от Airlock owner handoff; package version/manifests aligned; relevant tests pass; owned branch fast-forwarded to origin/main without force under direct owner authorization.",
+  "status": "done",
+  "estimate_minutes": {
+    "minimum": 8,
+    "maximum": 15
+  },
+  "affected_files": [
+    "AGENTS.md",
+    "src/common/protocols/OUTCOME_CONTRACT.md",
+    "src/common/protocols/REVIEW_TO_DELIVERY.md",
+    "plugins/last-human-commit/CHANGELOG.md",
+    "plugins/last-human-commit/plugin.json",
+    "plugins/last-human-commit/plugin.yaml",
+    "plugins/last-human-commit/.codex-plugin/plugin.json",
+    "plugins/last-human-commit/.claude-plugin/plugin.json",
+    "plugins/last-human-commit/.zcode-plugin/plugin.json",
+    "plugins/last-human-commit/native/codex/.codex-plugin/plugin.json",
+    "adapters/hermes/plugin/plugin.yaml",
+    "tests/test_review_delivery_contract.py"
+  ],
+  "id": "L08",
+  "created_at": "2026-10-25T23:33:52+03:00",
+  "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+  "harness": "codex",
+  "updated_at": "2026-10-25T23:35:38+03:00",
+  "progress_events": [
+    {
+      "at": "2026-10-25T23:33:52+03:00",
+      "note": "Исправляю неправильно применённый внешний Airlock owner-only запрет в правилах самого LHC repo.",
+      "changes": {
+        "label": "Исправить область owner-only интеграции для владельца LHC",
+        "description": "Уточнить root router и integration contracts: правило Oleg/Airlock относится к Airlock внешним проектам, не блокирует прямую авторизацию владельца megamen32/LastHumanCommit на fast-forward main. Сохранить защиту shared/external main.",
+        "acceptance": "Тест фиксирует отличие owner-controlled LHC main от Airlock owner handoff; package version/manifests aligned; relevant tests pass; owned branch fast-forwarded to origin/main without force under direct owner authorization.",
+        "status": "running",
+        "estimate_minutes": {
+          "minimum": 8,
+          "maximum": 15
+        },
+        "affected_files": [
+          "AGENTS.md",
+          "src/common/protocols/OUTCOME_CONTRACT.md",
+          "src/common/protocols/REVIEW_TO_DELIVERY.md",
+          "tests/test_review_delivery_contract.py",
+          "plugins/last-human-commit/CHANGELOG.md",
+          "plugins/last-human-commit/plugin.json",
+          "plugins/last-human-commit/plugin.yaml",
+          "adapters/hermes/plugin/plugin.yaml"
+        ]
+      },
+      "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+      "harness": "codex"
+    },
+    {
+      "at": "2026-10-25T23:35:38+03:00",
+      "note": "Direct owner-authorized fast-forward and native Codex installation/readback completed.",
+      "changes": {
+        "status": "done",
+        "affected_files": [
+          "AGENTS.md",
+          "src/common/protocols/OUTCOME_CONTRACT.md",
+          "src/common/protocols/REVIEW_TO_DELIVERY.md",
+          "plugins/last-human-commit/CHANGELOG.md",
+          "plugins/last-human-commit/plugin.json",
+          "plugins/last-human-commit/plugin.yaml",
+          "plugins/last-human-commit/.codex-plugin/plugin.json",
+          "plugins/last-human-commit/.claude-plugin/plugin.json",
+          "plugins/last-human-commit/.zcode-plugin/plugin.json",
+          "plugins/last-human-commit/native/codex/.codex-plugin/plugin.json",
+          "adapters/hermes/plugin/plugin.yaml",
+          "tests/test_review_delivery_contract.py"
+        ],
+        "result": "Owner-only integration wording is scoped to Airlock, and direct owner permission applies to owned LastHumanCommit main. Relevant policy/version checks passed (14 tests), package validation and projections passed. Commit 4fb6666 was pushed to the task branch and ordinary fast-forwarded to origin/main without force. Native Codex marketplace installed LHC 1.5.64 enabled; fleet-lhc duplicate is not installed; only one LHC plugin is enabled. Installed Lead role/skill text read back correctly; no new session launched."
+      },
+      "session": "01a1744b-71ee-70e0-a4ef-06d54c6aac70",
+      "harness": "codex"
+    }
+  ],
+  "result": "Owner-only integration wording is scoped to Airlock, and direct owner permission applies to owned LastHumanCommit main. Relevant policy/version checks passed (14 tests), package validation and projections passed. Commit 4fb6666 was pushed to the task branch and ordinary fast-forwarded to origin/main without force. Native Codex marketplace installed LHC 1.5.64 enabled; fleet-lhc duplicate is not installed; only one LHC plugin is enabled. Installed Lead role/skill text read back correctly; no new session launched."
+}

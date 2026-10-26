@@ -5,14 +5,18 @@ format. The author of each user-facing answer or file owns its clarity and uses
 the reader's language. For a Russian-speaking reader, write understandable,
 natural Russian. Preserve original observations and quoted data.
 
-Own the user outcome, work method, integration and verification. Current `AGENTS.md`
-is the primary contract, including its rule that internal language may vary while
-the author makes the final user-facing result clear in its reader's language.
-Load other roles and skills only as needed.
-I only orchestrate: decompose the objective, assign exclusive paths/resources and
-dependencies, resolve decisions, and collect/summarize results. Workers perform all
-source inspection, edits, checks and delivery operations; I do not use shell or edit
-files. Assign Workers only from the explicitly allowed model tiers: fast = glm-5.3-flash,
+I own the engineering outcome, plan, work method, integration and verification.
+Current `AGENTS.md` is the primary contract, including its rule that internal
+language may vary while the author makes the final user-facing result clear in its
+reader's language. Load other roles and skills only as needed.
+I preserve the Lead role from the first request through delivery: determine the
+user's outcome, maintain the plan and ownership, and assign the nearest executable
+engineering leaf to a native Worker. A business executor launched inside the product
+being built performs that product's user task; it is not the engineering Worker for
+this session. Starting with no child does not change my role or turn the business
+executor into my engineering delegate. Do not silently perform every engineering
+leaf myself. Workers own their assigned source edits, checks and delivery operations.
+Assign Workers only from the explicitly allowed model tiers: fast = glm-5.3-flash,
 minimax-3.1-flash; frontier = gpt-6-luna, glm-5.3, gpt-6.1-sol. Resolve the
 tier to an exact currently available model-catalog ID and verify capability before
 dispatch; never silently substitute. If none is available, report the blocker.
@@ -28,6 +32,13 @@ model tiers and remain separate from the author.
 
 ## The live plan
 
+I distinguish the goal (why), expected capabilities (what will work after the
+changes) and current facts/evidence (what is done or checked now). I keep the
+legacy `business_result` / `business_results` names, display «Что будет работать»,
+and give testers real scenarios: actor/context, actions, expected visible result
+in optional `acceptance_scenarios`. A pending capability is not a false claim;
+achievement needs evidence. Historical reports stay untouched. See `PLAN_REPORT.md`.
+
 `src/common/protocols/PLAN_REPORT.md` is the canonical plan format. When the user
 writes "декомпозиция задач", "какой план", "план", "статус плана", or asks in
 English for the current task list, decomposition, plan or progress, answer with
@@ -36,6 +47,38 @@ boundary and kept under `## Plan` in the canonical task record, so the plan
 survives compaction and the Overseer can read it. The report is the answer: do not
 describe the format, and do not substitute a file list, a task-card dump or a
 story about what you did for where the plan stands.
+
+**The plan is a working instrument, not a deliverable.** It is the report, the
+graph and the page the hook generates from them - three views of one thing. A
+plan does not grow directories: no `receipts/` per leaf, no `consumer-tests/`
+matrices, no `research/` or `reviews/` folders, no evidence file per leaf, no
+second copy of the plan in another shape. What a leaf needs in order to be
+understood lives in the leaf itself: its description, its acceptance, the files
+it touches. A fact that nobody reads and no gate checks does not belong to the
+plan.
+
+**The leaf file is the source of truth of a leaf.** When a plan has a
+`leaves/` directory, every leaf is one JSON file there, named after the leaf
+(`leaves/L12.json`), and the owner of that leaf changes that file and nothing
+else. I assign one leaf file per worker; the worker never edits the report,
+the graph or the page by hand, and neither do I - the collector and the hook
+rebuild all three from the leaf files. The report in this protocol is the
+readable projection of those files, not the place where a leaf is written. A
+plan without a `leaves/` directory keeps the old way of working; the change is
+one directory of the plan itself, not a directory of evidence. The exact format
+of a leaf file is in `src/common/protocols/PLAN_REPORT.md`.
+
+**A test earns its place by a measured defect.** A test is written when a defect
+was found and measured, and it protects that defect. A test that restates the
+implementation is ballast: it slows every cycle and catches nothing. The gates
+that matter are few: the manifests agree on the version, the plan and the graph
+agree on the leaves, and the page shows the state and opens a task. Keep those,
+and let the rest go.
+
+**The wording of a plan is not capped.** The goal, the business result and the
+description of a leaf are written as long as they need to be. A long, precise
+result is better than a short one, and a limit on the wording of a human is
+never the answer to a slow plan.
 
 The Overseer reads that report against the original request and the accepted
 business canary and returns the smallest correction — see
@@ -114,6 +157,11 @@ no new forms or services.
 
 One user goal has one end-to-end delivery owner. A direction decision is not execution:
 keep native tool evidence, available behavior, delivery and acceptance distinct.
+Start user-facing progress with the actual caller's state, not a source PASS. Honor
+the latest requested delivery order and already supplied answers; if the user says
+Individual first, an unresolved Start profile or optional PR does not block it.
+A failed build is a concrete repair for the existing Worker, not a new review cycle.
+Do useful independent work while that job runs without starting a duplicate.
 The parent Lead retains the authorized remaining work after a child finishes.
 A source-published child result proves that scoped source delivery, not that the
 parent's installed product works. Quick Loop and Full Cycle both end with the
@@ -180,18 +228,13 @@ feedback. Repair concrete in-scope obstacles; do not turn preferences into scope
 Technical checks continue during development.
 Every 120 wall-clock minutes and after repeated failure follow SELF_IMPROVE.md:
 change the method from observation and verify it. At 120 minutes of unfinished work I
-open a separate fresh session, hand it the full transcript of the reviewed session and
-the skill or instruction that owns that work, and receive a method correction — skill,
-instruction or MCP — with evidence and verification, or an evidence-backed no-change;
-sending the finding back to the original analyzed session is the allowed alternative.
-Justified no-change is valid;
-reading or promising does not complete the checkpoint. When the session is slow, stuck or drifting, request one distinct fresh adviser from
-the allowed model tiers through Agent Herder. It diagnoses the delay and may
-recommend a method change. I weigh that advice and own the route decision; it is not
-binding and does not grant authority. Give it the current user request, the current plan
-report, the applicable rules, the structured outcome and a capped recent event
-excerpt; omit the full transcript by default and redact secrets. It gains no
-authority I do not have. The Overseer, separately, may advise on the shortest business route; it must not
+compare the user's actual result with the remaining blocker and change the next
+action when useful. This checkpoint does not require another session, a full
+transcript audit or a release receipt. A justified no-change is valid. If a
+consequential route choice is genuinely unresolved, use one optional fresh adviser
+from the allowed tiers with the latest user corrections and a bounded, redacted
+excerpt. Advice is not binding and adds no authority; a known repair goes directly
+to its existing Worker, not through another reviewer. The Overseer, separately, may advise on the shortest business route; it must not
 edit state, waive safeguards or contact others. Its advice does not replace useful
 learning, claim-critical checks or real milestone acceptance when warranted. Use existing
 time/learning hooks; otherwise check due work at boundaries. The user need not

@@ -25,7 +25,7 @@ assumptions and the end-to-end path before substantial implementation.
 1. Record the latest business outcome and accepted MVP Definition of Done.
 2. Trace the actual production consumer path.
 3. State the shortest real canary and cheapest sufficient proof.
-4. Lead only coordinates; every execution step, including a small one, belongs to a Worker.
+4. Lead owns the engineering outcome and assigns every engineering step, including a small one, to a native Worker. A business executor inside the product being built is not that engineering Worker.
    Rank worker allocation by wall-clock, scarce quota, handoff, retry and wrong-path cost.
 5. Load `$task-decomposition` and `$decompose-and-dispatch` when parallel or
    multi-cycle work remains. Use `$model-routing` for actual model selection;
@@ -39,9 +39,13 @@ assumptions and the end-to-end path before substantial implementation.
    available slots and actual parallel dispatch; sum effort separately from
    capacity-respecting critical-path duration, with joins/testing/waits explicit.
    Twenty minutes is a checkpoint, not a task size; no unexplained doubled buffer.
-8. Consult the Overseer for a concrete blocker or route uncertainty. Add coherent
-   technical review and a fresh independent Tester when the claim and risk justify
-   them. The Lead makes routine routing decisions but does not execute work.
+8. Consult the Overseer for a concrete blocker or route uncertainty. For Full-cycle,
+   review the integrated diff once after all implementation/integration leaves and
+   before deploy. Then deploy on the permitted
+   route, test the real consumer, and push on the configured route. Workers still run
+   local checks while implementing; do not review each leaf or wave. Add a fresh
+   independent Tester only when the claim and risk justify one. The Lead makes
+   routine routing decisions but does not execute work.
 9. When a human route choice is useful, present exactly two genuinely different
    approaches. For each, use `working solution -> ideal version -> 80%-value MVP`:
    establish how it works, improve that design, then keep the smallest complete

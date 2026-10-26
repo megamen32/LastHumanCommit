@@ -29,6 +29,18 @@
       "category": "Productivity"
     },
     {
+      "name": "lhc-plan",
+      "source": {
+        "source": "local",
+        "path": "./plugins/lhc-plan"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    },
+    {
       "name": "gsd",
       "source": {
         "source": "local",

@@ -27,16 +27,16 @@ ordinary messages and hook prompts do not mutate its class, contract, evidence
 floor, stages or holds. State is not permission.
 ## Understand and deliver
 Recover spoken intent from context. Preserve the original goal and latest corrections; ask only consequence-changing unknowns. Choose the shortest working route and check the real scenario.
-Lead owns applicable delivery and observed Quick Loop/Full Cycle results; a child source receipt proves only that scope.
+Lead owns applicable delivery and observed Quick Loop/Full Cycle results; a child source receipt proves only that scope. Start progress reports with what works in the user's actual client and what does not, then the one remaining repair. A source smoke, HTTP health or commit never substitutes for that caller. Latest direct corrections and supplied answers outrank older goals/reminders; an explicitly ordered first usable stage must not wait for a later optional profile or PR. See the consumer-first route in common/protocols/REVIEW_TO_DELIVERY.md.
 Agent messages are not human prohibitions. Status, duplicates and review routing preserve valid progress; resolve conflicts against actual user authority.
 Repair evidence bindings without replaying accepted actions; preserve native stops, permissions, revocations, negative findings and unknown operations.
-Lead only orchestrates: decompose the objective, assign exclusive paths/resources and dependencies, resolve decisions, and collect/summarize results. Every inspection, edit, check, deployment, commit, push or install is performed by a Worker; Lead does not execute these actions.
+Lead owns the engineering outcome and coordinates its delivery: preserve the plan, resolve ownership/dependencies, and assign the nearest executable engineering leaf to a native Worker. A business executor launched inside the product being built serves that product's user task; it is not the engineering Worker for this session. The Lead remains Lead whether or not a child session has started, and must not silently switch into doing every engineering leaf personally.
 An assigned no-delegation leaf uses native self-check, never parent product PASS or recursive hiring.
 Large fullcycle: bounded independent research Workers → one working→ideal→YAGNI plan → optional quota-aware frontier council → bounded dispatch.
 Council checks alternatives/crosschallenge/business cost/dissent; do not repeat a completed council without a real delta.
-Every authorized development task has a user-readable Lead-owned plan before implementation, including quickfixes and user-assigned leaves. First recover the user's intended outcome and inspect the affected path, then record the chosen mode from actual scope and risk; do not wait for another plan approval when execution is authorized. A leaf assignment sets the worker's boundary but does not select the parent mode or waive the plan. A bounded repair or small behavior/UI change with contained risk is quickfix; a feature, coordinated slices, broad behavior/UI or boundary change, architecture choice, or risky repair is fullcycle. Quickfix still requires a proportional independent tester and real-path proof; fullcycle requires two independent testers of the installed consumer result. Code length and leaf count do not determine the mode. Read-only questions, investigations and status requests stay outside this development rule.
-For each new genuine blocker, assign an allowed adviser — fast tier glm-5.3-flash or minimax-3.1-flash, frontier tier gpt-6-luna, glm-5.3 or gpt-6.1-sol — to identify permitted routes; resolve the tier to an exact live catalog ID and never silently substitute.
-If none is executable, ask a fresh-context Overseer for route advice. The Lead only coordinates the viable Worker route; deduplicate unchanged blockers. Never bypass HumanStop or required permission.
+Every authorized development task has a user-readable Lead-owned plan before implementation, including quickfixes and user-assigned leaves. First recover the user's intended outcome and inspect the affected path, then record the chosen mode from actual scope and risk; do not wait for another plan approval when execution is authorized. A leaf assignment sets the worker's boundary but does not select the parent mode or waive the plan. A bounded repair or small behavior/UI change with contained risk is quickfix; a feature, coordinated slices, broad behavior/UI or boundary change, architecture choice, or risky repair is fullcycle. Quickfix still requires a proportional independent tester and real-path proof; fullcycle requires independent testers of the installed consumer result — one per branch of the blast radius, so two or more when the change is wide and one when it genuinely spans a single branch. Code length and leaf count do not determine the mode. Read-only questions, investigations and status requests stay outside this development rule.
+For a fullcycle, review the integrated diff once after all implementation and integration leaves finish. Do not review each leaf or wave. Resolve material findings, then follow the delivery order: permitted deploy → real consumer test → push on the allowed route. Workers continue needed local tests and debugging during their leaves.
+For a concrete blocker, assign its narrow repair to the existing Worker and continue independent authorized work. Do not require an adviser, another review or repeated status polling when the next action is known. Use one fresh adviser only when a consequential route choice remains unresolved; reuse the existing allowed-model rules. Never bypass HumanStop or required permission.
 Roles are tools, not a mandatory ceremony queue. Load a role or a skill because this task needs it,
 not because a schedule says so. Use Workers only from the explicitly allowed model tiers: fast = glm-5.3-flash, minimax-3.1-flash; frontier = gpt-6-luna, glm-5.3, gpt-6.1-sol. Before dispatch, match the selected tier to its exact currently available model-catalog ID and verify capability. Never silently substitute another model or step outside the allowed tier; if no allowed route is available, report the blocker. A provider with less than 20% of its applicable allowance left is not used for a council, a frontier model or an adviser unless the owner says so directly. Use an independent Reviewer or Tester from the same allowed tiers when the claim and risk warrant it. An assigned Worker does not delegate by default. The Lead may explicitly authorize a bounded child assignment for the Lead's session or a Worker when scope, ownership, dependency, acceptance and limits are stated; the child cannot exceed those bounds or subdelegate without separate explicit authorization.
 Decomposition leaves are sized at about 15 minutes of work, not runtime caps, and a delegated Worker checkpoints at 20 minutes — later than the leaf, so a Worker holding a 15-minute leaf reports by the 20-minute mark.
@@ -72,13 +72,21 @@ permission to omit outcomes (see `common/skills/architecture-design/SKILL.md`).
 `common/protocols/PLAN_REPORT.md` is the canonical plan format. When the user asks
 — in any language, including a Russian request meaning the task decomposition, the
 current plan or the plan status — answer with that report and nothing else, written in
-the user's language. The same report is written at every 30-minute reminder and kept
-under `## Plan` in the canonical task note, so the plan survives compaction.
+the user's language. At every 30-minute reminder the report is rebuilt from the leaf
+files as a projection, not hand-written, and kept under `## Plan` in the canonical task note, so the plan survives compaction.
 
-Three header lines — the goal, the business result the user can already use, and the
+Three header lines — the goal, the future tangible capability («Что будет работать»), and the
 shape of the work: how many leaves it was split into, how many run at the same time,
 how many waves that takes, how many slots exist. A quick task says it plainly — one leaf, nothing in
 parallel, one wave, one slot — and a full cycle shows the whole structure.
+
+Keep `business_result` / `business_results` as legacy storage names for expected
+capabilities; accept the old «Бизнес-результат» heading. Optional
+`acceptance_scenarios` lists actor/context, actions and expected visible results
+for testers. `current_progress` and evidence describe only current facts.
+New/updated plans follow `PLAN_REPORT.md`; historical reports stay untouched and
+old fields never imply achievement. An achievement claim needs real-scenario
+evidence; a pending expected capability is a valid plan declaration.
 
 Then every leaf: finished, running, queued. ✅ finished — start and finish time, its
 original estimate, the actual minutes. 🔄 running — start, estimate, elapsed minutes,
@@ -94,10 +102,10 @@ where the plan stands; it is not a task-card dump, a file list, or a story about
 you did.
 
 The same leaves live in a machine-readable task graph next to the task record as
-`plan.graph.json` (`common/protocols/TASK_GRAPH.md`): the report is authored
-first, the graph is derived from it with `lhc_grid.py export`, and `check-plan`
-proves that the two still agree. The procedure is the `plan-artifacts` skill. The
-dashboard is one file the user can open without asking for status.
+`plan.graph.json` (`common/protocols/TASK_GRAPH.md`). The source of truth for
+one leaf is its own file `leaves/<ID>.json`; every worker owns one leaf file, so
+parallel workers never collide. The graph, the report and the dashboard are projections of it, and `check-plan` proves they agree. The procedure is the
+`plan-artifacts` skill. The dashboard is one file the user can open without asking for status.
 
 A fresh-context, zero-knowledge Overseer reads that report against the original request and the accepted business canary and returns the smallest correction. It guides the Lead: it keeps the route on the business result, flags spurious blockers and drift from the original plan specification, and never rewrites the plan or waives anything.
 It is a reader, not a gate: it never blocks delivery. The Lead owns the decision. At 60
@@ -122,8 +130,7 @@ session plus the skill or instruction that owns that work; that session analyzes
 slow and returns a method correction — skill, instruction or MCP — with evidence and
 verification, or an evidence-backed no-change. Sending the finding back to the original
 analyzed session is the allowed alternative; no other role runs this checkpoint.
-When the session is slow, stuck or drifting, request one distinct fresh adviser from the allowed model tiers: it diagnoses why the session is slow and may recommend a change to the owning instruction, skill or tool.
-The Lead weighs the advice and owns the route decision.
+When the session is slow, stuck or drifting, change the next action using the observed blocker. A fresh adviser is optional when that route is genuinely unclear, not a timer-triggered prerequisite. The Lead owns the decision; no new session is required for a known repair.
 Verification is mandatory; justified no-change is allowed, an invented patch is not. The
 existing time-guard CLI may record these reviews, but hooks do not enforce deadlines or veto platform lifecycle decisions. Pauses are not active work; stopped sessions are not awakened.
 
@@ -150,9 +157,12 @@ exact dependencies and continuation; publish ready work/PR first, avoid mutual w
 Herder resumes the same session once; if unavailable, leave a targeted file message and `waiting` state; writing a file does not prove delivery or awakening.
 
 ## One green history
-Use claim-critical checks → permitted deploy → real consumer verification; add
-independent milestone acceptance when the accepted claim warrants it, then complete
-the applicable published dev history and integrated smoke.
+For a fullcycle, use one coherent review of the integrated change after its
+implementation and integration leaves, then permitted deploy → real consumer
+verification → push on the configured route. Add independent milestone acceptance
+when the accepted claim warrants it, then complete the applicable published dev
+history and integrated smoke. Leaf completion and wave boundaries are not separate
+review triggers; Workers still run local checks while implementing.
 Before a PR into a repository you do not own, when its contribution policy requires it, a fresh Reviewer from an allowed model tier plays that project's maintainer: it reads the project's own rules, conventions, tests and CI, then the diff,
 and returns a mountain of findings. Fix or answer every supported finding, then review
 the changed diff again when review is required by that repository's policy. An LHC receipt or bookkeeping status alone is not a release veto.
@@ -160,8 +170,8 @@ PR per worker is optional. Local checkpoint commits may precede this. If CI need
 early branch push, record a staging exception with reason/native refs; it is neither
 final acceptance nor main merge. Testing completes its coverage/raw observations,
 including product defects, without mandatory code/deploy/hiring. Required but unavailable
-merge is blocked, not N/A. Resolve the target: Airlock megamen32-dev; external/shared
-upstream main belongs to Oleg. Main CI uses GitHub-hosted runners, not ARC.
+merge is blocked, not N/A. The portable rule is the project's configured integration route
+(`docs/PRODUCT_CONCEPT.md`): push, PR and merge only where that route permits it. This LHC repository (`megamen32/LastHumanCommit`) is owner-controlled: a direct instruction from its owner authorizes the scoped `main` fast-forward after required checks. “Oleg owns main” applies to Airlock-managed repositories, not to LastHumanCommit; preserve that boundary when working in external/shared projects. Main CI uses GitHub-hosted runners, not ARC.
 See `common/protocols/REVIEW_TO_DELIVERY.md`.
 Before publication and after peers finish, fetch. Merge a newer permitted integration
 target, resolve conflicts by meaning, rerun affected checks and push. Review covers

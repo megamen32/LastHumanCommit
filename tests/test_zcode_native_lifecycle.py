@@ -8,6 +8,8 @@ import subprocess
 import sys
 import pytest
 
+from _inprocess_lane import git_repo, run_tool
+
 
 ROOT = Path(__file__).resolve().parents[1]
 ENTRY = ROOT / "src/common/tools/lhc_entry.py"
@@ -27,9 +29,10 @@ def invoke(cwd, event, *, runtime="zcode", **fields):
     payload = {"cwd": str(cwd), "session_id": "zcode-native-test", "turn_id": "turn-one", **fields}
     # --session is the explicit agent command that advances the stateful
     # lifecycle. The native hook templates stay time-only and never block.
-    result = subprocess.run(
-        [sys.executable, str(ENTRY), "--root", str(ROOT), "--runtime", runtime, "--event", event, "--session"],
-        input=json.dumps(payload), capture_output=True, text=True, timeout=8,
+    result = run_tool(
+        "lhc_entry",
+        ["--root", str(ROOT), "--runtime", runtime, "--event", event, "--session"],
+        stdin=json.dumps(payload),
     )
     assert result.returncode == 0, result.stderr or result.stdout
     return json.loads(result.stdout) if result.stdout.strip() else {}
@@ -37,7 +40,7 @@ def invoke(cwd, event, *, runtime="zcode", **fields):
 
 @pytest.fixture(autouse=True)
 def isolate_git_root(tmp_path):
-    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    git_repo(tmp_path)
 
 
 def state_file(cwd):
@@ -74,7 +77,6 @@ def test_zcode_tool_failure_stays_held_until_a_later_success(tmp_path):
 
 
 def test_zcode_stop_requires_real_milestone_acceptance(tmp_path):
-    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
     (tmp_path / "dashboard.html").write_text("<main>old</main>")
     subprocess.run(["git", "-C", str(tmp_path), "add", "dashboard.html"], check=True)
     subprocess.run(["git", "-C", str(tmp_path), "-c", "user.name=Tester", "-c", "user.email=test@example.invalid", "commit", "-qm", "fixture"], check=True)
@@ -178,10 +180,10 @@ def test_zcode_hook_bundle_declares_its_supported_native_events():
 def heartbeat(cwd, session="zcode-heartbeat"):
     """Run the installed time-only PostToolUse hook exactly as ZCode does."""
     payload = {"cwd": str(cwd), "session_id": session}
-    result = subprocess.run(
-        [sys.executable, str(ENTRY), "--root", str(ROOT), "--runtime", "zcode",
-         "--event", "PostToolUse", "--heartbeat-only"],
-        input=json.dumps(payload), capture_output=True, text=True, timeout=8,
+    result = run_tool(
+        "lhc_entry",
+        ["--root", str(ROOT), "--runtime", "zcode", "--event", "PostToolUse", "--heartbeat-only"],
+        stdin=json.dumps(payload),
     )
     assert result.returncode == 0, result.stderr or result.stdout
     return result.stdout
@@ -220,10 +222,11 @@ def test_zcode_heartbeat_delivers_the_due_time_reminder_after_elapsed_time(tmp_p
 
 def test_entry_infers_zcode_from_native_plugin_environment(tmp_path):
     payload = json.dumps({"cwd": str(tmp_path), "session_id": "zcode-env-test", "prompt": "Add a label"})
-    result = subprocess.run(
-        [sys.executable, str(ENTRY), "--root", str(ROOT), "--event", "UserPromptSubmit", "--session"],
-        input=payload, capture_output=True, text=True, timeout=8,
-        env={**os.environ, "ZCODE_PLUGIN_ROOT": str(PLUGIN)},
+    result = run_tool(
+        "lhc_entry",
+        ["--root", str(ROOT), "--event", "UserPromptSubmit", "--session"],
+        stdin=payload,
+        env={"ZCODE_PLUGIN_ROOT": str(PLUGIN)},
     )
     assert result.returncode == 0, result.stderr
     output = json.loads(result.stdout)

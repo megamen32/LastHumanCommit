@@ -1,0 +1,23 @@
+{
+  "id": "L14",
+  "label": "Opencode передаёт пути записанных файлов в хук: автопересборка плана перестаёт быть мнимой",
+  "status": "done",
+  "started_at": "06:04",
+  "description": "Разведка по harness-ам установила построчно, где обещание «хук сам пересобирает план» из PLAN_REPORT.md и plan-artifacts не выполняется. Codex, Claude и Zcode регистрируют PostToolUse (plugins/last-human-commit/hooks/hooks.json:26-31, hooks/zcode-hooks.json:26-33) и попадают в render_written_plan, который читает tool_input и пересобирает график и страницу. Opencode хук запускает, но передаёт только {cwd, session_id}: plugins/last-human-commit/opencode/lhc-v2.ts:254 делает JSON.stringify именно от них, без tool_input, поэтому written_paths() не видит ни одного пути и render_written_plan возвращает None. Hermes хуков не регистрирует вовсе (test_native_instruction_hooks.py:117-119 это закрепляет как ожидание). При этом adapters/opencode/adapter.yaml:16 заявляет «lifecycle_time_guard_hook: proven» — proven там, где ветка кода доказанно не доходит до пересборки.\nЛист чинит opencode: в payload добавляется тот самый tool_input/file paths, который уже есть у других harness-ам, и заявка в adapter.yaml приводится к проверенному факту. Hermes не получает хук насильно: его отсутствие — осознанное состояние, и оно должно быть названо в документах (это заберёт лист L13), а не выглядеть как работающий механизм.",
+  "acceptance": "На событии PostToolUse формата opencode (payload с путём к leaves/<ID>.json, переданным через stdin CLI --event PostToolUse --heartbeat-only) план пересобирается: plan.graph.json и plan.html меняются, код возврата 0. Отдельный тест доказывает, что старый payload без tool_input по-прежнему ничего не ломает и не роняет хук. Заявка «lifecycle_time_guard_hook: proven» либо подтверждена прогоном, либо заменена тем, что происходит на самом деле. Ни одна из существующих проверок не ослаблена: test_last_spawns.py, test_plan_json_build.py, test_native_instruction_hooks.py проходят как раньше.",
+  "affected_files": [
+    "plugins/last-human-commit/opencode/lhc-v2.ts",
+    "adapters/opencode/adapter.yaml",
+    "tests/test_last_spawns.py"
+  ],
+  "owner": "worker-l14",
+  "model_class": "fast",
+  "depends_on": [],
+  "estimate_minutes": {
+    "minimum": 15,
+    "maximum": 15
+  },
+  "note": "Готово: lhc-v2.ts передаёт args инструмента как tool_input в stdin-пayload хука (runTimeGuard + tool.execute.after), проверено прогоном плагина под node и запуском hook-бинаря в форме opencode (--event PostToolUse --heartbeat-only --runtime opencode): plan.graph.json/plan.html меняются, exit 0; старый payload без tool_input безвреден. Три теста в tests/test_last_spawns.py, suite 78 passed. lhc-v2.ts — собственный исходник harness-а: в scripts/publish_package.py нет ни одного отображения на opencode/-каталог, regenerация L06 его не перезапишет (устанавливает install_runtime.py копированием). Заявка lifecycle_time_guard_hook: proven подтверждена прогоном, в adapter.yaml добавлен указатель на тесты-стражи. Блокер вне листа: живые leaves/L18.json содержит actual_minutes свободным текстом, из-за чего пересборка ЖИВОГО плана хуком отказывает с именем L18 (exit 0, ничего не портит; см. .tmp/l14/01-live-blocker.log) — чинить должен владелец L18/Lead. Зеркало lhc-time-guard.ts (типы tool.execute.after/runTimeGuard) не обновлял: вне affected_files.",
+  "updated_at": "2026-10-24T08:55",
+  "finished_at": "08:55"
+}
