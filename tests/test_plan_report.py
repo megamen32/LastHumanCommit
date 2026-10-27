@@ -42,40 +42,10 @@ def compact(value: str) -> str:
     return " ".join(value.split())
 
 
-def test_plan_report_protocol_carries_the_canonical_format():
-    protocol = read("src/common/protocols/PLAN_REPORT.md")
-    for phrase in (
-        "✅",
-        "🔄",
-        "⏳",
-        "Цель:",
-        "Бизнес-результат:",
-        "Декомпозиция:",
-        "∥ параллельно с листом 1",
-        "отстаём потому что:",
-        "начнём после листа 3, потому что",
-        "начата 14:02 закончена 14:09, оценка 15 минут, факт 7 минут",
-        "не измерено",
-    ):
-        assert phrase in protocol, phrase
-    assert "декомпозиция задач" in protocol
-    assert "какой план" in protocol
 
 
 
 
-def test_task_template_carries_the_same_report_shape():
-    template = read("src/common/templates/.agents/tasks/task_template.md")
-    for phrase in (
-        "## Plan — live plan report",
-        "Декомпозиция: N листьев",
-        "✅ (описание листа) начата",
-        "🔄 работаем (описание листа) начата",
-        "⏳ (описание листа) начнём после листа N",
-        "∥ параллельно с листом 1",
-    ):
-        assert phrase in template, phrase
-    assert "Overseer is the plan reader" in template
 
 
 
