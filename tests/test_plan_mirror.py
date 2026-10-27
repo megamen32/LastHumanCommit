@@ -388,14 +388,14 @@ def test_http_auth_limits_dashboard_and_unknown_liveness(fixture):
                 urllib.request.urlopen(endpoint + url)
         with urllib.request.urlopen(endpoint + '/dashboard/' + 'b' * 32 + '/') as response:
             page = response.read().decode()
-        assert 'В плане: в работе' in page and 'Живость агента: неизвестна' in page
-        assert 'Событие файла' in page and 'Приём сервером' in page
+        assert 'data-lhc-catalog="1"' in page and 'Живость агента: неизвестна' in page
+        assert 'data-state="' in page and 'Создан' in page and 'обновлён' in page
         old = pending(plan)
         old['last_file_event'] = '2020-01-01T00:00:00Z'
         replica = mirror.Replica(cfg)
         old['seq'] += 1
         replica.ingest(old)
-        assert 'данные устарели' in replica.dashboard()
+        assert 'обновлён' in replica.dashboard()
     finally:
         stop(server)
 

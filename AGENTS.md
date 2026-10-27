@@ -152,7 +152,9 @@ reminders (30-minute plan, 60-minute goal, 120-minute method) are prompts to
 look up, not tasks: compare with the original request, adjust the next action,
 and keep working. A reminder never ends a turn. Tasks longer than 15 minutes
 keep one note in `.agents/tasks/` (goal, decisions, done, next). The plan page
-from `plan-artifacts` is a view of the plan, not a deliverable.
+from `plan-artifacts` is a view of the plan, not a deliverable. When a plan is
+first created, give the owner its public link once, on its own line
+(`lhc_plan_mirror.py link <plan-dir>`); never a local HTML path.
 
 ## Models
 

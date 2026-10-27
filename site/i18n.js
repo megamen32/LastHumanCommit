@@ -14,7 +14,7 @@
     ["#full-depth-steps", "aria-label", "Adaptive Full depth stages", "Адаптивные этапы углублённого цикла Full"],
     ["#prev-step", "aria-label", "Previous stage", "Предыдущий этап"],
     ["#next-step", "aria-label", "Next stage", "Следующий этап"],
-    ["meta[name='description']", "content", "Last Human Commit: a work method from human intent to a verified change in shared project history, sourced from Git.", "Last Human Commit: путь от замысла человека до проверенного изменения в общей истории проекта. Источник — Git."]
+    ["meta[name='description']", "content", "Last Human Commit: a work method from human intent to a verified, merged change, sourced from Git.", "Last Human Commit: путь от замысла человека до проверенного и влитого изменения. Источник — Git."]
   ];
   const MESSAGES = {
     "title": ["Last Human Commit — Ship the result, not the ritual.", "Last Human Commit — Результат, а не ритуал."],
@@ -72,7 +72,7 @@
     "fullDepth.small-pieces.summary": ["", "Разбейте работу на небольшие задачи с одним ответственным и проверяемым результатом, если это ускорит выполнение."],
     "fullDepth.worker-dispatch.summary": ["", "Поручайте независимым исполнителям ограниченные задачи, когда это экономит время или улучшает проверку."],
     "fullDepth.review-manual-test.summary": ["", "Проверьте изменения и вручную пройдите нужный пользовательский сценарий: одних автопроверок недостаточно."],
-    "fullDepth.shared-history.summary": ["", "Используйте настроенный путь публикации и объедините изменение с общей историей проекта, когда это разрешено."],
+    "fullDepth.shared-history.summary": ["", "Используйте настроенный путь публикации и влейте изменение в ветку назначения: свой репозиторий — в main, чужой — в вашу ветку."],
     "fullDepth.research.title": ["Research current code", "Исследуйте текущий код"],
     "fullDepth.working-solution.title": ["Build a working solution", "Соберите рабочее решение"],
     "fullDepth.ideal-version.title": ["Consider the ideal version", "Продумайте идеальную версию"],
@@ -81,7 +81,7 @@
     "fullDepth.small-pieces.title": ["Split useful work into small pieces", "Разбейте работу на полезные небольшие части"],
     "fullDepth.worker-dispatch.title": ["Dispatch bounded Worker tasks", "Поручите Worker-ам ограниченные задачи"],
     "fullDepth.review-manual-test.title": ["Review and manually test", "Проведите ревью и ручную проверку"],
-    "fullDepth.shared-history.title": ["Push and integrate into shared history", "Отправьте и объедините в общую историю"],
+    "fullDepth.shared-history.title": ["Push and merge where it belongs", "Отправьте и влейте по назначению"],
     "fullDepth.sourceLink": ["Open the Git source ↗", "Открыть источник в Git ↗"],
     "workflow.outcome.title": ["Start with human intent", "Начните с замысла человека"],
     "workflow.outcome.description": ["Name who benefits, what changes, what failed before and where the result can be tried.", "Определите, кому это нужно, что изменится, что не работало раньше и где проверить результат."],
@@ -91,7 +91,7 @@
     "workflow.execute.description": ["Make the needed change while preserving other active work, data and ownership.", "Внесите нужное изменение, сохранив чужую незавершённую работу, данные и границы ответственности."],
     "workflow.verify.title": ["Verify the real result", "Проверьте реальный результат"],
     "workflow.verify.description": ["Check the claim through the actual consumer path, fix in-scope failures and keep different evidence levels distinct.", "Проверьте результат через реальный потребительский путь, исправьте ошибки в своей области и разделяйте виды доказательств."],
-    "workflow.deliver.title": ["Deliver into shared history", "Доставьте изменение в общую историю"],
+    "workflow.deliver.title": ["Merge where it belongs", "Влейте изменение по назначению"],
     "workflow.deliver.description": ["Use the project's configured route and report what is verified, what is unknown and any external blocker.", "Используйте настроенный в проекте путь и сообщите, что проверено, что неизвестно и что блокирует работу извне."],
     "showStage": ["Show stage {number}: {title}", "Показать этап {number}: {title}"],
     "Smallest useful route": ["Smallest useful route", "Кратчайший полезный путь"],
@@ -114,6 +114,7 @@
     "The team",
     "Команда"
   ],
+  "nav.plans": ["Plans", "Планы"],
   "hero.eyebrow": [
     "A METHOD FOR AI-LED DEVELOPMENT",
     "МЕТОД РАЗРАБОТКИ КОМАНДОЙ ИИ"
@@ -179,8 +180,8 @@
     "Свежий взгляд, своя задача, исправление ошибок."
   ],
   "hero.output": [
-    "One shared development history",
-    "Одна общая история разработки"
+    "Merged where it belongs",
+    "Влито туда, где нужно"
   ],
   "strip.1": [
     "INTENT, NOT A PERFECT SPEC",
@@ -207,8 +208,8 @@
     "Полный цикл.<br><em>Не только код.</em>"
   ],
   "loop.copy": [
-    "The process starts before the first line of code and ends after the result is tried and brought into shared development history.",
-    "Работа начинается до первой строки кода и заканчивается после проверки реального результата и его интеграции в общую историю разработки."
+    "The process starts before the first line of code and ends after the result is tried and merged where it belongs.",
+    "Работа начинается до первой строки кода и заканчивается после проверки реального результата и его слияния туда, где нужно."
   ],
   "loop.fullBadge": [
     "DESIGN + COORDINATION",
@@ -359,8 +360,8 @@
     "Свести в dev-ветку"
   ],
   "story.integrate.copy": [
-    "Publish the owned change and converge into the configured development history through the permitted route. Verify the integrated result; an external main release has a separate owner.",
-    "Опубликовать изменения и свести их в настроенную dev-ветку разрешённым способом. Проверить общий результат. Релиз в чужой main остаётся отдельным решением владельца."
+    "Publish the owned change and merge it: the owner's repository into main when checks are green, someone else's into the owner's branch. Releasing an external main stays that owner's decision.",
+    "Опубликовать изменения и влить: свой репозиторий — в main, как только проверки зелёные; чужой — в вашу ветку. Релиз в чужой main остаётся решением его владельца."
   ],
   "story.quick-plan.title": [
     "Write a short plan",
@@ -534,37 +535,60 @@
     "Return observed failures to implementation. Do not turn every preference into a new product requirement.",
     "Вернуть реальные ошибки на исправление. Не превращать каждое предпочтение тестировщика в новое обязательное требование."
   ],
+  "plans.eyebrow": [
+    "FOLLOW ANY PLAN FROM YOUR PHONE",
+    "СЛЕДИТЬ ЗА ПЛАНОМ С ТЕЛЕФОНА"
+  ],
+  "plans.heading": [
+    "One link per plan.<br><em>One page for all of them.</em>",
+    "Одна ссылка на план.<br><em>Одна страница на все.</em>"
+  ],
+  "plans.copy": [
+    "When a plan is created, the agent gives you its permanent public link once. Every plan also lands on one list: what is moving, what is stuck, at which step and when it should end.",
+    "Когда план создан, агент один раз даёт вам его постоянную публичную ссылку. Все планы собраны на одной странице: что движется, что застряло, на каком шаге и когда должно закончиться."
+  ],
+  "plans.f1": ["Filter by project and state", "Фильтр по проекту и состоянию"],
+  "plans.f2": ["Current step and expected finish", "Текущий шаг и ожидаемое завершение"],
+  "plans.f3": ["Stuck plans stand out", "Застрявшие планы видно сразу"],
+  "plans.state": ["In progress", "В работе"],
+  "plans.title": ["Sessions page: rename without restart", "Страница сессий: переименование без перезапуска"],
+  "plans.stage": ["Now: connect the mode switch in four adapters", "Сейчас: подключить смену режима в четырёх адаптерах"],
+  "plans.eta": ["Ends ≈ today 14:45 (in 20 min)", "Завершится ≈ сегодня в 14:45 (через 20 мин)"],
+  "plans.stuckState": ["Stuck", "Застрял"],
+  "plans.stuckTitle": ["Voice secretary answers the call", "Голосовой секретарь отвечает на звонок"],
+  "plans.stuckStage": ["No changes for 7 h · stopped at: first audible reply", "Нет изменений 7 ч · остановился на: первый слышимый ответ"],
+  "plans.example": ["ILLUSTRATION OF THE PLAN LIST", "ИЛЛЮСТРАЦИЯ СПИСКА ПЛАНОВ"],
   "delivery.eyebrow": [
-    "05 / CONVERGE, DON’T SCATTER",
-    "05 / СВЕСТИ РАБОТУ, А НЕ РАЗБРОСАТЬ"
+    "05 / FINISHED MEANS MERGED",
+    "05 / ГОТОВО — ЗНАЧИТ ВЛИТО"
   ],
   "delivery.heading": [
-    "Many branches.<br><em>One shared history.</em>",
-    "Много веток.<br><em>Одна общая история.</em>"
+    "Every session<br><em>merges its own work.</em>",
+    "Каждая сессия<br><em>вливает свою работу сама.</em>"
   ],
   "delivery.copy": [
-    "A folder full of finished worktrees is not delivery. Publish, review and converge the owned changes into the project’s development branch.",
-    "Папка с готовыми worktree ещё не доставка. Опубликовать, проверить и собрать относящиеся к задаче изменения в общей dev-ветке проекта."
+    "A folder of finished worktrees is not delivery. Parallel sessions do not wait for each other or for a shared integrator: whoever merges second reconciles.",
+    "Папка с готовыми worktree ещё не доставка. Параллельные сессии не ждут друг друга и общего интегратора: кто вливает вторым, тот и сводит изменения."
   ],
   "delivery.devLabel": [
-    "SHARED DEVELOPMENT BRANCH",
-    "ОБЩАЯ ВЕТКА РАЗРАБОТКИ"
+    "YOUR REPOSITORY",
+    "ВАШ РЕПОЗИТОРИЙ"
   ],
   "delivery.devCopy": [
-    "Push → PR → permitted merge → integrated check",
-    "Push → PR → разрешённый merge → проверка вместе"
+    "Branch → PR → merge as soon as checks are green",
+    "Ветка → PR → merge, как только проверки зелёные"
   ],
   "delivery.release": [
-    "Release is a separate decision.",
-    "Релиз: отдельное решение."
+    "Someone else's repository: your branch.",
+    "Чужой репозиторий — ваша ветка."
   ],
   "delivery.releaseCopy": [
-    "Dev integration does not authorize an automatic merge into an external owner’s main branch.",
-    "Интеграция в dev не даёт разрешения автоматически мержить в main чужого владельца."
+    "PR into a branch you own there, after a strict maintainer review. Their main is their decision.",
+    "PR в вашу ветку в этом репозитории, после строгого ревью мейнтейнера. Их main — их решение."
   ],
   "delivery.example": [
-    "The target is configured per project. For shared Airlock work: megamen32-dev. Ownership and actual permissions still apply.",
-    "Целевая ветка определяется проектом. Для совместной работы в Airlock: megamen32-dev. Права владельца и реальные разрешения сохраняются."
+    "Set once per project in .agents/PROJECT.md: owner, target branch, dev environment. For Airlock: megamen32-dev.",
+    "Задаётся один раз на проект в .agents/PROJECT.md: владелец, целевая ветка, dev-стенд. Для Airlock: megamen32-dev."
   ],
   "roles.eyebrow": [
     "06 / WHO OWNS WHAT",
