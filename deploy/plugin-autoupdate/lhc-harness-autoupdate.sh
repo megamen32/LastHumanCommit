@@ -32,13 +32,22 @@ if command -v codex >/dev/null 2>&1; then
   if codex plugin marketplace upgrade megamen32-plugins >/dev/null 2>&1; then
     log "refreshed shared megamen32-plugins checkout"
   else
-    log "WARN Codex marketplace refresh failed; continuing with the current checkout"
+    log "WARN Codex marketplace refresh failed; trying a plain fast-forward"
+    if git -C "$MARKETPLACE_ROOT" fetch -q origin main 2>/dev/null && \
+       git -C "$MARKETPLACE_ROOT" merge -q --ff-only FETCH_HEAD 2>/dev/null; then
+      log "fast-forwarded shared megamen32-plugins checkout"
+    else
+      log "WARN shared checkout not updated; continuing with the current one"
+    fi
   fi
 fi
 
 # ZCode keeps a native package cache, so refresh its local marketplace and use
 # the native updater for this one plugin only.
+# ZCode resolves the relative plugin source from its working directory, so run
+# it from the marketplace root; from the home folder it picks up a stale ~/plugins copy.
 if command -v zcode >/dev/null 2>&1; then
+  cd "$MARKETPLACE_ROOT" || exit 1
   if zcode plugins marketplace update last-human-commit >/dev/null 2>&1 && \
      zcode plugins update last-human-commit@last-human-commit >/dev/null 2>&1; then
     log "checked ZCode last-human-commit through its native updater"
