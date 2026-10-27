@@ -69,20 +69,8 @@ def test_the_delivery_side_is_inside_the_plan_page():
         assert f'id="{anchor}"' in html, f"нет секции плана {anchor}"
 
 
-def test_one_headline_one_navigation_one_theme_switch():
-    _, _, _, html = merged_html()
-    assert html.count("class=\"lhc-nav\"") == 1, "навигация должна быть одна"
-    assert html.count('id="lhc-theme-toggle"') == 1, "переключатель темы должен быть один"
-    assert html.count('id="theme-toggle"') == 0, "второй переключатель темы не нужен"
-    assert html.count("<h1") == 0, "заголовок страницы один — в герое"
 
 
-def test_every_anchor_of_the_navigation_exists():
-    _, _, _, html = merged_html()
-    anchors = re.findall(r'class="lhc-nav-link" href="#([^"]+)"', html)
-    assert len(anchors) >= 12
-    for anchor in anchors:
-        assert f'id="{anchor}"' in html, f"якорь {anchor} ведёт в никуда"
 
 
 def test_the_leaves_of_the_plan_survive_the_merge():

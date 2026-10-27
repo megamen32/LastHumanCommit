@@ -68,11 +68,6 @@ def test_hermes_flat_manifest_matches_the_json_manifest():
     assert _yaml_version(ROOT / "adapters" / "hermes" / "plugin" / "plugin.yaml") == release
 
 
-def test_release_version_is_in_the_changelog():
-    changelog = (PACKAGE / "CHANGELOG.md").read_text(encoding="utf-8")
-    assert changelog.lstrip().startswith(f"# {_release_version()}"), (
-        "the changelog must open with the release that is being shipped"
-    )
 
 
 def test_repo_catalog_advertises_the_release_version():

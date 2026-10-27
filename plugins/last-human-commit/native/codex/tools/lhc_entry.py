@@ -163,7 +163,8 @@ def _fullcycle_plan_entry(event, root):
             url = mirror.register(selected, sidecar.get("config"))["url"]
         except (OSError, ValueError, KeyError, TypeError):
             pass
-    return {"plan": str(selected), "leaf_id": leaf_id, "url": url, "created": created}
+    announce = bool(url) and mirror.announce_once(selected) if hasattr(mirror, "announce_once") else False
+    return {"plan": str(selected), "leaf_id": leaf_id, "url": url, "created": created, "announce": announce}
 
 def context_for(event, root):
     root = Path(root).resolve()
@@ -882,9 +883,13 @@ def main():
             result = None
         if result:
             details = f"план {result['plan']}, активный лист {result['leaf_id']}"
-            if result.get("url"):
-                details += f", зеркало {result['url']}"
             context = f"LHC: fullcycle автоматически связан с локальным {details}. Используй этот источник, не создавай дубликат."
+            if result.get("announce"):
+                context += (f" Публичная ссылка на этот план: {result['url']} . Один раз дай её владельцу отдельной"
+                            " строкой в ближайшем ответе (это постоянная ссылка, открывается с любого устройства,"
+                            " не локальный HTML).")
+            elif result.get("url"):
+                context += f" Публичная ссылка плана: {result['url']}."
             if result.get("created"):
                 context += " Это начальный scaffold: уточни цель и разложи её на конкретные рабочие листья в этом плане до основной реализации."
             print(json.dumps({"hookSpecificOutput": {

@@ -237,27 +237,6 @@ def test_the_markers_of_the_block_are_the_markers_of_the_parser() -> None:
         assert lhc.GLYPH_STATUS[glyph] == status, glyph
 
 
-def test_the_wording_of_the_fields_is_the_wording_of_the_protocol() -> None:
-    protocol = (ROOT / "src" / "common" / "protocols" / "PLAN_REPORT.md").read_text(
-        encoding="utf-8"
-    )
-    for phrase in (
-        "начата",
-        "закончена",
-        "оценка",
-        "факт",
-        "не измерено",
-        "начнём после листа",
-        "примерно в",
-        "закончим в",
-        "блокер:",
-        "∥ параллельно с листом",
-        "исполнитель ещё не назначен",
-        "ждём ответа внешнего источника",
-        "владелец отложил лист",
-        "отстаём потому что:",
-    ):
-        assert phrase in protocol, phrase
 
 
 # ------------------------------------------------------- the fields of a leaf

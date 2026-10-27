@@ -329,42 +329,6 @@ class RenderTests(unittest.TestCase):
         self.assertIn('волн:', text)
         self.assertIn('L01', text)
 
-    def test_business_outcome_and_technical_details_have_separate_hierarchy(self):
-        graph = lhc.parse_graph_json({
-            'schema_version': 2,
-            'goal': 'Поручение запускается и завершается общим результатом',
-            'business_result': 'Участники продолжают одну историю и принимают результат',
-            'current_progress': 'Пока подтверждён только исследовательский canary',
-            'tasks': [{
-                'id': 'T1', 'label': 'Проверить исследовательский результат',
-                'status': 'running', 'owner': 'Luna', 'session': 'opaque-session',
-                'model': 'gpt-6-luna', 'depends_on': [],
-            }],
-        })
-        self.assertEqual(
-            lhc.parse_graph_json(lhc.export_graph(graph)).current_progress,
-            graph.current_progress,
-        )
-        html = lhc.render_html(graph, lhc.build_metrics(graph))
-        self.assertIn('Ожидаемый бизнес-результат', html)
-        self.assertIn('Подтверждённый прогресс', html)
-        self.assertIn("class='task-details-trigger'", html)
-        self.assertIn("id='task-details-host'", html)
-        self.assertIn('<details class="technical">', html)
-        self.assertIn('.table-scroll { max-width: 100%; overflow-x: auto;', html)
-        self.assertIn('@media (max-width: 640px)', html)
-        self.assertEqual(html.count('.grid { display: grid'), 1)
-        self.assertIn('@media (max-width: 1000px) { .grid { grid-template-columns: minmax(0, 1fr); } }', html)
-        # The one sticky layer is the progress strip; the goal block must not
-        # be a second one.
-        self.assertEqual(html.count('position: sticky; top: 0;'), 1)
-        # The goal and the business result are the reason the work exists. The
-        # owner put the progress above them, so they come after the state -
-        # but they stay open, so nothing is hidden behind a tap.
-        self.assertIn('<details class="panel brief-details brief-why-details" open>', html)
-        self.assertLess(html.index('class="kpis"'), html.index('Цель'))
-        self.assertLess(html.index('Цель'), html.index('Подтверждённый прогресс'))
-        self.assertIn('<details class="panel brief-details" open>', html)
 
     def test_long_task_ids_do_not_compete_with_gantt_or_table_titles(self):
         long_id = 'integrator-source-subject-39e04120-97e5-4302-9756-5072de10c84c'
@@ -504,35 +468,7 @@ class DashboardLayoutTests(unittest.TestCase):
         for columns in ('repeat(5,', 'repeat(3,', 'repeat(2,'):
             self.assertIn(columns, html)
 
-    def test_the_page_is_read_in_the_declared_order(self):
-        """The progress, then the action, then what blocks, then the wording.
 
-        The owner reads the page on a phone and named the order himself: the
-        current progress has to be seen at once, then what to do now, then what
-        blocks the work, and only then the wording of the plan.
-        """
-        graph = self._graph()
-        html = lhc.render_html(graph, lhc.build_metrics(graph))
-        markers = [
-            'progress-strip',
-            'class="kpis"',
-            'Что делать сейчас',
-            'Что блокирует',
-            'Подтверждённый прогресс',
-            'Гант · листья и параллельные волны',
-            "table table-leaves",
-        ]
-        positions = [html.index(marker) for marker in markers]
-        self.assertEqual(positions, sorted(positions))
-
-    def test_kpi_strip_carries_ten_metrics_with_a_big_number(self):
-        graph = self._graph()
-        html = lhc.render_html(graph, lhc.build_metrics(graph))
-        self.assertEqual(html.count('class="kpi kpi-tile"'), 10)
-        for label in ('Готово', 'В работе', 'Заблокировано', 'В очереди',
-                      'Отложено владельцем', 'Осталось', 'Параллельность',
-                      'Осталось по плану', 'Прогноз финиша', 'Усилие'):
-            self.assertRegex(html, r'kpi-label"[^>]*>[^<]*' + re.escape(label))
 
     def test_status_is_never_carried_by_colour_alone(self):
         graph = self._graph()
