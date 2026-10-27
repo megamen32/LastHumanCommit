@@ -45,23 +45,21 @@ class LandingTests(unittest.TestCase):
 
     def test_worker_is_a_canonical_role_not_a_method_reference(self):
         # Defect 2: Worker presented itself as an optional method reference.
+        # Since 2026-10-27 every role file is a short canonical role.
         self.assertEqual(self.role("Worker")["kind"], "role")
         self.assertEqual(
             {r["name"] for r in self.data["roles"] if r["kind"] == "role"},
-            {"Lead", "Worker", "Adviser"},
-        )
-        self.assertEqual(
-            {r["name"] for r in self.data["roles"] if r["kind"] == "method-reference"},
-            {"Reviewer", "Tester", "Overseer", "Maintainer"},
+            {"Lead", "Worker", "Adviser", "Reviewer", "Tester", "Overseer",
+             "Maintainer", "Critic"},
         )
 
     def test_taxonomy_counts_are_honest(self):
-        # Defect 3 support: the published data itself must split 3 roles + 4 methods + 1 alias.
+        # Defect 3 support: the published counts match the role files (8 canonical roles).
         counts = {}
         for role in self.data["roles"]:
             counts[role["kind"]] = counts.get(role["kind"], 0) + 1
         self.assertEqual(
-            counts, {"role": 3, "method-reference": 4, "compatibility-alias": 1}
+            counts, {"role": 8}
         )
 
     def test_maintainer_has_an_explicit_position(self):
