@@ -37,23 +37,9 @@ def assert_order(value: str, first: str, second: str, source: str) -> None:
     assert first_index < second_index, f"{source} routes process before business value"
 
 
-def test_lead_routes_business_value_before_process() -> None:
-    lead = compact(read("src/common/agents/Lead.md"))
-    assert_order(lead, "Start from the original request", "Before writing inspect project sessions", "Lead.md")
-    for phrase in ("Workers perform all source inspection, edits, checks and delivery operations",
-                   "actual product path", "Match verification to the claim",
-                   "instead of demanding a perfect specification"):
-        assert phrase in lead
 
 
 
-def test_factory_routes_decisions_and_preserves_independent_full_acceptance() -> None:
-    router = compact(read("AGENTS.md"))
-    for phrase in ("explicitly allowed model tiers", "Never silently substitute another model",
-                   "independent Reviewer or Tester", "not a mandatory ceremony queue"):
-        assert phrase in router
-    assert "independent Zero Knowledge Tester at major milestone or final acceptance" in compact(read("src/common/agents/Tester.md"))
-    assert "REDECOMPOSE" in read("src/common/protocols/STOP_RETHINK.md")
 
 
 
@@ -64,11 +50,6 @@ def test_factory_learning_reaches_verified_reuse() -> None:
     assert "without a new human coordination cycle" in protocol
 
 
-def test_advice_is_an_optional_capability_not_an_extra_gate() -> None:
-    router = compact(read("AGENTS.md"))
-    assert "Roles are tools" in router
-    assert "as needed" in router
-    assert "compatibility alias" in read("src/common/agents/Critic.md")
 
 
 
@@ -76,7 +57,6 @@ def test_parallel_worktree_contract_routes_every_adapter_to_one_tool() -> None:
     protocol = compact(read("src/common/protocols/SHARED_WORKTREE.md"))
     assert "lhc/<slug>" in protocol
     assert "lhc_worktree.py" in protocol
-    assert "inclusion in remote main" in protocol
     for adapter in ("codex", "opencode", "claude-code", "hermes", "zcode"):
         template = compact(read(f"adapters/{adapter}/templates/subagent.md"))
         assert "common/tools/lhc_worktree.py" in template, adapter
@@ -85,43 +65,9 @@ def test_parallel_worktree_contract_routes_every_adapter_to_one_tool() -> None:
 
 
 
-def test_cycle_inputs_retrieve_both_improvement_loops() -> None:
-    router = compact(read("AGENTS.md"))
-    assert "Preserve the original goal and latest corrections" in router
-    assert "check it against current code" in router
-    assert "Direction control and workflow improvement remain Lead responsibilities" in router
-    assert "verification canary" in read("src/common/protocols/SELF_IMPROVE.md")
 
 
 
-def test_worker_twenty_minutes_is_a_management_checkpoint() -> None:
-    aggregate = "\n".join(
-        read(path)
-        for path in (
-            "AGENTS.md",
-            "src/common/agents/Lead.md",
-            "src/common/agents/Worker.md",
-            "src/common/agents/Overseer.md",
-            "src/common/profiles/Planning.md",
-            "src/common/protocols/STOP_RETHINK.md",
-        )
-    )
-    normalized = compact(aggregate)
-    for phrase in (
-        "Every 20 active minutes is a control checkpoint, not a Worker lifetime limit.",
-        "The Worker reports progress, business delta, blocker, and the shortest next action",
-        "Prefer redirecting or resuming the same Worker",
-        "Cancellation is exceptional",
-    ):
-        assert phrase in normalized, phrase
-
-    forbidden = (
-        "maximum <=20 active minutes",
-        "Reject any Worker assignment above 20 minutes",
-        "proposed Worker assignment exceeds 20",
-    )
-    for phrase in forbidden:
-        assert phrase not in normalized, phrase
 
 
 def test_required_children_are_actually_joined() -> None:
@@ -131,34 +77,12 @@ def test_required_children_are_actually_joined() -> None:
 
 
 
-def test_worker_questions_lead_without_blocking_safe_parallel_work() -> None:
-    lead = compact(read("src/common/agents/Lead.md"))
-    assert "decision question with a recommendation" in lead
-    assert "continue answer-independent work meanwhile" in lead
 
 
 
-def test_minimal_path_is_mandatory() -> None:
-    # The shortest path remains; the mandatory three-line form is retired.
-    router = compact(read("AGENTS.md"))
-    assert "shortest working route" in router
-    assert "Every task is assigned to a Worker" in compact(read("src/common/agents/Lead.md"))
-    assert "An assigned no-delegation leaf" in router
-    assert "three-line minimal path" not in router
 
 
 
-def test_optional_governance_keeps_independent_real_testing() -> None:
-    # 1.4 retired the unconditional role queue. The published README changed
-    # after its last validation; this old exact-wording test was already red.
-    # Check the actual current policy rather than restoring mandatory rituals.
-    router = compact(read("AGENTS.md"))
-    assert "Roles are tools, not a mandatory ceremony queue" in router
-    assert "independent Reviewer or Tester" in router
-    assert "actual consumer path for a user result" in router
-    for role in ("Overseer", "Tester", "Reviewer"):
-        assert read(f"src/common/agents/{role}.md").strip()
-    assert "Use the real surface" in read("src/common/agents/Tester.md")
 
 
 def test_secret_paranoia_is_forbidden() -> None:
@@ -213,32 +137,11 @@ def test_secret_command_is_the_only_phone_handoff() -> None:
 
 
 
-def test_real_surface_testing_is_the_final_gate() -> None:
-    router = compact(read("AGENTS.md"))
-    assert "actual consumer path for a user result" in router
-    assert "recheck" in router
-    assert "successful rerun does not resolve flaky behavior" in router
-    assert "Use the real surface" in read("src/common/agents/Tester.md")
 
 
 
-def test_overseer_time_truth_requires_start_anchor() -> None:
-    overseer = compact(read("src/common/agents/Overseer.md"))
-    time_control = compact(read("src/common/protocols/TIME_CONTROL.md"))
-
-    for phrase in ("independent, read-only adviser", "Started at"):
-        assert phrase in overseer, phrase
-    for phrase in ("Start anchor", "manual clock", "not measured"):
-        assert phrase in time_control, phrase
 
 
-def test_self_improve_is_an_evolution_loop() -> None:
-    method = compact(read("src/common/protocols/SELF_IMPROVE.md"))
-    assert "minimal proposed patch" in method and "verification canary" in method
-    assert "every120" not in read("AGENTS.md")
-    assert "request one distinct fresh" in compact(read("src/common/agents/Lead.md"))
-    assert "allowed frontier-capable Worker" in compact(read("src/common/agents/Lead.md"))
-    assert "it is not binding and does not grant authority" in compact(read("src/common/agents/Lead.md"))
 
 
 
@@ -373,14 +276,6 @@ def test_every_bugfix_requires_a_recorded_red_green_tdd_cycle() -> None:
 
 
 
-def test_unified_history_is_mandatory() -> None:
-    router = compact(read("AGENTS.md"))
-    workspace = compact(read("src/common/protocols/SHARED_WORKTREE.md"))
-    for phrase in ("published dev history", "PR per worker is optional", "Airlock megamen32-dev", "GitHub-hosted runners, not ARC", "fetch", "rerun affected checks", "nested repositories", "participants' worktrees are clean"):
-        assert phrase in router
-    assert "last active session" in workspace
-    assert "Publish ready parts before waiting" in workspace
-    assert "file age or a missing session" in workspace
 
 
 

@@ -58,31 +58,10 @@ def test_the_role_is_the_projects_own_strict_maintainer():
     assert "never a rubber stamp" in role
 
 
-def test_the_delivery_protocol_binds_external_review_to_the_target_policy():
-    protocol = compact(read("src/common/protocols/REVIEW_TO_DELIVERY.md"))
-    assert "## Review for external repositories" in protocol
-    assert "Follow the target repository's actual contribution policy" in protocol
-    assert "assign a Reviewer from the allowed model families" in protocol
-    assert "Fix concrete defects that affect the accepted claim or required policy" in protocol
-    assert "never claim a clean result without evidence" in protocol
-    assert "Preferences and LHC ledger, manifest or identity-registration state are not delivery vetoes" in protocol
-    assert "Preserve actual negative findings and required project checks" in protocol
 
 
-def test_the_lead_owns_the_external_repository_review():
-    lead = compact(read("src/common/agents/Lead.md"))
-    assert "Before a PR into another repository, follow that repository's actual contribution policy" in lead
-    assert "Use an allowed-model Reviewer when it can identify concrete defects or material risk" in lead
-    assert "Fix findings that affect the accepted claim or required policy" in lead
-    assert "preferences and LHC bookkeeping alone are not delivery vetoes" in lead
 
 
-def test_the_router_carries_the_rule_and_stays_english():
-    router = read("AGENTS.md")
-    assert "a fresh Reviewer from an allowed model tier plays that project's maintainer" in router
-    assert "An LHC receipt or bookkeeping status alone is not a release veto" in router
-    assert not re.search("[А-Яа-яЁё]", router)
-    assert (ROOT / "CLAUDE.md").read_text(encoding="utf-8") == router
 
 
 def test_the_skill_is_registered_everywhere_it_must_be():

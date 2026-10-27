@@ -24,8 +24,8 @@ not override new instructions. For architecture, use
    Worker: fast tier glm-5.3-flash or minimax-3.1-flash, frontier tier gpt-6-luna,
    glm-5.3 or gpt-6.1-sol, resolved to an exact live
    catalog ID. The Lead coordinates only and never executes. No silent fallback.
-7. Consult the Overseer when a concrete blocker or route uncertainty would benefit
-   from independent advice. Add technical review and fresh independent testing when
+7. For a blocker or unclear route follow the escalation chain in `AGENTS.md`
+   (L, then Adviser, then Overseer). Add technical review and fresh independent testing when
    the change’s risk and claim justify their cost.
 
 Do not plan a horizontal layer before the first vertical user path. A plan is

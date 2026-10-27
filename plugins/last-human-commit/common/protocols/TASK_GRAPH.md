@@ -1,3 +1,5 @@
+> Background reference. Load only when the task needs this mechanism. `AGENTS.md` wins on any conflict: its finish line, blocker lists, escalation chain and delivery rules override this file.
+
 # The task graph
 
 Every objective that is decomposed has one machine-readable task graph. It is the

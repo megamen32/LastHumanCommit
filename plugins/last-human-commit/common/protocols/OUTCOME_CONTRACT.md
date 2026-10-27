@@ -1,3 +1,5 @@
+> Background reference. Load only when the task needs this mechanism. `AGENTS.md` wins on any conflict: its finish line, blocker lists, escalation chain and delivery rules override this file.
+
 # Ordinary task → observable outcome
 
 ## Expected result and evidence of achievement
@@ -43,7 +45,7 @@ user's intended outcome and affected path, selects `quickfix` or `fullcycle` fro
 actual scope and risk, and creates the human-readable plan before implementation.
 The plan states what a person will get, what changes, why it matters, and how to
 check it. A quickfix still needs a proportional independent tester and real-path
-proof; a fullcycle needs two independent testers of the installed consumer result.
+proof; a fullcycle needs at least two Zero Knowledge testers, more when the change touches more user journeys.
 A worker's assigned leaf narrows its execution scope but cannot select the parent
 mode or waive the Lead-owned plan. The Lead may assign one named Planner exclusive
 artifact writing from verified Lead decisions; this does not transfer plan
@@ -261,8 +263,8 @@ Keep previous receipts as history. One fresh harmless read-only check may verify
 corrected setup; never repeat deployments, sends or UNKNOWN operations merely to refresh a timestamp.
 For fullcycle, the applicable sequence is implementation/tests → authorized deploy
 → hands-on/applicable independent acceptance → publication/integration into the
-configured permitted dev branch → integrated smoke. PR per worker is optional;
-one published dev history is mandatory. Explicit original no-deploy/no-push/external PR-only boundaries make only
+configured target branch (`.agents/PROJECT.md`) → integrated smoke. PR per worker is
+optional; each session merges its own PR, no shared history to assemble. Explicit original no-deploy/no-push/external PR-only boundaries make only
 those operations N/A, with their scope source retained. Missing required access
 is blocked, not N/A. State does not grant permission. Airlock converges on
 `megamen32-dev`; Oleg owns final upstream main integration for those projects.

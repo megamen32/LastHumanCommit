@@ -34,10 +34,6 @@ def test_native_entry_distinguishes_receipt_error_from_material_change(tmp_path)
     assert str(ROOT/"AGENTS.md") in text
     assert "Deliver the fix." in text
     assert "decision" not in result
-    protocol=delivery_protocol()
-    assert "SHA typo, filename, JSON formatting" in protocol
-    assert "No new LLM review, second JSON or receipt-review" in protocol
-    assert "Real delta." in protocol and "Metadata error over known checked code." in protocol
 
 def test_old_session_first_tool_gets_delivery_rule_without_new_gate(tmp_path):
     prepare(tmp_path)
@@ -61,13 +57,6 @@ def test_hourly_checkpoint_challenges_proof_rework_not_only_sha_count(tmp_path):
     assert state["business"]["pending"] is not None
     assert state["business"]["last_review"] is None
 
-def test_reviewer_has_no_second_receipt_or_hidden_test_pass():
-    text=(ROOT/"src/common/agents/Reviewer.md").read_text()
-    for term in ("native response is the review result", "not a second JSON receipt", "unexecuted", "metadata-only", "known reviewed source", "dependencies", "existing release gates"):
-        assert term in text
-    assert "material repairs" in text
-    assert "after all" in text and "not a review after each leaf or wave" in text
-    assert "before deploy, real-use testing and" in text
 
 def test_fullcycle_delivery_reviews_the_join_once_before_deploy_test_push():
     sources = [
@@ -106,27 +95,8 @@ def test_lead_role_separates_engineering_worker_from_product_business_executor()
     assert "Lead only orchestrates:" not in combined
     assert "Every inspection, edit, check, deployment, commit, push or install is performed" not in combined
 
-def test_owner_only_main_rule_is_scoped_to_airlock_not_owned_lhc():
-    sources = [
-        ROOT / "AGENTS.md",
-        ROOT / "src/common/protocols/OUTCOME_CONTRACT.md",
-        ROOT / "src/common/protocols/REVIEW_TO_DELIVERY.md",
-    ]
-    combined = "\n".join(path.read_text() for path in sources)
-    assert "owner-controlled `megamen32/LastHumanCommit`" in combined
-    assert "directly authorizes the scoped change" in combined
-    assert "Oleg owns final main integration there" in combined
 
-def test_policy_preserves_business_testing_and_uncertainty():
-    text=(ROOT/"src/common/protocols/REVIEW_TO_DELIVERY.md").read_text()
-    for term in ("unknown", "PostgreSQL", "Zero Knowledge", "deployment", "Never bypass", "machine fields", "build a service"):
-        assert term in text
-    assert "git diff" in text
 
-def test_source_only_requests_do_not_acquire_a_deployment_requirement():
-    text=(ROOT/"src/common/protocols/REVIEW_TO_DELIVERY.md").read_text()
-    assert "If installation was requested" in text
-    assert "otherwise close within agreed boundaries" in text
 
 def test_review_obligation_is_recorded_by_the_explicit_cli_not_by_a_hook():
     # The review loop is a CLI-driven ritual. The hook bundle may only point at

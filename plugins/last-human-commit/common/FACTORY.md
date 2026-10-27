@@ -1,4 +1,4 @@
-> Optional method reference. The current LHC router decides when this method is useful; legacy fixed schedules, mandatory forms and extra roles below are not automatic prerequisites.
+> Background reference. Load only when the task needs this mechanism. `AGENTS.md` wins on any conflict: its finish line, blocker lists, escalation chain and delivery rules override this file.
 
 # Last Human Commit: autonomous completion by default
 
@@ -25,8 +25,8 @@ next cycle's inputs. Use architecture-design when structural uncertainty matters
 5. Execution allocation: strongest-model decomposition -> dependency graph ->
    suitable model assignments -> parallel execution -> acceptance -> routing update.
 
-The Overseer guides the Lead on concrete blockers, material drift and route
-uncertainty. It is zero-knowledge and advisory: it helps shorten the path to the
+The Overseer guides the Lead on drift and on blockers the Adviser could not
+resolve (escalation chain in `AGENTS.md`). It is zero-knowledge and advisory: it helps shorten the path to the
 business result, prevents spurious blockers and drift from the original plan
 specification, and does not own the result or gate release — the Lead owns the
 decision. The Lead arranges needed review and testing without waiting for a

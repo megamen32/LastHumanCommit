@@ -75,20 +75,3 @@ def test_large_fullcycle_routes_research_before_plan_and_final_council_before_di
             assert invariant in text, (path, invariant)
 
 
-def test_native_context_points_at_the_canonical_router_instead_of_copying_it():
-    import sys
-    sys.path.insert(0, str(ROOT/'src/common/tools'))
-    from lhc_entry import context_for
-    context = context_for({}, ROOT)
-    # The native context is a pointer to the canonical English router, so the
-    # harness always reads the live policy instead of a copied instruction blob.
-    assert context == f"LHC: read {(ROOT/'AGENTS.md').resolve()} for current instructions."
-    assert len(context) < 2200
-    # The router keeps the planning-only bounds: a small or read-only answer
-    # never starts development, and the Lead never executes the work itself.
-    router = (ROOT/'AGENTS.md').read_text()
-    assert "Simple questions, translations and status requests do not start development" in router
-    assert "Lead only orchestrates: decompose the objective" in router
-    assert "Every inspection, edit, check, deployment, commit, push or install is performed by a Worker" in router
-    assert "Never bypass HumanStop or required permission" in router
-    assert "Choose the shortest working route and check the real scenario" in router

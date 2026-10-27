@@ -1264,26 +1264,20 @@ def native_heartbeat(cwd: Path, runtime: str, session_id: str,
     reminders = []
     if any(item.startswith("plan:") for item in due):
         reminders.append(
-            "LHC 30-minute plan report: compare the latest direct user corrections with "
-            "what works in the actual caller now. Source checks, installed behavior and "
-            "consumer acceptance are different facts. Update existing leaves only where "
-            "facts changed (common/protocols/PLAN_REPORT.md); use the normal projection "
-            "path rather than rerunning export/render/check-plan on unchanged input. "
-            "Assign the concrete missing delivery step, not another report or adviser. "
-            "During a healthy build do independent authorized work; do not start a "
-            "duplicate build or conflicting installation. Reuse answers already supplied. "
-            "Apply useful native Overseer advice or reject it with an observed fact. "
-            "This reminder creates no gate, hold or extra code review."
+            "LHC 30-minute plan report: compare the owner's latest correction with what "
+            "works in the real caller now, update only the leaves whose facts changed "
+            "(common/protocols/PLAN_REPORT.md), assign the next missing delivery step "
+            "and keep working. This reminder is not a task and never ends the turn."
         )
         # The same checkpoint names the lanes that can start right now. It reads
         # the canonical graph and lists them; it never estimates or judges.
         reminders.append(render_parallel_lines(native_cwd))
     if any(item.startswith("goal:") for item in due):
         reminders.append(
-            "LHC 60-minute direction check: reread the original direct user goal and latest "
-            "correction. Honor the user's current delivery order; an older goal reminder "
-            "cannot restore a rejected priority. Compare actual caller behavior with the "
-            "remaining concrete repair. This reminder is not product acceptance."
+            "LHC 60-minute direction check: reread the original direct user goal and the "
+            "latest correction, compare them with what the real caller can do, adjust the "
+            "next action if you drifted, and keep working. Not a task, not acceptance, "
+            "never a reason to stop."
         )
     return {"state": os.fspath(path), "elapsed_wall_seconds": max(0, int(elapsed.total_seconds())),
             "due": due, "prompt": "\n\n".join(reminders)}
@@ -1341,23 +1335,13 @@ def learning_checkpoint(args: argparse.Namespace, cwd: Path, session_id: str,
     prompt = ""
     if due:
         prompt = (
-            "LHC session checkpoint: this session has run 120 wall-clock minutes of "
-            "unfinished work. Compare the latest direct correction and actual caller "
-            "result with the remaining blocker (common/skills/improve-workflow/SKILL.md). "
-            "A known repair goes to its existing Worker now; do not open another session "
-            "or audit merely because this timer fired. Only if a consequential route "
-            "choice remains unclear, consult one optional fresh adviser using the "
-            "existing allowed-model rules and a bounded redacted excerpt. The Lead "
-            "owns the decision; advice creates no authority or release gate. Record "
-            "observation → changed method → verification evidence, or an "
-            "evidence-backed bounded no-change reason. Notification, compaction, a "
-            "fresh cycle or a new task card does NOT acknowledge this checkpoint. "
-            "Bookkeeping must not delay permitted delivery. The existing optional CLI is "
-            "lhc_time_guard.py checkpoint with "
-            "--cwd, --runtime, --session-id, --due-at and the required review/evidence "
-            f"fields. Session={session_id}; runtime={args.runtime}; due-at={state['due_at']}; "
-            f"first observed={state['started_at']}; state={path}. "
-            "This is wall-clock scheduling; active time: not measured."
+            "LHC session checkpoint: this session has run 120 wall-clock minutes without "
+            "finishing. Ask what slowed it (a blocker you could remove yourself, a "
+            "ritual, a wrong route) and change the next action; if the route is unclear, "
+            "follow the escalation chain in AGENTS.md (Adviser, then Overseer). If the "
+            "method itself caused the delay, note it for improve-workflow. Keep working; "
+            "this is not a task and never a reason to stop. "
+            f"Session={session_id}; due-at={state['due_at']}; first observed={state['started_at']}."
         )
         if session_id == "unknown-session":
             prompt += (

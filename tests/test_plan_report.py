@@ -62,16 +62,6 @@ def test_plan_report_protocol_carries_the_canonical_format():
     assert "какой план" in protocol
 
 
-def test_router_points_to_the_report_and_stays_english():
-    router = compact(read("AGENTS.md"))
-    assert "is the canonical plan format" in router
-    assert "in any language" in router
-    assert "Overseer reads that report against the original request" in router
-    assert "it never blocks delivery" in router
-    # The English router includes two canonical Russian legacy report headings.
-    import re
-    router_source = read("AGENTS.md").replace("Что будет работать", "").replace("Бизнес-результат", "")
-    assert not re.search("[А-Яа-яЁё]", router_source)
 
 
 def test_task_template_carries_the_same_report_shape():
@@ -88,25 +78,6 @@ def test_task_template_carries_the_same_report_shape():
     assert "Overseer is the plan reader" in template
 
 
-def test_overseer_reads_the_plan_without_becoming_a_gate():
-    overseer = compact(read("src/common/agents/Overseer.md"))
-    # The Overseer is an independent, read-only adviser that guides the Lead.
-    assert "independent, read-only adviser" in overseer
-    assert "I guide the Lead" in overseer
-    # It reads the plan, its original specification and the business checkpoint
-    # against the original request, without implementation history.
-    assert "I read the plan, its original specification and the Business Checkpoint" in overseer
-    assert "without implementation history" in overseer
-    # It is a reader, not a gate: it never blocks delivery, never issues a
-    # binding verdict and never owns the result; the Lead owns the decision.
-    assert "Overseer never blocks delivery" in overseer
-    assert "never issues a binding verdict and never owns the result" in overseer
-    assert "the Lead owns the decision" in overseer
-    assert "Recommendations are advice, not binding agent verdicts" in overseer
-    # It can neither waive a gate nor override the user or harness authority.
-    assert "waive gates" in overseer
-    assert "bypass human-stop" in overseer
-    assert "cannot edit state, launch or contact agents" in overseer
 
 
 def test_heartbeat_asks_for_the_canonical_report_at_thirty_minutes(tmp_path):
@@ -120,27 +91,6 @@ def test_heartbeat_asks_for_the_canonical_report_at_thirty_minutes(tmp_path):
     assert "PLAN_REPORT.md" in due["prompt"]
 
 
-def test_heartbeat_raises_the_learning_checkpoint_with_an_allowed_tier_adviser(tmp_path):
-    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
-    start = datetime(2026, 10, 21, 10, 0, tzinfo=timezone.utc)
-    args = type("Args", (), {"runtime": "codex", "now": start})()
-    first = guard.learning_checkpoint(args, tmp_path, "sid-learn")
-    assert first["due"] is False
-    late = type("Args", (), {"runtime": "codex", "now": start + timedelta(minutes=121)})()
-    due = guard.learning_checkpoint(late, tmp_path, "sid-learn")
-    assert due["due"] is True
-    # The 120-minute checkpoint belongs to the Lead and asks for one fresh
-    # adviser from the allowed model tiers, resolved against the live catalog.
-    assert "120 wall-clock minutes" in due["prompt"]
-    assert "fast tier glm-5.3-flash or minimax-3.1-flash" in due["prompt"]
-    assert "frontier tier gpt-6-luna, glm-5.3 or gpt-6.1-sol" in due["prompt"]
-    assert "never silently substitute" in due["prompt"]
-    assert "The adviser diagnoses the delay and recommends a route; the Lead owns the decision." in due["prompt"]
-    # Only an evidenced acknowledgement closes the checkpoint.
-    assert "does NOT acknowledge this checkpoint" in due["prompt"]
-    assert "lhc_time_guard.py checkpoint" in due["prompt"]
-    assert "This is wall-clock scheduling; active time: not measured." in due["prompt"]
-    assert "read-only" not in due["prompt"]
 
 
 def test_post_tool_use_hook_emits_both_reminders(tmp_path):

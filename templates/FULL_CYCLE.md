@@ -81,8 +81,8 @@ dependency and capacity plan, not a broad global buffer.
 1. Trace the actual consumer call chain.
    For architecture, use architecture-design: review inputs, probe pivotal risks,
    verify early end-to-end integration and challenge the improved synthesis.
-2. Consult the Overseer when a concrete blocker or route uncertainty benefits from
-   independent advice; then implement the thinnest working vertical on that path.
+2. For a blocker or unclear route follow the escalation chain in `AGENTS.md`
+   (L, then Adviser, then Overseer); then implement the thinnest working vertical on that path.
 3. Run local or safe-fixture canaries as early as safely possible; the final
    deployed consumer test remains after the integrated review and deploy.
 4. Fix only the first claim-blocking failure.

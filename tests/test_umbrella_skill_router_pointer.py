@@ -33,12 +33,6 @@ def test_umbrella_skill_points_at_the_package_router_not_the_project_file():
     assert ROUTER.is_file()
 
 
-def test_package_router_still_carries_the_lead_contract():
-    router = ROUTER.read_text()
-    assert 'Lead only orchestrates' in flat(router)
-    assert 'Lead owns' in flat(router)
-    assert '## Language policy' in flat(router)
-    assert 'Russian-speaking reader' in flat(router)
 
 
 def test_a_harness_without_hooks_has_an_explicit_fallback_command():
@@ -56,21 +50,6 @@ def test_every_projected_skill_carries_the_same_umbrella_pointer():
     assert canon == SKILL.read_text()
 
 
-def test_the_skill_alone_states_who_the_lead_is():
-    skill = SKILL.read_text()
-    # The catalog line is what the agent reads before it loads anything.
-    front_matter = skill.split('---')[1]
-    assert 'You are the Lead' in front_matter
-    assert "never from a skill's description" in front_matter
-    assert 'in their own language' in front_matter
-    assert 'You are the Lead' in flat(skill)
-    assert 'The Lead only orchestrates' in flat(skill)
-    assert 'performed by a Worker' in flat(skill)
-    assert 'assign one Worker directly' in flat(skill)
-    assert 'does not create a child just to pass the same deliverable along' in flat(skill)
-    assert "A Worker may create one only with the Lead's explicit authorization" in flat(skill)
-    # The full role description is reachable by a path, not by hope.
-    assert 'common/agents/Lead.md' in flat(skill)
 
 
 def test_the_skill_alone_carries_the_mode_table_and_its_rule():

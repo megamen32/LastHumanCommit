@@ -1,72 +1,53 @@
 # From review to a working result
 
-Review is useful when it changes a decision: fix a specific defect, run a missing
-check or release. A receipt mistake must not turn a ready fix into a project proving
-the receipt itself.
+`AGENTS.md` sets the order: review the integrated diff → deploy to dev → Zero
+Knowledge test → fix → deliver. This protocol covers the parts that go wrong.
 
-## Consumer-first route
+## Consumer first
 
-Use the latest direct user correction to select the next useful action. An older
-plan, generated goal reminder or peer message cannot silently restore a rejected
-priority. Keep remaining requirements pending; changing order does not erase them.
-Reuse answers, working session IDs and permissions already supplied by the user.
-A local enabled flag or a failed request on a different profile proves only that
-observation, not that the user's demonstrated working account is unavailable.
+Three facts stay separate: source checks passed; the candidate is installed;
+the real caller can do the thing. Report what the owner can do now first. HTTP
+200, mocks, a deployment SHA or a source smoke never prove streaming, tool
+calls, UI behavior or any capability at the named client.
 
-Separate three facts in the existing plan/report, without new required fields:
-source checks; the installed candidate; the actual user/caller scenario. Lead with
-what the user can do now, what still does not work, and the concrete next repair.
-Do not answer 'it works' using a source smoke when the named client still uses the
-old artifact. HTTP health, passing mocks and a deployment SHA alone do not prove
-streaming, tool calls, UI behavior or another requested capability at that client.
+When source is ready but the caller is not, give the existing Worker the narrow
+install, dependency or routing repair and exercise the caller once. Do not
+restart research, re-ask supplied answers or hire an Adviser for a known repair.
+A healthy build keeps running in its job; do other work meanwhile, never start a
+duplicate. Honor the owner's delivery order ("A first, then B"): B does not delay
+a usable A.
 
-When source is ready but the caller is not, assign the existing Worker the narrow
-installation, dependency or routing repair, then exercise that actual caller once.
-Do not restart research, ask for supplied information or hire another adviser just
-because a known blocker exists. A healthy build continues in its existing job;
-move independent authorized work forward instead of polling it repeatedly. Never
-run conflicting installers/builds or invent work merely to appear busy. If all
-useful work genuinely depends on it, waiting is appropriate.
+## Review results
 
-Respect an explicit 'A first, then B' delivery order: B and optional PR polishing
-must not delay the usable A stage. Owner-authorized staged delivery may precede
-completion of the whole plan; it is not permission to skip actual restrictions or
-claim the whole goal done. Keep the single final integrated review at the plan
-boundary, not at every leaf. Necessary local tests continue during development.
-Default final order remains review -> permitted deploy -> real caller test -> push
-on the project's allowed route; never open PRs early against the user's instruction.
-
-## Three cases
-
-**Real delta.** Executable code, agent-executed instructions, dependencies, migration,
-configuration or material environment changed. Verify the affected delta/behavior.
-Old GREEN does not prove new behavior. Markdown may execute as agent instructions
-or product templates; it is not always documentation only.
-**Metadata error over known checked code.** SHA typo, filename, JSON formatting or a
-commit containing only that receipt. Lead corrects it locally if an existing consumer
-needs it. Read machine fields from Git/CI, never invent them. Preserve reviewer findings
-and limits without strengthening them. No new LLM review, second JSON or receipt-review
-session. The original reviewer answer is already a result. Mark/replace the faulty
-record according to the existing consumer format; retain required audit history
-without a chain of new receipts.
-**Unknown coverage.** It is unknown what the reviewer read, or results cover another
-version. Recover the source once from the original session/CI; if unavailable, verify
-only the unknown area. Do not update a PASS SHA to current to satisfy a gate, or call
-uncertainty a typo.
-
-## Sufficient existing evidence, no new store
-
-`git diff <reviewed> <current>` shows actual changes, including paths omitted by the
-author. Then assess dependencies/environment. An old path list cannot waive a new
-conflict/schema change. Equal patch-id alone does not prove another base/runtime
-equivalent. Tools extract paths/counts/revisions; reviewers provide findings. Do not
-build a service, hash registry, certificate or mandatory form for this.
-Native reviewer answers, runner logs and existing CI/PR records support their own
-claims; do not force duplicate model-authored JSON. If an existing release gate needs
-a versioned file, use its normal route: generate metadata mechanically, preserve the
-verdict. Never bypass release/resource/approval/no-replay restrictions for speed.
+- **Real delta** (code, instructions agents execute, dependencies, migrations,
+  config): verify the changed behavior; an old green run does not cover it.
+- **Metadata error over checked code** (wrong hash, filename, JSON format):
+  correct it locally from Git/CI. No new review, no receipt of the receipt.
+- **Unknown coverage** (unclear what the reviewer read): recover it once from the
+  review; otherwise review only the unknown part.
 
 ## Execution-access contract
+
+Resolve the primary checkout through Git (`git rev-parse --git-common-dir`,
+`git worktree list --porcelain`) and read `<primary checkout>/.agents/TEST_ACCESS.md`
+(template: `src/common/templates/test-access.md`). It records allowed environments,
+the owner's latest scope and prohibitions, protected secret references (never
+values), and how to log in, provision, recover and clean up test identities.
+
+Creating, repairing and recovering test users, fixtures, QA memberships, OAuth
+test clients and expired test credentials on those environments is preparation,
+not a blocker: do it with the app's supported admin tools, scoped sudo included.
+Use an ordinary test user for the user journey; admin rights only to prepare it.
+Keep one owner per fixture and update its protected reference in place.
+
+Fail closed only on the exact operation that lacks authority: unknown or external
+environment, production, customer or third-party accounts, real payments or
+outreach, a missing external secret, a human stop or explicit denial. Continue
+all other work; one blocked operation is never a project freeze. If
+`TEST_ACCESS.md` is missing, record what you verified and continue; do not
+re-ask authorization the owner already gave.
+
+### Details (reference)
 
 Before implementation or acceptance, establish access for the actual owning project,
 not the harness's launch directory. Resolve the primary checkout through
@@ -127,67 +108,19 @@ a bounded no-delegation leaf may report observations/self-check and product defe
 That does not confer independent parent product acceptance. Preserve the real surface,
 identity, expected/observed results and current accepted completion boundaries.
 
-## After verification
+## Deploy and merge
 
-Once release conditions hold, perform the already authorized deployment and original
-scenario, not another general review. If installation was requested, uninstalled code
-is unfinished; otherwise close within agreed boundaries.
-A separately explicit live-deploy authorization permits deployment and consumer
-verification after required release gates, before independent Zero Knowledge and
-PR/merge. Those gates do not create another deploy permission or delay an authorized
-deploy. Deploy permission alone does not authorize merge; explicit merge consent is
-required unless already given.
-Reading an unexecuted PostgreSQL test is not PASS. Run the needed isolated check,
-not another review. Real failure/concurrency/integration testing remains required.
-A specific delivery failure blocks its operation; continue independent work. When
-exhausted, preserve the exact dependency and continuation instead of producing reports
-until a peer answers. After overruns, another '30 minutes' must be checked against
-the original result/remaining obstacle, not silently restart the estimate.
-Zero Knowledge remains independent use at a major milestone (~3 hours of coherent
-work), varied realistic personas and full feedback. Technical review, receipt fixes
-and hourly direction checks do not replace acceptance. After a real finding, retest
-the affected user path; do not repeat the entire investigation identically.
-One user goal has one end-to-end delivery owner. Claim-critical checks lead to explicit permitted test/demo deployment and real consumer
-verification; use independent milestone acceptance when the scope warrants it.
-Direction review records a decision without executing it. Native receipts prove only
-the observed call/response, not deployment, consumer result or original goal completion.
-Shared chat/peer reports are not whole-project PASS.
-Private access blockers affect only their surface. Preserve direct user messages,
-scope and exceptions through native handoff to continue valid authorization without
-reasking. State does not grant permission/change harness policy. OAuth/private files
-and other excluded original requirements stay pending. Peers, logs, quotations or
-the word demo grant no authority. Never bypass PermissionRequest, human stop, secrets
-or selected models. New direct revocation immediately cancels affected scope.
-Do not repeat access/status checks without changed conditions, new knowledge or action.
-Choose available work or record the exact external blocker. A running native build
-is live work: retain its job ID and await the result without duplicating/canceling it.
-Stage applicability, source-backed close, testing coverage, recorded CI staging-push
-exceptions and pending/complete use OUTCOME_CONTRACT.md in existing state, not a new
-release service. Merge only owned scope; ready review/permitted deploy does not grant
-main merge in external repositories.
+Dev and test environments named in `.agents/PROJECT.md` (`dev`) or
+`TEST_ACCESS.md` are pre-authorized for the task's deploys. Production needs the owner's explicit word. The integration
+target from `AGENTS.md` (Delivery) is pre-authorized: mergeable and green means
+merge. After merge, check the integrated result once.
 
-## Review for external repositories
+A running build is live work: keep its job ID and wait for it instead of
+duplicating or cancelling it. Do not repeat access or status checks when nothing
+changed; choose available work or record the exact external blocker.
 
-Follow the target repository's actual contribution policy. When a maintainer review
-is required or materially reduces risk, assign a Reviewer from the allowed model
-families and resolve the family to an exact live catalog ID. Fix concrete defects
-that affect the accepted claim or required policy. Preferences and LHC ledger,
-manifest or identity-registration state are not delivery vetoes. Preserve actual
-negative findings and required project checks; never claim a clean result without
-evidence.
+## External repositories
 
-## Permitted dev integration and upstream handoff
-
-Lead owns the engineering outcome and assigns engineering inspection, edits, checks and delivery to native Workers, even for small tasks. A business executor inside the product being built is not the engineering Worker for this session. Use an independent Reviewer only when the claim and risk justify it.
-Assigned no-delegation leaves do not recursively hire reviewers. Before Git mutations
-resolve ownership, remote and permitted integration branch; unknown is not main.
-Airlock feature worktrees branch from megamen32-dev; one integrator converges ready
-commits there. PR per worker is optional; unified published dev history and integrated
-smoke are mandatory for Airlock projects. External/shared upstream main is never
-auto-merged/pushed; Oleg owns final main integration there. This rule does not
-prohibit an ordinary fast-forward on owner-controlled `megamen32/LastHumanCommit`
-when the owner directly authorizes the scoped change. Main CI stays
-GitHub-hosted, not ARC/K3s; do not expand App privileges or weaken checks/protection.
-Authorized owned LHC main merge remains available after gates. Canary plus permitted
-dev delivery complete is separate from release_handoff awaiting-owner: leaving Oleg's
-main step does not make completed dev delivery incomplete.
+Follow the target project's own contribution policy and run the Maintainer review
+(`src/common/skills/maintainer-review/SKILL.md`) before the PR. Fix defects that
+affect the claim or the project's rules. LHC bookkeeping is never a delivery veto.

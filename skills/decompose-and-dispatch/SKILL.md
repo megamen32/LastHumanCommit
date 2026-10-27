@@ -70,8 +70,9 @@ worktrees through the active SHARED_WORKTREE protocol and its common tool.
 Record primary root, `lhc/<task-slug>`, `.worktrees/<task-slug>`, immutable base
 commit and owner. Give the harness that existing path; never let it create a
 second private checkout. The resolved permitted dev integration target and task-owned cleanup remain Lead-owned.
-No PR per worker is required; one published dev history and integrated smoke are required.
-Airlock converges on megamen32-dev; Oleg owns upstream main, with GitHub-hosted main CI, never ARC.
+No PR per worker is required; L merges the leaf branches into the task branch, then merges the task PR into the target itself.
+The target branch follows `AGENTS.md` Delivery: `main` in the owner's repository,
+the owner's own branch (e.g. `megamen32-dev` in Airlock) in someone else's.
 
 Show which ready lanes will actually dispatch together and the available slots.
 Explain each serialization by a dependency, shared mutable resource or capacity

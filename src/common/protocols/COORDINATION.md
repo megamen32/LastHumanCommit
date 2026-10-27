@@ -54,8 +54,9 @@ answers once for everything merged into it. Never resend a message to wait for a
 reply: a resend is a second message and runs the work twice. Delivery is proven by
 reading the peer's own answer with `session messages`, not by the receipt.
 
-Waking a peer Codex or ZCode session is a human decision: ask through Herder
-`human_request_create` and let the human resolve it.
+Waking a peer Codex or ZCode session that holds the critical path is allowed
+through Herder (`resume_after`, `deliver`). Only an owner automation freeze or
+human stop makes it the owner's decision.
 
 A plain send to a busy peer is a queue: the runtime holds the message until that
 peer's current turn ends, so it arrives hours later or never. Use `force_steer: true`
@@ -95,7 +96,8 @@ Worker.
 ## Supervision of other sessions
 
 A session that watches other sessions is a supervisor. It decides inside the protocol
-instead of asking the owner, wakes a peer that holds a contour and stands idle, and
+instead of asking the owner, wakes a peer that holds the critical path and stands
+idle, and
 reports only what the owner cannot decide from the record: a change of the owner's
 rules, a risk of losing or reverting another session's work, and a deadlock that did
 not close in two cycles. It does not merge, rebuild, restart, publish, or touch the
