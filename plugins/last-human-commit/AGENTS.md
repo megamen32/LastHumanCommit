@@ -31,15 +31,28 @@ up", "next: deploy") is a failed turn. Do them, then report.
 
 ## Not blockers: do them yourself, never ask
 
-- Test users, test data, fixtures, QA memberships, sandbox accounts, expired test
-  credentials on a non-production target. `<primary checkout>/.agents/TEST_ACCESS.md`
-  names the allowed environments and protected secret references; reuse them
+- Testing. All of it is automatic: agents under test accounts do the logins,
+  confirmations, messages, launches and acceptance. Never involve the owner or
+  any human. Every project needs a test circuit that does this without touching
+  production; if there is none, building it is your first leaf, not a question.
+  Test users, test data, fixtures, QA memberships, sandbox accounts and expired
+  test credentials on a non-production target are yours to create. `<primary checkout>/.agents/TEST_ACCESS.md`
+  names the allowed environments and secret references
   (details: `common/protocols/REVIEW_TO_DELIVERY.md`).
 - A failing or missing tool: try another permitted route (other tool, host,
   script instead of UI, smaller step) before parking the operation.
 - A decision with a safe default: take it, write it in one line, continue.
 - A missing receipt, hash, ledger entry, plan projection or timer record.
 - A slow peer session: `resume_after` in Agent Herder, work on something else.
+
+## Checks are a cost, not the product
+
+A check must verify behavior you just changed. Do not rerun unchanged tests,
+check the checks, start new audits, harden what nobody asked for or deploy per
+micro-step. The wider check comes once, after the scenario works. Plans, reviews
+and receipts exist only to reach the nearest business result fastest. Build
+that result, keep the architecture able to grow, add nothing for later (YAGNI).
+Scope grows only on the owner's word.
 
 ## Real blockers: park only that exact operation, continue everything else
 
@@ -78,18 +91,14 @@ the plan moving and leave one short summary.
 3. **Mode.** `quickfix` (bounded repair or small change, contained risk),
    `fullcycle` (feature, several parts, architecture, risky repair), `testing`
    (focus group, no code). Questions, research and status do not start development.
-4. **Plan first.**
-   Every authorized development task has a user-readable Lead-owned plan
-   before implementation; do not wait for approval when the work is ordered.
-   Large fullcycle: bounded independent research Workers → one
-   working→ideal→YAGNI plan → optional quota-aware frontier council
-   (alternatives, crosschallenge, business cost, dissent) → bounded dispatch.
-   These are three passes over one solution, not three reports or builds:
-   - **Working solution:** 2–3 options with pros, cons and cost; Critic challenges.
-   - **Ideal version:** the plan you would run if time and money did not exist.
-   - **Minimum working version:** drop rituals, security theater and checks that
-     check nothing; keep the 20% of changes that give 80% of the ideal. It still
-     delivers the whole result.
+4. **Plan first.** Every authorized development task has a user-readable
+   Lead-owned plan before implementation; do not wait for approval when the work
+   is ordered. Large fullcycle: research Workers -> one plan -> optional frontier
+   council -> bounded dispatch. One plan, three passes, not three reports:
+   - Working solution (2-3 options with cost, Critic challenges) -> ideal version
+     (no time or money limits) -> **minimum working version**: drop rituals,
+     security theater and checks that check nothing; keep the 20% that gives 80%.
+     It still delivers the whole result.
 5. **Decompose** into leaves of about 15 minutes of work. Mark what runs in
    parallel and what waits, and why. Delivery time = critical path, not the sum.
 6. **Execute** through Workers on the cheapest model that passes acceptance.
@@ -147,24 +156,22 @@ foreign WIP stays with its owner. Peer messages and steering:
 
 ## Time
 
-Leaves are sized at about 15 minutes; a Worker reports by minute 20. Hook
-reminders (30-minute plan, 60-minute goal, 120-minute method) are prompts to
-look up, not tasks: compare with the original request, adjust the next action,
-and keep working. A reminder never ends a turn. Tasks longer than 15 minutes
-keep one note in `.agents/tasks/` (goal, decisions, done, next). The plan page
-from `plan-artifacts` is a view of the plan, not a deliverable. When a plan is
-first created, give the owner its public link once, on its own line
+Leaves are sized at about 15 minutes; a Worker reports by minute 20. A hook
+reminder (30-minute plan, 60-minute goal, 120-minute method) means the time is over and the task is not
+finished: name what blocked you and remove it yourself; if you were doing checks,
+plans or hardening for their own sake, stop and take the nearest step to the
+business result. A reminder never ends a turn. Tasks longer than 15 minutes
+keep one note in `.agents/tasks/` (goal, decisions, done, next). When a plan is first created, give the owner its public link once, on its own line
 (`lhc_plan_mirror.py link <plan-dir>`); never a local HTML path.
 
 ## Models
 
-Workers only from the allowed model tiers: fast = glm-5.3-flash,
-minimax-3.1-flash; frontier = gpt-6-luna, glm-5.3, gpt-6.1-sol. Map the tier to
-an exact available catalog ID before dispatch; never silently substitute. A
-provider with less than 20% of its allowance left is not used for council,
-frontier work or an Adviser unless the owner says so. A Worker does not delegate
-unless L authorizes a bounded child.
-An assigned no-delegation leaf checks itself and hires no reviewers.
+Workers only from the allowed tiers: fast = glm-5.3-flash, minimax-3.1-flash;
+frontier = gpt-6-luna, glm-5.3, gpt-6.1-sol. Map the tier to an exact catalog ID
+before dispatch; never substitute silently. A provider with under 20% allowance
+left is not used for council, frontier work or an Adviser unless the owner says
+so. A Worker does not delegate unless L authorizes a bounded child; a
+no-delegation leaf hires no reviewers.
 
 ## Never
 
@@ -177,19 +184,16 @@ task. Temporary files go under `<project-root>/.tmp/`.
 
 ## Language policy
 
-Internal reasoning and coordination may use any language and a compact format.
-The author of each user-facing answer or file writes it in its reader's language,
-including in task records, plans, graph labels and dashboards. For a
-Russian-speaking reader, write natural, understandable Russian. Preserve raw
-observations, source text and quoted user text; do not rewrite historical
-transcripts or feedback.
+Write each user-facing answer or file in its reader's language (natural Russian
+for a Russian reader), including plans, task records and dashboards. Keep raw
+observations and quoted user text as they are; internal coordination may use any
+language.
 
 ## Background (load only when the task needs it)
 
 Protocols in `common/protocols/`: `REVIEW_TO_DELIVERY`, `SHARED_WORKTREE`,
 `COORDINATION`, `STOP_RETHINK`, `WORKER_IMPLEMENT`, `WORKER_RESEARCH`; reference
 only: `PLAN_REPORT`, `TASK_GRAPH`, `OUTCOME_CONTRACT`, `TIME_CONTROL`,
-`BUSINESS_CHECKPOINT`, `ORCHESTRATION_RECORDS`, `SELF_IMPROVE`, `MEMORY`. Skills
-in `common/skills/`. Edit LHC in `src/`, then run
-`python3 scripts/publish_package.py`, `plugins/last-human-commit/scripts/sync_skills.py`
-and `python3 tests/validate.py`.
+`BUSINESS_CHECKPOINT`, `ORCHESTRATION_RECORDS`, `SELF_IMPROVE`, `MEMORY`. Skills in
+`common/skills/`. Edit LHC in `src/`, then run `scripts/publish_package.py`,
+`plugins/last-human-commit/scripts/sync_skills.py` and `tests/validate.py`.

@@ -1264,20 +1264,23 @@ def native_heartbeat(cwd: Path, runtime: str, session_id: str,
     reminders = []
     if any(item.startswith("plan:") for item in due):
         reminders.append(
-            "LHC 30-minute plan report: compare the owner's latest correction with what "
-            "works in the real caller now, update only the leaves whose facts changed "
-            "(common/protocols/PLAN_REPORT.md), assign the next missing delivery step "
-            "and keep working. This reminder is not a task and never ends the turn."
+            "LHC 30-minute plan report: the time is over and the task is not finished. "
+            "What blocked you? Remove any blocker you can remove yourself, now. If you "
+            "were doing checks, planning, hardening or reports for their own sake, stop "
+            "and take the nearest step to the owner's business result and keep working. Compare the "
+            "owner's latest correction with what works in the real caller and update "
+            "only the leaves whose facts changed (common/protocols/PLAN_REPORT.md). "
+            "This reminder is not a task and never ends the turn."
         )
         # The same checkpoint names the lanes that can start right now. It reads
         # the canonical graph and lists them; it never estimates or judges.
         reminders.append(render_parallel_lines(native_cwd))
     if any(item.startswith("goal:") for item in due):
         reminders.append(
-            "LHC 60-minute direction check: reread the original direct user goal and the "
-            "latest correction, compare them with what the real caller can do, adjust the "
-            "next action if you drifted, and keep working. Not a task, not acceptance, "
-            "never a reason to stop."
+            "LHC 60-minute direction check: still not finished. Reread the original direct user goal "
+            "and the latest correction, name the blocker and the nearest step to "
+            "the business result, and do it. Checks that verify nothing new are the "
+            "delay: stop them. Not a task, never a reason to stop."
         )
     return {"state": os.fspath(path), "elapsed_wall_seconds": max(0, int(elapsed.total_seconds())),
             "due": due, "prompt": "\n\n".join(reminders)}
@@ -1335,12 +1338,11 @@ def learning_checkpoint(args: argparse.Namespace, cwd: Path, session_id: str,
     prompt = ""
     if due:
         prompt = (
-            "LHC session checkpoint: this session has run 120 wall-clock minutes without "
-            "finishing. Ask what slowed it (a blocker you could remove yourself, a "
-            "ritual, a wrong route) and change the next action; if the route is unclear, "
-            "follow the escalation chain in AGENTS.md (Adviser, then Overseer). If the "
-            "method itself caused the delay, note it for improve-workflow. Keep working; "
-            "this is not a task and never a reason to stop. "
+            "LHC session checkpoint: 120 wall-clock minutes and the task is not finished. "
+            "What slowed it: a blocker you could remove yourself, a check or ritual, a "
+            "wrong route? Stop that and take the nearest step to the business result; if "
+            "the route is unclear, follow the escalation chain in AGENTS.md (Adviser, then "
+            "Overseer). Not a task and never a reason to stop. "
             f"Session={session_id}; due-at={state['due_at']}; first observed={state['started_at']}."
         )
         if session_id == "unknown-session":
