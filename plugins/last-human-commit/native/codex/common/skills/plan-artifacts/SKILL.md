@@ -5,6 +5,18 @@ description: Create LHC project-plan artifacts in one pass — one JSON file per
 
 # Plan artifacts
 
+## The owner's link (do this first)
+
+The owner follows plans from his phone, not from your disk. Right after the
+first leaves of a new plan are written, run
+`python3 "<tools>/lhc_plan_mirror.py" link <plan-dir>` and give the printed URL
+to the owner once, on its own line, in your next reply. It is the permanent
+public page of this plan (`https://…/<project>/<plan>/`), not `plan.html`. The
+prompt hook already prints this link for plans it creates; then just pass it
+on. If the command says no mirror is configured, say so in one line and go on.
+All plans are listed on the mirror's home page with state, stage and expected
+finish.
+
 ## Requests for a project or work plan
 
 Treat natural Russian requests including «составь план», «сделать план проекта»,

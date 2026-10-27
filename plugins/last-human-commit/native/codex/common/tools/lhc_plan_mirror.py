@@ -26,6 +26,7 @@ import time
 import urllib.request
 import urllib.error
 
+import lhc_plan_catalog as catalog
 import lhc_plan_json as leaves
 import lhc_plan_publish as pub
 import lhc_plan_transport as transport
@@ -83,7 +84,35 @@ def binding(plan, explicit=None):
                 Path(root).expanduser().resolve() in path.parents or Path(root).expanduser().resolve() == path
                 for root in cfg.get('roots', [])):
             return candidate.resolve()
+        # Every plan in a repository's conventional task folder gets its public
+        # link without editing the config, unless the owner turned that off.
+        if cfg.get('auto_bind_agent_tasks', True) and path.parent.name == 'tasks' \
+                and path.parent.parent.name == '.agents':
+            return candidate.resolve()
     return None
+
+
+def announce_once(plan):
+    """True only the first time a plan's public link is handed to the owner."""
+    marker = directory(plan) / 'link-announced.json'
+    if marker.exists():
+        return False
+    pub.atomic(marker, {'at': pub.now()})
+    return True
+
+
+def link(plan, config_path=None):
+    """Register a plan if a mirror is configured and return its public URL."""
+    plan = Path(plan).expanduser().resolve()
+    path = binding(plan, config_path)
+    if path is None:
+        candidate = Path(config_path or os.environ.get('LHC_PLAN_MIRROR_CONFIG', CONFIG)).expanduser()
+        path = candidate.resolve() if candidate.is_file() else None
+    if path is None:
+        raise ValueError('plan mirror is not configured on this host')
+    url = register(plan, path)['url']
+    pub.atomic(directory(plan) / 'dirty.json', {'at': pub.now()})
+    return url
 
 
 def register(plan, config_path):
@@ -537,51 +566,20 @@ class Replica:
             pub.atomic(path, entry)
             return receipt
 
+    def legacy(self):
+        """Older standalone publications in the webroot that the mirror never received."""
+        known = {(e['snapshot']['project'], e['snapshot']['name']) for e in self.entries()}
+        found = []
+        for page in Path(self.cfg['webroot']).glob('*/*/index.html'):
+            project, name = page.parent.parent.name, page.parent.name
+            if (project, name) in known or not IDENT.fullmatch(project) or not IDENT.fullmatch(name):
+                continue
+            title = re.search(r'<title>(.*?)</title>', page.read_text(errors='replace')[:4096], re.S)
+            found.append((project, name, html.unescape(title.group(1)).strip() if title else name))
+        return found
+
     def dashboard(self):
-        entries = sorted(self.entries(), key=lambda x: pub.timestamp(x['snapshot']['last_file_event']), reverse=True)
-        esc = lambda s: html.escape(str(s), quote=True)
-        groups = {}
-        counts = {'active': 0, 'blocked': 0, 'completed': 0}
-        for entry in entries:
-            snap, receipt = entry['snapshot'], entry['receipt']
-            age = time.time() - pub.timestamp(snap['last_file_event']).timestamp()
-            statuses = [t.get('status') for t in snap['document']['tasks']]
-            state = ('completed' if statuses and all(s == 'done' for s in statuses)
-                     else 'blocked' if any(s in {'blocked', 'waiting'} for s in statuses) else 'active')
-            counts[state] += 1
-            label = {'active': 'В плане: в работе', 'blocked': 'В плане: заблокировано',
-                     'completed': 'В плане: завершено'}[state]
-            freshness = 'данные устарели' if age > 300 else 'свежие данные'
-            title = snap['document'].get('title') or snap['name']
-            # Routes come from validated stable identifiers, never a client-supplied URL.
-            url = '/' + snap['project'] + '/' + snap['name'] + '/'
-            revision = snap['revisions'][-1]['id']
-            groups.setdefault(snap['project'], []).append(
-                f'<article data-state="{state}" data-search="{esc(snap["project"] + " " + title + " " + snap["name"])}">'
-                f'<div class="plan-heading"><h3><a href="{url}">{esc(title)}</a></h3>'
-                f'<span class="state {state}">{label}</span></div>'
-                f'<p class="meta">Событие файла: <time>{esc(snap["last_file_event"])}</time> · {freshness}<br>'
-                f'Приём сервером: <time>{esc(receipt["received_at"])}</time></p>'
-                f'<a class="revision" href="{url}view-{revision}.html">Ревизия {revision}</a></article>')
-        sections = ''.join(f'<section class="project"><h2>{esc(project)} <span>{len(rows)} пл.</span></h2>'
-                           + ''.join(rows) + '</section>' for project, rows in groups.items())
-        summary = (f'<div id="totals">Проектов: <b>{len(groups)}</b> · Планов: <b>{len(entries)}</b>'
-                   f'<span>В работе: {counts["active"]} · Заблокировано: {counts["blocked"]} · Завершено: {counts["completed"]}</span></div>')
-        empty = '<p class="empty">Пока нет синхронизированных планов. Они появятся после первой успешной синхронизации источника.</p>' if not entries else ''
-        return '''<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Проекты и планы · LHC</title>
-<style>
-*{box-sizing:border-box}body{font:15px/1.5 system-ui,sans-serif;background:#f5f6f8;color:#202938;max-width:1080px;margin:auto;padding:32px 24px}header{margin-bottom:24px}.brand{color:#657087;font-size:12px;letter-spacing:.14em}h1{font-size:32px;line-height:1.2;margin:8px 0 12px}h2{font-size:20px;margin:28px 0 10px;overflow-wrap:anywhere}h2 span{font-size:13px;font-weight:400;color:#657087}h3{font-size:17px;margin:0;overflow-wrap:anywhere}a{color:#255fa5;text-decoration:none}a:hover{text-decoration:underline}p{overflow-wrap:anywhere}.intro,.meta,#connection{color:#657087}.intro{max-width:780px}#totals{font-size:17px;margin-bottom:20px}#totals span{display:block;color:#657087;font-size:14px;margin-top:5px}.toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:center}input,select{font:inherit;padding:10px 12px;border:1px solid #bbc5d3;border-radius:8px;background:white;color:inherit}input{width:min(100%,420px)}label{display:flex;gap:8px;align-items:center}article{background:white;border:1px solid #dce1e8;border-radius:10px;padding:16px 20px;margin-bottom:8px}.plan-heading{display:flex;justify-content:space-between;align-items:baseline;gap:12px}.state{font-size:12px;white-space:nowrap;border-radius:5px;padding:3px 8px;background:#edf2f9;color:#315b8c}.blocked{background:#fff3df;color:#805912}.completed{background:#eaf3ef;color:#38664c}.meta{font-size:12px;margin:8px 0}.revision{font-size:12px}.empty{padding:24px;background:white;border:1px dashed #bbc5d3;border-radius:10px}[hidden]{display:none!important}#connection{font-size:13px;min-height:20px}#signin{font-weight:600}input:focus-visible,select:focus-visible,a:focus-visible{outline:2px solid #255fa5;outline-offset:3px}@media(max-width:600px){body{padding:20px 14px}h1{font-size:27px}.plan-heading{display:block}.state{display:inline-block;margin-top:8px}article{padding:14px}.toolbar,label,input,select{width:100%}label{flex-wrap:wrap}}
-</style></head><body><header><div class="brand">LAST HUMAN COMMIT</div><h1>Проекты и планы</h1><p class="intro">Все планы, принятые этим зеркалом. Проекты и планы упорядочены по последнему изменению исходного файла. Статус сообщает план. Живость агента: неизвестна.</p></header>
-<div class="toolbar"><label for="search">Поиск <input id="search" type="search" placeholder="Проект или план" autocomplete="off"></label><label for="scope">Показывать <select id="scope"><option value="all">Все</option><option value="active">В работе</option></select></label></div>
-<p id="connection" role="status" aria-live="polite">Последний известный снимок</p><a id="signin" href="/" hidden>Войти снова через SSO</a>
-<main data-lhc-catalog="1">''' + summary + sections + empty + '''</main><p id="no-matches" class="empty" hidden>По этому запросу планов нет. Измените поиск или выберите «Все».</p><script>
-const search=document.getElementById('search'),scope=document.getElementById('scope');
-function filter(){let visible=0;const query=search.value.trim().toLocaleLowerCase('ru');document.querySelectorAll('.project').forEach(group=>{let count=0;group.querySelectorAll('article').forEach(row=>{row.hidden=!(row.dataset.search.toLocaleLowerCase('ru').includes(query)&&(scope.value==='all'||row.dataset.state!=='completed'));if(!row.hidden)count++;});group.hidden=count===0;visible+=count;});document.getElementById('no-matches').hidden=visible>0||!document.querySelector('article');}
-search.addEventListener('input',filter);scope.addEventListener('change',filter);
-let refreshing=false;
-async function refresh(){if(refreshing)return;refreshing=true;const badge=document.getElementById('connection'),signin=document.getElementById('signin');try{const r=await fetch(location.href,{cache:'no-store',redirect:'manual'});if(r.status===401||r.status===403||r.status===0||r.type==='opaqueredirect'||r.status>=300&&r.status<400){signin.hidden=false;badge.textContent='Требуется вход · сохранён последний известный список';return;}if(!r.ok)throw Error();const doc=new DOMParser().parseFromString(await r.text(),'text/html');const next=doc.querySelector('main[data-lhc-catalog="1"]');if(!next){signin.hidden=false;badge.textContent='Требуется вход · сохранён последний известный список';return;}const y=window.scrollY;document.querySelector('main').replaceWith(next);filter();window.scrollTo(0,y);signin.hidden=true;badge.textContent='Связь есть · список проверен '+new Date().toLocaleTimeString();}catch(e){badge.textContent='Нет связи · сохранён последний известный список';}finally{refreshing=false;}}
-if(/^https?:$/.test(location.protocol))setInterval(refresh,12000);
-</script></body></html>'''
+        return catalog.render(self.entries(), self.legacy())
 
 
 def make_server(cfg):
@@ -662,9 +660,9 @@ def make_server(cfg):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest='command', required=True)
-    for name in ('serve', 'watch', 'once', 'register', 'status'):
+    for name in ('serve', 'watch', 'once', 'register', 'link', 'status'):
         cmd = commands.add_parser(name)
-        if name == 'register':
+        if name in ('register', 'link'):
             cmd.add_argument('plan_dir', type=Path)
         cmd.add_argument('--config', type=Path, default=CONFIG)
     args = parser.parse_args(argv)
@@ -673,6 +671,8 @@ def main(argv=None):
             make_server(config(args.config)).serve_forever()
         elif args.command in {'watch', 'once'}:
             run_observer(args.config, once=args.command == 'once')
+        elif args.command == 'link':
+            print(link(args.plan_dir, args.config))
         elif args.command == 'register':
             print(pub.encoded(register(args.plan_dir, args.config)), end='')
         else:

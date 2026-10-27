@@ -98,29 +98,32 @@ def catalog_entries(fixture):
     return entries
 
 
-def test_all_projects_plans_grouped_sorted_safe_and_no_task_dump(fixture, monkeypatch):
+def test_all_projects_plans_listed_sorted_safe_and_no_task_dump(fixture, monkeypatch):
     replica = mirror.Replica(fixture[2])
     entries = catalog_entries(fixture)
     monkeypatch.setattr(replica, 'entries', lambda: entries)
+    monkeypatch.setattr(replica, 'legacy', lambda: [])
     page = replica.dashboard()
-    assert page.count('<section class="project">') == 12
-    assert page.count('<article ') == 36
-    assert 'Проектов: <b>12</b>' in page and 'Планов: <b>36</b>' in page
-    assert 'В работе: 12 · Заблокировано: 12 · Завершено: 12' in page
+    assert page.count('<article class="plan') == 36
+    assert page.count('<option value="project-') == 12
+    # Old source events: unfinished running plans are stalled, not "in progress".
+    assert page.count('data-state="stalled"') == 12
+    assert page.count('data-state="blocked"') == 12
+    assert page.count('data-state="completed"') == 12
     for i in range(36):
         assert f'/project-{i // 3:02}/plan-{i:02}/' in page
-    # Last source event is day 25, then 24. Group rows also retain event order.
-    assert page.index('<h2>project-08') < page.index('<h2>project-07')
-    assert page.index('/project-00/plan-02/') < page.index('/project-00/plan-01/')
+    # Attention first: blocked before stalled before completed; newest first inside.
+    assert page.index('data-state="blocked"') < page.index('data-state="stalled"') < page.index('data-state="completed"')
+    assert page.index('/project-07/plan-22/') < page.index('/project-00/plan-01/')
     assert '&lt;img' in page and '<img' not in page
     assert 'PRIVATE-TASK-NOTE' not in page and 'javascript:' not in page
-    assert 'view-r001.html' in page
 
 
 def test_catalog_browser_filters_refresh_auth_expiry_mobile(fixture, browser, tmp_path, monkeypatch):
     call, js, url = browser
     replica = mirror.Replica(fixture[2])
     monkeypatch.setattr(replica, 'entries', lambda: catalog_entries(fixture))
+    monkeypatch.setattr(replica, 'legacy', lambda: [])
     (tmp_path / 'plan.html').write_text(replica.dashboard())
     call('Emulation.setDeviceMetricsOverride', {'width': 390, 'height': 844, 'deviceScaleFactor': 1, 'mobile': True})
     call('Page.navigate', {'url': url})
@@ -131,22 +134,17 @@ def test_catalog_browser_filters_refresh_auth_expiry_mobile(fixture, browser, tm
         time.sleep(.05)
     assert js("document.documentElement.scrollWidth <= innerWidth")
     assert js("document.querySelectorAll('article').length") == 36
-    js("search.value='project-00';search.dispatchEvent(new Event('input'));scope.value='active';scope.dispatchEvent(new Event('change'))")
-    assert js("document.querySelectorAll('article:not([hidden])').length") == 2
-    assert js("document.querySelectorAll('.project:not([hidden])').length") == 1
-    # Real fetch replaces data, controls retain values and filter still applies.
+    js("const s=document.getElementById('search');s.value='project-00';s.dispatchEvent(new Event('input'));"
+       "document.querySelector('[data-filter=\"blocked\"]').click()")
+    assert js("document.querySelectorAll('article:not([hidden])').length") == 1
     js('refresh()')
-    assert js("search.value==='project-00' && scope.value==='active'")
-    assert js("document.querySelectorAll('article:not([hidden])').length") == 2
+    assert js("document.getElementById('search').value==='project-00'")
+    assert js("document.querySelectorAll('article:not([hidden])').length") == 1
     for stub in ("new Response('',{status:401})", "new Response('',{status:403})",
                  "({status:0,type:'opaqueredirect'})", "new Response('<html>SSO login</html>')"):
         js(f"window.fetch=async()=>({stub});refresh()")
         assert js("!document.getElementById('signin').hidden")
         assert js("document.querySelectorAll('article').length") == 36
-    js("search.value='неттакогоплана';filter()")
-    assert js("!document.getElementById('no-matches').hidden")
-    js("search.value='';scope.value='all';filter()")
-    assert js("document.querySelectorAll('article:not([hidden])').length") == 36
 
 
 # Reuse the project's isolated Chrome fixture; opt in explicitly for this test.

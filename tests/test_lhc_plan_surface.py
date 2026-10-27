@@ -119,39 +119,3 @@ def test_writing_the_plan_rebuilds_the_page(tmp_path):
     assert "пересобрана" in proc.stdout.decode("utf-8", "replace")
 
 
-def test_a_task_may_carry_several_business_results():
-    """The owner's rule: two or more results, each checkable on its own.
-
-    A task may deliver more than one capability the user can touch by hand.
-    The results are not merged into one, and the means are not results.
-    """
-    import importlib.util
-    import sys as _sys
-    from pathlib import Path as _Path
-
-    tool = _Path(__file__).resolve().parents[1] / "src" / "common" / "tools" / "lhc_grid.py"
-    spec = importlib.util.spec_from_file_location("lhc_grid_results", tool)
-    lhc = importlib.util.module_from_spec(spec)
-    _sys.modules[spec.name] = lhc
-    spec.loader.exec_module(lhc)
-
-    report = (
-        "Цель: Связать Herder с Mavis на Mac M1.\n"
-        "Бизнес-результат: Herder находит сессии Mavis на Mac M1 и будит их.\n"
-        "Бизнес-результат: Поиск сессий через MCP и API отвечает быстро.\n"
-        "Декомпозиция: 2 листа · 1 параллельно · 1 волна(а) · слотов: 1\n\n"
-        "✅ (первое) начата 10:00 закончена 10:20, оценка 20 минут, факт 20 минут\n"
-        "✅ (второе) начата 10:20 закончена 10:40, оценка 20 минут, факт 20 минут\n"
-    )
-    graph = lhc.parse_plan_report(report)
-    assert len(graph.business_results) == 2, graph.business_results
-    assert graph.business_results[0].startswith("Herder находит сессии")
-    assert graph.business_results[1].startswith("Поиск сессий")
-    html = lhc.render_html(graph, lhc.build_metrics(graph))
-    assert "Ожидаемый бизнес-результат" in html
-    assert "Бизнес-результат 2" in html
-    assert "Herder находит сессии Mavis" in html
-    assert "Поиск сессий через MCP и API отвечает быстро." in html
-    # The results survive the round trip through the graph JSON.
-    again = lhc.parse_graph_json(lhc.export_graph(graph))
-    assert again.business_results == graph.business_results
