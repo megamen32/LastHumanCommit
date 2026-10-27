@@ -53,37 +53,21 @@ def test_zcode_hook_templates_allow_only_instruction_and_time_events(config_path
     assert "--heartbeat-only" in hooks["PostToolUse"][0]["hooks"][0]["command"]
 
 
-def test_codex_fullcycle_prompt_hook_creates_and_binds_local_plan_offline(tmp_path: Path, monkeypatch) -> None:
+def test_prompt_hook_points_at_the_open_plan_and_never_reads_the_prompt(tmp_path: Path, monkeypatch) -> None:
     repo = git_repo(tmp_path / "repo")
-    config = tmp_path / "missing-mirror-config.json"
-    monkeypatch.setenv("LHC_PLAN_MIRROR_CONFIG", str(config))
-    monkeypatch.setenv("USER", "codex-canary")
-    event = {
-        "cwd": str(repo), "session_id": "codex-fullcycle-session",
-        "prompt": "Implement a full new feature across several modules and verify it.",
-    }
-    args = ["--root", str(ROOT), "--event", "UserPromptSubmit", "--plan-entry"]
-    first = run_cli(entry, args, cwd=repo,
-                    env={"LHC_PLAN_MIRROR_CONFIG": str(config), "USER": "codex-canary"},
-                    stdin=json.dumps(event))
-    assert first.returncode == 0, first.stderr
-    message = json.loads(first.stdout)["hookSpecificOutput"]["additionalContext"]
-    result = entry._fullcycle_plan_entry(event, ROOT)
-    assert result and result["leaf_id"] == "L01" and result["url"] is None
-    assert "автоматически связан" in message
-    plan = Path(result["plan"])
-    assert plan.is_relative_to(repo / ".agents" / "tasks")
-    leaves = sorted((plan / "leaves").glob("*.json"))
-    assert [path.stem for path in leaves] == ["L01", "L02", "L03"]
-    active = json.loads((plan / "leaves/L01.json").read_text())
-    assert active["status"] == "running"
-    assert active["session"] == event["session_id"]
-    assert active["harness"] == "codex"
-    assert (plan / "plan.graph.json").is_file()
-    assert (plan / "plan.html").is_file()
-    before = len(active["progress_events"])
-    entry._fullcycle_plan_entry(event, ROOT)
-    assert len(json.loads((plan / "leaves/L01.json").read_text())["progress_events"]) == before
+    monkeypatch.setenv("LHC_PLAN_MIRROR_CONFIG", str(tmp_path / "missing-mirror-config.json"))
+    event = {"cwd": str(repo), "session_id": "s1", "prompt": "thanks"}
+    assert entry._plan_entry(event, ROOT) is None  # no plan: the hook stays silent
+    plan = repo / ".agents/tasks/20261027-x"
+    (plan / "leaves").mkdir(parents=True)
+    (plan / "plan.json").write_text("{}")
+    (plan / "leaves/L01.json").write_text(json.dumps({"id": "L01", "status": "done"}))
+    (plan / "leaves/L02.json").write_text(json.dumps({"id": "L02", "status": "queued"}))
+    result = entry._plan_entry(event, ROOT)
+    assert result["leaves"] == ["L02"] and result["plan"] == str(plan.resolve())
+    assert json.loads((plan / "leaves/L02.json").read_text())["status"] == "queued"  # nothing is changed
+    (plan / "leaves/L02.json").write_text(json.dumps({"id": "L02", "status": "done"}))
+    assert entry._plan_entry(event, ROOT) is None
 
 
 def test_codex_user_prompt_hook_invokes_automatic_local_plan_entry() -> None:
