@@ -25,12 +25,16 @@ def herder_panel(tasks):
     first_url = 'https://agent.bezrabotnyi.com/?from=lhc#/session/' + quote(next(iter(sessions)), safe='') if sessions else ''
     return ('<button type="button" id="herder-launch" aria-controls="herder-panel" aria-expanded="false"' + disabled + '>Agent Herder</button>'
             '<aside id="herder-panel" role="dialog" aria-label="Сессия исполнителя в Agent Herder" hidden>'
-            '<div class="herder-heading"><strong>Agent Herder</strong><button type="button" id="herder-close" aria-label="Закрыть Agent Herder">Закрыть</button></div>'
-            '<label class="herder-selection">Сессия исполнителя<select id="herder-session">' + options + '</select></label>'
-            '<p class="herder-help">Если вход внутри панели недоступен, откройте сессию отдельно.</p>'
-            '<a id="herder-direct" href="' + escape(first_url, quote=True) + '" target="_blank" rel="noopener noreferrer">Открыть отдельно ↗</a>'
+            '<div class="herder-heading"><label class="herder-selection"><select id="herder-session" aria-label="Сессия исполнителя">' + options + '</select></label>'
+            '<a id="herder-direct" href="' + escape(first_url, quote=True) + '" target="_blank" rel="noopener noreferrer" title="Открыть отдельно — в том числе для входа">Открыть отдельно ↗</a>'
+            '<button type="button" id="herder-close" aria-label="Закрыть Agent Herder">×</button></div>'
             '<p id="herder-plan-update" role="status" hidden>Есть обновления плана. Они применятся после закрытия панели.</p>'
-            '<iframe id="herder-frame" title="Рабочая сессия Agent Herder" referrerpolicy="no-referrer"></iframe></aside>')
+            '<iframe id="herder-frame" title="Рабочая сессия Agent Herder" referrerpolicy="no-referrer"></iframe></aside>'
+            '<div id="herder-divider" role="separator" tabindex="0" aria-label="Размер области плана" aria-controls="herder-plan-pane herder-panel" aria-orientation="vertical" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50" hidden></div>'
+            '<div id="herder-split-controls" role="group" aria-label="Расположение плана и чата" hidden>'
+            '<button type="button" data-herder-ratio="100">План</button><button type="button" data-herder-ratio="50" aria-label="Разделить поровну">½</button>'
+            '<button type="button" data-herder-ratio="0">Чат</button><button type="button" data-herder-close aria-label="Закрыть Agent Herder">×</button></div>'
+            '<div id="herder-drag-shield" hidden></div>')
 
 
 def display_time(value):
@@ -102,24 +106,50 @@ body #publication a{color:var(--accent)}body .comparison td,body .comparison th{
 @media print{.plan-sidebar,.revision-strip,.theme-toggle{display:none!important}body .page{padding:0!important;max-width:none}.plan-section{break-before:auto}body .kpis{grid-template-columns:repeat(4,1fr)}details>*{display:block!important}.compare-scroll,.gantt,.table-scroll{overflow:visible!important}.gantt-inner{min-width:0!important}.panel{break-inside:avoid}#plan-content{display:block}body>footer{margin:12px 0}}
 #herder-launch{position:fixed;z-index:45;top:20px;right:24px;border:1px solid var(--accent);background:var(--panel);color:var(--text);padding:10px 14px;border-radius:10px;font:inherit;cursor:pointer;min-height:44px;box-shadow:0 4px 24px #0005}#herder-launch:disabled{opacity:.55;cursor:default}
 @media(min-width:651px){body:has(#herder-launch) .head-actions{padding-right:140px}}
-#herder-panel{position:fixed;z-index:60;right:12px;top:84px;bottom:12px;width:min(640px,calc(100vw - 24px));background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 48px #0007;display:flex;flex-direction:column;overflow:hidden}#herder-panel[hidden],#herder-plan-update[hidden]{display:none!important}
-.herder-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 14px}.herder-heading button{min-height:44px;padding:8px 14px;border:1px solid var(--line);border-radius:8px;background:var(--panel-2);color:var(--text);font:inherit;cursor:pointer}.herder-selection{padding:0 14px;display:flex;align-items:center;gap:10px;font-size:12px}.herder-selection select{flex:1;min-width:0;max-width:100%;min-height:40px;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:8px}.herder-help,#herder-direct,#herder-plan-update{margin:8px 14px;font-size:12px}#herder-direct{color:var(--accent)}#herder-plan-update{color:var(--text)}#herder-frame{flex:1;width:100%;min-height:0;border:0;background:var(--bg)}
-@media(max-width:650px){body:has(#herder-launch) .page{padding-bottom:88px}#herder-launch{top:auto;right:14px;bottom:calc(14px + env(safe-area-inset-bottom))}#herder-panel{inset:auto 0 0;width:100%;height:86dvh;border-radius:16px 16px 0 0;border-bottom:0;padding-bottom:env(safe-area-inset-bottom);box-sizing:border-box}}
-@media print{#herder-launch,#herder-panel{display:none!important}}
+#herder-workspace,#herder-plan-pane{display:contents}body.herder-open{overflow:hidden}body.herder-open #herder-workspace{position:fixed;inset:0;display:grid;grid-template-columns:var(--herder-plan-size,calc(50vw - 6px)) 12px minmax(0,1fr);grid-template-rows:minmax(0,1fr)}body.herder-open #herder-plan-pane{display:block;overflow:auto;min-width:0;min-height:0;overscroll-behavior:contain}body.herder-open #herder-launch{display:none}
+body.herder-open #herder-plan-pane .page{padding:18px 18px 54px;box-sizing:border-box;width:100%}body.herder-open #herder-plan-pane .head-actions{padding-right:0}body.herder-open #herder-plan-pane .plan-sidebar{position:sticky;inset:0;flex-direction:row;width:auto;padding:6px;gap:4px;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line);box-sizing:border-box}body.herder-open .plan-brand{display:none}body.herder-open .plan-sidebar a{flex:none;padding:8px;font-size:12px}#herder-plan-pane>footer{margin:12px 24px}body.herder-open #herder-plan-pane .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+#herder-panel{background:var(--panel);color:var(--text);display:flex;flex-direction:column;overflow:hidden;min-width:0;min-height:0}#herder-panel[hidden],#herder-plan-update[hidden],#herder-divider[hidden],#herder-split-controls[hidden],#herder-drag-shield[hidden]{display:none!important}
+.herder-heading{display:flex;align-items:center;gap:6px;padding:4px 6px;min-height:44px;box-sizing:border-box;white-space:nowrap;flex-shrink:0;overflow:hidden}.herder-heading button,#herder-split-controls button{min-height:36px;padding:4px 8px;border:1px solid var(--line);border-radius:7px;background:var(--panel-2);color:var(--text);font:inherit;cursor:pointer}.herder-selection{flex:1;min-width:0;display:flex;font-size:12px}.herder-selection select{width:100%;min-width:0;min-height:36px;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:7px}#herder-direct{color:var(--accent);font-size:11px;flex-shrink:0}#herder-plan-update{margin:4px 8px;font-size:11px}#herder-frame{flex:1;width:100%;min-height:0;border:0;background:var(--bg)}
+#herder-divider{position:relative;z-index:61;cursor:col-resize;touch-action:none;background:var(--line)}#herder-divider:after{content:'';position:absolute;inset:calc(50% - 24px) 4px;border-radius:4px;background:var(--accent)}#herder-divider:focus-visible{outline:3px solid var(--accent);outline-offset:-3px}#herder-split-controls{position:fixed;z-index:65;display:flex;gap:2px;padding:2px;background:var(--panel);border:1px solid var(--line);border-radius:8px;white-space:nowrap}#herder-split-controls button{font-size:11px;padding:2px 7px;min-height:32px}#herder-drag-shield{position:fixed;inset:0;z-index:64;cursor:col-resize;touch-action:none}body.herder-dragging{user-select:none}body.herder-dragging #herder-frame{pointer-events:none}
+@media(max-width:650px){body:has(#herder-launch) .page{padding-bottom:88px}#herder-launch{top:auto;right:14px;bottom:calc(14px + env(safe-area-inset-bottom))}body.herder-open #herder-workspace{grid-template-columns:minmax(0,1fr);grid-template-rows:var(--herder-plan-size,calc(50dvh - 6px)) 12px minmax(0,1fr)}#herder-divider,#herder-drag-shield{cursor:row-resize}#herder-divider:after{inset:4px calc(50% - 24px)}}
+@media print{#herder-launch,#herder-panel,#herder-divider,#herder-split-controls,#herder-drag-shield{display:none!important}body.herder-open #herder-workspace,body.herder-open #herder-plan-pane{position:static;display:block;overflow:visible}}
 </style>'''
 
 HERDER_SCRIPT = '''<script id="lhc-herder-panel">
 (()=>{const launch=document.getElementById('herder-launch'),panel=document.getElementById('herder-panel');
 if(!launch||!panel||launch.disabled)return;
 const select=document.getElementById('herder-session'),frame=document.getElementById('herder-frame'),direct=document.getElementById('herder-direct'),close=document.getElementById('herder-close');
+const divider=document.getElementById('herder-divider'),controls=document.getElementById('herder-split-controls'),shield=document.getElementById('herder-drag-shield');
+// Move the frame once, before its first src assignment. Resizing never moves it.
+document.body.append(launch,panel,divider,controls,shield);
+const workspace=document.createElement('div'),plan=document.createElement('div');workspace.id='herder-workspace';plan.id='herder-plan-pane';
+for(const child of [...document.body.children])if(![launch,panel,divider,controls,shield].includes(child))plan.append(child);
+workspace.append(plan,divider,panel);document.body.append(workspace);
+const mobile=matchMedia('(max-width:650px)');
 const storage='lhc-herder:'+location.pathname;
 let saved={};try{saved=JSON.parse(sessionStorage.getItem(storage)||'{}')}catch(e){}
 if(!saved||typeof saved!=='object')saved={};
 if([...select.options].some(option=>option.value===saved.url))select.value=saved.url;
-function persist(){try{sessionStorage.setItem(storage,JSON.stringify({open:!panel.hidden,url:select.value}))}catch(e){}}
+const ratios={desktop:Number.isFinite(saved.desktop)?Math.max(0,Math.min(100,saved.desktop)):50,mobile:Number.isFinite(saved.mobile)?Math.max(0,Math.min(100,saved.mobile)):50};
+function persist(){try{sessionStorage.setItem(storage,JSON.stringify({open:!panel.hidden,url:select.value,...ratios}))}catch(e){}}
+function mode(){return mobile.matches?'mobile':'desktop'}
+function layout(){const rect=workspace.getBoundingClientRect(),vertical=mobile.matches,size=(vertical?rect.height:rect.width)-12,ratio=ratios[mode()],position=Math.max(0,size)*ratio/100;
+workspace.style.setProperty('--herder-plan-size',position+'px');divider.setAttribute('aria-orientation',vertical?'horizontal':'vertical');divider.setAttribute('aria-valuenow',String(Math.round(ratio)));divider.setAttribute('aria-valuetext','План '+Math.round(ratio)+'%, чат '+Math.round(100-ratio)+'%');
+const box=controls.getBoundingClientRect();controls.style.left=Math.max(0,Math.min(innerWidth-box.width,vertical?(innerWidth-box.width)/2:position+6-box.width/2))+'px';controls.style.top=Math.max(0,Math.min(innerHeight-box.height,vertical?position+6-box.height/2:8))+'px';persist()}
+function setRatio(value){ratios[mode()]=Math.max(0,Math.min(100,value));layout()}
 function choose(){const url=select.value;if(![...select.options].some(option=>option.value===url))return;direct.href=url;if(!panel.hidden&&frame.getAttribute('src')!==url)frame.src=url;persist()}
-function open(){panel.hidden=false;launch.setAttribute('aria-expanded','true');choose();close.focus();persist()}
-function shut(){panel.hidden=true;launch.setAttribute('aria-expanded','false');persist();launch.focus();window.dispatchEvent(new Event('lhc-herder-closed'))}
+function open(){const scroll=window.scrollY;panel.hidden=false;divider.hidden=false;controls.hidden=false;document.body.classList.add('herder-open');plan.scrollTop=scroll;launch.setAttribute('aria-expanded','true');layout();choose();close.focus({preventScroll:true});persist();window.dispatchEvent(new Event('resize'))}
+function shut(){const scroll=plan.scrollTop;finishDrag();panel.hidden=true;divider.hidden=true;controls.hidden=true;document.body.classList.remove('herder-open');launch.setAttribute('aria-expanded','false');persist();window.scrollTo({top:scroll,behavior:'instant'});launch.focus({preventScroll:true});window.dispatchEvent(new Event('lhc-herder-closed'))}
+let dragging=null;
+function point(event){const rect=workspace.getBoundingClientRect();setRatio(((mobile.matches?event.clientY-rect.top:event.clientX-rect.left)-6)/Math.max(1,(mobile.matches?rect.height:rect.width)-12)*100)}
+function finishDrag(){dragging=null;shield.hidden=true;document.body.classList.remove('herder-dragging')}
+divider.addEventListener('pointerdown',event=>{if(event.button!==0&&event.pointerType!=='touch')return;event.preventDefault();dragging=event.pointerId;divider.setPointerCapture(event.pointerId);shield.hidden=false;document.body.classList.add('herder-dragging');point(event)});
+window.addEventListener('pointermove',event=>{if(dragging===event.pointerId){event.preventDefault();point(event)}},{passive:false});
+window.addEventListener('pointerup',finishDrag);window.addEventListener('pointercancel',finishDrag);window.addEventListener('blur',finishDrag);
+divider.addEventListener('keydown',event=>{let next=ratios[mode()],step=event.shiftKey?10:2;if(event.key==='Home')next=0;else if(event.key==='End')next=100;else if(['ArrowLeft','ArrowUp'].includes(event.key))next-=step;else if(['ArrowRight','ArrowDown'].includes(event.key))next+=step;else return;event.preventDefault();setRatio(next)});
+controls.querySelectorAll('[data-herder-ratio]').forEach(button=>button.addEventListener('click',()=>setRatio(Number(button.dataset.herderRatio))));
+controls.querySelector('[data-herder-close]').addEventListener('click',shut);
+window.addEventListener('resize',()=>{if(!panel.hidden)layout()});
 launch.addEventListener('click',open);close.addEventListener('click',shut);select.addEventListener('change',choose);
 document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!panel.hidden){event.preventDefault();shut()}});
 choose();if(saved.open)open();
@@ -175,7 +205,10 @@ const key='lhc-ui:'+location.pathname;let saved={};
 try{saved=JSON.parse(sessionStorage.getItem(key)||'{}')}catch(e){}
 const nav=document.querySelector('.plan-sidebar');
 let offset=24;
-function measure(){offset=matchMedia('(max-width:650px)').matches?nav.getBoundingClientRect().height+12:24;document.documentElement.style.setProperty('--plan-anchor-offset',offset+'px')}
+function measure(){offset=matchMedia('(max-width:650px)').matches||document.body.classList.contains('herder-open')?nav.getBoundingClientRect().height+12:24;document.documentElement.style.setProperty('--plan-anchor-offset',offset+'px')}
+function scrollHost(){return document.body.classList.contains('herder-open')?document.getElementById('herder-plan-pane'):window}
+function readingTop(){const host=scrollHost();return host===window?window.scrollY:host.scrollTop}
+function readingTo(top){scrollHost().scrollTo({top,behavior:'instant'})}
 function select(id){links.forEach(a=>{if(a.hash==='#'+id)a.setAttribute('aria-current','location');else a.removeAttribute('aria-current')})}
 function spy(){let active=sections[0];for(const s of sections){if(s.getBoundingClientRect().top<=offset+2)active=s}if(active)select(active.id)}
 let frame=0;function schedule(){if(!frame)frame=requestAnimationFrame(()=>{frame=0;if(!signal.aborted)spy()})}
@@ -184,15 +217,16 @@ function fromHash(){const target=hashTarget();if(target){target.scrollIntoView()
 links.forEach((a,i)=>{a.addEventListener('keydown',e=>{if(['ArrowDown','ArrowRight','ArrowUp','ArrowLeft','Home','End'].includes(e.key)){e.preventDefault();const n=e.key==='Home'?0:e.key==='End'?links.length-1:(i+(['ArrowDown','ArrowRight'].includes(e.key)?1:-1)+links.length)%links.length;links[n].focus();links[n].click()}},{signal})});
 measure();window.addEventListener('resize',()=>{measure();schedule()},{signal});
 window.addEventListener('scroll',schedule,{signal,passive:true});window.addEventListener('hashchange',fromHash,{signal});
+document.addEventListener('scroll',schedule,{signal,passive:true,capture:true});
 const search=document.getElementById('search');if(search&&saved.search){search.value=saved.search;search.dispatchEvent(new Event('input'))}
 const chip=[...document.querySelectorAll('[data-filter]')].find(c=>c.dataset.filter===saved.filter);if(chip)chip.click();
 // A live swap preserves the actual reading position even when the URL still
 // contains an earlier clicked anchor. A deliberately opened hash wins on load.
 const swap=window.__lhcReadingPosition;delete window.__lhcReadingPosition;
 let reload=null;try{const publication=JSON.parse(sessionStorage.getItem('lhc-scroll:'+location.pathname)||'null');sessionStorage.removeItem('lhc-scroll:'+location.pathname);if(publication&&publication.hash===location.hash)reload=publication.scroll}catch(e){}
-requestAnimationFrame(()=>{if(signal.aborted)return;if(swap!=null||reload!=null)window.scrollTo({top:swap??reload,behavior:'instant'});else if(hashTarget())fromHash();else if(saved.scroll!=null)window.scrollTo({top:saved.scroll,behavior:'instant'});spy()});
-function save(){try{sessionStorage.setItem(key,JSON.stringify({search:search?.value||'',filter:document.querySelector('[data-filter].active')?.dataset.filter,scroll:window.scrollY}))}catch(e){}}
-window.addEventListener('lhc-before-swap',()=>{window.__lhcReadingPosition=window.scrollY},{signal});
+requestAnimationFrame(()=>{if(signal.aborted)return;if(swap!=null||reload!=null)readingTo(swap??reload);else if(hashTarget())fromHash();else if(saved.scroll!=null)readingTo(saved.scroll);spy()});
+function save(){try{sessionStorage.setItem(key,JSON.stringify({search:search?.value||'',filter:document.querySelector('[data-filter].active')?.dataset.filter,scroll:readingTop()}))}catch(e){}}
+window.addEventListener('lhc-before-swap',()=>{window.__lhcReadingPosition=readingTop()},{signal});
 window.addEventListener('pagehide',save,{signal});window.addEventListener('lhc-before-swap',save,{signal});
 let folded=[];window.addEventListener('beforeprint',()=>{folded=[...document.querySelectorAll('details:not([open])')];folded.forEach(d=>d.open=true)},{signal});
 window.addEventListener('afterprint',()=>{folded.forEach(d=>d.open=false);folded=[]},{signal});

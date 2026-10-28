@@ -60,6 +60,76 @@ def test_herder_panel_does_not_default_unknown_harness():
     assert 'disabled' in ui.herder_panel([{'session': 'ses_123Abc', 'harness': 'other'}])
 
 
+def test_herder_split_has_accessible_full_range_controls_and_compact_header():
+    import lhc_plan_ui as ui
+    panel = ui.herder_panel([{'session': 'ses_test', 'harness': 'opencode'}])
+    assert 'role="separator"' in panel
+    assert 'aria-valuemin="0"' in panel and 'aria-valuemax="100"' in panel
+    assert 'data-herder-ratio="0"' in panel and 'data-herder-ratio="100"' in panel
+    assert 'herder-help' not in panel
+    assert panel.index('herder-session') < panel.index('herder-close')
+
+
+def test_herder_resizing_preserves_frame_and_independent_mobile_ratio():
+    import lhc_plan_ui as ui
+    # Execute the actual UI controller with event-capable DOM doubles; no server
+    # or browser authentication is involved in this sizing/state regression.
+    harness = r'''
+const assert=require('assert');
+global.innerWidth=1280;global.innerHeight=720;
+const media={matches:false};global.matchMedia=()=>media;
+const events={};global.window=global;global.scrollY=180;
+global.addEventListener=(name,fn)=>(events[name]??=[]).push(fn);
+global.dispatchEvent=event=>(events[event.type]||[]).forEach(fn=>fn(event));
+global.scrollTo=({top})=>global.scrollY=top;
+global.location={pathname:'/test/'};
+let stored={};global.sessionStorage={getItem:()=>null,setItem:(key,value)=>stored=JSON.parse(value)};
+class Element{
+ constructor(id){this.id=id;this.children=[];this.hidden=false;this.handlers={};this.attrs={};this.dataset={};this.writes=0;this.scrollTop=0;this.style={setProperty:(key,value)=>this.style[key]=value};const classes=new Set();this.classList={add:x=>classes.add(x),remove:x=>classes.delete(x),contains:x=>classes.has(x)};}
+ append(...nodes){nodes.forEach(node=>{if(node.parent)node.parent.children=node.parent.children.filter(x=>x!==node);this.children.push(node);node.parent=this})}
+ addEventListener(name,fn){(this.handlers[name]??=[]).push(fn)}
+ fire(name,event={}){(this.handlers[name]||[]).forEach(fn=>fn({preventDefault(){},...event}))}
+ setAttribute(key,value){this.attrs[key]=value}getAttribute(key){return this.attrs[key]??null}
+ set src(value){this.writes++;this.attrs.src=value}focus(){}setPointerCapture(){}
+ getBoundingClientRect(){return {left:0,top:0,width:this.id==='herder-split-controls'?160:innerWidth,height:this.id==='herder-split-controls'?38:innerHeight}}
+}
+const ids=['herder-launch','herder-panel','herder-session','herder-frame','herder-direct','herder-close','herder-divider','herder-split-controls','herder-drag-shield'];
+const nodes=Object.fromEntries(ids.map(id=>[id,new Element(id)]));
+nodes['herder-panel'].hidden=true;nodes['herder-session'].options=[{value:'https://agent.example/#/session/test'}];nodes['herder-session'].value=nodes['herder-session'].options[0].value;
+const ratios=[0,50,100].map(ratio=>{const button=new Element('ratio'+ratio);button.dataset.herderRatio=String(ratio);return button});const closeControl=new Element('closeControl');
+nodes['herder-split-controls'].querySelectorAll=()=>ratios;nodes['herder-split-controls'].querySelector=()=>closeControl;
+const body=new Element('body');body.append(new Element('page'),...Object.values(nodes));
+global.document={body,getElementById:id=>nodes[id],createElement:()=>new Element(''),addEventListener(){}};
+'''
+    controller = ui.HERDER_SCRIPT.removeprefix('<script id="lhc-herder-panel">').removesuffix('</script>')
+    checks = r'''
+assert.equal(nodes['herder-frame'].writes,0);
+nodes['herder-launch'].fire('click');
+assert.equal(nodes['herder-frame'].writes,1);
+const workspace=body.children.find(node=>node.id==='herder-workspace');
+assert.equal(workspace.style['--herder-plan-size'],'634px');
+nodes['herder-divider'].fire('keydown',{key:'Home'});
+assert.equal(nodes['herder-divider'].attrs['aria-valuenow'],'0');
+nodes['herder-divider'].fire('keydown',{key:'End'});
+assert.equal(nodes['herder-divider'].attrs['aria-valuenow'],'100');
+media.matches=true;global.innerWidth=390;global.innerHeight=800;dispatchEvent({type:'resize'});
+assert.equal(nodes['herder-divider'].attrs['aria-valuenow'],'50');
+nodes['herder-divider'].fire('pointerdown',{button:0,pointerType:'touch',pointerId:1,clientY:203});
+assert.equal(nodes['herder-drag-shield'].hidden,false);
+dispatchEvent({type:'pointermove',pointerId:1,clientY:6,preventDefault(){}});
+assert.equal(nodes['herder-divider'].attrs['aria-valuenow'],'0');
+dispatchEvent({type:'pointerup'});assert.equal(nodes['herder-drag-shield'].hidden,true);
+assert.equal(stored.desktop,100);assert.equal(stored.mobile,0);
+media.matches=false;dispatchEvent({type:'resize'});
+assert.equal(nodes['herder-divider'].attrs['aria-valuenow'],'100');
+assert.equal(nodes['herder-frame'].writes,1);
+nodes['herder-close'].fire('click');assert.equal(scrollY,180);
+nodes['herder-launch'].fire('click');assert.equal(nodes['herder-frame'].writes,1);
+'''
+    result = subprocess.run(['node', '-e', harness + controller + checks], capture_output=True, text=True, timeout=5)
+    assert result.returncode == 0, result.stderr
+
+
 def test_historical_view_opens_current_working_session(plan):
     import copy
     path, _ = plan
