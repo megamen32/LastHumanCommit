@@ -3706,7 +3706,7 @@ def render_html(
             f"<template id='task-details-template-{details_index}'><div class='task-details-card'>"
             f"<div class='task-details-head'><h3>{escape(leaf.label)}</h3>"
             "<button type='button' class='task-details-close'>Закрыть</button></div>"
-            f"{details}</div></template>"
+            f"{details}<div class='leaf-compare'><!--leaf-compare:{escape(leaf.id)}--></div></div></template>"
         )
         # The row itself opens the task: the owner taps the task, not a
         # button that sits at the far end of the row. The meta line names who
@@ -3743,12 +3743,13 @@ def render_html(
         )
         table_rows.append(
             f'<tr data-status="{leaf.status}" data-text="{escape(_search_text(leaf))}" '
-            f"data-details-id='{details_index}' class='leaf-row'>"
+            f"data-leaf='{escape(leaf.id)}' data-details-id='{details_index}' class='leaf-row'>"
             f"<td class='task-title'><span class='row-id'>{escape(leaf.id)}</span>"
             f"<span class='row-name'>{escape(leaf.label)}</span>{times_html}{meta_html}</td>"
             f'<td data-label="Статус"><span class="status" style="--c:{STATUS_CSS_VARS[leaf.status]}">'
             f"{STATUS_GLYPHS[leaf.status]} {STATUS_LABELS[leaf.status]}</span></td>"
-            f"<td data-label=\"Оценка\"><div class='cell-plan'>{plan_cell}</div></td>"
+            f"<td data-label=\"Оценка\"><div class='cell-plan'>{plan_cell}</div>"
+            f"<span class='cell-sub'><!--leaf-delta:{escape(leaf.id)}--></span></td>"
             f'<td data-label="Усилие" class="{over.strip()}">{escape(actual)}'
             + (
                 f'<span class="cell-sub">по часам {escape(span)}</span>'
@@ -4239,6 +4240,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
   /* ---- gantt ---- */
   .gantt {{ overflow-x: auto; max-width: 100%; }}
+  .gantt-row[data-leaf] {{ cursor: pointer; }}
+  .gantt-row[data-leaf]:hover, .gantt-row[data-leaf]:focus-visible {{ background: color-mix(in srgb, var(--accent) 10%, transparent); outline: none; }}
+  .leaf-compare:not(:empty) {{ margin-top: 12px; }}
   .gantt-inner {{ min-width: 760px; }}
   .gantt-axis-row, .gantt-row {{ display: grid; grid-template-columns: minmax(240px, 320px) minmax(360px, 1fr);
     gap: 10px; min-width: 680px; }}
@@ -4630,6 +4634,22 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     if (!row.dataset.detailsId) {{ return; }}
     row.addEventListener('click', function () {{
       openDetails(row, row.dataset.detailsId);
+    }});
+  }});
+  // A Gantt bar opens the same card as the table row: one card per task.
+  document.querySelectorAll('.gantt-row[data-leaf]').forEach(function (bar) {{
+    bar.setAttribute('tabindex', '0');
+    bar.setAttribute('role', 'button');
+    function openFromGantt() {{
+      var target = null;
+      rows.forEach(function (row) {{ if (row.dataset.leaf === bar.dataset.leaf) {{ target = row; }} }});
+      if (!target) {{ return; }}
+      target.style.display = '';
+      openDetails(target, target.dataset.detailsId);
+    }}
+    bar.addEventListener('click', openFromGantt);
+    bar.addEventListener('keydown', function (event) {{
+      if (event.key === 'Enter' || event.key === ' ') {{ event.preventDefault(); openFromGantt(); }}
     }});
   }});
   // Every number of the page can be opened: the tile shows the tasks behind
