@@ -1,0 +1,90 @@
+{
+  "label": "Исправить подтверждённый разрыв активации и ведения плана",
+  "status": "done",
+  "description": "Реализовать согласованный механизм начала или продолжения плана до изменений, устранить немое отсутствие плана и неверное присоединение чужой задачи; синхронизировать описание с реальным поведением.",
+  "acceptance": "Воспроизводимые сценарии new-task/no-plan, unrelated-open-plan и exact continuation получают однозначный start/choice/continuation; контракт и skill соответствуют коду; без prompt regex, Stop veto и нового scheduler.",
+  "affected_files": [
+    "src/common/tools/lhc_entry.py",
+    "src/common/tools/lhc_plan_json.py",
+    "src/common/tools/lhc_plan_mirror.py",
+    "src/common/skills/last-human-commit/SKILL.md",
+    "src/common/skills/plan-artifacts/SKILL.md",
+    "tests/test_native_instruction_hooks.py",
+    "plugins/last-human-commit/common/tools/lhc_entry.py",
+    "plugins/last-human-commit/native/codex/tools/lhc_entry.py",
+    "plugins/last-human-commit/common/skills/last-human-commit/SKILL.md",
+    "plugins/last-human-commit/common/skills/plan-artifacts/SKILL.md"
+  ],
+  "owner": "Luna implementation",
+  "complexity": "M",
+  "estimate_minutes": 15,
+  "depends_on": [
+    "L01"
+  ],
+  "id": "L02",
+  "created_at": "2026-10-28T16:54:23+03:00",
+  "updated_at": "2026-10-28T17:20:48+03:00",
+  "progress_events": [
+    {
+      "at": "2026-10-28T16:54:23+03:00",
+      "note": "",
+      "changes": {
+        "label": "Исправить подтверждённый разрыв активации и ведения плана",
+        "status": "queued",
+        "description": "Реализовать согласованный механизм начала или продолжения плана до изменений, устранить немое отсутствие плана и неверное присоединение чужой задачи; синхронизировать описание с реальным поведением.",
+        "acceptance": "Воспроизводимые сценарии new-task/no-plan, unrelated-open-plan и exact continuation получают однозначный start/choice/continuation; контракт и skill соответствуют коду; без prompt regex, Stop veto и нового scheduler.",
+        "affected_files": [
+          "src/common/tools/lhc_entry.py",
+          "src/common/tools/lhc_plan_json.py",
+          "src/common/tools/lhc_plan_mirror.py",
+          "src/common/skills/last-human-commit/SKILL.md",
+          "src/common/skills/plan-artifacts/SKILL.md",
+          "tests/test_native_instruction_hooks.py",
+          "plugins/last-human-commit/common/tools/lhc_entry.py",
+          "plugins/last-human-commit/native/codex/tools/lhc_entry.py",
+          "plugins/last-human-commit/common/skills/last-human-commit/SKILL.md",
+          "plugins/last-human-commit/common/skills/plan-artifacts/SKILL.md"
+        ],
+        "owner": "Luna implementation",
+        "complexity": "M",
+        "estimate_minutes": 15,
+        "depends_on": [
+          "L01"
+        ]
+      }
+    },
+    {
+      "at": "2026-10-28T17:09:31+03:00",
+      "note": "Runtime intake и source-контракт исправлены; 32 focused проверки прошли. Выпуск 1.6.2 готовится, остаётся обработка malformed input и финальная интеграция.",
+      "changes": {
+        "status": "running",
+        "session": "01a17ea3-5600-7580-aba9-1badd2187dd5"
+      },
+      "session": "01a17ea3-5600-7580-aba9-1badd2187dd5",
+      "harness": "unknown"
+    },
+    {
+      "at": "2026-10-28T17:09:54+03:00",
+      "note": "Исполнитель реализации привязан по проверенному native thread ID из локального реестра, вместо ID исследуемого инцидента.",
+      "changes": {
+        "session": "01a182c4-143b-77e3-af4a-7f0907f45953",
+        "model": "gpt-6-luna",
+        "harness": "codex"
+      },
+      "session": "01a182c4-143b-77e3-af4a-7f0907f45953",
+      "harness": "codex"
+    },
+    {
+      "at": "2026-10-28T17:20:48+03:00",
+      "note": "Source и пакет LHC 1.6.2 опубликованы в main: 48a00d3. Полная проверка 530 passed, 5 skipped; runtime intake 33 passed. Установка и native canary — отдельный следующий лист.",
+      "changes": {
+        "status": "done"
+      },
+      "session": "01a182c4-143b-77e3-af4a-7f0907f45953",
+      "harness": "codex"
+    }
+  ],
+  "session": "01a182c4-143b-77e3-af4a-7f0907f45953",
+  "model": "gpt-6-luna",
+  "harness": "codex"
+}

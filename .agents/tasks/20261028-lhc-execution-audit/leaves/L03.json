@@ -1,0 +1,68 @@
+{
+  "label": "Проверить реальное выполнение и установить пакет",
+  "status": "done",
+  "description": "Проверить source отдельно от выпущенного пакета, провести изолированный Luna canary обычного инженерного запроса и проверить наблюдаемое runtime-поведение, затем выполнить установку выбранным штатным путём и прочитать установленный пакет.",
+  "acceptance": "Есть отдельные receipts на source/check, artifact/package, installed readback и реальный canary; обычный запрос не теряется и не привязывается к постороннему плану; LHC принимает результат.",
+  "affected_files": [
+    "plugins/last-human-commit/",
+    "/home/roomhacker/.codex/plugins/cache/megamen32-plugins/last-human-commit/"
+  ],
+  "owner": "luna_native_acceptance",
+  "complexity": "M",
+  "estimate_minutes": 15,
+  "depends_on": [
+    "L02"
+  ],
+  "id": "L03",
+  "created_at": "2026-10-28T16:54:23+03:00",
+  "updated_at": "2026-10-28T17:52:31+03:00",
+  "progress_events": [
+    {
+      "at": "2026-10-28T16:54:23+03:00",
+      "note": "",
+      "changes": {
+        "label": "Проверить реальное выполнение и установить пакет",
+        "status": "queued",
+        "description": "Проверить source отдельно от выпущенного пакета, провести изолированный Luna canary обычного инженерного запроса и проверить наблюдаемое runtime-поведение, затем выполнить установку выбранным штатным путём и прочитать установленный пакет.",
+        "acceptance": "Есть отдельные receipts на source/check, artifact/package, installed readback и реальный canary; обычный запрос не теряется и не привязывается к постороннему плану; LHC принимает результат.",
+        "affected_files": [
+          "plugins/last-human-commit/",
+          "/home/roomhacker/.codex/plugins/cache/megamen32-plugins/last-human-commit/"
+        ],
+        "owner": "Lead/Tester",
+        "complexity": "M",
+        "estimate_minutes": 15,
+        "depends_on": [
+          "L02"
+        ]
+      }
+    },
+    {
+      "at": "2026-10-28T17:24:04+03:00",
+      "note": "LHC 1.6.2 установлен native manager, hashes совпадают с source48a00d3. Независимый native Luna repair идёт в isolated Git fixture; результат ещё не принят.",
+      "changes": {
+        "status": "running",
+        "owner": "luna_native_acceptance",
+        "session": "01a182cf-68fb-7052-aab8-eb75cfa40768",
+        "model": "gpt-6-luna",
+        "harness": "codex"
+      },
+      "session": "01a182cf-68fb-7052-aab8-eb75cfa40768",
+      "harness": "codex"
+    },
+    {
+      "at": "2026-10-28T17:52:31+03:00",
+      "note": "Native acceptance PASS: обычный запрос создал план и bound leaf до правки; продолжение закрыло тот же leaf, turn.completed и fixture local main/origin совпадают (8e2621b), независимые 3/3 проверки. Status-only не создал лишних задач. Hooks/list подтвердил все9 current LHC hooks trusted; 72 чужих состояния сохранены.",
+      "changes": {
+        "status": "done",
+        "finished_at": "2026-10-28T14:52:14+00:00"
+      },
+      "session": "01a182cf-68fb-7052-aab8-eb75cfa40768",
+      "harness": "codex"
+    }
+  ],
+  "session": "01a182cf-68fb-7052-aab8-eb75cfa40768",
+  "model": "gpt-6-luna",
+  "harness": "codex",
+  "finished_at": "2026-10-28T14:52:14+00:00"
+}

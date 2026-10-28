@@ -1,0 +1,77 @@
+{
+  "label": "Проверить целевую и активные сессии",
+  "status": "done",
+  "description": "Сверить canonical checkout и целевой main, посмотреть активные сессии и ownership; зафиксировать условия, при которых можно менять общий механизм, сохраняя WIP.",
+  "acceptance": "Записаны источник целевого checkout, branch/status, актуальные receipts и покрытие инвентаря активных сессий; неизвестное покрытие явно оставлено unknown.",
+  "affected_files": [
+    "AGENTS.md",
+    "plugins/last-human-commit/AGENTS.md",
+    "src/common/tools/lhc_entry.py",
+    "src/common/skills/last-human-commit/SKILL.md",
+    "src/common/skills/plan-artifacts/SKILL.md",
+    "plugins/last-human-commit/com.openai/hooks/hooks.json",
+    "/home/roomhacker/.codex/plugins/cache/megamen32-plugins/last-human-commit/1.6.1/common/tools/lhc_entry.py"
+  ],
+  "owner": "Luna audits",
+  "session": "01a182c3-d16b-75b2-bc52-3084abe70929",
+  "harness": "codex",
+  "model": "gpt-6-luna",
+  "tier": "frontier",
+  "complexity": "M",
+  "estimate_minutes": 15,
+  "started_at": "2026-10-28T16:54:03+03:00",
+  "depends_on": [],
+  "id": "L01",
+  "created_at": "2026-10-28T16:54:23+03:00",
+  "updated_at": "2026-10-28T17:09:29+03:00",
+  "progress_events": [
+    {
+      "at": "2026-10-28T16:54:23+03:00",
+      "note": "",
+      "changes": {
+        "label": "Проверить целевую и активные сессии",
+        "status": "running",
+        "description": "Сверить canonical checkout и целевой main, посмотреть активные сессии и ownership; зафиксировать условия, при которых можно менять общий механизм, сохраняя WIP.",
+        "acceptance": "Записаны источник целевого checkout, branch/status, актуальные receipts и покрытие инвентаря активных сессий; неизвестное покрытие явно оставлено unknown.",
+        "affected_files": [
+          "AGENTS.md",
+          "plugins/last-human-commit/AGENTS.md",
+          "src/common/tools/lhc_entry.py",
+          "src/common/skills/last-human-commit/SKILL.md",
+          "src/common/skills/plan-artifacts/SKILL.md",
+          "plugins/last-human-commit/com.openai/hooks/hooks.json",
+          "/home/roomhacker/.codex/plugins/cache/megamen32-plugins/last-human-commit/1.6.1/common/tools/lhc_entry.py"
+        ],
+        "owner": "Luna audits",
+        "session": "01a182c3-d16b-75b2-bc52-3084abe70929",
+        "harness": "codex",
+        "model": "gpt-6-luna",
+        "tier": "frontier",
+        "complexity": "M",
+        "estimate_minutes": 15,
+        "started_at": "2026-10-28T13:54:03Z",
+        "depends_on": []
+      },
+      "session": "01a182c3-d16b-75b2-bc52-3084abe70929",
+      "harness": "codex"
+    },
+    {
+      "at": "2026-10-28T16:55:46+03:00",
+      "note": "",
+      "changes": {
+        "started_at": "2026-10-28T16:54:03+03:00"
+      },
+      "session": "01a182c3-d16b-75b2-bc52-3084abe70929",
+      "harness": "codex"
+    },
+    {
+      "at": "2026-10-28T17:09:29+03:00",
+      "note": "Три Luna-аудита завершены: целевой relay не доказывает human opt-out; в пяти активных сессиях четыре плана найдены, у XERJ не найден; подтверждены silent intake, чужой plan continuation и false hook claims.",
+      "changes": {
+        "status": "done"
+      },
+      "session": "01a182c3-d16b-75b2-bc52-3084abe70929",
+      "harness": "codex"
+    }
+  ]
+}
