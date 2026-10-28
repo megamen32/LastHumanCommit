@@ -1,6 +1,7 @@
 """The owner's plan catalog and the public plan link."""
 import json
 import sys
+import subprocess
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -59,6 +60,61 @@ def test_titles_are_escaped():
     hostile = entry([leaf(1, "done")])
     hostile["snapshot"]["document"]["title"] = '<script>alert(1)</script>'
     assert "<script>alert(1)</script>" not in catalog.render([hostile], now=NOW)
+
+
+def test_catalog_tabs_share_all_plans_and_group_every_project():
+    page = catalog.render([entry([leaf(1, 'running')], project='herder'),
+                           entry([leaf(1, 'done')], project='airlock', name='plan-second')],
+                          legacy=[('old', 'plan-20261024-1600-cc', 'Старый план')], now=NOW)
+    assert 'role="tablist"' in page
+    assert 'id="catalog-tab-plans"' in page and 'id="catalog-tab-projects"' in page
+    assert page.count('<article class="plan') == 3
+    for project in ('herder', 'airlock', 'old'):
+        assert f'data-project-group="{project}"' in page
+    assert 'aria-label="Главная Last Human Commit"' in page
+
+
+def test_plan_brand_links_home_even_for_downloaded_page():
+    import lhc_plan_ui as ui
+    page = ui.decorate('<html><head></head><body><!-- plan-revisions --></body></html>')
+    assert 'href="https://lhc.bezrabotnyi.com/"' in page
+    assert 'aria-label="Главная Last Human Commit"' in page
+
+
+def test_catalog_view_switches_keep_all_67_plans_and_common_filters():
+    script = catalog.PAGE.split('const match=', 1)[1].split("$('#chips').addEventListener", 1)[0]
+    harness = r'''
+const assert=require('assert');
+function node(){return {children:[],hidden:false,attrs:{},setAttribute(k,v){this.attrs[k]=v},appendChild(child){if(child.parentNode)child.parentNode.children=child.parentNode.children.filter(x=>x!==child);this.children.push(child);child.parentNode=this}}}
+const flat=node(),projectsPanel=node(),count=node(),project={value:'',options:[{value:''},{value:'p0'},{value:'p1'},{value:'p2'}]};
+const chips=['all','open','active','completed'].map(filter=>{const chip=node();chip.dataset={filter};chip.n={textContent:''};chip.querySelector=()=>chip.n;return chip});
+const groups=['p0','p1','p2'].map(name=>{const group=node();group.dataset={projectGroup:name};group.grid=node();group.count={};group.querySelector=selector=>selector==='.project-plans'?group.grid:group.count;return group});
+const tabs=['plans','projects'].map(view=>{const tab=node();tab.dataset={view};return tab});
+const cards=Array.from({length:67},(_,i)=>{const card=node(),name='p'+(i%3);card.dataset={project:name,state:i%2?'completed':'active',rank:i%2,search:name+' plan '+i,created:new Date(1700000000000+i*1000).toISOString(),updated:new Date(1700000000000+i*1000).toISOString()};flat.appendChild(card);return card});
+const nodes={'#catalog-plans':flat,'#catalog-projects':projectsPanel,'#no-matches':count,'#project':project,'#sort':{},'#search':{}};
+global.document={querySelector:selector=>nodes[selector],querySelectorAll:selector=>({'.plan':cards,'.chip':chips,'[data-project-group]':groups,'[data-view]':tabs}[selector]||[])};
+const $=selector=>document.querySelector(selector),state={view:'plans',filter:'all',q:'',project:'',sort:'rank'};
+global.localStorage={setItem(key,value){this.saved=JSON.parse(value)}};global.history={replaceState(){}};global.location={pathname:'/',search:''};
+'''
+    checks = r'''
+apply();assert.equal(flat.children.length,67);
+state.view='projects';apply();
+assert.equal(flat.children.length,0);assert.equal(groups.reduce((sum,g)=>sum+g.grid.children.length,0),67);
+assert.equal(new Set(groups.flatMap(g=>g.grid.children)).size,67);
+state.filter='active';state.q='p1';state.sort='created';apply();
+const visible=cards.filter(card=>!card.hidden);assert(visible.length>0);assert(visible.every(card=>card.dataset.project==='p1'&&card.dataset.state==='active'));
+assert.equal(groups.filter(group=>!group.hidden).length,1);
+const groupOrder=groups[1].grid.children.map(card=>card.dataset.created);assert.deepEqual(groupOrder,[...groupOrder].sort().reverse());
+const expected=visible.map(card=>card.dataset.created);
+state.view='plans';apply();assert.equal(flat.children.length,67);
+const flatOrder=flat.children.map(card=>card.dataset.created);assert.deepEqual(flatOrder,[...flatOrder].sort().reverse());
+assert.deepEqual(cards.filter(card=>!card.hidden).map(card=>card.dataset.created),expected);
+assert.equal(localStorage.saved.q,'p1');assert.equal(localStorage.saved.view,'plans');
+state.filter='all';state.q='';state.view='projects';apply();assert.equal(cards.filter(card=>!card.hidden).length,67);
+assert.equal(tabs[1].attrs['aria-selected'],'true');assert(groups.every(group=>!group.hidden));
+'''
+    result = subprocess.run(['node', '-e', harness + 'const match=' + script + checks], capture_output=True, text=True, timeout=5)
+    assert result.returncode == 0, result.stderr
 
 
 def test_plan_in_agents_tasks_gets_a_public_link_once(tmp_path, monkeypatch):

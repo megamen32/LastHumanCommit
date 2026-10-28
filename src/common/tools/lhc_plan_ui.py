@@ -7,6 +7,18 @@ from datetime import datetime, timezone
 from urllib.parse import quote
 
 
+def brand_link():
+    """Shared home destination; the verified brand artwork is supplied here."""
+    return ('<a class="lhc-brand" href="https://lhc.bezrabotnyi.com/" aria-label="Главная Last Human Commit">'
+            '<span class="brand-mark lhc-brand-mark">L<span>／</span>H</span>'
+            '<span class="brand-name lhc-brand-name">Last Human<br>Commit</span></a>')
+
+
+# Original typographic identity from site/index.html and site/styles.css,
+# commit 87be2e4459b154be35b6b3e4862d88398d5dfe81.
+BRAND_STYLE = '.lhc-brand{display:inline-flex;align-items:center;gap:15px}.lhc-brand .brand-mark{font-size:27px;font-weight:850;letter-spacing:-.12em;flex:none}.lhc-brand .brand-mark span{color:#f5b38a;font-weight:400}.lhc-brand .brand-name{font-size:11px;line-height:1.25;font-weight:850;letter-spacing:.08em;text-transform:uppercase}@media(max-width:640px){.lhc-brand .brand-mark{font-size:23px}}'
+
+
 def herder_panel(tasks):
     """Open only an explicitly bound, supported native session; never guess one."""
     sessions = {}
@@ -75,6 +87,7 @@ body .page{max-width:1600px;margin:0 auto;padding:28px 36px 48px 240px;min-width
 body>footer{margin:0 36px 24px 240px;max-width:1324px;padding:12px 0;color:var(--muted)}
 .plan-sidebar{position:fixed;inset:0 auto 0 0;width:208px;padding:36px 16px;background:var(--panel);border-right:1px solid var(--line);z-index:30;display:flex;flex-direction:column;gap:5px}
 .plan-brand{font-size:12px;font-weight:800;letter-spacing:.14em;color:var(--muted);padding:0 14px 28px}
+.plan-sidebar .plan-brand .lhc-brand{display:flex;align-items:center;gap:8px;padding:0;min-height:44px;color:var(--text);text-decoration:none}.lhc-brand-mark{flex:none}.lhc-brand-name{font-size:11px;letter-spacing:0;line-height:1.2}
 .plan-sidebar a{color:var(--muted);text-decoration:none;padding:12px 14px;border-radius:10px;font-size:14px;min-height:44px;box-sizing:border-box;display:flex;align-items:center;gap:10px}
 .plan-sidebar a[aria-current=location]{background:var(--accent);color:white;font-weight:650}
 .plan-sidebar a:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
@@ -113,7 +126,11 @@ body.herder-open #herder-plan-pane .page{padding:18px 18px 54px;box-sizing:borde
 #herder-divider{position:relative;z-index:61;cursor:col-resize;touch-action:none;background:var(--line)}#herder-divider:after{content:'';position:absolute;inset:calc(50% - 24px) 4px;border-radius:4px;background:var(--accent)}#herder-divider:focus-visible{outline:3px solid var(--accent);outline-offset:-3px}#herder-split-controls{position:fixed;z-index:65;display:flex;gap:2px;padding:2px;background:var(--panel);border:1px solid var(--line);border-radius:8px;white-space:nowrap}#herder-split-controls button{font-size:11px;padding:2px 7px;min-height:32px}#herder-drag-shield{position:fixed;inset:0;z-index:64;cursor:col-resize;touch-action:none}body.herder-dragging{user-select:none}body.herder-dragging #herder-frame{pointer-events:none}
 @media(max-width:650px){body:has(#herder-launch) .page{padding-bottom:88px}#herder-launch{top:auto;right:14px;bottom:calc(14px + env(safe-area-inset-bottom))}body.herder-open #herder-workspace{grid-template-columns:minmax(0,1fr);grid-template-rows:var(--herder-plan-size,calc(50dvh - 6px)) 12px minmax(0,1fr)}#herder-divider,#herder-drag-shield{cursor:row-resize}#herder-divider:after{inset:4px calc(50% - 24px)}}
 @media print{#herder-launch,#herder-panel,#herder-divider,#herder-split-controls,#herder-drag-shield{display:none!important}body.herder-open #herder-workspace,body.herder-open #herder-plan-pane{position:static;display:block;overflow:visible}}
+@media(max-width:650px){.plan-sidebar .plan-brand{display:flex;flex:none;padding:0}.plan-brand .lhc-brand-name{display:none}.plan-sidebar .plan-brand .lhc-brand{padding:0 8px}}
+body.herder-open .plan-sidebar .plan-brand{display:flex;flex:none;padding:0}body.herder-open .plan-brand .lhc-brand-name{display:none}
 </style>'''
+
+STYLE = STYLE.replace('</style>', BRAND_STYLE + '</style>')
 
 HERDER_SCRIPT = '''<script id="lhc-herder-panel">
 (()=>{const launch=document.getElementById('herder-launch'),panel=document.getElementById('herder-panel');
@@ -200,7 +217,7 @@ clock();
 if(live){const timer=setInterval(clock,15000);signal.addEventListener('abort',()=>clearInterval(timer),{once:true})}
 }
 const sections=[...document.querySelectorAll('.plan-section')];
-const links=[...document.querySelectorAll('.plan-sidebar a')];
+const links=[...document.querySelectorAll('.plan-sidebar a[href^="#"]')];
 const key='lhc-ui:'+location.pathname;let saved={};
 try{saved=JSON.parse(sessionStorage.getItem(key)||'{}')}catch(e){}
 const nav=document.querySelector('.plan-sidebar');
@@ -237,7 +254,7 @@ document.querySelectorAll('.brief-card p').forEach(p=>{if(p.textContent.length<7
 
 
 def decorate(document):
-    nav = '<nav class="plan-sidebar" aria-label="Разделы плана"><div class="plan-brand">LHC / ПЛАН</div>'
+    nav = '<nav class="plan-sidebar" aria-label="Разделы плана"><div class="plan-brand">' + brand_link() + '</div>'
     nav += ''.join(f'<a href="#{key}">{label}</a>' for key, label in SECTIONS) + '</nav>'
     revisions = '<nav class="revision-strip" aria-label="Ревизии плана"><span aria-current="page">Текущий план</span></nav>'
     return (document.replace('</head>', STYLE + '</head>', 1)

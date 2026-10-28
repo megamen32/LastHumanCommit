@@ -10,6 +10,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 import html
 import re
+import lhc_plan_ui as ui
 
 STALLED_AFTER = timedelta(hours=3)
 UNKNOWN_LEAF_MINUTES = 15
@@ -215,9 +216,12 @@ def render(entries, legacy=(), now=None):
         + [(s, STATE_LABELS[s], counts[s]) for s in STATE_ORDER if s != 'legacy' or counts[s]])
     options = ''.join(f'<option value="{esc(p)}">{esc(p)}</option>' for p in projects)
     body = ''.join(card(i) for i in items)
+    groups = ''.join('<section class="project-group" data-project-group="' + esc(project) + '" hidden>'
+                     '<h2>' + esc(project) + ' <span class="project-count"></span></h2>'
+                     '<div class="plan-grid project-plans"></div></section>' for project in projects)
     empty = ('' if items else '<p class="empty">Пока нет синхронизированных планов. '
              'Они появятся после первой успешной синхронизации источника.</p>')
-    return PAGE.replace('@@CHIPS@@', chips).replace('@@PROJECTS@@', options).replace(
+    return PAGE.replace('@@BRAND@@', ui.brand_link()).replace('@@BRAND_STYLE@@', ui.BRAND_STYLE).replace('@@GROUPS@@', groups).replace('@@CHIPS@@', chips).replace('@@PROJECTS@@', options).replace(
         '@@CARDS@@', body + empty).replace('@@TOTAL@@', str(len(items))).replace(
         '@@ACTIVE@@', str(counts['active'])).replace('@@STALLED@@', str(counts['stalled'] + counts['blocked']))
 
@@ -247,7 +251,8 @@ input{flex:1 1 260px;min-width:0}select{flex:0 1 220px}
 .chip .n{color:var(--muted);font-size:12px}.chip[aria-pressed="true"]{background:var(--text);color:var(--bg);border-color:var(--text)}
 .chip[aria-pressed="true"] .n{color:inherit;opacity:.7}
 #connection{font-size:12px;color:var(--muted);margin:0}#signin{font-weight:600;color:var(--accent)}
-main{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px}
+.plan-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr));gap:12px}
+.catalog-tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:10px}.catalog-tabs button{font:inherit;border:0;border-bottom:3px solid transparent;background:transparent;color:var(--muted);padding:10px 18px;cursor:pointer;min-height:44px}.catalog-tabs button[aria-selected="true"]{border-color:var(--accent);color:var(--text);font-weight:650}.project-group{margin:0 0 26px}.project-group h2{font-size:19px;margin:12px 0;overflow-wrap:anywhere}.project-count{font-size:12px;font-weight:400;color:var(--muted)}.lhc-brand{display:inline-flex;align-items:center;gap:8px;min-height:44px}.lhc-brand-mark{font-weight:800;font-size:18px;letter-spacing:.06em}.lhc-brand-name{font-size:12px;letter-spacing:0}
 .plan{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:8px;border-left:4px solid var(--q)}
 .plan.s-active{border-left-color:var(--a-fg)}.plan.s-blocked{border-left-color:var(--b-fg)}.plan.s-stalled{border-left-color:var(--s-fg)}.plan.s-completed{border-left-color:var(--c-fg)}
 .top{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px}
@@ -264,20 +269,21 @@ main{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:
 .dates{margin:auto 0 0;font-size:12px;color:var(--muted)}
 .empty{grid-column:1/-1;padding:24px;background:var(--surface);border:1px dashed var(--line);border-radius:14px;color:var(--muted)}
 [hidden]{display:none!important}
-@media (max-width:640px){body{padding:18px 14px 40px}h1{font-size:25px}main{grid-template-columns:1fr}
+@media (max-width:640px){body{padding:18px 14px 40px}h1{font-size:25px}.plan-grid{grid-template-columns:1fr}
 select{flex:1 1 40%;min-width:0}#chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:0 -14px;padding:0 14px}.chip{flex:none}}
+@@BRAND_STYLE@@
 </style></head><body>
-<header><div><div class="brand">LAST HUMAN COMMIT</div><h1>Планы</h1><p class="note">Состояние берётся из файлов плана. Живость агента: неизвестна.</p></div>
+<header><div><div class="brand">@@BRAND@@</div><h1>Планы и проекты</h1><p class="note">Состояние берётся из файлов плана. Живость агента: неизвестна.</p></div>
 <div class="totals">Всего <b>@@TOTAL@@</b> · в работе <b>@@ACTIVE@@</b> · требуют внимания <b>@@STALLED@@</b></div></header>
-<div class="toolbar"><div class="row"><input id="search" type="search" placeholder="Поиск по названию, цели или проекту" autocomplete="off" aria-label="Поиск">
+<div class="toolbar"><div class="catalog-tabs" role="tablist" aria-label="Представление каталога"><button type="button" id="catalog-tab-plans" role="tab" data-view="plans" aria-controls="catalog-plans" aria-selected="true">Планы</button><button type="button" id="catalog-tab-projects" role="tab" data-view="projects" aria-controls="catalog-projects" aria-selected="false" tabindex="-1">Проекты</button></div><div class="row"><input id="search" type="search" placeholder="Поиск по названию, цели или проекту" autocomplete="off" aria-label="Поиск">
 <select id="project" aria-label="Проект"><option value="">Все проекты</option>@@PROJECTS@@</select>
 <select id="sort" aria-label="Сортировка"><option value="rank">Сначала активные</option><option value="updated">Последние изменения</option><option value="created">Новые планы</option></select></div>
 <div class="row" id="chips">@@CHIPS@@</div>
 <p id="connection" role="status" aria-live="polite">Последний известный снимок</p><a id="signin" href="/" hidden>Войти снова через SSO</a></div>
-<main data-lhc-catalog="1">@@CARDS@@</main>
+<main data-lhc-catalog="1"><div id="catalog-plans" class="plan-grid" role="tabpanel" aria-labelledby="catalog-tab-plans">@@CARDS@@</div><div id="catalog-projects" role="tabpanel" aria-labelledby="catalog-tab-projects" hidden>@@GROUPS@@</div></main>
 <p id="no-matches" class="empty" hidden>Под эти фильтры планов нет.</p>
 <script>
-const $=s=>document.querySelector(s),state={filter:'all',project:'',sort:'rank',q:''};
+const $=s=>document.querySelector(s),state={filter:'all',project:'',sort:'rank',q:'',view:'plans'};
 try{Object.assign(state,JSON.parse(localStorage.getItem('lhc-catalog')||'{}'))}catch(e){}
 new URLSearchParams(location.hash.slice(1)).forEach((v,k)=>{if(k in state)state[k]=v});
 const fmt=new Intl.DateTimeFormat('ru',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
@@ -288,19 +294,24 @@ const left=m<60?Math.max(m,1)+' мин':Math.floor(m/60)+' ч '+(m%60)+' мин'
 function times(){document.querySelectorAll('time').forEach(t=>{const d=new Date(t.getAttribute('datetime'));if(isNaN(d))return;
 t.title=d.toLocaleString('ru');t.textContent=t.classList.contains('ago')?ago(d):t.classList.contains('rel-eta')?eta(d):fmt.format(d)})}
 const match=(f,s)=>f==='all'||(f==='open'?['active','blocked','stalled'].includes(s):s===f);
-function apply(){const q=state.q.trim().toLowerCase();let shown=0;const cards=[...document.querySelectorAll('.plan')];const n={};
+function apply(){if(!['plans','projects'].includes(state.view))state.view='plans';if(![...$('#project').options].some(o=>o.value===state.project))state.project='';const q=state.q.trim().toLowerCase();let shown=0;const cards=[...document.querySelectorAll('.plan')];const n={};
 cards.forEach(c=>{const s=c.dataset.state,scope=(!state.project||c.dataset.project===state.project)&&(!q||c.dataset.search.includes(q));
 if(scope)document.querySelectorAll('.chip').forEach(b=>{if(match(b.dataset.filter,s))n[b.dataset.filter]=(n[b.dataset.filter]||0)+1});
 c.hidden=!(scope&&match(state.filter,s));if(!c.hidden)shown++});
 document.querySelectorAll('.chip').forEach(b=>{b.querySelector('.n').textContent=n[b.dataset.filter]||0});
 const key={rank:c=>[+c.dataset.rank,-Date.parse(c.dataset.updated||0)],updated:c=>[-Date.parse(c.dataset.updated||0)],created:c=>[-Date.parse(c.dataset.created||0)]}[state.sort]||(c=>[0]);
-cards.sort((a,b)=>{const x=key(a),y=key(b);for(let i=0;i<x.length;i++)if(x[i]!==y[i])return x[i]-y[i];return 0}).forEach(c=>c.parentNode.appendChild(c));
+const groups=new Map([...document.querySelectorAll('[data-project-group]')].map(group=>[group.dataset.projectGroup,group]));
+cards.sort((a,b)=>{const x=key(a),y=key(b);for(let i=0;i<x.length;i++)if(x[i]!==y[i])return x[i]-y[i];return 0}).forEach(c=>{const parent=state.view==='projects'?groups.get(c.dataset.project)?.querySelector('.project-plans'):$('#catalog-plans');(parent||$('#catalog-plans')).appendChild(c)});
+groups.forEach((group,project)=>{const all=cards.filter(card=>card.dataset.project===project),visible=all.filter(card=>!card.hidden).length;group.hidden=state.view!=='projects'||visible===0;group.querySelector('.project-count').textContent=visible+' из '+all.length+' планов'});
+$('#catalog-plans').hidden=state.view!=='plans';$('#catalog-projects').hidden=state.view!=='projects';
+document.querySelectorAll('[data-view]').forEach(tab=>{const selected=tab.dataset.view===state.view;tab.setAttribute('aria-selected',String(selected));tab.tabIndex=selected?0:-1});
 document.querySelectorAll('.chip').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.filter===state.filter)));
 $('#no-matches').hidden=shown>0||!cards.length;$('#project').value=state.project;$('#sort').value=state.sort;$('#search').value=state.q;
 try{localStorage.setItem('lhc-catalog',JSON.stringify(state))}catch(e){}
-const h=new URLSearchParams();for(const k of['filter','project','sort'])if(state[k]&&!(k==='filter'&&state[k]==='all')&&!(k==='sort'&&state[k]==='rank'))h.set(k,state[k]);
+const h=new URLSearchParams();for(const k of['filter','project','sort','view'])if(state[k]&&!(k==='filter'&&state[k]==='all')&&!(k==='sort'&&state[k]==='rank')&&!(k==='view'&&state[k]==='plans'))h.set(k,state[k]);
 history.replaceState(null,'',h.toString()?'#'+h:location.pathname+location.search)}
 $('#chips').addEventListener('click',e=>{const b=e.target.closest('.chip');if(b){state.filter=b.dataset.filter;apply()}});
+document.querySelectorAll('[data-view]').forEach((tab,index,tabs)=>{tab.addEventListener('click',()=>{state.view=tab.dataset.view;apply()});tab.addEventListener('keydown',event=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;event.preventDefault();const next=event.key==='Home'?0:event.key==='End'?tabs.length-1:(index+(event.key==='ArrowLeft'?-1:1)+tabs.length)%tabs.length;tabs[next].click();tabs[next].focus()})});
 $('#project').addEventListener('change',e=>{state.project=e.target.value;apply()});
 $('#sort').addEventListener('change',e=>{state.sort=e.target.value;apply()});
 $('#search').addEventListener('input',e=>{state.q=e.target.value;apply()});
@@ -311,7 +322,7 @@ try{const r=await fetch(location.pathname,{cache:'no-store',redirect:'manual'});
 if(r.status===401||r.status===403||r.type==='opaqueredirect'||(r.status>=300&&r.status<400)){signin.hidden=false;badge.textContent='Нужен вход · показан последний известный список';return}
 if(!r.ok)throw Error();const doc=new DOMParser().parseFromString(await r.text(),'text/html');const next=doc.querySelector('main[data-lhc-catalog="1"]');
 if(!next){signin.hidden=false;badge.textContent='Нужен вход · показан последний известный список';return}
-const y=scrollY;$('main').replaceWith(next);times();apply();scrollTo(0,y);signin.hidden=true;badge.textContent='Обновлено в '+hm.format(new Date())}
+const y=scrollY;$('main').replaceWith(next);const projects=doc.querySelector('#project');if(projects)$('#project').innerHTML=projects.innerHTML;const totals=doc.querySelector('.totals');if(totals)$('.totals').innerHTML=totals.innerHTML;times();apply();scrollTo(0,y);signin.hidden=true;badge.textContent='Обновлено в '+hm.format(new Date())}
 catch(e){badge.textContent='Нет связи · показан последний известный список'}finally{busy=false}}
 if(/^https?:$/.test(location.protocol))setInterval(refresh,15000);setInterval(times,60000);
 </script></body></html>'''
