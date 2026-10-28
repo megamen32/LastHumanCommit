@@ -15,6 +15,37 @@ after installation and inspect its journal/log for adapter-specific warnings.
 The updater does not update unrelated plugins and preserves prior MiniMax Code
 packages as rollback copies.
 
+## Codex updates with open chats
+
+An open chat can retain an absolute path into an older native plugin version.
+The native installer prunes that version; a missing optional Python hook then
+fails before its own error handling runs. Use the source-owned wrapper after
+refreshing the configured marketplace:
+
+```sh
+python3 deploy/plugin-autoupdate/install-codex-plugin.py
+```
+
+It calls the native manager once and restores missing `tools` compatibility
+routes for prior version directories before returning, including on an install
+failure. It neither installs old manifests nor overwrites existing tool files.
+The target is the identified official marketplace LHC package. No background
+service, application restart or replay of a user's task is involved.
+
+For a previously pruned path, the explicit repair is:
+
+```sh
+python3 deploy/plugin-autoupdate/repair-codex-hook-roots.py \
+  --cache-root "$HOME/.codex/plugins/cache/megamen32-plugins/last-human-commit" \
+  --tools-root "$HOME/.codex/.tmp/marketplaces/megamen32-plugins/plugins/last-human-commit/tools" \
+  --version 1.6.4 --version 1.6.3 --version 1.6.2
+```
+
+Supply the actual affected versions. Existing usable paths are preserved;
+foreign or invalid paths are reported as conflicts. Verify the exact formerly
+failing commands separately from plugin installation and hook trust. The
+1.6.5 optional progress hooks also tolerate a missing root and adviser failures.
+
 ## Codex post-install hook readiness
 
 Installing or enabling the plugin does not establish hook trust. After a Codex

@@ -16,7 +16,15 @@ with `--check` and run the relevant behavioral tests plus both validators.
 Keep manifests at the same version. Review, push, create a PR and merge when
 checks and authority allow; then verify the merged source.
 
-Use each selected harness's native plugin manager. Test the installed loader
+Use each selected harness's native plugin manager. For Codex, invoke it through
+`python3 deploy/plugin-autoupdate/install-codex-plugin.py` from this checkout,
+after refreshing the configured marketplace. This wrapper retains compatibility
+routes for old versioned hook paths in the same operation as the native update;
+a bare `codex plugin add` can prune paths still used by open chats. These routes
+point to the identified marketplace tools and do not install old versions or
+edit tool contents in the cache. Verify old expanded hook commands as well as
+the new installed definitions; a fresh hook listing is not a live-chat reload.
+Test the installed loader
 with an ordinary engineering request, not only an explicit skill invocation.
 Report source validation, package publication and actual runtime loading
 separately. A source test does not prove every running session has reloaded.
