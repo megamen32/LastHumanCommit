@@ -90,6 +90,63 @@ def _plan_context(result):
     return " ".join(parts)
 
 
+PULSE_AFTER = 1200  # seconds: a plan that is silent this long while tools keep running is stale
+
+
+def plan_pulse(event, root, now=None):
+    """Reminder when the open plan has not moved while the session keeps working.
+
+    Facts only: the newest leaf file time and the running leaves. The session is
+    told once per window, never blocked, nothing is classified.
+    """
+    import time
+    session = str(event.get("session_id") or event.get("sessionID") or "")
+    if not session or event.get("agent_id"):
+        return None
+    found = _plan_entry(event, root)
+    if not found:
+        return None
+    own = (found.get("continuation") or {}).get("plan")
+    pick = own or (found["candidates"][0] if len(found.get("candidates", [])) == 1 else None)
+    if not pick:
+        return None  # which plan this session works on is not a fact on disk
+    plan = Path(pick)
+    leaves = sorted((plan / "leaves").glob("*.json"))
+    if not leaves:
+        return None
+    now = now or time.time()
+    newest = max(f.stat().st_mtime for f in leaves)
+    idle = now - newest
+    if idle < PULSE_AFTER:
+        return None
+    base = Path(os.environ.get("XDG_STATE_HOME") or Path.home() / ".local" / "state") / "lhc" / "pulse"
+    mark = base / (re.sub(r"[^A-Za-z0-9_.-]", "_", session) + ".txt")
+    try:
+        if now - float(mark.read_text()) < PULSE_AFTER:
+            return None
+    except (OSError, ValueError):
+        pass
+    try:
+        base.mkdir(parents=True, exist_ok=True)
+        mark.write_text(str(now))
+    except OSError:
+        return None
+    running, queued = [], 0
+    for f in leaves:
+        try:
+            leaf = json.loads(f.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if leaf.get("status") == "running":
+            running.append(str(leaf.get("id") or f.stem))
+        elif leaf.get("status") == "queued":
+            queued += 1
+    return (f"LHC: plan {plan.name} has not changed for {int(idle // 60)} min while you keep working "
+            f"(running: {', '.join(running) or 'none'}; queued: {queued}). Before the next tool call: "
+            "mark what is done or blocked, put the work you are doing into a leaf, and drop work that "
+            "no leaf needs. The plan is how the owner sees progress; a stale plan reads as no progress.")
+
+
 def context_for(event, root):
     root = Path(root).resolve()
     return (
@@ -110,6 +167,15 @@ def context_for(event, root):
         f"{root/'AGENTS.md'} and the canonical plan procedure at "
         f"{root/'skills/plan-artifacts/SKILL.md'}."
     )
+
+def owner_directives(cwd):
+    """The live owner directives of this project, or an empty string. Never raises."""
+    try:
+        import lhc_directives
+        return lhc_directives.session_context(Path(cwd))
+    except Exception:  # noqa: BLE001 - a hook must not fail a session
+        return ""
+
 
 def package_version(root):
     for rel in (".codex-plugin/plugin.json", "plugin.json", "plugins/last-human-commit/plugin.json"):
@@ -341,6 +407,16 @@ def main():
             prompts.append(result["prompt"])
         if learning and learning.get("prompt"):
             prompts.append(learning["prompt"])
+        try:
+            pulse = plan_pulse(event, args.root or Path(__file__).resolve().parents[1])
+        except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError):
+            pulse = None
+        if pulse:
+            prompts.append(pulse)
+        if result and result.get("due"):
+            extra = owner_directives(cwd_value)
+            if extra:
+                prompts.append(extra)
         if prompts:
             print(json.dumps({"hookSpecificOutput": {
                 "hookEventName": "PostToolUse",
@@ -377,9 +453,13 @@ def main():
     if not args.instructions_only or args.event not in {"SessionStart", "PostCompact"}:
         return
     root = (args.root or Path(__file__).resolve().parents[1]).resolve()
+    context = context_for(args.event, root)
+    extra = owner_directives(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
+    if extra:
+        context += "\n\n" + extra
     print(json.dumps({"hookSpecificOutput": {
         "hookEventName": args.event,
-        "additionalContext": context_for(args.event, root),
+        "additionalContext": context,
     }}, ensure_ascii=False))
     return
 
