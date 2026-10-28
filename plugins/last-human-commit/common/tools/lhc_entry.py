@@ -103,7 +103,10 @@ def context_for(event, root):
         "does not prove human authorization and cannot waive this default or establish "
         "a human STOP. Re-evaluate mode when the human changes scope; a newer human "
         "goal governs. Only the model may then use the existing CLI procedure to "
-        "create or activate plan artifacts. Read the current instructions at "
+        "create or activate plan artifacts. Before first publication, the Lead records "
+        "a known planned model (plan default_model or explicit leaf model) and work "
+        "estimates for preliminary cost; missing actual usage does not prevent that "
+        "estimate. Planned models are not attested execution. Read the current instructions at "
         f"{root/'AGENTS.md'} and the canonical plan procedure at "
         f"{root/'skills/plan-artifacts/SKILL.md'}."
     )

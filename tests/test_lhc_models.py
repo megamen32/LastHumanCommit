@@ -745,6 +745,87 @@ def test_equal_prices_break_toward_the_newer_route_not_alphabetically(tmp_path, 
 # ---------------------------------------------------------------------- cache
 
 
+def supplement_payload():
+    return {"generated_at": "2026-10-28T11:54:45Z", "schema_version": 1,
+            "currency": "USD", "models": {
+                "openai/gpt-6-luna": {"canonical_id": "openai/gpt-6-luna",
+                    "vendor": "openai", "display_name": "OpenAI: GPT-6 Luna",
+                    "routerai": {"id": "openai/gpt-6-luna", "context_length": 1050000,
+                        "input_usd_per_1m": 0.13, "output_usd_per_1m": 0.65,
+                        "supports_tools": True, "reasoning": True}}}}
+
+
+def test_preferred_supplement_prices_exact_model_and_pins_provenance(tmp_path):
+    raw = json.dumps(supplement_payload()).encode()
+    catalog = tool.load_catalog(cache_dir=tmp_path, fetcher=lambda url: raw)
+    result = tool.resolve_command(catalog, "openai/gpt-6-luna",
+                                  needs=tool.parse_needs("tool_call"), input_share=0.8,
+                                  include_deprecated=False, exclude_flat=False, limit=20)
+    assert result["resolved"]["provider"] == "routerai"
+    assert result["resolved"]["input_price_per_mtok"] == 0.13
+    assert result["catalog"]["generated_at"] == "2026-10-28T11:54:45Z"
+    recorder = tool.Recorder()
+    recorder.remember(catalog, result["matches"])
+    snapshot = recorder.snapshot(catalog)
+    assert snapshot["entries"][0]["pricing_source"]["url"] == tool.SUPPLEMENT_URL
+
+
+def test_preferred_catalog_falls_back_to_baseline_without_changing_model(tmp_path):
+    calls = []
+    def fetcher(url):
+        calls.append(url)
+        if url == tool.SUPPLEMENT_URL:
+            raise OSError("supplement unavailable")
+        return json.dumps(catalog_payload()).encode()
+    catalog = tool.load_catalog(cache_dir=tmp_path, fetcher=fetcher)
+    assert calls == [tool.SUPPLEMENT_URL, tool.BASELINE_CATALOG_URL]
+    assert catalog.url == tool.BASELINE_CATALOG_URL
+
+
+def test_explicit_catalog_url_never_fetches_supplement(tmp_path):
+    calls = []
+    def fetcher(url):
+        calls.append(url)
+        return json.dumps(catalog_payload()).encode()
+    tool.load_catalog(cache_dir=tmp_path, url="https://example.test/catalog", fetcher=fetcher)
+    assert calls == ["https://example.test/catalog"]
+
+
+def test_supplement_keeps_baseline_models_and_both_source_receipts(tmp_path):
+    def fetcher(url):
+        data = supplement_payload() if url == tool.SUPPLEMENT_URL else catalog_payload()
+        return json.dumps(data).encode()
+    catalog = tool.load_catalog(cache_dir=tmp_path, fetcher=fetcher)
+    ids = {model_id for _, model_id, _, _ in catalog.entries()}
+    assert "openai/gpt-6-luna" in ids
+    assert "glm-5.3-flash" in ids
+    assert {s["url"] for s in catalog.meta()["sources"]} == {
+        tool.SUPPLEMENT_URL, tool.BASELINE_CATALOG_URL}
+
+
+def test_merged_digest_tracks_baseline_price_change(tmp_path):
+    baseline = catalog_payload()
+    def fetcher(url):
+        return json.dumps(supplement_payload() if url == tool.SUPPLEMENT_URL else baseline).encode()
+    first = tool.load_catalog(cache_dir=tmp_path, fetcher=fetcher)
+    baseline["boundless"]["models"]["glm-5.3-flash"]["cost"]["input"] = 0.25
+    second = tool.load_catalog(cache_dir=tmp_path, fetcher=fetcher, refresh=True)
+    assert first.sha256 != second.sha256
+
+
+def test_merged_freshness_uses_oldest_source(tmp_path):
+    def fetcher(url):
+        return json.dumps(supplement_payload() if url == tool.SUPPLEMENT_URL else catalog_payload()).encode()
+    tool.load_catalog(cache_dir=tmp_path, fetcher=fetcher, now=1000)
+    # Refresh just the preferred source; the baseline cache remains older.
+    tool._load_catalog(cache_dir=tmp_path, fetcher=fetcher, now=1100, refresh=True)
+    merged = tool.load_catalog(cache_dir=tmp_path, fetcher=fetcher, now=1100)
+    assert merged.retrieved_at == 1000
+    assert len(merged.meta()["sources"]) == 2
+    assert all("sources" not in source for source in merged.meta()["sources"])
+    json.dumps(merged.meta())  # source receipts cannot contain recursive objects
+
+
 def test_cache_is_reused_inside_ttl_and_refetched_outside(tmp_path):
     cache = tmp_path / "cache"
     payload = json.dumps(catalog_payload()).encode()

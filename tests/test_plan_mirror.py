@@ -13,6 +13,49 @@ import urllib.request
 
 import pytest
 
+
+def test_catalog_refresh_changes_version_without_source_edits(fixture, monkeypatch):
+    plan, client, cfg = fixture
+    mirror.register(plan, client)
+    mirror.capture(plan)
+    replica = mirror.Replica(cfg)
+    price = {'ok': True, 'snapshot': {'sha256': 'first', 'retrieved_at': '2026-10-28T00:00:00Z'}}
+    monkeypatch.setattr(mirror, 'catalog_identity', lambda: copy.deepcopy(price))
+    replica.ingest(copy.deepcopy(pending(plan)))
+    target = dest(plan, cfg)
+    version = json.loads((target / 'version.json').read_text())['version']
+    immutable = (target / 'r001.html').read_bytes()
+    price['snapshot']['sha256'] = 'second'
+    replica.refresh_prices()
+    assert json.loads((target / 'version.json').read_text())['version'] != version
+    assert (target / 'r001.html').read_bytes() == immutable
+
+
+def test_catalog_refresh_is_background_and_backs_off(monkeypatch):
+    tick = [0.0]
+    entered, release = threading.Event(), threading.Event()
+    calls = []
+    def refresh():
+        calls.append(True)
+        entered.set()
+        release.wait(2)
+        raise OSError('offline')
+    monkeypatch.setattr(mirror.time, 'monotonic', lambda: tick[0])
+    monkeypatch.setattr(mirror, 'refresh_catalog', refresh)
+    refresher = mirror.CatalogRefresh()
+    refresher.kick()
+    assert entered.wait(1)
+    refresher.kick()
+    assert len(calls) == 1
+    release.set()
+    refresher.worker.join(2)
+    refresher.kick()
+    assert len(calls) == 1
+    tick[0] = 61
+    refresher.kick()
+    refresher.worker.join(2)
+    assert len(calls) == 2
+
 TOOLS = Path(__file__).resolve().parents[1] / 'src/common/tools'
 sys.path.insert(0, str(TOOLS))
 import lhc_plan_json as leaves

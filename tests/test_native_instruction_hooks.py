@@ -83,6 +83,9 @@ def test_plan_entry_without_session_or_git_emits_actionable_intake_without_creat
     assert "explicit opt-out" in context.lower()
     assert "peer/agent relay" in context.lower()
     assert "does not prove human authorization" in context.lower()
+    assert "default_model" in context
+    assert "preliminary" in context.lower()
+    assert "actual usage" in context.lower()
     assert str(ROOT / "skills/plan-artifacts/SKILL.md") in context
     assert sorted(p.relative_to(empty).as_posix() for p in empty.rglob("*")) == before
 

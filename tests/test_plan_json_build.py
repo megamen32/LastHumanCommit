@@ -40,6 +40,60 @@ def leaf(plan_dir: Path, leaf_id: str, **fields) -> Path:
 
 
 # --------------------------------------------------------------- the leaf
+def test_plan_default_model_prices_unassigned_leaves_and_preserves_overrides(tmp_path):
+    (tmp_path / "plan.json").write_text(json.dumps({"default_model": "gpt-6.1-sol"}))
+    leaf(tmp_path, "L01", estimate_minutes=10)
+    leaf(tmp_path, "L02", model="gpt-6-luna", estimate_minutes=10)
+    leaf(tmp_path, "L03", tier="fast", estimate_minutes=10)
+    leaf(tmp_path, "L04", model_class="frontier", estimate_minutes=10)
+
+    tasks = {task["id"]: task for task in plan_json.build_document(tmp_path)["tasks"]}
+    assert tasks["L01"]["model"] == "gpt-6.1-sol"
+    assert tasks["L02"]["model"] == "gpt-6-luna"
+    assert "model" not in tasks["L03"]
+    assert "model" not in tasks["L04"]
+    assert plan_json.collect_leaves(tmp_path) == list(tasks.values())
+    # Projection does not rewrite legacy source or claim actual spend.
+    assert "model" not in json.loads((tmp_path / "leaves/L01.json").read_text())
+    assert "cost_usd" not in tasks["L01"]
+
+
+def test_native_create_and_update_freeze_explicit_plan_model(tmp_path):
+    metadata = tmp_path / "plan.json"
+    metadata.write_text(json.dumps({"default_model": "gpt-6.1-sol"}))
+    plan_json.update_leaf(tmp_path, "L01", {"label": "Новый лист"}, create=True)
+    leaf(tmp_path, "L02")
+    plan_json.update_leaf(tmp_path, "L02", {"status": "running"})
+    metadata.write_text(json.dumps({"default_model": "gpt-6-luna"}))
+    for leaf_id in ("L01", "L02"):
+        saved = json.loads((tmp_path / "leaves" / f"{leaf_id}.json").read_text())
+        assert saved["model"] == "gpt-6.1-sol"
+        assert saved["progress_events"][-1]["changes"]["model"] == "gpt-6.1-sol"
+
+
+@pytest.mark.parametrize("assignment", [{"model": "gpt-6-luna"}, {"tier": "fast"}, {"model_class": "frontier"}])
+def test_native_create_preserves_explicit_model_or_tier(tmp_path, assignment):
+    (tmp_path / "plan.json").write_text(json.dumps({"default_model": "gpt-6.1-sol"}))
+    plan_json.update_leaf(tmp_path, "L01", {"label": "Явное назначение", **assignment}, create=True)
+    saved = json.loads((tmp_path / "leaves/L01.json").read_text())
+    assert {key: saved.get(key) for key in assignment} == assignment
+    if "model" not in assignment:
+        assert "model" not in saved
+
+
+def test_native_create_without_default_keeps_model_unassigned(tmp_path):
+    plan_json.update_leaf(tmp_path, "L01", {"label": "Без назначения"}, create=True)
+    assert "model" not in plan_json.collect_leaves(tmp_path)[0]
+
+
+@pytest.mark.parametrize("value", [12, {}, [], "", "   ", None])
+def test_plan_default_model_requires_nonempty_string(tmp_path, value):
+    (tmp_path / "plan.json").write_text(json.dumps({"default_model": value}))
+    leaf(tmp_path, "L01")
+    with pytest.raises(plan_json.LeafError, match="default_model"):
+        plan_json.build_document(tmp_path)
+
+
 def test_the_leaf_file_becomes_a_task_the_existing_reader_understands(tmp_path):
     plan_dir = tmp_path / "plan"
     leaf(

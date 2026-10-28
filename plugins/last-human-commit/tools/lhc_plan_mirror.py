@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Local authoritative plans; asynchronous, rebuildable, one-way HTTP mirror.
 
-Only watch/once use the network. register/mark/revise never contact a server.
+Only observers and server maintenance refresh prices over the network.
+register/mark/revise and HTTP rendering never fetch prices.
 Source: plan.json + leaves/*.json. Local history: .lhc-publication/. Derived:
 pending snapshot, server replica, HTML, dashboard. No uploaded code is executed.
 """
@@ -34,6 +35,48 @@ import lhc_plan_transport as transport
 CONFIG = Path.home() / '.config/lhc/plan-mirror/client.json'
 MAX_BYTES = 8 * 1024 * 1024
 IDENT = re.compile(r'[A-Za-z0-9][A-Za-z0-9_-]{0,159}')
+
+
+def catalog_identity():
+    """Offline identity and freshness; elapsed age alone must not churn pages."""
+    import lhc_grid
+    source = lhc_grid.price_source()
+    return {key: source[key] for key in ('ok', 'reason_code', 'snapshot') if key in source}
+
+
+def refresh_catalog():
+    """Maintenance-only bounded fetch; pinned files remain explicitly pinned."""
+    import lhc_grid
+    models = lhc_grid.models_module()
+    if models is None or os.environ.get(lhc_grid.CATALOG_FILE_ENV):
+        return
+    loaded = models.load_catalog(cache_dir=os.environ.get(lhc_grid.CATALOG_CACHE_DIR_ENV) or None)
+    if loaded.stale:
+        raise OSError('каталог моделей пока не обновлён')
+
+
+class CatalogRefresh:
+    """At most one maintenance fetch; retries never delay source or HTTP work."""
+    def __init__(self):
+        self.worker = None
+        self.deadline = 0
+        self.failures = 0
+        self.completed = 0
+
+    def kick(self):
+        if (self.worker is not None and self.worker.is_alive()) or time.monotonic() < self.deadline:
+            return
+        def run():
+            try:
+                refresh_catalog()
+                self.failures = 0
+            except Exception:
+                self.failures += 1
+            finally:
+                self.deadline = time.monotonic() + min(600, 60 * 2 ** max(0, min(self.failures - 1, 4)))
+                self.completed += 1
+        self.worker = threading.Thread(target=run, daemon=True, name='lhc-price-refresh')
+        self.worker.start()
 
 
 def read(path, default=None):
@@ -369,7 +412,7 @@ def record_error(plan, error):
         pub.atomic(dest / 'mirror-state.json', state)
 
 
-def run_observer(config_path, once=False):
+def run_observer(config_path, once=False, *, price_refresh=None):
     cfg = config(config_path)
     seen, retries, attempted, sent, capture_retries = {}, {}, {}, {}, {}
     local = Path(cfg['data_dir']).expanduser()
@@ -379,6 +422,8 @@ def run_observer(config_path, once=False):
     with (local / 'observer.lock').open('a') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         while True:
+            if price_refresh is not None:
+                price_refresh.kick()
             cfg = config(config_path)
             for plan in discover(cfg):
                 try:
@@ -501,7 +546,17 @@ class Replica:
         self.data.mkdir(parents=True, exist_ok=True)
         self.lock = threading.Lock()
         self.renderer = pub.digest({name: Path(pub.__file__).with_name(name).read_text()
-                                    for name in ('lhc_plan_publish.py', 'lhc_plan_transport.py', 'lhc_grid.py', 'lhc_plan_ui.py')})
+                                    for name in ('lhc_plan_publish.py', 'lhc_plan_transport.py', 'lhc_grid.py', 'lhc_plan_ui.py', 'lhc_models.py')})
+        self.prices = catalog_identity()
+
+    def refresh_prices(self):
+        prices = catalog_identity()
+        if prices == self.prices:
+            return
+        with self.lock, leaves.file_lock(self.data / 'ingest.lock'):
+            for entry in self.entries():
+                self.render(entry)
+            self.prices = prices
 
     def entries(self):
         return [read(p) for p in self.data.glob('*.json')]
@@ -510,7 +565,7 @@ class Replica:
         snapshot = entry['snapshot']
         revisions = snapshot['revisions']
         doc, observed = snapshot['document'], snapshot['observed']
-        version = pub.digest({'snapshot': snapshot, 'renderer': self.renderer})
+        version = pub.digest({'snapshot': snapshot, 'renderer': self.renderer, 'prices': catalog_identity()})
         files = {}
         for i, rev in enumerate(revisions):
             files[rev['id'] + '.html'] = pub.page(revisions[0]['document'], rev['document'], rev['document'], revisions[:i+1], rev['id'], rev['created_at'], False, observed=rev.get('observed'))
@@ -652,7 +707,22 @@ def make_server(cfg):
             except (ValueError, KeyError, TypeError, OSError, RecursionError):
                 self.reply(400, {'error': 'invalid source snapshot'})
 
-    server = ThreadingHTTPServer((cfg.get('listen', '127.0.0.1'), int(cfg.get('port', 8769))), Handler)
+    class Server(ThreadingHTTPServer):
+        price_refresh = None
+        price_completed = 0
+
+        def service_actions(self):
+            if self.price_refresh is None:
+                return
+            self.price_refresh.kick()
+            if self.price_refresh.completed != self.price_completed:
+                try:
+                    replica.refresh_prices()
+                except Exception:
+                    print('LHC: обновление цен на страницах повторится при следующей проверке', file=sys.stderr)
+                self.price_completed = self.price_refresh.completed
+
+    server = Server((cfg.get('listen', '127.0.0.1'), int(cfg.get('port', 8769))), Handler)
     server.daemon_threads = True
     return server
 
@@ -668,9 +738,17 @@ def main(argv=None):
     args = parser.parse_args(argv)
     try:
         if args.command == 'serve':
-            make_server(config(args.config)).serve_forever()
+            server = make_server(config(args.config))
+            server.price_refresh = CatalogRefresh()
+            server.serve_forever()
         elif args.command in {'watch', 'once'}:
-            run_observer(args.config, once=args.command == 'once')
+            if args.command == 'once':
+                try:
+                    refresh_catalog()
+                except Exception:
+                    pass  # Existing cached prices/unknown status stay honest.
+            run_observer(args.config, once=args.command == 'once',
+                         price_refresh=None if args.command == 'once' else CatalogRefresh())
         elif args.command == 'link':
             print(link(args.plan_dir, args.config))
         elif args.command == 'register':

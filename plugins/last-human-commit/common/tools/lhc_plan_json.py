@@ -182,6 +182,7 @@ LEAF_FIELDS = (
 # The plan-level fields. They belong to the plan, not to a leaf, so they live
 # in one file instead of being copied into every leaf.
 PLAN_FIELDS = (
+    "default_model",
     "title",
     "goal",
     "business_result",
@@ -563,6 +564,7 @@ def _collect(
 ) -> tuple[list[dict[str, Any]], dict[str, Path], dict[str, str]]:
     """The leaves of a plan, the file each came from and its own stamp."""
 
+    default_model = plan_metadata(plan_dir).get("default_model")
     leaves_dir = Path(plan_dir) / LEAVES_DIRNAME
     if not leaves_dir.is_dir():
         raise LeafError(f"{plan_dir}: каталог {LEAVES_DIRNAME}/ не найден")
@@ -573,6 +575,7 @@ def _collect(
     for path in paths:
         raw = _read_json(path)
         task = task_from_leaf(raw, path)
+        _inherit_default_model(task, default_model)
         leaf_id = task["id"]
         if leaf_id in sources:
             raise LeafError(f"{path}: лист «{leaf_id}» уже есть в {sources[leaf_id]}")
@@ -592,6 +595,12 @@ def collect_leaves(plan_dir: Path) -> list[dict[str, Any]]:
     return tasks
 
 
+def _inherit_default_model(task: dict[str, Any], default_model: Optional[str]) -> None:
+    """Apply an explicit planning choice, never infer the actual runtime model."""
+    if default_model and not any(task.get(field) for field in ("model", "tier", "model_class")):
+        task["model"] = default_model
+
+
 def _plan_fields(raw: dict[str, Any], path: Path) -> dict[str, Any]:
     """The plan-level facts of one file, validated."""
 
@@ -604,6 +613,11 @@ def _plan_fields(raw: dict[str, Any], path: Path) -> dict[str, Any]:
             f"допустимые поля: {', '.join(sorted(PLAN_FIELDS))}"
         )
     fields: dict[str, Any] = {}
+    if "default_model" in raw:
+        value = raw["default_model"]
+        if not isinstance(value, str) or not value.strip():
+            raise LeafError(f"{path}: поле default_model должно быть непустой строкой")
+        fields["default_model"] = value.strip()
     for field in ("title", "goal", "business_result", "current_progress",
                   "external_waits", "updated_at", "planned_start_at", "started_at", "finished_at"):
         value = raw.get(field)
@@ -1381,6 +1395,7 @@ def update_leaf(plan_dir: Path, leaf_id: str, fields: dict, *, create=False,
         if "id" in fields and fields["id"] != leaf_id:
             raise LeafError("id нельзя менять")
         merged = {**raw, **fields, "id": leaf_id}
+        _inherit_default_model(merged, plan_metadata(plan_dir).get("default_model"))
         stamp = datetime.now().astimezone().isoformat(timespec="seconds")
         if create:
             merged['created_at'] = stamp
@@ -1393,6 +1408,8 @@ def update_leaf(plan_dir: Path, leaf_id: str, fields: dict, *, create=False,
         merged["updated_at"] = stamp
         events = list(raw.get("progress_events", []))
         changes = {k: v for k, v in fields.items() if raw.get(k) != v}
+        if merged.get("model") and raw.get("model") != merged["model"]:
+            changes["model"] = merged["model"]
         events.append({"at": stamp, "note": note or "", "changes": changes,
                        "session": merged.get("session", "unknown"),
                        "harness": merged.get("harness", "unknown")})

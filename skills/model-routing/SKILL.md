@@ -103,6 +103,15 @@ decide: when the cheapest fitting class provably cannot meet the acceptance
 check, raise the class through the allowlist rather than stretching the cheap
 model, and record the reason in the assignment outcome.
 
+Before the plan is first published, record the chosen planned model in
+`plan.json.default_model` or in each leaf's `model`; use explicit leaf models
+for mixed assignments such as Luna execution and Sol integration. A declared
+leaf `model`, `tier` or `model_class` takes precedence over the default. Record
+the work estimate so the existing catalog/rate calculation can show a labelled
+preliminary tariff equivalent. This is not actual billed spend or proof that
+the requested model ran. Missing attested model/usage does not require the
+preliminary estimate to remain unknown; genuinely missing pricing does.
+
 ## Allocate an assignment, not a role stereotype
 
 For one concrete assignment with one expected result, route one Worker directly,

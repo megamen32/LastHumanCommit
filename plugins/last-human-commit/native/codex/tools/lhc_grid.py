@@ -1942,14 +1942,17 @@ def _snapshot_stamp(models: Any, path: Optional[str], directory: Optional[str]) 
     """What the memo key is built from: the file, or "missing" when there is none."""
 
     if path:
-        target = Path(path)
+        targets = [Path(path)]
     else:
         base = Path(directory) if directory else models.default_cache_dir()
-        target = base / getattr(models, "CACHE_FILE_NAME", "api.json")
-    try:
-        return str(target.stat().st_mtime_ns)
-    except OSError:
-        return "missing"
+        targets = sorted(base.glob("*.json")) + sorted((base / "baseline").glob("*.json"))
+    stamps = []
+    for target in targets:
+        try:
+            stamps.append((str(target), target.stat().st_mtime_ns))
+        except OSError:
+            continue
+    return repr(stamps) if stamps else "missing"
 
 
 def _load_price_snapshot(models: Any, *, path: Optional[str], directory: Optional[str]) -> dict:
@@ -1972,6 +1975,8 @@ def _load_price_snapshot(models: Any, *, path: Optional[str], directory: Optiona
             "sha256": str(meta.get("sha256") or ""),
             "retrieved_at": str(meta.get("retrieved_at") or ""),
             "source": str(meta.get("source") or ""),
+            "url": str(meta.get("url") or ""),
+            "sources": meta.get("sources") or [],
             "ttl_seconds": int(meta.get("ttl_seconds") or 0),
         },
     }
@@ -2408,7 +2413,7 @@ def cost_panel_html(cost: dict[str, Any]) -> str:
     if not cost.get("available"):
         return (
             '<div class="panel panel-cost" id="lhc-cost">'
-            "<h2>Смета плана</h2>"
+            "<h2>Предварительная смета плана</h2>"
             '<ul class="facts">'
             f"<li><b>Цены</b>: {escape(str(cost.get('reason') or PRICE_UNAVAILABLE))}</li>"
             f"<li><b>Что делать</b>: получить снимок каталога через "
@@ -2435,6 +2440,15 @@ def cost_panel_html(cost: dict[str, Any]) -> str:
             f"из {cost['leaf_count']} листьев</li>",
             "<li><b>Остатку к запуску</b>: нет посчитанных денег</li>",
         ]
+    if priced:
+        planned_models = sorted({entry.get("model", "") for entry in cost["leaves"].values()
+                                 if entry.get("state") == "priced" and entry.get("model")})
+        facts.append("<li><b>Плановые модели</b>: " + escape(", ".join(planned_models)) + "</li>")
+        facts.append(
+            "<li>Оценка по тарифам каталога и плановому объёму работы. "
+            "Это не фактические списания; условия подписки и реальное использование "
+            "могут отличаться.</li>"
+        )
     share = cost.get("frontier_share_pct")
     facts.append(
         f"<li><b>Класс frontier</b>: {escape(fmt_usd(cost['frontier_usd']))}"
@@ -2486,6 +2500,10 @@ def cost_panel_html(cost: dict[str, Any]) -> str:
     age = cost.get("age_minutes")
     if age is not None:
         provenance.append(f"возраст {escape(fmt_minutes(age))}")
+    sources = snapshot.get("sources") or [snapshot]
+    for item in sources:
+        if item.get("url"):
+            provenance.append("каталог: " + escape(str(item["url"])))
     for tier in ("fast", "frontier"):
         rate = (cost.get("tpm_rates") or {}).get(tier)
         if rate:
@@ -2497,7 +2515,7 @@ def cost_panel_html(cost: dict[str, Any]) -> str:
         facts.append("<li><b>Откуда числа</b>: " + " · ".join(provenance) + "</li>")
     return (
         '<div class="panel panel-cost" id="lhc-cost">'
-        "<h2>Смета плана</h2>"
+        "<h2>Предварительная смета плана</h2>"
         '<ul class="facts">' + "".join(facts) + "</ul></div>"
     )
 

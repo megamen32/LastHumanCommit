@@ -3,7 +3,7 @@
 
 LHC's economics say "routine work on a cheap model, expensive models only for
 decisions", but the repository carried no price data at all. This tool closes
-that gap from the live catalog https://models.dev/api.json so that a model
+that gap from the preferred models-supplement catalog and models.dev baseline so that a model
 shipping next week is selectable without editing this file: resolution is by
 normalized id/name against the fetched catalog, tiers are inferred from the
 catalog's own name markers and price distribution, and nothing here is an
@@ -26,6 +26,11 @@ Commands
                             the plan stays reproducible offline.
 
 Catalog source and cache
+    The preferred supplement contributes its explicit RouterAI reference API
+    tariffs and capabilities; models.dev supplies the baseline provider routes.
+    Both source receipts are pinned when merged. A reference tariff estimates
+    API-equivalent work and does not attest a native subscription's billed spend
+    or change the actual execution provider.
     The raw api.json is cached under the repository ``.tmp/`` directory
     (default ``<repo>/.tmp/lhc_models/api.json`` plus a ``.meta.json`` sibling)
     with a TTL of ``--max-age`` seconds, default 24 h, fetched with urllib and a
@@ -156,7 +161,9 @@ import urllib.error
 import urllib.request
 
 
-CATALOG_URL = "https://models.dev/api.json"
+SUPPLEMENT_URL = "https://github.com/megamen32/models-supplement/raw/refs/heads/main/supplement.json"
+BASELINE_CATALOG_URL = "https://models.dev/api.json"
+CATALOG_URL = SUPPLEMENT_URL
 DEFAULT_TTL_SECONDS = 86_400
 FETCH_TIMEOUT_SECONDS = 10
 USER_AGENT = "lhc-models/1.0 (Last Human Commit price resolver; +https://models.dev)"
@@ -397,7 +404,7 @@ class Catalog:
     """The parsed catalog plus the provenance a plan needs in order to trust it."""
 
     def __init__(self, providers: dict, *, source: str, sha256: str, retrieved_at: float,
-                 ttl_seconds: int, stale: bool, url: str):
+                 ttl_seconds: int, stale: bool, url: str, generated_at=None, sources=None):
         self.providers = providers
         self.source = source
         self.sha256 = sha256
@@ -405,6 +412,8 @@ class Catalog:
         self.ttl_seconds = int(ttl_seconds)
         self.stale = stale
         self.url = url
+        self.generated_at = generated_at
+        self.sources = sources
 
     def meta(self) -> dict:
         return {
@@ -414,6 +423,8 @@ class Catalog:
             "retrieved_at": iso_utc(self.retrieved_at),
             "retrieved_at_epoch": self.retrieved_at,
             "ttl_seconds": self.ttl_seconds,
+            **({"generated_at": self.generated_at} if self.generated_at else {}),
+            **({"sources": self.sources} if self.sources else {}),
         }
 
     def entries(self):
@@ -434,6 +445,31 @@ def _catalog_from_bytes(raw: bytes, *, source: str, url: str, retrieved_at: floa
         data = json.loads(raw.decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError) as error:
         raise CatalogUnavailable(f"catalog payload from {url} is not JSON: {error}") from error
+    generated_at = None
+    if isinstance(data, dict) and "schema_version" in data and isinstance(data.get("models"), dict):
+        generated_at = data.get("generated_at")
+        models = {}
+        for canonical_id, entry in data["models"].items():
+            if not isinstance(entry, dict) or not isinstance(entry.get("routerai"), dict):
+                continue
+            route = entry["routerai"]
+            model_id = route.get("id")
+            if not isinstance(model_id, str):
+                continue
+            models[model_id] = {
+                "id": model_id, "name": entry.get("display_name", model_id),
+                "canonical_model_id": entry.get("canonical_id", canonical_id),
+                "cost": {"input": route.get("input_usd_per_1m"),
+                         "output": route.get("output_usd_per_1m")},
+                "limit": {"context": route.get("context_length")},
+                "tool_call": route.get("supports_tools"), "reasoning": route.get("reasoning"),
+                "structured_output": route.get("supports_structured_output"),
+                "modalities": {"input": ["text", "image"] if route.get("supports_vision") else ["text"],
+                               "output": ["text"]},
+                "pricing_source": {"url": url, "generated_at": generated_at,
+                                   "provider": "routerai", "basis": "reference-api-tariff"},
+            }
+        data = {"routerai": {"id": "routerai", "name": "RouterAI reference tariff", "models": models}}
     if not isinstance(data, dict) or not any(
         isinstance(provider, dict) and isinstance(provider.get("models"), dict)
         for provider in data.values()
@@ -441,7 +477,8 @@ def _catalog_from_bytes(raw: bytes, *, source: str, url: str, retrieved_at: floa
         raise CatalogUnavailable(
             f"catalog payload from {url} has no provider/model objects; the shape changed")
     return Catalog(data, source=source, sha256=hashlib.sha256(raw).hexdigest(),
-                   retrieved_at=retrieved_at, ttl_seconds=ttl_seconds, stale=stale, url=url)
+                   retrieved_at=retrieved_at, ttl_seconds=ttl_seconds, stale=stale, url=url,
+                   generated_at=generated_at)
 
 
 def _read_cache(raw_path: Path, meta_path: Path):
@@ -472,7 +509,7 @@ def _write_cache(cache_dir: Path, raw_path: Path, meta_path: Path, raw: bytes, *
         sys.stderr.write(f"warning: could not write the catalog cache under {cache_dir}: {error}\n")
 
 
-def load_catalog(*, cache_dir: Path | str | None = None, url: str = CATALOG_URL,
+def _load_catalog(*, cache_dir: Path | str | None = None, url: str = CATALOG_URL,
                  max_age_seconds: int = DEFAULT_TTL_SECONDS, path: str | None = None,
                  offline: bool = False, refresh: bool = False, fetcher=None,
                  now: float | None = None) -> Catalog:
@@ -490,6 +527,8 @@ def load_catalog(*, cache_dir: Path | str | None = None, url: str = CATALOG_URL,
     clock = time.time() if now is None else now
     fetcher = fetcher or fetch_raw
     cached = _read_cache(raw_path, meta_path)
+    if cached is not None and cached[1].get("url") != url:
+        cached = None
 
     if cached is not None:
         cached_raw, cached_meta = cached
@@ -526,6 +565,51 @@ def load_catalog(*, cache_dir: Path | str | None = None, url: str = CATALOG_URL,
                  ttl_seconds=max_age_seconds)
     return _catalog_from_bytes(raw, source="network", url=url, retrieved_at=clock,
                                ttl_seconds=max_age_seconds, stale=False)
+
+
+def load_catalog(*, cache_dir: Path | str | None = None, url: str = CATALOG_URL,
+                 max_age_seconds: int = DEFAULT_TTL_SECONDS, path: str | None = None,
+                 offline: bool = False, refresh: bool = False, fetcher=None,
+                 now: float | None = None) -> Catalog:
+    """Prefer supplement routes and retain the models.dev baseline routes.
+
+    Explicit pinned files and custom URLs are self-contained and never trigger
+    an additional source. Catalog routes price an API-equivalent estimate;
+    resolving them does not configure or attest the execution provider.
+    """
+    options = dict(max_age_seconds=max_age_seconds, offline=offline, refresh=refresh,
+                   fetcher=fetcher, now=now)
+    fallback_dir = (Path(cache_dir) if cache_dir is not None else default_cache_dir()) / "baseline"
+    try:
+        preferred = _load_catalog(cache_dir=cache_dir, url=url, path=path, **options)
+    except CatalogUnavailable:
+        if path is not None or url != SUPPLEMENT_URL:
+            raise
+        return _load_catalog(cache_dir=fallback_dir, url=BASELINE_CATALOG_URL, **options)
+    if path is not None or url != SUPPLEMENT_URL or preferred.generated_at is None:
+        return preferred
+    try:
+        baseline = _load_catalog(cache_dir=fallback_dir, url=BASELINE_CATALOG_URL, **options)
+    except CatalogUnavailable:
+        return preferred
+    # Only the same provider/model pair is overlaid. A reference tariff must
+    # never replace a different provider's route or claim its billing terms.
+    providers = dict(baseline.providers)
+    for provider_id, provider in preferred.providers.items():
+        previous = providers.get(provider_id, {})
+        providers[provider_id] = {**previous, **provider,
+            "models": {**previous.get("models", {}), **provider.get("models", {})}}
+    preferred.sources = [preferred.meta(), baseline.meta()]
+    # Memoized resolutions describe the merged data, so either source changing
+    # must invalidate them. Freshness is bounded by the oldest contributing source.
+    preferred.sha256 = hashlib.sha256(json.dumps(
+        [(receipt["url"], receipt["sha256"]) for receipt in preferred.sources],
+        separators=(",", ":"), ensure_ascii=True).encode("utf-8")).hexdigest()
+    preferred.retrieved_at = min(preferred.retrieved_at, baseline.retrieved_at)
+    preferred.ttl_seconds = min(preferred.ttl_seconds, baseline.ttl_seconds)
+    preferred.providers = providers
+    preferred.stale = preferred.stale or baseline.stale
+    return preferred
 
 
 # --------------------------------------------------------------- reading a price
@@ -1323,7 +1407,7 @@ def slim_entry(provider_id: str, model_id: str, model: dict) -> dict:
              "cost": model.get("cost"), "limit": model.get("limit")}
     for key in ("name", "family", "status", "tool_call", "reasoning", "structured_output",
                 "temperature", "open_weights", "attachment", "modalities", "release_date",
-                "last_updated", "canonical_model_id"):
+                "last_updated", "canonical_model_id", "pricing_source"):
         if key in model:
             entry[key] = model[key]
     return entry

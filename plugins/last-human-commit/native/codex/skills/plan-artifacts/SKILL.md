@@ -50,6 +50,14 @@ development-plan rule.
 One procedure, no discovery. Do not read `lhc_grid.py`, do not grep the parser
 regexes, do not infer the shape from an old task record: everything needed is here.
 
+Before creating leaves or first publishing, the Lead chooses the planned model
+from the available catalog and records `default_model` in `plan.json`, or an
+explicit `model` on every leaf. Use the known current model for work planned in
+this session; a model requested for a Worker remains a planned assignment until
+execution is attested. Mixed assignments need explicit leaf models: for example,
+Luna execution uses `"model": "gpt-6-luna"`, while Sol integration uses
+`"model": "gpt-6.1-sol"`. Do not infer a model from the task's prose or role.
+
 `<tools>` below is the tools directory of the active package root: `common/tools/`
 in the installed package, `src/common/tools/` in a source checkout and in the
 repository-root projection of this tree. Resolve it once and reuse the value; never
@@ -89,7 +97,7 @@ One leaf file looks like this:
   "owner": "worker-1",
   "session": "mvs_...",
   "harness": "codex",
-  "model": "minimax-3.1-flash",
+  "model": "gpt-6-luna",
   "depends_on": [],
   "estimate_minutes": {"minimum": 15, "maximum": 20},
   "actual_minutes": 7,
@@ -171,10 +179,27 @@ Plan-level facts are not a leaf's business. They live in `plan.json` next to
   "business_result": "После сохранения локального листа новая заметка появится по прежней ссылке в течение установленного интервала.",
   "acceptance_scenarios": ["Оператор открывает страницу, меняет note обычным сохранением и проверяет появление новой заметки по прежней ссылке без publish."],
   "current_progress": "Сценарий определён; обновление страницы ещё не проверено.",
+  "default_model": "gpt-6.1-sol",
   "slots": 2,
   "updated_at": "2026-10-23T22:04"
 }
 ```
+
+`default_model` is the Lead's planned fallback for leaves with no explicit
+`model`, `tier` or `model_class`; it does not overwrite an individual assignment
+or attest which model actually ran. Creation/activation records this default
+on unassigned leaves; collection also applies it to existing unassigned leaves.
+Record realistic `estimate_minutes` for each leaf. An optional `token_estimate`
+is a nonnegative integer for a deliberate token forecast; do not invent measured
+tokens from elapsed time. The renderer can use its labelled provisional rate
+with the time estimate when no token forecast exists.
+
+The preliminary dollar estimate is a tariff equivalent of planned work, with
+the catalog's pricing basis and assumptions; subscription execution does not
+make it actual billed spend. Missing actual usage must not erase a preliminary
+estimate. Keep actual model, measured tokens and billed cost unknown until
+attested. If a model or its tariff genuinely cannot be resolved, explain that
+specific missing input instead of substituting another model or a zero price.
 
 `business_result` and optional `business_results` keep their legacy storage names
 but describe future tangible capabilities, displayed as «Что будет работать».
@@ -482,6 +507,8 @@ a continuation; other open plans are candidates. Before implementation or
 delegation, create the accepted-goal record and executable leaf, then use the
 existing CLI commands `lhc_plan_json.py create-leaf` and
 `lhc_plan_json.py activate <plan-dir> <leaf-id> --session <actual-session-id>`.
+Record the planned `default_model` or explicit leaf `model` and work estimates
+before those commands and first publication; actual usage can arrive later.
 Never invent an identity. Reassess whether a prior scoped no-LHC exception
 covers a materially changed human goal; peer/delegated messages do not revoke
 owner policy. When a human steer changes the accepted goal within this task,
@@ -530,7 +557,7 @@ Measured effort is `actual_minutes`; independent scheduled duration can use
 explicit scheduling assumption. No active minutes are inferred from mtime.
 
 ```sh
-python3 "<tools>/lhc_plan_json.py" create-leaf <plan-dir> L01 --fields '{"label":"Проверить страницу","estimate_minutes":10}'
+python3 "<tools>/lhc_plan_json.py" create-leaf <plan-dir> L01 --fields '{"label":"Проверить страницу","model":"gpt-6-luna","estimate_minutes":10}'
 python3 "<tools>/lhc_plan_json.py" progress <plan-dir> L01 --note "Страница открыта, проверка продолжается" --fields '{"status":"running"}'
 python3 "<tools>/lhc_plan_json.py" update-leaf <plan-dir> L01 --fields '{"status":"done"}' --expected-hash <sha256-from-previous-write>
 python3 "<tools>/lhc_plan_json.py" build-plan <plan-dir>
