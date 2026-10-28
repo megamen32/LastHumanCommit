@@ -91,7 +91,7 @@ if(Number.isFinite(start))rail.querySelector('.time-rail-start').textContent='Н
 const forecast=document.querySelector('[data-tile="forecast"] .kpi-value');
 if(forecast&&Number.isFinite(end))forecast.textContent=(f.completed?'Завершено: ':'≈ ')+(early!==end?fmt(early)+' — ':'')+fmt(end)+' · '+zone;
 const forecastHint=document.querySelector('[data-tile="forecast"] .kpi-hint');
-if(forecastHint&&f.anchor)forecastHint.textContent=(f.completed?'Фактический финиш записан':'Отсчёт от события '+fmt(Date.parse(f.anchor)))+' · '+zone;
+if(forecastHint&&f.anchor)forecastHint.textContent=(f.completed?'Фактический финиш записан':(f.anchor_source==='plan_origin'?'Отсчёт от начала плана ':'Оценка по состоянию на ')+fmt(Date.parse(f.anchor)))+' · '+zone;
 rail.querySelector('.time-rail-note').textContent='Цветная полоса показывает статусы задач; время указано под ней и не задаёт долю выполнения. Часовой пояс: '+zone+(f.completed?' · Завершённый план':'');
 function clock(){
 const now=live?Date.now():frozen,overdue=!f.completed&&Number.isFinite(end)&&now>end;

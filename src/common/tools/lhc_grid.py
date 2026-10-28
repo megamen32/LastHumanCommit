@@ -1820,6 +1820,11 @@ def plan_time_frame(graph: Graph, metrics: dict[str, Any]) -> dict[str, Any]:
     events += [absolute_time(value) for leaf in graph.leaves
                for value in (leaf.started_at, leaf.finished_at)]
     anchor = max((stamp for stamp in events if stamp and stamp <= reference), default=None)
+    anchor_source = 'event' if anchor else ''
+    if anchor is None and origin and origin <= reference:
+        # A new plan may have estimates and a frozen source origin before its
+        # first progress event. Reuse that origin, never the render/poll time.
+        anchor, anchor_source = origin, 'plan_origin'
     finish = absolute_time(graph.finished_at)
     if completed and not finish:
         finishes = [absolute_time(leaf.finished_at) for leaf in active]
@@ -1848,12 +1853,12 @@ def plan_time_frame(graph: Graph, metrics: dict[str, Any]) -> dict[str, Any]:
     elif metrics["unknown_estimate_pending"]:
         end_label = "Прогноз частичный: есть задачи без оценки"
     elif not end:
-        end_label = "Прогноз неизвестен: нет достоверной даты события"
+        end_label = "Прогноз неизвестен: не записана дата начала или обновления плана"
     else:
         end_label = "Прогноз ≈"
     iso = lambda stamp: stamp.isoformat() if stamp else ""
     return {"start": iso(start), "start_source": start_source, "legacy_start": legacy, "end_min": iso(end_min),
-            "end": iso(end), "anchor": iso(anchor), "reference": iso(reference),
+            "end": iso(end), "anchor": iso(anchor), "anchor_source": anchor_source, "reference": iso(reference),
             "snapshot": iso(snapshot), "completed": completed, "live": graph.time_live,
             "end_label": end_label}
 
@@ -2960,7 +2965,8 @@ def render_html(
         eta_hint = (("отсчёт от последнего события " + metrics["eta_anchor_clock"] + " · дата не записана; ")
                     if metrics["eta_anchor_clock"] else "") + frame["end_label"]
     elif not frame["completed"]:
-        eta_hint = "Отсчёт от события " + lhc_plan_ui.display_time(frame["anchor"])
+        eta_hint = ("Отсчёт от начала плана " if frame.get('anchor_source') == 'plan_origin'
+                    else "Оценка по состоянию на ") + lhc_plan_ui.display_time(frame["anchor"])
     if metrics['unfinished'] == 0:
         eta_range = "Работы по плану завершены"
         eta_hint = ("Фактический финиш: " + lhc_plan_ui.display_time(frame["end"])) if frame["end"] else "Фактический финиш не зафиксирован"
@@ -3976,7 +3982,8 @@ def render_html(
             "<header>"
             "<div>"
             f"<h1>{escape(graph.title)}</h1>"
-            f'<div class="sub">План обновлён {escape(graph.updated_at.replace("T", " ")) or "неизвестно"}</div>'
+            '<div class="sub">' + (f'План обновлён {escape(graph.updated_at.replace("T", " "))}'
+                                  if graph.updated_at else 'Дата обновления не записана') + '</div>'
             "</div>"
             '<div class="head-actions">'
             '<button type="button" class="theme-toggle" id="theme-toggle" '

@@ -166,6 +166,43 @@ def test_forecast_is_fixed_full_datetime_across_midnight_and_timezones():
     assert grid.build_metrics(graph)['time_frame']['end'] == '2026-10-25T21:20:00+00:00'
 
 
+@pytest.mark.parametrize('source', ['file_birthtime', 'leaf_created_at', 'recorded_start'])
+def test_new_plan_uses_recorded_origin_for_fixed_forecast(source):
+    doc = document(updated_at='')
+    doc['tasks'][0].pop('started_at')
+    doc['plan_origin'] = {'at': '2026-10-25T23:50:00+03:00', 'source': source}
+    graph = grid.parse_graph_json(doc)
+    graph.snapshot_at = '2026-10-26T00:05:00+03:00'
+    metrics = grid.build_metrics(graph)
+    f = metrics['time_frame']
+    assert f['anchor'] == doc['plan_origin']['at']
+    assert f['anchor_source'] == 'plan_origin'
+    assert f['end'] == '2026-10-26T00:10:00+03:00'
+    assert 'Отсчёт от начала плана' in grid.render_html(graph, metrics)
+    graph.snapshot_at = '2026-10-26T01:05:00+03:00'
+    assert grid.build_metrics(graph)['time_frame']['end'] == f['end']
+    graph.updated_at = '2026-10-26T00:00:00+03:00'
+    changed = grid.build_metrics(graph)['time_frame']
+    assert changed['anchor_source'] == 'event'
+    assert changed['end'] == '2026-10-26T00:20:00+03:00'
+
+
+@pytest.mark.parametrize('origin', ['invalid', '2026-10-27T00:00:00Z'])
+def test_bad_or_future_origin_does_not_invent_forecast(origin):
+    doc = document(updated_at='')
+    doc['tasks'][0].pop('started_at')
+    doc['plan_origin'] = {'at': origin, 'source': 'file_birthtime'}
+    assert frame(doc)['end'] == ''
+
+
+def test_missing_update_date_is_named_without_inventing_changes():
+    graph = grid.parse_graph_json(document(updated_at=''))
+    graph.plan_origin = {'at': '2026-10-25T23:50:00+03:00', 'source': 'file_birthtime'}
+    page = grid.render_html(graph, grid.build_metrics(graph))
+    assert 'План обновлён неизвестно' not in page
+    assert 'Дата обновления не записана' in page
+
+
 @pytest.mark.parametrize('start', ['2026-10-27T00:00:00Z', 'invalid'])
 def test_bad_or_future_start_does_not_make_proportional_marker(start):
     assert frame(document(started_at=start))['start'] == ''

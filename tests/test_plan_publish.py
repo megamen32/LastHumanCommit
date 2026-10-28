@@ -227,6 +227,38 @@ def test_queued_start_delay_requires_explicit_schedule_anchor(plan):
     assert "2026-01-01T00:00:00+00:00" in page
 
 
+def test_comparison_uses_absolute_origin_and_dependency_schedule():
+    doc = {'schema_version': 2, 'slots': 2,
+           'plan_origin': {'at': '2026-10-25T16:30:00+03:00', 'source': 'file_birthtime'},
+           'tasks': [{'id': name, 'label': name, 'status': 'queued',
+                      'depends_on': deps, 'estimate_minutes': 15}
+                     for name, deps in [('L01', []), ('L02', []), ('L03', ['L01', 'L02'])]]}
+    revisions = [{'document': doc}]
+    page = publication.comparison(doc, doc, doc, revisions, '2026-10-25T16:35:00+03:00')
+    assert 'плановый финиш неизвестен' not in page
+    assert page.count('плановый финиш 2026-10-25T17:00:00+03:00') == 2
+    assert 'Текущий прогноз: длительность 30 мин, остаток 30 мин; прогноз финиша 2026-10-25T17:00:00+03:00' in page
+    assert 'по началу плана' in page
+    assert '2026-10-25T16:45:00+03:00' in page
+    doc['planned_start_at'] = '2026-10-25T17:00:00+03:00'
+    explicit = publication.comparison(doc, doc, doc, revisions, '2026-10-25T16:35:00+03:00')
+    assert explicit.count('плановый финиш 2026-10-25T17:30:00+03:00') == 2
+    del doc['planned_start_at']
+    doc['plan_origin']['at'] = '2026-10-27T00:00:00Z'
+    future = publication.comparison(doc, doc, doc, revisions, '2026-10-25T16:35:00+03:00')
+    assert future.count('плановый финиш неизвестен') == 2
+
+
+def test_comparison_current_forecast_matches_dashboard_after_progress():
+    doc = {'schema_version': 2, 'updated_at': '2026-10-25T16:50:00+03:00',
+           'plan_origin': {'at': '2026-10-25T16:30:00+03:00', 'source': 'file_birthtime'},
+           'tasks': [{'id': 'L01', 'label': 'Работа', 'status': 'running', 'estimate_minutes': 20}]}
+    expected = publication.forecast(doc)['time_frame']['end']
+    assert expected == '2026-10-25T17:10:00+03:00'
+    page = publication.comparison(doc, doc, doc, [{'document': doc}], '2026-10-25T16:55:00+03:00')
+    assert f'Текущий прогноз: длительность 20 мин, остаток 20 мин; прогноз финиша {expected}' in page
+
+
 def test_removed_leaf_keeps_last_observed_fact_and_reset_keeps_completion(plan):
     path, config = plan
     publication.publish(path, config, autopublish=True)

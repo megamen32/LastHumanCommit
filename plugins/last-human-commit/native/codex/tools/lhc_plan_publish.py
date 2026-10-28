@@ -209,6 +209,13 @@ def planning_facts(doc):
 
 def comparison(baseline, selected, current, revisions, at, observed=None):
     esc = lambda v: html.escape(str(v), quote=True)
+    def schedule_anchor(doc):
+        explicit = timestamp(doc.get('planned_start_at'))
+        if explicit:
+            return explicit, 'по заданному старту'
+        origin = timestamp((doc.get('plan_origin') or {}).get('at'))
+        reference = timestamp(at) or datetime.now(timezone.utc)
+        return (origin, 'по началу плана') if origin and origin <= reference else (None, '')
     by_original = {t["id"]: t for t in baseline["tasks"]}
     by_selected = {t["id"]: t for t in selected["tasks"]}
     by_actual = {t["id"]: t for t in current["tasks"]}
@@ -223,7 +230,7 @@ def comparison(baseline, selected, current, revisions, at, observed=None):
     rows = []
     original_schedule = forecast(baseline)["schedule"]
     current_schedule = forecast(current)["schedule"]
-    anchor = timestamp(baseline.get("planned_start_at"))
+    anchor, anchor_label = schedule_anchor(baseline)
     for identity, historical in known.items():
         original, planned, actual = by_original.get(identity, {}), by_selected.get(identity, {}), by_actual.get(identity, historical)
         initial, revised = estimate(original), estimate(planned)
@@ -262,7 +269,7 @@ def comparison(baseline, selected, current, revisions, at, observed=None):
         scale = max([v for v in (initial, revised, elapsed) if v is not None] + [1])
         bars = "".join(f'<div class="compare-bar {kind}" style="width:{max(1, value / scale * 100):.2f}%">{label}: {esc(minutes(value))}</div>' for kind, label, value in (("baseline", "Оценка r001", initial), ("revised", "Выбранный план", revised), ("actual", "По часам", elapsed)) if value is not None)
         bars += f'<small>r001: +{esc(minutes(original_start))} → +{esc(minutes(original_finish))}<br>Текущий график: +{esc(minutes(current_schedule.starts.get(identity)))} → +{esc(minutes(current_schedule.finishes.get(identity)))}</small>'
-        bars += f'<br><small>Исходный старт/финиш: {esc(planned_start.isoformat() if planned_start else "не заданы")} → {esc(planned_finish.isoformat() if planned_finish else "не задан")}; опоздание старта: {esc(start_delay_text)}</small>'
+        bars += f'<br><small>Исходный старт/финиш{(" (" + anchor_label + ")") if anchor_label else ""}: {esc(planned_start.isoformat() if planned_start else "не заданы")} → {esc(planned_finish.isoformat() if planned_finish else "не задан")}; опоздание старта: {esc(start_delay_text)}</small>'
         rows.append(f'''<tr><td><b>{esc(identity)} · {esc(actual.get("label", ""))}</b><br>{esc(status)}
 <br>{esc(actual.get("owner", "неизвестно"))} · {esc(actual.get("harness", "неизвестно"))} · {esc(actual.get("session", "неизвестно"))}
 <br>{esc(actual.get("model", "неизвестно"))}<br>Зависит от: {esc(", ".join(planned.get("depends_on", [])) or "—")}
@@ -278,16 +285,19 @@ def comparison(baseline, selected, current, revisions, at, observed=None):
             return None
         return (max(ends) - min(starts)).total_seconds() / 60
     # Forecast anchored to the documented plan event, not browser wall time.
-    def horizon(doc):
+    def horizon(doc, current_forecast=False):
         m = forecast(doc)
         whole = m["delivery_minutes_max"] if m["duration_known"] else None
         remaining = m["remaining_minutes_max"] if m["remaining_known"] and not m["external_wait_unknown"] else None
-        start = timestamp(doc.get("planned_start_at"))
+        if current_forecast:
+            finish = m['time_frame']['end'] or 'неизвестен'
+            return f'длительность {minutes(whole)}, остаток {minutes(remaining)}; прогноз финиша {esc(finish)}'
+        start, anchor_label = schedule_anchor(doc)
         finish = (start + timedelta(minutes=whole)).isoformat() if start and whole is not None else "неизвестен"
-        return f'длительность {minutes(whole)}, остаток {minutes(remaining)}; плановый финиш {esc(finish)}'
+        return f'длительность {minutes(whole)}, остаток {minutes(remaining)}; плановый финиш {esc(finish)}' + (f' ({anchor_label})' if start else '')
     return f'''<section id="plan-comparison"><h1>Исходный план → работа по факту</h1>
 <p>Исходная цель: {esc(baseline.get("goal", ""))}</p>
-<p>Прогноз исходного снимка: {horizon(baseline)}<br>Прогноз выбранной ревизии: {horizon(revisions[-1]['document'])}<br>Текущий прогноз: {horizon(current)}<br>Измеренная длительность всей поставки: {esc(minutes(total_window(current)))}</p>
+<p>Прогноз исходного снимка: {horizon(baseline)}<br>Прогноз выбранной ревизии: {horizon(revisions[-1]['document'])}<br>Текущий прогноз: {horizon(current, current_forecast=True)}<br>Измеренная длительность всей поставки: {esc(minutes(total_window(current)))}</p>
 <p>Усилие — измеренное время работы. По часам — от начала до конца, с ожиданиями; параллельные окна не складываются. Если отдельная длительность не задана, расписание опирается на оценку работы. Без дат время неизвестно.</p>
 <div class="compare-scroll"><table class="comparison"><thead><tr><th>Работа / исполнитель</th><th>Оценки и время</th><th>Факт и отклонение от r001</th><th>Прогресс / ожидание</th></tr></thead><tbody>{''.join(rows)}</tbody></table></div></section>'''
 
