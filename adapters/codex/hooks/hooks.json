@@ -3,7 +3,7 @@
   "hooks": {
     "PostToolUse": [{"hooks": [{
       "type": "command",
-      "command": "python3 \"${PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}}/tools/lhc_progress_review.py\"",
+      "command": "lhc_progress_script=\"${PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-${ZCODE_PLUGIN_ROOT:-}}}}/tools/lhc_progress_review.py\"; if [ ! -f \"$lhc_progress_script\" ]; then lhc_progress_script=\"${CODEX_HOME:-$HOME/.codex}/.tmp/marketplaces/megamen32-plugins/plugins/last-human-commit/tools/lhc_progress_review.py\"; fi; if [ -f \"$lhc_progress_script\" ]; then python3 \"$lhc_progress_script\" || :; fi; :",
       "async": true,
       "timeout": 90
     }]}],
@@ -15,23 +15,23 @@
       }]},
       {"hooks": [{
         "type": "command",
-        "command": "python3 \"${PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}}/tools/lhc_progress_review.py\" --invalidate",
+        "command": "lhc_progress_script=\"${PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-${ZCODE_PLUGIN_ROOT:-}}}}/tools/lhc_progress_review.py\"; if [ ! -f \"$lhc_progress_script\" ]; then lhc_progress_script=\"${CODEX_HOME:-$HOME/.codex}/.tmp/marketplaces/megamen32-plugins/plugins/last-human-commit/tools/lhc_progress_review.py\"; fi; if [ -f \"$lhc_progress_script\" ]; then python3 \"$lhc_progress_script\" --invalidate || :; fi; :",
         "timeout": 3
       }]}
     ],
     "Interrupt": [{"hooks": [{
       "type": "command",
-      "command": "python3 \"${PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}}/tools/lhc_progress_review.py\" --invalidate",
+      "command": "lhc_progress_script=\"${PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-${ZCODE_PLUGIN_ROOT:-}}}}/tools/lhc_progress_review.py\"; if [ ! -f \"$lhc_progress_script\" ]; then lhc_progress_script=\"${CODEX_HOME:-$HOME/.codex}/.tmp/marketplaces/megamen32-plugins/plugins/last-human-commit/tools/lhc_progress_review.py\"; fi; if [ -f \"$lhc_progress_script\" ]; then python3 \"$lhc_progress_script\" --invalidate || :; fi; :",
       "timeout": 3
     }]}],
     "Stop": [{"hooks": [{
       "type": "command",
-      "command": "python3 \"${PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}}/tools/lhc_progress_review.py\" --invalidate",
+      "command": "lhc_progress_script=\"${PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-${ZCODE_PLUGIN_ROOT:-}}}}/tools/lhc_progress_review.py\"; if [ ! -f \"$lhc_progress_script\" ]; then lhc_progress_script=\"${CODEX_HOME:-$HOME/.codex}/.tmp/marketplaces/megamen32-plugins/plugins/last-human-commit/tools/lhc_progress_review.py\"; fi; if [ -f \"$lhc_progress_script\" ]; then python3 \"$lhc_progress_script\" --invalidate || :; fi; :",
       "timeout": 3
     }]}],
     "SessionEnd": [{"hooks": [{
       "type": "command",
-      "command": "python3 \"${PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}}/tools/lhc_progress_review.py\" --invalidate",
+      "command": "lhc_progress_script=\"${PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-${ZCODE_PLUGIN_ROOT:-}}}}/tools/lhc_progress_review.py\"; if [ ! -f \"$lhc_progress_script\" ]; then lhc_progress_script=\"${CODEX_HOME:-$HOME/.codex}/.tmp/marketplaces/megamen32-plugins/plugins/last-human-commit/tools/lhc_progress_review.py\"; fi; if [ -f \"$lhc_progress_script\" ]; then python3 \"$lhc_progress_script\" --invalidate || :; fi; :",
       "timeout": 3
     }]}]
   }
