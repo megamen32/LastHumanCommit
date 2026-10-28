@@ -102,15 +102,20 @@ def test_public_entries_do_not_expose_mutable_cache_and_ingest_can_read_fresh(tm
     monkeypatch.setattr(mirror, 'read', counted)
     service.entries(fresh=True)
     service.entries(fresh=True)
-    assert len(calls) == 2
+    assert not calls  # Fresh ownership is event-drained, not a full archive read.
 
 
-def test_dashboard_recomputes_time_even_when_files_unchanged(tmp_path, monkeypatch):
+def test_dashboard_recomputes_active_time_at_most_once_per_minute(tmp_path, monkeypatch):
     service = replica(tmp_path)
     (service.data / 'identity.json').write_text(json.dumps(entry()))
     calls = []
-    monkeypatch.setattr(mirror.catalog, 'render', lambda entries, legacy: calls.append(entries) or str(len(calls)))
+    tick = [0.0]
+    monkeypatch.setattr(mirror.time, 'monotonic', lambda: tick[0])
+    monkeypatch.setattr(mirror.catalog, 'render_items', lambda items, now: calls.append(items) or str(len(calls)))
     assert service.dashboard() == '1'
+    tick[0] = 59.9
+    assert service.dashboard() == '1'
+    tick[0] = 60.0
     assert service.dashboard() == '2'
 
 
@@ -119,12 +124,12 @@ def test_cached_legacy_title_is_invalidated_on_change(tmp_path, monkeypatch):
     page = Path(service.cfg['webroot']) / 'legacy' / 'old' / 'index.html'
     page.parent.mkdir(parents=True)
     page.write_text('<title>Old</title>')
-    original, calls = Path.read_text, []
+    original, calls = Path.open, []
     def counted(path, *args, **kwargs):
         if path == page:
             calls.append(path)
         return original(path, *args, **kwargs)
-    monkeypatch.setattr(Path, 'read_text', counted)
+    monkeypatch.setattr(Path, 'open', counted)
     assert service.legacy()[0][2] == 'Old'
     assert service.legacy()[0][2] == 'Old'
     assert len(calls) == 1
@@ -132,7 +137,7 @@ def test_cached_legacy_title_is_invalidated_on_change(tmp_path, monkeypatch):
     assert service.legacy()[0][2] == 'New title'
 
 
-def test_same_tick_inplace_updates_are_revalidated_within_thirty_seconds(tmp_path, monkeypatch):
+def test_same_tick_inplace_updates_are_revalidated_immediately_by_event(tmp_path, monkeypatch):
     service = replica(tmp_path)
     path = service.data / 'identity.json'
     value = entry()
@@ -140,10 +145,6 @@ def test_same_tick_inplace_updates_are_revalidated_within_thirty_seconds(tmp_pat
     page = Path(service.cfg['webroot']) / 'legacy' / 'old' / 'index.html'
     page.parent.mkdir(parents=True)
     page.write_text('<title>Old</title>')
-    signatures = {p: service.signature(p) for p in (path, page)}
-    # Real FS counterexample: Old->New within a single clock tick left all five
-    # stat fields equal. Freeze those observed fields to keep this reproducible.
-    monkeypatch.setattr(service, 'signature', signatures.__getitem__)
     tick = [0.0]
     monkeypatch.setattr(mirror.time, 'monotonic', lambda: tick[0])
     assert service.entries()[0]['snapshot']['document']['title'] == 'Plan'
@@ -151,9 +152,5 @@ def test_same_tick_inplace_updates_are_revalidated_within_thirty_seconds(tmp_pat
     value['snapshot']['document']['title'] = 'Next'
     path.write_text(json.dumps(value))
     page.write_text('<title>New</title>')
-    tick[0] = 29.9
-    assert service.entries()[0]['snapshot']['document']['title'] == 'Plan'
-    assert service.legacy()[0][2] == 'Old'
-    tick[0] = 30.0
     assert service.entries()[0]['snapshot']['document']['title'] == 'Next'
     assert service.legacy()[0][2] == 'New'

@@ -203,6 +203,13 @@ def card(item):
 def render(entries, legacy=(), now=None):
     now = now or datetime.now(timezone.utc)
     items = [summarize(e, now) for e in entries] + [legacy_summary(*x) for x in legacy]
+    return render_items(items, now)
+
+
+def render_items(items, now=None):
+    """Render already summarized items; callers may retain inactive summaries."""
+    now = now or datetime.now(timezone.utc)
+    items = list(items)
     items.sort(key=lambda x: (STATE_ORDER.index(x['state']),
                               -(x['updated'] or now).timestamp()))
     counts = {s: sum(i['state'] == s for i in items) for s in STATE_ORDER}

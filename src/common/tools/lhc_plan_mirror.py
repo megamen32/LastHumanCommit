@@ -433,7 +433,7 @@ def record_error(plan, error):
             pub.atomic(dest / 'mirror-state.json', state)
 
 
-def run_observer(config_path, once=False, *, price_refresh=None):
+def _run_observer_once(config_path, once=True, *, price_refresh=None):
     cfg = config(config_path)
     seen, retries, attempted, sent, capture_retries = {}, {}, {}, {}, {}
     registered, hashes, states = {}, {}, {}
@@ -530,6 +530,184 @@ def run_observer(config_path, once=False, *, price_refresh=None):
             time.sleep(max(.05, cfg.get('poll_seconds', 1)))
 
 
+def run_observer(config_path, once=False, *, price_refresh=None):
+    """Reconcile once, then touch only event-queued sources and due retries."""
+    if once:
+        return _run_observer_once(config_path, price_refresh=price_refresh)
+    from lhc_file_events import FileEvents
+    import fcntl
+    config_path = Path(config_path).expanduser().resolve()
+    cfg = config(config_path)
+    local = Path(cfg['data_dir']).expanduser()
+    local.mkdir(parents=True, exist_ok=True)
+    pending, retry, plans, owners, graph_files = {}, {}, set(), {}, {}
+    discovery_dirs, state_stamps, metadata_stamps, fallback = set(), {}, {}, {}
+    registry_stamp, fallback_scan, warned = None, 0, False
+
+    def queue(plan, source=True, registration=False, immediate=False):
+        old = pending.get(plan, (0, False, False))
+        pending[plan] = (time.monotonic() + (0 if immediate else max(.05, cfg.get('debounce_seconds', 1))),
+                         old[1] or source, old[2] or registration)
+
+    with (local / 'observer.lock').open('a') as lock, FileEvents() as events:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+
+        def watch(path):
+            path = Path(path).absolute()
+            # FileEvents owns inode-watch deduplication and IN_IGNORED removal.
+            # A second path cache here would retain deleted-directory watches.
+            if events.available and path.is_dir():
+                events.add(path)
+
+        def watch_plan(plan):
+            path = Path(plan)
+            if path.name == 'plan.graph.json':
+                graph_files[path] = plan
+                watch(path.parent)
+                return
+            for directory_path in (path, path / 'leaves', directory(plan)):
+                if directory_path.is_dir():
+                    watch(directory_path)
+                    owners[directory_path] = plan
+
+        def watch_roots(roots):
+            for root in roots:
+                root = Path(root).expanduser().resolve()
+                if root in (Path.home(), Path('/')):
+                    raise ValueError('home/filesystem discovery is forbidden')
+                parent = root.parent
+                while not parent.is_dir() and parent != parent.parent:
+                    parent = parent.parent
+                watch(parent)
+                discovery_dirs.add(parent)
+                for current, dirs, files in os.walk(root, followlinks=False):
+                    current = Path(current)
+                    watch(current)  # Coverage precedes discovery of its sources.
+                    if 'plan.json' in files and (current / 'leaves').is_dir():
+                        dirs[:] = []
+                    else:
+                        discovery_dirs.add(current)
+                        depth = len(current.relative_to(root).parts)
+                        dirs[:] = [name for name in dirs if not name.startswith('.') and not (current / name).is_symlink()] if depth < 3 else []
+
+        def reconcile(roots=None, reset=False):
+            watch_roots(cfg.get('roots', []) if roots is None else roots)
+            selection = cfg if roots is None else {**cfg, 'roots': roots}
+            for plan in discover(selection):
+                if plan not in plans or reset:
+                    plans.add(plan)
+                    watch(Path(plan).parent)
+                    watch_plan(plan)
+                    queue(plan, registration=True)
+
+        watch(config_path.parent)
+        watch(local)
+        cfg = config(config_path)  # Re-read after watches, closing startup gap.
+        reconcile()
+        registry_path = local / 'registry.json'
+        registry_stamp = file_stamp(registry_path)
+        while True:
+            if price_refresh is not None:
+                price_refresh.kick()
+            changes = events.poll(0)
+            if changes.overflow and events.available:
+                reconcile(reset=True)
+            for event in changes.paths:
+                path = Path(event).absolute()
+                if path == config_path:
+                    fresh = config(config_path)
+                    if fresh != cfg:
+                        cfg = fresh
+                        reconcile(reset=True)
+                    continue
+                if path == registry_path:
+                    stamp = file_stamp(registry_path)
+                    if stamp != registry_stamp:
+                        reconcile(roots=[])
+                        registry_stamp = stamp
+                    continue
+                if path in graph_files:
+                    queue(graph_files[path])
+                    continue
+                plan = owners.get(path.parent)
+                if plan is not None:
+                    root = Path(plan)
+                    if path.parent == root / 'leaves' and path.suffix == '.json':
+                        queue(plan)
+                    elif path.parent == root and path.name == 'plan.json':
+                        queue(plan)
+                    elif path.parent == directory(plan):
+                        if path.name in ('plan-origin.json', 'mirror.json', 'state.json'):
+                            if file_stamp(path) != metadata_stamps.get(path):
+                                queue(plan, registration=path.name != 'plan-origin.json')
+                        elif path.name == 'mirror-state.json' and file_stamp(path) != state_stamps.get(plan):
+                            queue(plan, source=False)
+                    elif path.name in ('leaves', '.lhc-publication'):
+                        watch_plan(plan)
+                        queue(plan)
+                    continue  # Generated files never trigger discovery/capture.
+                if path.parent in discovery_dirs or path in discovery_dirs:
+                    roots = [root for root in cfg.get('roots', [])
+                             if Path(root).expanduser().resolve() == path or Path(root).expanduser().resolve() in path.parents
+                             or path == Path(root).expanduser().resolve().parent]
+                    if roots:
+                        reconcile(roots=roots)
+
+            now = time.monotonic()
+            if not events.available:
+                if not warned:
+                    print('LHC: файловые события недоступны; сверка активных планов раз в минуту, завершённых раз в пять минут', file=sys.stderr)
+                    warned = True
+                if now >= fallback_scan:
+                    fresh = config(config_path)
+                    reset = fresh != cfg
+                    cfg = fresh
+                    reconcile(reset=reset)
+                    fallback_scan = now + 60
+                for plan, (deadline, stamp, inactive) in list(fallback.items()):
+                    if now >= deadline:
+                        signature = source_stamp(plan)
+                        fallback[plan] = (now + (300 if inactive else 60), signature, inactive)
+                        if signature != stamp:
+                            queue(plan, immediate=True)
+
+            due = {plan for plan, value in pending.items() if now >= value[0]}
+            due.update(plan for plan, value in retry.items() if now >= value[0])
+            for plan in due:
+                _, source, registration = pending.pop(plan, (0, False, False))
+                _, failures, retry_source, retry_registration = retry.pop(plan, (0, 0, False, False))
+                source = source or retry_source
+                registration = registration or retry_registration
+                try:
+                    if registration:
+                        register(plan, config_path)
+                        registration = False
+                    watch_plan(plan)
+                    before = source_stamp(plan) if not events.available else None
+                    if source:
+                        capture(plan)  # Strict content checks stay inside capture.
+                    state = read(directory(plan) / 'mirror-state.json', {})
+                    receipt = state.get('server_receipt') or {}
+                    snapshot = state.get('pending') or {}
+                    acknowledged = (state.get('seq') is not None and receipt.get('seq') == state['seq']
+                                    and receipt.get('identity') == snapshot.get('identity'))
+                    if snapshot and (state.get('error') or not acknowledged):
+                        source = False  # Network retry never rereads source files.
+                        sync(plan, cfg)
+                    tasks = (snapshot.get('document') or {}).get('tasks') or []
+                    inactive = bool(tasks) and all(task.get('status') in ('done', 'deferred') for task in tasks)
+                    fallback[plan] = (now + (300 if inactive else 60), before, inactive)
+                except (OSError, ValueError, KeyError, TypeError, urllib.error.URLError) as error:
+                    record_error(plan, error)
+                    retry[plan] = (now + min(60, 2 ** min(failures, 6)), failures + 1, source, registration)
+                state_stamps[plan] = file_stamp(directory(plan) / 'mirror-state.json')
+                for name in ('plan-origin.json', 'mirror.json', 'state.json'):
+                    path = directory(plan) / name
+                    metadata_stamps[path] = file_stamp(path)
+                registry_stamp = file_stamp(registry_path)
+            time.sleep(max(.05, cfg.get('poll_seconds', 1)))
+
+
 def valid_document(value):
     if not isinstance(value, dict) or not isinstance(value.get('tasks'), list) or not 1 <= len(value['tasks']) <= 1000:
         raise ValueError('invalid document')
@@ -603,12 +781,27 @@ class Conflict(ValueError):
 class Replica:
     def __init__(self, cfg):
         self.cfg = cfg
-        self.data = Path(cfg['data_dir']).expanduser()
+        self.data = Path(cfg['data_dir']).expanduser().resolve()
         self.data.mkdir(parents=True, exist_ok=True)
         self.lock = threading.Lock()
-        self.cache_lock = threading.Lock()
+        self.cache_lock = threading.RLock()
         self.entry_cache = {}
         self.legacy_cache = {}
+        self.legacy_aliases = {}
+        self.legacy_targets = {}
+        self.owners = {}
+        self.routes = {}
+        self.summaries = {}
+        self.dashboard_cache = None
+        self.webroot = Path(cfg['webroot']).expanduser().resolve()
+        self.webroot.mkdir(parents=True, exist_ok=True)
+        from lhc_file_events import FileEvents
+        self.events = FileEvents()
+        # Watches precede enumeration: writes during bootstrap remain queued.
+        self.events.add(self.data)
+        self.events.add(self.webroot)
+        self.last_reconcile = 0
+        self._reconcile()
         self.renderer = pub.digest({name: Path(pub.__file__).with_name(name).read_text()
                                     for name in ('lhc_plan_publish.py', 'lhc_plan_transport.py', 'lhc_grid.py', 'lhc_plan_ui.py', 'lhc_models.py')})
         self.prices = catalog_identity()
@@ -627,34 +820,155 @@ class Replica:
         stat = path.stat()
         return stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns
 
-    def entries(self, *, fresh=False, shared=False):
-        """Stat is cheap; unchanged multi-revision JSON is parsed only once.
+    def close(self):
+        self.events.close()
 
-        Only internal read-only consumers borrow cached objects. Ingest always
-        rereads ownership/CAS state under its file lock, and public callers get
-        their own copy so validation or accidental edits cannot poison the cache.
-        """
+    def _store_entry(self, path, value):
+        previous = self.entry_cache.pop(path, None)
+        self.summaries.pop(path, None)
+        self.dashboard_cache = None
+        if previous:
+            old = previous['snapshot']
+            for index, key in ((self.owners, old['identity']),
+                               (self.routes, (old['project'], old['name']))):
+                index.get(key, set()).discard(path)
+                if not index.get(key):
+                    index.pop(key, None)
+        if value:
+            self.entry_cache[path] = value
+            snap = value['snapshot']
+            self.owners.setdefault(snap['identity'], set()).add(path)
+            self.routes.setdefault((snap['project'], snap['name']), set()).add(path)
+            self.legacy_cache.pop(self.webroot / snap['project'] / snap['name'] / 'index.html', None)
+        elif previous:
+            self._legacy_plan(self.webroot / old['project'] / old['name'])
+
+    def _read_entry(self, path):
+        try:
+            value = read(path)
+        except FileNotFoundError:
+            value = None
+        self._store_entry(path, value)
+
+    def _forget_legacy_target(self, directory):
+        real = self.legacy_targets.pop(directory, None)
+        if real is not None:
+            aliases = self.legacy_aliases[real]
+            aliases.discard(directory)
+            if not aliases:
+                self.legacy_aliases.pop(real)
+
+    def _legacy_plan(self, directory):
+        page = directory / 'index.html'
+        self.dashboard_cache = None
+        self.summaries.pop(page, None)
+        self.legacy_cache.pop(page, None)
+        self._forget_legacy_target(directory)
+        project, name = directory.parent.name, directory.name
+        if (project, name) in self.routes or not IDENT.fullmatch(name):
+            return
+        if not directory.is_dir():
+            return
+        self.events.add(directory)
+        real = directory.resolve()
+        self.legacy_targets[directory] = real
+        self.legacy_aliases.setdefault(real, set()).add(directory)
+        try:
+            with page.open(encoding='utf-8', errors='replace') as stream:
+                title = re.search(r'<title>(.*?)</title>', stream.read(4096), re.S)
+        except (FileNotFoundError, NotADirectoryError):
+            return
+        self.legacy_cache[page] = (project, name, html.unescape(title.group(1)).strip() if title else name)
+
+    def _legacy_project(self, project):
+        self.dashboard_cache = None
+        for directory in list(self.legacy_targets):
+            if directory.parent == project:
+                self._forget_legacy_target(directory)
+        for page in list(self.legacy_cache):
+            if page.parent.parent == project:
+                self.legacy_cache.pop(page, None)
+                self.summaries.pop(page, None)
+        if not IDENT.fullmatch(project.name) or not project.is_dir():
+            return
+        self.events.add(project)
+        for directory in project.iterdir():
+            # Do not descend into transport's potentially large old bundles.
+            if IDENT.fullmatch(directory.name):
+                self._legacy_plan(directory)
+
+    def _reconcile(self, *, reset_events=False):
+        self.last_reconcile = time.monotonic()
+        if reset_events:
+            from lhc_file_events import FileEvents
+            self.events.close()
+            self.events = FileEvents()
+            self.events.add(self.data)
+            self.events.add(self.webroot)
+        if not self.data.is_dir() or not self.webroot.is_dir():
+            # A moved/deleted root loses coverage; retain the last good index
+            # and retry on the bounded recovery cadence, not every GET.
+            self.events.close()
+            return
+        self.summaries.clear()
+        self.dashboard_cache = None
+        self.entry_cache.clear()
+        self.owners.clear()
+        self.routes.clear()
+        for path in self.data.glob('*.json'):
+            self._read_entry(path)
+        self.legacy_cache.clear()
+        self.legacy_aliases.clear()
+        self.legacy_targets.clear()
+        for project in self.webroot.iterdir():
+            if IDENT.fullmatch(project.name):
+                self._legacy_project(project)
+        self.last_reconcile = time.monotonic()
+
+    def _changes(self, *, ownership=False):
+        changes = self.events.poll(0)
+        if changes.overflow or not self.events.available:
+            # A lost watch invalidates completeness. A writer must reconcile
+            # while holding ingest.lock; readers use a bounded recovery scan.
+            if changes.overflow and self.events.available or ownership or time.monotonic() - self.last_reconcile >= 30:
+                self._reconcile(reset_events=True)
+            return
+        projects, plans = set(), set()
+        for path in changes.paths:
+            if path in (self.data, self.webroot):
+                self._reconcile(reset_events=True)
+                return
+            if path.parent == self.data and path.suffix == '.json':
+                self._read_entry(path)
+                continue
+            # inotify reports real bundle paths, while public legacy plans
+            # commonly point at those hidden bundles through symlinks.
+            plans.update(self.legacy_aliases.get(path, ()))
+            if path.name == 'index.html':
+                plans.update(self.legacy_aliases.get(path.parent, ()))
+            try:
+                parts = path.relative_to(self.webroot).parts
+            except ValueError:
+                continue
+            if not parts:
+                projects.update(p for p in self.webroot.iterdir() if IDENT.fullmatch(p.name))
+            elif IDENT.fullmatch(parts[0]):
+                if len(parts) == 1:
+                    projects.add(self.webroot / parts[0])
+                elif IDENT.fullmatch(parts[1]) and (len(parts) == 2 or parts[2] == 'index.html'):
+                    plans.add(self.webroot / parts[0] / parts[1])
+        for project in projects:
+            self._legacy_project(project)
+        for directory in plans:
+            if directory.parent not in projects:
+                self._legacy_plan(directory)
+
+    def entries(self, *, fresh=False, shared=False):
+        """Read changed files only; never scan/stat all histories on a GET."""
         import copy
-        paths = list(self.data.glob('*.json'))
-        if fresh:
-            return [read(path) for path in paths]
         with self.cache_lock:
-            now = time.monotonic()
-            current = {}
-            for path in paths:
-                try:
-                    signature = self.signature(path)
-                except FileNotFoundError:
-                    continue
-                cached = self.entry_cache.get(path)
-                if cached is None or cached[0] != signature or now - cached[2] >= 30:
-                    # Same-size in-place writes can share one filesystem clock
-                    # tick. Bound that exceptional stale window without polling
-                    # and reparsing every complete history on every request.
-                    cached = signature, read(path), now
-                current[path] = cached
-            self.entry_cache = current
-            values = [item[1] for item in current.values()]
+            self._changes(ownership=fresh)
+            values = list(self.entry_cache.values())
             return values if shared else copy.deepcopy(values)
 
     def render(self, entry):
@@ -680,10 +994,14 @@ class Replica:
         import copy
         snapshot = copy.deepcopy(snapshot)
         snapshot = validate_snapshot(snapshot)
-        with self.lock, leaves.file_lock(self.data / 'ingest.lock'):
+        with self.lock, leaves.file_lock(self.data / 'ingest.lock'), self.cache_lock:
             path = self.data / (snapshot['identity'] + '.json')
+            self._changes(ownership=True)
             previous = read(path)
-            for entry in self.entries(fresh=True):
+            paths = (self.owners.get(snapshot['identity'], set())
+                     | self.routes.get((snapshot['project'], snapshot['name']), set()))
+            for candidate in paths:
+                entry = self.entry_cache[candidate]
                 old = entry['snapshot']
                 if old['identity'] == snapshot['identity'] or (old['project'], old['name']) == (snapshot['project'], snapshot['name']):
                     if any(old[k] != snapshot[k] for k in ('identity', 'owner', 'project', 'name')):
@@ -701,6 +1019,7 @@ class Replica:
                         self.render(previous)
                         previous['rendered'] = True
                         pub.atomic(path, previous)
+                        self._store_entry(path, previous)
                     return previous['receipt']
                 if snapshot['revisions'][:len(old['revisions'])] != old['revisions']:
                     raise Conflict('immutable revisions changed')
@@ -714,6 +1033,7 @@ class Replica:
             # Commit sequence ownership before derived rendering. A process
             # crash after replacing HTML must never make an older seq current.
             pub.atomic(path, entry)
+            self._store_entry(path, entry)
             self.render(entry)
             entry['rendered'] = True
             pub.atomic(path, entry)
@@ -721,33 +1041,41 @@ class Replica:
 
     def legacy(self, entries=None):
         """Older standalone publications in the webroot that the mirror never received."""
-        known = {(e['snapshot']['project'], e['snapshot']['name'])
-                 for e in (self.entries(shared=True) if entries is None else entries)}
-        found = []
         with self.cache_lock:
-            now = time.monotonic()
-            current = {}
-            for page in Path(self.cfg['webroot']).glob('*/*/index.html'):
-                project, name = page.parent.parent.name, page.parent.name
-                if (project, name) in known or not IDENT.fullmatch(project) or not IDENT.fullmatch(name):
-                    continue
-                try:
-                    signature = self.signature(page)
-                except FileNotFoundError:
-                    continue
-                cached = self.legacy_cache.get(page)
-                if cached is None or cached[0] != signature or now - cached[2] >= 30:
-                    title = re.search(r'<title>(.*?)</title>', page.read_text(errors='replace')[:4096], re.S)
-                    cached = signature, (project, name, html.unescape(title.group(1)).strip() if title else name), now
-                current[page] = cached
-                found.append(cached[1])
-            self.legacy_cache = current
-        return found
+            self._changes()
+            return list(self.legacy_cache.values())
 
     def dashboard(self):
-        entries = self.entries(shared=True)
-        # Render time-dependent ETA and stalled state on every request.
-        return catalog.render(entries, self.legacy(entries))
+        with self.cache_lock:
+            self._changes()
+            tick = time.monotonic()
+            if self.dashboard_cache is not None:
+                deadline, page = self.dashboard_cache
+                if deadline is None or tick < deadline:
+                    return page
+            now = catalog.datetime.now(catalog.timezone.utc)
+            items, active = [], False
+            entries = self.entries(shared=True)
+            for entry in entries:
+                path = self.data / (entry['snapshot']['identity'] + '.json')
+                cached = self.summaries.get(path)
+                if cached is None or (cached[0] is not None and tick >= cached[0]):
+                    item = catalog.summarize(entry, now)
+                    deadline = None if item['state'] == 'completed' else tick + 60
+                    cached = deadline, item
+                    self.summaries[path] = cached
+                active = active or cached[0] is not None
+                items.append(cached[1])
+            for legacy in self.legacy(entries):
+                path = self.webroot / legacy[0] / legacy[1] / 'index.html'
+                cached = self.summaries.get(path)
+                if cached is None:
+                    cached = None, catalog.legacy_summary(*legacy)
+                    self.summaries[path] = cached
+                items.append(cached[1])
+            page = catalog.render_items(items, now)
+            self.dashboard_cache = (tick + 60 if active else None), page
+            return page
 
     def directives(self, project, request=None):
         """The live directives of a project; request is one owner action to apply first."""
@@ -879,6 +1207,12 @@ def make_server(cfg):
                 self.reply(400, {'error': 'invalid source snapshot'})
 
     class Server(ThreadingHTTPServer):
+        def server_close(self):
+            try:
+                super().server_close()
+            finally:
+                replica.close()
+
         price_refresh = None
         price_completed = 0
 

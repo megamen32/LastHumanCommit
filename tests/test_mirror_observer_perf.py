@@ -78,7 +78,9 @@ def test_quiet_observer_reuses_file_bytes_registration_and_durable_ack(tmp_path,
     assert counts['state_read'] <= (7 if edit else 3), counts
     assert counts['sync'] == int(edit), counts
     if edit:
-        assert 30 <= delivered_at[0] <= 36 if constant_stamp else delivered_at[0] < 30
+        # Native directory events detect content edits even when a filesystem
+        # stamp is unchanged; no periodic content reread is necessary.
+        assert 9 <= delivered_at[0] < 15
 
 
 def test_repeated_identical_error_does_not_rewrite_state(tmp_path, monkeypatch):
