@@ -61,3 +61,25 @@ def test_file_mail_round_trip_between_worktrees(tmp_path):
         mail.send(root, "s2", "orch", "chat", "x")
     mail.ack(root, "s2", path.name)
     assert mail.inbox(root, "s2") == [] and (path.parent / "done" / path.name).exists()
+
+
+def test_plan_pulse_fires_once_when_leaves_stand_still(tmp_path, monkeypatch):
+    import json, os, time
+    import lhc_entry as entry
+    repo = tmp_path / "repo"
+    (repo / ".git").mkdir(parents=True)
+    plan = repo / ".agents/tasks/20261028-x"
+    (plan / "leaves").mkdir(parents=True)
+    (plan / "plan.json").write_text("{}")
+    leaf = plan / "leaves/L01.json"
+    leaf.write_text(json.dumps({"id": "L01", "status": "running"}))
+    monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
+    event = {"cwd": str(repo), "session_id": "s1"}
+    now = time.time()
+    assert entry.plan_pulse(event, ROOT, now=now) is None  # leaf just changed
+    old = now - 3600
+    os.utime(leaf, (old, old))
+    text = entry.plan_pulse(event, ROOT, now=now)
+    assert "L01" in text and "has not changed" in text
+    assert entry.plan_pulse(event, ROOT, now=now + 60) is None  # once per window
+    assert entry.plan_pulse({**event, "agent_id": "a"}, ROOT, now=now + 9999) is None
