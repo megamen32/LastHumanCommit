@@ -207,7 +207,9 @@ def planning_facts(doc):
             "tasks": [{k: v for k, v in t.items() if k in keys} for t in doc["tasks"]]}
 
 
-def comparison(baseline, selected, current, revisions, at, observed=None):
+def comparison(baseline, selected, current, revisions, at, observed=None, parts=None, table=True):
+    """Plan-versus-fact. With table=False the per-task rows go to parts[id] = (delta, card)
+    so the one task table of the page carries them."""
     esc = lambda v: html.escape(str(v), quote=True)
     def schedule_anchor(doc):
         explicit = timestamp(doc.get('planned_start_at'))
@@ -270,6 +272,16 @@ def comparison(baseline, selected, current, revisions, at, observed=None):
         bars = "".join(f'<div class="compare-bar {kind}" style="width:{max(1, value / scale * 100):.2f}%">{label}: {esc(minutes(value))}</div>' for kind, label, value in (("baseline", "Оценка r001", initial), ("revised", "Выбранный план", revised), ("actual", "По часам", elapsed)) if value is not None)
         bars += f'<small>r001: +{esc(minutes(original_start))} → +{esc(minutes(original_finish))}<br>Текущий график: +{esc(minutes(current_schedule.starts.get(identity)))} → +{esc(minutes(current_schedule.finishes.get(identity)))}</small>'
         bars += f'<br><small>Исходный старт/финиш{(" (" + anchor_label + ")") if anchor_label else ""}: {esc(planned_start.isoformat() if planned_start else "не заданы")} → {esc(planned_finish.isoformat() if planned_finish else "не задан")}; опоздание старта: {esc(start_delay_text)}</small>'
+        if parts is not None:
+            parts[identity] = (
+                f'r001: {esc(minutes(initial))} · ошибка оценки: {esc(minutes(diff))} · превышение: {esc(delay_text)}',
+                f'<h4>План и факт</h4><div class="compare-card">{bars}'
+                f'<p>Усилие: {esc(minutes(effort))} · по часам: {esc(minutes(elapsed))}<br>'
+                f'Ошибка оценки усилия: {esc(minutes(diff))}<br>Превышение длительности: {esc(delay_text)}<br>'
+                f'Старт: {esc(start_delay_text)} позже плана<br>{esc(status)}<br>'
+                f'Зависит от: {esc(", ".join(planned.get("depends_on", [])) or "—")}<br>'
+                f'Происхождение: {esc(actual.get("origin", ""))} {esc(", ".join(actual.get("supersedes", [])))}</p>'
+                f'{notes}</div>')
         rows.append(f'''<tr><td><b>{esc(identity)} · {esc(actual.get("label", ""))}</b><br>{esc(status)}
 <br>{esc(actual.get("owner", "неизвестно"))} · {esc(actual.get("harness", "неизвестно"))} · {esc(actual.get("session", "неизвестно"))}
 <br>{esc(actual.get("model", "неизвестно"))}<br>Зависит от: {esc(", ".join(planned.get("depends_on", [])) or "—")}
@@ -295,11 +307,12 @@ def comparison(baseline, selected, current, revisions, at, observed=None):
         start, anchor_label = schedule_anchor(doc)
         finish = (start + timedelta(minutes=whole)).isoformat() if start and whole is not None else "неизвестен"
         return f'длительность {minutes(whole)}, остаток {minutes(remaining)}; плановый финиш {esc(finish)}' + (f' ({anchor_label})' if start else '')
+    table_html = (f'''<div class="compare-scroll"><table class="comparison"><thead><tr><th>Работа / исполнитель</th><th>Оценки и время</th><th>Факт и отклонение от r001</th><th>Прогресс / ожидание</th></tr></thead><tbody>{''.join(rows)}</tbody></table></div>''' if table else '<p class="compare-note">По каждой задаче план и факт — в таблице «Задачи» ниже: в строке отклонение, в карточке по клику всё остальное.</p>')
     return f'''<section id="plan-comparison"><h1>Исходный план → работа по факту</h1>
 <p>Исходная цель: {esc(baseline.get("goal", ""))}</p>
 <p>Прогноз исходного снимка: {horizon(baseline)}<br>Прогноз выбранной ревизии: {horizon(revisions[-1]['document'])}<br>Текущий прогноз: {horizon(current, current_forecast=True)}<br>Измеренная длительность всей поставки: {esc(minutes(total_window(current)))}</p>
 <p>Усилие — измеренное время работы. По часам — от начала до конца, с ожиданиями; параллельные окна не складываются. Если отдельная длительность не задана, расписание опирается на оценку работы. Без дат время неизвестно.</p>
-<div class="compare-scroll"><table class="comparison"><thead><tr><th>Работа / исполнитель</th><th>Оценки и время</th><th>Факт и отклонение от r001</th><th>Прогресс / ожидание</th></tr></thead><tbody>{''.join(rows)}</tbody></table></div></section>'''
+{table_html}</section>'''
 
 
 STYLE = '''<style>#publication,#plan-comparison{margin:24px auto;padding:24px;max-width:1400px;border:1px solid #64748b55;border-radius:18px;background:#101b30;color:#e2e8f0;font:15px/1.6 system-ui}#publication a{color:#7dd3fc;margin-right:14px}.compare-scroll{overflow:auto}.comparison{width:100%;border-collapse:collapse}.comparison td,.comparison th{padding:16px;text-align:left;vertical-align:top;border-bottom:1px solid #64748b55;min-width:190px}.compare-bar{border-radius:5px;padding:3px 7px;margin:6px 0;min-width:110px;color:#fff;font-size:12px}.baseline{background:#475569}.revised{background:#2563eb}.actual{background:#0f766e}#live-state{font-weight:600}#plan-comparison li{overflow-wrap:anywhere}.comparison td:first-child{overflow-wrap:anywhere}</style>'''
@@ -331,7 +344,17 @@ def page(baseline, selected, current, revisions, revision_id, updated, live, ver
     result = result.replace("</head>", '<meta name="robots" content="noindex,nofollow,noarchive">' + STYLE + "</head>")
     result = re.sub(r'<nav class="revision-strip".*?</nav>', '<nav class="revision-strip" aria-label="Ревизии плана">' + links + '</nav>', result, count=1, flags=re.S)
     result = result.replace('<!-- plan-publication -->', panel, 1)
-    result = result.replace('<!-- plan-comparison -->', comparison(baseline, selected, current if live else selected, fact_revisions, updated, observed), 1)
+    parts = {}
+    result = result.replace('<!-- plan-comparison -->', comparison(baseline, selected, current if live else selected, fact_revisions, updated, observed, parts=parts, table=False), 1)
+    removed = []
+    for identity, (delta, card) in parts.items():
+        key = html.escape(str(identity))
+        if f'<!--leaf-compare:{key}-->' in result:
+            result = result.replace(f'<!--leaf-delta:{key}-->', delta).replace(f'<!--leaf-compare:{key}-->', card)
+        else:
+            removed.append(f'<details class="panel"><summary>{key} · {delta}</summary>{card}</details>')
+    if removed:
+        result = result.replace('</section>\n<section id="tasks"', '<h3>Убраны из текущего плана, но были в нём</h3>' + ''.join(removed) + '</section>\n<section id="tasks"', 1)
     if live:
         result = result.replace("</body>", POLLER.replace("__VERSION__", version) + "</body>")
     return result

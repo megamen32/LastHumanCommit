@@ -115,7 +115,7 @@ def test_historical_view_has_all_tabs_but_only_selected_revision_facts():
                  {'id': 'r002', 'document': later, 'reason': 'Вторая ревизия', 'created_at': '2026-10-25T11:00:00Z',
                   'observed': {'B': {'task': later['tasks'][-1], 'completed': []}}}]
     frozen = pub.page(first, first, first, revisions, 'r001', revisions[0]['created_at'], False)
-    expected_comparison = pub.comparison(first, first, first, revisions[:1], revisions[0]['created_at'])
+    expected_comparison = pub.comparison(first, first, first, revisions[:1], revisions[0]['created_at'], table=False)
     assert expected_comparison in frozen
     assert 'href="view-r001.html" aria-current="page"' in frozen
     assert 'href="view-r002.html"' in frozen
@@ -155,3 +155,14 @@ def test_publication_reload_handoff_has_one_owner_and_hash_identity():
     assert "JSON.stringify({scroll:scrollY,hash:location.hash})" in pub.POLLER
     assert "scrollTo(0,Number(saved))" not in pub.POLLER
     assert "publication.hash===location.hash" in ui.SCRIPT
+
+
+def test_one_task_table_carries_plan_and_fact_and_gantt_opens_the_same_card():
+    doc = document()
+    revisions = [{'id': 'r001', 'document': doc, 'reason': 'Начало', 'created_at': '2026-10-25T10:00:00Z'}]
+    page = pub.page(doc, doc, doc, revisions, 'r001', revisions[0]['created_at'], True, 'version')
+    assert 'class="comparison"' not in page          # no second table of the same tasks
+    assert '<!--leaf-compare' not in page and '<!--leaf-delta' not in page  # every slot is filled
+    assert "data-leaf='" in page and "class='leaf-compare'" in page
+    assert ".gantt-row[data-leaf]" in page            # the bar opens the table's card
+    assert 'r001:' in page and 'План и факт' in page
