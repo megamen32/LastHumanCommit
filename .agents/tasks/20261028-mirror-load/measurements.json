@@ -1,0 +1,15 @@
+{
+  "units": {"cpu": "percent of one logical core", "io": "MiB/s"},
+  "before": {
+    "runtime": "b82f826db13aacd0", "seconds": 35.03,
+    "mirror": {"pid": 7178, "cpu": 36.764, "file_read": 25.18933, "file_write": 0.01229, "disk_read": 0.00011, "disk_write": 0.01271},
+    "observer": {"pid": 7189, "cpu": 15.47, "file_read": 7.19571, "file_write": 0.39944, "disk_read": 0.00111, "disk_write": 0.40462}
+  },
+  "after": {
+    "runtime": "e4532fb023a36ed6", "seconds": 35.035,
+    "mirror": {"pid": 903921, "cpu": 2.8258, "file_read": 1.996371, "file_write": 0.009301, "disk_read": 0, "disk_write": 0.0097},
+    "observer": {"pid": 903662, "cpu": 3.7677, "file_read": 0.079199, "file_write": 0.004089, "disk_read": 0, "disk_write": 0.00446}
+  },
+  "public_note_added_after_install_verified": true,
+  "service_restarts_during_after_window": 0
+}

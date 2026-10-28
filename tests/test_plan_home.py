@@ -101,8 +101,8 @@ def catalog_entries(fixture):
 def test_all_projects_plans_listed_sorted_safe_and_no_task_dump(fixture, monkeypatch):
     replica = mirror.Replica(fixture[2])
     entries = catalog_entries(fixture)
-    monkeypatch.setattr(replica, 'entries', lambda: entries)
-    monkeypatch.setattr(replica, 'legacy', lambda: [])
+    monkeypatch.setattr(replica, 'entries', lambda **kwargs: entries)
+    monkeypatch.setattr(replica, 'legacy', lambda entries=None: [])
     page = replica.dashboard()
     assert page.count('<article class="plan') == 36
     assert page.count('<option value="project-') == 12
@@ -122,8 +122,8 @@ def test_all_projects_plans_listed_sorted_safe_and_no_task_dump(fixture, monkeyp
 def test_catalog_browser_filters_refresh_auth_expiry_mobile(fixture, browser, tmp_path, monkeypatch):
     call, js, url = browser
     replica = mirror.Replica(fixture[2])
-    monkeypatch.setattr(replica, 'entries', lambda: catalog_entries(fixture))
-    monkeypatch.setattr(replica, 'legacy', lambda: [])
+    monkeypatch.setattr(replica, 'entries', lambda **kwargs: catalog_entries(fixture))
+    monkeypatch.setattr(replica, 'legacy', lambda entries=None: [])
     (tmp_path / 'plan.html').write_text(replica.dashboard())
     call('Emulation.setDeviceMetricsOverride', {'width': 390, 'height': 844, 'deviceScaleFactor': 1, 'mobile': True})
     call('Page.navigate', {'url': url})

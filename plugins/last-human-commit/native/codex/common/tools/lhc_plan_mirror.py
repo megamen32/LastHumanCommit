@@ -212,6 +212,23 @@ def mark(plan, config_path=None):
     return True
 
 
+def file_stamp(path):
+    """Cheap identity for a local file, including atomic replacement and edits."""
+    try:
+        info = Path(path).lstat()
+    except FileNotFoundError:
+        return None
+    return (info.st_dev, info.st_ino, info.st_mode, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
+
+
+def source_stamp(plan):
+    plan = Path(plan)
+    paths = ([plan] if plan.name == 'plan.graph.json' else
+             [plan / 'plan.json', *sorted((plan / 'leaves').glob('*.json')),
+              plan / '.lhc-publication/plan-origin.json'])
+    return tuple((str(path), file_stamp(path)) for path in paths)
+
+
 def fingerprint(plan):
     plan = Path(plan)
     graph_source = plan.name == 'plan.graph.json'
@@ -408,15 +425,21 @@ def record_error(plan, error):
     with leaves.file_lock(dest / 'publish.lock'):
         state = read(dest / 'mirror-state.json', {})
         # Do not persist remote bodies (may include credentials or proxy details).
-        state['error'] = ('HTTP 409: конфликт владельца, последовательности или неизменяемой истории; зеркало не перезаписано'
+        message = ('HTTP 409: конфликт владельца, последовательности или неизменяемой истории; зеркало не перезаписано'
                           if isinstance(error, urllib.error.HTTPError) and error.code == 409
                           else type(error).__name__ + ': синхронизация или источник недоступны')
-        pub.atomic(dest / 'mirror-state.json', state)
+        if state.get('error') != message:
+            state['error'] = message
+            pub.atomic(dest / 'mirror-state.json', state)
 
 
 def run_observer(config_path, once=False, *, price_refresh=None):
     cfg = config(config_path)
     seen, retries, attempted, sent, capture_retries = {}, {}, {}, {}, {}
+    registered, hashes, states = {}, {}, {}
+    cfg_stamp = file_stamp(config_path)
+    config_deadline = time.monotonic() + 30
+    discovered, next_discovery, registry_stamp = [], 0, None
     local = Path(cfg['data_dir']).expanduser()
     # A second observer must not race sequence generation or network receipts.
     import fcntl
@@ -426,11 +449,33 @@ def run_observer(config_path, once=False, *, price_refresh=None):
         while True:
             if price_refresh is not None:
                 price_refresh.kick()
-            cfg = config(config_path)
-            for plan in discover(cfg):
+            stamp = file_stamp(config_path)
+            changed_config = stamp != cfg_stamp
+            if changed_config or time.monotonic() >= config_deadline:
+                fresh = config(config_path)
+                changed_config = changed_config or fresh != cfg
+                cfg, cfg_stamp = fresh, stamp
+                config_deadline = time.monotonic() + 30
+            if changed_config:
+                registered.clear()
+            registry_path = Path(cfg['data_dir']).expanduser() / 'registry.json'
+            changed_registry = file_stamp(registry_path) != registry_stamp
+            if changed_registry:
+                registered.clear()
+            if changed_config or changed_registry or time.monotonic() >= next_discovery:
+                discovered = discover(cfg)
+                next_discovery = time.monotonic() + 5
+            for plan in discovered:
                 try:
-                    register(plan, config_path)
-                    current = fingerprint(plan)
+                    dest = directory(plan)
+                    registration = (cfg_stamp, file_stamp(dest / 'mirror.json'), file_stamp(dest / 'state.json'))
+                    if registered.get(plan) != registration:
+                        register(plan, config_path)
+                        registered[plan] = (cfg_stamp, file_stamp(dest / 'mirror.json'), file_stamp(dest / 'state.json'))
+                    signature = source_stamp(plan)
+                    if plan not in hashes or hashes[plan][0] != signature or time.monotonic() - hashes[plan][2] >= 30:
+                        hashes[plan] = (signature, fingerprint(plan), time.monotonic())
+                    current = hashes[plan][1]
                     previous, since = seen.get(plan, (None, time.monotonic()))
                     if current != previous:
                         seen[plan] = (current, time.monotonic())
@@ -440,9 +485,12 @@ def run_observer(config_path, once=False, *, price_refresh=None):
                         capture_deadline, capture_failures = 0, 0
                     if once or (attempted.get(plan) != current and time.monotonic() >= capture_deadline and time.monotonic() - since >= max(.05, cfg.get('debounce_seconds', 1))):
                         try:
-                            capture(plan)
-                            attempted[plan] = fingerprint(plan)
-                            seen[plan] = (attempted[plan], time.monotonic())
+                            captured = capture(plan)
+                            signature = source_stamp(plan)
+                            after_capture = fingerprint(plan)
+                            attempted[plan] = (captured or {}).get('source_hash', after_capture)
+                            hashes[plan] = (signature, after_capture, time.monotonic())
+                            seen[plan] = (after_capture, time.monotonic())
                             capture_retries[plan] = (0, 0)
                         except (ValueError, OSError) as error:
                             capture_retries[plan] = (time.monotonic() + min(60, 2 ** min(capture_failures, 6)), capture_failures + 1)
@@ -452,20 +500,31 @@ def run_observer(config_path, once=False, *, price_refresh=None):
                         # A replay of the previous good snapshot must not clear
                         # the current source error while capture is retrying.
                         continue
-                    state = read(directory(plan) / 'mirror-state.json', {})
+                    state_path = dest / 'mirror-state.json'
+                    state_stamp = file_stamp(state_path)
+                    if plan not in states or states[plan][0] != state_stamp:
+                        states[plan] = (state_stamp, read(state_path, {}))
+                    state = states[plan][1]
+                    receipt = state.get('server_receipt') or {}
+                    delivery = ((state.get('pending') or {}).get('identity'), state.get('seq'))
+                    acknowledged = (state.get('seq') is not None and receipt.get('seq') == state['seq']
+                                    and receipt.get('identity') == (state.get('pending') or {}).get('identity'))
+                    if not state.get('pending') or (not state.get('error') and (acknowledged or sent.get(plan) == delivery)):
+                        continue
                     deadline, failures = retries.get(plan, (0, 0))
-                    if not failures and state.get('seq') != sent.get(plan):
+                    if not failures and delivery != sent.get(plan):
                         deadline = 0
                     if time.monotonic() >= deadline:
                         try:
                             sync(plan, cfg)
-                            sent[plan] = state.get('seq')
+                            sent[plan] = delivery
                             retries[plan] = (time.monotonic() + 30, 0)
                         except Exception as error:
                             retries[plan] = (time.monotonic() + min(60, 2 ** min(failures, 6)), failures + 1)
                             record_error(plan, error)
                 except (OSError, ValueError, KeyError, TypeError) as error:
                     record_error(plan, error)
+            registry_stamp = file_stamp(registry_path)
             if once:
                 return
             time.sleep(max(.05, cfg.get('poll_seconds', 1)))
@@ -547,6 +606,9 @@ class Replica:
         self.data = Path(cfg['data_dir']).expanduser()
         self.data.mkdir(parents=True, exist_ok=True)
         self.lock = threading.Lock()
+        self.cache_lock = threading.Lock()
+        self.entry_cache = {}
+        self.legacy_cache = {}
         self.renderer = pub.digest({name: Path(pub.__file__).with_name(name).read_text()
                                     for name in ('lhc_plan_publish.py', 'lhc_plan_transport.py', 'lhc_grid.py', 'lhc_plan_ui.py', 'lhc_models.py')})
         self.prices = catalog_identity()
@@ -560,8 +622,40 @@ class Replica:
                 self.render(entry)
             self.prices = prices
 
-    def entries(self):
-        return [read(p) for p in self.data.glob('*.json')]
+    @staticmethod
+    def signature(path):
+        stat = path.stat()
+        return stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns
+
+    def entries(self, *, fresh=False, shared=False):
+        """Stat is cheap; unchanged multi-revision JSON is parsed only once.
+
+        Only internal read-only consumers borrow cached objects. Ingest always
+        rereads ownership/CAS state under its file lock, and public callers get
+        their own copy so validation or accidental edits cannot poison the cache.
+        """
+        import copy
+        paths = list(self.data.glob('*.json'))
+        if fresh:
+            return [read(path) for path in paths]
+        with self.cache_lock:
+            now = time.monotonic()
+            current = {}
+            for path in paths:
+                try:
+                    signature = self.signature(path)
+                except FileNotFoundError:
+                    continue
+                cached = self.entry_cache.get(path)
+                if cached is None or cached[0] != signature or now - cached[2] >= 30:
+                    # Same-size in-place writes can share one filesystem clock
+                    # tick. Bound that exceptional stale window without polling
+                    # and reparsing every complete history on every request.
+                    cached = signature, read(path), now
+                current[path] = cached
+            self.entry_cache = current
+            values = [item[1] for item in current.values()]
+            return values if shared else copy.deepcopy(values)
 
     def render(self, entry):
         snapshot = entry['snapshot']
@@ -583,11 +677,13 @@ class Replica:
         transport.deploy(self.cfg['webroot'], snapshot['project'], snapshot['name'], snapshot['identity'], version, files)
 
     def ingest(self, snapshot):
+        import copy
+        snapshot = copy.deepcopy(snapshot)
         snapshot = validate_snapshot(snapshot)
         with self.lock, leaves.file_lock(self.data / 'ingest.lock'):
             path = self.data / (snapshot['identity'] + '.json')
             previous = read(path)
-            for entry in self.entries():
+            for entry in self.entries(fresh=True):
                 old = entry['snapshot']
                 if old['identity'] == snapshot['identity'] or (old['project'], old['name']) == (snapshot['project'], snapshot['name']):
                     if any(old[k] != snapshot[k] for k in ('identity', 'owner', 'project', 'name')):
@@ -623,20 +719,35 @@ class Replica:
             pub.atomic(path, entry)
             return receipt
 
-    def legacy(self):
+    def legacy(self, entries=None):
         """Older standalone publications in the webroot that the mirror never received."""
-        known = {(e['snapshot']['project'], e['snapshot']['name']) for e in self.entries()}
+        known = {(e['snapshot']['project'], e['snapshot']['name'])
+                 for e in (self.entries(shared=True) if entries is None else entries)}
         found = []
-        for page in Path(self.cfg['webroot']).glob('*/*/index.html'):
-            project, name = page.parent.parent.name, page.parent.name
-            if (project, name) in known or not IDENT.fullmatch(project) or not IDENT.fullmatch(name):
-                continue
-            title = re.search(r'<title>(.*?)</title>', page.read_text(errors='replace')[:4096], re.S)
-            found.append((project, name, html.unescape(title.group(1)).strip() if title else name))
+        with self.cache_lock:
+            now = time.monotonic()
+            current = {}
+            for page in Path(self.cfg['webroot']).glob('*/*/index.html'):
+                project, name = page.parent.parent.name, page.parent.name
+                if (project, name) in known or not IDENT.fullmatch(project) or not IDENT.fullmatch(name):
+                    continue
+                try:
+                    signature = self.signature(page)
+                except FileNotFoundError:
+                    continue
+                cached = self.legacy_cache.get(page)
+                if cached is None or cached[0] != signature or now - cached[2] >= 30:
+                    title = re.search(r'<title>(.*?)</title>', page.read_text(errors='replace')[:4096], re.S)
+                    cached = signature, (project, name, html.unescape(title.group(1)).strip() if title else name), now
+                current[page] = cached
+                found.append(cached[1])
+            self.legacy_cache = current
         return found
 
     def dashboard(self):
-        return catalog.render(self.entries(), self.legacy())
+        entries = self.entries(shared=True)
+        # Render time-dependent ETA and stalled state on every request.
+        return catalog.render(entries, self.legacy(entries))
 
     def directives(self, project, request=None):
         """The live directives of a project; request is one owner action to apply first."""
@@ -721,7 +832,7 @@ def make_server(cfg):
             if self.path == '/health':
                 self.reply(200, {'status': 'ok'})
             elif self.path == '/v1/status' and self.authorized():
-                self.reply(200, {'plans': [e['receipt'] for e in replica.entries()]})
+                self.reply(200, {'plans': [e['receipt'] for e in replica.entries(shared=True)]})
             elif self.path == '/' and sso_enabled:
                 if sso_enabled and not self.proxy_authorized():
                     self.reply(401, {'error': 'SSO authentication required'})

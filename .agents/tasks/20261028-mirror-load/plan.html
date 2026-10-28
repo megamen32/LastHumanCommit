@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Снизить CPU и дисковую нагрузку LHC Mirror · LHC</title>
+<style>
+  :root, :root[data-theme="dark"] { --bg: #0d1117; --panel: #151b26; --panel-2: #1b2331; --line: #26303f; --text: #e6edf6; --muted: #9fb0c6; --accent: #6ea8fe; --ok: #2ecc71; --warn: #f0a742; --bad: #f25f74; --st-done: #2ecc71; --st-running: #4f9cf9; --st-blocked: #f25f74; --st-waiting: #f0a742; --st-deferred: #b08ce8; --st-queued: #8fa0b8; }
+  :root[data-theme="light"] { --bg: #f4f6f9; --panel: #ffffff; --panel-2: #eaeef4; --line: #d3dae3; --text: #15202c; --muted: #58677a; --accent: #1a62cc; --ok: #1a7f37; --warn: #8a6100; --bad: #c02b38; --st-done: #1a7f37; --st-running: #1a62cc; --st-blocked: #c02b38; --st-waiting: #8a6100; --st-deferred: #6b4fa8; --st-queued: #5a6b7f; }
+  * { box-sizing: border-box; }
+  /* The page background lives on the canvas itself. No overlay element is
+     painted over the content, so nothing can ever hide a block of the
+     dashboard behind an opaque layer. */
+  html { background: var(--bg); }
+  body {
+    margin: 0; background: var(--bg);
+    background-image: radial-gradient(1500px 760px at 12% -12%, #1b2b45 0%, rgba(13,17,23,0) 62%);
+    background-repeat: no-repeat;
+    color: var(--text);
+    font: 14px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, "Helvetica Neue", Arial, sans-serif;
+    padding: 22px clamp(12px, 3vw, 40px) 56px;
+    min-height: 100%;
+    overflow-x: hidden;
+  }
+  a { color: var(--accent); }
+  .page { max-width: 2200px; margin: 0 auto; }
+
+  /* ---- header ---- */
+  header { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between;
+    margin-bottom: 16px; }
+  h1 { font-size: 23px; margin: 0; letter-spacing: -0.3px; overflow-wrap: anywhere; }
+  header > div { min-width: 0; max-width: 100%; }
+  .sub { color: var(--muted); font-size: 12.5px; overflow-wrap: anywhere; }
+  .head-count { display: flex; align-items: baseline; gap: 8px; background: var(--panel);
+    border: 1px solid var(--line); border-radius: 12px; padding: 8px 14px; }
+  .head-count b { font-size: 22px; font-weight: 650; letter-spacing: -0.4px; }
+  .head-count span { color: var(--muted); font-size: 12px; }
+  .theme-toggle { background: var(--panel); border: 1px solid var(--line); color: var(--muted);
+    border-radius: 10px; padding: 8px 12px; cursor: pointer; font: inherit; font-size: 12.5px;
+    min-height: 44px; min-width: 44px; }
+  .theme-toggle:hover { color: var(--text); }
+  .head-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  /* The progress stays in sight while the page scrolls. */
+  /* A number you can click: the tasks behind it. */
+  .kpi-tile { cursor: pointer; }
+  .kpi-tile:hover { border-color: var(--accent); }
+  .kpi-tile:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .progress-strip { cursor: pointer; }
+  .tile-card { margin: 0 0 14px; padding: 10px 12px; border: 1px solid var(--line);
+    border-radius: 10px; background: var(--panel-2); }
+  .tile-card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    margin-bottom: 8px; }
+  .tile-card-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .tile-card-item { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px;
+    padding: 6px 0; border-top: 1px solid var(--line); cursor: pointer; }
+  .tile-card-item:hover .row-name { color: var(--accent); }
+  .tile-card-close, .tile-card-back { min-height: 44px; padding: 4px 10px; border-radius: 8px;
+    border: 1px solid var(--line); background: transparent; color: var(--muted); cursor: pointer; }
+  .journal-fold summary { cursor: pointer; list-style: none; }
+  .journal-fold summary::-webkit-details-marker { display: none; }
+  .journal-fold summary h2 { margin: 0; font-size: 12px; text-transform: uppercase;
+    letter-spacing: .08em; color: var(--muted); }
+  .journal-fold[open] summary h2 { color: var(--text); }
+  .evidence-fold { margin: 0 0 14px; border: 1px solid var(--line); border-radius: 10px;
+    background: var(--panel); }
+  .evidence-fold > summary { cursor: pointer; padding: 10px 12px; color: var(--muted);
+    font-size: 12.5px; }
+  .evidence-fold[open] > summary { color: var(--text); border-bottom: 1px solid var(--line); }
+  .evidence-fold > *:not(summary) { margin-left: 12px; margin-right: 12px; }
+  .blocking-group { display: grid; gap: 8px; }
+  .blocking-group h3 { margin: 0 0 2px; font-size: 11px; text-transform: uppercase;
+    letter-spacing: .08em; color: var(--muted); }
+  .blocker-owner { border-left-color: var(--warn); }
+  /* The progress strip sticks to the top, so an anchor jump must not land
+     a section under it. */
+  section, .panel, .kpis, [id^="lhc-"] { scroll-margin-top: 76px; }
+  .progress-strip { position: sticky; top: 0; z-index: 40; margin: 0 0 12px;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; }
+  .progress-strip-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; }
+  .progress-strip-title { font-size: 11px; text-transform: uppercase; letter-spacing: .08em;
+    color: var(--muted); }
+  .progress-strip-value { font-size: 15px; font-weight: 700; color: var(--text); }
+  .progress-strip-percent { font-size: 13px; font-weight: 600; color: var(--accent); }
+  .progress-strip-hint { font-size: 12px; color: var(--muted); }
+  .progress-strip-bar { display: flex; height: 6px; margin-top: 7px; border-radius: 999px;
+    overflow: hidden; background: var(--panel-2); }
+  .progress-strip-bar .seg { height: 100%; }
+  .snapshot-note { color: var(--muted); font-size: 12.5px; margin: 0 0 14px; padding: 8px 12px;
+    border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 10px;
+    background: var(--panel); overflow-wrap: anywhere; }
+
+  /* ---- panels ---- */
+  .panel { background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
+    border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; margin-bottom: 16px; min-width: 0; }
+  .panel h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .09em; color: var(--muted);
+    margin: 0 0 12px; font-weight: 600; }
+  .panel-head { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+  .panel-head h2 { margin: 0; }
+
+  /* ---- brief: goal and business result ---- */
+  .brief { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-bottom: 16px; }
+  /* The technical wording is a confirmation, not the first thing to read. */
+  .brief-details { margin-bottom: 16px; }
+  .brief-details > summary { cursor: pointer; color: var(--muted); font-size: 12.5px;
+    min-height: 44px; display: flex; align-items: center; }
+  .brief-details[open] > summary { margin-bottom: 12px; color: var(--text); }
+  .brief-card { background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
+    border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 12px; padding: 14px 16px;
+    min-width: 0; }
+  .brief-card h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted);
+    margin: 0 0 6px; font-weight: 600; }
+  .brief-card p { margin: 0; overflow-wrap: anywhere; }
+  .brief-goal { border-left-color: var(--accent); }
+  .brief-result { border-left-color: var(--ok); }
+  .brief-wait { border-left-color: var(--warn); }
+  /* The why-panel is open on the first screen; it may be folded by the owner. */
+  .brief-why-details { margin-bottom: 16px; }
+  .brief-why-details > summary { color: var(--text); }
+  .brief-why { margin-bottom: 0; }
+
+  /* ---- KPI strip ---- */
+  .kpis { display: grid; gap: 10px; grid-template-columns: repeat(5, minmax(0, 1fr)); margin-bottom: 14px; }
+  .kpi { background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
+    border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 12px; padding: 11px 13px;
+    min-width: 0; }
+  .kpi-label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .07em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .kpi-value { font-size: 25px; font-weight: 650; margin: 3px 0 2px; letter-spacing: -0.6px; line-height: 1.15;
+    overflow-wrap: anywhere; }
+  .kpi-hint { color: var(--muted); font-size: 11.5px; overflow-wrap: anywhere; }
+
+  /* ---- progress and legend ---- */
+  .progress { display: flex; height: 12px; border-radius: 999px; overflow: hidden; background: #0b1018;
+    border: 1px solid var(--line); }
+  .seg { height: 100%; }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 10px; color: var(--muted); font-size: 12px; }
+  .legend-item i { display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-right: 6px; }
+
+  /* ---- what to do now ---- */
+  .slots-badge { font-size: 12.5px; color: var(--muted); background: var(--panel-2);
+    border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px; }
+  .slots-badge b { color: var(--text); font-size: 14px; }
+  .now-grid { display: grid; gap: 14px; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 14px;
+    align-items: start; }
+  .now-col { background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px;
+    min-width: 0; }
+  .now-col h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted);
+    margin: 0 0 10px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+  .now-count { margin-left: auto; background: #0e141d; border: 1px solid var(--line); border-radius: 999px;
+    padding: 0 8px; color: var(--text); font-size: 11.5px; }
+  .now-subtitle { color: var(--muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: .06em;
+    margin: 12px 0 6px; }
+  .now-list { list-style: none; margin: 0; padding: 0; }
+  .now-item { padding: 8px 0; border-bottom: 1px solid #232c3a; }
+  .now-item:last-child { border-bottom: 0; }
+  .now-head { display: flex; gap: 8px; align-items: baseline; min-width: 0; }
+  .now-id { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11.5px;
+    color: var(--accent); flex: none; max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .now-name { min-width: 0; overflow-wrap: anywhere; }
+  .now-meta { color: var(--muted); font-size: 11.5px; margin-top: 2px; overflow-wrap: anywhere; }
+  .now-item.deferred { opacity: .75; }
+  .now-item.blocked .now-id { color: var(--bad); }
+  .now-empty { color: var(--muted); font-style: italic; font-size: 12.5px; }
+  .wait-list { display: flex; flex-wrap: wrap; gap: 6px; }
+  .wait-chip { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11.5px;
+    color: var(--muted); background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px;
+    padding: 2px 7px; white-space: nowrap; }
+  .wait-more { color: var(--muted); font-size: 11.5px; align-self: center; }
+
+  /* ---- gantt ---- */
+  .gantt { overflow-x: auto; max-width: 100%; }
+  .gantt-row[data-leaf] { cursor: pointer; }
+  .gantt-row[data-leaf]:hover, .gantt-row[data-leaf]:focus-visible { background: color-mix(in srgb, var(--accent) 10%, transparent); outline: none; }
+  .leaf-compare:not(:empty) { margin-top: 12px; }
+  .gantt-inner { min-width: 760px; }
+  .gantt-axis-row, .gantt-row { display: grid; grid-template-columns: minmax(240px, 320px) minmax(360px, 1fr);
+    gap: 10px; min-width: 680px; }
+  .gantt-axis-spacer { min-width: 0; }
+  .gantt-axis { position: relative; height: 22px; min-width: 0; border-bottom: 1px solid var(--line); }
+  .gantt-axis-note { font-size: 11px; color: var(--muted); line-height: 22px; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis; }
+  .gantt-noduration { color: var(--muted); font-size: 13px; line-height: 26px; opacity: .8; }
+  .tick { position: absolute; top: 2px; transform: translateX(-50%); font-size: 11px; color: var(--muted);
+    white-space: nowrap; }
+  .tick-0 { transform: none; }
+  .tick-6 { transform: translateX(-100%); }
+  .gantt-row { align-items: center; border-bottom: 1px solid #1e2632; }
+  .gantt-row:hover { background: #18202d; }
+  .gantt-label { display: flex; flex-direction: column; gap: 1px; padding: 5px 0; min-width: 0; overflow: hidden; }
+  .gantt-line { display: flex; align-items: center; gap: 7px; min-width: 0; }
+  .gantt-id { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11px;
+    color: var(--muted); flex: none; max-width: 34%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .gantt-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .gantt-meta { gap: 8px; }
+  .gantt-status { font-size: 11px; color: var(--muted); white-space: nowrap; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex: none; }
+  .crit { color: #f0a742; font-size: 10.5px; white-space: nowrap; }
+  .gantt-track { position: relative; height: 26px; min-width: 0; }
+  .bar { position: absolute; top: 6px; height: 15px; border-radius: 5px; min-width: 3px;
+    box-shadow: 0 0 0 1px rgba(0,0,0,.25) inset; }
+  .wave-row { display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    margin-top: 14px; padding: 8px 12px; background: var(--panel-2); border: 1px solid var(--line);
+    border-left: 3px solid var(--accent); border-radius: 10px; color: var(--muted);
+    font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+  .wave-count { text-transform: none; letter-spacing: 0; }
+
+  /* ---- two column work area ---- */
+  .grid { display: grid; gap: 16px; grid-template-columns: minmax(0, 1.35fr) minmax(0, .65fr);
+    align-items: start; }
+  .grid > * { min-width: 0; }
+  @media (max-width: 1000px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+  @media (min-width: 1700px) {
+    .gantt-axis-row, .gantt-row { grid-template-columns: minmax(340px, 460px) minmax(360px, 1fr); }
+  }
+  @media (max-width: 1800px) { .kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  @media (max-width: 1200px) { .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (max-width: 1100px) {
+    .now-grid { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 900px) {
+    .brief { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 700px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .blocker { background: var(--panel-2); border: 1px solid #3a2530; border-left: 3px solid var(--bad);
+    border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; }
+  .blocker-head { display: flex; gap: 8px; align-items: center; margin-bottom: 4px; }
+  .blocker-reason { color: #d7e0ec; }
+  .blocker-meta { color: var(--muted); font-size: 12px; margin-top: 4px; }
+  .badge { font-size: 11px; font-weight: 700; color: #0d1117; border-radius: 5px; padding: 1px 6px; }
+  .facts { margin: 0; padding-left: 18px; color: var(--muted); }
+  .facts li { margin-bottom: 6px; }
+  .facts b { color: var(--text); }
+  .live { list-style: none; margin: 0; padding: 0; }
+  .live li { display: flex; gap: 8px; padding: 6px 0; border-bottom: 1px solid #1e2632; align-items: baseline; }
+  .live-text { flex: 1; }
+  .live-at { color: #8aa0b8; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .live-result { color: var(--text); font-size: 12.5px; }
+  .live-evidence { color: #8aa0b8; font-size: 12px; white-space: nowrap; }
+  .leaf-tag { color: var(--muted); font-size: 11px; border: 1px solid var(--line); border-radius: 5px;
+    padding: 0 5px; min-width: 0; white-space: normal; overflow-wrap: anywhere; }
+  .cell-sub { display: block; color: var(--muted); font-size: 11px; }
+  .table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .table th { text-align: left; color: var(--muted); font-weight: 600; font-size: 11px;
+    text-transform: uppercase; letter-spacing: .05em; padding: 6px 8px; border-bottom: 1px solid var(--line);
+    background: var(--panel); }
+  .table td { padding: 6px 8px; border-bottom: 1px solid #1c2431; vertical-align: top; }
+  /* The leaves are read as a table, so the panel takes the whole width
+     of the page instead of one column of a two-column grid. */
+  .panel-leaves { grid-column: 1 / -1; }
+  .table-leaves { min-width: 920px; width: 100%; table-layout: fixed; }
+  .table-scroll { max-width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; }
+  .table-leaves th:nth-child(1) { width: 42%; }
+  .table-leaves th:nth-child(2) { width: 120px; }
+  .table-leaves th:nth-child(3), .table-leaves th:nth-child(4) { width: 110px; }
+  .table-leaves th:nth-child(5) { width: 120px; }
+  .task-title { font-weight: 550; overflow-wrap: anywhere; }
+  .row-id { display: inline-block; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 11px; color: var(--muted); margin-right: 7px; vertical-align: 1px; }
+  .table-leaves .status { white-space: nowrap; }
+  .task-details-trigger, .task-details-close { color: var(--accent); background: transparent; border: 1px solid var(--line);
+    border-radius: 6px; cursor: pointer; font: inherit; padding: 3px 7px; }
+  .task-details-host { position: static; width: 100%; margin-top: 12px; }
+  /* The leaf row is the control: the owner taps the task, and the task opens
+     right under itself, where the finger already is. */
+  .leaf-row { cursor: pointer; }
+  .leaf-row:hover .row-name { color: var(--accent); }
+  .leaf-row:focus-within { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .task-details-row > td { padding: 0; border: none; background: transparent; }
+  .task-details-row .task-details-card { margin: 0 0 10px; }
+  .row-meta { display: block; margin-top: 2px; color: var(--muted); font-size: 12px;
+    overflow-wrap: anywhere; }
+  .details-cell { text-align: right; }
+  .task-details-card { width: 100%; min-width: 0; background: var(--panel-2); border: 1px solid var(--line);
+    border-radius: 10px; padding: 12px; }
+  .task-details-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+  .task-details-head h3 { min-width: 0; margin: 0; font-size: 14px; overflow-wrap: anywhere; }
+  .task-details { display: grid; grid-template-columns: minmax(110px, auto) minmax(0, 1fr); gap: 3px 12px; margin: 8px 0 2px; }
+  .task-details dt { color: var(--muted); }
+  .task-details dd { margin: 0; min-width: 0; width: 100%; overflow-wrap: anywhere; word-break: break-word; }
+  details > summary { color: var(--accent); cursor: pointer; }
+  .technical { font-size: 12px; }
+  .status { color: var(--c); font-weight: 600; white-space: nowrap; }
+  /* The overrun of the plan and the plan itself are two facts with two
+     colors, and both colors come from the palette of the theme: the planned
+     time is green, everything above it is yellow. */
+  .over { color: var(--warn); }
+  .plan-time { display: block; color: var(--ok); font-weight: 600; }
+  .plan-over { color: var(--warn); font-weight: 600; }
+  .plan-none { color: var(--muted); }
+  .plan-value { color: var(--ok); font-weight: 600; }
+  .plan-over-value { color: var(--warn); font-weight: 600; }
+  .cell-plan { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; }
+  .row-times { display: block; margin-top: 2px; color: var(--muted); font-size: 12px;
+    font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  .empty { color: var(--muted); font-style: italic; }
+  .notes { color: var(--muted); margin: 0; padding-left: 18px; }
+  .hint { color: var(--muted); font-size: 12px; margin: 10px 0 0; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .toolbar input { background: #0e141d; border: 1px solid var(--line); color: var(--text); border-radius: 8px;
+    padding: 6px 10px; min-width: 200px; font: inherit; }
+  .chip { background: #0e141d; border: 1px solid var(--line); color: var(--muted); border-radius: 999px;
+    padding: 4px 11px; cursor: pointer; font: inherit; font-size: 12px; }
+  .chip.active { background: var(--accent); color: #0d1117; border-color: var(--accent); font-weight: 600; }
+  footer { color: var(--muted); font-size: 11.5px; margin-top: 22px; border-top: 1px solid var(--line);
+    padding-top: 12px; }
+  /* The phone layout comes last, so it wins over every base rule above. */
+  @media (max-width: 640px) {
+    /* The state and the action come first; the Gantt opens on its own,
+       below the table that carries the same leaves. */
+    .page { display: flex; flex-direction: column; }
+    /* A flex item keeps its content width by default, so the wide Gantt
+       would push the whole page sideways. The panels have to be allowed to
+       shrink and scroll inside. */
+    .page > * { min-width: 0; max-width: 100%; }
+    .panel, .grid > *, .kpis { min-width: 0; }
+    .panel-gantt { order: 8; }
+    footer { order: 9; }
+    body { padding: 14px 10px 36px; }
+    .panel { padding: 12px; border-radius: 11px; }
+    h1 { font-size: 19px; }
+    /* The cards become compact rows: on a phone the state and the action
+       have to be visible without a grid of boxes. */
+    .kpis { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+    .kpi { padding: 8px 10px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; }
+    .kpi-label { order: 1; flex: 0 0 auto; }
+    .kpi-value { order: 2; font-size: 19px; margin: 0; }
+    .kpi-hint { order: 3; flex: 1 1 100%; font-size: 11px; }
+    .toolbar input { min-width: 0; width: 100%; }
+    /* Every touch target is at least 44 CSS px. */
+    .chip, .task-details-trigger, .task-details-close, .toolbar input, .toolbar select { min-height: 44px; min-width: 44px; }
+    .task-details { grid-template-columns: minmax(0, 1fr); gap: 0; }
+    .task-details dd { margin-bottom: 8px; }
+    /* The leaf table becomes one compact row per leaf instead of a wide
+       table that has to be scrolled sideways. */
+    .table-leaves { min-width: 0; display: block; }
+    .table-leaves thead { display: none; }
+    .table-leaves tbody { display: block; }
+    .table-leaves tr { display: block; padding: 8px 0; border-bottom: 1px solid var(--line); }
+    .table-leaves td { display: flex; gap: 10px; justify-content: space-between; align-items: baseline;
+      border: none; padding: 2px 0; text-align: right; }
+    .table-leaves td::before { content: attr(data-label); color: var(--muted); font-size: 11px;
+      text-transform: uppercase; letter-spacing: .05em; text-align: left; flex: 0 0 auto; }
+    .table-leaves td.task-title { display: block; text-align: left; }
+    .table-leaves td.task-title::before { content: none; }
+    /* The plan cell keeps its lines stacked and flush right on a phone. */
+    .table-leaves td .cell-plan { align-items: flex-end; }
+    .table-leaves td:last-child { justify-content: flex-start; }
+    .table-leaves td:last-child::before { content: none; }
+    .table-scroll { overflow-x: visible; }
+    /* The opened task is a card under its own row, not another table cell. */
+    .table-leaves tr.task-details-row { display: block; padding: 0; border: none; }
+    .table-leaves tr.task-details-row > td { display: block; padding: 0; text-align: left; }
+    .table-leaves tr.task-details-row > td::before { content: none; }
+  }
+
+</style>
+<style id="plan-app-style">
+html{scroll-behavior:smooth}body{margin:0;padding:0;overflow-wrap:anywhere;background:var(--bg);background-image:none}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body .page{max-width:1600px;margin:0 auto;padding:28px 36px 48px 240px;min-width:0}
+.page>header{margin:0 0 14px;align-items:flex-start}.page>header h1{font-size:clamp(24px,3vw,36px);line-height:1.15;letter-spacing:-.035em}
+.page>header .sub{font-size:11px;max-width:700px;color:var(--muted);opacity:1}.head-count{display:none}
+.now-count{color:var(--text)!important;background:var(--panel-2)!important;border:1px solid var(--line)}
+body>footer{margin:0 36px 24px 240px;max-width:1324px;padding:12px 0;color:var(--muted)}
+.plan-sidebar{position:fixed;inset:0 auto 0 0;width:208px;padding:36px 16px;background:var(--panel);border-right:1px solid var(--line);z-index:30;display:flex;flex-direction:column;gap:5px}
+.plan-brand{font-size:12px;font-weight:800;letter-spacing:.14em;color:var(--muted);padding:0 14px 28px}
+.plan-sidebar .plan-brand .lhc-brand{display:flex;align-items:center;gap:8px;padding:0;min-height:44px;color:var(--text);text-decoration:none}.lhc-brand-mark{flex:none}.lhc-brand-name{font-size:11px;letter-spacing:0;line-height:1.2}
+.plan-sidebar a{color:var(--muted);text-decoration:none;padding:12px 14px;border-radius:10px;font-size:14px;min-height:44px;box-sizing:border-box;display:flex;align-items:center;gap:10px}
+.plan-sidebar a[aria-current=location]{background:var(--accent);color:white;font-weight:650}
+.plan-sidebar a:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.plan-section{min-width:0;scroll-margin-top:var(--plan-anchor-offset,24px)}.plan-section [id]{scroll-margin-top:var(--plan-anchor-offset,24px)}.plan-section>h2{font-size:23px;margin:22px 0 18px}
+.revision-strip{display:flex;gap:6px;overflow-x:auto;max-width:100%;padding:2px 0 16px;margin-bottom:6px;align-items:center}
+.revision-strip a,.revision-strip span{flex:none;white-space:nowrap;padding:7px 13px;border:1px solid var(--line);border-radius:8px;color:var(--muted);font-size:12px;text-decoration:none}
+.revision-strip [aria-current=page]{color:var(--text);border-color:var(--accent);background:var(--panel);font-weight:650}
+body .progress-strip{position:relative;top:auto;margin:0 0 18px;box-shadow:none}
+.time-rail{margin-top:9px;cursor:default;min-width:0}
+.time-rail-start{font-size:11px;line-height:1.4;color:var(--muted);overflow-wrap:anywhere}
+.time-rail-times{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:7px;font-size:12px;line-height:1.4}
+.time-rail-times>span{min-width:0;overflow-wrap:anywhere}.time-rail-minimum{text-align:left;color:#687386}.time-rail-maximum{text-align:right;color:#687386}.time-rail-now{text-align:center;font-weight:700;color:var(--text)}
+.time-rail-clock.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.time-rail-note,.time-rail-status{font-size:12px;line-height:1.5;margin-top:7px}.time-rail-note{font-size:11px;color:var(--muted)}
+.time-rail-status{min-height:18px;color:var(--text);font-weight:600}.time-rail[data-state=early-passed] .time-rail-status{color:#9a6700}.time-rail[data-state=overdue] .time-rail-status{color:#b42318}
+@media(max-width:650px){.time-rail-times{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:5px}.time-rail-now{grid-column:1/-1;text-align:left}}
+body .kpis{grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:0 0 18px}
+body .kpi{padding:15px 16px;min-width:0;border-radius:12px}body .kpi-value{font-size:clamp(22px,2.5vw,32px)}body .kpi-hint{font-size:11px;line-height:1.4}
+body .panel{border-radius:14px;padding:20px;margin-bottom:16px}body .brief{gap:12px}body .brief-card{min-width:0}
+body .panel-now{margin-top:12px}
+.compare-scroll,.table-scroll,.gantt{max-width:100%;overflow-x:auto!important}.comparison-empty:has(+*){font-size:13px}
+#comparison:has(#plan-comparison) .comparison-empty{display:none}
+body #publication,body #plan-comparison{margin:0 0 16px;padding:20px;max-width:none;background:var(--panel);color:var(--text);border-color:var(--line);font:inherit}
+body #publication a{color:var(--accent)}body .comparison td,body .comparison th{padding:12px;min-width:180px;font-size:13px}
+.plan-section p,.brief-card p{white-space:pre-wrap}#history #lhc-forecast{max-width:900px}
+@media(max-width:900px){body .page{padding:20px 20px 40px 200px}.plan-sidebar{width:176px;padding:24px 12px}body .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}body>footer{margin-left:200px}}
+@media(max-width:650px){body .page{padding:14px 12px 30px}.plan-sidebar{position:sticky;inset:0;flex-direction:row;width:auto;padding:8px 10px;gap:4px;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line)}.plan-brand{display:none}.plan-sidebar a{flex:none;padding:10px 12px;font-size:12px}.page>header{gap:12px}.page>header .sub{font-size:10px}.head-actions{flex-shrink:0}.theme-toggle{max-width:94px;font-size:11px}body .kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}body .kpi{padding:12px}body .panel{padding:14px}body .brief{grid-template-columns:1fr}body .progress-strip{font-size:11px}.toolbar{flex-wrap:wrap}.toolbar input{width:100%;min-width:0}.revision-strip{padding-bottom:12px}body .gantt-inner{min-width:600px}}
+@media(max-width:650px){body>footer{margin:0 12px 24px}}
+@media print{.plan-sidebar,.revision-strip,.theme-toggle{display:none!important}body .page{padding:0!important;max-width:none}.plan-section{break-before:auto}body .kpis{grid-template-columns:repeat(4,1fr)}details>*{display:block!important}.compare-scroll,.gantt,.table-scroll{overflow:visible!important}.gantt-inner{min-width:0!important}.panel{break-inside:avoid}#plan-content{display:block}body>footer{margin:12px 0}}
+#herder-launch{position:fixed;z-index:45;top:20px;right:24px;border:1px solid var(--accent);background:var(--panel);color:var(--text);padding:10px 14px;border-radius:10px;font:inherit;cursor:pointer;min-height:44px;box-shadow:0 4px 24px #0005}#herder-launch:disabled{opacity:.55;cursor:default}
+@media(min-width:651px){body:has(#herder-launch) .head-actions{padding-right:140px}}
+#herder-workspace,#herder-plan-pane{display:contents}body.herder-open{overflow:hidden}body.herder-open #herder-workspace{position:fixed;inset:0;display:grid;grid-template-columns:var(--herder-plan-size,calc(50vw - 6px)) 12px minmax(0,1fr);grid-template-rows:minmax(0,1fr)}body.herder-open #herder-plan-pane{display:block;overflow:auto;min-width:0;min-height:0;overscroll-behavior:contain}body.herder-open #herder-launch{display:none}
+body.herder-open #herder-plan-pane .page{padding:18px 18px 54px;box-sizing:border-box;width:100%}body.herder-open #herder-plan-pane .head-actions{padding-right:0}body.herder-open #herder-plan-pane .plan-sidebar{position:sticky;inset:0;flex-direction:row;width:auto;padding:6px;gap:4px;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line);box-sizing:border-box}body.herder-open .plan-brand{display:none}body.herder-open .plan-sidebar a{flex:none;padding:8px;font-size:12px}#herder-plan-pane>footer{margin:12px 24px}body.herder-open #herder-plan-pane .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+#herder-panel{background:var(--panel);color:var(--text);display:flex;flex-direction:column;overflow:hidden;min-width:0;min-height:0}#herder-panel[hidden],#herder-plan-update[hidden],#herder-divider[hidden],#herder-split-controls[hidden],#herder-drag-shield[hidden]{display:none!important}
+.herder-heading{display:flex;align-items:center;gap:6px;padding:4px 6px;min-height:44px;box-sizing:border-box;white-space:nowrap;flex-shrink:0;overflow:hidden}.herder-heading button,#herder-split-controls button{min-height:36px;padding:4px 8px;border:1px solid var(--line);border-radius:7px;background:var(--panel-2);color:var(--text);font:inherit;cursor:pointer}.herder-selection{flex:1;min-width:0;display:flex;font-size:12px}.herder-selection select{width:100%;min-width:0;min-height:36px;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:7px}#herder-direct{color:var(--accent);font-size:11px;flex-shrink:0}#herder-plan-update{margin:4px 8px;font-size:11px}#herder-frame{flex:1;width:100%;min-height:0;border:0;background:var(--bg)}
+#herder-divider{position:relative;z-index:61;cursor:col-resize;touch-action:none;background:var(--line)}#herder-divider:after{content:'';position:absolute;inset:calc(50% - 24px) 4px;border-radius:4px;background:var(--accent)}#herder-divider:focus-visible{outline:3px solid var(--accent);outline-offset:-3px}#herder-split-controls{position:fixed;z-index:65;display:flex;gap:2px;padding:2px;background:var(--panel);border:1px solid var(--line);border-radius:8px;white-space:nowrap}#herder-split-controls button{font-size:11px;padding:2px 7px;min-height:32px}#herder-drag-shield{position:fixed;inset:0;z-index:64;cursor:col-resize;touch-action:none}body.herder-dragging{user-select:none}body.herder-dragging #herder-frame{pointer-events:none}
+@media(max-width:650px){body:has(#herder-launch) .page{padding-bottom:88px}#herder-launch{top:auto;right:14px;bottom:calc(14px + env(safe-area-inset-bottom))}body.herder-open #herder-workspace{grid-template-columns:minmax(0,1fr);grid-template-rows:var(--herder-plan-size,calc(50dvh - 6px)) 12px minmax(0,1fr)}#herder-divider,#herder-drag-shield{cursor:row-resize}#herder-divider:after{inset:4px calc(50% - 24px)}}
+@media print{#herder-launch,#herder-panel,#herder-divider,#herder-split-controls,#herder-drag-shield{display:none!important}body.herder-open #herder-workspace,body.herder-open #herder-plan-pane{position:static;display:block;overflow:visible}}
+@media(max-width:650px){.plan-sidebar .plan-brand{display:flex;flex:none;padding:0}.plan-brand .lhc-brand-name{display:none}.plan-sidebar .plan-brand .lhc-brand{padding:0 8px}}
+body.herder-open .plan-sidebar .plan-brand{display:flex;flex:none;padding:0}body.herder-open .plan-brand .lhc-brand-name{display:none}
+.lhc-brand{display:inline-flex;align-items:center;gap:15px}.lhc-brand .brand-mark{font-size:27px;font-weight:850;letter-spacing:-.12em;flex:none}.lhc-brand .brand-mark span{color:#f5b38a;font-weight:400}.lhc-brand .brand-name{font-size:11px;line-height:1.25;font-weight:850;letter-spacing:.08em;text-transform:uppercase}@media(max-width:640px){.lhc-brand .brand-mark{font-size:23px}}</style></head>
+<body><nav class="plan-sidebar" aria-label="Разделы плана"><div class="plan-brand"><a class="lhc-brand" href="https://lhc.bezrabotnyi.com/" aria-label="Главная Last Human Commit"><span class="brand-mark lhc-brand-mark">L<span>／</span>H</span><span class="brand-name lhc-brand-name">Last Human<br>Commit</span></a></div><a href="#dashboard">Дашборд</a><a href="#outcome">Цель и результат</a><a href="#work-plan">План работ</a><a href="#comparison">План и факт</a><a href="#tasks">Задачи</a><a href="#history">История</a></nav>
+<div class="page">
+<header><div><h1>Снизить CPU и дисковую нагрузку LHC Mirror</h1><div class="sub">Дата обновления не записана</div></div><div class="head-actions"><button type="button" class="theme-toggle" id="theme-toggle" aria-label="Переключить тему">Тема: как в системе</button><div class="head-count"><b>2</b><span>задач в графе</span></div></div></header>
+<!-- plan-revisions --><nav class="revision-strip" aria-label="Ревизии плана"><span aria-current="page">Текущий план</span></nav>
+<main id="plan-content">
+<section id="dashboard" class="plan-section" aria-label="Дашборд">
+<div class="progress-strip" id="lhc-progress-strip" role="button" tabindex="0" data-tile="all" aria-label="Степень прогресса — показать все задачи"><div class="progress-strip-line"><span class="progress-strip-title">Степень прогресса</span><span class="progress-strip-value">2 / 2</span><span class="progress-strip-percent">100%</span><span class="progress-strip-hint">Оценка оставшихся работ</span></div><div class="progress-strip-bar" aria-label="Распределение задач по статусам"><div class="seg" style="width:100.0000%;background:var(--st-done)" title="Готово: 2"></div></div><div class="legend"><span class="legend-item"><i style="background:var(--st-done)"></i>Готово · 2</span></div><div class="time-rail" data-time-frame="{&quot;start&quot;: &quot;2026-10-28T20:45:15.355340+00:00&quot;, &quot;start_source&quot;: &quot;file_birthtime&quot;, &quot;legacy_start&quot;: &quot;&quot;, &quot;end_min&quot;: &quot;2026-10-28T23:57:51+03:00&quot;, &quot;end&quot;: &quot;2026-10-28T23:57:51+03:00&quot;, &quot;anchor&quot;: &quot;2026-10-28T23:57:51+03:00&quot;, &quot;anchor_source&quot;: &quot;event&quot;, &quot;reference&quot;: &quot;2026-10-28T20:59:01.902974+00:00&quot;, &quot;snapshot&quot;: &quot;2026-10-28T20:59:01.902974+00:00&quot;, &quot;completed&quot;: true, &quot;live&quot;: true, &quot;end_label&quot;: &quot;\u0417\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u043e&quot;}"><div class="time-rail-start">Начало плана: 28.10.2026 20:45 UTC · восстановлено по файлам</div><div class="time-rail-times" aria-label="Временные границы плана"><span class="time-rail-minimum">Минимум —</span><span class="time-rail-maximum">Максимум —</span><span class="time-rail-now">На момент снимка 28.10.2026 20:59 UTC</span></div><div class="time-rail-clock sr-only">На момент снимка 28.10.2026 20:59 UTC</div><div class="time-rail-status" role="status"></div><div class="time-rail-note">Время показано отдельно от доли выполненных задач; цветная полоса считает статусы. Часовой пояс указан в датах.</div></div></div>
+<p class="hint acceptance-note">Прогресс задач не означает приёмку пользовательского результата.</p>
+<div class="kpis" id="lhc-state"><div class="kpi kpi-tile" data-tile="remaining" role="button" tabindex="0" aria-label="Остаток по плану: 0 мин — показать задачи" style="--accent:var(--st-waiting)"><div class="kpi-label" title="Остаток по плану">Остаток по плану</div><div class="kpi-value">0 мин</div><div class="kpi-hint">Оценка оставшихся работ</div></div><div class="kpi kpi-tile" data-tile="forecast" role="button" tabindex="0" aria-label="Прогноз финиша: Работы по плану завершены — показать задачи" style="--accent:var(--st-done)"><div class="kpi-label" title="Прогноз финиша">Прогноз финиша</div><div class="kpi-value">Работы по плану завершены</div><div class="kpi-hint">Фактический финиш: 28.10.2026 20:57 UTC</div></div><div class="kpi kpi-tile" data-tile="parallel" role="button" tabindex="0" aria-label="Параллельность: 0 / 2 — показать задачи" style="--accent:var(--st-running)"><div class="kpi-label" title="Параллельность">Параллельность</div><div class="kpi-value">0 / 2</div><div class="kpi-hint">пик по плану 2 · занятых исполнителей 0</div></div><div class="kpi kpi-tile" data-tile="unfinished" role="button" tabindex="0" aria-label="Осталось: 0 — показать задачи" style="--accent:var(--st-queued)"><div class="kpi-label" title="Осталось">⋯ Осталось</div><div class="kpi-value">0</div><div class="kpi-hint">не завершено · отложено владельцем: 0 (в остаток не входит)</div></div></div>
+<section class="panel status-details"><h2>Статусы задач и усилие</h2><div class="kpis secondary-kpis"><div class="kpi kpi-tile" data-tile="done" role="button" tabindex="0" aria-label="Готово: 2 / 2 — показать задачи" style="--accent:var(--st-done)"><div class="kpi-label" title="Готово">✅ Готово</div><div class="kpi-value">2 / 2</div><div class="kpi-hint">100.0% листьев</div></div><div class="kpi kpi-tile" data-tile="running" role="button" tabindex="0" aria-label="В работе: 0 — показать задачи" style="--accent:var(--st-running)"><div class="kpi-label" title="В работе">🔄 В работе</div><div class="kpi-value">0</div><div class="kpi-hint">сейчас выполняется</div></div><div class="kpi kpi-tile" data-tile="blocked" role="button" tabindex="0" aria-label="Заблокировано: 0 — показать задачи" style="--accent:var(--st-blocked)"><div class="kpi-label" title="Заблокировано">⛔ Заблокировано</div><div class="kpi-value">0</div><div class="kpi-hint">нужен внешний ход</div></div><div class="kpi kpi-tile" data-tile="queued" role="button" tabindex="0" aria-label="В очереди: 0 — показать задачи" style="--accent:var(--st-queued)"><div class="kpi-label" title="В очереди">⋯ В очереди</div><div class="kpi-value">0</div><div class="kpi-hint">ждут своего слота</div></div><div class="kpi kpi-tile" data-tile="deferred" role="button" tabindex="0" aria-label="Отложено владельцем: 0 — показать задачи" style="--accent:var(--st-deferred)"><div class="kpi-label" title="Отложено владельцем">⏸ Отложено владельцем</div><div class="kpi-value">0</div><div class="kpi-hint">ответа не ждём, вне остатка</div></div><div class="kpi kpi-tile" data-tile="effort" role="button" tabindex="0" aria-label="Усилие: 45 мин — показать задачи" style="--accent:var(--st-queued)"><div class="kpi-label" title="Усилие">Усилие</div><div class="kpi-value">45 мин</div><div class="kpi-hint">критический путь 25 мин</div></div></div></section>
+
+<div class="tile-card" id="lhc-tile-card" hidden></div>
+<template id="lhc-tile-index">{"tiles": {"all": ["L01", "L02"], "done": ["L01", "L02"], "running": [], "blocked": [], "queued": [], "deferred": [], "unfinished": [], "parallel": ["L01", "L02"], "remaining": [], "forecast": ["L02"], "effort": ["L02"]}, "titles": {"remaining": "Остаток по плану", "forecast": "Прогноз финиша", "parallel": "Параллельность", "unfinished": "Осталось", "done": "Готово", "running": "В работе", "blocked": "Заблокировано", "queued": "В очереди", "deferred": "Отложено владельцем", "effort": "Усилие", "all": "Все задачи плана"}, "leaves": {"L01": {"id": "L01", "template": 0, "label": "Убрать повторное чтение и запись неизменившихся источников наблюдателем", "status": "done", "status_label": "Готово", "owner": "observer-worker", "estimate": "10 мин–20 мин"}, "L02": {"id": "L02", "template": 1, "label": "Снизить повторную работу сервера зеркала и проверить действующий результат", "status": "done", "status_label": "Готово", "owner": "root", "estimate": "15 мин–25 мин"}}}</template>
+
+<div class="panel panel-now">
+  <div class="panel-head"><h2>Что делать сейчас</h2><div class="slots-badge">Свободных слотов: <b>2 из 2</b></div></div><div class="now-grid"><section class="now-col"><h3><span class="now-glyph">🔄</span> В работе <span class="now-count">0</span></h3><div class="now-empty">Сейчас не идёт ни одна линия.</div></section><section class="now-col"><h3><span class="now-glyph">🚀</span> Готовы к запуску <span class="now-count">0</span></h3><div class="now-empty">Ни одна линия не готова к запуску.</div></section><section class="now-col"><h3><span class="now-glyph">⛔</span> Заблокированы <span class="now-count">0</span></h3><div class="now-empty">Активных блокеров нет.</div></section></div><div class="hint">Источник расчёта: lhc_parallel.</div>
+</div>
+
+<div class="panel panel-blocking" id="lhc-blocking">
+  <h2>Что блокирует</h2>
+  <div class="empty">Ничего не блокировано и от меня ничего не нужно.</div>
+</div>
+</section>
+<section id="outcome" class="plan-section" aria-label="Цель и результат">
+<details class="panel brief-details brief-why-details" open>
+  <summary>Цель и результат</summary>
+  <div class="brief brief-why"><article class="brief-card brief-goal"><h2>Цель</h2><p>Зеркало и наблюдатель не должны постоянно перечитывать и переписывать неизменившиеся планы.</p></article><article class="brief-card brief-result"><h2>Что будет работать</h2><p>CPU и I/O резко ниже, а сохранённые изменения автоматически доходят до того же дашборда.</p></article></div><article class="panel acceptance-scenarios"><h2>Как проверим</h2><ul><li>Измерить CPU и /proc/PID/io до и после; в собственном плане изменить заметку и увидеть её по прежнему публичному URL без ручной публикации.</li></ul></article><p class="hint">Это декларация плана. Статус задач сам по себе не подтверждает приёмку результата.</p>
+</details>
+<details class="panel brief-details" open>
+  <summary>Текущий факт и внешние ожидания</summary>
+  <div class="brief"><article class="brief-card"><h2>Что уже сделано</h2><p>Исправление установлено. В35sзамерах суммарныйCPU52.234→6.5935%одногоядра; чтение32.38504→2.07557МиБ/с; физическаязапись427→14.5КиБ/с. Независимо подтверждено живое обновление заметки; 612тестов прошли.</p></article></div>
+</details>
+
+
+
+</section>
+<section id="work-plan" class="plan-section" aria-label="План работ">
+<div class="panel panel-gantt" id="lhc-plan-gantt">
+  <h2>Гант · листья и параллельные волны</h2>
+  
+  <div class="gantt"><div class="gantt-inner">
+    <div class="gantt-axis-row"><div class="gantt-axis-spacer"></div><div class="gantt-axis"><div class="tick tick-0" style="left:0.0000%">0 мин</div><div class="tick tick-1" style="left:16.6667%">4 мин</div><div class="tick tick-2" style="left:33.3333%">8 мин</div><div class="tick tick-3" style="left:50.0000%">12 мин</div><div class="tick tick-4" style="left:66.6667%">16 мин</div><div class="tick tick-5" style="left:83.3333%">20 мин</div><div class="tick tick-6" style="left:100.0000%">25 мин</div></div></div>
+    <div class="wave-row"><span>Волна 1</span><span class="wave-count">2 листьев</span></div><div class="gantt-row" data-status="done" data-leaf="L01"><div class="gantt-label" title="Убрать повторное чтение и запись неизменившихся источников наблюдателем"><span class="gantt-line"><span class="dot" style="background:var(--st-done)"></span><span class="gantt-id" title="L01">L01</span><span class="gantt-text">Убрать повторное чтение и запись неизменившихся источников наблюдателем</span></span><span class="gantt-line gantt-meta"><span class="gantt-status">✅ Готово</span></span></div><div class="gantt-track"><div class="bar" style="left:0.0000%;width:80.0000%;background:var(--st-done)" title="L01 · Убрать повторное чтение и запись неизменившихся источников наблюдателем
+статус: Готово
+оценка: 10 мин–20 мин
+план: 20 мин
+конец: 2026-10-28T23:57:51+03:00"></div></div></div><div class="gantt-row" data-status="done" data-leaf="L02"><div class="gantt-label" title="Снизить повторную работу сервера зеркала и проверить действующий результат"><span class="gantt-line"><span class="dot" style="background:var(--st-done)"></span><span class="gantt-id" title="L02">L02</span><span class="gantt-text">Снизить повторную работу сервера зеркала и проверить действующий результат</span></span><span class="gantt-line gantt-meta"><span class="gantt-status">✅ Готово</span><span class="crit" title="критический путь">◆ критический путь</span></span></div><div class="gantt-track"><div class="bar" style="left:0.0000%;width:100.0000%;background:var(--st-done)" title="L02 · Снизить повторную работу сервера зеркала и проверить действующий результат
+статус: Готово
+оценка: 15 мин–25 мин
+план: 25 мин
+конец: 2026-10-28T23:57:51+03:00
+на критическом пути"></div></div></div>
+  </div></div>
+</div>
+</section>
+<section id="comparison" class="plan-section" aria-label="План и факт">
+<!-- plan-comparison -->
+<p class="comparison-empty panel">Сравнение ревизий доступно в опубликованном плане. Этот файл содержит один снимок.</p>
+<div class="panel panel-cost" id="lhc-cost"><h2>Предварительная смета плана</h2><ul class="facts"><li><b>Весь план</b>: $0.20 <span class='cell-sub'>provisional</span> · цена посчитана для 2 из 2 листьев</li><li><b>Остатку к запуску</b>: $0.0000 <span class='cell-sub'>provisional</span> (завершённые и отложенные листья не в этой строке)</li><li><b>Плановые модели</b>: gpt-6.1-sol</li><li><b>Тарифы для расчёта</b>: 302ai/gpt-6.1-sol</li><li>Оценка по тарифам каталога и плановому объёму работы. Это не фактические списания; условия подписки и реальное использование могут отличаться.</li><li><b>Класс frontier</b>: $0.20 <span class='cell-sub'>provisional</span> — 100.0% всех долларов плана · 2 листьев · fast $0.0000 <span class='cell-sub'>provisional</span> · 0 листьев</li><li><b>Бюджет плана</b>: не задан</li><li><b>Откуда числа</b>: снимок d0a9e0dea9a8 от 2026-10-28T15:12:09Z · возраст 5 ч 47 мин · каталог: https://github.com/megamen32/models-supplement/raw/refs/heads/main/supplement.json · каталог: https://models.dev/api.json · frontier: 1 200 ток/мин (provisional)</li></ul></div>
+</section>
+<section id="tasks" class="plan-section" aria-label="Задачи">
+  <div class="panel panel-leaves" id="lhc-leaves">
+    <h2>Задачи</h2>
+    <div class="hint">граф: 2 листьев · слотов: 2 · пик параллельности 2</div>
+    <div class="toolbar">
+      <input id="search" type="search" placeholder="Поиск по листу, id, владельцу, сессии или модели…">
+      <button class="chip active" data-filter="all">все</button>
+      <button class="chip" data-filter="done">готово</button>
+      <button class="chip" data-filter="running">в работе</button>
+      <button class="chip" data-filter="blocked">блокеры</button>
+      <button class="chip" data-filter="queued">в очереди</button>
+    </div>
+    <div class='table-scroll'><table class='table table-leaves'><thead><tr><th>Задача</th><th>Статус</th><th>Оценка</th><th>Усилие</th><th>Детали</th></tr></thead><tbody><tr data-status="done" data-text="l01 убрать повторное чтение и запись неизменившихся источников наблюдателем observer-worker 01a182b0-5520-7e81-8d75-51bbe361d85b codex gpt-6.1-sol в простое нет циклических перезаписей реестра и полного чтения всех листов; изменения, ошибки и восстановление источника продолжают обрабатываться." data-leaf='L01' data-details-id='0' class='leaf-row'><td class='task-title'><span class='row-id'>L01</span><span class='row-name'>Убрать повторное чтение и запись неизменившихся источников наблюдателем</span><span class='row-times'>финиш 2026-10-28T23:57:51+03:00</span><span class='row-meta'>владелец: observer-worker · сессия: 01a182b0-5520-7e81-8d75-51bbe361d85b · модель: gpt-6.1-sol · стоимость: $0.09 · frontier · provisional</span></td><td data-label="Статус"><span class="status" style="--c:var(--st-done)">✅ Готово</span></td><td data-label="Оценка"><div class='cell-plan'><span class='plan-time'>план 20 мин</span><span class='cell-sub'>оценка 10 мин–20 мин</span></div><span class='cell-sub'><!--leaf-delta:L01--></span></td><td data-label="Усилие" class="">не измерено</td><td class='details-cell'><button type='button' class='task-details-trigger' data-details-id='0' aria-expanded='false' aria-label='Подробнее: Убрать повторное чтение и запись неизменившихся источников наблюдателем'>Подробнее</button></td></tr><tr data-status="done" data-text="l02 снизить повторную работу сервера зеркала и проверить действующий результат root 01a182b0-5520-7e81-8d75-51bbe361d85b codex gpt-6.1-sol живая проверка: эта заметка добавлена после установки исправления нагрузки. повторные запросы каталога не перечитывают все большие json, измерена реальная экономия cpu/i/o, сохранён live update планов." data-leaf='L02' data-details-id='1' class='leaf-row'><td class='task-title'><span class='row-id'>L02</span><span class='row-name'>Снизить повторную работу сервера зеркала и проверить действующий результат</span><span class='row-times'>финиш 2026-10-28T23:57:51+03:00</span><span class='row-meta'>владелец: root · сессия: 01a182b0-5520-7e81-8d75-51bbe361d85b · модель: gpt-6.1-sol · стоимость: $0.11 · frontier · provisional</span></td><td data-label="Статус"><span class="status" style="--c:var(--st-done)">✅ Готово</span></td><td data-label="Оценка"><div class='cell-plan'><span class='plan-time'>план 25 мин</span><span class='cell-sub'>оценка 15 мин–25 мин</span></div><span class='cell-sub'><!--leaf-delta:L02--></span></td><td data-label="Усилие" class="">не измерено</td><td class='details-cell'><button type='button' class='task-details-trigger' data-details-id='1' aria-expanded='false' aria-label='Подробнее: Снизить повторную работу сервера зеркала и проверить действующий результат'>Подробнее</button></td></tr></tbody></table></div>
+    <div id='task-details-host' class='task-details-host' hidden></div><template id='task-details-template-0'><div class='task-details-card'><div class='task-details-head'><h3>Убрать повторное чтение и запись неизменившихся источников наблюдателем</h3><button type='button' class='task-details-close'>Закрыть</button></div><dl class='task-details'><dt>Код</dt><dd>L01</dd><dt>Ожидаемый результат</dt><dd>В простое нет циклических перезаписей реестра и полного чтения всех листов; изменения, ошибки и восстановление источника продолжают обрабатываться.</dd><dt>Результат исполнителя</dt><dd>Stat и служебные кеши, повторный ack не отправляется, одинаковые ошибки не переписываются. Observer CPU15.47→3.7677%, чтение7.19571→0.079199МиБ/с, запись0.40462→0.00446МиБ/с. Обновление заметки дошло публично.</dd><dt>Владелец</dt><dd>observer-worker</dd><dt>Зависит от</dt><dd>—</dd><dt>Параллельно с</dt><dd>—</dd><dt>Сессия</dt><dd>01a182b0-5520-7e81-8d75-51bbe361d85b</dd><dt>Модель</dt><dd>gpt-6.1-sol</dd><dt>Стоимость</dt><dd>$0.09 <span class='cell-sub'>provisional</span></dd><dt>Модель каталога</dt><dd>302ai/gpt-6.1-sol <span class='cell-sub'>класс frontier</span></dd><dt>Токены</dt><dd>24 000 <span class='cell-sub'>минуты × скорость токенов</span></dd><dt>Рантайм</dt><dd>codex</dd><dt>Усилие (суммарно)</dt><dd>не измерено</dd><dt>Длительность по часам</dt><dd>—</dd><dt>Оценка</dt><dd>10 мин–20 мин</dd><dt>План</dt><dd class='plan-value'>20 мин</dd><dt>Сверх плана</dt><dd>длительность не измерена</dd><dt>Начало</dt><dd>не зафиксировано</dd><dt>Конец</dt><dd>2026-10-28T23:57:51+03:00</dd></dl><div class='leaf-compare'><!--leaf-compare:L01--></div></div></template><template id='task-details-template-1'><div class='task-details-card'><div class='task-details-head'><h3>Снизить повторную работу сервера зеркала и проверить действующий результат</h3><button type='button' class='task-details-close'>Закрыть</button></div><dl class='task-details'><dt>Код</dt><dd>L02</dd><dt>Ожидаемый результат</dt><dd>Повторные запросы каталога не перечитывают все большие JSON, измерена реальная экономия CPU/I/O, сохранён live update планов.</dd><dt>Примечание</dt><dd>Живая проверка: эта заметка добавлена после установки исправления нагрузки.</dd><dt>Результат исполнителя</dt><dd>Runtimee4532fb023a36ed6 установлен. MirrorCPU36.764→2.8258%, чтение25.18933→1.996371МиБ/с. Контрольная заметка найдена по прежней публичной ссылке. 612tests passed,5skipped; независимое35sокно подтверждено.</dd><dt>Владелец</dt><dd>root</dd><dt>Зависит от</dt><dd>—</dd><dt>Параллельно с</dt><dd>—</dd><dt>Сессия</dt><dd>01a182b0-5520-7e81-8d75-51bbe361d85b</dd><dt>Модель</dt><dd>gpt-6.1-sol</dd><dt>Стоимость</dt><dd>$0.11 <span class='cell-sub'>provisional</span></dd><dt>Модель каталога</dt><dd>302ai/gpt-6.1-sol <span class='cell-sub'>класс frontier</span></dd><dt>Токены</dt><dd>30 000 <span class='cell-sub'>минуты × скорость токенов</span></dd><dt>Рантайм</dt><dd>codex</dd><dt>Усилие (суммарно)</dt><dd>не измерено</dd><dt>Длительность по часам</dt><dd>—</dd><dt>Оценка</dt><dd>15 мин–25 мин</dd><dt>План</dt><dd class='plan-value'>25 мин</dd><dt>Сверх плана</dt><dd>длительность не измерена</dd><dt>Начало</dt><dd>не зафиксировано</dd><dt>Конец</dt><dd>2026-10-28T23:57:51+03:00</dd></dl><div class='leaf-compare'><!--leaf-compare:L02--></div></div></template>
+  </div>
+</section>
+<section id="history" class="plan-section" aria-label="История">
+<!-- plan-publication -->
+<p class="snapshot-note">Это снимок плана, а не панель управления: фактическое состояние работы приходит из API владельцев, а не из пересказа агента в графе.</p>
+  <div>
+    <div class="panel">
+      <h2>Технические привязки</h2>
+      <details class="technical"><summary>Владельцы, сессии, harness и модели</summary>
+        <div class='table-scroll'><table class='table'><thead><tr><th>ID</th><th>Лист</th><th>Владелец</th><th>Сессия</th><th>Harness</th><th>Модель</th><th>Статус</th></tr></thead><tbody><tr><td><span class="dot" style="background:var(--st-done)"></span>L01</td><td>Убрать повторное чтение и запись неизменившихся источников наблюдателе</td><td>observer-worker</td><td>01a182b0-5520-7e81-8d75-51bbe361d85b</td><td>codex</td><td>gpt-6.1-sol</td><td>Готово</td></tr><tr><td><span class="dot" style="background:var(--st-done)"></span>L02</td><td>Снизить повторную работу сервера зеркала и проверить действующий резул</td><td>root</td><td>01a182b0-5520-7e81-8d75-51bbe361d85b</td><td>codex</td><td>gpt-6.1-sol</td><td>Готово</td></tr></tbody></table></div>
+      </details>
+    </div>
+    <div class="panel" id="lhc-forecast">
+      <h2>Прогноз</h2>
+      <ul class='facts'><li><b>Усилие</b> (сумма известных оценок): 45 мин</li><li><b>Длительность (план с 2 слотами): 25 мин</li><li><b>Осталось</b> (без завершённых): 0 мин</li><li><b>Пик параллельности</b> по плану: 2 из 2 слотов</li><li><b>Критический путь</b>: Снизить повторную работу сервера зеркала и проверить действующий результат</li><li><b>Заблокировано</b> работы: 0 мин</li></ul>
+      
+      <div class='hint' id='lhc-estimate-cap'><b>Превышен предел оценки листа (15 мин)</b>: 2 листьев. Лист длиннее предела — это два листа. <ul><li>L01: оценка 20 мин при пределе 15 мин — разбейте лист на два либо запишите в листе estimate_over_limit_reason</li><li>L02: оценка 25 мин при пределе 15 мин — разбейте лист на два либо запишите в листе estimate_over_limit_reason</li></ul></div>
+    </div>
+    <div class="panel journal-fold" id="lhc-journal">
+      <details>
+        <summary><h2>Журнал изменений</h2></summary>
+
+      <h2>Журнал изменений</h2>
+      <ul class="live"><li><span class="dot" style="background:var(--st-done)"></span><span class="live-text">Убрать повторное чтение и запись неизменившихся источников наблюдателем</span><span class="leaf-tag">Убрать повторное чтение и запись неизменившихся источников наблюдателем</span></li><li><span class="dot" style="background:var(--st-done)"></span><span class="live-text">Снизить повторную работу сервера зеркала и проверить действующий результат</span><span class="leaf-tag">Снизить повторную работу сервера зеркала и проверить действующий результат</span></li></ul>
+
+      </details>
+    </div>
+  </div>
+</section>
+</main>
+</div>
+
+<footer>
+  LHC task graph · ревизия dbae97eb255f · один файл, без внешних зависимостей · собран 28.10.2026 23:59
+  <details class="technical"><summary>Путь исходного плана</summary><code>.agents/tasks/20261028-mirror-load/plan.graph.json</code></details>
+</footer>
+
+<script>
+(function () {
+  // The theme is the reader's choice, remembered between openings. Without a
+  // stored choice the dashboard follows the system.
+  var root = document.documentElement;
+  var stored = null;
+  try { stored = window.localStorage.getItem('lhc-theme'); } catch (error) { stored = null; }
+  function systemPrefersLight() {
+    return !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches);
+  }
+  function applyTheme(state) {
+    if (state === 'light' || state === 'dark') {
+      root.setAttribute('data-theme', state);
+    } else {
+      // "as the system": no attribute, and the light scheme of the system wins.
+      root.removeAttribute('data-theme');
+      if (systemPrefersLight()) { root.setAttribute('data-theme', 'light'); }
+    }
+  }
+  function currentTheme() {
+    var value = null;
+    try { value = window.localStorage.getItem('lhc-theme'); } catch (error) { value = null; }
+    return value === 'light' || value === 'dark' ? value : 'auto';
+  }
+  applyTheme(currentTheme());
+  var toggle = document.getElementById('theme-toggle');
+  if (toggle) {
+    var order = ['auto', 'light', 'dark'];
+    var names = { auto: 'Тема: как в системе', light: 'Тема: светлая', dark: 'Тема: тёмная' };
+    function label() { toggle.textContent = names[currentTheme()]; }
+    label();
+    toggle.addEventListener('click', function () {
+      var next = order[(order.indexOf(currentTheme()) + 1) % order.length];
+      applyTheme(next);
+      try {
+        if (next === 'auto') { window.localStorage.removeItem('lhc-theme'); }
+        else { window.localStorage.setItem('lhc-theme', next); }
+      } catch (error) { /* no storage */ }
+      label();
+    });
+  }
+})();
+(function () {
+  var chips = Array.prototype.slice.call(document.querySelectorAll('.chip'));
+  var rows = Array.prototype.slice.call(document.querySelectorAll('.table-leaves tbody tr'));
+  var input = document.getElementById('search');
+  var activeDetailsRow = null;
+  var filter = 'all';
+  function apply() {
+    var query = (input && input.value || '').trim().toLowerCase();
+    rows.forEach(function (row) {
+      var okFilter = filter === 'all' || row.dataset.status === filter;
+      var okQuery = !query || (row.dataset.text || '').indexOf(query) !== -1;
+      row.style.display = (okFilter && okQuery) ? '' : 'none';
+    });
+  }
+  chips.forEach(function (chip) {
+    chip.addEventListener('click', function () {
+      chips.forEach(function (other) { other.classList.remove('active'); });
+      chip.classList.add('active');
+      filter = chip.dataset.filter;
+      apply();
+    });
+  });
+  if (input) { input.addEventListener('input', apply); }
+  // The task opens where the owner taps it. The card used to open in a host
+  // below the whole table, which on a phone is thousands of pixels away from
+  // the finger that asked for it.
+  function closeDetails() {
+    if (!activeDetailsRow) { return; }
+    if (activeDetailsRow.previousElementSibling) {
+      var previousButton = activeDetailsRow.previousElementSibling.querySelector('.task-details-trigger');
+      if (previousButton) { previousButton.setAttribute('aria-expanded', 'false'); }
+    }
+    activeDetailsRow.remove();
+    activeDetailsRow = null;
+  }
+  function openDetails(row, id) {
+    var template = document.getElementById('task-details-template-' + id);
+    if (!template || !row) { return; }
+    closeDetails();
+    var detailsRow = document.createElement('tr');
+    detailsRow.className = 'task-details-row';
+    var cell = document.createElement('td');
+    cell.colSpan = 5;
+    cell.appendChild(template.content.cloneNode(true));
+    detailsRow.appendChild(cell);
+    row.after(detailsRow);
+    activeDetailsRow = detailsRow;
+    var button = row.querySelector('.task-details-trigger');
+    if (button) { button.setAttribute('aria-expanded', 'true'); }
+    var close = detailsRow.querySelector('.task-details-close');
+    if (close) {
+      close.addEventListener('click', function () { closeDetails(); });
+      close.focus({ preventScroll: true });
+    }
+    detailsRow.scrollIntoView({ block: 'nearest' });
+  }
+  document.querySelectorAll('.task-details-trigger').forEach(function (button) {
+    button.addEventListener('click', function (event) {
+      event.stopPropagation();
+      var row = button.closest('tr');
+      openDetails(row, button.dataset.detailsId);
+    });
+  });
+  rows.forEach(function (row) {
+    if (!row.dataset.detailsId) { return; }
+    row.addEventListener('click', function () {
+      openDetails(row, row.dataset.detailsId);
+    });
+  });
+  // A Gantt bar opens the same card as the table row: one card per task.
+  document.querySelectorAll('.gantt-row[data-leaf]').forEach(function (bar) {
+    bar.setAttribute('tabindex', '0');
+    bar.setAttribute('role', 'button');
+    function openFromGantt() {
+      var target = null;
+      rows.forEach(function (row) { if (row.dataset.leaf === bar.dataset.leaf) { target = row; } });
+      if (!target) { return; }
+      target.style.display = '';
+      openDetails(target, target.dataset.detailsId);
+    }
+    bar.addEventListener('click', openFromGantt);
+    bar.addEventListener('keydown', function (event) {
+      if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openFromGantt(); }
+    });
+  });
+  // Every number of the page can be opened: the tile shows the tasks behind
+  // it, and a task in that list opens its full card.
+  var tileIndex = null;
+  try {
+    var island = document.getElementById('lhc-tile-index');
+    tileIndex = island ? JSON.parse(island.content.textContent) : null;
+  } catch (error) { tileIndex = null; }
+  var tileCard = document.getElementById('lhc-tile-card');
+  var currentTile = null;
+  function tileTitle(key) {
+    return (tileIndex && tileIndex.titles && tileIndex.titles[key]) || 'Задачи';
+  }
+  function renderTileList(key) {
+    if (!tileIndex || !tileCard) { return; }
+    var ids = (tileIndex.tiles && tileIndex.tiles[key]) || [];
+    var head = document.createElement('div');
+    head.className = 'tile-card-head';
+    var title = document.createElement('b');
+    title.textContent = tileTitle(key) + ' · ' + ids.length;
+    var close = document.createElement('button');
+    close.type = 'button'; close.className = 'tile-card-close'; close.textContent = 'Закрыть';
+    close.addEventListener('click', function () {
+      tileCard.hidden = true; tileCard.replaceChildren(); currentTile = null;
+    });
+    head.appendChild(title); head.appendChild(close);
+    var list = document.createElement('ul');
+    list.className = 'tile-card-list';
+    ids.forEach(function (id) {
+      var leaf = (tileIndex.leaves && tileIndex.leaves[id]) || {};
+      var item = document.createElement('li');
+      item.className = 'tile-card-item';
+      var code = document.createElement('span'); code.className = 'row-id'; code.textContent = id;
+      var name = document.createElement('span'); name.className = 'row-name';
+      name.textContent = leaf.label || id;
+      var meta = document.createElement('span'); meta.className = 'row-meta';
+      meta.textContent = [leaf.status_label, leaf.owner, leaf.estimate].filter(Boolean).join(' · ');
+      item.appendChild(code); item.appendChild(name); item.appendChild(meta);
+      item.addEventListener('click', function () { openLeafInTile(id); });
+      list.appendChild(item);
+    });
+    if (!ids.length) {
+      var empty = document.createElement('div');
+      empty.className = 'empty'; empty.textContent = 'Задач нет.';
+      list.appendChild(empty);
+    }
+    tileCard.replaceChildren(head, list);
+    tileCard.hidden = false;
+  }
+  function openLeafInTile(id) {
+    if (!tileIndex || !tileCard) { return; }
+    var leaf = (tileIndex.leaves && tileIndex.leaves[id]) || {};
+    var template = document.getElementById('task-details-template-' + leaf.template);
+    if (!template) { return; }
+    var back = document.createElement('button');
+    back.type = 'button'; back.className = 'tile-card-back'; back.textContent = '← ко всем задачам';
+    back.addEventListener('click', function () { renderTileList(currentTile); });
+    var card = template.content.cloneNode(true);
+    tileCard.replaceChildren(back, card);
+    tileCard.hidden = false;
+    var progressStrip = document.getElementById('lhc-progress-strip');
+    var stickySpace = progressStrip ? progressStrip.getBoundingClientRect().height + 12 : 76;
+    tileCard.style.scrollMarginTop = Math.max(76, Math.ceil(stickySpace)) + 'px';
+    tileCard.scrollIntoView({ block: 'start' });
+    var close = tileCard.querySelector('.task-details-close');
+    if (close) {
+      close.addEventListener('click', function () { renderTileList(currentTile); });
+    }
+  }
+  document.querySelectorAll('[data-tile]').forEach(function (tile) {
+    tile.addEventListener('click', function () {
+      currentTile = tile.dataset.tile;
+      renderTileList(currentTile);
+    });
+    tile.addEventListener('keydown', function (event) {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        tile.click();
+      }
+    });
+  });
+  apply();
+})();
+
+</script>
+<script id="lhc-live" data-lhc-live="1">
+(function () {
+  if (window.__lhcLive) { return; }
+  window.__lhcLive = true;
+  var source = "";
+  var interval = 2000;
+
+  function address() {
+    var base = source || (window.location.href.split('#')[0]);
+    if (!base) { return ''; }
+    return base + (base.indexOf('?') >= 0 ? '&' : '?') + 'lhc_live=' + Date.now();
+  }
+
+  function text_of(node) {
+    if (!node) { return ''; }
+    var text = node.textContent || '';
+    return text.replace(/\s+/g, ' ').trim();
+  }
+
+  function swap(parsed) {
+    if (!parsed || !parsed.body) { return false; }
+    var body = document.body;
+    window.dispatchEvent(new Event('lhc-before-swap'));
+    // Inline presentation belongs to the same generation as the new body.
+    Array.prototype.slice.call(document.head.querySelectorAll('style')).forEach(function (style) { style.remove(); });
+    Array.prototype.slice.call(parsed.head.querySelectorAll('style')).forEach(function (style) { document.head.appendChild(document.importNode(style, true)); });
+    var scripts = [];
+    Array.prototype.slice.call(parsed.body.querySelectorAll('script')).forEach(
+      function (old) { scripts.push(old); }
+    );
+    while (body.firstChild) { body.removeChild(body.firstChild); }
+    while (parsed.body.firstChild) { body.appendChild(document.adoptNode(parsed.body.firstChild)); }
+    if (parsed.title) { document.title = parsed.title; }
+    scripts.forEach(function (old) {
+      if (old.getAttribute('data-lhc-live') === '1') { return; }
+      var fresh = document.createElement('script');
+      if (old.src) { fresh.src = old.src; } else { fresh.textContent = old.textContent; }
+      body.appendChild(fresh);
+    });
+    return true;
+  }
+
+  function poll() {
+    var url = address();
+    if (!url || typeof window.fetch !== 'function' || typeof window.DOMParser !== 'function') { return; }
+    window.fetch(url, { cache: 'no-store', credentials: 'same-origin' })
+      .then(function (response) { return response && response.ok ? response.text() : null; })
+      .then(function (text) {
+        if (!text) { return; }
+        var parsed = new DOMParser().parseFromString(text, 'text/html');
+        if (!parsed || !parsed.body) { return; }
+        if (text_of(parsed.body) === text_of(document.body)) { return; }
+        swap(parsed);
+      })
+      .catch(function () {
+        /* A page opened from the disk cannot fetch itself: it stays as rendered. */
+      });
+  }
+
+  window.setInterval(poll, interval);
+  poll();
+})();
+</script>
+<script id="plan-app">
+(()=>{
+if(window.__lhcUI)window.__lhcUI.abort();window.__lhcUI=new AbortController();const signal=window.__lhcUI.signal;
+const rail=document.querySelector('.time-rail');
+if(rail){
+const f=JSON.parse(rail.dataset.timeFrame),start=Date.parse(f.start),end=Date.parse(f.end),early=Date.parse(f.end_min);
+const live=f.live&&/^https?:$/.test(location.protocol)&&!f.completed;
+const frozen=Date.parse(f.snapshot),zone=Intl.DateTimeFormat().resolvedOptions().timeZone;
+const fmt=n=>new Date(n).toLocaleString('ru-RU',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
+const fmtClock=n=>new Date(n).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit',hourCycle:'h23',timeZone:zone});
+const fmtDate=n=>new Date(n).toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',timeZone:zone});
+const duration=ms=>{const total=Math.max(0,Math.round(ms/60000)),h=Math.floor(total/60),m=total%60;return h?`${h}ч${String(m).padStart(2,'0')}мин`:`${m}мин`};
+const qualifier=({file_birthtime:'восстановлено по файлам',leaf_created_at:'создание первого листа',recorded_start:'по записанному началу работы'})[f.start_source];
+if(Number.isFinite(start))rail.querySelector('.time-rail-start').textContent='Начало плана: '+fmt(start)+(qualifier?' · '+qualifier:'');
+const forecast=document.querySelector('[data-tile="forecast"] .kpi-value');
+if(forecast&&Number.isFinite(end))forecast.textContent=(f.completed?'Завершено: ':'≈ ')+(early!==end?fmt(early)+' — ':'')+fmt(end)+' · '+zone;
+const forecastHint=document.querySelector('[data-tile="forecast"] .kpi-hint');
+if(forecastHint&&f.anchor)forecastHint.textContent=(f.completed?'Фактический финиш записан':(f.anchor_source==='plan_origin'?'Отсчёт от начала плана ':'Оценка по состоянию на ')+fmt(Date.parse(f.anchor)))+' · '+zone;
+rail.querySelector('.time-rail-note').textContent='Цветная полоса показывает статусы задач; время указано под ней и не задаёт долю выполнения. Часовой пояс: '+zone+(f.completed?' · Завершённый план':'');
+function clock(){
+const now=live?Date.now():frozen,overdue=!f.completed&&Number.isFinite(end)&&now>end;
+const text=(live?'Сейчас ':'На момент снимка ')+fmt(now)+(overdue?' · Прогнозный срок прошёл':'');
+rail.dataset.overdue=String(overdue);rail.querySelector('.time-rail-clock').textContent=text;
+const valid=Number.isFinite(end)&&end>0&&Number.isFinite(now);
+const status=rail.querySelector('.time-rail-status'),minLabel=rail.querySelector('.time-rail-minimum'),maxLabel=rail.querySelector('.time-rail-maximum'),nowLabel=rail.querySelector('.time-rail-now');
+const endText=f.end_label||'Прогноз неизвестен';
+nowLabel.textContent=(live?'Сейчас ':'На момент снимка ')+fmt(now);
+if(!valid){
+minLabel.textContent='Минимум не оценён';maxLabel.textContent='Максимум не оценён';
+rail.dataset.state='unknown';status.textContent=endText;return;
+}
+const min=Number.isFinite(early)?Math.min(early,end):end;
+minLabel.textContent='Минимум ≈'+fmtClock(min)+' · '+fmtDate(min);
+maxLabel.textContent=(f.completed?'Финиш ':'Максимум ≈')+fmtClock(end)+' · '+fmtDate(end);
+nowLabel.title=fmt(now)+' · '+zone;
+if(f.completed){status.textContent='План завершён · '+fmt(end);rail.dataset.state='complete';}
+else if(now<min){status.textContent='До ранней оценки '+duration(min-now)+' · до верхней границы '+duration(end-now);rail.dataset.state='before';}
+else if(now<=end){status.textContent='Ранняя оценка пройдена на '+duration(now-min)+' · до верхней границы '+duration(end-now);rail.dataset.state='early-passed';}
+else{status.textContent='Верхняя оценка превышена на '+duration(now-end);rail.dataset.state='overdue';}
+}
+clock();
+if(live){const timer=setInterval(clock,15000);signal.addEventListener('abort',()=>clearInterval(timer),{once:true})}
+}
+const sections=[...document.querySelectorAll('.plan-section')];
+const links=[...document.querySelectorAll('.plan-sidebar a[href^="#"]')];
+const key='lhc-ui:'+location.pathname;let saved={};
+try{saved=JSON.parse(sessionStorage.getItem(key)||'{}')}catch(e){}
+const nav=document.querySelector('.plan-sidebar');
+let offset=24;
+function measure(){offset=matchMedia('(max-width:650px)').matches||document.body.classList.contains('herder-open')?nav.getBoundingClientRect().height+12:24;document.documentElement.style.setProperty('--plan-anchor-offset',offset+'px')}
+function scrollHost(){return document.body.classList.contains('herder-open')?document.getElementById('herder-plan-pane'):window}
+function readingTop(){const host=scrollHost();return host===window?window.scrollY:host.scrollTop}
+function readingTo(top){scrollHost().scrollTo({top,behavior:'instant'})}
+function select(id){links.forEach(a=>{if(a.hash==='#'+id)a.setAttribute('aria-current','location');else a.removeAttribute('aria-current')})}
+function spy(){let active=sections[0];for(const s of sections){if(s.getBoundingClientRect().top<=offset+2)active=s}if(active)select(active.id)}
+let frame=0;function schedule(){if(!frame)frame=requestAnimationFrame(()=>{frame=0;if(!signal.aborted)spy()})}
+function hashTarget(){try{return document.getElementById(decodeURIComponent(location.hash.slice(1)))}catch(e){return null}}
+function fromHash(){const target=hashTarget();if(target){target.scrollIntoView();const section=target.closest('.plan-section');if(section)select(section.id)}}
+links.forEach((a,i)=>{a.addEventListener('keydown',e=>{if(['ArrowDown','ArrowRight','ArrowUp','ArrowLeft','Home','End'].includes(e.key)){e.preventDefault();const n=e.key==='Home'?0:e.key==='End'?links.length-1:(i+(['ArrowDown','ArrowRight'].includes(e.key)?1:-1)+links.length)%links.length;links[n].focus();links[n].click()}},{signal})});
+measure();window.addEventListener('resize',()=>{measure();schedule()},{signal});
+window.addEventListener('scroll',schedule,{signal,passive:true});window.addEventListener('hashchange',fromHash,{signal});
+document.addEventListener('scroll',schedule,{signal,passive:true,capture:true});
+const search=document.getElementById('search');if(search&&saved.search){search.value=saved.search;search.dispatchEvent(new Event('input'))}
+const chip=[...document.querySelectorAll('[data-filter]')].find(c=>c.dataset.filter===saved.filter);if(chip)chip.click();
+// A live swap preserves the actual reading position even when the URL still
+// contains an earlier clicked anchor. A deliberately opened hash wins on load.
+const swap=window.__lhcReadingPosition;delete window.__lhcReadingPosition;
+let reload=null;try{const publication=JSON.parse(sessionStorage.getItem('lhc-scroll:'+location.pathname)||'null');sessionStorage.removeItem('lhc-scroll:'+location.pathname);if(publication&&publication.hash===location.hash)reload=publication.scroll}catch(e){}
+requestAnimationFrame(()=>{if(signal.aborted)return;if(swap!=null||reload!=null)readingTo(swap??reload);else if(hashTarget())fromHash();else if(saved.scroll!=null)readingTo(saved.scroll);spy()});
+function save(){try{sessionStorage.setItem(key,JSON.stringify({search:search?.value||'',filter:document.querySelector('[data-filter].active')?.dataset.filter,scroll:readingTop()}))}catch(e){}}
+window.addEventListener('lhc-before-swap',()=>{window.__lhcReadingPosition=readingTop()},{signal});
+window.addEventListener('pagehide',save,{signal});window.addEventListener('lhc-before-swap',save,{signal});
+let folded=[];window.addEventListener('beforeprint',()=>{folded=[...document.querySelectorAll('details:not([open])')];folded.forEach(d=>d.open=true)},{signal});
+window.addEventListener('afterprint',()=>{folded.forEach(d=>d.open=false);folded=[]},{signal});
+// Long notes remain readable without turning every section into a wall of text.
+document.querySelectorAll('.brief-card p').forEach(p=>{if(p.textContent.length<700)return;const d=document.createElement('details'),s=document.createElement('summary');s.textContent='Читать полностью';p.before(d);d.append(s,p)});
+})();
+</script></body>
+</html>
