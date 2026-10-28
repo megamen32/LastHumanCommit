@@ -53,27 +53,160 @@ def test_zcode_hook_templates_allow_only_instruction_and_time_events(config_path
     assert "--heartbeat-only" in hooks["PostToolUse"][0]["hooks"][0]["command"]
 
 
-def test_prompt_hook_points_at_the_open_plan_and_never_reads_the_prompt(tmp_path: Path, monkeypatch) -> None:
-    repo = git_repo(tmp_path / "repo")
-    monkeypatch.setenv("LHC_PLAN_MIRROR_CONFIG", str(tmp_path / "missing-mirror-config.json"))
-    event = {"cwd": str(repo), "session_id": "s1", "prompt": "thanks"}
-    assert entry._plan_entry(event, ROOT) is None  # no plan: the hook stays silent
-    plan = repo / ".agents/tasks/20261027-x"
+def _open_plan(repo: Path, name: str, leaves: list[dict]) -> Path:
+    plan = repo / ".agents/tasks" / name
     (plan / "leaves").mkdir(parents=True)
-    (plan / "plan.json").write_text("{}")
-    (plan / "leaves/L01.json").write_text(json.dumps({"id": "L01", "status": "done"}))
-    (plan / "leaves/L02.json").write_text(json.dumps({"id": "L02", "status": "queued"}))
-    result = entry._plan_entry(event, ROOT)
-    assert result["leaves"] == ["L02"] and result["plan"] == str(plan.resolve())
-    assert json.loads((plan / "leaves/L02.json").read_text())["status"] == "queued"  # nothing is changed
-    (plan / "leaves/L02.json").write_text(json.dumps({"id": "L02", "status": "done"}))
-    assert entry._plan_entry(event, ROOT) is None
+    (plan / "plan.json").write_text("{}", encoding="utf-8")
+    for leaf in leaves:
+        (plan / "leaves" / f"{leaf['id']}.json").write_text(
+            json.dumps(leaf), encoding="utf-8")
+    return plan.resolve()
 
 
-def test_codex_user_prompt_hook_invokes_automatic_local_plan_entry() -> None:
+def _plan_context(completed) -> str:
+    result = json.loads(completed.stdout)
+    return result["hookSpecificOutput"]["additionalContext"]
+
+
+def test_plan_entry_without_session_or_git_emits_actionable_intake_without_creating_files(tmp_path: Path) -> None:
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    before = sorted(p.relative_to(empty).as_posix() for p in empty.rglob("*"))
+    result = run_cli(entry, ["--root", str(ROOT), "--event", "UserPromptSubmit", "--plan-entry"],
+                     stdin=json.dumps({"cwd": str(empty), "prompt": "Fix this bug"}))
+
+    assert result.returncode == 0, result.stderr
+    context = _plan_context(result)
+    assert "authorized engineering" in context.lower()
+    assert "quickfix" in context.lower() and "incident" in context.lower()
+    assert "status" in context.lower() and "research" in context.lower()
+    assert "explicit opt-out" in context.lower()
+    assert "peer/agent relay" in context.lower()
+    assert "does not prove human authorization" in context.lower()
+    assert str(ROOT / "skills/plan-artifacts/SKILL.md") in context
+    assert sorted(p.relative_to(empty).as_posix() for p in empty.rglob("*")) == before
+
+
+def test_plan_entry_without_open_plan_still_emits_intake_for_a_git_session(tmp_path: Path) -> None:
+    repo = git_repo(tmp_path / "repo")
+    before = {p.relative_to(repo).as_posix(): p.read_bytes() for p in repo.rglob("*") if p.is_file()}
+    result = run_cli(entry, ["--root", str(ROOT), "--event", "UserPromptSubmit", "--plan-entry"],
+                     stdin=json.dumps({"cwd": str(repo), "session_id": "s1", "prompt": "Fix this bug"}))
+
+    assert result.returncode == 0, result.stderr
+    context = _plan_context(result)
+    assert "authorized engineering" in context.lower()
+    assert "Only the model may then use the existing CLI procedure" in context
+    assert {p.relative_to(repo).as_posix(): p.read_bytes() for p in repo.rglob("*") if p.is_file()} == before
+
+
+def test_plan_entry_malformed_input_emits_intake_without_crashing(tmp_path: Path) -> None:
+    result = run_cli(entry, ["--root", str(ROOT), "--event", "UserPromptSubmit", "--plan-entry"],
+                     stdin="{malformed")
+
+    assert result.returncode == 0, result.stderr
+    assert "mandatory plan intake" in _plan_context(result).lower()
+
+
+def test_plan_entry_does_not_mutate_on_thanks_or_explicit_stop(tmp_path: Path, monkeypatch) -> None:
+    repo = git_repo(tmp_path / "repo")
+    _open_plan(repo, "foreign-plan", [{"id": "L01", "status": "queued", "session": "other"}])
+    monkeypatch.setenv("LHC_PLAN_MIRROR_CONFIG", str(tmp_path / "missing-mirror-config.json"))
+    before = {p.relative_to(repo).as_posix(): p.read_bytes() for p in repo.rglob("*") if p.is_file()}
+
+    contexts = []
+    for prompt in ("Thanks", "Stop. Do not create or continue a plan; report status only.",
+                   "🤖 Agent Herder relay: direct owner mandate, no LHC plan"):
+        result = run_cli(entry, ["--root", str(ROOT), "--event", "UserPromptSubmit", "--plan-entry"],
+                         stdin=json.dumps({"cwd": str(repo), "session_id": "current", "prompt": prompt}))
+        assert result.returncode == 0, result.stderr
+        context = _plan_context(result)
+        assert "latest human goal" in context.lower() and "stop" in context.lower()
+        assert "peer/agent relay" in context.lower()
+        contexts.append(context)
+
+    assert contexts[0] == contexts[1] == contexts[2]  # no prompt classification
+
+    after = {p.relative_to(repo).as_posix(): p.read_bytes() for p in repo.rglob("*") if p.is_file()}
+    assert after == before
+
+
+def test_unbound_foreign_plan_is_only_a_candidate_not_an_instruction_to_continue(tmp_path: Path, monkeypatch) -> None:
+    repo = git_repo(tmp_path / "repo")
+    foreign = _open_plan(repo, "foreign-plan", [{"id": "L01", "status": "queued", "session": "other"}])
+    monkeypatch.setenv("LHC_PLAN_MIRROR_CONFIG", str(tmp_path / "missing-mirror-config.json"))
+
+    result = entry._plan_entry({"cwd": str(repo), "session_id": "current", "prompt": "new task"}, ROOT)
+
+    assert result["continuation"] is None
+    assert result["candidates"] == [str(foreign)]
+    completed = run_cli(entry, ["--root", str(ROOT), "--event", "UserPromptSubmit", "--plan-entry"],
+                        stdin=json.dumps({"cwd": str(repo), "session_id": "current", "prompt": "new task"}))
+    context = _plan_context(completed)
+    assert "кандидаты" in context.lower()
+    assert "Продолжай его" not in context
+
+
+def test_only_a_unique_unfinished_leaf_bound_to_this_session_can_be_a_continuation(tmp_path: Path, monkeypatch) -> None:
+    repo = git_repo(tmp_path / "repo")
+    own = _open_plan(repo, "own-plan", [{"id": "L01", "status": "queued", "session": "current"}])
+    foreign = _open_plan(repo, "foreign-plan", [{"id": "L02", "status": "running", "session": "other"}])
+
+    class ReadOnlyMirror:
+        @staticmethod
+        def read(path, default=None):
+            return json.loads(Path(path).read_text(encoding="utf-8")) if Path(path).exists() else default
+
+        @staticmethod
+        def link(*args, **kwargs):
+            raise AssertionError("intake hook must not register a plan mirror")
+
+        @staticmethod
+        def announce_once(*args, **kwargs):
+            raise AssertionError("intake hook must not consume the owner announcement")
+
+    original = entry.sibling_tool
+    monkeypatch.setattr(entry, "sibling_tool", lambda tools, name: ReadOnlyMirror if name == "lhc_plan_mirror.py" else original(tools, name))
+    result = entry._plan_entry({"cwd": str(repo), "session_id": "current"}, ROOT)
+
+    assert result["continuation"] == {"plan": str(own), "leaf": "L01"}
+    assert result["candidates"] == [str(foreign)]
+    context = entry.context_for({}, ROOT) + "\n" + entry._plan_context(result)
+    assert "latest human goal" in context.lower() and "stop" in context.lower()
+    assert "L01" in context and str(own) in context
+    assert json.loads((own / "leaves/L01.json").read_text(encoding="utf-8"))["status"] == "queued"
+    assert not (own / ".lhc-publication/link-announced.json").exists()
+
+
+def test_multiple_session_bound_open_leaves_are_candidates_for_model_choice(tmp_path: Path, monkeypatch) -> None:
+    repo = git_repo(tmp_path / "repo")
+    first = _open_plan(repo, "first-plan", [{"id": "L01", "status": "queued", "session": "current"}])
+    second = _open_plan(repo, "second-plan", [{"id": "L02", "status": "running", "session": "current"}])
+    monkeypatch.setenv("LHC_PLAN_MIRROR_CONFIG", str(tmp_path / "missing-mirror-config.json"))
+
+    result = entry._plan_entry({"cwd": str(repo), "session_id": "current"}, ROOT)
+
+    assert result["continuation"] is None
+    assert result["candidates"] == [str(first), str(second)]
+    assert {tuple(item.values()) for item in result["ambiguous_bindings"]} == {
+        (str(first), "L01"), (str(second), "L02")}
+    context = entry._plan_context(result)
+    assert "модель должна сопоставить" in context
+    assert "не выбирать автоматически" in context
+
+
+def test_codex_user_prompt_hook_invokes_read_only_plan_intake() -> None:
     hooks = json.loads((ROOT / "adapters/codex/hooks/hooks.json").read_text())["hooks"]
     commands = [item["hooks"][0]["command"] for item in hooks["UserPromptSubmit"]]
     assert any("lhc_entry.py" in command and "--plan-entry" in command for command in commands)
+
+
+def test_plan_entry_help_does_not_claim_to_create_or_bind_plans(tmp_path: Path) -> None:
+    completed = run_cli(entry, ["--root", str(tmp_path), "--help"])
+    assert completed.returncode == 0
+    help_text = " ".join(completed.stdout.split())
+    assert "read-only session-bound plan candidates" in help_text
+    assert "automatically bind/create" not in help_text
 
 
 def test_opencode_compatibility_adapters_are_inert_and_config_is_skills_only(tmp_path: Path) -> None:
@@ -290,7 +423,11 @@ def test_instruction_only_branch_does_not_import_or_touch_state(tmp_path: Path, 
 
     output = json.loads(capsys.readouterr().out)
     context = output["hookSpecificOutput"]["additionalContext"]
-    assert context == f"LHC: read {tmp_path.resolve() / 'AGENTS.md'} for current instructions."
+    assert "mandatory plan intake" in context.lower()
+    assert "quickfix" in context.lower() and "incident" in context.lower()
+    assert "explicit opt-out" in context.lower()
+    assert str(tmp_path.resolve() / "AGENTS.md") in context
+    assert str(tmp_path.resolve() / "skills/plan-artifacts/SKILL.md") in context
     assert list(tmp_path.iterdir()) == []
 
 
@@ -299,7 +436,12 @@ def test_post_compact_instruction_only_uses_the_same_side_effect_free_path(tmp_p
     assert completed.returncode == 0, completed.stderr
     result = json.loads(completed.stdout)
     assert result["hookSpecificOutput"]["hookEventName"] == "PostCompact"
-    assert result["hookSpecificOutput"]["additionalContext"] == f"LHC: read {tmp_path.resolve() / 'AGENTS.md'} for current instructions."
+    context = result["hookSpecificOutput"]["additionalContext"]
+    assert "mandatory plan intake" in context.lower()
+    assert "quickfix" in context.lower() and "incident" in context.lower()
+    assert "explicit opt-out" in context.lower()
+    assert str(tmp_path.resolve() / "AGENTS.md") in context
+    assert str(tmp_path.resolve() / "skills/plan-artifacts/SKILL.md") in context
     assert list(tmp_path.iterdir()) == []
 
 

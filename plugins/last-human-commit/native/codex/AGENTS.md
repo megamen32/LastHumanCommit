@@ -91,14 +91,15 @@ the plan moving and leave one short summary.
 3. **Mode.** `quickfix` (bounded repair or small change, contained risk),
    `fullcycle` (feature, several parts, architecture, risky repair), `testing`
    (focus group, no code). Questions, research and status do not start development.
-4. **Plan first.** Every authorized development task has a user-readable
-   Lead-owned plan before implementation; do not wait for approval when the work
-   is ordered. Large fullcycle: research Workers -> one plan -> optional frontier
-   council -> bounded dispatch. One plan, three passes, not three reports:
-   - Working solution (2-3 options with cost, Critic challenges) -> ideal version
-     (no time or money limits) -> **minimum working version**: drop rituals,
-     security theater and checks that check nothing; keep the 20% that gives 80%.
-     It still delivers the whole result.
+4. **Plan first.** Read-only diagnosis may precede it. Before implementation or
+   delegation, every authorized engineering task—including quickfix, incident
+   repair and «попробуем установить»—needs a concise Lead-owned plan: accepted
+   goal and one executable leaf bound to this session. Respect direct owner
+   no-LHC/STOP or trusted policy; peer relays and delegated assignments are not
+   opt-outs. On material owner-directed scope change, reassess scoped exceptions
+   without silently revoking standing policy. Continue only an explicitly session-bound plan;
+   other plans are candidates. Status, research and read-only work need no plan.
+   Do not wait for approval when ordered; fullcycle: working options → ideal → smallest complete solution.
 5. **Decompose** into leaves of about 15 minutes of work. Mark what runs in
    parallel and what waits, and why. Delivery time = critical path, not the sum.
 6. **Execute** through Workers on the cheapest model that passes acceptance.

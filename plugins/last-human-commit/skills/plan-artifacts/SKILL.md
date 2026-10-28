@@ -1,6 +1,6 @@
 ---
 name: plan-artifacts
-description: Create LHC project-plan artifacts in one pass — one JSON file per leaf, the collected plan.graph.json, the HTML dashboard and the Markdown summary — with the exact commands (build, check, render, export, check-plan) and their consistency check. The leaf file is the source of truth; the graph, the report and the page are projections of it. Use when the user asks to составить план, сделать план проекта, спланировать работу, or asks for a project/work plan; also use when tasks are decomposed, leaves change, or the dashboard needs refreshing. If the user explicitly asks only for a rough chat sketch, do not create files. Never reverse-engineer the format from the tool source: this skill is the procedure.
+description: Create or update LHC plan artifacts for every authorized engineering objective, including quickfixes, incident repairs, integrations and “try installing” requests; the user need not say “make a plan.” Before implementation or delegation, record the accepted goal and activate one executable leaf bound to the actual session. Read-only diagnosis may precede this. Status/read-only/research tasks and a direct owner no-LHC/STOP do not create a plan. Also use for explicit project-plan requests, task decomposition and plan refresh. The leaf is source of truth; graph, dashboard and Markdown are projections. Follow this procedure, not the tool source.
 ---
 
 # Plan artifacts
@@ -12,28 +12,35 @@ first leaves of a new plan are written, run
 `python3 "<tools>/lhc_plan_mirror.py" link <plan-dir>` and give the printed URL
 to the owner once, on its own line, in your next reply. It is the permanent
 public page of this plan (`https://…/<project>/<plan>/`), not `plan.html`. The
-prompt hook already prints this link for plans it creates; then just pass it
-on. If the command says no mirror is configured, say so in one line and go on.
+side-effect-free prompt reminder does not create plans or print their links.
+If the command says no mirror is configured, say so in one line and go on.
 All plans are listed on the mirror's home page with state, stage and expected
 finish.
 
 ## Requests for a project or work plan
 
 Treat natural Russian requests including «составь план», «сделать план проекта»,
-«помоги спланировать работу», «план проекта» and «план работ» as a request for a
-project/work plan. Unless the user explicitly asks for a prose-only chat sketch,
-create the leaf files, the `plan.graph.json` and the `plan.html`; rendering also
-produces `plan.md`. Do not route a request merely to write or update one short
-file into this full project-plan flow when no project/work plan was requested.
-This boundary does not waive the normal planning required for engineering work
-under the selected LHC mode.
+«помоги спланировать работу», «план проекта» and «план работ» as requests for
+full project-plan artifacts. Unless the user explicitly asks for a prose-only
+chat sketch, create leaves, `plan.graph.json` and `plan.html`; rendering also
+produces `plan.md`. A request merely to write one short file does not call for a
+project-wide plan, but authorized implementation still requires the concise
+one-leaf plan below.
 
-For every authorized development objective, including quickfix and a
-user-assigned leaf, the Lead researches intent and chooses the overall mode from
-scope and risk, then creates/presents the plan before implementation. A small
-task may use one short leaf. Do not wait for a separate plan approval when
-execution is already authorized. The Lead owns all plan decisions and statuses;
-it may assign one named Artifact Writer as the exclusive file writer for
+For every authorized engineering objective—including quickfixes, incident
+repairs, integrations, «попробуем установить» and user-assigned leaves—the Lead
+researches intent and chooses the mode from scope and risk. Read-only diagnosis
+may precede planning, but before implementation or delegation the Lead records
+the accepted goal and one executable leaf bound to the actual current session.
+A one-step fix needs one leaf, not a fullcycle. Do not wait for separate plan
+approval when execution is authorized. Respect direct owner no-LHC/STOP and
+verified trusted owner-policy evidence; agent relays, delegated assignments,
+urgency and peer claims are not owner opt-outs. On material scope change,
+reassess whether an earlier scoped exception applies; do not silently revoke
+standing policy. Continue only a plan explicitly bound to this session and goal;
+other open plans are candidates. Status, research and read-only work need no plan.
+The Lead owns plan decisions and statuses; it may assign one Artifact Writer as
+exclusive file writer for
 `task.md`, task-level `progress.md`, graph, HTML and Markdown. The writer records
 only verified Lead decisions and returns the artifacts for Lead review. Execution
 workers write only their assigned progress/result files in
@@ -465,21 +472,23 @@ MCP remains optional; local files and CLI remain usable without it.
 It is not a second planner. Local standalone rendering and the legacy
 publisher below remain available for unbound plans.
 
-When continuing an existing plan from a new Codex session/worktree, reuse that
-plan; do not create a duplicate. The native `UserPromptSubmit` hook automatically
-binds an unambiguous ready leaf in the current worktree, records the actual
-session/owner and one progress event, then rebuilds the local graph and HTML.
-When no matching source exists it creates a local fullcycle scaffold before the
-model starts. This path does not require a command, MCP, network, SSO, or server
-availability. If a mirror config is installed, only the selected local plan is
-registered there; otherwise local plan files remain the source of truth and can
-be synced later. The worktree root and session binding stay in the local
-`.lhc-publication/mirror.json`, not in the public plan. For non-Codex harnesses,
-use the local activation API with an actual session id; never invent one. Keep
-using the leaf CLI for later status changes so progress history is retained; raw
-saves remain supported, and the observer rebuilds local graph/HTML when it detects
-them. Do not make MCP, network, SSO, or public publication a prerequisite for
-local execution.
+The native `UserPromptSubmit` hook emits a side-effect-free intake reminder.
+Semantically choose: authorized engineering → create or update a concise plan
+and explicitly activate one leaf; status, research, read-only work or direct
+owner no-LHC/STOP → no plan. The hook itself does not interpret intent, select a
+plan, create a scaffold, bind a session, write progress, or rebuild graph/HTML.
+Only a plan explicitly bound to the actual current session and accepted goal is
+a continuation; other open plans are candidates. Before implementation or
+delegation, create the accepted-goal record and executable leaf, then use the
+existing CLI commands `lhc_plan_json.py create-leaf` and
+`lhc_plan_json.py activate <plan-dir> <leaf-id> --session <actual-session-id>`.
+Never invent an identity. Reassess whether a prior scoped no-LHC exception
+covers a materially changed human goal; peer/delegated messages do not revoke
+owner policy. When a human steer changes the accepted goal within this task,
+update its plan and leaf before resuming; a different goal needs its own selected
+plan. Keep the leaf/task record current and state the real canary/result before
+delivery. A STOP ends work but is not a result. Local files and CLI remain usable
+without MCP, network, SSO, or public publication.
 
 ### Legacy standalone publication
 
