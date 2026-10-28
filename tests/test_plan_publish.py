@@ -21,6 +21,58 @@ def write(path, data):
     path.write_text(json.dumps(data, ensure_ascii=False))
 
 
+def test_herder_panel_uses_current_session_and_keeps_selection_safe():
+    import lhc_plan_ui as ui
+    tasks = [
+        {'session': '01a182ff-be14-7171-9b7d-a4965f7363cd', 'harness': 'codex', 'status': 'queued', 'label': '<План>'},
+        {'session': '01a182b0-5520-7e81-8d75-51bbe361d85b', 'harness': 'codex', 'status': 'running', 'label': 'Работа'},
+        {'session': 'javascript:alert(1)', 'harness': 'codex', 'status': 'running'},
+    ]
+    panel = ui.herder_panel(tasks)
+    assert 'https://agent.bezrabotnyi.com/?from=lhc#/session/codex%3A01a182b0-5520-7e81-8d75-51bbe361d85b' in panel
+    assert panel.index('01a182b0-') < panel.index('01a182ff-')
+    assert '&lt;План&gt;' in panel
+    assert 'javascript:' not in panel
+    assert '<iframe' in panel and '<iframe src=' not in panel
+    assert 'Открыть отдельно' in panel
+    assert 'herder-panel' in publication.POLLER
+
+
+def test_herder_panel_does_not_guess_missing_or_remote_sessions():
+    import lhc_plan_ui as ui
+    panel = ui.herder_panel([{'session': 'unknown', 'harness': 'codex'},
+                             {'session': 'codex:remote:host:01a182ff-be14-7171-9b7d-a4965f7363cd', 'harness': 'codex'}])
+    assert 'disabled' in panel
+    assert '#/session/' not in panel
+
+
+@pytest.mark.parametrize('harness,session', [('codex', '01a182ff-be14-7171-9b7d-a4965f7363cd'),
+                                          ('zcode', 'native-session_1'), ('opencode', 'ses_123Abc')])
+def test_herder_panel_preserves_supported_native_harness(harness, session):
+    import lhc_plan_ui as ui
+    panel = ui.herder_panel([{'session': session, 'harness': harness, 'label': 'Исполнитель'}])
+    assert f'https://agent.bezrabotnyi.com/?from=lhc#/session/{harness}%3A{session}' in panel
+    assert ' disabled' not in panel
+
+
+def test_herder_panel_does_not_default_unknown_harness():
+    import lhc_plan_ui as ui
+    assert 'disabled' in ui.herder_panel([{'session': 'ses_123Abc', 'harness': 'other'}])
+
+
+def test_historical_view_opens_current_working_session(plan):
+    import copy
+    path, _ = plan
+    baseline = leaves.build_document(path)
+    current = copy.deepcopy(baseline)
+    current['tasks'][0].update(session='01a182ff-be14-7171-9b7d-a4965f7363cd', harness='codex', status='running')
+    revisions = [{'id': 'r001', 'document': baseline, 'reason': 'Исходный план', 'created_at': '2026-10-28T12:00:00Z'}]
+    page = publication.page(baseline, baseline, current, revisions, 'r001', '2026-10-28T12:00:00Z', False)
+    assert 'codex%3A01a182ff-be14-7171-9b7d-a4965f7363cd' in page
+    assert page.count('id="herder-launch"') == 1
+    assert 'id="lhc-herder-panel"' in page
+
+
 @pytest.fixture
 def plan(tmp_path):
     path = tmp_path / "safe-plan"

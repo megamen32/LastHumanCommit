@@ -307,12 +307,15 @@ STYLE = '''<style>#publication,#plan-comparison{margin:24px auto;padding:24px;ma
 
 def page(baseline, selected, current, revisions, revision_id, updated, live, version="", observed=None):
     import lhc_grid
+    import lhc_plan_ui
     graph = lhc_grid.parse_graph_json(schedule_document(selected))
     graph.resolve_dependencies()
     graph.source_path = "Публичный снимок плана"
     graph.time_live = live
     graph.snapshot_at = updated if not live else ""
     result = lhc_grid.render_html(graph, lhc_grid.build_metrics(graph))
+    result = result.replace('<div class="head-actions">', '<div class="head-actions">' + lhc_plan_ui.herder_panel(current.get('tasks', [])), 1)
+    result = result.replace('</body>', lhc_plan_ui.HERDER_SCRIPT + '</body>', 1)
     # Replace the existing self-HTML poller with metadata polling, HTTP only.
     result = re.sub(r'<script[^>]*id="lhc-live"[^>]*>.*?</script>', "", result, flags=re.S)
     links = '<a href="./"' + (' aria-current="page"' if live else '') + '>Текущий план</a>' + ''.join(f'<a href="view-{r["id"]}.html"' + (' aria-current="page"' if not live and r['id'] == revision_id else '') + f' title="{html.escape(r["reason"], quote=True)}">{r["id"]}</a>' for r in revisions)
@@ -338,10 +341,12 @@ POLLER = '''<script id="lhc-publication-live">
 (()=>{if(!/^https?:$/.test(location.protocol))return;
 const badge=document.getElementById('live-state'); const version='__VERSION__';
 const stamp=Date.parse(document.getElementById('publication-time').textContent);
-let lastOK=0;
-function status(){badge.textContent=!lastOK?'Проверка связи…':Date.now()-lastOK>30000?'Нет связи · сохранённый снимок':Date.now()-stamp>300000?'Давно не обновлялся · связь есть':'Связь есть';}
+let lastOK=0,pending=false;
+function reload(){try{sessionStorage.setItem('lhc-scroll:'+location.pathname,JSON.stringify({scroll:scrollY,hash:location.hash}));}catch(e){}location.reload();}
+window.addEventListener('lhc-herder-closed',()=>{if(pending)reload()});
+function status(){badge.textContent=pending?'Есть обновления · применятся после закрытия Agent Herder':!lastOK?'Проверка связи…':Date.now()-lastOK>30000?'Нет связи · сохранённый снимок':Date.now()-stamp>300000?'Давно не обновлялся · связь есть':'Связь есть';}
 async function poll(){try{const r=await fetch('version.json',{cache:'no-store'});if(!r.ok)throw Error();const m=await r.json();lastOK=Date.now();
-if(version!==m.version){try{sessionStorage.setItem('lhc-scroll:'+location.pathname,JSON.stringify({scroll:scrollY,hash:location.hash}));}catch(e){}location.reload();return;}status();}catch(e){badge.textContent='Нет связи · сохранённый снимок';}}
+if(version!==m.version){const panel=document.getElementById('herder-panel');if(panel&&!panel.hidden){pending=true;const update=document.getElementById('herder-plan-update');if(update)update.hidden=false;badge.textContent='Есть обновления · применятся после закрытия Agent Herder';return;}reload();return;}status();}catch(e){badge.textContent='Нет связи · сохранённый снимок';}}
 poll();setInterval(poll,12000);setInterval(status,15000);})();
 </script>'''
 

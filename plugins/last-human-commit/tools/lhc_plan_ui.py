@@ -1,8 +1,36 @@
 """Shared, dependency-free navigation for standalone and published plan views."""
 
 import json
+import re
 from html import escape
 from datetime import datetime, timezone
+from urllib.parse import quote
+
+
+def herder_panel(tasks):
+    """Open only an explicitly bound, supported native session; never guess one."""
+    sessions = {}
+    for task in sorted(tasks, key=lambda task: task.get('status') not in ('running', 'in_progress')):
+        session = str(task.get('session') or '')
+        harness = task.get('harness')
+        if (harness not in ('codex', 'zcode', 'opencode') or session.lower() in ('unknown', 'none', 'null') or
+                not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._-]{0,199}', session)):
+            continue
+        key = harness + ':' + session
+        sessions.setdefault(key, (task.get('label') or session, task.get('status') in ('running', 'in_progress')))
+    options = ''.join('<option value="' + escape('https://agent.bezrabotnyi.com/?from=lhc#/session/' + quote(key, safe=''), quote=True) + '">' +
+                      escape(('В работе · ' if running else '') + label) + '</option>'
+                      for key, (label, running) in sessions.items())
+    disabled = '' if sessions else ' disabled title="В плане не записана поддерживаемая сессия исполнителя"'
+    first_url = 'https://agent.bezrabotnyi.com/?from=lhc#/session/' + quote(next(iter(sessions)), safe='') if sessions else ''
+    return ('<button type="button" id="herder-launch" aria-controls="herder-panel" aria-expanded="false"' + disabled + '>Agent Herder</button>'
+            '<aside id="herder-panel" role="dialog" aria-label="Сессия исполнителя в Agent Herder" hidden>'
+            '<div class="herder-heading"><strong>Agent Herder</strong><button type="button" id="herder-close" aria-label="Закрыть Agent Herder">Закрыть</button></div>'
+            '<label class="herder-selection">Сессия исполнителя<select id="herder-session">' + options + '</select></label>'
+            '<p class="herder-help">Если вход внутри панели недоступен, откройте сессию отдельно.</p>'
+            '<a id="herder-direct" href="' + escape(first_url, quote=True) + '" target="_blank" rel="noopener noreferrer">Открыть отдельно ↗</a>'
+            '<p id="herder-plan-update" role="status" hidden>Есть обновления плана. Они применятся после закрытия панели.</p>'
+            '<iframe id="herder-frame" title="Рабочая сессия Agent Herder" referrerpolicy="no-referrer"></iframe></aside>')
 
 
 def display_time(value):
@@ -72,7 +100,30 @@ body #publication a{color:var(--accent)}body .comparison td,body .comparison th{
 @media(max-width:650px){body .page{padding:14px 12px 30px}.plan-sidebar{position:sticky;inset:0;flex-direction:row;width:auto;padding:8px 10px;gap:4px;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line)}.plan-brand{display:none}.plan-sidebar a{flex:none;padding:10px 12px;font-size:12px}.page>header{gap:12px}.page>header .sub{font-size:10px}.head-actions{flex-shrink:0}.theme-toggle{max-width:94px;font-size:11px}body .kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}body .kpi{padding:12px}body .panel{padding:14px}body .brief{grid-template-columns:1fr}body .progress-strip{font-size:11px}.toolbar{flex-wrap:wrap}.toolbar input{width:100%;min-width:0}.revision-strip{padding-bottom:12px}body .gantt-inner{min-width:600px}}
 @media(max-width:650px){body>footer{margin:0 12px 24px}}
 @media print{.plan-sidebar,.revision-strip,.theme-toggle{display:none!important}body .page{padding:0!important;max-width:none}.plan-section{break-before:auto}body .kpis{grid-template-columns:repeat(4,1fr)}details>*{display:block!important}.compare-scroll,.gantt,.table-scroll{overflow:visible!important}.gantt-inner{min-width:0!important}.panel{break-inside:avoid}#plan-content{display:block}body>footer{margin:12px 0}}
+#herder-launch{position:fixed;z-index:45;top:20px;right:24px;border:1px solid var(--accent);background:var(--panel);color:var(--text);padding:10px 14px;border-radius:10px;font:inherit;cursor:pointer;min-height:44px;box-shadow:0 4px 24px #0005}#herder-launch:disabled{opacity:.55;cursor:default}
+#herder-panel{position:fixed;z-index:60;right:12px;top:84px;bottom:12px;width:min(640px,calc(100vw - 24px));background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 48px #0007;display:flex;flex-direction:column;overflow:hidden}#herder-panel[hidden],#herder-plan-update[hidden]{display:none!important}
+.herder-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 14px}.herder-heading button{min-height:44px;padding:8px 14px;border:1px solid var(--line);border-radius:8px;background:var(--panel-2);color:var(--text);font:inherit;cursor:pointer}.herder-selection{padding:0 14px;display:flex;align-items:center;gap:10px;font-size:12px}.herder-selection select{flex:1;min-width:0;max-width:100%;min-height:40px;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:8px}.herder-help,#herder-direct,#herder-plan-update{margin:8px 14px;font-size:12px}#herder-direct{color:var(--accent)}#herder-plan-update{color:var(--text)}#herder-frame{flex:1;width:100%;min-height:0;border:0;background:var(--bg)}
+@media(max-width:650px){body:has(#herder-launch) .page{padding-bottom:88px}#herder-launch{top:auto;right:14px;bottom:calc(14px + env(safe-area-inset-bottom))}#herder-panel{inset:auto 0 0;width:100%;height:86dvh;border-radius:16px 16px 0 0;border-bottom:0;padding-bottom:env(safe-area-inset-bottom);box-sizing:border-box}}
+@media print{#herder-launch,#herder-panel{display:none!important}}
 </style>'''
+
+HERDER_SCRIPT = '''<script id="lhc-herder-panel">
+(()=>{const launch=document.getElementById('herder-launch'),panel=document.getElementById('herder-panel');
+if(!launch||!panel||launch.disabled)return;
+const select=document.getElementById('herder-session'),frame=document.getElementById('herder-frame'),direct=document.getElementById('herder-direct'),close=document.getElementById('herder-close');
+const storage='lhc-herder:'+location.pathname;
+let saved={};try{saved=JSON.parse(sessionStorage.getItem(storage)||'{}')}catch(e){}
+if(!saved||typeof saved!=='object')saved={};
+if([...select.options].some(option=>option.value===saved.url))select.value=saved.url;
+function persist(){try{sessionStorage.setItem(storage,JSON.stringify({open:!panel.hidden,url:select.value}))}catch(e){}}
+function choose(){const url=select.value;if(![...select.options].some(option=>option.value===url))return;direct.href=url;if(!panel.hidden&&frame.getAttribute('src')!==url)frame.src=url;persist()}
+function open(){panel.hidden=false;launch.setAttribute('aria-expanded','true');choose();close.focus();persist()}
+function shut(){panel.hidden=true;launch.setAttribute('aria-expanded','false');persist();launch.focus();window.dispatchEvent(new Event('lhc-herder-closed'))}
+launch.addEventListener('click',open);close.addEventListener('click',shut);select.addEventListener('change',choose);
+document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!panel.hidden){event.preventDefault();shut()}});
+choose();if(saved.open)open();
+})();
+</script>'''
 
 SCRIPT = '''<script id="plan-app">
 (()=>{
