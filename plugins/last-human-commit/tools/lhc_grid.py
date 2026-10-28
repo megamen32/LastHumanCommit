@@ -2441,9 +2441,12 @@ def cost_panel_html(cost: dict[str, Any]) -> str:
             "<li><b>Остатку к запуску</b>: нет посчитанных денег</li>",
         ]
     if priced:
-        planned_models = sorted({entry.get("model", "") for entry in cost["leaves"].values()
+        planned_models = sorted({entry.get("alias") or entry.get("model", "") for entry in cost["leaves"].values()
                                  if entry.get("state") == "priced" and entry.get("model")})
         facts.append("<li><b>Плановые модели</b>: " + escape(", ".join(planned_models)) + "</li>")
+        tariff_routes = sorted({entry["model"] for entry in cost["leaves"].values()
+                                if entry.get("state") == "priced" and entry.get("model")})
+        facts.append("<li><b>Тарифы для расчёта</b>: " + escape(", ".join(tariff_routes)) + "</li>")
         facts.append(
             "<li>Оценка по тарифам каталога и плановому объёму работы. "
             "Это не фактические списания; условия подписки и реальное использование "
