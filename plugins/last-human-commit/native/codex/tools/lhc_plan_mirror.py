@@ -24,9 +24,11 @@ import secrets
 import sys
 import threading
 import time
+import urllib.parse
 import urllib.request
 import urllib.error
 
+import lhc_directives as directives
 import lhc_plan_catalog as catalog
 import lhc_plan_json as leaves
 import lhc_plan_publish as pub
@@ -636,6 +638,23 @@ class Replica:
     def dashboard(self):
         return catalog.render(self.entries(), self.legacy())
 
+    def directives(self, project, request=None):
+        """The live directives of a project; request is one owner action to apply first."""
+        path = self.data / 'directives' / (project + '.json')
+        with self.lock, leaves.file_lock(self.data / 'directives.lock'):
+            doc = directives.load(path)
+            moved = directives.sweep(doc)
+            snapshot = directives.apply(doc, request) if request else directives.view(doc)
+            if request or moved:
+                directives.save(path, doc)
+            return snapshot
+
+    def directive_counts(self):
+        counts = {}
+        for path in sorted((self.data / 'directives').glob('*.json')):
+            counts[path.stem] = len(self.directives(path.stem)['active'])
+        return counts
+
 
 def make_server(cfg):
     replica = Replica(cfg)
@@ -673,7 +692,32 @@ def make_server(cfg):
             return (sso_enabled and loopback
                     and self.headers.get_all('X-LHC-SSO-Verified') == ['1'])
 
+        def directive_project(self, prefix):
+            name = urllib.parse.unquote(self.path[len(prefix):].split('?')[0]).strip('/')
+            return name if name and name == pub.slug(name) else None
+
+        def read_body(self):
+            length = int(self.headers.get('Content-Length', '0'))
+            if not 0 < length <= MAX_BYTES or self.headers.get('Transfer-Encoding'):
+                raise ValueError('invalid payload size')
+            self.connection.settimeout(10)
+            return json.loads(self.rfile.read(length))
+
         def do_GET(self):
+            if self.path.startswith('/v1/directives/') and self.authorized():
+                project = self.directive_project('/v1/directives/')
+                if project is None:
+                    return self.reply(404, {'error': 'not found'})
+                return self.reply(200, replica.directives(project))
+            if self.path.startswith('/directives/') and sso_enabled:
+                if not self.proxy_authorized():
+                    return self.reply(401, {'error': 'SSO authentication required'})
+                if self.path.rstrip('/') == '/directives':
+                    return self.reply(200, directives.index(replica.directive_counts()), 'text/html')
+                project = self.directive_project('/directives/')
+                if project is None:
+                    return self.reply(404, {'error': 'not found'})
+                return self.reply(200, directives.page(project, replica.directives(project)), 'text/html')
             if self.path == '/health':
                 self.reply(200, {'status': 'ok'})
             elif self.path == '/v1/status' and self.authorized():
@@ -690,6 +734,22 @@ def make_server(cfg):
                 self.reply(404, {'error': 'not found'})
 
         def do_POST(self):
+            for prefix, allowed in (('/v1/directives/', self.authorized()),
+                                    ('/directives/', sso_enabled and self.proxy_authorized()
+                                     and self.headers.get('X-LHC-Directives') == '1')):
+                if self.path.startswith(prefix):
+                    project = self.directive_project(prefix)
+                    if project is None:
+                        return self.reply(404, {'error': 'not found'})
+                    if not allowed:
+                        return self.reply(401, {'error': 'authentication required'})
+                    try:
+                        request = self.read_body()
+                        if not isinstance(request, dict):
+                            raise ValueError('request must be an object')
+                        return self.reply(200, replica.directives(project, request))
+                    except (ValueError, KeyError, TypeError, OSError):
+                        return self.reply(400, {'error': 'invalid directive request'})
             if self.path != '/v1/snapshots':
                 return self.reply(404, {'error': 'not found'})
             if not self.authorized():

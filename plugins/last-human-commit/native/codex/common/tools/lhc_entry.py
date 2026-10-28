@@ -111,6 +111,15 @@ def context_for(event, root):
         f"{root/'skills/plan-artifacts/SKILL.md'}."
     )
 
+def owner_directives(cwd):
+    """The live owner directives of this project, or an empty string. Never raises."""
+    try:
+        import lhc_directives
+        return lhc_directives.session_context(Path(cwd))
+    except Exception:  # noqa: BLE001 - a hook must not fail a session
+        return ""
+
+
 def package_version(root):
     for rel in (".codex-plugin/plugin.json", "plugin.json", "plugins/last-human-commit/plugin.json"):
         p = root/rel
@@ -341,6 +350,10 @@ def main():
             prompts.append(result["prompt"])
         if learning and learning.get("prompt"):
             prompts.append(learning["prompt"])
+        if result and result.get("due"):
+            extra = owner_directives(cwd_value)
+            if extra:
+                prompts.append(extra)
         if prompts:
             print(json.dumps({"hookSpecificOutput": {
                 "hookEventName": "PostToolUse",
@@ -377,9 +390,13 @@ def main():
     if not args.instructions_only or args.event not in {"SessionStart", "PostCompact"}:
         return
     root = (args.root or Path(__file__).resolve().parents[1]).resolve()
+    context = context_for(args.event, root)
+    extra = owner_directives(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
+    if extra:
+        context += "\n\n" + extra
     print(json.dumps({"hookSpecificOutput": {
         "hookEventName": args.event,
-        "additionalContext": context_for(args.event, root),
+        "additionalContext": context,
     }}, ensure_ascii=False))
     return
 

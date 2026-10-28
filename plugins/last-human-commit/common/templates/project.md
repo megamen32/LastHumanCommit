@@ -11,5 +11,9 @@ target: main
 dev: <how to deploy for testing, and the URL testers use>
 # Agents may deploy here without asking. Production is never implied.
 
+deploy: blue-green
+# blue-green = new color beside the old one, tests pass on it, traffic switches, rollback is a switch back.
+# Use simple only for what has no external clients.
+
 notes:
 # Anything the owner wants every session to know about this project.
