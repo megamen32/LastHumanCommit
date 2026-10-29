@@ -50,16 +50,16 @@ class LandingTests(unittest.TestCase):
         self.assertEqual(
             {r["name"] for r in self.data["roles"] if r["kind"] == "role"},
             {"Lead", "Worker", "Adviser", "Reviewer", "Tester", "Overseer",
-             "Maintainer", "Critic"},
+             "Maintainer", "Critic", "Orchestrator", "Sentinel"},
         )
 
     def test_taxonomy_counts_are_honest(self):
-        # Defect 3 support: the published counts match the role files (8 canonical roles).
+        # Defect 3 support: the published counts match the role files (10 canonical roles).
         counts = {}
         for role in self.data["roles"]:
             counts[role["kind"]] = counts.get(role["kind"], 0) + 1
         self.assertEqual(
-            counts, {"role": 8}
+            counts, {"role": 10}
         )
 
     def test_maintainer_has_an_explicit_position(self):
@@ -67,7 +67,7 @@ class LandingTests(unittest.TestCase):
         names = [r["name"] for r in self.data["roles"]]
         self.assertEqual(
             names,
-            ["Lead", "Worker", "Adviser", "Critic", "Reviewer", "Tester", "Overseer", "Maintainer"],
+            ["Lead", "Worker", "Adviser", "Critic", "Reviewer", "Tester", "Overseer", "Maintainer", "Orchestrator", "Sentinel"],
         )
         self.assertIn("Maintainer", build.role_order)
 

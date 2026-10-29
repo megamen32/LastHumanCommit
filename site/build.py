@@ -169,6 +169,7 @@ def role_data(path: Path, sha: str) -> dict:
 role_order = {
     "Lead": 0, "Worker": 1, "Adviser": 2, "Critic": 3,
     "Reviewer": 4, "Tester": 5, "Overseer": 6, "Maintainer": 7,
+    "Orchestrator": 8, "Sentinel": 9,
 }
 
 

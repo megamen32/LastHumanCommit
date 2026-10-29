@@ -36,6 +36,8 @@
     "role.Tester.summary": ["Try the real user journey without implementation history and report what helped, what obstructed you and whether you reached the goal.", "Самостоятельно проходит пользовательский сценарий без истории реализации и сообщает, что помогло, где возникли трудности и достигнута ли цель."],
     "role.Overseer.summary": ["Watch the overall route and progress, catch drift from the outcome or unjustified delay, and direct Lead to the next useful proof.", "Следит за общим маршрутом и прогрессом, замечает уход от результата или необоснованные задержки и направляет Lead к следующему полезному доказательству."],
     "role.Maintainer.summary": ["Act as the target project's strict maintainer: read the project and the diff, then return a hard critique of every rule and convention the change breaks.", "Выступает строгим мейнтейнером чужого проекта: сначала читает сам проект, потом диф и выдаёт жёсткий разбор всех нарушенных правил и конвенций."],
+    "role.Orchestrator.summary": ["Carry the owner's sessions to their results from a registry and file mail, and never do the work myself.", "Ведёт сессии владельца к результату по реестру и файловой почте и сам работу не делает."],
+    "role.Sentinel.summary": ["Watch one thing for the owner and report only when something is wrong.", "Следит за одной вещью для владельца и пишет только когда что-то не так."],
     "readRole": ["Read current definition", "Прочитать определение"],
     "hideRole": ["Hide definition", "Скрыть определение"],
     "verbatim": ["VERBATIM GIT CONTENT", "ОПРЕДЕЛЕНИЕ ИЗ GIT · ОРИГИНАЛ БЕЗ ПЕРЕВОДА"],
