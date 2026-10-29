@@ -146,3 +146,22 @@ def test_opencode_install_registers_the_plan_mcp_and_role_profiles(tmp_path):
     assert result["plugin"]["mcp"] == "registered"
     again = install.configure(home, plugin, "opencode")
     assert again["plugin"]["mcp"] == "unchanged"
+
+
+def test_opencode_install_does_not_duplicate_an_installed_plugin(tmp_path):
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("lhc_install2", ROOT / "plugins/last-human-commit/scripts/install_runtime.py")
+    install = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(install)
+    home = tmp_path / "home"
+    plugin = ROOT / "plugins/last-human-commit"
+    plugins = home / ".config/opencode/plugins"
+    plugins.mkdir(parents=True)
+    (plugins / "last-human-commit.ts").symlink_to(plugin / "opencode/lhc-v2.ts")
+    install.configure(home, plugin, "opencode", opencode_plugin_dir=plugins)
+    install.configure(home, plugin, "opencode", opencode_plugin_dir=plugins)
+    assert sorted(f.name for f in plugins.glob("*.ts")) == ["last-human-commit.ts"]
+    fresh = tmp_path / "home2"
+    install.configure(fresh, plugin, "opencode")
+    install.configure(fresh, plugin, "opencode")
+    assert [f.name for f in (fresh / ".config/opencode/plugin").glob("*.ts")] == ["lhc-v2.ts"]
