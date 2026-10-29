@@ -1,3 +1,7 @@
+# 1.7.12 — установщик OpenCode не создаёт второй плагин
+
+- install_runtime.py --runtime opencode: если в каталоге плагинов уже есть запись на тот же исходник (симлинк) или last-human-commit.ts, новая копия lhc-v2.ts не создаётся; иначе OpenCode грузил бы плагин дважды и хуки удваивались.
+
 # 1.7.11 — OpenCode получает инструменты плана, Stop-гейт и роли оркестратора и сторожа
 
 - install_runtime.py --runtime opencode теперь вписывает MCP LhcPlan в opencode.json (с резервной копией) и ставит профили agents/orchestrator.md и agents/sentinel.md. До этого OpenCode получал только указатель на AGENTS.md и время: ни одного вызова инструментов плана в сессиях.
