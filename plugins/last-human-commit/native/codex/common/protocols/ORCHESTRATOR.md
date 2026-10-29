@@ -15,6 +15,12 @@ Written only by the orchestrator.
                "last_seen": "<iso time>", "next": "<the next concrete step>"}]}
 ```
 
+Maintained with `lhc_orchestrator.py`: `init ID` names the orchestrator, `set ID --task ... --status ...` adds or
+updates a row, `archive` moves accepted and released rows older than six hours to
+`.agents/sessions-archive.jsonl`, `tick` compares the registry with the live Codex and OpenCode
+sessions of the project. A hook reminds the orchestrator when the registry stands still for
+20 minutes, and any session when file mail waits for it. A sentinel follows `common/agents/Sentinel.md`.
+
 ## File mail: `.agents/mail/<to-session-id>/<time>-<from>-<kind>.md`
 
 The harness messaging breaks now and then; files do not. This costs extra, so use it
