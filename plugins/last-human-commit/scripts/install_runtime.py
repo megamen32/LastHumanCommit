@@ -21,6 +21,44 @@ def backup_path(home:Path,runtime:str,suffix:str="")->Path:
     stamp=datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ-")+uuid.uuid4().hex[:8]
     return backup_dir(home)/(f"{stamp}-{runtime}{suffix}.md")
 
+def register_opencode_mcp(home:Path,root:Path)->dict:
+    """Give OpenCode the LHC plan tools: a local MCP server entry in its user config."""
+    script=root/"scripts"/"plan_mcp.py"
+    if not script.is_file():
+        return {"mcp":"skipped","reason":"plan_mcp.py is missing from the installed package"}
+    file=home/".config/opencode/opencode.json"
+    config=json.loads(file.read_text(encoding="utf-8")) if file.is_file() else {"$schema":"https://opencode.ai/config.json"}
+    entry={"type":"local","command":["python3",str(script)],"enabled":True}
+    if config.setdefault("mcp",{}).get("LhcPlan")==entry:
+        return {"mcp":"unchanged","file":str(file)}
+    if file.is_file():
+        backup=backup_path(home,"opencode","-config")
+        backup.parent.mkdir(parents=True,exist_ok=True)
+        backup.write_text(file.read_text(encoding="utf-8"),encoding="utf-8")
+    config["mcp"]["LhcPlan"]=entry
+    file.parent.mkdir(parents=True,exist_ok=True)
+    file.write_text(json.dumps(config,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+    return {"mcp":"registered","file":str(file)}
+
+OPENCODE_ROLES={"Orchestrator":"LastHumanCommit Orchestrator: carries the owner's sessions to results from a registry and file mail; does not do the work.",
+                "Sentinel":"LastHumanCommit Sentinel: watches one thing, reports only when something is wrong."}
+
+def register_opencode_agents(home:Path,root:Path)->dict:
+    """Install the Orchestrator and Sentinel role profiles next to the other LHC agents."""
+    target=home/".config/opencode/agents"
+    done={}
+    for name,description in OPENCODE_ROLES.items():
+        src=next((c/f"{name}.md" for c in (root/"common/agents",root/"src/common/agents") if (c/f"{name}.md").is_file()),None)
+        if src is None:
+            continue
+        payload=f"---\ndescription: {description}\nmode: primary\n---\n\n"+src.read_text(encoding="utf-8")
+        file=target/f"{name.lower()}.md"
+        if not file.is_file() or file.read_text(encoding="utf-8")!=payload:
+            target.mkdir(parents=True,exist_ok=True)
+            file.write_text(payload,encoding="utf-8")
+        done[name]=str(file)
+    return {"agents":done}
+
 def register_opencode_plugin(home:Path,root:Path,plugin_dir:Path)->dict:
     """Install the LHC OpenCode plugin so OpenCode auto-discovers it.
 
@@ -56,7 +94,10 @@ def register_opencode_plugin(home:Path,root:Path,plugin_dir:Path)->dict:
         "pluginFiles":installed,
         "registeredAt":datetime.now(timezone.utc).isoformat(),
     },ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
-    return {"dir":str(plugin_dir),"files":installed,"state":str(state)}
+    extra={}
+    if plugin_dir.parent==(home/".config/opencode").resolve():
+        extra.update(register_opencode_mcp(home,root));extra.update(register_opencode_agents(home,root))
+    return {"dir":str(plugin_dir),"files":installed,"state":str(state),**extra}
 
 def configure(home:Path,root:Path,runtime:str,replace_gsd:bool=False,opencode_plugin_dir:Path|None=None)->dict:
     home=home.expanduser().resolve();root=root.expanduser().resolve()
