@@ -32,7 +32,8 @@ entry = load_module(ENTRY, name="lhc_entry_instructions_test")
 @pytest.mark.parametrize("config_path", HOOK_CONFIGS)
 def test_native_hook_templates_register_only_instruction_lifecycle(config_path: Path) -> None:
     hooks = json.loads(config_path.read_text(encoding="utf-8"))["hooks"]
-    assert set(hooks) == {"SessionStart", "PostCompact", "PostToolUse"}
+    assert set(hooks) == {"SessionStart", "PostCompact", "PostToolUse", "Stop"}
+    assert "--stop-gate" in hooks["Stop"][0]["hooks"][0]["command"]
     for event in ("SessionStart", "PostCompact"):
         for registrations in (hooks[event],):
             for registration in registrations:
@@ -47,7 +48,8 @@ def test_native_hook_templates_register_only_instruction_lifecycle(config_path: 
 @pytest.mark.parametrize("config_path", SUPPLEMENTAL_HOOK_CONFIGS)
 def test_zcode_hook_templates_allow_only_instruction_and_time_events(config_path: Path) -> None:
     hooks = json.loads(config_path.read_text(encoding="utf-8"))["hooks"]
-    assert set(hooks) == {"SessionStart", "PostCompact", "PostToolUse"}
+    assert set(hooks) == {"SessionStart", "PostCompact", "PostToolUse", "Stop"}
+    assert "--stop-gate" in hooks["Stop"][0]["hooks"][0]["command"]
     assert "--instructions-only" in hooks["SessionStart"][0]["hooks"][0]["command"]
     assert "--instructions-only" in hooks["PostCompact"][0]["hooks"][0]["command"]
     assert "--heartbeat-only" in hooks["PostToolUse"][0]["hooks"][0]["command"]

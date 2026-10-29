@@ -83,7 +83,7 @@ def test_package_declares_both_native_adapters() -> None:
     assert any(h.get("async") for r in native["hooks"]["PostToolUse"] for h in r["hooks"])
     hooks = json.loads((PLUGIN / "hooks/hooks.json").read_text(encoding="utf-8"))
     # The declared hook bundle is time-only: instructions plus the heartbeat.
-    assert set(hooks["hooks"]) == {"SessionStart", "PostCompact", "PostToolUse"}
+    assert set(hooks["hooks"]) == {"SessionStart", "PostCompact", "PostToolUse", "Stop"}
     assert "PostToolUse" in hooks["hooks"], "the heartbeat must not depend on a manual invocation"
     assert "UserPromptSubmit" not in hooks["hooks"], "a hook never observes the stateful lifecycle"
     assert (PLUGIN / "opencode/lhc-time-guard.ts").is_file()

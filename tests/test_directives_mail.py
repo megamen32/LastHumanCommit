@@ -83,3 +83,25 @@ def test_plan_pulse_fires_once_when_leaves_stand_still(tmp_path, monkeypatch):
     assert "L01" in text and "has not changed" in text
     assert entry.plan_pulse(event, ROOT, now=now + 60) is None  # once per window
     assert entry.plan_pulse({**event, "agent_id": "a"}, ROOT, now=now + 9999) is None
+
+
+def test_stop_gate_holds_a_stop_while_leaves_are_untouched(tmp_path, monkeypatch):
+    import json
+    import lhc_entry as entry
+    repo = tmp_path / "repo"
+    (repo / ".git").mkdir(parents=True)
+    plan = repo / ".agents/tasks/20261029-x"
+    (plan / "leaves").mkdir(parents=True)
+    (plan / "plan.json").write_text("{}")
+    for name, status in (("L01", "done"), ("L02", "queued"), ("L03", "blocked")):
+        (plan / f"leaves/{name}.json").write_text(json.dumps({"id": name, "status": status}))
+    monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
+    event = {"cwd": str(repo), "session_id": "s1"}
+    text = entry.stop_gate(event, ROOT)
+    assert "L02" in text and "1 blocked" in text
+    assert entry.stop_gate({**event, "stop_hook_active": True}, ROOT) is None
+    assert entry.stop_gate({**event, "agent_id": "a"}, ROOT) is None
+    assert entry.stop_gate(event, ROOT)            # second hold
+    assert entry.stop_gate(event, ROOT) is None    # then the session is released
+    (plan / "leaves/L02.json").write_text(json.dumps({"id": "L02", "status": "done"}))
+    assert entry.stop_gate({**event, "session_id": "s2"}, ROOT) is None  # nothing left to do

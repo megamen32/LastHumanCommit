@@ -147,6 +147,70 @@ def plan_pulse(event, root, now=None):
             "no leaf needs. The plan is how the owner sees progress; a stale plan reads as no progress.")
 
 
+STOP_FIRES = 2          # a stop is held at most this many times per window
+STOP_WINDOW = 6 * 3600  # a plan untouched this long is not this session's live work
+
+
+def stop_gate(event, root, now=None):
+    """Hold a stop while the session's plan still has untouched work.
+
+    Facts only: queued or running leaves on disk. The text of the turn is never
+    read. The hold is bounded (stop_hook_active, STOP_FIRES per window), so a
+    session that truly cannot go on is released after two reminders.
+    """
+    import time
+    session = str(event.get("session_id") or event.get("sessionID") or "")
+    if not session or event.get("agent_id") or event.get("stop_hook_active"):
+        return None
+    found = _plan_entry(event, root)
+    if not found:
+        return None
+    own = (found.get("continuation") or {}).get("plan")
+    pick = own or (found["candidates"][0] if len(found.get("candidates", [])) == 1 else None)
+    if not pick:
+        return None
+    plan = Path(pick)
+    files = sorted((plan / "leaves").glob("*.json"))
+    now = now or time.time()
+    if not files or now - max(f.stat().st_mtime for f in files) > STOP_WINDOW:
+        return None
+    todo, blocked = [], 0
+    for f in files:
+        try:
+            leaf = json.loads(f.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if leaf.get("status") in {"queued", "running"}:
+            todo.append(str(leaf.get("id") or f.stem))
+        elif leaf.get("status") == "blocked":
+            blocked += 1
+    if not todo:
+        return None
+    base = Path(os.environ.get("XDG_STATE_HOME") or Path.home() / ".local" / "state") / "lhc" / "pulse"
+    mark = base / (re.sub(r"[^A-Za-z0-9_.-]", "_", session) + ".stop")
+    fires, since = 0, now
+    try:
+        fires, since = json.loads(mark.read_text())
+    except (OSError, ValueError, TypeError):
+        pass
+    if now - since > STOP_WINDOW:
+        fires, since = 0, now
+    if fires >= STOP_FIRES:
+        return None
+    try:
+        base.mkdir(parents=True, exist_ok=True)
+        mark.write_text(json.dumps([fires + 1, since]))
+    except OSError:
+        return None
+    shown = ", ".join(todo[:6]) + (" ..." if len(todo) > 6 else "")
+    return (f"LHC: you are stopping, but plan {plan.name} still has {len(todo)} leaves not done ({shown}) "
+            f"and {blocked} blocked. A stop is right when the business result is reached or only the owner "
+            "can unblock it. Otherwise do not stop: take the next queued leaf that is not blocked and work it "
+            "now; for a blocked leaf send the blocker up the chain (python3 common/tools/lhc_mail.py send "
+            "to the L, Adviser or Overseer) and go on to the next leaf instead of waiting. Report when the "
+            "leaves are done or escalated, not when the first one is stuck.")
+
+
 def _due(session, key, now, window):
     """True once per window for this session and reminder: the mark is a small state file."""
     base = Path(os.environ.get("XDG_STATE_HOME") or Path.home() / ".local" / "state") / "lhc" / "pulse"
@@ -391,6 +455,8 @@ def main():
                         help="emit mandatory planning intake and canonical plan procedure without changing state")
     parser.add_argument("--heartbeat-only", action="store_true",
                         help="record only an isolated wall-time reminder at PostToolUse")
+    parser.add_argument("--stop-gate", action="store_true",
+                        help="at Stop, hold the turn once or twice while the plan still has untouched leaves")
     parser.add_argument("--plan-entry", action="store_true",
                         help="emit planning intake and read-only session-bound plan candidates on UserPromptSubmit")
     default_runtime = ("zcode" if os.environ.get("ZCODE_PLUGIN_ROOT") else
@@ -475,6 +541,18 @@ def main():
                 "hookEventName": "PostToolUse",
                 "additionalContext": "\n\n".join(prompts),
             }}, ensure_ascii=False))
+        return
+    if args.stop_gate:
+        if args.event != "Stop":
+            return
+        try:
+            raw = sys.stdin.read(8 * 1024 * 1024 + 1)
+            event = json.loads(raw or "{}") if len(raw) <= 8 * 1024 * 1024 else {}
+            reason = stop_gate(event, args.root or Path(__file__).resolve().parents[1]) if isinstance(event, dict) else None
+        except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError):
+            reason = None
+        if reason:
+            print(json.dumps({"decision": "block", "reason": reason}, ensure_ascii=False))
         return
     if args.plan_entry:
         if args.event != "UserPromptSubmit":
