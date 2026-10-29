@@ -27,6 +27,12 @@ import { fileURLToPath } from "node:url"
 
 /** Structural subset of the OpenCode plugin contract (@opencode-ai/plugin). */
 export type LhcPluginInput = {
+  client?: {
+    session?: {
+      get?: (input: { path: { id: string } }) => Promise<{ data?: { parentID?: string } }>
+      prompt?: (input: { path: { id: string }; body: { parts: { type: "text"; text: string }[] } }) => Promise<unknown>
+    }
+  }
   directory?: string
   worktree?: string
   project?: { worktree?: string }
@@ -263,6 +269,50 @@ function runTimeGuard(
   })
 }
 
+/**
+ * Ask the canonical Stop gate whether this idle session still has untouched plan
+ * leaves. Resolves to the reason text, or null when the stop stands.
+ */
+function runStopGate(entry: string, options: { cwd: string; sessionID: string }): Promise<string | null> {
+  return new Promise((resolvePromise) => {
+    let settled = false
+    const finish = (value: string | null) => {
+      if (settled) return
+      settled = true
+      resolvePromise(value)
+    }
+    let child: ReturnType<typeof spawn>
+    try {
+      child = spawn("python3", [entry, "--event", "Stop", "--stop-gate", "--runtime", "opencode"],
+        { cwd: options.cwd, stdio: ["pipe", "pipe", "ignore"] })
+    } catch {
+      finish(null)
+      return
+    }
+    const timer = setTimeout(() => {
+      try { child.kill("SIGKILL") } catch { /* already gone */ }
+      finish(null)
+    }, GUARD_TIMEOUT_MS)
+    if (typeof timer.unref === "function") timer.unref()
+    let out = ""
+    child.stdout?.setEncoding("utf8")
+    child.stdout?.on("data", (chunk: string) => { if (out.length < MAX_OUTPUT_CHARS) out += chunk })
+    child.on("error", () => { clearTimeout(timer); finish(null) })
+    child.on("close", () => {
+      clearTimeout(timer)
+      try {
+        const parsed = JSON.parse(out)
+        finish(parsed?.decision === "block" && typeof parsed.reason === "string" ? parsed.reason : null)
+      } catch {
+        finish(null)
+      }
+    })
+    try {
+      child.stdin?.end(JSON.stringify({ cwd: options.cwd, session_id: options.sessionID }))
+    } catch { /* fail open */ }
+  })
+}
+
 /** The bounded session handoff written by the compaction protocol, if any. */
 function handoffFile(projectRoot: string | null, sessionID: string): string | null {
   if (!projectRoot || !sessionID) return null
@@ -364,8 +414,27 @@ const LastHumanCommitV2 = async (input: LhcPluginInput = {}): Promise<LhcHooks> 
   const pointer = paths.agentsFile ? `LHC: read ${paths.agentsFile} for current instructions.` : null
   const already = (lines: string[], needle: string) => lines.some((line) => typeof line === "string" && line.includes(needle))
 
+  const holdStop = async (hookInput: { event?: { type?: string; properties?: Record<string, unknown> } }) => {
+    try {
+      if (hookInput?.event?.type !== "session.idle") return
+      const sessionID = hookInput.event.properties?.sessionID
+      if (typeof sessionID !== "string" || !paths.entry || !paths.projectRoot) return
+      const session = input.client?.session
+      if (!session?.prompt) return
+      const info = await session.get?.({ path: { id: sessionID } }).catch(() => undefined)
+      if (info?.data?.parentID) return  // a subagent session never carries the plan
+      const reason = await runStopGate(paths.entry, { cwd: paths.projectRoot, sessionID })
+      if (reason) await session.prompt({ path: { id: sessionID }, body: { parts: [{ type: "text", text: reason }] } })
+    } catch {
+      // Fail open: a stop that cannot be held is simply a stop.
+    }
+  }
+
   return {
-    event: guard?.event,
+    event: async (hookInput) => {
+      await guard?.event?.(hookInput)
+      await holdStop(hookInput)
+    },
     "tool.execute.after": guard?.["tool.execute.after"],
     "chat.message": guard?.["chat.message"],
     "experimental.chat.system.transform": async (hookInput, output) => {
@@ -409,5 +478,6 @@ export default Object.assign(LastHumanCommitV2, {
   resolveProjectRoot,
   extractReminder,
   runTimeGuard,
+  runStopGate,
   handoffFile,
 })

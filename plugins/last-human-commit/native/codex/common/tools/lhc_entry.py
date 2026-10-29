@@ -251,6 +251,25 @@ def coordination_pulse(event, root, now=None):
             notes.append(f"LHC: your session registry has not changed for {int(quiet // 60)} min. Run "
                          "python3 common/tools/lhc_orchestrator.py tick and act on every line; "
                          "a tick without an action on a session is not a tick.")
+    if registry.is_file():
+        data = orch.load(primary)
+        mr = method_root(Path(root).resolve())
+        def role_file(name):
+            return next((str(c / f"{name}.md") for c in (mr / "common" / "agents", mr / "src" / "common" / "agents",
+                                                           Path(root) / "common" / "agents") if (c / f"{name}.md").is_file()), name + ".md")
+        if data.get("orchestrator") == session:
+            if _due(session, "orchestrator-role", now, 3600):
+                notes.append(f"LHC: the registry names you the orchestrator of this project. You orchestrate and do "
+                             f"not do the work. Read {role_file('Orchestrator')} now. {registry} is the only list of "
+                             "sessions (a sessions.md is legacy: carry its live rows over, then stop writing it); act on "
+                             "every session through the registry and file mail, and release what they finish.")
+        else:
+            row = next((r for r in data.get("sessions", []) if r.get("id") == session), None)
+            if row and _due(session, "registry-row", now, 1800):
+                sentinel = f" Read {role_file('Sentinel')}." if row.get("role") == "sentinel" else ""
+                notes.append(f"LHC: you are a row in {registry.name}. Task: {row.get('task')}. Acceptance: "
+                             f"{row.get('acceptance')}. Next: {row.get('next')}.{sentinel} Work toward the acceptance and "
+                             "tell the orchestrator by file mail (lhc_mail.py send) when it is met or blocked.")
     waiting = mail.inbox(primary, session)
     if waiting and _due(session, "mail", now, 600):
         notes.append(f"LHC: {len(waiting)} unread file mail for you. Run python3 common/tools/lhc_mail.py "
