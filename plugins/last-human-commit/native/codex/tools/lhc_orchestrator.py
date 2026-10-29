@@ -142,7 +142,7 @@ def opencode_live(project, since, database=None):
 
 def live_sessions(root, now=None):
     since = (now or time.time()) - LOOKBACK
-    project = Path(root).name
+    project = Path(root).resolve().name
     return codex_live(project, since) + opencode_live(project, since)
 
 
@@ -194,7 +194,7 @@ def main(argv=None):
     ar = sub.add_parser("archive")
     ar.add_argument("--hours", type=int, default=6)
     args = parser.parse_args(argv)
-    root = args.root or mail.primary_root(Path.cwd())
+    root = (args.root or mail.primary_root(Path.cwd())).resolve()
     if args.cmd == "tick":
         doc = load(root)
         age = "never" if not reg_file(root).exists() else f"{int((time.time() - reg_file(root).stat().st_mtime) // 60)} min ago"

@@ -78,3 +78,13 @@ def test_coordination_pulse_for_orchestrator_registry_and_unread_mail(tmp_path, 
     assert entry.coordination_pulse(event, ROOT) is None  # once per window
     worker = entry.coordination_pulse({"cwd": str(root), "session_id": "S"}, ROOT)
     assert "unread" in worker and "lhc_mail.py" in worker
+
+
+def test_relative_root_still_finds_the_project_name(tmp_path, monkeypatch):
+    root = repo(tmp_path)
+    monkeypatch.chdir(root)
+    seen = []
+    monkeypatch.setattr(orch, "codex_live", lambda project, since, home=None: seen.append(project) or [])
+    monkeypatch.setattr(orch, "opencode_live", lambda project, since, database=None: [])
+    orch.live_sessions(Path("."))
+    assert seen == ["proj"]
