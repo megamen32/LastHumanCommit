@@ -11,6 +11,15 @@ import lhc_plan_mirror as mirror
 import lhc_file_events as events
 
 
+def test_discover_accepts_more_than_one_thousand_registered_plans(tmp_path):
+    # Explicit registrations need not be traversed: archive count must not
+    # prevent observer startup or admission of a newly registered plan.
+    registered = [str(tmp_path / 'plans' / f'plan-{index}') for index in range(5001)]
+    found = mirror.discover({'data_dir': str(tmp_path / 'client'), 'plans': registered})
+    assert len(found) == 5001
+    assert set(found) == set(registered)
+
+
 @pytest.mark.parametrize('change', ['quiet', 'edit', 'new', 'overflow'])
 def test_event_observer_processes_only_affected_plans(tmp_path, monkeypatch, change):
     root = tmp_path / 'plans'
@@ -29,7 +38,12 @@ def test_event_observer_processes_only_affected_plans(tmp_path, monkeypatch, cha
     cfg = tmp_path / 'client.json'
     cfg.write_text(json.dumps({'data_dir': str(tmp_path / 'client'), 'roots': [str(root)], 'poll_seconds': .1, 'debounce_seconds': .05}))
     tick = [0]
-    captures, registrations, stamps = [], [], []
+    captures, registrations, stamps, walks = [], [], [], []
+    walk = mirror.os.walk
+    def counted_walk(path, **kwargs):
+        walks.append((tick[0], Path(path)))
+        return walk(path, **kwargs)
+    monkeypatch.setattr(mirror.os, 'walk', counted_walk)
     stamp = mirror.file_stamp
     def counted_stamp(path):
         stamps.append((tick[0], Path(path)))
@@ -66,6 +80,7 @@ def test_event_observer_processes_only_affected_plans(tmp_path, monkeypatch, cha
         assert all(captures.count(plan) == 1 for plan in plans[1:])
     elif change == 'new':
         assert len(captures) == 106 and str(root / 'new-plan') in captures
+        assert not [path for at, path in walks if at >= 2 and path == root], 'new plan must not walk all siblings'
     else:
         assert all(captures.count(plan) == 2 for plan in plans)
     assert len(registrations) == 106 if change == 'new' else len(registrations) in (105, 210)
@@ -154,3 +169,55 @@ def test_recreated_leaves_directory_is_watched_again(tmp_path, monkeypatch):
     with pytest.raises(Finished): mirror.run_observer(cfg)
     assert leaves in covered
     assert 9 in captures, 'later edits in the replacement directory must arrive'
+
+
+def test_staged_new_plan_discovery_keeps_original_depth_and_rejects_symlinks(tmp_path, monkeypatch):
+    root = tmp_path / 'plans'
+    root.mkdir()
+    plan = root / 'level1' / 'level2' / 'plan'
+    cfg = tmp_path / 'client.json'
+    cfg.write_text(json.dumps({'data_dir': str(tmp_path / 'client'), 'roots': [str(root)],
+                               'poll_seconds': .1, 'debounce_seconds': .05}))
+    tick, captures, walked = [0], [], []
+    original_walk = mirror.os.walk
+    def walk(path, **kwargs):
+        walked.append((tick[0], Path(path)))
+        return original_walk(path, **kwargs)
+    monkeypatch.setattr(mirror.os, 'walk', walk)
+    monkeypatch.setattr(mirror, 'register', lambda *args: None)
+    monkeypatch.setattr(mirror, 'capture', lambda p: captures.append(p))
+    class StagedEvents:
+        available = True
+        def __enter__(self): return self
+        def __exit__(self, *args): pass
+        def add(self, path): return True
+        def poll(self, timeout=0):
+            paths = set()
+            if tick[0] == 3:
+                plan.mkdir(parents=True)
+                paths = {root / 'level1'}
+            elif tick[0] == 5:
+                (plan / 'plan.json').write_text('{}')
+                paths = {plan / 'plan.json'}
+            elif tick[0] == 7:
+                (plan / 'leaves').mkdir()
+                paths = {plan / 'leaves'}
+            elif tick[0] == 10:
+                deep = root / 'deep' / 'a' / 'b' / 'plan'
+                (deep / 'leaves').mkdir(parents=True)
+                (deep / 'plan.json').write_text('{}')
+                paths = {root / 'deep'}
+            elif tick[0] == 12:
+                (root / 'alias').symlink_to(plan, target_is_directory=True)
+                paths = {root / 'alias'}
+            return SimpleNamespace(paths=paths, overflow=False)
+    monkeypatch.setattr(events, 'FileEvents', StagedEvents)
+    class Finished(Exception): pass
+    def sleep(_):
+        tick[0] += 1
+        if tick[0] >= 15: raise Finished()
+    monkeypatch.setattr(mirror.time, 'monotonic', lambda: tick[0])
+    monkeypatch.setattr(mirror.time, 'sleep', sleep)
+    with pytest.raises(Finished): mirror.run_observer(cfg)
+    assert captures == [str(plan)]
+    assert not [p for at, p in walked if at > 0 and p == root]

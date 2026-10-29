@@ -387,8 +387,6 @@ def discover(cfg):
             if 'plan.json' in files and (Path(current) / 'leaves').is_dir():
                 plans.add(str(Path(current).resolve()))
                 dirs[:] = []
-    if len(plans) > 1000:
-        raise ValueError('registered plan limit exceeded')
     return sorted(plans)
 
 
@@ -570,11 +568,18 @@ def run_observer(config_path, once=False, *, price_refresh=None):
                     watch(directory_path)
                     owners[directory_path] = plan
 
-        def watch_roots(roots):
+        def watch_roots(roots, *, origin=None):
+            found = set()
             for root in roots:
-                root = Path(root).expanduser().resolve()
+                root = Path(root).expanduser().absolute()
+                if root.is_symlink():
+                    continue
+                root = root.resolve()
+                boundary = root if origin is None else origin
                 if root in (Path.home(), Path('/')):
                     raise ValueError('home/filesystem discovery is forbidden')
+                if len(root.relative_to(boundary).parts) > 3:
+                    continue
                 parent = root.parent
                 while not parent.is_dir() and parent != parent.parent:
                     parent = parent.parent
@@ -584,21 +589,26 @@ def run_observer(config_path, once=False, *, price_refresh=None):
                     current = Path(current)
                     watch(current)  # Coverage precedes discovery of its sources.
                     if 'plan.json' in files and (current / 'leaves').is_dir():
+                        found.add(str(current))
                         dirs[:] = []
                     else:
                         discovery_dirs.add(current)
-                        depth = len(current.relative_to(root).parts)
+                        depth = len(current.relative_to(boundary).parts)
                         dirs[:] = [name for name in dirs if not name.startswith('.') and not (current / name).is_symlink()] if depth < 3 else []
+            return found
 
-        def reconcile(roots=None, reset=False):
-            watch_roots(cfg.get('roots', []) if roots is None else roots)
-            selection = cfg if roots is None else {**cfg, 'roots': roots}
-            for plan in discover(selection):
+        def admit(found, reset=False):
+            for plan in found:
                 if plan not in plans or reset:
                     plans.add(plan)
                     watch(Path(plan).parent)
                     watch_plan(plan)
                     queue(plan, registration=True)
+
+        def reconcile(roots=None, reset=False):
+            watch_roots(cfg.get('roots', []) if roots is None else roots)
+            selection = cfg if roots is None else {**cfg, 'roots': roots}
+            admit(discover(selection), reset)
 
         watch(config_path.parent)
         watch(local)
@@ -647,11 +657,25 @@ def run_observer(config_path, once=False, *, price_refresh=None):
                         queue(plan)
                     continue  # Generated files never trigger discovery/capture.
                 if path.parent in discovery_dirs or path in discovery_dirs:
-                    roots = [root for root in cfg.get('roots', [])
-                             if Path(root).expanduser().resolve() == path or Path(root).expanduser().resolve() in path.parents
-                             or path == Path(root).expanduser().resolve().parent]
-                    if roots:
-                        reconcile(roots=roots)
+                    for source in cfg.get('roots', []):
+                        root = Path(source).expanduser().resolve()
+                        if path == root.parent:
+                            # A root's own move/delete event is coverage recovery.
+                            admit(watch_roots([root]))
+                            continue
+                        if path != root and root not in path.parents:
+                            continue
+                        relative = path.relative_to(root)
+                        if any(part.startswith('.') or (root.joinpath(*relative.parts[:i + 1])).is_symlink()
+                               for i, part in enumerate(relative.parts)):
+                            continue
+                        if not path.is_dir() and path.name not in ('plan.json', 'leaves'):
+                            continue
+                        # Staged creation must reconsider the plan directory
+                        # when plan.json or leaves appears, not its siblings.
+                        candidate = path.parent if path.name in ('plan.json', 'leaves') or not path.is_dir() else path
+                        if candidate == root or root in candidate.parents:
+                            admit(watch_roots([candidate], origin=root))
 
             now = time.monotonic()
             if not events.available:

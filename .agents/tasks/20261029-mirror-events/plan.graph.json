@@ -9,10 +9,10 @@
   "acceptance_scenarios": [
     "В простое наблюдатель не сканирует все листья и истории; редактирование завершённого плана и создание нового автоматически видны по публичному URL; атомарное сохранение и переполнение очереди событий не теряют изменения."
   ],
-  "current_progress": "Установлен runtime57214f110d1561f4 с inotify у обоих процессов. Изменение завершённого плана автоматически видно по прежнему HTTPS URL. 642passed,5skipped. За35.033с mirror0.3996%CPU, observer0.6851%CPU одного ядра; физическое чтение и запись обоих процессов0байт. Новые планы, atomic save, overflow, watch recovery и ownership проверены регрессиями.",
+  "current_progress": "Проверено5000планов: idle0stat/read/walk; edit1capture без обхода; новый1capture и обход только своего каталога. Исправлены предел1000 и повторное обнаружение через весьroot. Установлена1.7.8 runtime d4f5d8eb5a93ba88, оба сервиса active с nativeinotify; sourceSHA совпадают, результатL04автоматически виден поHTTPS. Fullvalidate650passed5skipped. Подробности и ограничения масштабного прогона вacceptance.md.",
   "external_waits": "",
   "slots": 3,
-  "updated_at": "",
+  "updated_at": "2026-10-29T05:53:02+03:00",
   "tasks": [
     {
       "id": "L01",
@@ -67,9 +67,73 @@
         "minimum": 15.0,
         "maximum": 25.0
       }
+    },
+    {
+      "id": "L04",
+      "label": "Убрать предел 1000 планов и проверить 5000 без фоновых обходов",
+      "status": "done",
+      "acceptance": "Штатный discover и observer принимают 5000 планов; после startup в простое нет обходов, новый и изменённый план доставляются; серверная проверка5000 через HTTP.",
+      "result": "5000реальных планов и inotify: две фазы idle120виртуальных секунд без stat/read/walk/capture; edit1capture/0walk; новый1capture/1directorywalk/39stat вместо40045stat. Сервер5000: repeatHTTP0stat/read/glob, три моделируемые минуты пересчитывают толькоactive. Runtime d4f5d8eb5a93ba88 установлен, full validate650passed5skipped.",
+      "owner": "roomhacker",
+      "session": "01a182b0-5520-7e81-8d75-51bbe361d85b",
+      "harness": "codex",
+      "model": "gpt-6.1-sol",
+      "origin": "",
+      "supersedes": [],
+      "progress_events": [
+        {
+          "at": "2026-10-29T05:44:10+03:00",
+          "note": "",
+          "changes": {
+            "label": "Убрать предел 1000 планов и проверить 5000 без фоновых обходов",
+            "model": "gpt-6.1-sol",
+            "owner": "observer_finish",
+            "estimate_minutes": {
+              "minimum": 10,
+              "maximum": 20
+            },
+            "acceptance": "Штатный discover и observer принимают 5000 планов; после startup в простое нет обходов, новый и изменённый план доставляются; серверная проверка5000 через HTTP."
+          },
+          "session": "01a182b0-5520-7e81-8d75-51bbe361d85b",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-10-29T05:44:11+03:00",
+          "note": "Начал работу в текущей сессии",
+          "changes": {
+            "status": "running",
+            "owner": "roomhacker"
+          },
+          "session": "01a182b0-5520-7e81-8d75-51bbe361d85b",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-10-29T05:48:06+03:00",
+          "note": "На5000 idle0 и адресный edit подтверждены. Убран cap1000; найден повторный обход root при создании нового каталога, исправляется targeted discovery с сохранением исходной глубины и запрета symlinks.",
+          "changes": {},
+          "session": "01a182b0-5520-7e81-8d75-51bbe361d85b",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-10-29T05:53:02+03:00",
+          "note": "Проверка5000 d4f5d8eb: предел1000 устранён, простой0обходов, новый план обходит только свой каталог.",
+          "changes": {
+            "status": "done",
+            "result": "5000реальных планов и inotify: две фазы idle120виртуальных секунд без stat/read/walk/capture; edit1capture/0walk; новый1capture/1directorywalk/39stat вместо40045stat. Сервер5000: repeatHTTP0stat/read/glob, три моделируемые минуты пересчитывают толькоactive. Runtime d4f5d8eb5a93ba88 установлен, full validate650passed5skipped."
+          },
+          "session": "01a182b0-5520-7e81-8d75-51bbe361d85b",
+          "harness": "codex"
+        }
+      ],
+      "depends_on": [],
+      "estimate_minutes": {
+        "minimum": 10.0,
+        "maximum": 20.0
+      },
+      "created_at": "2026-10-29T05:44:10+03:00"
     }
   ],
-  "leaf_count": 3,
+  "leaf_count": 4,
   "plan_origin": {
     "at": "2026-10-28T21:02:33.535324+00:00",
     "source": "file_birthtime",

@@ -1,0 +1,62 @@
+{
+  "label": "Убрать предел 1000 планов и проверить 5000 без фоновых обходов",
+  "model": "gpt-6.1-sol",
+  "owner": "roomhacker",
+  "estimate_minutes": {
+    "minimum": 10,
+    "maximum": 20
+  },
+  "acceptance": "Штатный discover и observer принимают 5000 планов; после startup в простое нет обходов, новый и изменённый план доставляются; серверная проверка5000 через HTTP.",
+  "id": "L04",
+  "created_at": "2026-10-29T05:44:10+03:00",
+  "session": "01a182b0-5520-7e81-8d75-51bbe361d85b",
+  "harness": "codex",
+  "updated_at": "2026-10-29T05:53:02+03:00",
+  "progress_events": [
+    {
+      "at": "2026-10-29T05:44:10+03:00",
+      "note": "",
+      "changes": {
+        "label": "Убрать предел 1000 планов и проверить 5000 без фоновых обходов",
+        "model": "gpt-6.1-sol",
+        "owner": "observer_finish",
+        "estimate_minutes": {
+          "minimum": 10,
+          "maximum": 20
+        },
+        "acceptance": "Штатный discover и observer принимают 5000 планов; после startup в простое нет обходов, новый и изменённый план доставляются; серверная проверка5000 через HTTP."
+      },
+      "session": "01a182b0-5520-7e81-8d75-51bbe361d85b",
+      "harness": "codex"
+    },
+    {
+      "at": "2026-10-29T05:44:11+03:00",
+      "note": "Начал работу в текущей сессии",
+      "changes": {
+        "status": "running",
+        "owner": "roomhacker"
+      },
+      "session": "01a182b0-5520-7e81-8d75-51bbe361d85b",
+      "harness": "codex"
+    },
+    {
+      "at": "2026-10-29T05:48:06+03:00",
+      "note": "На5000 idle0 и адресный edit подтверждены. Убран cap1000; найден повторный обход root при создании нового каталога, исправляется targeted discovery с сохранением исходной глубины и запрета symlinks.",
+      "changes": {},
+      "session": "01a182b0-5520-7e81-8d75-51bbe361d85b",
+      "harness": "codex"
+    },
+    {
+      "at": "2026-10-29T05:53:02+03:00",
+      "note": "Проверка5000 d4f5d8eb: предел1000 устранён, простой0обходов, новый план обходит только свой каталог.",
+      "changes": {
+        "status": "done",
+        "result": "5000реальных планов и inotify: две фазы idle120виртуальных секунд без stat/read/walk/capture; edit1capture/0walk; новый1capture/1directorywalk/39stat вместо40045stat. Сервер5000: repeatHTTP0stat/read/glob, три моделируемые минуты пересчитывают толькоactive. Runtime d4f5d8eb5a93ba88 установлен, full validate650passed5skipped."
+      },
+      "session": "01a182b0-5520-7e81-8d75-51bbe361d85b",
+      "harness": "codex"
+    }
+  ],
+  "status": "done",
+  "result": "5000реальных планов и inotify: две фазы idle120виртуальных секунд без stat/read/walk/capture; edit1capture/0walk; новый1capture/1directorywalk/39stat вместо40045stat. Сервер5000: repeatHTTP0stat/read/glob, три моделируемые минуты пересчитывают толькоactive. Runtime d4f5d8eb5a93ba88 установлен, full validate650passed5skipped."
+}
