@@ -1,4 +1,4 @@
 name: last-human-commit
-version: 1.7.9
+version: 1.7.10
 description: "Resolve explicitly tagged LHC delegation role context in Hermes. Session lifecycle control is not installed."
 author: "Last Human Commit"
