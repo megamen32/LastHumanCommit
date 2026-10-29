@@ -147,6 +147,53 @@ def plan_pulse(event, root, now=None):
             "no leaf needs. The plan is how the owner sees progress; a stale plan reads as no progress.")
 
 
+def _due(session, key, now, window):
+    """True once per window for this session and reminder: the mark is a small state file."""
+    base = Path(os.environ.get("XDG_STATE_HOME") or Path.home() / ".local" / "state") / "lhc" / "pulse"
+    mark = base / (re.sub(r"[^A-Za-z0-9_.-]", "_", session) + "." + key)
+    try:
+        if now - float(mark.read_text()) < window:
+            return False
+    except (OSError, ValueError):
+        pass
+    try:
+        base.mkdir(parents=True, exist_ok=True)
+        mark.write_text(str(now))
+    except OSError:
+        return False
+    return True
+
+
+def coordination_pulse(event, root, now=None):
+    """Remind the orchestrator of a registry that stands still, and anyone of waiting file mail."""
+    import time
+    session = str(event.get("session_id") or event.get("sessionID") or "")
+    if not session or event.get("agent_id"):
+        return None
+    tools = method_root(Path(root).resolve()) / "tools"
+    mail, orch = sibling_tool(tools, "lhc_mail.py"), sibling_tool(tools, "lhc_orchestrator.py")
+    if mail is None or orch is None:
+        return None
+    try:
+        primary = mail.primary_root(Path(event.get("cwd") or "."))
+    except (OSError, subprocess.SubprocessError):
+        return None
+    now = now or time.time()
+    notes = []
+    registry = orch.reg_file(primary)
+    if registry.is_file() and orch.load(primary).get("orchestrator") == session:
+        quiet = now - registry.stat().st_mtime
+        if quiet >= PULSE_AFTER and _due(session, "registry", now, PULSE_AFTER):
+            notes.append(f"LHC: your session registry has not changed for {int(quiet // 60)} min. Run "
+                         "python3 src/common/tools/lhc_orchestrator.py tick and act on every line; "
+                         "a tick without an action on a session is not a tick.")
+    waiting = mail.inbox(primary, session)
+    if waiting and _due(session, "mail", now, 600):
+        notes.append(f"LHC: {len(waiting)} unread file mail for you. Run python3 src/common/tools/lhc_mail.py "
+                     f"inbox --me {session}, act on each, then ack it.")
+    return "\n\n".join(notes) or None
+
+
 def context_for(event, root):
     root = Path(root).resolve()
     return (
@@ -413,6 +460,12 @@ def main():
             pulse = None
         if pulse:
             prompts.append(pulse)
+        try:
+            coordination = coordination_pulse(event, args.root or Path(__file__).resolve().parents[1])
+        except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError):
+            coordination = None
+        if coordination:
+            prompts.append(coordination)
         if result and result.get("due"):
             extra = owner_directives(cwd_value)
             if extra:

@@ -11,17 +11,23 @@ nobody orchestrates, so I do not.
 `.agents/sessions.json` in the primary checkout: one row per session with its task,
 acceptance (how the owner will know), status and next step. It is the only list of
 the owner's sessions; I update it every tick (format: `src/common/protocols/ORCHESTRATOR.md`).
+It holds the current state only: finished rows go to the archive (`lhc_orchestrator.py archive`).
 
 ## Every tick (30 minutes, or when a message arrives)
 
-1. Read the owner's directives, the registry and my mailbox. An ended directive that
-   says to switch something back is a task for a session, now.
-2. For each session: did its acceptance get closer since the last tick? That is the
-   only measure.
-3. Not closer: send its L one concrete next step. Blocked on something the L can
-   remove itself (a stuck queue entry, a missing test user, a route): say so and tell
-   it to remove it. Not closer at the next tick too: replace the L or go up the chain
-   (Adviser, Overseer, owner).
+1. Run `python3 src/common/tools/lhc_orchestrator.py tick`. Its lines are the agenda:
+   DEAD, SILENT, UNREGISTERED, RUNNING and MAIL. The list of sessions comes from the
+   live sources and the registry, never from a prompt or from memory. Also read the
+   owner's directives. An ended directive that says to switch something back is a task
+   for a session, now.
+2. For each RUNNING line: did its acceptance get closer since the last tick? That is the
+   only measure. Record it with `lhc_orchestrator.py set ID --next "..."`.
+3. Not closer, SILENT or DEAD: send its L one concrete next step. Blocked on something
+   the L can remove itself (a stuck queue entry, a missing test user, a route): say so
+   and tell it to remove it. Not closer at the next tick too: replace the L or go up the
+   chain (Adviser, Overseer, owner). UNREGISTERED: ask what it is for, then register it.
+   Answer every MAIL line.
+
 4. Accepted (the test circuit is green on the new color): release that result at once,
    blue-green, without waiting for the other sessions. Rollback is a switch back.
 5. A tick without an action on a session is not a tick; a summary without an action is
