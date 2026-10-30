@@ -414,6 +414,91 @@ def rebuild_plan_graph(plan_dir, tools):
     return Path(plan_dir) / "plan.graph.json"
 
 
+def stamp_leaf(path, now=None):
+    """Record when a leaf started and finished, the first time its file shows the status.
+
+    Agents move statuses and forget the clock, so the plan page had no effort
+    to show for any leaf. The hook already sees every leaf write; it adds the
+    time of that write and nothing else, and never overwrites a time the agent
+    set itself.
+    """
+    try:
+        leaf = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return
+    if not isinstance(leaf, dict):
+        return
+    stamp = (now or datetime.now().astimezone()).isoformat(timespec="seconds")
+    status, changed = leaf.get("status"), False
+    if status == "running" and not leaf.get("started_at"):
+        leaf["started_at"], changed = stamp, True
+    if status == "done" and not leaf.get("finished_at"):
+        leaf["finished_at"], changed = stamp, True
+    if not changed:
+        return
+    temporary = path.with_name(path.name + ".stamp")
+    try:
+        temporary.write_text(json.dumps(leaf, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        os.replace(temporary, path)
+    except OSError:
+        temporary.unlink(missing_ok=True)
+
+
+def plan_audit(event, root, now=None):
+    """Facts about the plan the session works on that cannot be true at once.
+
+    A leaf that is done or running while a leaf it depends on is not done, and a
+    plan with dependency edges whose decomposition nobody checked. Told once per
+    window; nothing is blocked and no text is read.
+    """
+    import time
+    session = str(event.get("session_id") or event.get("sessionID") or "")
+    if not session or event.get("agent_id"):
+        return None
+    found = _plan_entry(event, root)
+    if not found:
+        return None
+    own = (found.get("continuation") or {}).get("plan")
+    pick = own or (found["candidates"][0] if len(found.get("candidates", [])) == 1 else None)
+    if not pick:
+        return None
+    plan = Path(pick)
+    leaves = {}
+    for f in sorted((plan / "leaves").glob("*.json")):
+        try:
+            leaf = json.loads(f.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if isinstance(leaf, dict):
+            leaves[str(leaf.get("id") or f.stem)] = leaf
+    now = now or time.time()
+    notes = []
+    broken = []
+    for ident, leaf in leaves.items():
+        if leaf.get("status") not in {"running", "done"}:
+            continue
+        waiting = [d for d in (leaf.get("depends_on") or []) if leaves.get(str(d), {}).get("status") != "done"]
+        if waiting:
+            broken.append(f"{ident} is {leaf.get('status')} while {', '.join(map(str, waiting))} it depends on "
+                          f"{'is' if len(waiting) == 1 else 'are'} not done")
+    if broken and _due(session, "audit-deps", now, PULSE_AFTER):
+        notes.append("LHC: the plan contradicts itself: " + "; ".join(broken[:4]) + ". Either the status is wrong "
+                     "(a leaf is done only when what it depends on is done) or the dependency is: if the leaf does "
+                     "not read the output of the leaf it waits for, remove that dependency and let them run in parallel.")
+    try:
+        meta = json.loads((plan / "plan.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        meta = {}
+    has_edges = any(leaf.get("depends_on") for leaf in leaves.values())
+    if (has_edges and len(leaves) >= 3 and not (meta or {}).get("decomposition_check")
+            and _due(session, "audit-decomposition-" + plan.name, now, 6 * 3600)):
+        notes.append("LHC: nobody has checked the decomposition of this plan. Once, before more work: for every "
+                     "dependency name the concrete output of the first leaf that the second one reads; drop the "
+                     "dependency when there is none; ask for each later wave whether it can start now. Write the result "
+                     "into plan.json as decomposition_check (see TASK_GRAPH.md, Check the decomposition).")
+    return "\n\n".join(notes) or None
+
+
 def render_written_plan(event, root):
     """Rebuild the page of the plan that has just been written.
 
@@ -441,6 +526,7 @@ def render_written_plan(event, root):
             path = base / path
         directory = leaf_plan_dir(path)
         if directory is not None:
+            stamp_leaf(path)
             graph = rebuild_plan_graph(directory, tools)
             if graph is None:
                 continue
@@ -551,6 +637,12 @@ def main():
             coordination = None
         if coordination:
             prompts.append(coordination)
+        try:
+            audit = plan_audit(event, args.root or Path(__file__).resolve().parents[1])
+        except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError):
+            audit = None
+        if audit:
+            prompts.append(audit)
         if result and result.get("due"):
             extra = owner_directives(cwd_value)
             if extra:
