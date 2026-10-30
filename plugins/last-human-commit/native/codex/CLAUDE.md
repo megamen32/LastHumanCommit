@@ -188,9 +188,12 @@ from protected environments or `/secret`). Temporary files: `<project-root>/.tmp
 ## Models and language
 
 Workers only from fast (glm-5.3-flash, minimax-3.1-flash) or frontier (gpt-6-luna,
-glm-5.3, gpt-6.1-sol); rules in `common/protocols/MODELS.md`. Write each
-user-facing answer or file in its reader's language (natural Russian for a Russian
-reader); keep raw observations and quoted user text as they are.
+glm-5.3, gpt-6.1-sol); rules in `common/protocols/MODELS.md`. Write each user-facing
+answer or file in its reader's language (natural Russian for a Russian reader); keep raw
+observations and quoted user text as they are. Code language: Go by default, unless the
+owner or the project says otherwise, in new projects, submodules and tools (fast, one
+binary, no venv). Python and Node stay only where a project already uses them, Node also
+for web front ends; Rust only when asked.
 
 ## Background (load only when the task needs it)
 
