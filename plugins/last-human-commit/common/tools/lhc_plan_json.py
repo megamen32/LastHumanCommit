@@ -66,6 +66,7 @@ COST_SOURCES = ("measured", "provisional")
 # nonzero, unless the leaf records, in its own words, why it is deliberately
 # larger — so the rule is a signpost, not a blind barrier.
 LEAF_ESTIMATE_CAP_MINUTES = 15
+LEAF_KINDS = ("task", "milestone")
 
 STATUS_QUEUED = "queued"
 STATUS_RUNNING = "running"
@@ -137,6 +138,8 @@ LEAF_FIELDS = (
     "result",
     "affected_files",
     "status",
+    "kind",
+    "parent",
     "owner",
     "session",
     "harness",
@@ -454,6 +457,19 @@ def task_from_leaf(raw: Any, path: Path) -> dict[str, Any]:
         "label": label,
         "status": _status(raw.get("status"), path),
     }
+
+    # A leaf is a task unless it says it is a milestone: a stage whose leaves are
+    # not known yet. A milestone is never worked on; its leaves name it in the
+    # field parent, and its status is read from them (split_milestones).
+    kind = _text(raw, "kind", path)
+    if kind:
+        if kind not in LEAF_KINDS:
+            raise LeafError(f"{path}: kind должен быть один из: " + ", ".join(LEAF_KINDS))
+        if kind != "task":
+            task["kind"] = kind
+    parent = _text(raw, "parent", path)
+    if parent:
+        task["parent"] = parent
 
     for field in ("description", "acceptance", "result", "owner", "session", "harness",
                   "model", "model_class", "note", "blocker",
@@ -888,11 +904,107 @@ def ensure_plan_origin(plan_dir):
         return fixed
 
 
+def _milestone_status(statuses: list) -> str:
+    """The status of a milestone, read from the statuses of its leaves."""
+
+    if "blocked" in statuses:
+        return "blocked"
+    if all(item in ("done", "deferred") for item in statuses):
+        return "done" if "done" in statuses else "deferred"
+    if "running" in statuses or "done" in statuses:
+        return "running"
+    if "waiting" in statuses:
+        return "waiting"
+    return "queued"
+
+
+def split_milestones(tasks, sources=None, strict=True):
+    """Take the milestones that have leaves out of the list of tasks.
+
+    A milestone with leaves is a container: it is never worked on, its status is
+    read from its leaves, and whoever depends on it waits for all of them. The
+    graph, the schedule and every count then see only real work, once. A
+    milestone without leaves stays in the list as one queued leaf, so a plan
+    cannot look finished while a stage is still undecomposed. Returns the tasks
+    and the list of all milestones. Nesting is one level: a parent is a
+    milestone and a milestone has no parent. With strict=False (hooks) a broken
+    link is ignored instead of raised.
+    """
+
+    by_id = {task["id"]: task for task in tasks}
+    kids: dict = {}
+
+    def fail(task, text):
+        if strict:
+            where = (sources or {}).get(task["id"], task["id"])
+            raise LeafError(f"{where}: {text}")
+
+    for task in tasks:
+        parent = task.get("parent")
+        if not parent:
+            continue
+        holder = by_id.get(parent)
+        if holder is None:
+            fail(task, f"parent «{parent}» не существует")
+        elif holder.get("kind") != "milestone":
+            fail(task, f"parent «{parent}» не этап (kind: milestone)")
+        elif task.get("kind") == "milestone" or holder.get("parent"):
+            fail(task, "этап не вкладывается в этап: вложенность один уровень")
+        else:
+            kids.setdefault(parent, []).append(task["id"])
+            continue
+        task.pop("parent", None)
+
+    def expand(items, skip):
+        out: list = []
+        for item in items:
+            for one in kids.get(item) or [item]:
+                if one not in out and one not in skip:
+                    out.append(one)
+        return out
+
+    rest = []
+    for task in tasks:
+        if task["id"] in kids:
+            continue
+        own = {task["id"]}
+        deps = expand(task.get("depends_on") or [], own)
+        holder = task.get("parent")
+        if holder in kids:
+            inherited = expand(by_id[holder].get("depends_on") or [], own | set(kids[holder]))
+            deps = inherited + [item for item in deps if item not in inherited]
+        task["depends_on"] = deps
+        if task.get("parallel_with"):
+            task["parallel_with"] = expand(task["parallel_with"], own)
+        rest.append(task)
+
+    milestones = []
+    for task in tasks:
+        if task.get("kind") != "milestone":
+            continue
+        ids = kids.get(task["id"], [])
+        label = str(task.get("label") or task["id"])
+        if ids:
+            status = _milestone_status([str(by_id[item].get("status")) for item in ids])
+        else:
+            status = "deferred" if task.get("status") == "deferred" else "queued"
+            task["status"] = status
+            task["label"] = "Этап · " + label
+        milestones.append({
+            "id": task["id"], "label": label, "status": status, "children": list(ids),
+            "done": sum(1 for item in ids if by_id[item].get("status") == "done"),
+            "total": len(ids),
+        })
+    milestones.sort(key=lambda item: natural_key(item["id"]))
+    return rest, milestones
+
+
 def build_document(plan_dir: Path) -> dict[str, Any]:
     """The graph document of a plan, collected from its leaf files."""
 
     plan_dir = Path(plan_dir)
     tasks, sources, stamps = _collect(plan_dir)
+    tasks, milestones = split_milestones(tasks, sources)
     tasks = _order(tasks, sources)
     metadata = plan_metadata(plan_dir)
 
@@ -928,6 +1040,8 @@ def build_document(plan_dir: Path) -> dict[str, Any]:
         "tasks": tasks,
         "leaf_count": len(tasks),
     }
+    if milestones:
+        document["milestones"] = milestones
     budget = metadata.get("budget_usd")
     if budget is not None:
         document["budget_usd"] = budget
@@ -1350,6 +1464,8 @@ def estimate_cap_findings(tasks: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
     findings: list[dict[str, Any]] = []
     for task in tasks:
+        if task.get("kind") == "milestone":
+            continue
         bounds = task.get("estimate_minutes") or {}
         high = bounds.get("maximum")
         if high is None or high <= LEAF_ESTIMATE_CAP_MINUTES:

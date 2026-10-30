@@ -55,6 +55,15 @@ assumptions and the end-to-end path before substantial implementation.
    This is one design sequence, not three builds or approval rounds. If the user
    requests the reasoning behind the plan, show the three passes in one plan.
 
+## Stages first, leaves from facts
+
+Write the plan to the next business result in stages (a leaf with kind: milestone and
+a rough estimate), not in leaves you cannot yet name. Cut only the nearest stage into
+leaves of about 15 minutes, and only after you have looked at the real state. If you
+cannot name the parts and fit them into 15 minutes, the first leaf is a 15 minute
+look at the facts (a list, a command output); cut the stage from what it shows.
+Leaves name the stage in parent. The later stages stay as they are until their turn.
+
 ## Do not
 
 - Three design passes are not three selectable alternatives or approval rounds.

@@ -205,6 +205,15 @@ unknown estimate is a choice, never a demand.
 7. The forecast is a plan, not a promise: capacity, resource conflicts and
    external waits stay visible in the report next to the graph.
 
+## Stages
+
+A leaf has `kind`: `task` (default) or `milestone`. A milestone is a stage whose leaves are not known yet; it is
+never worked on, has no status of its own (it is read from its leaves: blocked, done when all are done, running,
+waiting, queued) and a leaf that depends on it waits for all of them. Its leaves name it in `parent`; one level only.
+The graph counts the leaves, not the stage. A milestone without leaves is shown as one queued leaf, so a plan with an
+uncut stage is not finished. The hook tells once when a leaf is longer than about 15 minutes (split it, or make it a
+stage) and when the next stage has no leaves.
+
 ## Check the decomposition
 
 One pass after the graph is written, before dispatch, by someone who did not

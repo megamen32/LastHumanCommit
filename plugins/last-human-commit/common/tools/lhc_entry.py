@@ -147,6 +147,44 @@ def plan_pulse(event, root, now=None):
             "no leaf needs. The plan is how the owner sees progress; a stale plan reads as no progress.")
 
 
+LEAF_CAP_MINUTES = 20   # a leaf is about 15 minutes; past this the hook says so once
+
+
+def _split_leaves(leaves):
+    """The leaves without the milestones that have leaves, and all milestones.
+
+    Facts of the files only: a milestone is read from its leaves the way the
+    page reads it, so the hook and the page never disagree about a stage.
+    """
+    if not any(isinstance(leaf, dict) and (leaf.get("kind") == "milestone" or leaf.get("parent"))
+               for leaf in leaves.values()):
+        return leaves, []
+    try:
+        tools = str(Path(__file__).resolve().parent)
+        if tools not in sys.path:
+            sys.path.insert(0, tools)
+        from lhc_plan_json import split_milestones
+    except ImportError:
+        return leaves, []
+    rows = []
+    for ident, leaf in leaves.items():
+        row = dict(leaf)
+        row["id"] = str(ident)
+        rows.append(row)
+    tasks, stages = split_milestones(rows, strict=False)
+    return {task["id"]: task for task in tasks}, stages
+
+
+def _estimate_max(leaf):
+    estimate = leaf.get("estimate_minutes") or leaf.get("estimate") or leaf.get("estimate_max")
+    if isinstance(estimate, dict):
+        estimate = estimate.get("maximum", estimate.get("max"))
+    try:
+        return float(estimate)
+    except (TypeError, ValueError):
+        return None
+
+
 STOP_FIRES = 2          # a stop is held at most this many times per window
 STOP_WINDOW = 6 * 3600  # a plan untouched this long is not this session's live work
 
@@ -175,13 +213,18 @@ def stop_gate(event, root, now=None):
     if not files or now - max(f.stat().st_mtime for f in files) > STOP_WINDOW:
         return None
     todo, blocked = [], 0
+    rows = {}
     for f in files:
         try:
             leaf = json.loads(f.read_text(encoding="utf-8"))
         except (OSError, ValueError):
             continue
+        if isinstance(leaf, dict):
+            rows[str(leaf.get("id") or f.stem)] = leaf
+    rows, _stages = _split_leaves(rows)
+    for ident, leaf in rows.items():
         if leaf.get("status") in {"queued", "running"}:
-            todo.append(str(leaf.get("id") or f.stem))
+            todo.append(ident)
         elif leaf.get("status") == "blocked":
             blocked += 1
     if not todo:
@@ -471,6 +514,7 @@ def plan_audit(event, root, now=None):
             continue
         if isinstance(leaf, dict):
             leaves[str(leaf.get("id") or f.stem)] = leaf
+    leaves, stages = _split_leaves(leaves)
     now = now or time.time()
     notes = []
     broken = []
@@ -514,6 +558,29 @@ def plan_audit(event, root, now=None):
                      "rest into new leaves of about 15 minutes with real dependencies, and append to plan.json revisions "
                      "{at, reason, summary}. Work on from the new plan; a long-running leaf that is not re-planned is a "
                      "plan nobody follows.")
+    big = [f"{ident} ({int(high)} min)" for ident, leaf in leaves.items()
+           if leaf.get("kind") != "milestone" and leaf.get("status") not in {"done", "deferred"}
+           and not leaf.get("estimate_over_limit_reason")
+           for high in [_estimate_max(leaf)] if high and high > LEAF_CAP_MINUTES]
+    if big and _due(session, "audit-cap-" + plan.name + "-" + re.sub(r"[^A-Za-z0-9]+", "-", "-".join(sorted(big))),
+                    now, 6 * 3600):
+        notes.append("LHC: a leaf is about 15 minutes and these are longer: " + "; ".join(big[:4]) + ". Split each into "
+                     "leaves of about 15 minutes. If you cannot yet name what the parts are, it is a stage: make it a "
+                     "milestone (kind: milestone), make the first leaf of it a 15 minute look at the facts (a list, a "
+                     "command output), then cut the stage into leaves from what you found (parent: its id), and write "
+                     "a line to revisions. A leaf that is deliberately long says why in estimate_over_limit_reason.")
+    pending = []
+    for index, stage in enumerate(stages):
+        if stage["children"] or stage["status"] in {"done", "deferred"}:
+            continue
+        if all(other["status"] in {"done", "deferred"} for other in stages[:index]):
+            pending.append(stage["id"])
+        break
+    if pending and _due(session, "audit-stage-" + plan.name + "-" + pending[0], now, 3600):
+        notes.append(f"LHC: {pending[0]} is a milestone with no leaves and it is the next one. Cut it into leaves of "
+                     "about 15 minutes now, from facts: if you cannot name the parts, the first leaf is a 15 minute "
+                     "look at what is there. Give the leaves parent: " + pending[0] + ", and write a line to revisions. "
+                     "A milestone is not worked on itself.")
     has_edges = any(leaf.get("depends_on") for leaf in leaves.values())
     if (has_edges and len(leaves) >= 3 and not (meta or {}).get("decomposition_check")
             and _due(session, "audit-decomposition-" + plan.name, now, 6 * 3600)):

@@ -236,7 +236,8 @@ def test_plan_audit_demands_a_replan_when_a_leaf_runs_past_its_estimate(tmp_path
     import lhc_entry as entry
     began = (datetime.now().astimezone() - timedelta(minutes=118)).isoformat(timespec="seconds")
     repo, plan = _plan(tmp_path, [{"id": "L01", "status": "running", "started_at": began,
-                                   "estimate_minutes": {"minimum": 60, "maximum": 120}}])
+                                   "estimate_minutes": {"minimum": 60, "maximum": 120},
+                                   "estimate_over_limit_reason": "one long build"}])
     monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
     event = {"cwd": str(repo), "session_id": "s1"}
     assert entry.plan_audit(event, ROOT, now=time.time()) is None  # 118 of 120 min: still inside
@@ -258,3 +259,71 @@ def test_plan_revisions_reach_the_page(tmp_path):
                    check=True, capture_output=True)
     html = (plan / "plan.html").read_text()
     assert "Версии плана" in html and "split into 8 leaves" in html
+
+
+def _stages(tmp_path, extra=()):
+    leaves = [
+        {"id": "L01", "label": "Look at stash and trees", "kind": "milestone", "status": "queued"},
+        {"id": "L02", "label": "List", "status": "done", "parent": "L01", "depends_on": []},
+        {"id": "L03", "label": "Decide", "status": "queued", "parent": "L01", "depends_on": ["L02"]},
+        {"id": "L04", "label": "Merge", "status": "queued", "depends_on": ["L01"]},
+        *extra]
+    return _plan(tmp_path, leaves)
+
+
+def test_a_milestone_is_read_from_its_leaves_and_dependents_wait_for_all(tmp_path):
+    import lhc_plan_json as pj
+    repo, plan = _stages(tmp_path)
+    doc = pj.build_document(plan)
+    assert [t["id"] for t in doc["tasks"]] == ["L02", "L03", "L04"]
+    assert next(t for t in doc["tasks"] if t["id"] == "L04")["depends_on"] == ["L02", "L03"]
+    stage = doc["milestones"][0]
+    assert (stage["id"], stage["status"], stage["done"], stage["total"]) == ("L01", "running", 1, 2)
+    leaf = plan / "leaves/L03.json"
+    leaf.write_text(leaf.read_text().replace("queued", "done"))
+    assert pj.build_document(plan)["milestones"][0]["status"] == "done"
+
+
+def test_a_milestone_without_leaves_stays_one_queued_leaf_and_bad_parents_fail(tmp_path):
+    import lhc_plan_json as pj
+    repo, plan = _plan(tmp_path, [{"id": "L01", "label": "Stage", "kind": "milestone", "status": "done"}])
+    doc = pj.build_document(plan)
+    assert doc["tasks"][0]["status"] == "queued" and doc["tasks"][0]["label"].startswith("Этап")
+    repo, plan = _plan(tmp_path / "x", [{"id": "L01", "label": "A", "status": "queued", "parent": "L09"}])
+    with pytest.raises(pj.LeafError):
+        pj.build_document(plan)
+    repo, plan = _plan(tmp_path / "y", [{"id": "L01", "label": "A", "status": "queued"},
+                                         {"id": "L02", "label": "B", "status": "queued", "parent": "L01"}])
+    with pytest.raises(pj.LeafError):
+        pj.build_document(plan)
+
+
+def test_plan_audit_says_once_that_a_leaf_is_too_long_and_which_stage_is_next(tmp_path, monkeypatch):
+    import lhc_entry as entry
+    repo, plan = _plan(tmp_path, [
+        {"id": "L01", "status": "queued", "estimate_minutes": {"minimum": 60, "maximum": 120}},
+        {"id": "L02", "status": "queued", "estimate_minutes": 15}])
+    monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
+    event = {"cwd": str(repo), "session_id": "s1"}
+    text = entry.plan_audit(event, ROOT, now=1_800_000_000)
+    assert "L01 (120 min)" in text and "L02" not in text and "milestone" in text
+    assert entry.plan_audit(event, ROOT, now=1_800_000_060) is None
+    repo, plan = _plan(tmp_path / "s", [
+        {"id": "L01", "kind": "milestone", "status": "queued"},
+        {"id": "L02", "status": "done", "parent": "L01"},
+        {"id": "L03", "kind": "milestone", "status": "queued"},
+        {"id": "L04", "kind": "milestone", "status": "queued"}])
+    event = {"cwd": str(repo), "session_id": "s2"}
+    text = entry.plan_audit(event, ROOT, now=1_800_000_000)
+    assert "L03 is a milestone with no leaves" in text and "L04" not in text
+
+
+def test_stop_gate_holds_for_an_uncut_stage_but_not_for_a_finished_one(tmp_path, monkeypatch):
+    import time
+    import lhc_entry as entry
+    monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
+    repo, plan = _plan(tmp_path, [{"id": "L01", "kind": "milestone", "status": "queued"}])
+    assert entry.stop_gate({"cwd": str(repo), "session_id": "s1"}, ROOT, now=time.time())
+    repo, plan = _plan(tmp_path / "d", [{"id": "L01", "kind": "milestone", "status": "running"},
+                                         {"id": "L02", "status": "done", "parent": "L01"}])
+    assert entry.stop_gate({"cwd": str(repo), "session_id": "s2"}, ROOT, now=time.time()) is None
