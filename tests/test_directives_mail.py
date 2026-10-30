@@ -228,3 +228,33 @@ def test_effort_falls_back_to_the_clock_span():
     assert grid.effort_text(leaf) == "1 ч 30 мин"
     leaf.actual_minutes, leaf.started_at, leaf.finished_at = None, "", ""
     assert grid.effort_text(leaf) == "не измерено"
+
+
+def test_plan_audit_demands_a_replan_when_a_leaf_runs_past_its_estimate(tmp_path, monkeypatch):
+    import json, time
+    from datetime import datetime, timedelta
+    import lhc_entry as entry
+    began = (datetime.now().astimezone() - timedelta(minutes=118)).isoformat(timespec="seconds")
+    repo, plan = _plan(tmp_path, [{"id": "L01", "status": "running", "started_at": began,
+                                   "estimate_minutes": {"minimum": 60, "maximum": 120}}])
+    monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
+    event = {"cwd": str(repo), "session_id": "s1"}
+    assert entry.plan_audit(event, ROOT, now=time.time()) is None  # 118 of 120 min: still inside
+    later = entry.plan_audit(event, ROOT, now=time.time() + 15 * 60)
+    assert "L01 has run" in later and "re-plan" in later and "revisions" in later
+    assert entry.plan_audit(event, ROOT, now=time.time() + 15 * 60 + 30) is None  # once per 15 min
+
+
+def test_plan_revisions_reach_the_page(tmp_path):
+    import json, subprocess, sys
+    repo, plan = _plan(tmp_path, [{"id": "L01", "status": "done", "label": "first", "estimate_minutes": {"minimum": 10, "maximum": 15}}],
+                       meta={"title": "T", "goal": "g", "business_result": "r",
+                             "revisions": [{"at": "2026-10-30T19:00:00+03:00", "reason": "leaf ran 2 h", "summary": "split into 8 leaves"}]})
+    tools = ROOT / "src/common/tools"
+    subprocess.run([sys.executable, str(tools / "lhc_plan_json.py"), "build", str(plan)], check=True, capture_output=True)
+    graph = json.loads((plan / "plan.graph.json").read_text())
+    assert graph["revisions"][0]["reason"] == "leaf ran 2 h"
+    subprocess.run([sys.executable, str(tools / "lhc_grid.py"), "render", str(plan / "plan.graph.json"), "--out-dir", str(plan)],
+                   check=True, capture_output=True)
+    html = (plan / "plan.html").read_text()
+    assert "Версии плана" in html and "split into 8 leaves" in html

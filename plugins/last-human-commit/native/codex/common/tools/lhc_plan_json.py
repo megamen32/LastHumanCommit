@@ -189,6 +189,7 @@ PLAN_FIELDS = (
     "business_results",
     "acceptance_scenarios",
     "current_progress",
+    "revisions",
     "external_waits",
     "slots",
     "budget_usd",
@@ -645,6 +646,8 @@ def _plan_fields(raw: dict[str, Any], path: Path) -> dict[str, Any]:
         if not isinstance(scenarios, list) or not all(isinstance(item, str) for item in scenarios):
             raise LeafError(f"{path}: поле acceptance_scenarios должно быть списком строк")
         fields["acceptance_scenarios"] = [item.strip() for item in scenarios if item.strip()]
+    if isinstance(raw.get("revisions"), list):
+        fields["revisions"] = _revisions(raw["revisions"])
     slots = raw.get("slots")
     if slots is not None:
         if isinstance(slots, bool) or not isinstance(slots, int) or slots < 1:
@@ -800,6 +803,17 @@ def file_birthtime(path):
     return ''
 
 
+def _revisions(items):
+    """The plan versions after the first: when the plan was rewritten and why."""
+    out = []
+    for item in items:
+        if isinstance(item, dict):
+            row = {k: str(item[k]).strip() for k in ("at", "reason", "summary") if item.get(k)}
+            if row.get("reason"):
+                out.append(row)
+    return out
+
+
 def validate_plan_origin(value):
     if not isinstance(value, dict) or value.get('source') not in {
             'leaf_created_at', 'file_birthtime', 'recorded_start', 'unknown'}:
@@ -907,6 +921,7 @@ def build_document(plan_dir: Path) -> dict[str, Any]:
         "business_results": results,
         "acceptance_scenarios": list(metadata.get("acceptance_scenarios") or []),
         "current_progress": str(metadata.get("current_progress") or ""),
+        "revisions": list(metadata.get("revisions") or []),
         "external_waits": str(metadata.get("external_waits") or ""),
         "slots": int(metadata.get("slots") or 1),
         "updated_at": stamp,
