@@ -424,6 +424,7 @@ class Graph:
     acceptance_scenarios: list[str] = field(default_factory=list)
     current_progress: str = ""
     revisions: list = field(default_factory=list)
+    milestones: list = field(default_factory=list)
     external_waits: str = ""
     leaves: list[Leaf] = field(default_factory=list)
     slots: int = 1
@@ -1185,6 +1186,7 @@ def parse_graph_json(document: Any) -> Graph:
     graph.acceptance_scenarios = list(scenarios)
     graph.current_progress = str(document.get("current_progress") or "")
     graph.revisions = [r for r in (document.get("revisions") or []) if isinstance(r, dict)]
+    graph.milestones = [m for m in (document.get("milestones") or []) if isinstance(m, dict)]
     graph.external_waits = str(document.get("external_waits") or "")
     graph.updated_at = str(document.get("updated_at") or "")
     graph.started_at = str(document.get("started_at") or "")
@@ -3953,6 +3955,19 @@ def render_html(
             f"<p>Исходный план зафиксирован; дальше план пересматривался {len(graph.revisions)} раз.</p>"
             f"<ul>{revision_items}</ul></article>"
         )
+    if graph.milestones:
+        stage_items = "".join(
+            f"<li><b>{escape(str(m.get('id', '')))}</b> {escape(str(m.get('label', '')))} — "
+            + (f"{int(m.get('done', 0))} из {int(m.get('total', 0))} листов готово"
+               if m.get("total") else "ещё не разложен на листы")
+            + f" · {escape(str(m.get('status', '')))}</li>"
+            for m in graph.milestones
+        )
+        detail_cards.append(
+            f'<article class="brief-card"><h2>Этапы</h2>'
+            f"<p>Этап не исполняется: его статус читается из его листов.</p>"
+            f"<ul>{stage_items}</ul></article>"
+        )
     if graph.current_progress:
         detail_cards.append(
             f'<article class="brief-card"><h2>Что уже сделано</h2>'
@@ -5401,6 +5416,7 @@ def export_graph(graph: Graph) -> dict[str, Any]:
         "acceptance_scenarios": list(graph.acceptance_scenarios),
         "current_progress": graph.current_progress,
         "revisions": list(graph.revisions),
+        "milestones": list(graph.milestones),
         "external_waits": graph.external_waits,
         "slots": graph.slots,
         "updated_at": graph.updated_at,
@@ -6066,7 +6082,7 @@ def merge_attribution(
             )
             if missing and source.get(field) is not None:
                 task[field] = source[field]
-    for field in ("current_progress", "revisions", "external_waits", "acceptance_scenarios", "started_at", "finished_at", "updated_at", "plan_origin"):
+    for field in ("current_progress", "revisions", "milestones", "external_waits", "acceptance_scenarios", "started_at", "finished_at", "updated_at", "plan_origin"):
         if not document.get(field) and previous.get(field):
             document[field] = previous[field]
     # The title of the plan is the first line of the report. A title that was

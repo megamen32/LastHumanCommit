@@ -44,8 +44,9 @@ No plan: section 3.
 
 1. Goal and the shortest route to the next real canary: `$planning`. The text is the
    goal; without text, the owner's latest request.
-2. Leaves of about 15 minutes with real dependencies: `$task-decomposition` and
-   `TASK_GRAPH.md`. Write the files per `$plan-artifacts`.
+2. Stages to the next real canary; leaves of about 15 minutes with real dependencies only
+   for the nearest stage, and only after a look at the facts (`$planning`, Stages first; `$task-decomposition`;
+   `TASK_GRAPH.md`). Write the files per `$plan-artifacts`.
 3. Check the decomposition once (`TASK_GRAPH.md`, Check the decomposition) with a
    separate subagent that is given only `plan.json` and the leaves, never yourself. Fix
    what it flags, once, and record it as `decomposition_check` with its id in `who`.

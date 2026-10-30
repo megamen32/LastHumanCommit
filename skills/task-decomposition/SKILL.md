@@ -148,3 +148,11 @@ Use `common/protocols/ORCHESTRATION_RECORDS.md` for durable Lead briefs, worker
 progress, decisions, blockers and result receipts. Detailed execution state lives
 in the canonical task directory; chat carries only a required decision, a
 route-changing blocker, or concise readiness with a receipt path.
+
+## Stages
+
+A stage whose parts are not known is a milestone (kind: milestone), never an hour-long
+leaf. Cut it after a 15 minute look at the facts: one item found is one leaf of about
+15 minutes with parent set to the stage, then a line in revisions. If you cannot give an
+estimate, it is still the look at the facts. A stage has no status of its own: it is
+done when its leaves are, and a leaf that depends on the stage waits for all of them.
