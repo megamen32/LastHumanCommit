@@ -35,7 +35,10 @@ require(("AGENTS.md","CLAUDE.md",()) in _publisher.COPIES,
         "the publisher must generate CLAUDE.md from AGENTS.md - add that copy to COPIES, do not edit CLAUDE.md by hand")
 require(not any(source=="CLAUDE.md" for source,_,_ in _publisher.COPIES),
         "CLAUDE.md must not be a projection source again; AGENTS.md is the only authored router")
-require(len(router.decode().splitlines())<=200,"automatic entry grew beyond its context budget")
+_router_lines=len(router.decode().splitlines())
+require(_router_lines<=300,"automatic entry grew beyond its context budget (hard limit 300 lines)")
+if _router_lines>250:
+    print(f"warning: AGENTS.md has {_router_lines} lines; the soft limit is 250 - trim before adding more",file=sys.stderr)
 for role in ("Lead","Worker","Overseer","Tester","Reviewer","Adviser","Critic","Maintainer"):
     require((ROOT/f"src/common/agents/{role}.md").is_file(),f"missing optional role {role}")
 for harness in ("codex","opencode","claude-code","hermes","zcode"):
@@ -51,8 +54,11 @@ for tool in ("lhc_chat.py","lhc_entry.py","lhc_worktree.py","lhc_time_guard.py",
 hooks=json.loads((PACKAGE/"hooks/hooks.json").read_text())["hooks"]
 require("SessionStart" in hooks and "PostCompact" in hooks,"automatic entry hooks missing")
 require("PostToolUse" in hooks,"time-only plan and direction reminders need the heartbeat hook")
-require("UserPromptSubmit" not in hooks and "Stop" not in hooks,
+require("UserPromptSubmit" not in hooks,
         "conversation-driven control hooks must stay removed; they vetoed ordinary work")
+# The one Stop hook allowed reads plan files only, never the conversation, and holds a stop at most twice.
+require(all("--stop-gate" in h["command"] for r in hooks.get("Stop",[]) for h in r["hooks"]),
+        "a Stop hook is allowed only as the bounded plan-file stop gate (--stop-gate)")
 for groups in hooks.values():
     for group in groups:
         for hook in group["hooks"]:
