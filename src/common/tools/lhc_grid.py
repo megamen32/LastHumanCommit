@@ -1804,6 +1804,31 @@ def absolute_time(value: str) -> Optional[datetime]:
         return None
 
 
+def _legacy_finish(leaves, ceiling):
+    """The last finish of a plan whose leaves record only the time of day.
+
+    The plan's last update is the ceiling: a clock without a date is placed on the latest day
+    that does not pass it. Every leaf must have a finish, or nothing is claimed.
+    """
+    if not ceiling:
+        return None
+    latest = None
+    for leaf in leaves:
+        value = str(leaf.finished_at or "")
+        if re.fullmatch(r"\d{1,2}:\d{2}", value):
+            hour, minute = (int(part) for part in value.split(":"))
+            stamp = ceiling.replace(hour=hour, minute=minute, second=0, microsecond=0)
+            if stamp > ceiling:
+                stamp -= timedelta(days=1)
+        else:
+            stamp = absolute_time(value)
+            if stamp is None:
+                return None
+        if latest is None or stamp > latest:
+            latest = stamp
+    return latest
+
+
 def plan_time_frame(graph: Graph, metrics: dict[str, Any]) -> dict[str, Any]:
     reference = absolute_time(graph.snapshot_at) or datetime.now(timezone.utc)
     snapshot = absolute_time(graph.snapshot_at) or absolute_time(graph.updated_at) or reference
@@ -1838,6 +1863,7 @@ def plan_time_frame(graph: Graph, metrics: dict[str, Any]) -> dict[str, Any]:
         # first progress event. Reuse that origin, never the render/poll time.
         anchor, anchor_source = origin, 'plan_origin'
     finish = absolute_time(graph.finished_at)
+    dated = True
     if completed and not finish:
         finishes = [absolute_time(leaf.finished_at) for leaf in active]
         if all(finishes):
@@ -1845,7 +1871,10 @@ def plan_time_frame(graph: Graph, metrics: dict[str, Any]) -> dict[str, Any]:
             if any(absolute_time(leaf.started_at) and end < absolute_time(leaf.started_at)
                    for leaf, end in zip(active, finishes)):
                 finish = None
-    if finish and (finish > reference or (start and finish < start)):
+        else:
+            # A finish read off a bare clock has no date of its own, so it is not weighed against a start.
+            finish, dated = _legacy_finish(active, absolute_time(graph.updated_at) or reference), False
+    if finish and (finish > reference or (dated and start and finish < start)):
         finish = None
     end_min = end = None
     if completed:
@@ -1856,7 +1885,7 @@ def plan_time_frame(graph: Graph, metrics: dict[str, Any]) -> dict[str, Any]:
             end = anchor + timedelta(minutes=metrics["remaining_minutes_max"])
         except (OverflowError, ValueError):
             pass
-    if end and start and end <= start:
+    if end and start and end <= start and dated:
         end_min = end = None
     if completed:
         end_label = "Завершено" if finish else "Завершено; время не записано"
