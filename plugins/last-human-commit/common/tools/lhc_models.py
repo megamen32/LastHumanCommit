@@ -384,9 +384,20 @@ def gate_failures(model: dict, needs: dict) -> list[str]:
 
 
 def default_cache_dir() -> Path:
-    """Repository ``.tmp/``: never a new global path, never outside the checkout."""
+    """Catalog snapshots: LHC_MODELS_CACHE, else the checkout's .tmp/, else one user cache.
+
+    A development checkout keeps its snapshots in its own .tmp/. An installed copy has no
+    checkout (and every harness unpacks its own), so it shares ~/.cache/lhc/models;
+    otherwise each copy would look for a snapshot nobody ever made.
+    """
+    override = os.environ.get("LHC_MODELS_CACHE", "").strip()
+    if override:
+        return Path(override).expanduser()
     repo_root = Path(__file__).resolve().parents[3]
-    return repo_root / ".tmp" / "lhc_models"
+    if (repo_root / ".git").exists():
+        return repo_root / ".tmp" / "lhc_models"
+    cache_home = os.environ.get("XDG_CACHE_HOME", "").strip() or str(Path.home() / ".cache")
+    return Path(cache_home) / "lhc" / "models"
 
 
 def fetch_raw(url: str) -> bytes:

@@ -1,3 +1,10 @@
+## 1.7.18
+
+- A finished plan shows when it finished. Leaves that recorded only a time of day ("23:26") now give a real finish: the clock is placed on the last day not past the plan's last update. The page no longer says "Фактический финиш не зафиксирован" for a plan whose every leaf is done.
+- Price catalog for installed copies: without a git checkout the snapshot lives in one user cache (~/.cache/lhc/models), so every harness finds the same snapshot instead of an empty private .tmp. LHC_MODELS_CACHE overrides it.
+- OpenCode installer rewrites every LHC role profile (all ten) from the current package; a stale one is backed up first. A July Lead/Adviser profile used to survive and ask the owner to choose between three plans.
+- OpenCode installer links the LHC skills into its user skills folder (hand-made skill folders are left alone) and writes a current pointer into its AGENTS.md.
+
 # 1.7.17 — план этапами, листы по 15 минут режутся по фактам
 
 - Лист получил поле kind: task (по умолчанию) или milestone (этап) и поле parent у листов этапа. Этап не исполняется и не хранит статус: он читается из своих листов (blocked, done, когда готовы все, running, waiting, queued), зависимость от этапа означает «ждать все его листы». Одна вложенность. Граф, расписание и счётчики видят только листы, поэтому двойного счёта нет; этап без листов остаётся одним листом в очереди, и план с нераскрытым этапом не выглядит законченным. На странице плана новый блок «Этапы».

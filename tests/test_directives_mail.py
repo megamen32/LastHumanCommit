@@ -327,3 +327,62 @@ def test_stop_gate_holds_for_an_uncut_stage_but_not_for_a_finished_one(tmp_path,
     repo, plan = _plan(tmp_path / "d", [{"id": "L01", "kind": "milestone", "status": "running"},
                                          {"id": "L02", "status": "done", "parent": "L01"}])
     assert entry.stop_gate({"cwd": str(repo), "session_id": "s2"}, ROOT, now=time.time()) is None
+
+
+def test_a_finished_plan_with_clock_only_leaves_shows_its_finish(tmp_path):
+    import json, subprocess, sys
+    repo, plan = _plan(tmp_path, [
+        {"id": "L01", "status": "done", "label": "a", "started_at": "17:19", "finished_at": "17:35",
+         "estimate_minutes": {"minimum": 10, "maximum": 15}},
+        {"id": "L02", "status": "done", "label": "b", "started_at": "19:00", "finished_at": "19:26",
+         "estimate_minutes": {"minimum": 10, "maximum": 15}, "depends_on": ["L01"]}],
+        meta={"title": "T", "goal": "g", "business_result": "r", "updated_at": "2026-10-30T20:05:00+00:00"})
+    tools = ROOT / "src/common/tools"
+    subprocess.run([sys.executable, str(tools / "lhc_plan_json.py"), "build", str(plan)], check=True, capture_output=True)
+    subprocess.run([sys.executable, str(tools / "lhc_grid.py"), "render", str(plan / "plan.graph.json"), "--out-dir", str(plan)],
+                   check=True, capture_output=True)
+    html = (plan / "plan.html").read_text()
+    assert "Фактический финиш: 30.10.2026 19:26" in html     # a bare clock is placed on the last day not past the last update
+    assert "Фактический финиш не зафиксирован" not in html
+
+
+def test_price_snapshots_of_an_installed_copy_share_one_user_cache(tmp_path, monkeypatch):
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("lhc_models_cache", ROOT / "src/common/tools/lhc_models.py")
+    models = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = models
+    spec.loader.exec_module(models)
+    monkeypatch.delenv("LHC_MODELS_CACHE", raising=False)
+    assert models.default_cache_dir() == ROOT / ".tmp" / "lhc_models"          # a checkout keeps its own .tmp
+    fake = tmp_path / "pkg" / "a" / "b" / "src" / "tool.py"                     # no .git up the tree
+    fake.parent.mkdir(parents=True)
+    monkeypatch.setattr(models, "__file__", str(fake))
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path / "cache"))
+    assert models.default_cache_dir() == tmp_path / "cache" / "lhc" / "models"
+    monkeypatch.setenv("LHC_MODELS_CACHE", str(tmp_path / "pinned"))
+    assert models.default_cache_dir() == tmp_path / "pinned"
+
+
+def test_opencode_install_replaces_a_stale_role_profile_and_links_the_skills(tmp_path):
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("lhc_install3", ROOT / "plugins/last-human-commit/scripts/install_runtime.py")
+    install = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(install)
+    home = tmp_path / "home"
+    plugin = ROOT / "plugins/last-human-commit"
+    agents = home / ".config/opencode/agents"
+    agents.mkdir(parents=True)
+    (agents / "lead.md").write_text("old Lead: present exactly three plans and wait for the human\n")
+    hand = home / ".config/opencode/skills/planning"
+    hand.mkdir(parents=True)
+    (hand / "SKILL.md").write_text("mine")
+    install.configure(home, plugin, "opencode")
+    assert "three plans" not in (agents / "lead.md").read_text()
+    for role in install.OPENCODE_ROLES:
+        assert (agents / f"{role.lower()}.md").is_file(), role
+    assert (agents / "lead.md").read_text().startswith("---\ndescription:")
+    assert any("three plans" in f.read_text() for f in home.rglob("*") if f.is_file() and "backup" in str(f).lower())
+    assert (hand / "SKILL.md").read_text() == "mine"                      # a hand-made skill is left alone
+    skills = home / ".config/opencode/skills"
+    assert any(p.is_symlink() for p in skills.iterdir())
+    install.configure(home, plugin, "opencode")                           # a second run changes nothing

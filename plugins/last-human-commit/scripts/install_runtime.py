@@ -40,24 +40,69 @@ def register_opencode_mcp(home:Path,root:Path)->dict:
     file.write_text(json.dumps(config,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
     return {"mcp":"registered","file":str(file)}
 
-OPENCODE_ROLES={"Orchestrator":"LastHumanCommit Orchestrator: carries the owner's sessions to results from a registry and file mail; does not do the work.",
-                "Sentinel":"LastHumanCommit Sentinel: watches one thing, reports only when something is wrong."}
+OPENCODE_ROLES={"Lead":"LastHumanCommit Lead: owns classification, integration, proof, and release.",
+                "Orchestrator":"LastHumanCommit Orchestrator: carries the owner's sessions to results from a registry and file mail; does not do the work.",
+                "Sentinel":"LastHumanCommit Sentinel: watches one thing, reports only when something is wrong.",
+                "Adviser":"LastHumanCommit Adviser: a second opinion on a hard decision.",
+                "Critic":"LastHumanCommit Critic: finds where a plan or change breaks.",
+                "Overseer":"LastHumanCommit Overseer: the last step before the owner.",
+                "Reviewer":"LastHumanCommit Reviewer: reviews the integrated change once.",
+                "Tester":"LastHumanCommit Tester: proves the claim on the real consumer path.",
+                "Maintainer":"LastHumanCommit Maintainer: keeps the package and its installs current.",
+                "Worker":"LastHumanCommit Worker: does one bounded leaf."}
+OPENCODE_PRIMARY=("Lead","Orchestrator","Sentinel")
 
 def register_opencode_agents(home:Path,root:Path)->dict:
-    """Install the Orchestrator and Sentinel role profiles next to the other LHC agents."""
+    """Install every LHC role profile from the current package, replacing a stale copy.
+
+    A profile left from an older package carries the rules of that package (the Lead of
+    July asked the owner to choose between three plans), so a profile that differs is
+    backed up and rewritten, not kept.
+    """
     target=home/".config/opencode/agents"
     done={}
     for name,description in OPENCODE_ROLES.items():
         src=next((c/f"{name}.md" for c in (root/"common/agents",root/"src/common/agents") if (c/f"{name}.md").is_file()),None)
         if src is None:
             continue
-        payload=f"---\ndescription: {description}\nmode: primary\n---\n\n"+src.read_text(encoding="utf-8")
+        mode="primary" if name in OPENCODE_PRIMARY else "subagent"
+        payload=f"---\ndescription: {description}\nmode: {mode}\n---\n\n"+src.read_text(encoding="utf-8")
         file=target/f"{name.lower()}.md"
         if not file.is_file() or file.read_text(encoding="utf-8")!=payload:
             target.mkdir(parents=True,exist_ok=True)
+            if file.is_file():
+                backup=backup_path(home,"opencode","-agent-"+name.lower())
+                backup.parent.mkdir(parents=True,exist_ok=True)
+                backup.write_text(file.read_text(encoding="utf-8"),encoding="utf-8")
             file.write_text(payload,encoding="utf-8")
         done[name]=str(file)
     return {"agents":done}
+
+def register_opencode_skills(home:Path,root:Path)->dict:
+    """Give OpenCode the LHC skills: one link per skill in its user skills folder.
+
+    The link points at the installed package, so a package update is an update of the skill.
+    A skill folder the owner made by hand under the same name is left alone.
+    """
+    source=root/"skills"
+    if not source.is_dir():
+        return {"skills":"skipped","reason":"the installed package has no skills folder"}
+    target=home/".config/opencode/skills"
+    done=[];kept=[]
+    for skill in sorted(source.iterdir()):
+        if not (skill/"SKILL.md").is_file():
+            continue
+        link=target/skill.name
+        if link.is_symlink():
+            if link.resolve()!=skill.resolve():
+                link.unlink();link.symlink_to(skill.resolve())
+            done.append(skill.name)
+        elif link.exists():
+            kept.append(skill.name)
+        else:
+            target.mkdir(parents=True,exist_ok=True)
+            link.symlink_to(skill.resolve());done.append(skill.name)
+    return {"skills":done,"skills_kept":kept}
 
 def register_opencode_plugin(home:Path,root:Path,plugin_dir:Path)->dict:
     """Install the LHC OpenCode plugin so OpenCode auto-discovers it.
@@ -107,7 +152,7 @@ def register_opencode_plugin(home:Path,root:Path,plugin_dir:Path)->dict:
     },ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
     extra={}
     if plugin_dir.parent==(home/".config/opencode").resolve():
-        extra.update(register_opencode_mcp(home,root));extra.update(register_opencode_agents(home,root))
+        extra.update(register_opencode_mcp(home,root));extra.update(register_opencode_agents(home,root));extra.update(register_opencode_skills(home,root))
     return {"dir":str(plugin_dir),"files":installed,"state":str(state),**extra}
 
 def configure(home:Path,root:Path,runtime:str,replace_gsd:bool=False,opencode_plugin_dir:Path|None=None)->dict:
@@ -142,15 +187,16 @@ def configure(home:Path,root:Path,runtime:str,replace_gsd:bool=False,opencode_pl
         pointer = (f"{BEGIN}\n"
             "LHC is active in native OpenCode engineering sessions through the installed "
             "LHC plugin. The plugin injects the current installed AGENTS.md into the system "
-            "context and reports time-only reminders at tool and idle boundaries; after "
-            "compaction it re-injects the AGENTS.md pointer and the bounded current-handoff.md "
-            "pointer. The plugin does not review, gate, approve or evaluate a diff. "
-            "The core workflow stays yours: TDD RED/GREEN, working→ideal→useful-80%, "
-            "review→delivery that fixes known receipt metadata from Git/CI instead of hiring "
-            "a new reviewer, hourly direction and 120-minute learning checks, and independent "
-            "Zero Knowledge only at major milestones. If the plugin context is missing, say "
-            "activation is unverified. Use English for internal records/coordination and the "
-            "user's language for answers; preserve original user data.\n"
+            "context, reports time facts at tool and idle boundaries, holds a stop (twice at most) "
+            "while the session's plan has queued or running leaves, and re-injects the AGENTS.md "
+            "pointer after compaction. It never reviews or approves a diff. The LHC role profiles "
+            "(Lead, Orchestrator, Adviser, Critic, Worker and the rest) and skills (plan, planning, "
+            "task-decomposition and the rest) are installed with it: type /plan to reconcile the "
+            "work with the plan or to make one. Plan in stages, cut only the nearest stage into "
+            "leaves of about 15 minutes, and choose yourself: the owner does not pick between plans. "
+            "If the plugin context is missing, say activation is unverified. Use English for "
+            "internal records/coordination and the user's language for answers; preserve original "
+            "user data.\n"
             f"{END}\n")
     after=text.rstrip()+"\n\n"+pointer
     result={"path":str(file),"root":str(root)}
