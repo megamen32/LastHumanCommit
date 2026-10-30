@@ -172,7 +172,8 @@ Leaves are about 15 minutes; a Worker reports by minute 20. A hook reminder
 (30-minute plan, 60-minute goal, 120-minute method) means the time is over and the
 task is not finished: name what blocked you and remove it yourself; if you were
 doing checks, plans or hardening for their own sake, stop and take the nearest step
-to the business result. A reminder never ends a turn. Tasks over 15 minutes keep
+to the business result. A leaf that runs past its estimate is re-planned, not continued: new leaves and a line in
+`revisions` of `plan.json`. A reminder never ends a turn. Tasks over 15 minutes keep
 one note in `.agents/tasks/` (goal, decisions, done, next). When a plan is first
 created, give the owner its public link once, on its own line
 (`lhc_plan_mirror.py link <plan-dir>`); never a local HTML path.

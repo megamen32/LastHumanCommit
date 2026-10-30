@@ -489,6 +489,31 @@ def plan_audit(event, root, now=None):
         meta = json.loads((plan / "plan.json").read_text(encoding="utf-8"))
     except (OSError, ValueError):
         meta = {}
+    late = []
+    wall = datetime.fromtimestamp(now).astimezone()
+    origin_at = ((meta or {}).get("plan_origin") or {}).get("at")
+    for ident, leaf in leaves.items():
+        if leaf.get("status") != "running":
+            continue
+        began = leaf.get("started_at") or (origin_at if len(leaves) == 1 else None)
+        try:
+            elapsed = (wall - datetime.fromisoformat(str(began).replace("Z", "+00:00"))).total_seconds() / 60
+        except (TypeError, ValueError):
+            continue
+        estimate = leaf.get("estimate_minutes") or leaf.get("estimate") or {}
+        planned = estimate.get("maximum") if isinstance(estimate, dict) else estimate
+        try:
+            planned = float(planned)
+        except (TypeError, ValueError):
+            planned = 15.0
+        if elapsed > planned + 5:
+            late.append(f"{ident} has run {int(elapsed)} min against an estimate of {int(planned)} min")
+    if late and _due(session, "audit-overrun", now, 900):
+        notes.append("LHC: " + "; ".join(late[:3]) + ". Time is over: stop and re-plan before the next tool call. "
+                     "Say in two lines what is done and what is left, close the leaf (done, blocked or dropped), put the "
+                     "rest into new leaves of about 15 minutes with real dependencies, and append to plan.json revisions "
+                     "{at, reason, summary}. Work on from the new plan; a long-running leaf that is not re-planned is a "
+                     "plan nobody follows.")
     has_edges = any(leaf.get("depends_on") for leaf in leaves.values())
     if (has_edges and len(leaves) >= 3 and not (meta or {}).get("decomposition_check")
             and _due(session, "audit-decomposition-" + plan.name, now, 6 * 3600)):
