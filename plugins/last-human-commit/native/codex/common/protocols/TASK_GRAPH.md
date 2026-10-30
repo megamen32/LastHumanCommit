@@ -205,6 +205,16 @@ unknown estimate is a choice, never a demand.
 7. The forecast is a plan, not a promise: capacity, resource conflicts and
    external waits stay visible in the report next to the graph.
 
+## Check the decomposition
+
+One pass after the graph is written, before dispatch, by someone who did not
+draw it (Adviser or Critic, plan only): for every `depends_on` edge name the
+concrete output of the first leaf that the second one reads. No output named
+means no edge: drop it. Then ask of every leaf in a later wave whether it can
+start now, and move it forward when it can. Record the result in `plan.json`
+as `decomposition_check` (who checked, the edges kept with what they read, the
+leaves moved). A leaf is `done` only when everything it depends on is `done`.
+
 ## Checking it
 
 The offline checker validates declared path and dependency conflicts:

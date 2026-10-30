@@ -165,3 +165,66 @@ def test_opencode_install_does_not_duplicate_an_installed_plugin(tmp_path):
     install.configure(fresh, plugin, "opencode")
     install.configure(fresh, plugin, "opencode")
     assert [f.name for f in (fresh / ".config/opencode/plugin").glob("*.ts")] == ["lhc-v2.ts"]
+
+
+def _plan(tmp_path, leaves, meta=None):
+    import json
+    repo = tmp_path / "repo"
+    (repo / ".git").mkdir(parents=True)
+    plan = repo / ".agents/tasks/20261030-x"
+    (plan / "leaves").mkdir(parents=True)
+    (plan / "plan.json").write_text(json.dumps(meta or {}))
+    for leaf in leaves:
+        (plan / "leaves" / (leaf["id"] + ".json")).write_text(json.dumps(leaf))
+    return repo, plan
+
+
+def test_stamp_leaf_records_start_and_finish_once(tmp_path):
+    import json
+    import lhc_entry as entry
+    repo, plan = _plan(tmp_path, [{"id": "L01", "status": "running"}])
+    leaf = plan / "leaves/L01.json"
+    entry.stamp_leaf(leaf)
+    first = json.loads(leaf.read_text())
+    assert "T" in first["started_at"] and "finished_at" not in first
+    first["status"] = "done"
+    leaf.write_text(json.dumps(first))
+    entry.stamp_leaf(leaf)
+    done = json.loads(leaf.read_text())
+    assert done["started_at"] == first["started_at"] and "T" in done["finished_at"]
+    stamped = done["finished_at"]
+    entry.stamp_leaf(leaf)
+    assert json.loads(leaf.read_text())["finished_at"] == stamped
+
+
+def test_plan_audit_names_a_done_leaf_over_unfinished_dependencies(tmp_path, monkeypatch):
+    import lhc_entry as entry
+    repo, plan = _plan(tmp_path, [
+        {"id": "L01", "status": "done", "depends_on": []},
+        {"id": "L02", "status": "running", "depends_on": ["L01"]},
+        {"id": "L03", "status": "done", "depends_on": ["L01", "L02"]}])
+    monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
+    event = {"cwd": str(repo), "session_id": "s1"}
+    text = entry.plan_audit(event, ROOT, now=1_800_000_000)
+    assert "L03 is done while L02" in text and "decomposition" in text
+    assert entry.plan_audit(event, ROOT, now=1_800_000_060) is None  # once per window
+
+
+def test_plan_audit_is_quiet_when_the_decomposition_was_checked(tmp_path, monkeypatch):
+    import lhc_entry as entry
+    repo, plan = _plan(tmp_path, [
+        {"id": "L01", "status": "done"}, {"id": "L02", "status": "running", "depends_on": ["L01"]},
+        {"id": "L03", "status": "queued", "depends_on": ["L02"]}], meta={"decomposition_check": {"by": "adviser"}})
+    monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
+    assert entry.plan_audit({"cwd": str(repo), "session_id": "s1"}, ROOT, now=1_800_000_000) is None
+
+
+def test_effort_falls_back_to_the_clock_span():
+    import lhc_grid as grid
+    leaf = grid.Leaf("L01")
+    leaf.started_at, leaf.finished_at = "2026-10-30T10:00:00+03:00", "2026-10-30T10:45:00+03:00"
+    assert grid.effort_text(leaf) == "45 мин по часам"
+    leaf.actual_minutes = 90
+    assert grid.effort_text(leaf) == "1 ч 30 мин"
+    leaf.actual_minutes, leaf.started_at, leaf.finished_at = None, "", ""
+    assert grid.effort_text(leaf) == "не измерено"

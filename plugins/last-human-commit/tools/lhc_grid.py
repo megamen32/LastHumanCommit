@@ -547,6 +547,14 @@ def format_clock(minutes: Optional[int]) -> str:
     return f"{minutes // 60:02d}:{minutes % 60:02d}"
 
 
+def effort_text(leaf) -> str:
+    """The effort of a leaf: the summed executor minutes, else the clock span, else unknown."""
+    if leaf.actual_minutes is not None:
+        return fmt_minutes(leaf.actual_minutes)
+    span = leaf.actual_span_minutes
+    return f"{fmt_minutes(span)} по часам" if span is not None else "не измерено"
+
+
 def _elapsed_since(started_at: str, build_minutes: Optional[int]) -> Optional[float]:
     """Minutes from a leaf's start to the moment the projection was built.
 
@@ -3529,7 +3537,7 @@ def render_html(
     for details_index, leaf in enumerate(leaves):
         deps = ", ".join(label_by_id.get(dep, dep) for dep in leaf.depends_on) or "—"
         peer = ", ".join(label_by_id.get(other, other) for other in leaf.parallel_with) or "—"
-        actual = fmt_minutes(leaf.actual_minutes) if leaf.actual_minutes is not None else "не измерено"
+        actual = effort_text(leaf)
         span = fmt_minutes(leaf.actual_span_minutes) if leaf.actual_span_minutes is not None else "—"
         # The time a running leaf has been going, measured at the moment this
         # page is built. It is a fact of the build, not a measured effort: the
@@ -3764,7 +3772,7 @@ def render_html(
         )
     leaves_table = (
         "<div class='table-scroll'><table class='table table-leaves'><thead><tr><th>Задача</th><th>Статус</th>"
-        "<th>Оценка</th><th>Усилие</th><th>Детали</th></tr></thead><tbody>"
+        "<th>Оценка</th><th title=\"Усилие: суммарные минуты работы исполнителей над задачей. Без замера показывается время по часам между началом и концом.\">Усилие</th><th>Детали</th></tr></thead><tbody>"
         + "".join(table_rows)
         + "</tbody></table></div>"
     )
@@ -5086,7 +5094,7 @@ def render_leaf_lines(graph: Graph, metrics: dict[str, Any]) -> list[str]:
     lines = [f"Листья плана ({len(graph.leaves)}):"]
     for leaf in graph.leaves:
         wave = leaf.wave if leaf.wave is not None else waves.get(leaf.id, 0) + 1
-        actual = fmt_minutes(leaf.actual_minutes) if leaf.actual_minutes is not None else "не измерено"
+        actual = effort_text(leaf)
         parts = [
             f"  - {leaf.id}",
             f"{STATUS_GLYPHS.get(leaf.status, '⋯')} {STATUS_LABELS.get(leaf.status, leaf.status)}",
