@@ -1286,6 +1286,9 @@ def native_heartbeat(cwd: Path, runtime: str, session_id: str,
             "due": due, "prompt": "\n\n".join(reminders)}
 
 
+CHECKPOINT_REPEAT_MINUTES = 60
+
+
 def learning_checkpoint(args: argparse.Namespace, cwd: Path, session_id: str,
                         *, acknowledge: bool = False) -> dict[str, Any]:
     """Observe a persistent wall deadline; only an evidenced ack advances it."""
@@ -1336,7 +1339,13 @@ def learning_checkpoint(args: argparse.Namespace, cwd: Path, session_id: str,
         state["last_observed_at"] = observed.isoformat()
         write_state(path, state)
     prompt = ""
-    if due:
+    # The text is said once per deadline and then at most once an hour. An unanswered checkpoint
+    # stays due (the state is the record), but repeating the same words after every tool call
+    # only fills the context.
+    said = state.get("prompted_at")
+    quiet = (due and state.get("prompted_due_at") == state["due_at"] and said
+             and observed - parse_time(said) < timedelta(minutes=CHECKPOINT_REPEAT_MINUTES))
+    if due and not quiet:
         prompt = (
             "LHC session checkpoint: 120 wall-clock minutes and the task is not finished. "
             "What slowed it: a blocker you could remove yourself, a check or ritual, a "
@@ -1350,6 +1359,10 @@ def learning_checkpoint(args: argparse.Namespace, cwd: Path, session_id: str,
                 " Native session identity unavailable: this project/runtime fallback is shared; "
                 "per-session/user-goal isolation is NOT established."
             )
+        state["prompted_at"], state["prompted_due_at"] = observed.isoformat(), state["due_at"]
+        with lock.open("a", encoding="utf-8") as handle:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+            write_state(path, state)
     return {"due": due, "due_at": state["due_at"], "state": str(path), "prompt": prompt}
 
 
