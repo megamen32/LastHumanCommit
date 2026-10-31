@@ -1286,9 +1286,6 @@ def native_heartbeat(cwd: Path, runtime: str, session_id: str,
             "due": due, "prompt": "\n\n".join(reminders)}
 
 
-CHECKPOINT_REPEAT_MINUTES = 60
-
-
 def learning_checkpoint(args: argparse.Namespace, cwd: Path, session_id: str,
                         *, acknowledge: bool = False) -> dict[str, Any]:
     """Observe a persistent wall deadline; only an evidenced ack advances it."""
@@ -1534,6 +1531,10 @@ def record_native_action(business, payload, event, session_id, now):
             ) + 1
 
 
+# An unanswered checkpoint stays due in its state; its words are repeated at most this often.
+CHECKPOINT_REPEAT_MINUTES = 60
+
+
 def business_checkpoint(args, cwd: Path, session_id: str, payload: dict,
                         *, acknowledge: bool = False) -> dict[str, Any]:
     """Record hourly original-goal direction, independently of milestone acceptance.
@@ -1758,7 +1759,7 @@ def business_checkpoint(args, cwd: Path, session_id: str, payload: dict,
         previous = business.get("last_injected_at")
         if due and not acknowledge and event not in pauses and not (args.runtime == "codex" and event in {"precompact", "postcompact"}) and not (args.runtime == "opencode" and event in {"tool.execute.before", "permission.replied"}) and (not previous or
                 business.get("last_injected_review_id") != pending["id"] or
-                (now-parse_time(previous)).total_seconds() >= 300):
+                (now-parse_time(previous)).total_seconds() >= CHECKPOINT_REPEAT_MINUTES * 60):
             reminder = (
                 "Mandatory hourly LHC direction check: reread the original assignment and latest user corrections, "
                 "not only your plan. What result did the user receive this hour? SHA/test counts/registry updates alone do not answer. "
