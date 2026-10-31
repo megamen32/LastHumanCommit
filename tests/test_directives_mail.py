@@ -402,3 +402,20 @@ def test_an_unanswered_session_checkpoint_is_said_once_not_after_every_tool_call
         again = look(minutes)
         assert again["due"] and again["prompt"] == ""
     assert "120 wall-clock minutes" in look(182)["prompt"]      # an hour later it is said again
+
+
+def test_an_unanswered_hourly_direction_check_is_not_repeated_every_five_minutes(tmp_path):
+    import argparse
+    import lhc_time_guard as guard
+    t0 = datetime(2026, 10, 31, 3, 0, tzinfo=timezone.utc)
+    def look(minutes):
+        args = argparse.Namespace(runtime="claude", now=t0 + timedelta(minutes=minutes), event="")  # no native interval: the wall deadline decides
+        guard.learning_checkpoint(args, tmp_path, "s1")      # the hook observes the session first
+        return guard.business_checkpoint(args, tmp_path, "s1", {})
+    assert look(0)["prompt"] == ""
+    first = look(61)
+    assert first["due"] and "hourly LHC direction check" in first["prompt"]
+    for minutes in (62, 70, 118):
+        again = look(minutes)
+        assert again["due"] and again["prompt"] == ""
+    assert "hourly LHC direction check" in look(125)["prompt"]

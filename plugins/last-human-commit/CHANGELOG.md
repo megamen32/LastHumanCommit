@@ -1,3 +1,7 @@
+## 1.7.20
+
+- The hourly direction check is repeated at most once an hour while unanswered (it was every 5 minutes, each time with the long text and excerpts). Both time checkpoints now share one repeat interval; the state still records them as due.
+
 ## 1.7.19
 
 - The 120-minute session checkpoint is said once per deadline, then at most once an hour. Until the agent answered it with the evidence command it stayed due and the hook repeated the same text after every tool call, filling the context. The state still records the checkpoint as due; only the repetition is gone.
