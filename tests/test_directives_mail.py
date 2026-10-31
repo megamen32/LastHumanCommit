@@ -386,3 +386,19 @@ def test_opencode_install_replaces_a_stale_role_profile_and_links_the_skills(tmp
     skills = home / ".config/opencode/skills"
     assert any(p.is_symlink() for p in skills.iterdir())
     install.configure(home, plugin, "opencode")                           # a second run changes nothing
+
+
+def test_an_unanswered_session_checkpoint_is_said_once_not_after_every_tool_call(tmp_path):
+    import argparse
+    import lhc_time_guard as guard
+    t0 = datetime(2026, 10, 31, 3, 0, tzinfo=timezone.utc)
+    def look(minutes):
+        return guard.learning_checkpoint(argparse.Namespace(runtime="claude", now=t0 + timedelta(minutes=minutes)),
+                                         tmp_path, "s1")
+    assert look(0)["prompt"] == ""                              # first observation starts the clock
+    first = look(121)
+    assert "120 wall-clock minutes" in first["prompt"] and first["due"]
+    for minutes in (122, 130, 170):                             # still due, not repeated
+        again = look(minutes)
+        assert again["due"] and again["prompt"] == ""
+    assert "120 wall-clock minutes" in look(182)["prompt"]      # an hour later it is said again

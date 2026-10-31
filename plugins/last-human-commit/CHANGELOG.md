@@ -1,3 +1,7 @@
+## 1.7.19
+
+- The 120-minute session checkpoint is said once per deadline, then at most once an hour. Until the agent answered it with the evidence command it stayed due and the hook repeated the same text after every tool call, filling the context. The state still records the checkpoint as due; only the repetition is gone.
+
 ## 1.7.18
 
 - A finished plan shows when it finished. Leaves that recorded only a time of day ("23:26") now give a real finish: the clock is placed on the last day not past the plan's last update. The page no longer says "Фактический финиш не зафиксирован" for a plan whose every leaf is done.
