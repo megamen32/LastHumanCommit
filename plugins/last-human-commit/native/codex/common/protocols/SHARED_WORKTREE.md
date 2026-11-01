@@ -18,7 +18,7 @@ adopt another task's uncommitted changes or reset the shared primary checkout.
 
 1. Commit coherent scoped steps and push the task branch. Branch publication is
    independent: nobody waits for other tasks to finish.
-2. Open/update a draft PR into the permitted target. Record owning session,
+2. Open/update a draft PR into the permitted target, with the LHC plan link. Record owning session,
    worktree, branch, exact HEAD and PR URL in the task.
 3. Run `lhc_worktree.py delivery --repo <task-worktree> --target <target>`.
    It reads the remote itself, not a stale tracking ref, and checks that the
@@ -30,8 +30,11 @@ adopt another task's uncommitted changes or reset the shared primary checkout.
 5. After an authorized merge, verify the integrated revision once. Keep source
    published, merged, installed and consumer-verified states separate.
 
-A local worktree, unpushed commit or pushed branch without a PR is unfinished
-publication. A reviewed PR awaiting an actual approval is a precise blocker,
+A local worktree or unpushed commit is not durable publication. A pushed branch
+is valid work in progress; an early draft PR is recommended for visibility of
+unfinished work. Include the LHC plan link; confirm its intended audience and
+access controls before adding private content. Mark ready only after implementation,
+tests and review are complete. Draft publication is not merge readiness. A reviewed PR awaiting an actual approval is a precise blocker,
 not a reason to discard the branch or pretend the change is installed.
 
 ## Shared runtime
@@ -60,5 +63,19 @@ an equivalent fenced lease.
 
 Record branch/remote HEAD/PR, authorized integration revision, lease owner/fence
 reference (never secret values), actual deployed revision and consumer proof.
-Remove only your own clean worktree after its commits are integrated. Never
+On terminal session end, collect the read-only project inventory:
+`lhc_worktree.py inventory --repo <project> --target <verified-target>`.
+It reports Git facts, not session liveness or cleanup permission. Correlate paths
+with Agent Herder's authoritative session registry; unknown ownership is not inactive.
+The last active worker owns whole-project integration, verification and cleanup.
+Account for every task branch, contact peers through SendMessage, and integrate
+known reviewed changes through PRs under the applicable approval policy. Never
+blindly merge unknown branches. A required approval or conflict remains a visible
+blocker, not an excuse to discard work or claim completion.
+Clean up only merged, clean, confirmed-inactive worktrees/branches after rechecking
+their exact HEAD, target ancestry and session ownership under project coordination.
+Preserve primary/target checkouts, active or locked worktrees, dirty/conflicted,
+unmerged and unknown work. No force removal, reset, stash-all or branch -D.
+If the last worker exits before integration completes, record the successor or
+explicit pending integration blocker; session completion is not project completion. Never
 report publication or a lease receipt as business acceptance.

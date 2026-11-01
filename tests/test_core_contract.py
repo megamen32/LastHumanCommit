@@ -65,13 +65,17 @@ def test_owner_repository_merges_to_main_and_foreign_repository_to_the_owner_bra
     assert package.read_bytes() == (ROOT / "src/common/templates/project.md").read_bytes()
 
 
-def test_parallel_sessions_do_not_wait_for_an_elected_integrator():
+def test_branch_publication_is_independent_but_last_worker_integrates():
     # Sessions in separate worktrees waited for a self-elected "release owner"
     # who forgot it was the owner.
     sources = " ".join(flat(path) for path in (
         ROUTER, "src/common/protocols/SHARED_WORKTREE.md",
         "src/common/protocols/OUTCOME_CONTRACT.md", "PRODUCT-PHILOSOPHY.md"))
-    assert "no shared integrator" in sources
+    assert "last active worker owns" in sources
+    assert "confirmed-inactive" in sources
+    assert "Never blindly merge unknown branches" in sources
+    assert "an early draft PR is recommended" in sources
+    assert "LHC plan link" in sources
     assert "nobody waits" in sources
     for retired in ("one published dev history is mandatory", "unified published dev history",
                     "Airlock converges on megamen32-dev; Oleg owns upstream main"):

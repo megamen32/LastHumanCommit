@@ -32,7 +32,7 @@ def task(tmp_path, monkeypatch):
     run("git", "-C", str(main), "worktree", "add", "-b", "task/test", str(work))
     head = mod.git(work, "rev-parse", "HEAD")
     pr = {"headRefName": "task/test", "headRefOid": head, "baseRefName": "main",
-          "url": "https://example.invalid/pull/1", "state": "OPEN", "isDraft": True}
+          "url": "https://example.invalid/pull/1", "state": "OPEN", "isDraft": False}
     actual_run = subprocess.run
     real_git = mod.git
     def remote_git(repo, *args, **kwargs):
@@ -104,12 +104,12 @@ def test_local_remote_tracking_ref_does_not_prove_push(task):
         mod.delivery(work, "main")
 
 
-def test_exact_published_draft_is_review_not_merge_or_deploy(task):
+def test_exact_published_ready_pr_is_not_merge_or_deploy(task):
     _, work, _ = task
     publish(work)
     result = mod.delivery(work, "main")
     assert result["status"] == "published_for_review"
-    assert result["draft"] is True
+    assert result["draft"] is False
     assert result["merge_authorized"] is False
     assert result["deployment_verified"] is False
 
@@ -153,3 +153,40 @@ def test_checkout_change_during_pr_lookup_is_rejected(task, monkeypatch):
     monkeypatch.setattr(mod.subprocess, "run", racing_run)
     with pytest.raises(ValueError, match="checkout changed"):
         mod.delivery(work, "main")
+
+def test_draft_pr_is_not_ready_delivery(task):
+    _, work, pr = task
+    publish(work)
+    pr["isDraft"] = True
+    result = mod.delivery(work, "main")
+    assert result["draft"] and not result["pr_marked_ready"]
+    assert not result["merge_authorized"]
+
+
+def test_inventory_is_read_only_and_does_not_infer_inactivity(task):
+    main, work, _ = task
+    (work / "keep").write_text("foreign dirty work")
+    result = mod.inventory(main, "main")
+    item = next(x for x in result["worktrees"] if x["path"] == str(work))
+    assert item["dirty"] and item["merged"]
+    assert item["activity"] == "unknown"
+    assert not item["cleanup_authorized"]
+    assert (work / "keep").read_text() == "foreign dirty work"
+
+
+def test_inventory_holds_unmerged_locked_branch(task):
+    main, work, _ = task
+    (work / "one").write_text("new")
+    mod.git(work, "commit", "-am", "new task")
+    mod.git(main, "worktree", "lock", str(work))
+    result = mod.inventory(main, "main")
+    item = next(x for x in result["worktrees"] if x["path"] == str(work))
+    assert item["locked"] and not item["merged"]
+    assert not item["cleanup_authorized"]
+    assert mod.git(work, "rev-parse", "HEAD") == item["head"]
+
+
+def test_inventory_rejects_missing_target(task):
+    main, _, _ = task
+    with pytest.raises(ValueError):
+        mod.inventory(main, "does-not-exist")

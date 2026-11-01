@@ -158,14 +158,20 @@ own repository) or the external owner's name; `target:` the branch PRs go into;
 
 Each task owns an isolated Git worktree and task branch from the verified target.
 Do not implement in shared `main`, even if no peer is visible yet. Commit coherent
-steps, push the task branch, and open/update its draft PR. A worktree or local
-commit is not delivery. There is no shared integrator: other tasks may continue;
+steps, push the task branch, and open/update its draft PR for visibility, with the LHC plan link. A worktree or local
+commit is not delivery. The last active worker owns project integration and verification; other tasks may continue;
 nobody waits for a project-wide batch just to publish their branch. Never force
 push, stash, reset or delete foreign work.
 
 Before declaring source ready, run the read-only gate:
 `python3 src/common/tools/lhc_worktree.py delivery --repo <task-worktree> --target <target>`.
-It verifies clean isolated work, exact remote HEAD and an open matching PR.
+It verifies clean isolated work, exact remote HEAD and an open matching PR (draft is valid publication, not merge readiness).
+Push freely during work; early draft PRs make unfinished work visible. Include the
+LHC plan link and mark ready only after implementation, tests and review are complete.
+At terminal session end run the read-only worktree inventory. The last active worker
+owns whole-project integration/verification and cleans only merged, clean,
+confirmed-inactive worktrees/branches. Keep all other work and blockers visible;
+never blindly merge unknown branches. See SHARED_WORKTREE.md for the handoff.
 Record branch, commit and PR URL with the owning session in the task. A green
 gate is not merge/deploy permission. If target moved, fetch and reconcile in the
 task branch, rerun affected checks and update the PR. Merge through that PR only

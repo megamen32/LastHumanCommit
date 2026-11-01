@@ -237,13 +237,45 @@ def delivery(repo: Path, target: str, remote: str = "origin") -> dict:
     return {"branch": branch, "head": head, "remote": remote,
             "repository": repository, "target": target,
             "pr_url": pr["url"], "draft": pr.get("isDraft") is True,
-            "status": "published_for_review", "merge_authorized": False,
+            "status": "published_for_review", "pr_marked_ready": pr.get("isDraft") is False,
+            "merge_authorized": False,
             "deployment_verified": False}
+
+
+def inventory(repo: Path, target: str) -> dict:
+    """Read-only Git facts; callers must establish session ownership separately."""
+    target_head = git(repo, "rev-parse", "--verify", "--end-of-options", target + "^{commit}")
+    entries = []
+    for record in worktrees(repo):
+        path = Path(record["worktree"])
+        entry = {"path": str(path), "branch": record.get("branch"),
+                 "head": record.get("HEAD"), "locked": "locked" in record,
+                 "prunable": "prunable" in record, "activity": "unknown",
+                 "cleanup_authorized": False}
+        try:
+            if "bare" in record or "prunable" in record or not path.exists():
+                raise ValueError("worktree unavailable")
+            head = git(path, "rev-parse", "HEAD")
+            entry.update(head=head, primary=absolute_git_dir(path) == common_dir(repo),
+                         dirty=bool(git(path, "status", "--porcelain")),
+                         conflicted=bool(git(path, "ls-files", "--unmerged")))
+            check = subprocess.run(["git", "-C", str(repo), "merge-base", "--is-ancestor",
+                                    head, target_head], capture_output=True, text=True)
+            if check.returncode not in (0, 1):
+                raise ValueError(check.stderr.strip() or "ancestry check failed")
+            entry["merged"] = check.returncode == 0
+            entry["head_unchanged"] = git(path, "rev-parse", "HEAD") == head
+        except (ValueError, OSError) as exc:
+            entry["error"] = str(exc)
+        entries.append(entry)
+    return {"common_dir": str(common_dir(repo)), "target": target,
+            "target_head": target_head, "worktrees": entries,
+            "read_only": True, "cleanup_authorized": False}
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("plan", "create", "delivery"))
+    parser.add_argument("action", choices=("plan", "create", "delivery", "inventory"))
     parser.add_argument("--repo", type=Path, required=True)
     parser.add_argument("--task")
     parser.add_argument("--target", default="main", help="PR integration target for delivery")
@@ -251,7 +283,9 @@ def main() -> None:
     parser.add_argument("--base", help="resolve from primary checkout; required for create")
     args = parser.parse_args()
     try:
-        if args.action == "delivery":
+        if args.action == "inventory":
+            result = inventory(args.repo, args.target)
+        elif args.action == "delivery":
             result = delivery(args.repo, args.target, args.remote)
         else:
             if not args.task:

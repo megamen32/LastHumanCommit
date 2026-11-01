@@ -113,7 +113,7 @@ identity, expected/observed results and current accepted completion boundaries.
 Dev and test environments named in `.agents/PROJECT.md` (`dev`) or
 `TEST_ACCESS.md` are pre-authorized for the task's deploys. Production needs the owner's explicit word. The integration
 target comes from `AGENTS.md` (Delivery). Publish the isolated task branch and
-open a draft PR; `lhc_worktree.py delivery` verifies exact remote HEAD/PR evidence.
+open a draft PR for visibility, with the LHC plan link; mark ready only after tests and review; `lhc_worktree.py delivery` verifies exact remote HEAD/PR evidence.
 Green checks do not authorize merge or approve the PR. Follow the owner and
 active harness approval requirements. After an authorized merge, check the
 integrated result once. Before shared-runtime mutation, acquire and check the
