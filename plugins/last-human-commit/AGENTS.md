@@ -171,7 +171,11 @@ LHC plan link and mark ready only after implementation, tests and review are com
 At terminal session end run the read-only worktree inventory. The last active worker
 owns whole-project integration/verification and cleans only merged, clean,
 confirmed-inactive worktrees/branches. Keep all other work and blockers visible;
-never blindly merge unknown branches. See SHARED_WORKTREE.md for the handoff.
+never blindly merge unknown branches. If bounded lookup finds no active owner,
+take responsibility: inspect the existing diff, record it in the current plan,
+review/test it and finish its integration. Do not abandon it as "foreign work".
+No owner found is not proof of correctness or permission to skip merge/release
+checks. See SHARED_WORKTREE.md for the adoption and handoff procedure.
 Record branch, commit and PR URL with the owning session in the task. A green
 gate is not merge/deploy permission. If target moved, fetch and reconcile in the
 task branch, rerun affected checks and update the PR. Merge through that PR only

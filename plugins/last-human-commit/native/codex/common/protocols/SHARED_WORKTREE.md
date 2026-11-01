@@ -79,3 +79,27 @@ unmerged and unknown work. No force removal, reset, stash-all or branch -D.
 If the last worker exits before integration completes, record the successor or
 explicit pending integration blocker; session completion is not project completion. Never
 report publication or a lease receipt as business acceptance.
+
+
+## Existing work without an active owner
+
+Do a bounded owner lookup using current session/declaration state, recent
+coordination records and process evidence; record which sources were checked.
+An unresponsive or ambiguous owner is not automatically inactive. If no active
+owner is found, the current worker must adopt responsibility for finishing the
+work instead of leaving a permanent "foreign work" blocker.
+
+Inventory and preserve exact branch/commit identities and dirty diffs first.
+Add the adoption, evidence, intended integration and acceptance checks to the
+existing project plan. Inspect the full diff and its dependencies, review and
+test it, then finish integration through the permitted PR/release path.
+Do not blindly copy dirty files, reset another checkout, bulk-stash, discard
+changes or silently claim the diff is trusted. Preserve original evidence and
+recheck ownership before mutation; if an active owner appears, coordinate.
+
+Ownership adoption is an obligation to investigate and finish, not automatic
+acceptance or merge/deploy authorization. Conflicts, unsafe changes or required
+approval remain explicit actionable blockers owned by the adopting worker.
+Continue unblocked work, arrange the needed review/approval, and report the
+precise remaining action rather than abandoning the branch. Clean up only under
+the merged, clean, confirmed-inactive rules above, never from owner absence alone.

@@ -145,3 +145,14 @@ def test_parallel_release_requires_published_task_pr_and_fenced_lease():
     for required in ("SendMessage", "TTL", "finally", "foreign lease", "stale fence"):
         assert required in protocol
     assert "Mergeable and green: merge" not in protocol
+
+
+def test_ownerless_work_is_adopted_after_bounded_lookup_not_blindly_merged():
+    router = flat(ROUTER)
+    protocol = flat("src/common/protocols/SHARED_WORKTREE.md")
+    assert "bounded lookup finds no active owner" in router
+    assert "record it in the current plan" in router
+    assert "current worker must adopt responsibility" in protocol
+    assert "not automatic acceptance or merge/deploy authorization" in protocol
+    assert "recheck ownership before mutation" in protocol
+    assert "never from owner absence alone" in protocol
