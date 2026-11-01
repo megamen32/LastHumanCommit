@@ -140,11 +140,12 @@ own repository) or the external owner's name; `target:` the branch PRs go into;
 
 ## Delivery
 
-- **The owner's repository:** feature branch → PR into `main` → merge as soon as
-  checks are green.
+- **The owner's repository:** isolated task worktree → commit → push task branch →
+  draft PR into `main`. Green checks are evidence, not merge authorization;
+  follow the active harness and owner approval requirements.
 - **Someone else's repository:** branch from the owner's own branch in that repo
-  (`target`, e.g. `megamen32-dev` in Airlock) → PR into that branch → merge when
-  green. Never push, merge or open a PR into the external owner's `main`; that
+  (`target`, e.g. `megamen32-dev` in Airlock) → draft PR into that branch.
+  Merge only with the applicable owner and harness authorization. Never push, merge or open a PR into the external owner's `main`; that
   handoff is the owner's decision. Before that PR a fresh **Maintainer** reads
   the project's rules, then the diff; fix or answer every finding.
 - **Services:** deploy blue-green with the test circuit (new color beside the old,
@@ -153,18 +154,47 @@ own repository) or the external owner's name; `target:` the branch PRs go into;
 - **Unknown ownership:** treat as someone else's. If no owner branch exists, ask
   once (with a default) and continue other work.
 
-## Parallel sessions do not wait for each other
+## Parallel sessions publish independently; release one project at a time
 
-Each session delivers its own task; there is no shared integrator. Merge your own
-PR as soon as it is green; if the target moved, fetch, merge it into your branch,
-rerun the affected checks, merge; nobody waits for another session. Only the dev
-deploy is serialized: take the project deploy lock (Agent Herder workspace
-reservation or the project chat), deploy, test, release. Production release stays
-the owner's decision. No force push, no deleting foreign work.
+Each task owns an isolated Git worktree and task branch from the verified target.
+Do not implement in shared `main`, even if no peer is visible yet. Commit coherent
+steps, push the task branch, and open/update its draft PR for visibility, with the LHC plan link. A worktree or local
+commit is not delivery. The last active worker owns project integration and verification; other tasks may continue;
+nobody waits for a project-wide batch just to publish their branch. Never force
+push, stash, reset or delete foreign work.
 
-If another session may write the repo, use a Git worktree (`src/common/tools/lhc_worktree.py`,
-`<primary-root>/.worktrees/<task>`); one owner per task, file and runtime. Peers:
-`COORDINATION.md`, `SHARED_WORKTREE.md` in `src/common/protocols/`.
+Before declaring source ready, run the read-only gate:
+`python3 src/common/tools/lhc_worktree.py delivery --repo <task-worktree> --target <target>`.
+It verifies clean isolated work, exact remote HEAD and an open matching PR (draft is valid publication, not merge readiness).
+Push freely during work; early draft PRs make unfinished work visible. Include the
+LHC plan link and mark ready only after implementation, tests and review are complete.
+At terminal session end run the read-only worktree inventory. The last active worker
+owns whole-project integration/verification and cleans only merged, clean,
+confirmed-inactive worktrees/branches. Keep all other work and blockers visible;
+never blindly merge unknown branches. See SHARED_WORKTREE.md for the handoff.
+Record branch, commit and PR URL with the owning session in the task. A green
+gate is not merge/deploy permission. If target moved, fetch and reconcile in the
+task branch, rerun affected checks and update the PR. Merge through that PR only
+under the active approval policy; never direct-push the integration branch.
+
+Before changing a shared runtime, use Agent Herder `project_release_lease`:
+`status` shows owner session, expiry/remaining time and its `SendMessage` target;
+`acquire` claims only this project, `renew` extends valid ownership, and `check`
+verifies the current token/fence immediately before the release. Re-read the
+deployed revision and enforce the release entrypoint's expected-revision compare
+and swap. If either changed, do not overwrite a newer release. The lease is not
+permission to deploy and is not a substitute for the target's release gate.
+
+Release in `finally`; session terminal hooks release on end/abort/error/stop,
+not every ordinary turn end. Crash recovery is bounded by TTL. A resumed stale
+session must acquire a new lease, never reuse its old fence. Do not release or
+steal another session's lease; use the reported `SendMessage` target. Different
+projects remain independent. Explicitly authorized rollback is a separate,
+checked operation, never an implicit stale-candidate deploy.
+
+If the installed Herder has no release-lease capability yet, report that exact
+release blocker and continue branch work; do not replace it with a chat promise.
+Details: `src/common/protocols/SHARED_WORKTREE.md` and `COORDINATION.md`.
 
 ## Time
 
