@@ -1,3 +1,7 @@
+## 1.7.21
+
+- Publish the reviewed isolated-worktree, project release lease, last-worker integration and ownerless-work adoption workflow from PRs #51 and #52. A new native package version ensures installed clients receive these changes instead of retaining cached 1.7.20 instructions.
+
 ## 1.7.20
 
 - The hourly direction check is repeated at most once an hour while unanswered (it was every 5 minutes, each time with the long text and excerpts). Both time checkpoints now share one repeat interval; the state still records them as due.
