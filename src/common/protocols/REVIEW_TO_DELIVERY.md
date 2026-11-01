@@ -112,8 +112,13 @@ identity, expected/observed results and current accepted completion boundaries.
 
 Dev and test environments named in `.agents/PROJECT.md` (`dev`) or
 `TEST_ACCESS.md` are pre-authorized for the task's deploys. Production needs the owner's explicit word. The integration
-target from `AGENTS.md` (Delivery) is pre-authorized: mergeable and green means
-merge. After merge, check the integrated result once.
+target comes from `AGENTS.md` (Delivery). Publish the isolated task branch and
+open a draft PR; `lhc_worktree.py delivery` verifies exact remote HEAD/PR evidence.
+Green checks do not authorize merge or approve the PR. Follow the owner and
+active harness approval requirements. After an authorized merge, check the
+integrated result once. Before shared-runtime mutation, acquire and check the
+Agent Herder project release lease and expected live revision as described in
+`SHARED_WORKTREE.md`; release in `finally`, never deploy with a stale fence.
 
 A running build is live work: keep its job ID and wait for it instead of
 duplicating or cancelling it. Do not repeat access or status checks when nothing

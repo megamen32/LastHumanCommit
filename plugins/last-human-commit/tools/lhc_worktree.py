@@ -10,6 +10,7 @@ from pathlib import Path
 import re
 import subprocess
 import sys
+from urllib.parse import urlparse
 
 
 def git(repo: Path, *args: str, check: bool = True) -> str:
@@ -178,16 +179,85 @@ def assignment(repo: Path, task: str, base_ref: str | None, create: bool) -> dic
     return result
 
 
+def pr_repository(repo: Path, remote: str) -> str:
+    """Bind gh to the selected remote, not GH_REPO or an ambient default."""
+    url = git(repo, "remote", "get-url", remote)
+    if "://" not in url:
+        match = re.fullmatch(r"(?:[^@/:]+@)?([^/:]+):([^?#]+)", url)
+        if not match:
+            raise ValueError("delivery requires a supported GitHub remote URL")
+        host, path = match.groups()
+    else:
+        parsed = urlparse(url)
+        if parsed.scheme not in ("https", "ssh") or parsed.query or parsed.fragment:
+            raise ValueError("delivery requires a supported GitHub remote URL")
+        host, path = parsed.hostname or "", parsed.path.lstrip("/")
+    path = path.removesuffix(".git").rstrip("/")
+    if not host or not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", path):
+        raise ValueError("delivery requires an owner/repository remote")
+    return host + "/" + path
+
+
+def delivery(repo: Path, target: str, remote: str = "origin") -> dict:
+    """Verify a task is committed, remotely published and represented by a PR.
+
+    Read-only. A green receipt is not merge/deploy authorization and does not
+    replace the project release lease immediately before a runtime mutation.
+    """
+    branch = git(repo, "symbolic-ref", "--quiet", "--short", "HEAD", check=False)
+    if not branch or branch == target:
+        raise ValueError("delivery requires a task branch, not detached HEAD or the target branch")
+    if absolute_git_dir(repo) == common_dir(repo):
+        raise ValueError("delivery requires an isolated task worktree")
+    if git(repo, "status", "--porcelain"):
+        raise ValueError("commit scoped changes and preserve foreign work before delivery")
+    head = git(repo, "rev-parse", "HEAD")
+    # Query the remote itself: a local remote-tracking ref is not push evidence.
+    published = git(repo, "ls-remote", "--exit-code", remote, "refs/heads/" + branch)
+    if published.split() != [head, "refs/heads/" + branch]:
+        raise ValueError("task HEAD is not published on the remote branch")
+    repository = pr_repository(repo, remote)
+    result = subprocess.run(
+        ["gh", "pr", "view", branch, "--repo", repository, "--json",
+         "headRefName,headRefOid,baseRefName,url,state,isDraft"],
+        cwd=repo, capture_output=True, text=True, timeout=30,
+    )
+    if result.returncode:
+        raise ValueError("open a draft PR for the published task branch before delivery")
+    try:
+        pr = json.loads(result.stdout)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("invalid PR evidence") from exc
+    if (not isinstance(pr, dict) or pr.get("headRefName") != branch
+            or pr.get("headRefOid") != head or pr.get("baseRefName") != target
+            or pr.get("state") != "OPEN" or not pr.get("url")):
+        raise ValueError("PR must be open and match the exact task HEAD and target")
+    if git(repo, "rev-parse", "HEAD") != head or git(repo, "status", "--porcelain"):
+        raise ValueError("checkout changed while collecting publication evidence")
+    return {"branch": branch, "head": head, "remote": remote,
+            "repository": repository, "target": target,
+            "pr_url": pr["url"], "draft": pr.get("isDraft") is True,
+            "status": "published_for_review", "merge_authorized": False,
+            "deployment_verified": False}
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("plan", "create"))
+    parser.add_argument("action", choices=("plan", "create", "delivery"))
     parser.add_argument("--repo", type=Path, required=True)
-    parser.add_argument("--task", required=True)
+    parser.add_argument("--task")
+    parser.add_argument("--target", default="main", help="PR integration target for delivery")
+    parser.add_argument("--remote", default="origin", help="remote to verify for delivery")
     parser.add_argument("--base", help="resolve from primary checkout; required for create")
     args = parser.parse_args()
     try:
-        result = assignment(args.repo, args.task, args.base, args.action == "create")
-    except (ValueError, OSError) as exc:
+        if args.action == "delivery":
+            result = delivery(args.repo, args.target, args.remote)
+        else:
+            if not args.task:
+                raise ValueError("--task is required for plan/create")
+            result = assignment(args.repo, args.task, args.base, args.action == "create")
+    except (ValueError, OSError, subprocess.TimeoutExpired) as exc:
         parser.exit(2, f"error: {exc}\n")
     print(json.dumps(result, ensure_ascii=False, sort_keys=True))
 

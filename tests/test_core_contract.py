@@ -55,7 +55,8 @@ def test_workers_return_blockers_instead_of_hunting_routes():
 
 def test_owner_repository_merges_to_main_and_foreign_repository_to_the_owner_branch():
     router = flat(ROUTER)
-    assert "feature branch → PR into `main` → merge as soon as checks are green" in router
+    assert "draft PR into `main`" in router
+    assert "Green checks are evidence, not merge authorization" in router
     assert "Never push, merge or open a PR into the external owner's `main`" in router
     template = (ROOT / "src/common/templates/project.md").read_text()
     for field in ("owner:", "target:", "dev:"):
@@ -127,3 +128,16 @@ def test_time_reminders_never_tell_the_agent_to_stop(tmp_path):
     assert "30-minute plan report" in prompt and "60-minute direction check" in prompt
     assert "keep working" in prompt
     assert "never ends the turn" in prompt and "never a reason to stop" in prompt
+
+
+def test_parallel_release_requires_published_task_pr_and_fenced_lease():
+    router = flat(ROUTER)
+    assert "Do not implement in shared `main`" in router
+    assert "lhc_worktree.py delivery" in router
+    assert "project_release_lease" in router
+    assert "expected-revision compare and swap" in router
+    assert "not every ordinary turn end" in router
+    protocol = flat("src/common/protocols/SHARED_WORKTREE.md")
+    for required in ("SendMessage", "TTL", "finally", "foreign lease", "stale fence"):
+        assert required in protocol
+    assert "Mergeable and green: merge" not in protocol

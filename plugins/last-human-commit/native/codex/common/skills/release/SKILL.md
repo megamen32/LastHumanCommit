@@ -21,7 +21,18 @@ unknown/revoked operations stay blocked. Sudo alone never grants authority.
    and exact release canary.
 2. Use only the review/testing/rollback gates justified by this action's actual
    blast radius and reversibility.
-3. Revalidate target and evidence immediately before action.
+3. Before merge, verify published task branch and matching PR with `lhc_worktree.py delivery`;
+   source evidence is not merge/deploy authorization. After an authorized merge,
+   do not require an open PR or task checkout: verify the merged PR/commit is on
+   the current permitted target and the candidate artifact is built from that
+   exact revision. Acquire the existing
+   Agent Herder `project_release_lease` for this canonical project, inspect its
+   status/owner and use the returned `SendMessage` target for contention.
+   Immediately before mutation, check token/fence and compare the expected
+   deployed revision with the actual revision. A stale owner or newer release
+   blocks the candidate. Release in `finally`; terminal lifecycle hooks and TTL
+   are recovery, not permission to bypass ownership. Do not use normal turn end
+   as session termination. Keep authorized rollback explicit.
 4. Record source/test proof, release state, and post-action business proof
    separately.
 
