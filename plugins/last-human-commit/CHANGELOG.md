@@ -1,3 +1,7 @@
+## 1.7.22
+
+- Optional PR stage at build time: publish with `--pr-stage off` to omit PR creation and matching-URL checks while retaining isolated branches, remote publication, independent review, authorized final merge, deployment and real consumer acceptance. Default remains on.
+
 ## 1.7.21
 
 - Publish the reviewed isolated-worktree, project release lease, last-worker integration and ownerless-work adoption workflow from PRs #51 and #52. A new native package version ensures installed clients receive these changes instead of retaining cached 1.7.20 instructions.

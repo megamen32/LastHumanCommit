@@ -6,6 +6,7 @@ import argparse
 import ast
 import importlib.util
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
@@ -198,8 +199,32 @@ def pr_repository(repo: Path, remote: str) -> str:
     return host + "/" + path
 
 
-def delivery(repo: Path, target: str, remote: str = "origin") -> dict:
-    """Verify a task is committed, remotely published and represented by a PR.
+def configured_pr_stage() -> str:
+    """Read existing user LHC config first, then built package, then PR-on.
+
+    Existing LHC preferences are under ~/.config/lhc; PR-off on one user's
+    installation should not change the default mode of all marketplace users.
+    Both common/tools and tools facades support the same package layout.
+    """
+    parent = Path(__file__).resolve().parent.parent
+    config_home = Path(os.environ.get("XDG_CONFIG_HOME") or Path.home() / ".config")
+    user_config = config_home / "lhc/workflow.json"
+    bases = (parent.parent, parent) if parent.name == "common" else (parent, parent / "common")
+    for path in [user_config, *(base / "config/workflow.json" for base in bases)]:
+        if path.is_file():
+            try:
+                data = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError) as exc:
+                raise ValueError("invalid workflow config") from exc
+            stage = data.get("pr_stage", "on") if isinstance(data, dict) else None
+            if stage not in ("on", "off"):
+                raise ValueError("pr_stage must be on or off")
+            return stage
+    return "on"
+
+
+def delivery(repo: Path, target: str, remote: str = "origin", *, pr_stage: str | None = None) -> dict:
+    """Verify a task is committed, remotely published and (if configured) in a PR.
 
     Read-only. A green receipt is not merge/deploy authorization and does not
     replace the project release lease immediately before a runtime mutation.
@@ -213,10 +238,25 @@ def delivery(repo: Path, target: str, remote: str = "origin") -> dict:
         raise ValueError("commit scoped changes and preserve foreign work before delivery")
     head = git(repo, "rev-parse", "HEAD")
     # Query the remote itself: a local remote-tracking ref is not push evidence.
-    published = git(repo, "ls-remote", "--exit-code", remote, "refs/heads/" + branch)
+    published = git(repo, "ls-remote", "--exit-code", remote, "refs/heads/" + branch, check=False)
     if published.split() != [head, "refs/heads/" + branch]:
         raise ValueError("task HEAD is not published on the remote branch")
     repository = pr_repository(repo, remote)
+    stage = pr_stage if pr_stage is not None else configured_pr_stage()
+    if stage not in ("on", "off"):
+        raise ValueError("pr_stage must be on or off")
+    if stage == "off":
+        # A PR-free publication is a handoff to review/integration, never a
+        # bypass of host branch protection or permission to deploy.
+        target_ref = "refs/heads/" + target
+        remote_target = git(repo, "ls-remote", "--exit-code", remote, target_ref, check=False)
+        if not remote_target or git(repo, "rev-parse", "HEAD") != head or git(repo, "status", "--porcelain"):
+            raise ValueError("checkout or target changed while collecting publication evidence")
+        return {"branch": branch, "head": head, "remote": remote,
+                "repository": repository, "target": target,
+                "pr_stage": "off", "pr_required": False,
+                "status": "published_without_pr", "integration_required": True,
+                "merge_authorized": False, "deployment_verified": False}
     result = subprocess.run(
         ["gh", "pr", "view", branch, "--repo", repository, "--json",
          "headRefName,headRefOid,baseRefName,url,state,isDraft"],
@@ -236,6 +276,7 @@ def delivery(repo: Path, target: str, remote: str = "origin") -> dict:
         raise ValueError("checkout changed while collecting publication evidence")
     return {"branch": branch, "head": head, "remote": remote,
             "repository": repository, "target": target,
+            "pr_stage": "on", "pr_required": True, "integration_required": True,
             "pr_url": pr["url"], "draft": pr.get("isDraft") is True,
             "status": "published_for_review", "pr_marked_ready": pr.get("isDraft") is False,
             "merge_authorized": False,
@@ -280,13 +321,14 @@ def main() -> None:
     parser.add_argument("--task")
     parser.add_argument("--target", default="main", help="PR integration target for delivery")
     parser.add_argument("--remote", default="origin", help="remote to verify for delivery")
+    parser.add_argument("--pr-stage", choices=("on", "off"), help="override the built package PR stage for this check")
     parser.add_argument("--base", help="resolve from primary checkout; required for create")
     args = parser.parse_args()
     try:
         if args.action == "inventory":
             result = inventory(args.repo, args.target)
         elif args.action == "delivery":
-            result = delivery(args.repo, args.target, args.remote)
+            result = delivery(args.repo, args.target, args.remote, pr_stage=args.pr_stage)
         else:
             if not args.task:
                 raise ValueError("--task is required for plan/create")

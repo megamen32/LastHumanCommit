@@ -55,9 +55,28 @@ Architecture, decomposition, independent review/testing and learning tools remai
 available; scheduled inspection is required even when the current plan looks correct. The complete default workflow is in
 [AGENTS.md](AGENTS.md). Details: [1.4 changes](docs/V1.4.md).
 
+## Optional PR stage (1.7.22)
+
+Build with the existing package publisher: run
+`python3 scripts/publish_package.py --pr-stage on` (the default) or
+`python3 scripts/publish_package.py --pr-stage off`.
+The selected mode is stored in each native bundle's
+`config/workflow.json` and read by the worktree delivery gate.
+The config is built into the artifact; to disable PR only for one
+installation, set `{"pr_stage": "off"}` in the existing user
+LHC config directory at `~/.config/lhc/workflow.json` (or
+`$XDG_CONFIG_HOME/lhc/workflow.json`). This overrides the package default
+without modifying a versioned cache or other users' installations. Check an off build with
+`python3 scripts/publish_package.py --check --pr-stage off`.
+
+With PR-off, the task branch must still be isolated, committed and pushed.
+Review, final authorized merge, build, deploy, rollback and real-consumer
+testing remain mandatory. Branch protection or a host requiring PR is not
+overridden. Only the creation/checking of a PR and its URL are disabled.
+
 ## Package and installation
 
-The native Agent Plugin is `plugins/last-human-commit`, version 1.5.38, with the full
+The native Agent Plugin is `plugins/last-human-commit`, version 1.7.22, with the full
 optional skill set (validated by `plugins/last-human-commit/scripts/validate.py`),
 instruction-only startup hooks and time-only reminders. Use the harness's native plugin manager.
 For clients whose plugin hooks are unavailable or still await trust, the package

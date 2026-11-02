@@ -140,46 +140,59 @@ own repository) or the external owner's name; `target:` the branch PRs go into;
 
 ## Delivery
 
-- **The owner's repository:** isolated task worktree → commit → push task branch →
-  draft PR into `main`. Green checks are evidence, not merge authorization;
-  follow the active harness and owner approval requirements.
-- **Someone else's repository:** branch from the owner's own branch in that repo
-  (`target`, e.g. `megamen32-dev` in Airlock) → draft PR into that branch.
-  Merge only with the applicable owner and harness authorization. Never push, merge or open a PR into the external owner's `main`; that
-  handoff is the owner's decision. Before that PR a fresh **Maintainer** reads
-  the project's rules, then the diff; fix or answer every finding.
-- **Services:** deploy blue-green with the test circuit (new color beside the old,
-  tests pass on it, traffic switches, rollback = switch back): no customer downtime.
-  A service without it: building it is a leaf.
-- **Unknown ownership:** treat as someone else's. If no owner branch exists, ask
-  once (with a default) and continue other work.
+Set `pr_stage: on|off` at build time with
+`python3 scripts/publish_package.py --pr-stage on|off` or per user in
+`~/.config/lhc/workflow.json` (higher priority). Missing config defaults to `on`. Read the effective installed config, not an assumed mode.
+`off` removes only PR creation/URL checks, **not** branch ownership,
+commit/push, independent review, tests, final merge, build, deployment or
+consumer acceptance. Host branch protection and human/harness gates still win.
+
+- **The owner's repository:** isolated task worktree → commit → push task
+  branch → review/tests → authorized integration into `main`. With
+  `pr_stage=on`, draft PR into `main` and merge through the approved
+  PR. With `pr_stage=off`, use the permitted host merge path without
+  requiring a PR if the host allows it. Green checks are evidence, not merge
+  authorization; follow the active harness and owner approval requirements.
+- **Someone else's repository:** branch from the owner's own branch in that
+  repo (`target`, e.g. `megamen32-dev` in Airlock). When PR-on, draft
+  PR into that branch; when PR-off, use only its authorized integration path.
+  Never push, merge or open a PR into the external owner's `main`.
+  Before integration a fresh Maintainer reads the project's rules and diff.
+- **Services:** deploy blue-green with the test circuit (new color beside
+  the old, tests pass, traffic switches, rollback = switch back): no
+  customer downtime. A service without it: building it is a leaf.
+- **Unknown ownership:** treat as someone else's. If no owner branch exists,
+  ask once (with a default) and continue other work.
 
 ## Parallel sessions publish independently; release one project at a time
 
-Each task owns an isolated Git worktree and task branch from the verified target.
-Do not implement in shared `main`, even if no peer is visible yet. Commit coherent
-steps, push the task branch, and open/update its draft PR for visibility, with the LHC plan link. A worktree or local
-commit is not delivery. The last active worker owns project integration and verification; other tasks may continue;
-nobody waits for a project-wide batch just to publish their branch. Never force
-push, stash, reset or delete foreign work.
+Each task owns an isolated Git worktree and task branch from the verified
+target. Do not implement in shared `main`, even if no peer is visible.
+Commit coherent steps and push the task branch. PR-on: open/update a draft PR
+for visibility and record its URL. PR-off: do not create a PR just for
+publication, but record the branch, exact published HEAD and merge target.
+A local commit is not delivery. The last active worker owns integration
+and verification; nobody waits for a project-wide batch to push a branch. Never force push, stash, reset or delete foreign work.
 
 Before declaring source ready, run the read-only gate:
 `python3 common/tools/lhc_worktree.py delivery --repo <task-worktree> --target <target>`.
-It verifies clean isolated work, exact remote HEAD and an open matching PR (draft is valid publication, not merge readiness).
-Push freely during work; early draft PRs make unfinished work visible. Include the
-LHC plan link and mark ready only after implementation, tests and review are complete.
-At terminal session end run the read-only worktree inventory. The last active worker
-owns whole-project integration/verification and cleans only merged, clean,
-confirmed-inactive worktrees/branches. Keep all other work and blockers visible;
-never blindly merge unknown branches. If bounded lookup finds no active owner,
-take responsibility: inspect the existing diff, record it in the current plan,
-review/test it and finish its integration. Do not abandon it as "foreign work".
-No owner found is not proof of correctness or permission to skip merge/release
-checks. See SHARED_WORKTREE.md for the adoption and handoff procedure.
-Record branch, commit and PR URL with the owning session in the task. A green
-gate is not merge/deploy permission. If target moved, fetch and reconcile in the
-task branch, rerun affected checks and update the PR. Merge through that PR only
-under the active approval policy; never direct-push the integration branch.
+It verifies a clean isolated worktree and exact remote HEAD in both modes.
+Only PR-on requires an open matching PR and PR URL; PR-off must not invent one.
+This publication receipt is never a merge, deployment or result receipt.
+
+At terminal session end run the read-only worktree inventory. The last active
+worker owns whole-project integration/verification and cleans only merged,
+clean, confirmed-inactive worktrees/branches. Keep all other work and blockers
+visible; never blindly merge unknown branches. If bounded lookup finds no
+active owner, record it in the current plan, inspect, review, test and
+integrate known work under permitted authorization; absence of an owner grants no merge permission.
+Record branch, commit, effective `pr_stage`, published HEAD and (PR-on
+only) PR URL with the owning session. A green gate is not merge/deploy
+permission. If the target moved, fetch and reconcile in the task branch,
+rerun affected checks, and update a PR only when PR-on. Merge through the
+approved PR when enabled; when disabled, only through a host-permitted merge
+route under existing owner/harness rules. If the host requires a PR, stop
+at that exact gate; do not weaken protection or switch principals.
 
 Before changing a shared runtime, use Agent Herder `project_release_lease`:
 `status` shows owner session, expiry/remaining time and its `SendMessage` target;
