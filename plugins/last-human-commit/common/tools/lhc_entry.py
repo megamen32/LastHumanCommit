@@ -652,6 +652,8 @@ def main():
                         help="emit mandatory planning intake and canonical plan procedure without changing state")
     parser.add_argument("--heartbeat-only", action="store_true",
                         help="record only an isolated wall-time reminder at PostToolUse")
+    parser.add_argument("--git-guard", action="store_true",
+                        help="at PreToolUse, refuse git stash everywhere and a branch switch in the primary checkout")
     parser.add_argument("--stop-gate", action="store_true",
                         help="at Stop, hold the turn once or twice while the plan still has untouched leaves")
     parser.add_argument("--plan-entry", action="store_true",
@@ -660,6 +662,23 @@ def main():
                        "claude" if os.environ.get("CLAUDE_PROJECT_DIR") else "codex")
     parser.add_argument("--runtime", choices=("codex", "claude", "opencode", "zcode"), default=default_runtime)
     args = parser.parse_args()
+    if args.git_guard:
+        if args.event != "PreToolUse":
+            return
+        try:
+            raw = sys.stdin.read(8 * 1024 * 1024 + 1)
+            event = json.loads(raw or "{}") if len(raw) <= 8 * 1024 * 1024 else {}
+            if not isinstance(event, dict):
+                return
+            import lhc_git_guard
+            reason = lhc_git_guard.check(lhc_git_guard.command_of(event), str(event.get("cwd") or os.getcwd()))
+        except (OSError, ValueError, KeyError, TypeError, ImportError, subprocess.SubprocessError):
+            return  # fail open: a guard that cannot decide never blocks
+        if reason:
+            print(json.dumps({"decision": "block", "reason": reason,
+                              "hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny",
+                                                     "permissionDecisionReason": reason}}, ensure_ascii=False))
+        return
     if args.heartbeat_only:
         if args.event != "PostToolUse":
             return

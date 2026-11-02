@@ -180,7 +180,7 @@ Commit coherent steps and push the task branch. PR-on: open/update a draft PR
 for visibility and record its URL. PR-off: do not create a PR just for
 publication, but record the branch, exact published HEAD and merge target.
 A local commit is not delivery. The last active worker owns integration
-and verification; nobody waits for a project-wide batch to push a branch. Never force push, stash, reset or delete foreign work.
+and verification; nobody waits for a project-wide batch to push a branch. Never force push, reset or delete foreign work. `git stash` is banned for everyone, in every form (a hook refuses it): park work as a WIP commit on the task branch and push.
 
 Before declaring source ready, run the read-only gate:
 `python3 src/common/tools/lhc_worktree.py delivery --repo <task-worktree> --target <target>`.
@@ -220,6 +220,20 @@ checked operation, never an implicit stale-candidate deploy.
 If the installed Herder has no release-lease capability yet, report that exact
 release blocker and continue branch work; do not replace it with a chat promise.
 Details: `src/common/protocols/SHARED_WORKTREE.md` and `COORDINATION.md`.
+
+## One checkout, one worktree per session, one version counter
+
+- The primary checkout never switches or creates a branch (a hook refuses it): other sessions and the live
+  service read it. Switch branches only in a linked worktree.
+- A session makes **one** worktree and keeps it; after a merge it runs `git switch -c <next-task> origin/main`
+  there. A second worktree only for work that runs at the same time.
+- Every project keeps its version in a root `VERSION` file, `X.Y.Z`: X breaks the contract, Y adds a
+  compatible capability, Z is a fix, wording or docs. Every change that lands raises it by exactly one step over
+  the target's own `VERSION`. Bump last: fetch, rebase, `python3 src/common/tools/lhc_version.py bump --level z|y|x`,
+  test, push, merge.
+- The number is not a lock; the failed check is. If the target moved, `lhc_version.py check` fails: rebase, bump
+  again, re-test. Never settle a conflict by taking one whole side of a file. CI runs the check (site/test_version_counter.py) and the host
+  should require branches to be up to date before merge.
 
 ## Time
 

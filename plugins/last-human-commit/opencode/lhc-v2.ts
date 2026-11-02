@@ -45,6 +45,10 @@ export type LhcHooks = {
     input: { sessionID?: string; messageID?: string },
     output: { message?: { id?: string; sessionID?: string }; parts?: unknown[] },
   ) => Promise<void>
+  "tool.execute.before"?: (
+    input: { tool?: string; sessionID?: string; callID?: string },
+    output: { args?: Record<string, unknown> },
+  ) => Promise<void>
   "tool.execute.after"?: (
     input: { tool?: string; sessionID?: string; callID?: string; args?: Record<string, unknown> },
     output: { title?: string; output?: string },
@@ -273,6 +277,47 @@ function runTimeGuard(
  * Ask the canonical Stop gate whether this idle session still has untouched plan
  * leaves. Resolves to the reason text, or null when the stop stands.
  */
+/** Ask the Python guard whether a shell command may run: stash is banned, branches switch only in a worktree. */
+function runGitGuard(entry: string, options: { cwd: string; command: string }): Promise<string | null> {
+  return new Promise((resolvePromise) => {
+    let settled = false
+    const finish = (value: string | null) => {
+      if (settled) return
+      settled = true
+      resolvePromise(value)
+    }
+    let child: ReturnType<typeof spawn>
+    try {
+      child = spawn("python3", [entry, "--event", "PreToolUse", "--git-guard", "--runtime", "opencode"],
+        { cwd: options.cwd, stdio: ["pipe", "pipe", "ignore"] })
+    } catch {
+      finish(null)
+      return
+    }
+    const timer = setTimeout(() => {
+      try { child.kill("SIGKILL") } catch { /* already gone */ }
+      finish(null)
+    }, GUARD_TIMEOUT_MS)
+    if (typeof timer.unref === "function") timer.unref()
+    let out = ""
+    child.stdout?.setEncoding("utf8")
+    child.stdout?.on("data", (chunk: string) => { if (out.length < MAX_OUTPUT_CHARS) out += chunk })
+    child.on("error", () => { clearTimeout(timer); finish(null) })
+    child.on("close", () => {
+      clearTimeout(timer)
+      try {
+        const parsed = JSON.parse(out)
+        finish(parsed?.decision === "block" && typeof parsed.reason === "string" ? parsed.reason : null)
+      } catch {
+        finish(null)
+      }
+    })
+    try {
+      child.stdin?.end(JSON.stringify({ cwd: options.cwd, tool_name: "Bash", tool_input: { command: options.command } }))
+    } catch { /* fail open */ }
+  })
+}
+
 function runStopGate(entry: string, options: { cwd: string; sessionID: string }): Promise<string | null> {
   return new Promise((resolvePromise) => {
     let settled = false
@@ -435,6 +480,16 @@ const LastHumanCommitV2 = async (input: LhcPluginInput = {}): Promise<LhcHooks> 
       await guard?.event?.(hookInput)
       await holdStop(hookInput)
     },
+    "tool.execute.before": async (hookInput, output) => {
+      // Only a refusal reaches the agent; any failure of the guard lets the command run.
+      if (String(hookInput?.tool ?? "").toLowerCase() !== "bash") return
+      const command = output?.args?.command
+      if (typeof command !== "string" || !paths.entry) return
+      const workdir = typeof output?.args?.workdir === "string" ? (output.args.workdir as string) : paths.projectRoot
+      if (!workdir) return
+      const reason = await runGitGuard(paths.entry, { cwd: workdir, command })
+      if (reason) throw new Error(reason)
+    },
     "tool.execute.after": guard?.["tool.execute.after"],
     "chat.message": guard?.["chat.message"],
     "experimental.chat.system.transform": async (hookInput, output) => {
@@ -478,6 +533,7 @@ export default Object.assign(LastHumanCommitV2, {
   resolveProjectRoot,
   extractReminder,
   runTimeGuard,
+  runGitGuard,
   runStopGate,
   handoffFile,
 })

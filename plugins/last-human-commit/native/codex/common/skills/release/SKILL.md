@@ -43,6 +43,14 @@ bug must have real fix proof or a reasoned duplicate/false-positive resolution;
 blocked access remains an honest release blocker. Run all applicable tests
 green and verify merge, deployed artifact and consumer result separately.
 
+## Version number
+
+The project's version lives in its root `VERSION` file (`X.Y.Z`: X breaks the contract, Y adds a compatible
+capability, Z is a fix, wording or docs). A change that lands raises it by exactly one step over the target's
+`VERSION`, as the last step before the merge: fetch, rebase, `lhc_version.py bump`, test, push, merge. When the
+target moved, `lhc_version.py check` fails; rebase, bump again to the new next number and re-test. The tag
+`vX.Y.Z` is created once, on the merged commit.
+
 ## Do not
 
 - Do not treat every release as requiring the same roles or number of tests.

@@ -103,7 +103,7 @@ to discard work or claim completion.
 
 Clean only merged, clean, confirmed-inactive worktrees/branches after checking
 the exact HEAD, target ancestry and session ownership. Preserve target,
-primary and dirty or unknown work; no force removal, reset or bulk stash.
+primary and dirty or unknown work; no force removal or reset; stash is banned outright (commit WIP on the task branch).
 
 ## Existing work without an active owner
 
@@ -117,7 +117,7 @@ Inventory and preserve exact branch/commit identities and dirty diffs first.
 Add the adoption, evidence, intended integration and acceptance checks to the
 existing project plan. Inspect the full diff and its dependencies, review and
 test it, then finish integration through the permitted PR/release path.
-Do not blindly copy dirty files, reset another checkout, bulk-stash, discard
+Do not blindly copy dirty files, reset another checkout, stash, discard
 changes or silently claim the diff is trusted. Preserve original evidence and
 recheck ownership before mutation; if an active owner appears, coordinate.
 

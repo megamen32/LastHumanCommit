@@ -294,3 +294,12 @@ def pytest_terminal_summary(terminalreporter):
             "BUDGET EXCEEDED: %d spawns, budget %d" % (_SPAWN_COUNTS["total"], budget))
         terminalreporter.write_line("Failing the session: the process budget is a gate.")
         terminalreporter._session.exitstatus = 1
+
+
+import pytest as _pytest_for_user_config  # noqa: E402
+
+
+@_pytest_for_user_config.fixture(autouse=True)
+def _no_user_lhc_config(tmp_path_factory, monkeypatch):
+    """A user's ~/.config/lhc (for example pr_stage: off) must not change what the tests assert."""
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path_factory.mktemp("xdg-config")))
