@@ -16,26 +16,33 @@ adopt another task's uncommitted changes or reset the shared primary checkout.
 
 ## Publish and review
 
-1. Commit coherent scoped steps and push the task branch. Branch publication is
-   independent: nobody waits for other tasks to finish.
-2. Open/update a draft PR into the permitted target, with the LHC plan link. Record owning session,
-   worktree, branch, exact HEAD and PR URL in the task.
-3. Run `lhc_worktree.py delivery --repo <task-worktree> --target <target>`.
-   It reads the remote itself, not a stale tracking ref, and checks that the
-   open PR names this exact HEAD and target. It performs no push/merge/deploy.
-4. Reconcile a moved target in the task branch and rerun affected checks.
-   Merge only through the PR and with the applicable owner/harness approval.
-   Green checks do not approve a PR or authorize merge. Never direct-push main,
-   force-push, weaken branch protections, or delete foreign work.
-5. After an authorized merge, verify the integrated revision once. Keep source
-   published, merged, installed and consumer-verified states separate.
+The package `config/workflow.json` sets `pr_stage` to `on` or
+`off`; build with `python3 scripts/publish_package.py --pr-stage on|off`.
+A user's existing LHC config directory `~/.config/lhc/workflow.json`
+overrides the built value; otherwise missing configuration defaults to `on`.
 
-A local worktree or unpushed commit is not durable publication. A pushed branch
-is valid work in progress; an early draft PR is recommended for visibility of
-unfinished work. Include the LHC plan link; confirm its intended audience and
-access controls before adding private content. Mark ready only after implementation,
-tests and review are complete. Draft publication is not merge readiness. A reviewed PR awaiting an actual approval is a precise blocker,
-not a reason to discard the branch or pretend the change is installed.
+1. Commit scoped changes in an isolated worktree and push the task branch.
+   Other sessions do not need a PR before continuing their own branches.
+2. When PR-on, open/update a draft PR into the permitted target with the LHC
+   plan link. Record session, worktree, branch, HEAD and PR URL.
+   When PR-off, do not demand or fabricate a PR. Record the same facts
+   except URL, plus `pr_stage=off` and the exact intended merge target.
+3. Run `lhc_worktree.py delivery --repo <task-worktree> --target <target>`.
+   Both modes check clean isolated work and remote published HEAD. PR-on checks
+   matching open PR; PR-off skips `gh pr` and PR URL. Neither mode merges
+   or deploys. A green publication receipt is not proof of finished work.
+4. Reconcile a moved target on the task branch and rerun affected tests.
+   After independent review and checks, finish an authorized merge through
+   the PR (on) or only through a host-permitted direct merge path (off).
+   A host that requires a PR is an exact external gate: no rule bypass,
+   force-push, access change or invented approval.
+5. Verify integrated target SHA, build artifact, deployed revision and actual
+   consumer result separately. PR-off never makes these optional.
+
+A pushed task branch is valid work in progress; when PR-on, an early draft PR is recommended
+for visibility. Include the plan link only when a PR is opened, after checking
+its audience. Green checks do not authorize merge. A required approval or
+branch-protection gate is a precise blocker, not a reason to delete work.
 
 ## Shared runtime
 
@@ -61,25 +68,25 @@ an equivalent fenced lease.
 
 ## Completion
 
-Record branch/remote HEAD/PR, authorized integration revision, lease owner/fence
-reference (never secret values), actual deployed revision and consumer proof.
+Record branch/remote HEAD, effective `pr_stage`, PR URL if on,
+authorized integrated revision, lease owner/fence reference (never secret
+values), deployed artifact/revision and consumer proof. Off requires all
+fields except PR URL; it does **not** permit stopping after branch push.
 On terminal session end, collect the read-only project inventory:
 `lhc_worktree.py inventory --repo <project> --target <verified-target>`.
-It reports Git facts, not session liveness or cleanup permission. Correlate paths
-with Agent Herder's authoritative session registry; unknown ownership is not inactive.
-The last active worker owns whole-project integration, verification and cleanup.
-Account for every task branch, contact peers through SendMessage, and integrate
-known reviewed changes through PRs under the applicable approval policy. Never
-blindly merge unknown branches. A required approval or conflict remains a visible
-blocker, not an excuse to discard work or claim completion.
-Clean up only merged, clean, confirmed-inactive worktrees/branches after rechecking
-their exact HEAD, target ancestry and session ownership under project coordination.
-Preserve primary/target checkouts, active or locked worktrees, dirty/conflicted,
-unmerged and unknown work. No force removal, reset, stash-all or branch -D.
-If the last worker exits before integration completes, record the successor or
-explicit pending integration blocker; session completion is not project completion. Never
-report publication or a lease receipt as business acceptance.
+It reports Git facts, not session liveness or cleanup permission. Correlate
+paths with Agent Herder's authoritative session registry.
 
+The last active worker owns whole-project integration, verification and
+cleanup. Account for every task branch, contact peers through SendMessage,
+review/test known changes, then integrate them by the route permitted by
+the active PR mode and host protections. Never blindly merge unknown branches.
+A required approval or conflict remains an explicit blocker, never an excuse
+to discard work or claim completion.
+
+Clean only merged, clean, confirmed-inactive worktrees/branches after checking
+the exact HEAD, target ancestry and session ownership. Preserve target,
+primary and dirty or unknown work; no force removal, reset or bulk stash.
 
 ## Existing work without an active owner
 

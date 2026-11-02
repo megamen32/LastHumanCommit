@@ -26,6 +26,14 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE = ROOT / "plugins" / "last-human-commit"
 NATIVE = PACKAGE / "native" / "codex"
+WORKFLOW_SOURCE = ROOT / "src/common/config/workflow.json"
+
+
+def workflow_config_bytes(stage: str) -> bytes:
+    """Build one tiny workflow setting into the native package; no policy service."""
+    if stage not in ("on", "off"):
+        raise ValueError("pr_stage must be on or off")
+    return (json.dumps({"pr_stage": stage}, sort_keys=True, indent=2) + "\n").encode()
 
 COMMON = ((b"src/common/", b"common/"),)
 ROUTING = COMMON + (
@@ -154,7 +162,12 @@ def project(data: bytes, replacements: tuple[tuple[bytes, bytes], ...]) -> bytes
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true", help="только показать расхождения")
+    parser.add_argument("--pr-stage", choices=("on", "off"), help="PR requirement in built package (default: source config on)")
     args = parser.parse_args()
+
+    source_config = json.loads(WORKFLOW_SOURCE.read_text(encoding="utf-8"))
+    pr_stage = args.pr_stage or source_config["pr_stage"]
+    workflow_bytes = workflow_config_bytes(pr_stage)
 
     stale: list[str] = []
     published = 0
@@ -168,6 +181,12 @@ def main() -> int:
             target.write_bytes(data)
             published += 1
         stale.append(str(target.relative_to(ROOT)))
+
+    # Project the versioned workflow setting into both native bundle roots.
+    # Source default stays on; --pr-stage off builds an off variant without
+    # mutating source or weakening another installation.
+    for target in (PACKAGE / "config/workflow.json", NATIVE / "config/workflow.json"):
+        write(target, workflow_bytes)
 
     # The tool copies: byte for byte under tools/, and with the path of the
     # package under common/tools/.

@@ -190,3 +190,79 @@ def test_inventory_rejects_missing_target(task):
     main, _, _ = task
     with pytest.raises(ValueError):
         mod.inventory(main, "does-not-exist")
+
+
+def test_pr_off_allows_published_branch_without_pr(task, monkeypatch):
+    _, work, _ = task
+    publish(work)
+    real_run = mod.subprocess.run
+    def reject_gh(argv, **kwargs):
+        if argv[0] == "gh":
+            raise AssertionError("PR stage off must never call gh pr")
+        return real_run(argv, **kwargs)
+    monkeypatch.setattr(mod.subprocess, "run", reject_gh)
+    result = mod.delivery(work, "main", pr_stage="off")
+    assert result["pr_stage"] == "off"
+    assert result["status"] == "published_without_pr"
+    assert "pr_url" not in result
+    assert result["integration_required"]
+    assert not result["merge_authorized"]
+    assert not result["deployment_verified"]
+
+
+def test_pr_off_still_rejects_unpushed_and_dirty_tasks(task):
+    _, work, _ = task
+    with pytest.raises(ValueError, match="published|remote"):
+        mod.delivery(work, "main", pr_stage="off")
+    publish(work)
+    (work / "foreign").write_text("do not lose")
+    with pytest.raises(ValueError, match="commit"):
+        mod.delivery(work, "main", pr_stage="off")
+
+
+def test_pr_off_does_not_allow_primary_checkout(task):
+    main, _, _ = task
+    with pytest.raises(ValueError, match="task branch|isolated"):
+        mod.delivery(main, "main", pr_stage="off")
+
+
+def test_configured_pr_stage_defaults_on_and_accepts_build_off(tmp_path, monkeypatch):
+    root = tmp_path / "native" / "common"
+    tool = root / "tools" / "lhc_worktree.py"
+    tool.parent.mkdir(parents=True)
+    monkeypatch.setattr(mod, "__file__", str(tool))
+    assert mod.configured_pr_stage() == "on"
+    config = root / "config" / "workflow.json"
+    config.parent.mkdir()
+    config.write_text(json.dumps({"pr_stage": "off"}))
+    assert mod.configured_pr_stage() == "off"
+    config.write_text(json.dumps({"pr_stage": "unknown"}))
+    with pytest.raises(ValueError, match="pr_stage"):
+        mod.configured_pr_stage()
+
+
+def test_built_plugin_mode_wins_over_canonical_common_default(tmp_path, monkeypatch):
+    package = tmp_path / "plugin"
+    tool = package / "common" / "tools" / "lhc_worktree.py"
+    tool.parent.mkdir(parents=True)
+    (package / "common/config").mkdir()
+    (package / "common/config/workflow.json").write_text(json.dumps({"pr_stage": "on"}))
+    (package / "config").mkdir()
+    (package / "config/workflow.json").write_text(json.dumps({"pr_stage": "off"}))
+    monkeypatch.setattr(mod, "__file__", str(tool))
+    assert mod.configured_pr_stage() == "off"
+
+def test_user_lhc_config_overrides_built_plugin_without_other_changes(tmp_path, monkeypatch):
+    package = tmp_path / "package"
+    tool = package / "common" / "tools" / "lhc_worktree.py"
+    tool.parent.mkdir(parents=True)
+    (package / "config").mkdir()
+    (package / "config/workflow.json").write_text(json.dumps({"pr_stage":"on"}))
+    user = tmp_path / "xdg"
+    (user / "lhc").mkdir(parents=True)
+    (user / "lhc/workflow.json").write_text(json.dumps({"pr_stage":"off"}))
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(user))
+    monkeypatch.setattr(mod, "__file__", str(tool))
+    assert mod.configured_pr_stage() == "off"
+    (user / "lhc/workflow.json").unlink()
+    assert mod.configured_pr_stage() == "on"
