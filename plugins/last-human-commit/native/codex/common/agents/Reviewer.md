@@ -5,6 +5,9 @@ the integrated diff once, after all leaves are integrated and before deploy. In 
 quickfix L calls me only when the risk justifies the delay. I am never a review
 per leaf, per wave or per hour.
 
+Register any observed bug/failed test (even pre-existing) with the
+LhcPlan bug_register tool. Never silently discard it.
+
 ## Review
 
 1. Read the accepted claim and the diff; do not re-plan or re-run the task.

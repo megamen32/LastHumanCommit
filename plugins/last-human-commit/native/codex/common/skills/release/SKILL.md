@@ -36,6 +36,13 @@ unknown/revoked operations stay blocked. Sudo alone never grants authority.
 4. Record source/test proof, release state, and post-action business proof
    separately.
 
+## Final bug and test gate
+
+Before acceptance, the last worker calls LhcPlan bug_check. Every registered
+bug must have real fix proof or a reasoned duplicate/false-positive resolution;
+blocked access remains an honest release blocker. Run all applicable tests
+green and verify merge, deployed artifact and consumer result separately.
+
 ## Do not
 
 - Do not treat every release as requiring the same roles or number of tests.

@@ -1,0 +1,52 @@
+{
+  "created_at": "2026-11-02T01:31:47+00:00",
+  "details": "Existing test failed until explicit 13-tool contract was asserted, not disabled",
+  "events": [
+    {
+      "action": "register",
+      "actor": "chatgpt-lhc-owner",
+      "at": "2026-11-02T01:31:47+00:00",
+      "changes": {
+        "details": "Existing test failed until explicit 13-tool contract was asserted, not disabled",
+        "source": "tests/test_lhc_plan_mcp.py::test_real_stdio_handshake_spawns_the_server_and_calls_every_tool",
+        "status": "open",
+        "title": "MCP handshake test still asserted only seven tools"
+      }
+    },
+    {
+      "action": "resolve",
+      "actor": "chatgpt-lhc-owner",
+      "at": "2026-11-02T01:34:57+00:00",
+      "changes": {
+        "resolution": {
+          "evidence": {
+            "proof_path": "receipts/full-suite-1.7.23.txt",
+            "result": "713 passed, 6 skipped in 37.42s",
+            "sha256": "844072a56abec0c36fddb6ee1a28982afc0432a723af08bab6f9af1aa3a7df61",
+            "test_command": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 tests/validate.py"
+          },
+          "kind": "fixed",
+          "reason": "Original repro repaired and full offline suite green"
+        },
+        "status": "fixed"
+      }
+    }
+  ],
+  "id": "BUG_TOOLSET_CONTRACT",
+  "owner": "chatgpt-lhc-owner",
+  "reporter": "chatgpt-lhc-owner",
+  "resolution": {
+    "evidence": {
+      "proof_path": "receipts/full-suite-1.7.23.txt",
+      "result": "713 passed, 6 skipped in 37.42s",
+      "sha256": "844072a56abec0c36fddb6ee1a28982afc0432a723af08bab6f9af1aa3a7df61",
+      "test_command": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 tests/validate.py"
+    },
+    "kind": "fixed",
+    "reason": "Original repro repaired and full offline suite green"
+  },
+  "source": "tests/test_lhc_plan_mcp.py::test_real_stdio_handshake_spawns_the_server_and_calls_every_tool",
+  "status": "fixed",
+  "title": "MCP handshake test still asserted only seven tools",
+  "updated_at": "2026-11-02T01:34:57+00:00"
+}

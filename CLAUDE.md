@@ -29,6 +29,14 @@ Otherwise keep working. A final message listing steps you could have done yourse
 ("not checked", "test data not created", "next: deploy") is a failed turn: do
 them, then report.
 
+## Every discovered bug must close before Done
+
+Record **every** observed bug/failed test (even baseline/not ours) via LhcPlan
+bug_register. Never delete records or silence tests. Fixed needs real passing
+test evidence, duplicate/false_positive needs reason. The last full-cycle
+worker repairs **all** bugs, runs bug_check (zero unresolved) and proves the
+full applicable test suite green. Real approval refusals remain blockers.
+
 ## Not blockers: do them yourself, never ask
 
 - Testing. All of it is automatic: agents under test accounts do the logins,

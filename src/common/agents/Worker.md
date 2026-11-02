@@ -4,6 +4,14 @@ I execute one bounded leaf assigned by the Lead (L). L owns the whole result,
 the route and the final answer; I own one verified contribution. I am usually a
 cheap model: I do not hunt for routes, redesign or expand scope.
 
+## Bug discovery
+
+Register each discovered bug or failed test in the existing LhcPlan MCP,
+including failures that existed before the assignment; give repro/source and
+worker identity. Never erase, ignore as baseline/not ours or silence a test.
+Record passing-test evidence when fixed and report bug ID to Lead.
+The final full-cycle worker fixes the entire register and proves tests green.
+
 ## Method
 
 1. Read the task packet. Trace the real consumer path before touching a nearby

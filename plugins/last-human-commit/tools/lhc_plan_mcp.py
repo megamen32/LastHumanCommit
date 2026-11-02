@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Single optional LhcPlan stdio facade over the canonical local-file CLI.
 
-Seven tools share one implementation in source and every standalone package.
+Plan and bug-register tools share one implementation in source and each package.
 Leaf mutation belongs to lhc_plan_json.py: locks, validation, creation time,
 plan origin and progress history are never reimplemented here. build_plan
 retains the original collect/render/check default and accepts report/graph.
@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Any, Callable, Optional
 
 SERVER_NAME = "LhcPlan"
-SERVER_VERSION = "1.7.22"
+SERVER_VERSION = "1.7.23"
 DEFAULT_PROTOCOL_VERSION = "2024-11-05"
 SUPPORTED_PROTOCOL_VERSIONS = ("2024-11-05", "2025-03-26", "2025-06-18")
 
@@ -321,7 +321,7 @@ def _render(calls: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 # --------------------------------------------------------------------------
-# the seven CLI operations
+# the canonical CLI operations
 # --------------------------------------------------------------------------
 
 
@@ -464,6 +464,45 @@ def estimate_cost(arguments: dict[str, Any]) -> dict[str, Any]:
     return _render([run_cli(argv)])
 
 
+def _bug_op(arguments: dict[str, Any], operation: str) -> dict[str, Any]:
+    """Use one canonical serialized local-file bug CLI, not MCP-side storage."""
+    argv = [sys.executable, str(find_cli("lhc_bug_register.py")),
+            operation, str(_plan_dir(arguments))]
+    for name in ("bug_id", "title", "details", "source", "reporter", "actor",
+                 "expected_sha256", "fields", "status", "reason",
+                 "duplicate_of", "evidence"):
+        value = arguments.get(name)
+        if value is None or value == "":
+            continue
+        argv.extend(["--" + name.replace("_", "-"),
+                     json.dumps(value, ensure_ascii=False) if isinstance(value, dict) else str(value)])
+    return _render([run_cli(argv)])
+
+
+def bug_register(arguments):
+    return _bug_op(arguments, "register")
+
+
+def bug_get(arguments):
+    return _bug_op(arguments, "get")
+
+
+def bug_list(arguments):
+    return _bug_op(arguments, "list")
+
+
+def bug_update(arguments):
+    return _bug_op(arguments, "update")
+
+
+def bug_resolve(arguments):
+    return _bug_op(arguments, "resolve")
+
+
+def bug_check(arguments):
+    return _bug_op(arguments, "check")
+
+
 OPERATIONS: dict[str, Callable[[dict[str, Any]], dict[str, Any]]] = {
     "create_leaf": create_leaf,
     "update_leaf": update_leaf,
@@ -472,6 +511,12 @@ OPERATIONS: dict[str, Callable[[dict[str, Any]], dict[str, Any]]] = {
     "update_progress": update_progress,
     "publish_html": publish_html,
     "revise_plan": revise_plan,
+    "bug_register": bug_register,
+    "bug_get": bug_get,
+    "bug_list": bug_list,
+    "bug_update": bug_update,
+    "bug_resolve": bug_resolve,
+    "bug_check": bug_check,
 }
 
 
@@ -593,6 +638,46 @@ TOOLS += [
     _schema("update_progress", {"plan_dir": {"type": "string"}, "leaf_id": {"type": "string"}, "note": {"type": "string"}, "fields": {"type": "object"}, "expected_hash": {"type": "string"}}, ["plan_dir", "leaf_id", "note"]),
     _schema("publish_html", {"plan_dir": {"type": "string"}, "config": {"type": "string"}, "autopublish": {"type": "boolean"}}, ["plan_dir"]),
     _schema("revise_plan", {"plan_dir": {"type": "string"}, "reason": {"type": "string"}}, ["plan_dir", "reason"]),
+]
+BUG_SCHEMA_PROPERTIES = {
+    "plan_dir": {"type": "string", "description": "Existing LHC task/plan directory; records live in bugs/*.json."},
+    "bug_id": {"type": "string", "description": "Optional for register (auto-ID); required otherwise."},
+    "title": {"type": "string", "description": "Observed error title, including pre-existing test failures."},
+    "details": {"type": "string", "description": "What failed and how it was observed; avoid private data."},
+    "source": {"type": "string", "description": "Test command, user report or incident source."},
+    "reporter": {"type": "string", "description": "Discovering worker identity; never omit baseline failures."},
+    "actor": {"type": "string", "description": "Owner of this update/resolution."},
+    "expected_sha256": {"type": "string", "description": "SHA from get/list; stale competing updates fail."},
+    "fields": {"type": "object", "description": "Partial metadata; status may be open/blocked, never fixed here."},
+    "status": {"type": "string", "description": "List filter or resolve state: fixed, duplicate, false_positive."},
+    "reason": {"type": "string", "description": "Required for duplicate/false-positive or reopening."},
+    "duplicate_of": {"type": "string", "description": "Registered original bug id when duplicate."},
+    "evidence": {"type": "object", "description": "Fixed only: proof_path, test_command, passing result. Proof file is hashed."},
+}
+
+def _bug_schema(name: str, keys: tuple[str, ...], required: tuple[str, ...], description: str):
+    return {"name": name, "description": description,
+            "inputSchema": {"type": "object",
+                            "properties": {key: BUG_SCHEMA_PROPERTIES[key] for key in keys},
+                            "required": list(required), "additionalProperties": False}}
+
+TOOLS += [
+    _bug_schema("bug_register",
+                ("plan_dir","bug_id","title","details","source","reporter"),
+                ("plan_dir","title","details","reporter"),
+                "Record every discovered bug or failed test, including failures predating this task. Never delete records."),
+    _bug_schema("bug_get", ("plan_dir","bug_id"), ("plan_dir","bug_id"),
+                "Read one immutable-history bug and its optimistic concurrency SHA."),
+    _bug_schema("bug_list", ("plan_dir","status"), ("plan_dir",),
+                "List all recorded bugs and their status/history; missing or corrupt records never count green."),
+    _bug_schema("bug_update", ("plan_dir","bug_id","actor","expected_sha256","fields","reason"),
+                ("plan_dir","bug_id","actor","expected_sha256","fields"),
+                "Update metadata or block/reopen one bug with CAS; cannot erase history or mark fixed."),
+    _bug_schema("bug_resolve", ("plan_dir","bug_id","actor","expected_sha256","status","reason","duplicate_of","evidence"),
+                ("plan_dir","bug_id","actor","expected_sha256","status"),
+                "Fixed requires file-backed proof of passing test; duplicate/false-positive require explicit reason."),
+    _bug_schema("bug_check", ("plan_dir",), ("plan_dir",),
+                "Final-worker gate: fail if any recorded bug is open or blocked. Green tests and deploy still required."),
 ]
 TOOLS_BY_NAME = {tool["name"]: tool for tool in TOOLS}
 

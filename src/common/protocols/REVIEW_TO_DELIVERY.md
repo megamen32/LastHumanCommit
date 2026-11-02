@@ -108,6 +108,15 @@ a bounded no-delegation leaf may report observations/self-check and product defe
 That does not confer independent parent product acceptance. Preserve the real surface,
 identity, expected/observed results and current accepted completion boundaries.
 
+## Bug accountability
+
+The discoverer registers every failed test/bug via LhcPlan bug_register,
+even if it predates the task. The last worker owns all registered repairs,
+the bug_check zero-unresolved receipt and a green full applicable test suite.
+Never silence prior failures, remove records or mark fixed without proof.
+Resolve duplicate/false_positive with reason; blocked access stays blocked.
+These gates do not change merge, review or deployment permissions.
+
 ## Deploy and merge
 
 Dev and test environments named in `.agents/PROJECT.md` (`dev`) or

@@ -74,9 +74,25 @@ Review, final authorized merge, build, deploy, rollback and real-consumer
 testing remain mandatory. Branch protection or a host requiring PR is not
 overridden. Only the creation/checking of a PR and its URL are disabled.
 
+## File-backed bug register (1.7.23)
+
+The existing LhcPlan MCP now exposes `bug_register`, `bug_get`,
+`bug_list`, `bug_update`, `bug_resolve` and `bug_check`.
+The same commands work offline via `tools/lhc_bug_register.py`. Each task
+plan stores `bugs/<id>.json`; locks and atomic writes reuse the plan CLI
+primitives. Competing writers supply `expected_sha256` and changes retain
+history. There is no destructive deletion.
+
+Register every observed failure immediately, even if it predates the task.
+A fixed bug requires passing-test proof in a file inside the plan; duplicate
+and false-positive resolutions require a reason. `bug_check` fails if
+any bug remains open or blocked. The last full-cycle worker fixes all recorded
+bugs and runs the complete applicable suite green before claiming completion.
+PR-off changes none of this. Never bypass host/security gates for green.
+
 ## Package and installation
 
-The native Agent Plugin is `plugins/last-human-commit`, version 1.7.22, with the full
+The native Agent Plugin is `plugins/last-human-commit`, version 1.7.23, with the full
 optional skill set (validated by `plugins/last-human-commit/scripts/validate.py`),
 instruction-only startup hooks and time-only reminders. Use the harness's native plugin manager.
 For clients whose plugin hooks are unavailable or still await trust, the package
