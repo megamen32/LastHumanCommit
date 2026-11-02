@@ -105,6 +105,18 @@
           }
         ]
       }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${PLUGIN_ROOT:-${ZCODE_PLUGIN_ROOT:-$HOME/.codex/.tmp/marketplaces/megamen32-plugins/plugins/last-human-commit}}}}/tools/lhc_entry.py\" --event PreToolUse --git-guard || { printf '%s\\n' 'LHC entry unavailable; message processing continues.' >&2; :; }",
+            "timeout": 5
+          }
+        ],
+        "matcher": "Bash"
+      }
     ]
   }
 }

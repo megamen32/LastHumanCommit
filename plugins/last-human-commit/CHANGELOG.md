@@ -1,3 +1,9 @@
+## 1.8.0
+
+- git stash is banned for everyone, in every form (also --autostash and rebase.autoStash). A PreToolUse hook on Bash refuses it in Claude Code, Codex and ZCode; the OpenCode plugin refuses it in tool.execute.before. The refusal tells the agent to commit WIP on the task branch.
+- The primary checkout never switches or creates a branch (git switch, git checkout <branch>, git checkout -b); the same hook refuses it. Branches switch only in a linked worktree, and a session keeps one worktree for all its tasks instead of making a new one per task. Restoring a file (git checkout -- path) is not a branch switch and is not touched.
+- One version counter. A root VERSION file (X.Y.Z; X breaks the contract, Y adds a compatible capability, Z is a fix or docs) is the only place the number is typed. src/common/tools/lhc_version.py bumps it over the target's VERSION and checks it is exactly one step above; scripts/sync_version.py writes it into the manifests, the plan MCP server and the README. CI runs both on pull requests, so two sessions that bump from the same base cannot both land: the second must rebase, bump again and re-test.
+
 ## 1.7.23
 
 - Add the bug register to the existing LhcPlan MCP and file-backed CLI; preserve append-only history and optimistic concurrency, include failed tests predating the current task, demand actual passing-test evidence before fixed, and prevent falsely green status after record/evidence removal.
