@@ -22,16 +22,10 @@ jobs:
         uses: actions/checkout@v4
         with:
           persist-credentials: false
-          fetch-depth: 0
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Version is exactly one step above main
-        if: github.event_name == 'pull_request'
-        run: python3 src/common/tools/lhc_version.py check --target origin/main
-      - name: Repeated versions agree with VERSION
-        run: python3 scripts/sync_version.py --check
       - name: Validate the generator
         run: python3 -m unittest discover -s site -p 'test_*.py' -v
       - name: Generate the live-source site

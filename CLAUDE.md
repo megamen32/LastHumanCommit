@@ -232,8 +232,8 @@ Details: `src/common/protocols/SHARED_WORKTREE.md` and `COORDINATION.md`.
   the target's own `VERSION`. Bump last: fetch, rebase, `python3 src/common/tools/lhc_version.py bump --level z|y|x`,
   test, push, merge.
 - The number is not a lock; the failed check is. If the target moved, `lhc_version.py check` fails: rebase, bump
-  again, re-test. Never settle a conflict by taking one whole side of a file. CI runs the check and the host
-  requires branches to be up to date before merge.
+  again, re-test. Never settle a conflict by taking one whole side of a file. CI runs the check (site/test_version_counter.py) and the host
+  should require branches to be up to date before merge.
 
 ## Time
 
