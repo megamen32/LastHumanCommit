@@ -1,0 +1,10 @@
+{"action": "register", "actor": "chatgpt-lhc-owner", "at": "2026-11-02T01:31:47+00:00", "id": "BUG_MCP_MISSING", "sha256": "5507685d8627478b58c4104e21feea06d722aaa43261f109f58cbb0eb4fa2851", "status": "open"}
+{"action": "register", "actor": "chatgpt-lhc-owner", "at": "2026-11-02T01:31:47+00:00", "id": "BUG_PACKAGE_DRIFT", "sha256": "cddf7061d8bcaf2d4c3a6e8881f58575794bf5fcb56cf82b4a38dc1875456bec", "status": "open"}
+{"action": "register", "actor": "chatgpt-lhc-owner", "at": "2026-11-02T01:31:47+00:00", "id": "BUG_TOOLSET_CONTRACT", "sha256": "6e2179f8c488b771c50a8b51e717b57cde4282894b0ff7980be3292b3d1b0df1", "status": "open"}
+{"action": "register", "actor": "chatgpt-lhc-owner", "at": "2026-11-02T01:31:47+00:00", "id": "BUG_ERASURE_GREEN", "sha256": "171c6de0829542831bcedc68fe629f5f9b6ef684f5086310a27f90f4fc4c2ffc", "status": "open"}
+{"action": "register", "actor": "chatgpt-lhc-owner", "at": "2026-11-02T01:32:55+00:00", "id": "BUG_STANDALONE_MCP", "sha256": "0ba9ece7c0ebafff3cce778a76db2ca5ed2266a4a631d9827b3f21895a2fbaa4", "status": "open"}
+{"action": "resolve", "actor": "chatgpt-lhc-owner", "at": "2026-11-02T01:34:56+00:00", "id": "BUG_MCP_MISSING", "sha256": "0ae39525fbdc40316488d5ca891a401835d818b9527c823dda0f2f7ffe6cc330", "status": "fixed"}
+{"action": "resolve", "actor": "chatgpt-lhc-owner", "at": "2026-11-02T01:34:57+00:00", "id": "BUG_PACKAGE_DRIFT", "sha256": "81e16c9aaa4aaaba2b4aae0fc8d371e0276e1aca488909849951bad7a5d32982", "status": "fixed"}
+{"action": "resolve", "actor": "chatgpt-lhc-owner", "at": "2026-11-02T01:34:57+00:00", "id": "BUG_TOOLSET_CONTRACT", "sha256": "5978eb1e938a71f8dd3b1e2e16a349937ede4cbad809da4997f0c6153606cd42", "status": "fixed"}
+{"action": "resolve", "actor": "chatgpt-lhc-owner", "at": "2026-11-02T01:34:57+00:00", "id": "BUG_ERASURE_GREEN", "sha256": "251db5fcd71f1d004c5721b1e246fb473c96ecdf6ca4c60b5ec6ea36d3edfa6a", "status": "fixed"}
+{"action": "resolve", "actor": "chatgpt-lhc-owner", "at": "2026-11-02T01:34:57+00:00", "id": "BUG_STANDALONE_MCP", "sha256": "a7789623aa0ca30dcb19213b39762698ad6f61f94320b30b5daa2f45b03e6f7f", "status": "fixed"}

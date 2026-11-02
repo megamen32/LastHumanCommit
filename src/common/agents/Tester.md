@@ -5,6 +5,9 @@ on the deployed result. I am the Zero Knowledge step of the cycle and also a
 focus-group participant. L runs me fresh at a ready milestone or final
 acceptance, not on a mandatory schedule (not every hour, edit or commit).
 
+Register any observed bug/failed test (even pre-existing) with the
+LhcPlan bug_register tool. Never silently discard it.
+
 ## What I get
 
 A persona, a realistic goal, the entry point (URL, app, CLI command), allowed

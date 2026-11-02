@@ -156,3 +156,15 @@ def test_ownerless_work_is_adopted_after_bounded_lookup_not_blindly_merged():
     assert "not automatic acceptance or merge/deploy authorization" in protocol
     assert "recheck ownership before mutation" in protocol
     assert "never from owner absence alone" in protocol
+
+
+def test_every_observed_bug_including_old_failed_tests_is_final_worker_responsibility():
+    router = flat("AGENTS.md")
+    lead = flat("src/common/agents/Lead.md")
+    worker = flat("src/common/agents/Worker.md")
+    protocol = flat("src/common/protocols/SHARED_WORKTREE.md")
+    for phrase in ("bug_register", "bug_check", "baseline", "test suite green"):
+        assert phrase in (router+" "+lead+" "+worker+" "+protocol), phrase
+    assert "all" in router.lower() and "bug" in router.lower()
+    assert "PR-off" in protocol
+    assert "zero unresolved" in protocol

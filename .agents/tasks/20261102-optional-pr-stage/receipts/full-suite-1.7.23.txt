@@ -1,0 +1,6 @@
+Command: PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 tests/validate.py
+parity: PASS (26 skills)
+plugin validation: PASS skills=26 canonical=PASS (26) parity=PASS (26 skills)
+713 passed, 6 skipped in 37.42s
+PASS: block adapter preserves project-owned instructions
+PASS: current LHC package, automatic entry, optional adapters and complete behavioral suite

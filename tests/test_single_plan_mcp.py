@@ -17,7 +17,7 @@ def request(identifier, method, params=None):
 
 
 @pytest.mark.parametrize("flavour", ["", "native/codex"])
-def test_standalone_default_entrypoint_calls_all_seven_tools(tmp_path, flavour):
+def test_standalone_entrypoint_calls_plan_tools_and_exposes_bug_crud(tmp_path, flavour):
     package = tmp_path / "package"
     shutil.copytree(PLUGIN / flavour, package)
     home = tmp_path / "home"
@@ -34,6 +34,11 @@ def test_standalone_default_entrypoint_calls_all_seven_tools(tmp_path, flavour):
         ("estimate_cost", {"model": "acme-flash", "minutes": "15", "offline": True, "catalog": str(catalog)}),
         ("publish_html", {"plan_dir": str(plan), "config": str(config)}),
         ("revise_plan", {"plan_dir": str(plan), "reason": "Уточнение"}),
+        ("bug_register", {"plan_dir": str(plan), "bug_id": "B01",
+                          "title": "Pre-existing failed test", "details": "Observed failure",
+                          "reporter": "offline-tester", "source": "pytest"}),
+        ("bug_get", {"plan_dir": str(plan), "bug_id": "B01"}),
+        ("bug_list", {"plan_dir": str(plan)}),
     ]
     messages = [request(0, "initialize"), request(1, "tools/list")]
     messages += [request(i + 2, "tools/call", {"name": name, "arguments": args})
@@ -45,7 +50,11 @@ def test_standalone_default_entrypoint_calls_all_seven_tools(tmp_path, flavour):
     assert proc.returncode == 0, proc.stderr
     replies = [json.loads(line) for line in proc.stdout.splitlines()]
     assert len(replies) == len(messages)
-    assert {t["name"] for t in replies[1]["result"]["tools"]} == {n for n, _ in operations}
+    assert {t["name"] for t in replies[1]["result"]["tools"]} == {
+        "create_leaf", "update_leaf", "build_plan", "estimate_cost", "update_progress",
+        "publish_html", "revise_plan", "bug_register", "bug_get", "bug_list",
+        "bug_update", "bug_resolve", "bug_check",
+    }
     for reply in replies[2:]:
         result = reply["result"]
         assert not result["isError"], result
@@ -54,6 +63,8 @@ def test_standalone_default_entrypoint_calls_all_seven_tools(tmp_path, flavour):
     assert leaf["created_at"]
     assert len(leaf["progress_events"]) == 3
     assert (plan / "plan.graph.json").is_file()
+    assert (plan / "bugs/B01.json").is_file()
+    assert (plan / ".lhc-bugs.jsonl").is_file()
 
 
 def test_cli_mutations_and_default_mcp_preserve_the_same_data(tmp_path):

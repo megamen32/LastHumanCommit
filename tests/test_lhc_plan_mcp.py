@@ -13,7 +13,7 @@ package, not only in the repository checkout.
 
 These cases pin exactly that:
 
-* the tool list is the seven operations and nothing else;
+* the tool list includes canonical plan and append-only bug CRUD/check operations;
 * each tool builds precisely the argument vector the human would type, with
   the real positional arguments of the real argparse surface;
 * the CLI bytes come back verbatim, including on failure;
@@ -130,14 +130,14 @@ def call_tool(name: str, arguments: dict) -> dict:
 
 
 # --------------------------------------------------------------------------
-# the surface is seven operations
+# the surface is the unified plan/bug MCP
 # --------------------------------------------------------------------------
 
 
 def test_tools_list_exposes_exactly_the_seven_operations():
     response = plan_mcp.handle({"jsonrpc": "2.0", "id": 1, "method": "tools/list"})
     names = {tool["name"] for tool in response["result"]["tools"]}
-    assert names == {"create_leaf", "update_leaf", "build_plan", "estimate_cost", "update_progress", "publish_html", "revise_plan"}
+    assert names == {"create_leaf", "update_leaf", "build_plan", "estimate_cost", "update_progress", "publish_html", "revise_plan", "bug_register", "bug_get", "bug_list", "bug_update", "bug_resolve", "bug_check"}
     for tool in response["result"]["tools"]:
         assert tool["description"]
         assert tool["inputSchema"]["type"] == "object"
@@ -719,7 +719,8 @@ def test_real_stdio_handshake_spawns_the_server_and_calls_every_tool(tmp_path):
 
     assert init["result"]["protocolVersion"] == "2024-11-05"
     assert {tool["name"] for tool in tools["result"]["tools"]} == {
-        "create_leaf", "update_leaf", "build_plan", "estimate_cost", "update_progress", "publish_html", "revise_plan"}
+        "create_leaf", "update_leaf", "build_plan", "estimate_cost", "update_progress", "publish_html", "revise_plan",
+        "bug_register", "bug_get", "bug_list", "bug_update", "bug_resolve", "bug_check"}
     for reply in (created, updated, built, priced):
         assert reply["result"]["isError"] is False, reply["result"]
     assert (plan_dir / "leaves" / "L01.json").is_file()

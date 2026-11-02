@@ -19,3 +19,6 @@ graphify-out/
 .agents/shared-session/chat/
 .agents/shared-session/readers/
 .agents/shared-session/sessions/
+
+# Bug registers are durable; only flock handles are ephemeral
+**/.lhc-bugs.lock

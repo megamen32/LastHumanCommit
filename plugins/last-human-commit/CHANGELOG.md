@@ -1,3 +1,8 @@
+## 1.7.23
+
+- Add the bug register to the existing LhcPlan MCP and file-backed CLI; preserve append-only history and optimistic concurrency, include failed tests predating the current task, demand actual passing-test evidence before fixed, and prevent falsely green status after record/evidence removal.
+- Last full-cycle worker owns all registered defects and full applicable test suite green; optional PR stage from 1.7.22 remains compatible and off can still be selected per installation.
+
 ## 1.7.22
 
 - Optional PR stage at build time: publish with `--pr-stage off` to omit PR creation and matching-URL checks while retaining isolated branches, remote publication, independent review, authorized final merge, deployment and real consumer acceptance. Default remains on.

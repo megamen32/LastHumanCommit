@@ -54,6 +54,14 @@ with that report in their language. For decomposed work the `plan-artifacts`
 skill keeps one JSON file per leaf; the graph, report and page are generated
 from them. Estimates are never rewritten to fit reality.
 
+## All discovered bugs are in scope
+
+Register every observed error and failed test (including baseline) via the
+single LhcPlan MCP. The last full-cycle worker fixes all registered defects,
+runs bug_check and gets all applicable tests green, then integrates/deploys
+and tests the actual result. Fixed needs proof; duplicate/false-positive
+needs reason. Preserve any permission denial as a blocker, not a shortcut.
+
 ## Checks
 
 Match the check to the claim: a regression test for a bug, the real consumer path

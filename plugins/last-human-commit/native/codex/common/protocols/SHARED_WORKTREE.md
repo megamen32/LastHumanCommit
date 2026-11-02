@@ -44,6 +44,23 @@ for visibility. Include the plan link only when a PR is opened, after checking
 its audience. Green checks do not authorize merge. A required approval or
 branch-protection gate is a precise blocker, not a reason to delete work.
 
+## Bug register, inherited failures and last-worker gate
+
+Use the same LhcPlan MCP for bug_register/bug_get/bug_list/bug_update/
+bug_resolve/bug_check, backed by `<plan-dir>/bugs/*.json`. The CLI reuses
+the plan collector's flock, atomic writer and optimistic hash; no new service.
+Register every observed error, even a pre-existing failed test, immediately.
+The last active full-cycle worker inherits all records; "baseline/not ours"
+does not exclude them. Fixed requires a real proof file (hashed), passing
+check and result. Duplicate and false_positive need an explicit reason
+and remain visible in their history.
+
+Before accepted completion, run bug_check (zero unresolved bugs) **and the
+full applicable test suite green**, then verify actual merge, deployed
+revision and consumer result. Never delete bug records or silence/skip tests
+to fabricate acceptance. A true access/approval gate stays a blocked bug
+and a visible blocker. This applies equally with PR on or off.
+
 ## Shared runtime
 
 Use Agent Herder `project_release_lease` with the canonical project `cwd` and
