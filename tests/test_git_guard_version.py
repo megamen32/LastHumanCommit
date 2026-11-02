@@ -184,3 +184,14 @@ def test_the_repeated_versions_agree_with_the_version_file():
     done = subprocess.run([sys.executable, str(ROOT / "scripts/sync_version.py"), "--check"],
                           capture_output=True, text=True)
     assert done.returncode == 0, done.stdout
+
+
+@pytest.mark.parametrize("entry_path", ["plugins/last-human-commit/tools/lhc_entry.py",
+                                        "plugins/last-human-commit/native/codex/tools/lhc_entry.py"])
+def test_the_published_copies_refuse_stash_too(entry_path, tmp_path):
+    """The guard fails open, so a copy that lacks the module would silently allow everything."""
+    done = subprocess.run([sys.executable, str(ROOT / entry_path), "--event", "PreToolUse", "--git-guard"],
+                          input=json.dumps({"tool_name": "Bash", "tool_input": {"command": "git stash"},
+                                            "cwd": str(tmp_path)}), capture_output=True, text=True)
+    assert json.loads(done.stdout)["decision"] == "block", done.stderr
+    assert (ROOT / entry_path).with_name("lhc_git_guard.py").is_file()
