@@ -1,3 +1,7 @@
+## 1.8.1
+
+- Fix for 1.8.0: the published tools/ folders did not carry lhc_git_guard.py and lhc_version.py, so the installed hook could not import the guard and, failing open by design, allowed git stash and branch switches in the primary checkout. Both files are now in the published list, and a test runs the published entry points of the plugin and of native/codex.
+
 ## 1.8.0
 
 - git stash is banned for everyone, in every form (also --autostash and rebase.autoStash). A PreToolUse hook on Bash refuses it in Claude Code, Codex and ZCode; the OpenCode plugin refuses it in tool.execute.before. The refusal tells the agent to commit WIP on the task branch.

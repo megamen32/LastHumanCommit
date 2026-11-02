@@ -131,6 +131,8 @@ TOOL_COPIES = (
     "lhc_task_budget.py",
     "lhc_testing_reuse.py",
     "lhc_worktree.py",
+    "lhc_git_guard.py",
+    "lhc_version.py",
     "lhc_chat.py",
     "lhc_plan_json.py",
     "lhc_plan_publish.py",
