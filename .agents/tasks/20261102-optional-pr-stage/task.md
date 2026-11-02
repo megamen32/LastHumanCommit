@@ -42,3 +42,14 @@ by registered Herder's unresolved ownership check; do not bypass it.
 - Registered Herder project_release_lease previously denied Git common-dir with detected dubious ownership; root is fixing the registered child. No safe.directory change and no reattempt without changed evidence.
 - After root repairs the authoritative native guard: read lease status/acquire/check at canonical repo, compare live revision, use the existing native marketplace/installer path, set existing ~/.config/lhc/workflow.json to pr_stage off for this user, then verify installed version, effective config and offline read-only PR-off/MCP behavior. Release lease in finally. Do not start live Codex/Work sessions or bypass any denial.
 - All five discovered bugs have fixed history and hashed proof receipts; bug_check zero unresolved, full offline suite green (713 passed, 6 conditional skips). Do not call release complete before installed consumer readback.
+
+## Lease cleanup: 2026-11-02 03:04 UTC
+
+- [x] One native project_release_lease(action=status) on registered
+  roomhacker-server-100:AgentHerder for the canonical LHC project.
+- [x] Exact result: project /home/roomhacker/agents-projects/LastHumanCommit/.git;
+  lease=null; deploymentInProgress=false; remainingSeconds=0;
+  nextFence=2; contact=null. Expired fence 1 has no outstanding lease.
+- [x] Accepted rollout LHC 1.7.23 / effective PR-off remains complete; no
+  reacquire, force-release, store change, retry, test or deploy.
+- [x] Rollback snapshot and prior acceptance retained. No remaining release-lease cleanup action.
