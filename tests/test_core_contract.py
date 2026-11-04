@@ -180,3 +180,28 @@ def test_existing_owner_authority_deploys_before_integration_and_keeps_boundarie
     assert "do not require separate confirmation" in protocol
     assert "third-party boundaries and system/harness restrictions" in protocol
     assert "production needs the owner's explicit word" not in router
+
+def test_commit_always_blockers_removed_and_two_stop_states():
+    # 2026-11-04: an excode session stopped with "not installed, not ready, nothing
+    # committed or pushed" after a build warning it could have fixed itself.
+    router = flat(ROUTER)
+    protocol = flat("src/common/protocols/SHARED_WORKTREE.md")
+    for text in (router.lower(), protocol.lower()):
+        assert "wip commits" in text
+        assert "test-first delays only the pr/integration into main, never the commit" in text
+        assert "unsafe" in text and "artifact" in text
+        assert "outside your power" in text
+        assert "worker -> lead -> adviser -> overseer" in text or "escalated it down the chain" in text
+        assert '"part done, part unconfirmed" is not an end state' in text
+        assert "independent recheck" in text
+
+
+def test_lead_orchestrates_by_default_inside_one_session():
+    router = flat(ROUTER).lower()
+    protocol = flat("src/common/protocols/SHARED_WORKTREE.md").lower()
+    for text in (router, protocol):
+        assert "orchestrator by default" in text
+        assert "in parallel" in text and "one per leaf" in text
+        assert "zero-knowledge critic" in text
+        assert "does no engineering" in text
+        assert "one leaf" in text

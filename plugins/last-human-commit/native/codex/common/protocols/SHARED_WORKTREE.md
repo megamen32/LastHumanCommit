@@ -21,8 +21,9 @@ The package `config/workflow.json` sets `pr_stage` to `on` or
 A user's existing LHC config directory `~/.config/lhc/workflow.json`
 overrides the built value; otherwise missing configuration defaults to `on`.
 
-1. Commit scoped changes in an isolated worktree and push the task branch.
-   Other sessions do not need a PR before continuing their own branches.
+1. Commit scoped changes in an isolated worktree and push the task branch
+   always, as you work (WIP commits); test-first delays only the PR/integration
+   into main, never the commit. Other sessions do not need a PR before continuing their own branches.
 2. After the real user or test scenario passes on the agreed environment,
    when PR-on, open/update a draft PR into the permitted target with the LHC
    plan link. Record session, worktree, branch, HEAD and PR URL.
@@ -40,11 +41,22 @@ overrides the built value; otherwise missing configuration defaults to `on`.
 5. Verify integrated target SHA, build artifact, deployed revision and actual
    consumer result separately. PR-off never makes these optional.
 
-A pushed task branch is valid work in progress. Prepare a PR only after the real
+A pushed task branch is valid work in progress; stopping with uncommitted work is
+never allowed. A blocker you can remove yourself (unsafe artifact composition,
+failed check, uninstalled stand) is removed at once; stop with "not ready" only
+for a blocker outside your power, escalated Worker -> Lead -> Adviser -> Overseer,
+not to the owner. Stop only when the result is verified (including an independent
+recheck of the fixed screen if acceptance required it) or the escalation has gone
+out; "part done, part unconfirmed" is not an end state. Prepare a PR only after the real
 user or test scenario passes on the agreed environment. Include the plan link
 only when a PR is opened, after checking
 its audience. Green checks do not authorize merge. A required approval or
 branch-protection gate is a precise blocker, not a reason to delete work.
+
+Inside one session the Lead is an orchestrator by default: two or more independent
+leaves go to Workers in parallel, one per leaf, plus a Zero-Knowledge Critic on the
+result; the Lead does no engineering itself, only plans, decides, integrates and
+accepts. One leaf is one Worker. This is not the cross-session Orchestrator role.
 
 ## Bug register, inherited failures and last-worker gate
 

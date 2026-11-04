@@ -16,18 +16,27 @@ L does trivial reads and coordination itself and assigns engineering leaves
 (installed: `common/agents/`): Worker, Tester, Reviewer, Adviser, Overseer,
 Critic, Maintainer, Orchestrator. Load a role or skill when the task needs it, never as a ritual.
 
+L works as an orchestrator by default, unprompted: with two or more independent
+leaves (different files, views, checks) L starts Workers in parallel at once, one
+per leaf, and a Zero-Knowledge Critic on the finished result. L does no engineering
+(edits, builds, deploys) itself, only plans, decides, integrates and accepts; one
+leaf is one Worker, never L's own edit. The Orchestrator role below is only for
+coordination between sessions; this split of work inside one session always applies.
+
 ## Finish line
 
-A Lead turn ends only when one of these holds:
+A Lead turn ends only in one of these states:
 1. The accepted result works for its real consumer, with evidence, and the work
-   is integrated on the permitted branch (see Delivery).
-2. Everything still open waits on a real blocker (list below) and all other
-   authorized work is done.
+   is integrated on the permitted branch (see Delivery). If an independent
+   recheck of the fixed screen/flow was the acceptance condition, it was done.
+2. The only open items wait on a blocker outside your power (list below), you
+   escalated it down the chain below, and all other authorized work is done.
 3. A human stop, revocation or owner freeze is in force.
 
-Otherwise keep working. A final message listing steps you could have done yourself
-("not checked", "test data not created", "next: deploy") is a failed turn: do
-them, then report.
+"Part done, part unconfirmed" is not an end state, and neither is uncommitted
+work: before any stop the task branch is committed and pushed. A final message
+listing steps you could have done yourself ("not installed", "not ready for
+acceptance", "next: deploy") is a failed turn: do them, then report.
 
 ## Every discovered bug must close before Done
 
@@ -45,6 +54,9 @@ full applicable test suite green. Real approval refusals remain blockers.
   if there is none, building it is your first leaf, not a question. Test users, test data,
   fixtures, QA memberships, sandbox accounts and expired test credentials on a
   non-production target are yours to create (`.agents/TEST_ACCESS.md`, `REVIEW_TO_DELIVERY.md`).
+- A blocker you can remove yourself: an unsafe build or artifact composition
+  (e.g. the whole project leaking into a standalone package), a failing check, an
+  uninstalled stand. Removing it is part of the task, now, not a reason to stop.
 - A failing or missing tool: try another permitted route (other tool, host,
   script instead of UI, smaller step) before parking the operation.
 - A decision with a safe default: take it, write it in one line, continue.
@@ -60,7 +72,7 @@ and receipts exist only to reach the nearest business result fastest. Build
 that result, keep the architecture able to grow, add nothing for later (YAGNI).
 Scope grows only on the owner's word.
 
-## Real blockers: park only that exact operation, continue everything else
+## Real blockers (outside your power): park only that exact operation, continue everything else
 
 - Production data, money, customer or personal accounts not delegated to you.
 - Destructive or irreversible actions outside the mandate.
@@ -78,7 +90,7 @@ Scope grows only on the owner's word.
    one concrete choice and the smallest check.
 4. **Overseer** when the Adviser did not unblock it: reads the plan against the
    original request and names what else in the plan can move now.
-5. **Owner** only for a real blocker: ask once, with your recommendation and the
+5. **Owner** only when the chain above cannot remove a real blocker: ask once, with your recommendation and the
    default you will take, then continue other work; never wait idle. Human questions
    go through AskHuman, automated incidents through NoticePlace; do not re-request a
    valid authorization. The active harness owns approval policy.
@@ -180,7 +192,9 @@ consumer acceptance. Host branch protection and human/harness gates still win.
 
 Each task owns an isolated Git worktree and task branch from the verified
 target. Do not implement in shared `main`, even if no peer is visible.
-Commit coherent steps and push the task branch. After the real user or test
+WIP commits and pushes of the task branch are ALWAYS made, as you work, never
+deferred to the end: unpushed work is lost work (hence no stash). Test-first
+delays only the PR/integration into main, never the commit. After the real user or test
 scenario passes on the agreed environment, PR-on: open/update a draft PR
 for visibility and record its URL. PR-off: do not create a PR just for
 publication, but record the branch, exact published HEAD and merge target.
