@@ -74,7 +74,8 @@ def test_branch_publication_is_independent_but_last_worker_integrates():
     assert "last active worker owns" in sources
     assert "confirmed-inactive" in sources
     assert "Never blindly merge unknown branches" in sources
-    assert "an early draft PR is recommended" in sources
+    assert "after the real user or test scenario passes" in sources
+    assert "an early draft PR is recommended" not in sources
     assert "LHC plan link" in sources
     assert "nobody waits" in sources
     for retired in ("one published dev history is mandatory", "unified published dev history",
@@ -168,3 +169,14 @@ def test_every_observed_bug_including_old_failed_tests_is_final_worker_responsib
     assert "all" in router.lower() and "bug" in router.lower()
     assert "PR-off" in protocol
     assert "zero unresolved" in protocol
+
+
+def test_existing_owner_authority_deploys_before_integration_and_keeps_boundaries():
+    router = flat(ROUTER)
+    protocol = flat("src/common/protocols/REVIEW_TO_DELIVERY.md")
+    assert "existing request for the result or deployment authorizes deployment to their own service" in router
+    assert "manually exercise the real scenario" in router
+    assert "before preparing a PR or integration" in router
+    assert "do not require separate confirmation" in protocol
+    assert "third-party boundaries and system/harness restrictions" in protocol
+    assert "production needs the owner's explicit word" not in router

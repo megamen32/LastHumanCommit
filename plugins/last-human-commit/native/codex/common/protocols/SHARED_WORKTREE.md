@@ -23,7 +23,8 @@ overrides the built value; otherwise missing configuration defaults to `on`.
 
 1. Commit scoped changes in an isolated worktree and push the task branch.
    Other sessions do not need a PR before continuing their own branches.
-2. When PR-on, open/update a draft PR into the permitted target with the LHC
+2. After the real user or test scenario passes on the agreed environment,
+   when PR-on, open/update a draft PR into the permitted target with the LHC
    plan link. Record session, worktree, branch, HEAD and PR URL.
    When PR-off, do not demand or fabricate a PR. Record the same facts
    except URL, plus `pr_stage=off` and the exact intended merge target.
@@ -39,8 +40,9 @@ overrides the built value; otherwise missing configuration defaults to `on`.
 5. Verify integrated target SHA, build artifact, deployed revision and actual
    consumer result separately. PR-off never makes these optional.
 
-A pushed task branch is valid work in progress; when PR-on, an early draft PR is recommended
-for visibility. Include the plan link only when a PR is opened, after checking
+A pushed task branch is valid work in progress. Prepare a PR only after the real
+user or test scenario passes on the agreed environment. Include the plan link
+only when a PR is opened, after checking
 its audience. Green checks do not authorize merge. A required approval or
 branch-protection gate is a precise blocker, not a reason to delete work.
 

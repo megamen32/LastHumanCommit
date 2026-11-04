@@ -180,7 +180,8 @@ consumer acceptance. Host branch protection and human/harness gates still win.
 
 Each task owns an isolated Git worktree and task branch from the verified
 target. Do not implement in shared `main`, even if no peer is visible.
-Commit coherent steps and push the task branch. PR-on: open/update a draft PR
+Commit coherent steps and push the task branch. After the real user or test
+scenario passes on the agreed environment, PR-on: open/update a draft PR
 for visibility and record its URL. PR-off: do not create a PR just for
 publication, but record the branch, exact published HEAD and merge target.
 A local commit is not delivery. The last active worker owns integration
