@@ -41,7 +41,7 @@ Use an ordinary test user for the user journey; admin rights only to prepare it.
 Keep one owner per fixture and update its protected reference in place.
 
 Fail closed only on the exact operation that lacks authority: unknown or external
-environment, production, customer or third-party accounts, real payments or
+environment without authority, customer or third-party accounts, real payments or
 outreach, a missing external secret, a human stop or explicit denial. Continue
 all other work; one blocked operation is never a project freeze. If
 `TEST_ACCESS.md` is missing, record what you verified and continue; do not
@@ -120,8 +120,13 @@ These gates do not change merge, review or deployment permissions.
 ## Deploy and merge
 
 Dev and test environments named in `.agents/PROJECT.md` (`dev`) or
-`TEST_ACCESS.md` are pre-authorized for the task's deploys. Production needs the owner's explicit word. The integration
-target comes from `AGENTS.md` (Delivery). Publish the isolated task branch and record its exact remote HEAD. When the
+`TEST_ACCESS.md` are pre-authorized for the task's deploys. An owner's existing
+request for a result or deployment authorizes deployment to their own service
+within that request's scope; do not require separate confirmation. Preserve
+explicit exclusions, third-party boundaries and system/harness restrictions.
+Install on the agreed user or test environment and manually verify the real
+scenario before preparing a PR or integration. The integration target comes
+from `AGENTS.md` (Delivery). Publish the task branch and record its exact remote HEAD. When the
 packaged `config/workflow.json` has `pr_stage=on`, open a
 draft PR with the LHC plan link; when off, omit the PR and its URL.
 `lhc_worktree.py delivery` verifies remote HEAD in both modes and PR

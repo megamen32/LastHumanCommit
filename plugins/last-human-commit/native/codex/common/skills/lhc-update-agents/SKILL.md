@@ -13,8 +13,12 @@ package is `plugins/last-human-commit`.
 
 Generate with `python3 plugins/last-human-commit/scripts/sync_skills.py`, check
 with `--check` and run the relevant behavioral tests plus both validators.
-Keep manifests at the same version. Review, push, create a PR and merge when
-checks and authority allow; then verify the merged source.
+Keep manifests at the same version. Install the candidate on the agreed user or
+test environment and manually verify an ordinary real scenario before preparing
+the PR or integration. Then review, push, create a PR when configured, and carry
+the authorized integration through; verify the merged source. An existing owner
+request for their own result or deployment needs no duplicate confirmation.
+Respect explicit exclusions, third-party boundaries and system/harness restrictions.
 
 Use each selected harness's native plugin manager. For Codex, invoke it through
 `python3 deploy/plugin-autoupdate/install-codex-plugin.py` from this checkout,

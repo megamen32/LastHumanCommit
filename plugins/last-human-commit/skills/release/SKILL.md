@@ -19,8 +19,12 @@ unknown/revoked operations stay blocked. Sudo alone never grants authority.
 
 1. Confirm the target, artifact/commit, accepted claim, active-harness policy,
    and exact release canary.
-2. Use only the review/testing/rollback gates justified by this action's actual
-   blast radius and reversibility.
+2. Install the candidate on the agreed user or test environment and manually
+   verify the real scenario before preparing a PR or integration. An owner's
+   existing request for their own result or deploy authorizes the deployment
+   within scope; preserve explicit exclusions, third-party boundaries and
+   system/harness restrictions. Use review/testing/rollback gates justified by
+   the action's actual blast radius and reversibility.
 3. Before merge, verify the published task branch with `lhc_worktree.py delivery` and a matching PR only when configured `pr_stage=on`;
    source evidence is not merge/deploy authorization. After an authorized merge,
    do not require an open PR or task checkout: verify the merged PR/commit is on

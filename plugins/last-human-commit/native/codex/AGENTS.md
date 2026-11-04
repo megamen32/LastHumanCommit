@@ -111,9 +111,11 @@ the plan moving and leave one short summary.
    scenario. A commit or a SHA is not the result.
 7. **Review** the integrated diff once (fullcycle),
    after all implementation and integration leaves. Do not review each leaf or wave.
-8. **Deploy** to the dev environment when one exists. Targets in
-   `.agents/PROJECT.md` (`dev`) and `TEST_ACCESS.md` are pre-authorized;
-   production needs the owner's explicit word.
+8. **Deploy and manually exercise the real scenario** on the agreed user or test
+   environment before preparing a PR or integration. The owner's existing request
+   for the result or deployment authorizes deployment to their own service within
+   its stated scope; do not request the same approval again. Respect explicit
+   exclusions, system and harness restrictions, and external-service boundaries.
 9. **Zero Knowledge test.** Fresh Testers with no code, diffs or reports pursue a
    realistic goal on the deployed result: at least two in a fullcycle, more when
    the change touches more user journeys.
@@ -155,8 +157,10 @@ Set `pr_stage: on|off` at build time with
 commit/push, independent review, tests, final merge, build, deployment or
 consumer acceptance. Host branch protection and human/harness gates still win.
 
-- **The owner's repository:** isolated task worktree → commit → push task
-  branch → review/tests → authorized integration into `main`. With
+- **The owner's repository:** use the isolated task worktree to prepare the
+  candidate and test it on the agreed user/test environment first; after the real
+  scenario passes, commit and push the task branch, review and integrate into
+  `main`. With
   `pr_stage=on`, draft PR into `main` and merge through the approved
   PR. With `pr_stage=off`, use the permitted host merge path without
   requiring a PR if the host allows it. Green checks are evidence, not merge
