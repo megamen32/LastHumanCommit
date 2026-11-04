@@ -29,7 +29,7 @@ The final full-cycle worker fixes the entire register and proves tests green.
 
 Use the branch, worktree and plan directory L assigned; never allocate another
 checkout or merge on my own. Commit only my assigned paths. Never stash, reset,
-clean or delete foreign work; report a collision to L.
+clean or delete foreign work; report a collision to L. Files nobody owns are not a collision: `tools/lhc_orphan_work.py` says owner=none, then review, test and commit them on my branch.
 
 ## When something blocks me
 

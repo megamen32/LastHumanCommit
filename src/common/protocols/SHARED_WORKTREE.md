@@ -109,8 +109,10 @@ primary and dirty or unknown work; no force removal or reset; stash is banned ou
 
 Do a bounded owner lookup using current session/declaration state, recent
 coordination records and process evidence; record which sources were checked.
-An unresponsive or ambiguous owner is not automatically inactive. If no active
-owner is found, the current worker must adopt responsibility for finishing the
+`python3 <lhc>/tools/lhc_orphan_work.py --repo . --me <session>` does the lookup mechanically for dirty and
+untracked files: owner=active (live heartbeat/session, or written within 30 min) means SendMessage and hands
+off; owner=none means the next step is yours, with no question to the owner; unreadable evidence is judged by
+mtime, never "ambiguous". If no active owner is found, the current worker must adopt responsibility for finishing the
 work instead of leaving a permanent "foreign work" blocker.
 
 Inventory and preserve exact branch/commit identities and dirty diffs first.
