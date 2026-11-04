@@ -194,6 +194,9 @@ clean, confirmed-inactive worktrees/branches. Keep all other work and blockers
 visible; never blindly merge unknown branches. If bounded lookup finds no
 active owner, record it in the current plan, inspect, review, test and
 integrate known work under permitted authorization; absence of an owner grants no merge permission.
+Run `python3 <lhc>/tools/lhc_orphan_work.py --repo . --me <session>` for dirty or untracked files: owner=active
+(live session, or written within 30 min): do not touch, SendMessage it; owner=none: do not ask the owner, review,
+test, commit on your task branch and take it to a PR. Unreadable evidence is judged by mtime, never "ambiguous".
 Record branch, commit, effective `pr_stage`, published HEAD and (PR-on
 only) PR URL with the owning session. A green gate is not merge/deploy
 permission. If the target moved, fetch and reconcile in the task branch,

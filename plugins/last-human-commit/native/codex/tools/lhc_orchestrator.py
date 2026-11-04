@@ -109,7 +109,8 @@ def _belongs(cwd, project):
     return bool(cwd) and project.lower() in (part.lower() for part in Path(cwd).parts)
 
 
-def codex_live(project, since, home=None):
+def codex_live(project, since, home=None, match=None):
+    match = match or (lambda cwd: _belongs(cwd, project))
     base = Path(home or os.environ.get("LHC_CODEX_HOME") or Path.home() / ".codex") / "sessions"
     found = []
     for rollout in base.glob("*/*/*/rollout-*.jsonl"):
@@ -120,12 +121,13 @@ def codex_live(project, since, home=None):
         if seen < since:
             continue
         cwd = _cwd_of(rollout)
-        if _belongs(cwd, project):
-            found.append({"id": rollout.stem[-36:], "name": Path(cwd).name, "runtime": "codex", "seen": seen})
+        if match(cwd):
+            found.append({"id": rollout.stem[-36:], "name": Path(cwd).name, "runtime": "codex", "seen": seen, "cwd": cwd})
     return found
 
 
-def opencode_live(project, since, database=None):
+def opencode_live(project, since, database=None, match=None):
+    match = match or (lambda cwd: _belongs(cwd, project))
     path = Path(database or os.environ.get("LHC_OPENCODE_DB") or Path.home() / ".local/share/opencode/opencode.db")
     if not path.is_file():
         return []
@@ -136,8 +138,8 @@ def opencode_live(project, since, database=None):
         con.close()
     except sqlite3.Error:
         return []
-    return [{"id": sid, "name": title or "", "runtime": "opencode", "seen": updated / 1000}
-            for sid, title, directory, updated in rows if _belongs(directory, project)]
+    return [{"id": sid, "name": title or "", "runtime": "opencode", "seen": updated / 1000, "cwd": directory or ""}
+            for sid, title, directory, updated in rows if match(directory or "")]
 
 
 def live_sessions(root, now=None):

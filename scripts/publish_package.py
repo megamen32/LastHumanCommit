@@ -133,6 +133,7 @@ TOOL_COPIES = (
     "lhc_worktree.py",
     "lhc_git_guard.py",
     "lhc_version.py",
+    "lhc_orphan_work.py",
     "lhc_chat.py",
     "lhc_plan_json.py",
     "lhc_plan_publish.py",

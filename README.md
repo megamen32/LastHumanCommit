@@ -74,7 +74,7 @@ Review, final authorized merge, build, deploy, rollback and real-consumer
 testing remain mandatory. Branch protection or a host requiring PR is not
 overridden. Only the creation/checking of a PR and its URL are disabled.
 
-## File-backed bug register (1.8.1)
+## File-backed bug register (1.9.0)
 
 The existing LhcPlan MCP now exposes `bug_register`, `bug_get`,
 `bug_list`, `bug_update`, `bug_resolve` and `bug_check`.
@@ -92,7 +92,7 @@ PR-off changes none of this. Never bypass host/security gates for green.
 
 ## Package and installation
 
-The native Agent Plugin is `plugins/last-human-commit`, version 1.8.1, with the full
+The native Agent Plugin is `plugins/last-human-commit`, version 1.9.0, with the full
 optional skill set (validated by `plugins/last-human-commit/scripts/validate.py`),
 instruction-only startup hooks and time-only reminders. Use the harness's native plugin manager.
 For clients whose plugin hooks are unavailable or still await trust, the package

@@ -1,3 +1,7 @@
+## 1.9.0
+
+- Orphaned work gets a mechanical verdict. src/common/tools/lhc_orphan_work.py (published in tools/) reads every dirty and untracked file of every worktree and answers owner=active (an LHC heartbeat, Codex rollout or OpenCode session whose cwd covers the file was seen within --quiet-minutes, default 30; or the file itself was written that recently and no record names the writer) or owner=none. For owner=none the instruction is fixed: no owner, review it, run the tests, commit it on your own task branch, take it to a PR, do not ask the owner. For owner=active: do not touch, SendMessage the session. An unreadable heartbeat or no session record at all is decided by the file's mtime, never reported as ambiguous. AGENTS.md, the Worker agent and SHARED_WORKTREE.md point to it; lhc_orchestrator's live-session readers now return the session cwd and accept a match function.
+
 ## 1.8.1
 
 - Fix for 1.8.0: the published tools/ folders did not carry lhc_git_guard.py and lhc_version.py, so the installed hook could not import the guard and, failing open by design, allowed git stash and branch switches in the primary checkout. Both files are now in the published list, and a test runs the published entry points of the plugin and of native/codex.
