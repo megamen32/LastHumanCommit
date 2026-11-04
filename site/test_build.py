@@ -50,7 +50,7 @@ class LandingTests(unittest.TestCase):
         self.assertEqual(
             {r["name"] for r in self.data["roles"] if r["kind"] == "role"},
             {"Lead", "Worker", "Adviser", "Reviewer", "Tester", "Overseer",
-             "Maintainer", "Critic", "Orchestrator", "Sentinel"},
+             "Maintainer", "Critic", "Dispatcher", "Sentinel"},
         )
 
     def test_taxonomy_counts_are_honest(self):
@@ -67,7 +67,7 @@ class LandingTests(unittest.TestCase):
         names = [r["name"] for r in self.data["roles"]]
         self.assertEqual(
             names,
-            ["Lead", "Worker", "Adviser", "Critic", "Reviewer", "Tester", "Overseer", "Maintainer", "Orchestrator", "Sentinel"],
+            ["Lead", "Worker", "Adviser", "Critic", "Reviewer", "Tester", "Overseer", "Maintainer", "Dispatcher", "Sentinel"],
         )
         self.assertIn("Maintainer", build.role_order)
 

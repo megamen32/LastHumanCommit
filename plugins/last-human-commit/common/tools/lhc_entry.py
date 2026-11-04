@@ -254,6 +254,45 @@ def stop_gate(event, root, now=None):
             "leaves are done or escalated, not when the first one is stuck.")
 
 
+def overseer_review(event, root, channel, now=None):
+    """Ask the Lead to call the Overseer once per 30 min boundary of an active plan.
+
+    A hook cannot start an agent, so it names the step; lhc_overseer_ack.py marks it done. Facts
+    only (queued or running leaves on disk); never for a subagent, a session without a plan, a
+    plan that is not this session's live work, or an owner no-LHC/STOP. Any failure is silent.
+    """
+    import time
+    try:
+        session = str(event.get("session_id") or event.get("sessionID") or "")
+        if not session or event.get("agent_id"):
+            return None
+        import lhc_overseer_ack as ack
+        found = _plan_entry(event, root)
+        if not found:
+            return None
+        own = (found.get("continuation") or {}).get("plan")
+        pick = own or (found["candidates"][0] if len(found.get("candidates", [])) == 1 else None)
+        if not pick:
+            return None
+        plan = Path(pick)
+        files = sorted((plan / "leaves").glob("*.json"))
+        now = now or time.time()
+        if not files or now - max(f.stat().st_mtime for f in files) > STOP_WINDOW:
+            return None
+        active = False
+        for f in files:
+            leaf = json.loads(f.read_text(encoding="utf-8"))
+            if isinstance(leaf, dict) and leaf.get("status") in {"queued", "running"}:
+                active = True
+                break
+        if not active:
+            return None
+        minutes = ack.due(plan, channel, now)
+        return ack.request_text(plan, minutes) if minutes is not None else None
+    except Exception:  # noqa: BLE001 - fail open: a reminder that cannot decide stays silent
+        return None
+
+
 def _due(session, key, now, window):
     """True once per window for this session and reminder: the mark is a small state file."""
     base = Path(os.environ.get("XDG_STATE_HOME") or Path.home() / ".local" / "state") / "lhc" / "pulse"
@@ -272,13 +311,13 @@ def _due(session, key, now, window):
 
 
 def coordination_pulse(event, root, now=None):
-    """Remind the orchestrator of a registry that stands still, and anyone of waiting file mail."""
+    """Remind the dispatcher of a registry that stands still, and anyone of waiting file mail."""
     import time
     session = str(event.get("session_id") or event.get("sessionID") or "")
     if not session or event.get("agent_id"):
         return None
     tools = method_root(Path(root).resolve()) / "tools"
-    mail, orch = sibling_tool(tools, "lhc_mail.py"), sibling_tool(tools, "lhc_orchestrator.py")
+    mail, orch = sibling_tool(tools, "lhc_mail.py"), sibling_tool(tools, "lhc_dispatcher.py")
     if mail is None or orch is None:
         return None
     try:
@@ -288,11 +327,11 @@ def coordination_pulse(event, root, now=None):
     now = now or time.time()
     notes = []
     registry = orch.reg_file(primary)
-    if registry.is_file() and orch.load(primary).get("orchestrator") == session:
+    if registry.is_file() and orch.load(primary).get("dispatcher") == session:
         quiet = now - registry.stat().st_mtime
         if quiet >= PULSE_AFTER and _due(session, "registry", now, PULSE_AFTER):
             notes.append(f"LHC: your session registry has not changed for {int(quiet // 60)} min. Run "
-                         "python3 common/tools/lhc_orchestrator.py tick and act on every line; "
+                         "python3 common/tools/lhc_dispatcher.py tick and act on every line; "
                          "a tick without an action on a session is not a tick.")
     if registry.is_file():
         data = orch.load(primary)
@@ -300,10 +339,10 @@ def coordination_pulse(event, root, now=None):
         def role_file(name):
             return next((str(c / f"{name}.md") for c in (mr / "common" / "agents", mr / "src" / "common" / "agents",
                                                            Path(root) / "common" / "agents") if (c / f"{name}.md").is_file()), name + ".md")
-        if data.get("orchestrator") == session:
-            if _due(session, "orchestrator-role", now, 3600):
-                notes.append(f"LHC: the registry names you the orchestrator of this project. You orchestrate and do "
-                             f"not do the work. Read {role_file('Orchestrator')} now. {registry} is the only list of "
+        if data.get("dispatcher") == session:
+            if _due(session, "dispatcher-role", now, 3600):
+                notes.append(f"LHC: the registry names you the dispatcher of this project. You watch the sessions and "
+                             f"do not do the work. Read {role_file('Dispatcher')} now. {registry} is the only list of "
                              "sessions (a sessions.md is legacy: carry its live rows over, then stop writing it); act on "
                              "every session through the registry and file mail, and release what they finish.")
         else:
@@ -312,8 +351,10 @@ def coordination_pulse(event, root, now=None):
                 sentinel = f" Read {role_file('Sentinel')}." if row.get("role") == "sentinel" else ""
                 notes.append(f"LHC: you are a row in {registry.name}. Task: {row.get('task')}. Acceptance: "
                              f"{row.get('acceptance')}. Next: {row.get('next')}.{sentinel} Work toward the acceptance and "
-                             "tell the orchestrator by file mail (lhc_mail.py send) when it is met or blocked.")
+                             "tell the dispatcher by file mail (lhc_mail.py send) when it is met or blocked.")
     waiting = mail.inbox(primary, session)
+    if registry.is_file() and orch.load(primary).get("dispatcher") == session:
+        waiting = sorted(waiting + mail.inbox(primary, "DISPATCHER"), key=lambda p: p.name)  # the role address
     if waiting and _due(session, "mail", now, 600):
         notes.append(f"LHC: {len(waiting)} unread file mail for you. Run python3 common/tools/lhc_mail.py "
                      f"inbox --me {session}, act on each, then ack it.")
@@ -655,7 +696,7 @@ def main():
     parser.add_argument("--git-guard", action="store_true",
                         help="at PreToolUse, refuse git stash everywhere and a branch switch in the primary checkout")
     parser.add_argument("--stop-gate", action="store_true",
-                        help="at Stop, hold the turn once or twice while the plan still has untouched leaves")
+                        help="at Stop, hold the turn while the plan still has untouched leaves, or once per 30 min until the Overseer reviewed it")
     parser.add_argument("--plan-entry", action="store_true",
                         help="emit planning intake and read-only session-bound plan candidates on UserPromptSubmit")
     default_runtime = ("zcode" if os.environ.get("ZCODE_PLUGIN_ROOT") else
@@ -742,6 +783,9 @@ def main():
             pulse = None
         if pulse:
             prompts.append(pulse)
+        overseer = overseer_review(event, args.root or Path(__file__).resolve().parents[1], "post")
+        if overseer:
+            prompts.append(overseer)
         try:
             coordination = coordination_pulse(event, args.root or Path(__file__).resolve().parents[1])
         except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError):
@@ -770,7 +814,8 @@ def main():
         try:
             raw = sys.stdin.read(8 * 1024 * 1024 + 1)
             event = json.loads(raw or "{}") if len(raw) <= 8 * 1024 * 1024 else {}
-            reason = stop_gate(event, args.root or Path(__file__).resolve().parents[1]) if isinstance(event, dict) else None
+            hook_root = args.root or Path(__file__).resolve().parents[1]
+            reason = (overseer_review(event, hook_root, "stop") or stop_gate(event, hook_root)) if isinstance(event, dict) else None
         except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError):
             reason = None
         if reason:

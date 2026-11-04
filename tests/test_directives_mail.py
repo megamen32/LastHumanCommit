@@ -107,7 +107,7 @@ def test_stop_gate_holds_a_stop_while_leaves_are_untouched(tmp_path, monkeypatch
     assert entry.stop_gate({**event, "session_id": "s2"}, ROOT) is None  # nothing left to do
 
 
-def test_registry_names_the_orchestrator_and_each_row(tmp_path, monkeypatch):
+def test_registry_names_the_dispatcher_and_each_row(tmp_path, monkeypatch):
     import json
     import lhc_entry as entry
     repo = tmp_path / "repo"
@@ -115,12 +115,12 @@ def test_registry_names_the_orchestrator_and_each_row(tmp_path, monkeypatch):
     subprocess.run(["git", "init", "-q", str(repo)], check=True)
     (repo / ".agents").mkdir()
     (repo / ".agents/sessions.json").write_text(json.dumps({
-        "orchestrator": "ses_o",
+        "orchestrator": "ses_o",  # the pre-1.10 key still names the dispatcher
         "sessions": [{"id": "ses_s", "role": "sentinel", "task": "watch views", "acceptance": "OK-check", "next": "check Telemeter"}]}))
     monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
     now = 1_800_000_000
     orch = entry.coordination_pulse({"cwd": str(repo), "session_id": "ses_o"}, ROOT, now=now)
-    assert "orchestrator" in orch and "do not do the work" in orch
+    assert "dispatcher" in orch and "do not do the work" in orch and "rchestr" not in orch
     assert entry.coordination_pulse({"cwd": str(repo), "session_id": "ses_o"}, ROOT, now=now + 60) is None
     row = entry.coordination_pulse({"cwd": str(repo), "session_id": "ses_s"}, ROOT, now=now)
     assert "watch views" in row and "OK-check" in row and "Sentinel" in row
@@ -141,7 +141,7 @@ def test_opencode_install_registers_the_plan_mcp_and_role_profiles(tmp_path):
     data = json.loads(config.read_text())
     assert data["mcp"]["other"]["url"] == "x"
     assert data["mcp"]["LhcPlan"]["command"][1].endswith("scripts/plan_mcp.py")
-    assert (home / ".config/opencode/agents/orchestrator.md").read_text().startswith("---\ndescription:")
+    assert (home / ".config/opencode/agents/dispatcher.md").read_text().startswith("---\ndescription:")
     assert (home / ".config/opencode/agents/sentinel.md").is_file()
     assert result["plugin"]["mcp"] == "registered"
     again = install.configure(home, plugin, "opencode")

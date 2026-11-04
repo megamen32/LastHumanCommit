@@ -34,6 +34,8 @@ Native PostToolUse reminders track only time and deduplicate each due interval;
 without tool activity, a reminder arrives at the next work boundary. They never
 classify text, mutate task/evidence/holds or block completion.
 
+Every 30 minutes of an active plan the default-on hook in `lhc_entry.py` (Stop gate and PostToolUse; Stop only on
+OpenCode) asks the Lead to call the Overseer and mark it with `lhc_overseer_ack.py`; see `agents/Overseer.md`.
 The optional Codex `com.openai` extension adds an async progress adviser beside
 that timer. Once per due bucket and with at most one invocation in flight, it
 runs the existing fresh read-only Overseer through the native ephemeral CLI.

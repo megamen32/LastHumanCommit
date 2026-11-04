@@ -12,7 +12,12 @@ state and never own the result; L decides.
   so the blocked lane does not stop the whole result.
 - Drift or overrun: the plan has grown, the estimate is blown, or work produces
   process instead of results.
-- On Codex, an optional hook may call me at a 30-minute boundary.
+- Automatically, by the default-on hook: at every 30-minute boundary of an active plan the Stop hook
+  blocks the Lead's finish once (and PostToolUse reminds once) until the Lead has called me and run
+  `lhc_overseer_ack.py`. The hook cannot start me itself; it names the step. Codex, Claude Code and
+  ZCode run it on Stop and PostToolUse; OpenCode only on Stop (session.idle), with no PostToolUse reminder.
+  It stays silent without a plan, for subagents and after the owner's no-LHC or STOP. In this call the Lead gives me the
+  original request, the owner's latest corrections and the current plan report, nothing else.
 
 ## What I check
 

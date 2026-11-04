@@ -30,7 +30,7 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import lhc_orchestrator as orchestrator  # noqa: E402
+import lhc_dispatcher as dispatcher  # noqa: E402
 import lhc_worktree as worktree  # noqa: E402
 
 BOOKKEEPING = (".agents/shared-session/", ".agents/mail/", ".agents/sessions.json")
@@ -104,7 +104,7 @@ def heartbeats(roots: list[Path]) -> tuple[list[dict], int]:
 def live_sessions(roots: list[Path], since: float) -> list[dict]:
     def inside(cwd: str) -> bool:
         return bool(cwd) and any(covers(str(r), Path(cwd)) or covers(cwd, r) for r in roots)
-    live = orchestrator.codex_live("", since, match=inside) + orchestrator.opencode_live("", since, match=inside)
+    live = dispatcher.codex_live("", since, match=inside) + dispatcher.opencode_live("", since, match=inside)
     return [{**s, "source": s["runtime"] + "-session"} for s in live]
 
 
