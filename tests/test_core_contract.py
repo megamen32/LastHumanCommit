@@ -196,11 +196,11 @@ def test_commit_always_blockers_removed_and_two_stop_states():
         assert "independent recheck" in text
 
 
-def test_lead_orchestrates_by_default_inside_one_session():
+def test_lead_splits_work_and_starts_workers_inside_one_session():
     router = flat(ROUTER).lower()
     protocol = flat("src/common/protocols/SHARED_WORKTREE.md").lower()
     for text in (router, protocol):
-        assert "orchestrator by default" in text
+        assert "splits the work and starts workers in parallel" in text
         assert "in parallel" in text and "one per leaf" in text
         assert "zero-knowledge critic" in text
         assert "does no engineering" in text

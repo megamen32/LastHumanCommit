@@ -26,10 +26,24 @@ def primary_root(cwd):
     return Path(out).parent
 
 
+ROLE_ADDRESS = "DISPATCHER"
+LEGACY_ADDRESS = "ORCHESTRATOR"  # the pre-1.10 address of the same role
+
+
 def box(root, session):
     if not session or any(c in session for c in "/\\") or session in {".", ".."}:
         raise ValueError("bad session id")
+    if session.upper() in (ROLE_ADDRESS, LEGACY_ADDRESS):
+        session = ROLE_ADDRESS
     return Path(root) / ".agents" / "mail" / session
+
+
+def boxes(root, session):
+    """The box of a session; the role address also reads the legacy box of unread old mail."""
+    first = box(root, session)
+    if first.name != ROLE_ADDRESS:
+        return [first]
+    return [first, first.with_name(LEGACY_ADDRESS)]
 
 
 def send(root, to, sender, kind, text, now=None):
@@ -46,12 +60,13 @@ def send(root, to, sender, kind, text, now=None):
 
 
 def inbox(root, me):
-    folder = box(root, me)
-    return sorted(p for p in folder.glob("*.md")) if folder.is_dir() else []
+    found = [p for folder in boxes(root, me) if folder.is_dir() for p in folder.glob("*.md")]
+    return sorted(found, key=lambda p: p.name)
 
 
 def ack(root, me, name):
-    source = box(root, me) / Path(name).name
+    source = next((f / Path(name).name for f in boxes(root, me) if (f / Path(name).name).is_file()),
+                  box(root, me) / Path(name).name)
     done = source.parent / "done"
     done.mkdir(exist_ok=True)
     os.replace(source, done / source.name)

@@ -143,6 +143,8 @@ TOOL_COPIES = (
     "lhc_directives.py",
     "lhc_mail.py",
     "lhc_orchestrator.py",
+    "lhc_dispatcher.py",
+    "lhc_overseer_ack.py",
     "lhc_plan_catalog.py",
     "lhc_plan_mcp.py",
     "lhc_plan_ui.py",

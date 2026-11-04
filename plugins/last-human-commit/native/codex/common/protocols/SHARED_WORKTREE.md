@@ -53,10 +53,10 @@ only when a PR is opened, after checking
 its audience. Green checks do not authorize merge. A required approval or
 branch-protection gate is a precise blocker, not a reason to delete work.
 
-Inside one session the Lead is an orchestrator by default: two or more independent
+Inside one session the Lead splits the work and starts Workers in parallel: two or more independent
 leaves go to Workers in parallel, one per leaf, plus a Zero-Knowledge Critic on the
 result; the Lead does no engineering itself, only plans, decides, integrates and
-accepts. One leaf is one Worker. This is not the cross-session Orchestrator role.
+accepts. One leaf is one Worker. The Lead is not the cross-session Dispatcher role.
 
 ## Bug register, inherited failures and last-worker gate
 

@@ -41,7 +41,7 @@ def register_opencode_mcp(home:Path,root:Path)->dict:
     return {"mcp":"registered","file":str(file)}
 
 OPENCODE_ROLES={"Lead":"LastHumanCommit Lead: owns classification, integration, proof, and release.",
-                "Orchestrator":"LastHumanCommit Orchestrator: carries the owner's sessions to results from a registry and file mail; does not do the work.",
+                "Dispatcher":"LastHumanCommit Dispatcher: carries the owner's sessions to results from a registry and file mail; does not do the work.",
                 "Sentinel":"LastHumanCommit Sentinel: watches one thing, reports only when something is wrong.",
                 "Adviser":"LastHumanCommit Adviser: a second opinion on a hard decision.",
                 "Critic":"LastHumanCommit Critic: finds where a plan or change breaks.",
@@ -50,7 +50,7 @@ OPENCODE_ROLES={"Lead":"LastHumanCommit Lead: owns classification, integration, 
                 "Tester":"LastHumanCommit Tester: proves the claim on the real consumer path.",
                 "Maintainer":"LastHumanCommit Maintainer: keeps the package and its installs current.",
                 "Worker":"LastHumanCommit Worker: does one bounded leaf."}
-OPENCODE_PRIMARY=("Lead","Orchestrator","Sentinel")
+OPENCODE_PRIMARY=("Lead","Dispatcher","Sentinel")
 
 def register_opencode_agents(home:Path,root:Path)->dict:
     """Install every LHC role profile from the current package, replacing a stale copy.
@@ -190,7 +190,7 @@ def configure(home:Path,root:Path,runtime:str,replace_gsd:bool=False,opencode_pl
             "context, reports time facts at tool and idle boundaries, holds a stop (twice at most) "
             "while the session's plan has queued or running leaves, and re-injects the AGENTS.md "
             "pointer after compaction. It never reviews or approves a diff. The LHC role profiles "
-            "(Lead, Orchestrator, Adviser, Critic, Worker and the rest) and skills (plan, planning, "
+            "(Lead, Dispatcher, Adviser, Critic, Worker and the rest) and skills (plan, planning, "
             "task-decomposition and the rest) are installed with it: type /plan to reconcile the "
             "work with the plan or to make one. Plan in stages, cut only the nearest stage into "
             "leaves of about 15 minutes, and choose yourself: the owner does not pick between plans. "

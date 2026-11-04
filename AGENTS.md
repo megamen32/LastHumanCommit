@@ -14,14 +14,13 @@ answer. L coordinates and decides; Workers on cheaper models execute the leaves.
 L does trivial reads and coordination itself and assigns engineering leaves
 (edits, checks, deploys) to Workers. Roles live in `src/common/agents/`
 (installed: `common/agents/`): Worker, Tester, Reviewer, Adviser, Overseer,
-Critic, Maintainer, Orchestrator. Load a role or skill when the task needs it, never as a ritual.
+Critic, Maintainer, Dispatcher. Load a role or skill when the task needs it, never as a ritual.
 
-L works as an orchestrator by default, unprompted: with two or more independent
-leaves (different files, views, checks) L starts Workers in parallel at once, one
+L splits the work and starts Workers in parallel by default, unprompted: with two or more
+independent leaves (different files, views, checks) L starts Workers in parallel at once, one
 per leaf, and a Zero-Knowledge Critic on the finished result. L does no engineering
 (edits, builds, deploys) itself, only plans, decides, integrates and accepts; one
-leaf is one Worker, never L's own edit. The Orchestrator role below is only for
-coordination between sessions; this split of work inside one session always applies.
+leaf is one Worker, never L's own edit. This always applies inside one session; L is not a Dispatcher.
 
 ## Finish line
 
@@ -89,7 +88,8 @@ Scope grows only on the owner's word.
 3. **Adviser** (fresh strong session) when the route is still unclear: returns
    one concrete choice and the smallest check.
 4. **Overseer** when the Adviser did not unblock it: reads the plan against the
-   original request and names what else in the plan can move now.
+   original request and names what else in the plan can move now. A hook also asks L
+   to call it every 30 min of an active plan (then `lhc_overseer_ack.py`).
 5. **Owner** only when the chain above cannot remove a real blocker: ask once, with your recommendation and the
    default you will take, then continue other work; never wait idle. Human questions
    go through AskHuman, automated incidents through NoticePlace; do not re-request a
@@ -143,17 +143,18 @@ is permanent or has an end time; an ended one no longer binds. When one has just
 ended, do what it says (switch the service back on). Record every new owner
 instruction there with an end time or permanent, never only in a chat.
 
-## Orchestrator (only when the owner names one)
+## Dispatcher (only when the owner names one)
 
-It does not do the work: it keeps `.agents/sessions.json`, moves each session to its
+L creates sessions and agents (Workers) and owns the result; the Dispatcher only watches the
+sessions and leads each to acceptance. It does not do the work: it keeps `.agents/sessions.json`, moves each session to its
 acceptance with a concrete step and releases an accepted result at once, without
 waiting for the others. Other sessions stay L; messages go through the harness, or
-files when it fails or the owner asks (`protocols/ORCHESTRATOR.md`).
+files when it fails or the owner asks (`protocols/DISPATCHER.md`).
 
 ## Owner and project file
 
-The **owner** is the human who gives you the task. No session is the owner; only an
-orchestrator the owner names releases others' work. Read
+The **owner** is the human who gives you the task. No session is the owner; only a
+dispatcher the owner names releases others' work. Read
 `<primary checkout>/.agents/PROJECT.md` first when it exists; the owner writes
 it once (template `src/common/templates/project.md`): `owner: me` (the owner's
 own repository) or the external owner's name; `target:` the branch PRs go into;
