@@ -20,7 +20,7 @@ unknown/revoked operations stay blocked. Sudo alone never grants authority.
 1. Confirm the target, artifact/commit, accepted claim, active-harness policy,
    and exact release canary.
 2. Install the candidate on the agreed user or test environment and manually
-   verify the real scenario before preparing a PR or integration. An owner's
+   verify the real scenario before preparing a PR or integration (commit and push the task branch regardless). An uninstalled stand or an unsafe artifact is yours to fix; do not stop at "not ready". An owner's
    existing request for their own result or deploy authorizes the deployment
    within scope; preserve explicit exclusions, third-party boundaries and
    system/harness restrictions. Use review/testing/rollback gates justified by

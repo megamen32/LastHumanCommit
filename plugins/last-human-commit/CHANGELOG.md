@@ -1,3 +1,7 @@
+## 1.9.2
+
+- A stop must not leave work uncommitted or a blocker standing. WIP commits and pushes of the task branch are always made as work goes on; test-first delays only the PR/integration into main, never the commit. A blocker the agent can remove itself (unsafe build or artifact composition, failed check, uninstalled stand) is removed at once; stopping with "not ready" is allowed only for a blocker outside its power, escalated Worker -> Lead -> Adviser -> Overseer, not to the owner. The only end states are a verified result (with the independent recheck, if acceptance required it) or an escalation that went out. Changed AGENTS.md, SHARED_WORKTREE.md and the release skill; test in tests/test_core_contract.py.
+
 ## 1.9.1
 
 - Honor an existing owner request for deployment to their service, and verify the real user or test scenario before preparing integration. Preserve external-service and system boundaries.
