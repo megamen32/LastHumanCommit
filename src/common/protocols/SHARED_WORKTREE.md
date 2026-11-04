@@ -53,6 +53,11 @@ only when a PR is opened, after checking
 its audience. Green checks do not authorize merge. A required approval or
 branch-protection gate is a precise blocker, not a reason to delete work.
 
+Inside one session the Lead is an orchestrator by default: two or more independent
+leaves go to Workers in parallel, one per leaf, plus a Zero-Knowledge Critic on the
+result; the Lead does no engineering itself, only plans, decides, integrates and
+accepts. One leaf is one Worker. This is not the cross-session Orchestrator role.
+
 ## Bug register, inherited failures and last-worker gate
 
 Use the same LhcPlan MCP for bug_register/bug_get/bug_list/bug_update/

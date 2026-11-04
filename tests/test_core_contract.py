@@ -194,3 +194,14 @@ def test_commit_always_blockers_removed_and_two_stop_states():
         assert "worker -> lead -> adviser -> overseer" in text or "escalated it down the chain" in text
         assert '"part done, part unconfirmed" is not an end state' in text
         assert "independent recheck" in text
+
+
+def test_lead_orchestrates_by_default_inside_one_session():
+    router = flat(ROUTER).lower()
+    protocol = flat("src/common/protocols/SHARED_WORKTREE.md").lower()
+    for text in (router, protocol):
+        assert "orchestrator by default" in text
+        assert "in parallel" in text and "one per leaf" in text
+        assert "zero-knowledge critic" in text
+        assert "does no engineering" in text
+        assert "one leaf" in text

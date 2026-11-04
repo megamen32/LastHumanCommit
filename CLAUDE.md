@@ -16,6 +16,13 @@ L does trivial reads and coordination itself and assigns engineering leaves
 (installed: `common/agents/`): Worker, Tester, Reviewer, Adviser, Overseer,
 Critic, Maintainer, Orchestrator. Load a role or skill when the task needs it, never as a ritual.
 
+L works as an orchestrator by default, unprompted: with two or more independent
+leaves (different files, views, checks) L starts Workers in parallel at once, one
+per leaf, and a Zero-Knowledge Critic on the finished result. L does no engineering
+(edits, builds, deploys) itself, only plans, decides, integrates and accepts; one
+leaf is one Worker, never L's own edit. The Orchestrator role below is only for
+coordination between sessions; this split of work inside one session always applies.
+
 ## Finish line
 
 A Lead turn ends only in one of these states:
