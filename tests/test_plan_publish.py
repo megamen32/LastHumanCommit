@@ -176,7 +176,10 @@ def test_baseline_progress_replan_and_idempotency(plan):
     assert "Сборка началась" in (dest / "index.html").read_text()
     assert (dest / "r001.html").read_bytes() == frozen
     assert len(publication.load_revisions(path / publication.STATE_DIR)) == 1
-    leaves.update_leaf(path, "L01", {"estimate_minutes": 50, "actual_minutes": 30, "status": "done", "finished_at": "2026-10-24T10:20:00Z"})
+    # a legacy leaf already over the 15-minute cap: written directly, update_leaf now refuses it
+    legacy = json.loads((path / "leaves/L01.json").read_text())
+    legacy.update({"estimate_minutes": 50, "actual_minutes": 30, "status": "done", "finished_at": "2026-10-24T10:20:00Z"})
+    write(path / "leaves/L01.json", legacy)
     publication.publish(path, config, reason="Изменилась оценка оставшейся работы")
     assert (dest / "r001.html").read_bytes() == frozen
     assert (path / publication.STATE_DIR / "revisions/r001.json").read_bytes() == baseline_json
@@ -324,7 +327,9 @@ def test_untrusted_history_fields_are_not_published(plan):
 def test_unrevised_planning_and_unknown_forecast(plan):
     path, config = plan
     publication.publish(path, config)
-    leaves.update_leaf(path, "L01", {"estimate_minutes": 50})
+    legacy = json.loads((path / "leaves/L01.json").read_text())
+    legacy["estimate_minutes"] = 50  # legacy leaf over the cap: written directly
+    write(path / "leaves/L01.json", legacy)
     publication.publish(path, config)
     page = (destination(path, config) / "index.html").read_text()
     assert "Есть изменения плана без новой ревизии" in page

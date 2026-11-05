@@ -422,6 +422,8 @@ class Graph:
     # and they are not the commits and the internal stages.
     business_results: list[str] = field(default_factory=list)
     acceptance_scenarios: list[str] = field(default_factory=list)
+    # What was found before the plan (facts with their proof); empty in old plans.
+    recon: list[str] = field(default_factory=list)
     current_progress: str = ""
     revisions: list = field(default_factory=list)
     milestones: list = field(default_factory=list)
@@ -1184,6 +1186,8 @@ def parse_graph_json(document: Any) -> Graph:
     if not isinstance(scenarios, list) or not all(isinstance(item, str) for item in scenarios):
         raise ValueError("acceptance_scenarios должно быть списком строк")
     graph.acceptance_scenarios = list(scenarios)
+    recon = document.get("recon") or []
+    graph.recon = [str(i).strip() for i in recon if str(i).strip()] if isinstance(recon, list) else []
     graph.current_progress = str(document.get("current_progress") or "")
     graph.revisions = [r for r in (document.get("revisions") or []) if isinstance(r, dict)]
     graph.milestones = [m for m in (document.get("milestones") or []) if isinstance(m, dict)]
@@ -4009,6 +4013,8 @@ def render_html(
         )
     why_html = f'<div class="brief brief-why">{"".join(why_cards)}</div>' if why_cards else ""
     scenarios = ''.join(f'<li>{escape(item)}</li>' for item in graph.acceptance_scenarios)
+    if graph.recon:
+        why_html += '<article class="panel plan-recon"><h2>Что уже есть (разведка)</h2><ul>' + ''.join(f'<li>{escape(item)}</li>' for item in graph.recon) + '</ul></article>'
     why_html += '<article class="panel acceptance-scenarios"><h2>Как проверим</h2>' + (f'<ul>{scenarios}</ul>' if scenarios else '<p>Сценарии проверки ещё не описаны</p>') + '</article>'
     why_html += '<p class="hint">Это декларация плана. Статус задач сам по себе не подтверждает приёмку результата.</p>'
     brief_html = f'<div class="brief">{"".join(detail_cards)}</div>' if detail_cards else ""
@@ -4953,6 +4959,8 @@ def render_print_html(graph: Graph, metrics: dict[str, Any]) -> str:
         )
     for item in graph.business_results:
         business += f"<p class='small muted'>{escape(item)}</p>\n"
+    if graph.recon:
+        business += '<h2>Что уже есть (разведка)</h2><ul>' + ''.join(f'<li>{escape(item)}</li>' for item in graph.recon) + '</ul>'
     business += '<h2>Как проверим</h2>'
     business += ('<ul>' + ''.join(f'<li>{escape(item)}</li>' for item in graph.acceptance_scenarios) + '</ul>') if graph.acceptance_scenarios else '<p>Сценарии проверки ещё не описаны</p>'
     if graph.current_progress:
@@ -5443,6 +5451,7 @@ def export_graph(graph: Graph) -> dict[str, Any]:
         "business_result": graph.business_result,
         "business_results": list(graph.business_results),
         "acceptance_scenarios": list(graph.acceptance_scenarios),
+        "recon": list(graph.recon),
         "current_progress": graph.current_progress,
         "revisions": list(graph.revisions),
         "milestones": list(graph.milestones),
@@ -6111,7 +6120,7 @@ def merge_attribution(
             )
             if missing and source.get(field) is not None:
                 task[field] = source[field]
-    for field in ("current_progress", "revisions", "milestones", "external_waits", "acceptance_scenarios", "started_at", "finished_at", "updated_at", "plan_origin"):
+    for field in ("current_progress", "revisions", "milestones", "external_waits", "acceptance_scenarios", "recon", "started_at", "finished_at", "updated_at", "plan_origin"):
         if not document.get(field) and previous.get(field):
             document[field] = previous[field]
     # The title of the plan is the first line of the report. A title that was

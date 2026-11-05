@@ -105,6 +105,9 @@ def failing_cli(monkeypatch):
 def make_plan_dir(tmp_path: Path, leaves: dict[str, dict]) -> Path:
     plan_dir = tmp_path / "plan"
     (plan_dir / "leaves").mkdir(parents=True)
+    # a researched plan: a second leaf passes the recon gate
+    (plan_dir / "plan.json").write_text(json.dumps({
+        "recon": ["файл a: есть", "команда b: вывод c"], "acceptance_scenario": "запустить, увидеть результат"}))
     for leaf_id, payload in leaves.items():
         write_leaf(plan_dir, leaf_id, payload)
     return plan_dir

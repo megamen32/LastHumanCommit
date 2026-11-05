@@ -5,9 +5,10 @@ description: Decompose large or stalled work into independently verifiable subta
 
 # Task Decomposition
 
-Every authorized development task has a Lead-owned plan before implementation,
-including one bounded fix or a small behavior change. A small task can use one
-concise leaf; it does not require a review ceremony or another user approval.
+An authorized development task over 15 minutes or with 2+ leaves has a Lead-owned
+plan, built after research, before implementation. One bounded fix of 15 minutes or
+less needs no plan; a one-leaf plan of that size is allowed, not required, and needs
+no review ceremony or user approval.
 Research enough to understand intent and affected path, then explicitly choose
 quickfix or fullcycle from scope and risk. A user-assigned leaf remains an
 execution slice created and managed by the Lead; it cannot choose the parent mode

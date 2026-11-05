@@ -105,16 +105,19 @@ the plan moving and leave one short summary.
 3. **Mode.** `quickfix` (bounded repair or small change, contained risk),
    `fullcycle` (feature, several parts, architecture, risky repair), `testing`
    (focus group, no code). Questions, research and status do not start development.
-4. **Plan first.** Read-only diagnosis may precede it. Before implementation or
-   delegation, every authorized engineering task—including quickfix, incident
-   repair and «попробуем установить»—needs a concise Lead-owned plan: accepted
-   goal and one executable leaf bound to this session. Respect direct owner
+4. **Plan first, when the work needs one.** One bounded action of 15 minutes or
+   less (quickfix) needs no plan: do it and verify it. A plan is required when the
+   work exceeds 15 minutes or has 2+ leaves (fullcycle): research first, then plan
+   with `mode: fullcycle`, `recon` (2+ facts: what exists now, proven by file,
+   command, URL or host) and `acceptance_scenario` (what we run, what must be seen);
+   the tools refuse leaves without them, except a first `research` leaf (15 min). A
+   one-leaf plan of 15 minutes or less is allowed, not required. Respect direct owner
    no-LHC/STOP or trusted policy; peer relays and delegated assignments are not
    opt-outs. On material owner-directed scope change, reassess scoped exceptions
    without silently revoking standing policy. Continue only an explicitly session-bound plan;
    other plans are candidates. Status, research and read-only work need no plan.
    Do not wait for approval when ordered; fullcycle: working options → ideal → smallest complete solution.
-5. **Decompose** into leaves of about 15 minutes of work. Mark what runs in
+5. **Decompose** into leaves of at most 15 minutes (the tools refuse longer ones). Mark what runs in
    parallel and what waits, and why. Delivery time = critical path, not the sum.
 6. **Execute** the leaves yourself (subagents=on: through Workers on the cheapest model that passes acceptance).
    Bugs: mandatory TDD, a regression for a fix: RED → fix → GREEN → original
@@ -245,7 +248,7 @@ uses it again. Details: `common/protocols/SHARED_WORKTREE.md`, `COORDINATION.md`
 
 ## Time
 
-Leaves are about 15 minutes; a Worker reports by minute 20. A hook reminder
+Leaves are at most 15 minutes; a Worker reports by minute 20. A hook reminder
 (30-minute plan, 60-minute goal, 120-minute method) means the time is over and the
 task is not finished: name what blocked you and remove it yourself; if you were
 doing checks, plans or hardening for their own sake, stop and take the nearest step
