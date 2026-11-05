@@ -1532,11 +1532,98 @@ def file_lock(path: Path):
         fcntl.flock(stream, fcntl.LOCK_EX)
         yield
 
-NO_RECON_MESSAGE = ("сначала исследуй: что есть сейчас и как проверим. В plan.json нужны recon "
-                    "(список из 2+ фактов: что уже есть и чем подтверждено - файл, команда, URL, "
-                    "хост) и непустой acceptance_scenario (что запускаем и что должно быть видно). "
-                    "Первым листом без них допускается только лист исследования "
+NO_RECON_MESSAGE = ("сначала исследуй: что есть сейчас и как проверим. "
+                    "recon: каждый факт с доказательством (команда/путь/URL) и ≥3 факта для fullcycle "
+                    "(для остальных планов ≥2). В plan.json recon - список строк вида "
+                    "«факт не короче 30 знаков :: evidence», где evidence - команда, путь, URL или хост; "
+                    "факты не повторяются. Нужен и непустой acceptance_scenario (что запускаем и что "
+                    "должно быть видно). Первым листом без них допускается только лист исследования "
                     "(kind=research, до 15 минут)")
+RECON_MIN_TEXT = 30
+RECON_FULLCYCLE_FACTS = 3
+RECON_OTHER_FACTS = 2
+
+
+def recon_review(recon: Any, fullcycle: bool) -> dict[str, Any]:
+    """Judge a plan's recon. Facts of the text only: the evidence is not run here.
+
+    New format: "fact (30+ chars) :: evidence" with evidence a command, path, URL or host.
+    The old format (plain strings) is still read: it is 'legacy' and is not refused for a
+    plan that already works, only for a plan that is being started."""
+    items = [i.strip() for i in recon if isinstance(i, str) and i.strip()] if isinstance(recon, list) else []
+    need = RECON_FULLCYCLE_FACTS if fullcycle else RECON_OTHER_FACTS
+    split = [re.split(r"\s::\s", item, maxsplit=1) for item in items]
+    structured = [p for p in split if len(p) == 2]
+    if not structured:
+        unique = {re.sub(r"\s+", " ", i).casefold() for i in items}
+        return {"strict": False, "legacy": len(unique) >= RECON_OTHER_FACTS, "need": need,
+                "problem": "recon без доказательств («факт :: evidence»)" if items else "recon пуст"}
+    problem, seen = "", set()
+    if len(structured) != len(items):
+        problem = "в recon есть пункт без « :: evidence»"
+    for text, evidence in structured:
+        text, evidence = text.strip(), evidence.strip()
+        key = re.sub(r"\s+", " ", text).casefold()
+        if len(text) < RECON_MIN_TEXT:
+            problem = problem or f"факт короче {RECON_MIN_TEXT} знаков: «{text[:40]}»"
+        elif not evidence:
+            problem = problem or f"у факта нет evidence: «{text[:40]}»"
+        elif key in seen:
+            problem = problem or f"факт повторяется: «{text[:40]}»"
+        seen.add(key)
+    if not problem and len(seen) < need:
+        problem = f"фактов {len(seen)} из {need}"
+    return {"strict": not problem, "legacy": False, "need": need, "problem": problem}
+
+
+def _state_dir() -> Path:
+    return Path(os.environ.get("XDG_STATE_HOME") or Path.home() / ".local" / "state") / "lhc" / "sessions"
+
+
+def _session_file(session: str) -> Optional[Path]:
+    if not re.fullmatch(r"[A-Za-z0-9._:-]{1,200}", session or ""):
+        return None
+    return _state_dir() / (re.sub(r"[^A-Za-z0-9_.-]", "_", session) + ".json")
+
+
+def record_session_plan(session: Any, plan_dir: Any, leaf_id: Any = None) -> bool:
+    """Remember that this session works a leaf of this plan (index session -> plan dirs).
+
+    The plan stays authoritative; the index only says where to look, so a session whose
+    cwd is another project is still found by its Stop gate. Any failure is silent."""
+    import time
+    try:
+        path = _session_file(str(session or ""))
+        if path is None:
+            return False
+        path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            data = {}
+        plans = data.get("plans") if isinstance(data, dict) and isinstance(data.get("plans"), dict) else {}
+        plans[str(Path(plan_dir).expanduser().resolve())] = {"leaf": leaf_id, "at": time.time()}
+        for old in sorted(plans, key=lambda k: float((plans[k] or {}).get("at") or 0))[:-20]:
+            plans.pop(old, None)
+        tmp = path.with_name(path.name + f".{os.getpid()}.tmp")
+        tmp.write_text(json.dumps({"session": str(session), "plans": plans}, ensure_ascii=False), encoding="utf-8")
+        os.replace(tmp, path)
+        return True
+    except Exception:  # noqa: BLE001 - the index is a convenience, never a failure
+        return False
+
+
+def session_plans(session: Any) -> list[str]:
+    """Plan directories this session was bound to (newest first); [] on any failure."""
+    try:
+        path = _session_file(str(session or ""))
+        if path is None or not path.is_file():
+            return []
+        plans = json.loads(path.read_text(encoding="utf-8")).get("plans") or {}
+        ordered = sorted(plans, key=lambda k: float((plans[k] or {}).get("at") or 0), reverse=True)
+        return [p for p in ordered if Path(p).is_dir()]
+    except Exception:  # noqa: BLE001
+        return []
 
 
 def leaf_max_minutes(task: dict[str, Any]) -> Optional[float]:
@@ -1555,14 +1642,16 @@ def _plan_gate_state(plan_dir: Path) -> dict[str, Any]:
             raw = {}
     if not isinstance(raw, dict):
         raw = {}
-    recon = raw.get("recon")
-    facts = [i.strip() for i in recon if isinstance(i, str) and i.strip()] if isinstance(recon, list) else []
+    fullcycle = raw.get("mode") == "fullcycle"
+    review = recon_review(raw.get("recon"), fullcycle)
     one = raw.get("acceptance_scenario")
     many = raw.get("acceptance_scenarios")
     scenario = (isinstance(one, str) and one.strip()) or (
         isinstance(many, list) and any(isinstance(i, str) and i.strip() for i in many))
-    return {"fullcycle": raw.get("mode") == "fullcycle",
-            "recon_ok": len(facts) >= 2 and bool(scenario)}
+    return {"fullcycle": fullcycle,
+            "recon_ok": review["strict"] and bool(scenario),
+            "recon_legacy": review["legacy"] and bool(scenario),
+            "recon_problem": review["problem"] if raw.get("recon") is not None else ""}
 
 
 def check_leaf_gates(plan_dir: Path, candidate: dict[str, Any], *, create: bool,
@@ -1593,7 +1682,11 @@ def check_leaf_gates(plan_dir: Path, candidate: dict[str, Any], *, create: bool,
         return
     if candidate.get("kind") == "research" and not real:
         return
-    raise LeafError(NO_RECON_MESSAGE)
+    if state["recon_legacy"] and any(t.get("kind") != "research" for t in real):
+        print("LHC: предупреждение: recon в старом формате (без «факт :: evidence»); "
+              "для нового плана каждый факт нужен с доказательством", file=sys.stderr)
+        return
+    raise LeafError(NO_RECON_MESSAGE + (f" [{state['recon_problem']}]" if state["recon_problem"] else ""))
 
 
 def check_activation(plan_dir: Path, leaf: dict[str, Any]) -> None:
@@ -1614,7 +1707,11 @@ def check_activation(plan_dir: Path, leaf: dict[str, Any]) -> None:
               f"разбей на листья по ≤{LEAF_ESTIMATE_CAP_MINUTES} мин", file=sys.stderr)
     state = _plan_gate_state(plan_dir)
     if state["fullcycle"] and not state["recon_ok"] and leaf.get("kind") != "research":
-        raise LeafError(NO_RECON_MESSAGE)
+        if state["recon_legacy"]:
+            print("LHC: предупреждение: recon в старом формате (без «факт :: evidence»); "
+                  "допиши доказательства к фактам и третий факт", file=sys.stderr)
+            return
+        raise LeafError(NO_RECON_MESSAGE + (f" [{state['recon_problem']}]" if state["recon_problem"] else ""))
 
 
 def update_leaf(plan_dir: Path, leaf_id: str, fields: dict, *, create=False,
@@ -1674,6 +1771,8 @@ def update_leaf(plan_dir: Path, leaf_id: str, fields: dict, *, create=False,
         serialized = json.dumps(merged, ensure_ascii=False, indent=2) + "\n"
         _write_atomic(path, serialized)
         own_hash = hashlib.sha256(serialized.encode()).hexdigest()
+        if merged.get("session") and merged.get("status", "queued") in {"queued", "running"}:
+            record_session_plan(merged["session"], plan_dir, leaf_id)
         try:
             ensure_plan_origin(plan_dir)
         except (OSError, ValueError) as error:
