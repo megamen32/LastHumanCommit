@@ -56,7 +56,11 @@ full applicable test suite green. Real approval refusals remain blockers.
 - A failing or missing tool: try another permitted route (other tool, host,
   script instead of UI, smaller step) before parking the operation.
 - A decision with a safe default: take it, write it in one line, continue.
-- A missing receipt, hash, ledger entry, plan projection or timer record.
+- A missing receipt, hash, ledger entry, plan projection or timer record, including the provenance receipt of an
+  installed artifact: treat it as unverified, build a new release from fresh origin/main by the standard route, keep
+  a backup of the old one, install, exercise the real scenario, roll back on failure. Asking a 'release owner' or
+  the owner for confirmation is forbidden when the owner already ordered the result and deployment to their own
+  service; only what is outside your power is blocked, and it goes Worker→Lead→Adviser→Overseer, not into a stop.
 - A slow peer session: `resume_after` in Agent Herder (or file mail), work on something else.
 
 ## Checks are a cost, not the product

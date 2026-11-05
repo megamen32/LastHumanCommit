@@ -221,3 +221,14 @@ def test_herder_outage_falls_back_to_a_git_ref_lease_after_three_minutes():
         assert needed in router + " " + protocol, needed
     assert "park only release" not in protocol and "not an equivalent fenced lease" not in protocol
     assert "release-guard" in flat("src/common/skills/release/SKILL.md")
+
+
+def test_unknown_artifact_provenance_is_not_a_blocker_but_a_rebuild():
+    # 2026-11-05: a Codex session stood still asking the "release owner" to confirm the origin of an installed binary.
+    router = flat(ROUTER)
+    assert "provenance receipt of an installed artifact: treat it as unverified, build a new release from fresh origin/main" in router
+    assert "keep a backup of the old one" in router and "roll back on failure" in router
+    assert "forbidden when the owner already ordered the result and deployment" in router
+    assert "Worker→Lead→Adviser→Overseer, not into a stop" in router
+    assert len((ROOT / ROUTER).read_text().splitlines()) <= 300
+    assert "not a blocker: rebuild from fresh origin/main" in flat("src/common/protocols/SHARED_WORKTREE.md")
