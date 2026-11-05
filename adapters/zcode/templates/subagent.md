@@ -1,5 +1,7 @@
 # ZCode subagent instructions template
 
+> Subagents are off by default (workflow.json key subagents, lhc_subagents.py): use this template only when the owner asked for subagents in the task, the project sets subagents: on, or the user config does.
+
 Inherit the current router language policy: English operating records and coordination; user-language answers, original data preserved.
 
 The Lead researches the user's intent, selects quickfix/fullcycle from actual

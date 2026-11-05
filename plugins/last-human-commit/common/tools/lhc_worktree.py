@@ -314,9 +314,207 @@ def inventory(repo: Path, target: str) -> dict:
             "read_only": True, "cleanup_authorized": False}
 
 
+GUARD_REF = "refs/lhc/release/"
+GUARD_TTL = 15 * 60  # seconds a fallback lease lives without a renewal
+EMPTY_TREE = "4b825dc642cb6eb9a060e54bf8d69288fbbdb904"
+
+
+def _sibling(name: str):
+    """A neighbouring LHC tool, imported by name or loaded from next to this file."""
+    try:
+        return importlib.import_module(name)
+    except ImportError:
+        pass
+    path = Path(__file__).resolve().with_name(name + ".py")
+    spec = importlib.util.spec_from_file_location(name + "_sibling", path)
+    if spec is None or spec.loader is None:
+        raise ValueError(f"{name} is not next to lhc_worktree.py")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def _guard_ref(project: str) -> str:
+    if not re.fullmatch(r"[A-Za-z0-9_.-]+", project or ""):
+        raise ValueError("release-guard needs --project made of letters, digits, '.', '_' or '-'")
+    return GUARD_REF + project
+
+
+def _guard_read(repo: Path, remote: str, ref: str) -> tuple[str, dict]:
+    """The commit the lease ref points at on the remote, and the JSON it carries."""
+    out = git(repo, "ls-remote", remote, ref)
+    sha = out.split()[0] if out else ""
+    if not sha:
+        return "", {}
+    git(repo, "fetch", "--quiet", remote, ref)
+    try:
+        data = json.loads(git(repo, "show", "-s", "--format=%B", sha))
+    except ValueError:
+        data = {}
+    return sha, data if isinstance(data, dict) else {}
+
+
+def _guard_push(repo: Path, remote: str, ref: str, expected: str, source: str) -> str:
+    """Atomic compare-and-swap of the lease ref; an empty expected value means 'must not exist'."""
+    result = subprocess.run(
+        ["git", "-C", str(repo), "push", "--quiet", f"--force-with-lease={ref}:{expected}", remote, f"{source}:{ref}"],
+        capture_output=True, text=True)
+    return "" if result.returncode == 0 else (result.stderr.strip() or "push refused")
+
+
+def _expired(data: dict, now: float) -> bool:
+    try:
+        return float(data.get("expires", 0)) <= now
+    except (TypeError, ValueError):
+        return True
+
+
+def guard_acquire(repo: Path, project: str, session: str, candidate: str, host: str = "",
+                  remote: str = "origin", ttl: int = GUARD_TTL, now: float | None = None) -> dict:
+    """Take or renew the fallback release lease (Herder unavailable): a git ref on the remote.
+
+    A live lease of another session stops the caller; an expired one is taken by the same CAS.
+    """
+    import time
+    now = time.time() if now is None else now
+    ref = _guard_ref(project)
+    if not session:
+        raise ValueError("release-guard needs --session")
+    sha, data = _guard_read(repo, remote, ref)
+    if data.get("session") != session and sha and not _expired(data, now):
+        return {"ok": False, "action": "acquire", "ref": ref, "reason": "foreign lease",
+                "owner": data.get("session"), "remaining_seconds": int(float(data.get("expires", 0)) - now)}
+    payload = {"session": session, "host": host, "candidate": candidate, "expires": int(now + ttl)}
+    env = {**os.environ, "GIT_AUTHOR_NAME": "lhc", "GIT_AUTHOR_EMAIL": "lhc@localhost",
+           "GIT_COMMITTER_NAME": "lhc", "GIT_COMMITTER_EMAIL": "lhc@localhost"}
+    tree = subprocess.run(["git", "-C", str(repo), "mktree"], input="", capture_output=True, text=True).stdout.strip()
+    made = subprocess.run(["git", "-C", str(repo), "commit-tree", tree or EMPTY_TREE, "-m", json.dumps(payload, sort_keys=True)],
+                          capture_output=True, text=True, env=env)
+    if made.returncode:
+        raise ValueError(made.stderr.strip() or "cannot create the lease commit")
+    commit = made.stdout.strip()
+    error = _guard_push(repo, remote, ref, sha, commit)
+    if error:
+        return {"ok": False, "action": "acquire", "ref": ref, "reason": "lost the compare-and-swap: " + error}
+    return {"ok": True, "action": "acquire", "ref": ref, "commit": commit, "expires": payload["expires"],
+            "took_over_expired": bool(sha and data.get("session") != session)}
+
+
+def _is_ancestor(repo: Path, ancestor: str, descendant: str) -> bool:
+    """lhc_git_facts.is_ancestor; the git binary answers when the facts reader cannot."""
+    try:
+        facts = _sibling("lhc_git_facts")
+        found = facts.discover(repo)
+        answer = facts.is_ancestor(found, ancestor, descendant) if found is not None else None
+    except Exception:  # noqa: BLE001 - the git binary is the fallback
+        answer = None
+    if answer is None:
+        answer = subprocess.run(["git", "-C", str(repo), "merge-base", "--is-ancestor", ancestor, descendant],
+                                capture_output=True).returncode == 0
+    return answer is True
+
+
+def _version(text: str) -> tuple:
+    try:
+        return tuple(int(part) for part in text.strip().split("."))
+    except ValueError:
+        return ()
+
+
+def guard_check(repo: Path, project: str, session: str, candidate: str, live: str, expected: str = "",
+                target: str = "main", remote: str = "origin", now: float | None = None) -> dict:
+    """The checks made in code immediately before a release that runs under the fallback lease."""
+    import time
+    now = time.time() if now is None else now
+    ref = _guard_ref(project)
+    checks: dict[str, bool] = {}
+    sha, data = _guard_read(repo, remote, ref)
+    checks["own_unexpired_lease"] = bool(sha) and data.get("session") == session and not _expired(data, now) \
+        and data.get("candidate") == candidate
+    cand = git(repo, "rev-parse", "--verify", candidate + "^{commit}", check=False)
+    live_sha = git(repo, "rev-parse", "--verify", live + "^{commit}", check=False) if live else ""
+    git(repo, "fetch", "--quiet", remote, target, check=False)
+    tip = git(repo, "rev-parse", "--verify", f"{remote}/{target}^{{commit}}", check=False)
+    checks["candidate_in_origin_main"] = bool(cand and tip) and _is_ancestor(repo, cand, tip)
+    checks["live_is_ancestor_of_candidate"] = bool(cand and live_sha) and _is_ancestor(repo, live_sha, cand)
+    checks["expected_revision_matches_live"] = bool(live_sha) and bool(expected) \
+        and git(repo, "rev-parse", "--verify", expected + "^{commit}", check=False) == live_sha
+    new_v = _version(git(repo, "show", f"{cand}:VERSION", check=False)) if cand else ()
+    old_v = _version(git(repo, "show", f"{live_sha}:VERSION", check=False)) if live_sha else ()
+    checks["version_is_greater_than_live"] = bool(new_v and old_v) and new_v > old_v
+    dirty = [line for line in git(repo, "status", "--porcelain", check=False).splitlines()
+             if not line.startswith("?? .agents/mail")]
+    checks["worktree_clean"] = not dirty
+    return {"ok": all(checks.values()), "action": "check", "ref": ref, "checks": checks}
+
+
+def guard_release(repo: Path, project: str, session: str, remote: str = "origin") -> dict:
+    """Free the fallback lease: delete the ref by CAS, and only when this session holds it."""
+    ref = _guard_ref(project)
+    sha, data = _guard_read(repo, remote, ref)
+    if not sha:
+        return {"ok": True, "action": "release", "ref": ref, "released": False, "note": "no lease"}
+    if data.get("session") != session:
+        return {"ok": False, "action": "release", "ref": ref, "reason": "foreign lease", "owner": data.get("session")}
+    error = _guard_push(repo, remote, ref, sha, "")
+    return ({"ok": False, "action": "release", "ref": ref, "reason": error} if error
+            else {"ok": True, "action": "release", "ref": ref, "released": True})
+
+
+def guard_journal(repo: Path, plan: Path | None, session: str, result: dict, project: str) -> None:
+    """Leave the herder-bypass trace: a revisions entry in the plan and a result mail to the DISPATCHER."""
+    from datetime import datetime, timezone
+    text = f"herder-bypass: release-guard {result.get('action')} project={project} ok={result.get('ok')} ref={result.get('ref')}"
+    try:
+        if plan is not None and (plan / "plan.json").is_file():
+            data = json.loads((plan / "plan.json").read_text(encoding="utf-8"))
+            data.setdefault("revisions", []).append(
+                {"at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "reason": "herder-bypass", "summary": text})
+            tmp = plan / "plan.json.tmp"
+            tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            os.replace(tmp, plan / "plan.json")
+    except (OSError, ValueError):
+        pass
+    try:
+        mail = _sibling("lhc_mail")
+        mail.send(mail.primary_root(repo), "DISPATCHER", session or "release-guard", "result", text)
+    except Exception:  # noqa: BLE001 - the journal never blocks a release decision
+        pass
+
+
+def release_guard_cli(args) -> dict:
+    import socket
+    repo = args.repo
+    project = args.project or Path(git(repo, "rev-parse", "--path-format=absolute", "--git-common-dir")).parent.name
+    candidate = args.candidate or git(repo, "rev-parse", "HEAD")
+    if args.guard_action == "acquire":
+        result = guard_acquire(repo, project, args.session, candidate, args.host or socket.gethostname(), args.remote, args.ttl)
+    elif args.guard_action == "check":
+        result = guard_check(repo, project, args.session, candidate, args.live_rev or "", args.expected_rev or "",
+                             args.target, args.remote)
+    elif args.guard_action == "release":
+        result = guard_release(repo, project, args.session, args.remote)
+    else:
+        raise ValueError("release-guard needs acquire, check or release")
+    if result.get("ok"):
+        guard_journal(repo, args.plan, args.session, result, project)
+    return result
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("plan", "create", "delivery", "inventory"))
+    parser.add_argument("action", choices=("plan", "create", "delivery", "inventory", "release-guard"))
+    parser.add_argument("guard_action", nargs="?", choices=("acquire", "check", "release"),
+                        help="release-guard: the fallback release lease (a git ref) used when Herder is unavailable")
+    parser.add_argument("--project", help="release-guard: project name of the lease ref (default: primary checkout name)")
+    parser.add_argument("--session", default="", help="release-guard: this session's id")
+    parser.add_argument("--host", default="")
+    parser.add_argument("--candidate", help="release-guard: candidate commit (default HEAD)")
+    parser.add_argument("--live-rev", help="release-guard check: the live revision just re-read")
+    parser.add_argument("--expected-rev", help="release-guard check: the revision the release entrypoint expects")
+    parser.add_argument("--ttl", type=int, default=GUARD_TTL)
+    parser.add_argument("--plan", type=Path, help="release-guard: plan directory that gets the herder-bypass revision")
     parser.add_argument("--repo", type=Path, required=True)
     parser.add_argument("--task")
     parser.add_argument("--target", default="main", help="PR integration target for delivery")
@@ -325,6 +523,10 @@ def main() -> None:
     parser.add_argument("--base", help="resolve from primary checkout; required for create")
     args = parser.parse_args()
     try:
+        if args.action == "release-guard":
+            result = release_guard_cli(args)
+            print(json.dumps(result, ensure_ascii=False, sort_keys=True))
+            raise SystemExit(0 if result.get("ok") else 1)
         if args.action == "inventory":
             result = inventory(args.repo, args.target)
         elif args.action == "delivery":

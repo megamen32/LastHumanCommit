@@ -196,12 +196,28 @@ def test_commit_always_blockers_removed_and_two_stop_states():
         assert "independent recheck" in text
 
 
-def test_lead_splits_work_and_starts_workers_inside_one_session():
+def test_subagents_are_off_by_default_and_the_lead_does_the_work_itself():
     router = flat(ROUTER).lower()
     protocol = flat("src/common/protocols/SHARED_WORKTREE.md").lower()
     for text in (router, protocol):
-        assert "splits the work and starts workers in parallel" in text
-        assert "in parallel" in text and "one per leaf" in text
-        assert "zero-knowledge critic" in text
-        assert "does no engineering" in text
-        assert "one leaf" in text
+        assert "subagents are off by default" in text
+        assert "subagents: on" in text and "council" in text
+    assert "l does the work itself" in router
+    assert "the lead does the work itself" in protocol
+    assert "with subagents=on l splits the work and starts workers in parallel" in router
+    assert "does no engineering" in router and "one per leaf" in router and "zero-knowledge" in router
+    assert "off by default" in flat("src/common/agents/Lead.md").lower()
+    assert (ROOT / "src/common/config/workflow.json").read_text().count('"subagents": "off"') == 1
+    for adapter in (ROOT / "adapters").glob("*/templates/subagent.md"):
+        assert "off by default" in adapter.read_text(), adapter
+
+
+def test_herder_outage_falls_back_to_a_git_ref_lease_after_three_minutes():
+    router = flat(ROUTER)
+    protocol = flat("src/common/protocols/SHARED_WORKTREE.md")
+    assert "Herder unavailable for 3 min" in router and "git-ref fallback lease" in router
+    assert "report that exact release blocker" not in router
+    for needed in ("3 min", "refs/lhc/release", "herder-bypass", "release-guard", "--force-with-lease", "20 s"):
+        assert needed in router + " " + protocol, needed
+    assert "park only release" not in protocol and "not an equivalent fenced lease" not in protocol
+    assert "release-guard" in flat("src/common/skills/release/SKILL.md")

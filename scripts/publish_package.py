@@ -29,11 +29,13 @@ NATIVE = PACKAGE / "native" / "codex"
 WORKFLOW_SOURCE = ROOT / "src/common/config/workflow.json"
 
 
-def workflow_config_bytes(stage: str) -> bytes:
+def workflow_config_bytes(stage: str, subagents: str = "off") -> bytes:
     """Build one tiny workflow setting into the native package; no policy service."""
     if stage not in ("on", "off"):
         raise ValueError("pr_stage must be on or off")
-    return (json.dumps({"pr_stage": stage}, sort_keys=True, indent=2) + "\n").encode()
+    if subagents not in ("on", "off"):
+        raise ValueError("subagents must be on or off")
+    return (json.dumps({"pr_stage": stage, "subagents": subagents}, sort_keys=True, indent=2) + "\n").encode()
 
 COMMON = ((b"src/common/", b"common/"),)
 ROUTING = COMMON + (
@@ -145,6 +147,7 @@ TOOL_COPIES = (
     "lhc_orchestrator.py",
     "lhc_dispatcher.py",
     "lhc_overseer_ack.py",
+    "lhc_subagents.py",
     "lhc_plan_catalog.py",
     "lhc_plan_mcp.py",
     "lhc_plan_ui.py",
@@ -173,7 +176,7 @@ def main() -> int:
 
     source_config = json.loads(WORKFLOW_SOURCE.read_text(encoding="utf-8"))
     pr_stage = args.pr_stage or source_config["pr_stage"]
-    workflow_bytes = workflow_config_bytes(pr_stage)
+    workflow_bytes = workflow_config_bytes(pr_stage, source_config.get("subagents", "off"))
 
     stale: list[str] = []
     published = 0

@@ -7,6 +7,7 @@ Overseer (zero-knowledge, read-only), then marks the review done with one comman
 the 30 minutes:
 
     python3 lhc_overseer_ack.py [--plan PLAN_DIR]     mark the review done now
+    python3 lhc_overseer_ack.py --self [--plan DIR]   the Lead did the review itself (subagents off)
     python3 lhc_overseer_ack.py --off [--plan DIR]    the owner said no-LHC/STOP: stop reminding
     python3 lhc_overseer_ack.py --status [--plan DIR]
 
@@ -61,10 +62,10 @@ def disabled(plan):
     return bool(read_state(plan).get("off"))
 
 
-def ack(plan, now=None):
+def ack(plan, now=None, by="overseer"):
     now = now or time.time()
     data = read_state(plan)
-    data.update(last_review=now, since=data.get("since") or now, stop_mark=None, post_mark=None)
+    data.update(last_review=now, since=data.get("since") or now, stop_mark=None, post_mark=None, by=by)
     return write_state(plan, data)
 
 
@@ -93,8 +94,15 @@ def due(plan, channel, now=None):
     return int(elapsed // 60)
 
 
-def request_text(plan, minutes):
+def request_text(plan, minutes, self_review=False):
     tool = Path(__file__).resolve()
+    if self_review:
+        return (f"LHC: plan {Path(plan).name} has been active for {minutes} min without an Overseer review "
+                "(one is due every 30 min). Subagents are off, so review it yourself: read the checklist in "
+                "agents/Overseer.md, compare the plan with the original owner request and its latest corrections, "
+                "write 3 lines in the plan's revisions, then run "
+                f"python3 {tool} --self --plan {plan} and finish. Skip it only when the owner said no-LHC or "
+                f"STOP (python3 {tool} --off --plan {plan}).")
     return (f"LHC: plan {Path(plan).name} has been active for {minutes} min without an Overseer review "
             "(one is due every 30 min). Call the Overseer now (zero-knowledge, read-only): give it the "
             "original owner request, the owner's latest corrections and the current plan report, not the "
@@ -122,6 +130,8 @@ def main(argv=None):
     parser.add_argument("--plan", type=Path, default=None, help="plan directory; default: the only open plan here")
     parser.add_argument("--off", action="store_true")
     parser.add_argument("--status", action="store_true")
+    parser.add_argument("--self", dest="self_review", action="store_true",
+                        help="the Lead reviewed the plan itself (subagents off)")
     args = parser.parse_args(argv)
     plan = args.plan
     if plan is None:
@@ -140,7 +150,7 @@ def main(argv=None):
         ok = write_state(plan, {**read_state(plan), "off": True})
         print("overseer reminders off for " + plan.name if ok else "overseer: could not write state")
         return 0 if ok else 1
-    ok = ack(plan)
+    ok = ack(plan, by="self" if args.self_review else "overseer")
     print("overseer review recorded for " + plan.name if ok else "overseer: could not write state")
     return 0 if ok else 1
 

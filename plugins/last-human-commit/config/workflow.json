@@ -1,3 +1,4 @@
 {
-  "pr_stage": "on"
+  "pr_stage": "on",
+  "subagents": "off"
 }

@@ -288,7 +288,15 @@ def overseer_review(event, root, channel, now=None):
         if not active:
             return None
         minutes = ack.due(plan, channel, now)
-        return ack.request_text(plan, minutes) if minutes is not None else None
+        if minutes is None:
+            return None
+        try:
+            import lhc_subagents
+            cwd = event.get("cwd")
+            on = lhc_subagents.enabled(cwd if isinstance(cwd, str) and cwd else plan)
+        except Exception:  # noqa: BLE001 - without the resolver the default is off
+            on = False
+        return ack.request_text(plan, minutes, self_review=not on)
     except Exception:  # noqa: BLE001 - fail open: a reminder that cannot decide stays silent
         return None
 

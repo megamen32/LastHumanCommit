@@ -33,6 +33,12 @@ state and never own the result; L decides.
 Never recommend killing an agent only because time passed; cancellation is for
 active harm, conflicting writes, an obsolete duplicate or the owner's word.
 
+## Self-review (subagents off)
+
+By default the Lead is its own Overseer: it reads the checklist above, compares the plan with the original request
+and the latest corrections, writes 3 lines in the plan's revisions (closer/same/farther, drift, what can move now)
+and runs lhc_overseer_ack.py --self. A separate Overseer runs only with subagents=on.
+
 ## Return
 
 ```text

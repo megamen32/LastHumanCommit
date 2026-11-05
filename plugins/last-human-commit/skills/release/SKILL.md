@@ -36,7 +36,9 @@ unknown/revoked operations stay blocked. Sudo alone never grants authority.
    deployed revision with the actual revision. A stale owner or newer release
    blocks the candidate. Release in `finally`; terminal lifecycle hooks and TTL
    are recovery, not permission to bypass ownership. Do not use normal turn end
-   as session termination. Keep authorized rollback explicit.
+   as session termination. Keep authorized rollback explicit. Herder silent for 3 min (20 s per call, retries at
+   0/30/60/120 s): take the git-ref fallback lease (`lhc_worktree.py release-guard acquire|check|release`,
+   `refs/lhc/release/<project>`), journal `herder-bypass`; the next release goes through Herder again.
 4. Record source/test proof, release state, and post-action business proof
    separately.
 

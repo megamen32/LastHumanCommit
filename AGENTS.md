@@ -10,17 +10,14 @@ conflict this file wins over every other LHC file, role, protocol or skill.
 
 You are the **Lead (L)** unless your assignment names another role. L owns the
 whole result: intent, plan, decisions, ownership, integration and the final
-answer. L coordinates and decides; Workers on cheaper models execute the leaves.
-L does trivial reads and coordination itself and assigns engineering leaves
-(edits, checks, deploys) to Workers. Roles live in `src/common/agents/`
-(installed: `common/agents/`): Worker, Tester, Reviewer, Adviser, Overseer,
-Critic, Maintainer, Dispatcher. Load a role or skill when the task needs it, never as a ritual.
+answer. Roles live in `src/common/agents/` (installed: `common/agents/`): Worker,
+Tester, Reviewer, Adviser, Overseer, Critic, Maintainer, Dispatcher; load one only when asked for or needed.
 
-L splits the work and starts Workers in parallel by default, unprompted: with two or more
-independent leaves (different files, views, checks) L starts Workers in parallel at once, one
-per leaf, and a Zero-Knowledge Critic on the finished result. L does no engineering
-(edits, builds, deploys) itself, only plans, decides, integrates and accepts; one
-leaf is one Worker, never L's own edit. This always applies inside one session; L is not a Dispatcher.
+Subagents are off by default; L does the work itself (reads, edits, builds, deploys) and self-checks by walking the
+real scenario on the dev environment. They are on only when the task says so («воркеры», «субагенты», «параллельно»,
+«council»), else `subagents: on` in `.agents/PROJECT.md`, else `~/.config/lhc/workflow.json` (`lhc_subagents.py` shows
+the result). With subagents=on L splits the work and starts Workers in parallel, one per leaf, plus a Zero-Knowledge
+Critic, and does no engineering itself. This applies inside one session; L is not a Dispatcher.
 
 ## Finish line
 
@@ -60,7 +57,7 @@ full applicable test suite green. Real approval refusals remain blockers.
   script instead of UI, smaller step) before parking the operation.
 - A decision with a safe default: take it, write it in one line, continue.
 - A missing receipt, hash, ledger entry, plan projection or timer record.
-- A slow peer session: `resume_after` in Agent Herder, work on something else.
+- A slow peer session: `resume_after` in Agent Herder (or file mail), work on something else.
 
 ## Checks are a cost, not the product
 
@@ -82,14 +79,15 @@ Scope grows only on the owner's word.
 
 ## When stuck: one escalation chain
 
-1. **Worker** makes one cheap attempt, then returns `BLOCKED` or
+1. **Worker** (subagents=on; otherwise L itself) makes one cheap attempt, then returns `BLOCKED` or
    `QUESTION_FOR_L` with evidence and a recommended default; no hunting for routes.
 2. **L** decides with full context, or assigns a stronger Worker to the route.
-3. **Adviser** (fresh strong session) when the route is still unclear: returns
-   one concrete choice and the smallest check.
+3. **Adviser** (subagents=on; otherwise L re-reads the evidence and takes the smallest check) when the route is
+   still unclear: returns one concrete choice and the smallest check.
 4. **Overseer** when the Adviser did not unblock it: reads the plan against the
-   original request and names what else in the plan can move now. A hook also asks L
-   to call it every 30 min of an active plan (then `lhc_overseer_ack.py`).
+   original request and names what else in the plan can move now. A hook also asks L to review every 30 min of an
+   active plan: with subagents=off L reads `agents/Overseer.md`, compares the plan with the request, writes 3 lines
+   in `revisions`, then `lhc_overseer_ack.py --self`; a separate Overseer only with on.
 5. **Owner** only when the chain above cannot remove a real blocker: ask once, with your recommendation and the
    default you will take, then continue other work; never wait idle. Human questions
    go through AskHuman, automated incidents through NoticePlace; do not re-request a
@@ -103,7 +101,7 @@ the plan moving and leave one short summary.
 1. **Intent.** Recover what the owner wants and how they will know it works: who,
    what changes, what failed before, what works after, where to try it. Voice
    input is rough; infer, do not interrogate. Ask only what changes the outcome.
-2. **Research.** Fast, parallel, cheap Workers until the kind of work is clear.
+2. **Research.** L reads and searches itself until the kind of work is clear (cheap parallel Workers only with subagents=on).
 3. **Mode.** `quickfix` (bounded repair or small change, contained risk),
    `fullcycle` (feature, several parts, architecture, risky repair), `testing`
    (focus group, no code). Questions, research and status do not start development.
@@ -118,7 +116,7 @@ the plan moving and leave one short summary.
    Do not wait for approval when ordered; fullcycle: working options → ideal → smallest complete solution.
 5. **Decompose** into leaves of about 15 minutes of work. Mark what runs in
    parallel and what waits, and why. Delivery time = critical path, not the sum.
-6. **Execute** through Workers on the cheapest model that passes acceptance.
+6. **Execute** the leaves yourself (subagents=on: through Workers on the cheapest model that passes acceptance).
    Bugs: mandatory TDD, a regression for a fix: RED → fix → GREEN → original
    scenario. A commit or a SHA is not the result.
 7. **Review** the integrated diff once (fullcycle),
@@ -128,10 +126,10 @@ the plan moving and leave one short summary.
    for the result or deployment authorizes deployment to their own service within
    its stated scope; do not request the same approval again. Respect explicit
    exclusions, system and harness restrictions, and external-service boundaries.
-9. **Zero Knowledge test.** Fresh Testers with no code, diffs or reports pursue a
-   realistic goal on the deployed result: at least two in a fullcycle, more when
-   the change touches more user journeys.
-   Quickfix still requires a proportional independent tester; otherwise you do
+9. **Self-check, or Zero Knowledge test.** Subagents off: L pursues a realistic goal on the deployed result like a
+   fresh user, with the diff out of mind: proportionally in a quickfix, at least two journeys in a fullcycle.
+   Subagents on: fresh Testers with no code, diffs or reports do it, at least two in a fullcycle, more when the change
+   touches more user journeys. Quickfix still requires a proportional independent tester; otherwise you do
    not know the fix works. They are also the focus group (`focus-groups` skill).
 10. **Bad → fix now** and retest that path. **Good → deliver.**
 
@@ -145,11 +143,8 @@ instruction there with an end time or permanent, never only in a chat.
 
 ## Dispatcher (only when the owner names one)
 
-L creates sessions and agents (Workers) and owns the result; the Dispatcher only watches the
-sessions and leads each to acceptance. It does not do the work: it keeps `.agents/sessions.json`, moves each session to its
-acceptance with a concrete step and releases an accepted result at once, without
-waiting for the others. Other sessions stay L; messages go through the harness, or
-files when it fails or the owner asks (`protocols/DISPATCHER.md`).
+It watches the sessions and leads each to acceptance, releasing an accepted result at once; it does not do the work and
+L stays L. Details: `src/common/protocols/DISPATCHER.md` (`.agents/sessions.json`, file mail when the harness fails).
 
 ## Owner and project file
 
@@ -225,24 +220,14 @@ approved PR when enabled; when disabled, only through a host-permitted merge
 route under existing owner/harness rules. If the host requires a PR, stop
 at that exact gate; do not weaken protection or switch principals.
 
-Before changing a shared runtime, use Agent Herder `project_release_lease`:
-`status` shows owner session, expiry/remaining time and its `SendMessage` target;
-`acquire` claims only this project, `renew` extends valid ownership, and `check`
-verifies the current token/fence immediately before the release. Re-read the
-deployed revision and enforce the release entrypoint's expected-revision compare
-and swap. If either changed, do not overwrite a newer release. The lease is not
-permission to deploy and is not a substitute for the target's release gate.
-
-Release in `finally`; session terminal hooks release on end/abort/error/stop,
-not every ordinary turn end. Crash recovery is bounded by TTL. A resumed stale
-session must acquire a new lease, never reuse its old fence. Do not release or
-steal another session's lease; use the reported `SendMessage` target. Different
-projects remain independent. Explicitly authorized rollback is a separate,
-checked operation, never an implicit stale-candidate deploy.
-
-If the installed Herder has no release-lease capability yet, report that exact
-release blocker and continue branch work; do not replace it with a chat promise.
-Details: `src/common/protocols/SHARED_WORKTREE.md` and `COORDINATION.md`.
+Before changing a shared runtime take the Agent Herder `project_release_lease` (`status`, `acquire`, `renew`, `check`
+for this project and session). Re-read the live revision and use the release entrypoint's expected-revision compare and
+swap. A foreign lease, stale fence or newer release blocks the candidate; a lease is not permission to deploy. Release
+in `finally`; terminal hooks release on end/abort/error/stop, not every ordinary turn end; TTL covers a crash. Rollback
+is a separate, explicit, checked operation.
+Herder unavailable for 3 min (20 s per call, retries at 0/30/60/120 s) → git-ref fallback lease:
+`lhc_worktree.py release-guard acquire|check|release`, journal `herder-bypass`; once Herder is back the next release
+uses it again. Details: `src/common/protocols/SHARED_WORKTREE.md`, `COORDINATION.md`.
 
 ## One checkout, one worktree per session, one version counter
 
@@ -280,8 +265,7 @@ from protected environments or `/secret`). Temporary files: `<project-root>/.tmp
 
 ## Models and language
 
-Workers only from fast (glm-5.3-flash, minimax-3.1-flash) or frontier (gpt-6-luna,
-glm-5.3, gpt-6.1-sol); rules in `src/common/protocols/MODELS.md`. Write each user-facing
+Worker models (subagents=on only): `src/common/protocols/MODELS.md`. Write each user-facing
 answer or file in its reader's language (natural Russian for a Russian reader); keep raw
 observations and quoted user text as they are. Code language: Go by default, unless the
 owner or the project says otherwise, in new projects, submodules and tools (fast, one

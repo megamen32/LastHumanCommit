@@ -53,10 +53,11 @@ only when a PR is opened, after checking
 its audience. Green checks do not authorize merge. A required approval or
 branch-protection gate is a precise blocker, not a reason to delete work.
 
-Inside one session the Lead splits the work and starts Workers in parallel: two or more independent
-leaves go to Workers in parallel, one per leaf, plus a Zero-Knowledge Critic on the
-result; the Lead does no engineering itself, only plans, decides, integrates and
-accepts. One leaf is one Worker. The Lead is not the cross-session Dispatcher role.
+Subagents are off by default (`workflow.json` key `subagents`, `lhc_subagents.py`): inside one session the Lead does
+the work itself and self-checks the real scenario on the dev environment. Only on the owner's word in the task
+(«воркеры», «субагенты», «параллельно», «council»), `subagents: on` in `.agents/PROJECT.md` or in
+`~/.config/lhc/workflow.json` (that priority) does the Lead split the work and start Workers in parallel, one per
+leaf, plus a Zero-Knowledge Critic. The Lead is not the cross-session Dispatcher role.
 
 ## Bug register, inherited failures and last-worker gate
 
@@ -93,9 +94,30 @@ release a foreign lease; contact its session via the reported `SendMessage`
 target. Separate projects do not share a global lock. A lease does not authorize
 production or rollback. An authorized rollback must name and verify its target.
 
-If this capability is unavailable in the installed Herder, park only release;
-continue isolated implementation and PR publication. A file/chat claim is not
-an equivalent fenced lease.
+### Herder unavailable: git-ref fallback lease
+
+Each `project_release_lease` call waits up to 20 s for an answer and is retried after 0, 30, 60 and 120 s; with no
+successful answer in 3 min Herder is unavailable. Then, and only then, take the fallback lease: a git ref on origin
+changed by atomic compare-and-swap (`--force-with-lease`).
+
+```sh
+python3 <lhc>/tools/lhc_worktree.py release-guard acquire --repo <wt> --project <p> --session <id> --candidate <sha> [--plan <plan-dir>]
+python3 <lhc>/tools/lhc_worktree.py release-guard check   --repo <wt> --project <p> --session <id> --candidate <sha> --live-rev <live> --expected-rev <live>
+python3 <lhc>/tools/lhc_worktree.py release-guard release --repo <wt> --project <p> --session <id>
+```
+
+- The lease is `refs/lhc/release/<project>`: a commit whose message is JSON {session, host, candidate, expires = now + 15 min}.
+  A ref of another session that has not expired stops you (foreign lease); an expired one is taken by the same CAS;
+  the owner renews with `acquire` and frees the ref in `finally` (`release`, a CAS delete).
+- `check` runs in code right before the mutation: the candidate is in `origin/main` (`lhc_git_facts.is_ancestor`), the
+  live revision is its ancestor, the candidate's `VERSION` is greater than the live one, the entrypoint's expected
+  revision equals the live revision just re-read (otherwise a stale fence stops the release) and the worktree is clean.
+- Journal: `acquire` and `release` add a `herder-bypass` entry to the plan's `revisions` (`--plan`) and send
+  `lhc_mail.py send --to DISPATCHER --kind result`.
+- Allowed: merge your own checked PR, build and roll out your own candidate, renew your own ref. Not allowed: touch a
+  foreign dirty tree while `lhc_orphan_work.py` shows owner=active, roll back, release a Herder lease seen before the
+  outage, roll out a candidate that is not a descendant of the live revision. When Herder answers again, the next
+  release goes through it.
 
 ## Completion
 
