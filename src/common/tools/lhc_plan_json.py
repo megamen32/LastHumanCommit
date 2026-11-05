@@ -66,7 +66,9 @@ COST_SOURCES = ("measured", "provisional")
 # nonzero, unless the leaf records, in its own words, why it is deliberately
 # larger — so the rule is a signpost, not a blind barrier.
 LEAF_ESTIMATE_CAP_MINUTES = 15
-LEAF_KINDS = ("task", "milestone")
+LEAF_KINDS = ("task", "milestone", "research")
+ESTIMATE_KEYS = ("estimate_minutes", "estimate", "estimate_min", "estimate_max")
+PLAN_MODES = ("quickfix", "fullcycle")
 
 STATUS_QUEUED = "queued"
 STATUS_RUNNING = "running"
@@ -191,6 +193,9 @@ PLAN_FIELDS = (
     "business_result",
     "business_results",
     "acceptance_scenarios",
+    "acceptance_scenario",
+    "recon",
+    "mode",
     "current_progress",
     "revisions",
     "external_waits",
@@ -662,6 +667,25 @@ def _plan_fields(raw: dict[str, Any], path: Path) -> dict[str, Any]:
         if not isinstance(scenarios, list) or not all(isinstance(item, str) for item in scenarios):
             raise LeafError(f"{path}: поле acceptance_scenarios должно быть списком строк")
         fields["acceptance_scenarios"] = [item.strip() for item in scenarios if item.strip()]
+    one = raw.get("acceptance_scenario")
+    if one is not None:
+        if not isinstance(one, str):
+            raise LeafError(f"{path}: поле acceptance_scenario должно быть строкой")
+        one = one.strip()
+        if one:
+            fields["acceptance_scenario"] = one
+            fields["acceptance_scenarios"] = [one] + [
+                item for item in fields.get("acceptance_scenarios", []) if item != one]
+    recon = raw.get("recon")
+    if recon is not None:
+        if not isinstance(recon, list) or not all(isinstance(item, str) for item in recon):
+            raise LeafError(f"{path}: поле recon должно быть списком строк")
+        fields["recon"] = [item.strip() for item in recon if item.strip()]
+    mode = raw.get("mode")
+    if mode is not None:
+        if mode not in PLAN_MODES:
+            raise LeafError(f"{path}: поле mode должно быть одним из: " + ", ".join(PLAN_MODES))
+        fields["mode"] = mode
     if isinstance(raw.get("revisions"), list):
         fields["revisions"] = _revisions(raw["revisions"])
     slots = raw.get("slots")
@@ -709,6 +733,9 @@ def plan_metadata(plan_dir: Path) -> dict[str, Any]:
             scenarios = raw.get("acceptance_scenarios")
             if isinstance(scenarios, list) and all(isinstance(item, str) for item in scenarios):
                 fields["acceptance_scenarios"] = [item.strip() for item in scenarios if item.strip()]
+            recon = raw.get("recon")
+            if isinstance(recon, list) and all(isinstance(item, str) for item in recon):
+                fields["recon"] = [item.strip() for item in recon if item.strip()]
             if isinstance(results, list):
                 values = [
                     item.strip()
@@ -1032,6 +1059,7 @@ def build_document(plan_dir: Path) -> dict[str, Any]:
         "business_result": business_result,
         "business_results": results,
         "acceptance_scenarios": list(metadata.get("acceptance_scenarios") or []),
+        "recon": list(metadata.get("recon") or []),
         "current_progress": str(metadata.get("current_progress") or ""),
         "revisions": list(metadata.get("revisions") or []),
         "external_waits": str(metadata.get("external_waits") or ""),
@@ -1504,6 +1532,91 @@ def file_lock(path: Path):
         fcntl.flock(stream, fcntl.LOCK_EX)
         yield
 
+NO_RECON_MESSAGE = ("сначала исследуй: что есть сейчас и как проверим. В plan.json нужны recon "
+                    "(список из 2+ фактов: что уже есть и чем подтверждено - файл, команда, URL, "
+                    "хост) и непустой acceptance_scenario (что запускаем и что должно быть видно). "
+                    "Первым листом без них допускается только лист исследования "
+                    "(kind=research, до 15 минут)")
+
+
+def leaf_max_minutes(task: dict[str, Any]) -> Optional[float]:
+    bounds = task.get("estimate_minutes") or {}
+    value = bounds.get("maximum", bounds.get("minimum"))
+    return float(value) if value is not None else None
+
+
+def _plan_gate_state(plan_dir: Path) -> dict[str, Any]:
+    plan_file = Path(plan_dir) / PLAN_FILE
+    raw: Any = {}
+    if plan_file.is_file():
+        try:
+            raw = _read_json(plan_file)
+        except (LeafError, OSError, ValueError):
+            raw = {}
+    if not isinstance(raw, dict):
+        raw = {}
+    recon = raw.get("recon")
+    facts = [i.strip() for i in recon if isinstance(i, str) and i.strip()] if isinstance(recon, list) else []
+    one = raw.get("acceptance_scenario")
+    many = raw.get("acceptance_scenarios")
+    scenario = (isinstance(one, str) and one.strip()) or (
+        isinstance(many, list) and any(isinstance(i, str) and i.strip() for i in many))
+    return {"fullcycle": raw.get("mode") == "fullcycle",
+            "recon_ok": len(facts) >= 2 and bool(scenario)}
+
+
+def check_leaf_gates(plan_dir: Path, candidate: dict[str, Any], *, create: bool,
+                     touches_estimate: bool, others: list[dict[str, Any]]) -> None:
+    """Refuse a leaf above the 15-minute cap and a plan without recon.
+
+    No flag bypasses the cap on a write. A leaf that is already over it in an
+    old plan stays readable and renderable; it only draws a warning."""
+
+    if candidate.get("kind") != "milestone":
+        high = leaf_max_minutes(candidate)
+        if high is not None and high > LEAF_ESTIMATE_CAP_MINUTES:
+            if create or touches_estimate:
+                raise LeafError(
+                    f"лист {candidate.get('id')} >{LEAF_ESTIMATE_CAP_MINUTES} мин: разбей на листья "
+                    f"по ≤{LEAF_ESTIMATE_CAP_MINUTES} мин (исследование, шаг, проверка)")
+            print(f"LHC: предупреждение: лист {candidate.get('id')} длиннее "
+                  f"{LEAF_ESTIMATE_CAP_MINUTES} мин; разбей его на листья по ≤{LEAF_ESTIMATE_CAP_MINUTES} мин",
+                  file=sys.stderr)
+    if not create:
+        return
+    state = _plan_gate_state(plan_dir)
+    real = [t for t in others if t.get("kind") != "milestone"]
+    became_plan = len(real) == 1  # the plan goes from one leaf to two
+    if not (state["fullcycle"] or became_plan) or candidate.get("kind") == "milestone":
+        return
+    if state["recon_ok"]:
+        return
+    if candidate.get("kind") == "research" and not real:
+        return
+    raise LeafError(NO_RECON_MESSAGE)
+
+
+def check_activation(plan_dir: Path, leaf: dict[str, Any]) -> None:
+    """Called before a leaf is bound to a session."""
+
+    if leaf.get("kind") == "milestone":
+        return
+    task = {"id": leaf.get("id"), "kind": leaf.get("kind")}
+    try:
+        estimate = _estimate(leaf, Path(plan_dir) / LEAVES_DIRNAME / (str(leaf.get("id")) + ".json"))
+    except LeafError:
+        estimate = None
+    if estimate:
+        task["estimate_minutes"] = estimate
+    high = leaf_max_minutes(task)
+    if high is not None and high > LEAF_ESTIMATE_CAP_MINUTES:
+        print(f"LHC: предупреждение: лист {leaf.get('id')} длиннее {LEAF_ESTIMATE_CAP_MINUTES} мин; "
+              f"разбей на листья по ≤{LEAF_ESTIMATE_CAP_MINUTES} мин", file=sys.stderr)
+    state = _plan_gate_state(plan_dir)
+    if state["fullcycle"] and not state["recon_ok"] and leaf.get("kind") != "research":
+        raise LeafError(NO_RECON_MESSAGE)
+
+
 def update_leaf(plan_dir: Path, leaf_id: str, fields: dict, *, create=False,
                 note=None, expected_hash=None) -> dict:
     """Serialized read/merge/validate/replace; stale optimistic writes fail."""
@@ -1547,6 +1660,8 @@ def update_leaf(plan_dir: Path, leaf_id: str, fields: dict, *, create=False,
         merged["progress_events"] = events
         candidate = task_from_leaf(merged, path)
         tasks = [t for t in collect_leaves(plan_dir) if t["id"] != leaf_id] if (Path(plan_dir) / LEAVES_DIRNAME).is_dir() and any((Path(plan_dir) / LEAVES_DIRNAME).glob("*.json")) else []
+        check_leaf_gates(plan_dir, candidate, create=create,
+                         touches_estimate=any(k in fields for k in ESTIMATE_KEYS), others=list(tasks))
         tasks.append(candidate)
         _order(tasks, {t["id"]: path.parent / (t["id"] + ".json") for t in tasks})
         # Recover legacy birth BEFORE atomic replacement destroys that evidence.

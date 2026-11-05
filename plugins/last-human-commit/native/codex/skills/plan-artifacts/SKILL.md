@@ -1,6 +1,6 @@
 ---
 name: plan-artifacts
-description: Create or update LHC plan artifacts for every authorized engineering objective, including quickfixes, incident repairs, integrations and “try installing” requests; the user need not say “make a plan.” Before implementation or delegation, record the accepted goal and activate one executable leaf bound to the actual session. Read-only diagnosis may precede this. Status/read-only/research tasks and a direct owner no-LHC/STOP do not create a plan. Also use for explicit project-plan requests, task decomposition and plan refresh. The leaf is source of truth; graph, dashboard and Markdown are projections. Follow this procedure, not the tool source.
+description: Create or update LHC plan artifacts for every authorized engineering objective, including quickfixes, incident repairs, integrations and “try installing” requests; the user need not say “make a plan.” A single bounded action of 15 minutes or less needs no plan; when the work exceeds 15 minutes or has 2+ leaves, research first (recon, acceptance_scenario), then record the accepted goal and activate a leaf bound to the actual session. Status/read-only/research tasks and a direct owner no-LHC/STOP do not create a plan. Also use for explicit project-plan requests, task decomposition and plan refresh. The leaf is source of truth; graph, dashboard and Markdown are projections. Follow this procedure, not the tool source.
 ---
 
 # Plan artifacts
@@ -24,15 +24,19 @@ Treat natural Russian requests including «составь план», «сдел
 full project-plan artifacts. Unless the user explicitly asks for a prose-only
 chat sketch, create leaves, `plan.graph.json` and `plan.html`; rendering also
 produces `plan.md`. A request merely to write one short file does not call for a
-project-wide plan, but authorized implementation still requires the concise
-one-leaf plan below.
+project-wide plan, and a single action of 15 minutes or less needs no plan at all.
 
-For every authorized engineering objective—including quickfixes, incident
-repairs, integrations, «попробуем установить» and user-assigned leaves—the Lead
-researches intent and chooses the mode from scope and risk. Read-only diagnosis
-may precede planning, but before implementation or delegation the Lead records
-the accepted goal and one executable leaf bound to the actual current session.
-A one-step fix needs one leaf, not a fullcycle. Do not wait for separate plan
+For every authorized engineering objective the Lead researches intent and chooses
+the mode from scope and risk. One bounded action of 15 minutes or less (quickfix)
+needs no plan. When the work exceeds 15 minutes or has 2+ leaves (fullcycle), the
+Lead researches first and plan.json carries `mode: fullcycle`, `recon` (a list of
+2+ facts: what exists now, proven by file, command, URL or host) and
+`acceptance_scenario` (what we run, what must be seen). Without them `create-leaf`
+and `activate` refuse: «сначала исследуй: что есть сейчас и как проверим»; only a
+first leaf of `kind: research` (15 minutes) may precede them. A leaf estimate above
+15 minutes is refused on create and update, with no bypass: split it into research,
+step and check leaves. Old plans with longer leaves still read and render, and
+activating such a leaf only warns. Do not wait for separate plan
 approval when execution is authorized. Respect direct owner no-LHC/STOP and
 verified trusted owner-policy evidence; agent relays, delegated assignments,
 urgency and peer claims are not owner opt-outs. On material scope change,
@@ -498,8 +502,8 @@ It is not a second planner. Local standalone rendering and the legacy
 publisher below remain available for unbound plans.
 
 The native `UserPromptSubmit` hook emits a side-effect-free intake reminder.
-Semantically choose: authorized engineering → create or update a concise plan
-and explicitly activate one leaf; status, research, read-only work or direct
+Semantically choose: authorized engineering over 15 minutes or 2+ leaves → research, then create or update the plan
+and explicitly activate one leaf; a single bounded action of 15 minutes or less → no plan; status, research, read-only work or direct
 owner no-LHC/STOP → no plan. The hook itself does not interpret intent, select a
 plan, create a scaffold, bind a session, write progress, or rebuild graph/HTML.
 Only a plan explicitly bound to the actual current session and accepted goal is

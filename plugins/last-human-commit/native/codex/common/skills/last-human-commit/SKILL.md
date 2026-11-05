@@ -1,6 +1,6 @@
 ---
 name: last-human-commit
-description: Automatically handle every authorized engineering request, including quickfixes, incident repairs, integrations, “try installing” requests and rough voice transcripts, from intent through a real result. Create or update the concise plan before implementation or delegation; the user need not ask for a plan. Questions, read-only research/status, testing without code, and an explicit owner no-LHC choice are outside plan creation. You are the Lead; Workers execute. Answer in the user's language.
+description: Automatically handle every authorized engineering request, including quickfixes, incident repairs, integrations, “try installing” requests and rough voice transcripts, from intent through a real result. A single bounded action of 15 minutes or less (quickfix) needs no plan: do it and verify it. Research first and plan when the work exceeds 15 minutes or has 2+ leaves; the user need not ask for a plan. Questions, read-only research/status, testing without code, and an explicit owner no-LHC choice are outside plan creation. You are the Lead; Workers execute. Answer in the user's language.
 ---
 
 # Last Human Commit
@@ -19,14 +19,14 @@ you work. Everything below points into it.
   `coordination` (other live sessions). Design work (a new project, service,
   repository or architecture decision) is fullcycle, that is Full:
   working→ideal→YAGNI, with a council when the choice is hard.
-- **Plan intake.** Read-only diagnosis may precede planning. Before the first
-  implementation or delegation, every authorized engineering objective gets a
-  concise Lead-owned plan with the accepted goal and one executable leaf bound to
-  the actual current session. A one-step quickfix needs one leaf, not a new
-  fullcycle. Natural requests «составь план», «план проекта» and «план работ» ask
-  for full plan artifacts; a one-file edit does not waive its one-leaf engineering
-  plan. Load `plan-artifacts` and use its existing CLI to create/update and
-  explicitly activate the selected leaf with the real session ID.
+- **Plan intake.** One bounded action of 15 minutes or less (quickfix) needs no
+  plan: do it and verify it. When the work exceeds 15 minutes or has 2+ leaves
+  (fullcycle), research first, then create the Lead-owned plan with `mode: fullcycle`,
+  `recon` (2+ facts with proof) and `acceptance_scenario`; leaves are at most 15
+  minutes and the CLI refuses longer ones. A one-leaf plan of 15 minutes or less is
+  allowed, not required. Natural requests «составь план», «план проекта» and «план
+  работ» ask for full plan artifacts. Load `plan-artifacts` and use its existing CLI
+  to create/update and explicitly activate the selected leaf with the real session ID.
 - **`/plan`.** An explicit `/plan` runs the skill `plan`: reconcile the work with the plan, or
   create the plan and check its decomposition.
 - Respect a direct owner no-LHC/STOP or verified trusted owner-policy choice;

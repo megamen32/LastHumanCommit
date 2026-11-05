@@ -327,6 +327,7 @@ def activate(plan, leaf_id, *, config_path=None, session=None, harness=None,
         raise ValueError('selected leaf does not exist in this plan')
     if leaf.get('status') in {'done', 'deferred', 'blocked', 'waiting'}:
         raise ValueError('selected leaf is not ready to start; resolve its recorded state first')
+    leaves.check_activation(plan, leaf)
 
     config_path = Path(config_path or os.environ.get('LHC_PLAN_MIRROR_CONFIG', CONFIG)).expanduser().resolve()
     # The local plan lifecycle must remain usable when mirror configuration is
