@@ -1,3 +1,8 @@
+## 1.12.1
+
+- An installed artifact with no provenance receipt is not a blocker. AGENTS.md (Not blockers) and SHARED_WORKTREE.md: treat it as unverified, build a new release from fresh origin/main by the standard route, keep a backup of the old one, install, exercise the real scenario, roll back on failure. Asking a "release owner" or the owner is forbidden when the owner already ordered the result and deployment to their own service; only what is outside your power is blocked, and it escalates Worker to Lead to Adviser to Overseer instead of stopping. Test in tests/test_core_contract.py.
+- File mail reaches idle sessions. lhc_entry.py checks .agents/mail/<session id>/ of the primary checkout: SessionStart and PostToolUse (at most every 5 min) put unread letters into the context (sender, first lines, the ack command); Stop is held once per unacknowledged task/step letter (decision block, never twice for the same letter). Silent for subagents and without a session id; any failure is fail open. No hooks.json change (the same three flags). Tests: tests/test_mail_hook.py.
+
 ## 1.12.0
 
 - A plan is no longer written for show. One bounded action of 15 minutes or less (quickfix) needs no plan; a plan is required for work over 15 minutes or with 2+ leaves, after research. AGENTS.md step 4 and the skills no longer demand a one-leaf plan for every task.

@@ -369,6 +369,71 @@ def coordination_pulse(event, root, now=None):
     return "\n\n".join(notes) or None
 
 
+def _mail_letters(event):
+    """(session, letters) of this session's file mail; letters are (name, sender, kind, body)."""
+    session = str(event.get("session_id") or event.get("sessionID") or "")
+    if not session or event.get("agent_id"):
+        return session, []
+    import lhc_mail
+    primary = lhc_mail.primary_root(Path(event.get("cwd") or "."))
+    letters = []
+    for path in lhc_mail.inbox(primary, session):
+        head, _, body = path.read_text(encoding="utf-8").partition("\n\n")
+        meta = dict(line.split(": ", 1) for line in head.splitlines() if ": " in line)
+        letters.append((path.name, meta.get("from", "?"), meta.get("kind", ""), body.strip()))
+    return session, letters
+
+
+def mail_context(event, now=None, throttle=0):
+    """Put unread file mail into the context: the harness messaging may never reach an idle session.
+
+    Never for a subagent or without a session id; any failure is silent. throttle (seconds) limits how
+    often the same session is reminded; SessionStart passes 0.
+    """
+    import time
+    try:
+        session, letters = _mail_letters(event)
+        if not letters:
+            return None
+        if throttle and not _due(session, "mailbody", now or time.time(), throttle):
+            return None
+        rows = []
+        for name, sender, kind, body in letters[:3]:
+            first = " / ".join(line.strip() for line in body.splitlines() if line.strip())[:400]
+            rows.append(f"LHC: you have a letter from {sender} ({kind or 'step'}): {first}. Do it, then ack: "
+                        f"python3 src/common/tools/lhc_mail.py ack --me {session} {name}")
+        return "\n".join(rows)
+    except Exception:  # noqa: BLE001 - fail open
+        return None
+
+
+def mail_stop(event):
+    """Hold a Stop once per letter while a task/step letter is not acked; never twice for the same letter."""
+    try:
+        session, letters = _mail_letters(event)
+        todo = [row for row in letters if row[2] in {"task", "step"}]
+        if not todo:
+            return None
+        base = Path(os.environ.get("XDG_STATE_HOME") or Path.home() / ".local" / "state") / "lhc" / "pulse"
+        mark = base / (re.sub(r"[^A-Za-z0-9_.-]", "_", session) + ".mailstop")
+        try:
+            seen = json.loads(mark.read_text())
+        except (OSError, ValueError, TypeError):
+            seen = []
+        fresh = [row for row in todo if row[0] not in seen]
+        if not fresh:
+            return None
+        base.mkdir(parents=True, exist_ok=True)
+        mark.write_text(json.dumps(seen[-200:] + [row[0] for row in fresh]))
+        name, sender, kind, body = fresh[0]
+        first = " / ".join(line.strip() for line in body.splitlines() if line.strip())[:400]
+        return (f"LHC: you are stopping with an unacknowledged {kind} letter from {sender}: {first}. Do not stop: "
+                f"run python3 src/common/tools/lhc_mail.py inbox --me {session}, do what it says, then ack: "
+                f"python3 src/common/tools/lhc_mail.py ack --me {session} {name}")
+    except Exception:  # noqa: BLE001 - fail open
+        return None
+
+
 def context_for(event, root):
     root = Path(root).resolve()
     return (
@@ -791,6 +856,9 @@ def main():
             pulse = None
         if pulse:
             prompts.append(pulse)
+        letters = mail_context(event, throttle=300)
+        if letters:
+            prompts.append(letters)
         overseer = overseer_review(event, args.root or Path(__file__).resolve().parents[1], "post")
         if overseer:
             prompts.append(overseer)
@@ -823,7 +891,7 @@ def main():
             raw = sys.stdin.read(8 * 1024 * 1024 + 1)
             event = json.loads(raw or "{}") if len(raw) <= 8 * 1024 * 1024 else {}
             hook_root = args.root or Path(__file__).resolve().parents[1]
-            reason = (overseer_review(event, hook_root, "stop") or stop_gate(event, hook_root)) if isinstance(event, dict) else None
+            reason = (mail_stop(event) or overseer_review(event, hook_root, "stop") or stop_gate(event, hook_root)) if isinstance(event, dict) else None
         except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError):
             reason = None
         if reason:
@@ -863,6 +931,16 @@ def main():
     extra = owner_directives(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
     if extra:
         context += "\n\n" + extra
+    if args.event == "SessionStart":
+        try:
+            import select
+            if not sys.stdin.isatty() and select.select([sys.stdin], [], [], 0.5)[0]:
+                start = json.loads(sys.stdin.read(1024 * 1024) or "{}")
+                letters = mail_context(start) if isinstance(start, dict) else None
+                if letters:
+                    context += "\n\n" + letters
+        except Exception:  # noqa: BLE001 - fail open
+            pass
     print(json.dumps({"hookSpecificOutput": {
         "hookEventName": args.event,
         "additionalContext": context,

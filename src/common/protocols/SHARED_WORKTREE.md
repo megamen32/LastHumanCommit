@@ -33,6 +33,8 @@ overrides the built value; otherwise missing configuration defaults to `on`.
    Both modes check clean isolated work and remote published HEAD. PR-on checks
    matching open PR; PR-off skips `gh pr` and PR URL. Neither mode merges
    or deploys. A green publication receipt is not proof of finished work.
+   An installed artifact with no provenance receipt is unverified, not a blocker: rebuild from fresh origin/main,
+   back up the old one, install, verify the real scenario, roll back on failure; do not ask for a release owner.
 4. Reconcile a moved target on the task branch and rerun affected tests.
    After independent review and checks, finish an authorized merge through
    the PR (on) or only through a host-permitted direct merge path (off).
