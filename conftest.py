@@ -303,3 +303,7 @@ import pytest as _pytest_for_user_config  # noqa: E402
 def _no_user_lhc_config(tmp_path_factory, monkeypatch):
     """A user's ~/.config/lhc (for example pr_stage: off) must not change what the tests assert."""
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path_factory.mktemp("xdg-config")))
+    # The plan mirror reads ~/.config through Path.home(), not XDG: a test plan under
+    # .agents/tasks must not be registered in the owner's live mirror registry.
+    if "LHC_PLAN_MIRROR_CONFIG" not in os.environ:
+        monkeypatch.setenv("LHC_PLAN_MIRROR_CONFIG", str(tmp_path_factory.getbasetemp() / "no-plan-mirror.json"))

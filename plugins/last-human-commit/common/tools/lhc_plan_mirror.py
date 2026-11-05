@@ -36,6 +36,11 @@ import lhc_plan_transport as transport
 
 CONFIG = Path.home() / '.config/lhc/plan-mirror/client.json'
 MAX_BYTES = 8 * 1024 * 1024
+
+class SourceAbsent(ValueError):
+    """The registered source is gone or empty: a warning, not a failed mirror."""
+
+
 IDENT = re.compile(r'[A-Za-z0-9][A-Za-z0-9_-]{0,159}')
 
 
@@ -259,15 +264,30 @@ def source_stamp(plan):
     paths = ([plan] if plan.name == 'plan.graph.json' else
              [plan / 'plan.json', *sorted((plan / 'leaves').glob('*.json')),
               plan / '.lhc-publication/plan-origin.json'])
+    if plan.name != 'plan.graph.json' and not (plan / 'plan.json').is_file():
+        paths.append(plan / 'plan.graph.json')
     return tuple((str(path), file_stamp(path)) for path in paths)
+
+
+def source_missing(plan):
+    """Cheap check: nothing to mirror (neither plan.json nor plan.graph.json)."""
+    plan = Path(plan)
+    if plan.name == 'plan.graph.json':
+        return not plan.is_file()
+    # A plan being staged (plan.json written, leaves not yet) is not absent: capture decides.
+    return not (plan / 'plan.json').is_file() and not (plan / 'plan.graph.json').is_file()
 
 
 def fingerprint(plan):
     plan = Path(plan)
     graph_source = plan.name == 'plan.graph.json'
-    paths = [plan] if graph_source else [plan / 'plan.json', *sorted((plan / 'leaves').glob('*.json'))]
+    # Old plans keep their plan-level facts in plan.graph.json when plan.json is gone.
+    head = plan / 'plan.json'
+    if not graph_source and not head.is_file() and (plan / 'plan.graph.json').is_file():
+        head = plan / 'plan.graph.json'
+    paths = [plan] if graph_source else [head, *sorted((plan / 'leaves').glob('*.json'))]
     if not paths[0].is_file() or (not graph_source and len(paths) < 2):
-        raise ValueError('source temporarily absent; preserving last good snapshot')
+        raise SourceAbsent('source temporarily absent; preserving last good snapshot')
     result = []
     # Presentation migration: old unchanged source must be captured once too.
     result.append(('plan_origin_schema', 1))
@@ -279,6 +299,25 @@ def fingerprint(plan):
             raise ValueError('unsafe or oversized source')
         result.append((str(path.name if graph_source else path.relative_to(plan)), hashlib.sha256(path.read_bytes()).hexdigest()))
     return pub.digest(result)
+
+
+def inspect_source(plan):
+    """Read-only: what capture would do with this source now (nothing is written)."""
+    plan = Path(plan)
+    if source_missing(plan):
+        return {'source': 'absent', 'note': 'источник отсутствует или пуст'}
+    try:
+        fingerprint(plan)
+        with leaves.lenient_reading() as warnings:
+            if plan.name == 'plan.graph.json':
+                valid_document(read(plan))
+            else:
+                pub.public_document(leaves.build_document(plan))
+    except SourceAbsent:
+        return {'source': 'absent', 'note': 'источник отсутствует или пуст'}
+    except (ValueError, OSError) as error:
+        return {'source': 'error', 'note': type(error).__name__ + ': ' + str(error)[:300]}
+    return {'source': 'warning' if warnings else 'ok', 'note': '; '.join(warnings)}
 
 
 def observe(document, observed, stamp):
@@ -295,7 +334,15 @@ def observe(document, observed, stamp):
 
 
 def capture(plan, *, reason=None):
-    """Transactionally save latest pending state + local immutable revisions."""
+    """Transactionally save latest pending state + local immutable revisions.
+
+    An existing plan is read leniently: a field the schema no longer knows is
+    dropped with a warning in the state, it never stops the mirror."""
+    with leaves.lenient_reading() as warnings:
+        return _capture(plan, reason, warnings)
+
+
+def _capture(plan, reason, warnings):
     plan = Path(plan)
     dest = directory(plan)
     with leaves.file_lock(dest / 'publish.lock'):
@@ -308,7 +355,10 @@ def capture(plan, *, reason=None):
             if before != fingerprint(plan):
                 raise ValueError('files changed during capture; retry after debounce')
         old = read(dest / 'mirror-state.json', {})
-        if old.get('source_hash') == before and not reason:
+        if old.get('source_hash') == before and not reason and not old.get('error'):
+            if (old.get('warning') or None) != ('; '.join(warnings) or None):
+                old = {**old, 'warning': '; '.join(warnings) or None}
+                pub.atomic(dest / 'mirror-state.json', old)
             return old
         if not graph_source:
             graph = leaves.build_graph(plan)
@@ -330,7 +380,8 @@ def capture(plan, *, reason=None):
                     'seq': old.get('seq', 0) + 1, 'last_file_event': stamp if old.get('source_hash') != before else old.get('last_file_event'),
                     'document': document, 'revisions': pub.load_revisions(dest), 'observed': observed}
         result = {**old, 'source_hash': before, 'seq': snapshot['seq'], 'pending': snapshot,
-                  'last_file_event': snapshot['last_file_event'], 'error': None}
+                  'last_file_event': snapshot['last_file_event'], 'error': None,
+                  'warning': '; '.join(warnings) or None}
         # One atomic durable latest snapshot includes the entire revision history.
         pub.atomic(dest / 'mirror-state.json', result)
         return result
@@ -439,19 +490,60 @@ def secret(path):
     return value
 
 
+def _post_snapshot(cfg, snapshot):
+    data = pub.encoded(snapshot).encode()
+    if len(data) > MAX_BYTES:
+        raise ValueError('snapshot size limit exceeded')
+    req = urllib.request.Request(cfg['endpoint'].rstrip('/') + '/v1/snapshots', data=data,
+                                 headers={'Authorization': 'Bearer ' + secret(cfg['token_file']), 'Content-Type': 'application/json'}, method='POST')
+    with urllib.request.urlopen(req, timeout=min(10, max(.1, cfg.get('timeout_seconds', 3)))) as response:
+        return json.loads(response.read(MAX_BYTES))
+
+
+def _server_seq(cfg, identity):
+    req = urllib.request.Request(cfg['endpoint'].rstrip('/') + '/v1/status',
+                                 headers={'Authorization': 'Bearer ' + secret(cfg['token_file'])})
+    with urllib.request.urlopen(req, timeout=min(10, max(.1, cfg.get('timeout_seconds', 3)))) as response:
+        plans = json.loads(response.read(MAX_BYTES)).get('plans', [])
+    return next((item.get('seq') for item in plans if item.get('identity') == identity), None)
+
+
+def _advance_past_server(plan, cfg, state, error):
+    dest = directory(plan)
+    identity = state['pending']['identity']
+    try:
+        server_seq = _server_seq(cfg, identity)
+    except (OSError, ValueError):
+        raise error
+    if not isinstance(server_seq, int) or server_seq < state['seq']:
+        raise error
+    with leaves.file_lock(dest / 'publish.lock'):
+        latest = read(dest / 'mirror-state.json')
+        if latest.get('seq') != state['seq'] or latest['pending']['identity'] != identity:
+            raise error  # the source moved on; the next capture continues from its own state
+        latest['seq'] = server_seq + 1
+        latest['pending'] = {**latest['pending'], 'seq': server_seq + 1}
+        pub.atomic(dest / 'mirror-state.json', latest)
+    return latest
+
+
 def sync(plan, cfg):
     """Only observer calls this. The server can disappear without local loss."""
     dest = directory(plan)
     state = read(dest / 'mirror-state.json', {})
     if not state.get('pending'):
         return
-    data = pub.encoded(state['pending']).encode()
-    if len(data) > MAX_BYTES:
-        raise ValueError('snapshot size limit exceeded')
-    req = urllib.request.Request(cfg['endpoint'].rstrip('/') + '/v1/snapshots', data=data,
-                                 headers={'Authorization': 'Bearer ' + secret(cfg['token_file']), 'Content-Type': 'application/json'}, method='POST')
-    with urllib.request.urlopen(req, timeout=min(10, max(.1, cfg.get('timeout_seconds', 3)))) as response:
-        receipt = json.loads(response.read(MAX_BYTES))
+    try:
+        receipt = _post_snapshot(cfg, state['pending'])
+    except urllib.error.HTTPError as error:
+        if error.code != 409:
+            raise
+        # The server may hold a newer sequence than the local state (a local
+        # state restored from an older copy). The local plan stays
+        # authoritative: continue after the server's sequence and retry once.
+        # Owner or history conflicts stay conflicts (second 409 is raised).
+        state = _advance_past_server(plan, cfg, state, error)
+        receipt = _post_snapshot(cfg, state['pending'])
     if receipt.get('seq') != state['seq'] or receipt.get('identity') != state['pending']['identity']:
         raise ValueError('unexpected server receipt')
     with leaves.file_lock(dest / 'publish.lock'):
@@ -460,7 +552,24 @@ def sync(plan, cfg):
         pub.atomic(dest / 'mirror-state.json', latest)
 
 
+def record_warning(plan, error):
+    """A source that is gone is a warning on the plan, not an error of the mirror."""
+    dest = directory(plan)
+    if not dest.is_dir():
+        return
+    with leaves.file_lock(dest / 'publish.lock'):
+        state = read(dest / 'mirror-state.json', {})
+        if not state:
+            return
+        message = 'источник плана отсутствует или пуст; последний снимок сохранён'
+        if state.get('warning') != message or state.get('error'):
+            state['warning'], state['error'] = message, None
+            pub.atomic(dest / 'mirror-state.json', state)
+
+
 def record_error(plan, error):
+    if isinstance(error, SourceAbsent):
+        return record_warning(plan, error)
     dest = directory(plan)
     with leaves.file_lock(dest / 'publish.lock'):
         state = read(dest / 'mirror-state.json', {})
@@ -507,6 +616,8 @@ def _run_observer_once(config_path, once=True, *, price_refresh=None):
                 next_discovery = time.monotonic() + 5
             for plan in discovered:
                 try:
+                    if source_missing(plan):
+                        raise SourceAbsent('source absent')
                     dest = directory(plan)
                     registration = (cfg_stamp, file_stamp(dest / 'mirror.json'), file_stamp(dest / 'state.json'))
                     if registered.get(plan) != registration:
@@ -745,6 +856,8 @@ def run_observer(config_path, once=False, *, price_refresh=None):
                 source = source or retry_source
                 registration = registration or retry_registration
                 try:
+                    if source_missing(plan):
+                        raise SourceAbsent('source absent')
                     if registration:
                         register(plan, config_path)
                         registration = False
@@ -1305,6 +1418,9 @@ def main(argv=None):
         cmd = commands.add_parser(name)
         if name in ('register', 'link'):
             cmd.add_argument('plan_dir', type=Path)
+        if name == 'status':
+            cmd.add_argument('--check', action='store_true',
+                             help='read-only: also show what capture would do with each source now')
         cmd.add_argument('--config', type=Path, default=CONFIG)
     args = parser.parse_args(argv)
     try:
@@ -1331,7 +1447,8 @@ def main(argv=None):
             print(pub.encoded(register(args.plan_dir, args.config)), end='')
         else:
             cfg = config(args.config)
-            print(pub.encoded({'plans': [{'plan': p, **{k: v for k, v in read(directory(p) / 'mirror-state.json', {}).items() if k != 'pending'}} for p in discover(cfg)]}), end='')
+            print(pub.encoded({'plans': [{'plan': p, **{k: v for k, v in read(directory(p) / 'mirror-state.json', {}).items() if k != 'pending'},
+                                          **({'source_check': inspect_source(p)} if args.check else {})} for p in discover(cfg)]}), end='')
         return 0
     except (OSError, ValueError, KeyError, TypeError):
         print('LHC: проверьте локальный config и status наблюдателя', file=sys.stderr)

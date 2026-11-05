@@ -5,6 +5,19 @@
 каталог release; `current` служит удобной ссылкой для CLI. Сервер разрешён
 только на Linux server100. Копировать весь tools, не один entrypoint.
 
+Смена релиза без ручной правки юнитов: `lhc_plan_mirror_release.py` из установленного
+пакета (`status|build|canary|switch|rollback`). `build` собирает неизменяемый
+release `releases/<хэш>` из tools пакета (хэш тот же, что у `install-native.py`),
+ничего не переключая. `canary` поднимает его на запасном порту (18769) во временном
+каталоге с копией плана, делает register/once и проверяет, что HTML собрался.
+`switch <хэш>` сохраняет config, `registry.json` и юниты в `backup-<дата>`, пишет
+юниты `lhc-plan-mirror.service` (serve) и `lhc-plan-observer.service` (watch) с путями
+релиза, делает daemon-reload, останавливает watch, перезапускает serve, запускает watch
+(`ingest.lock` не трогается; при сбое возвращается прежний релиз). `rollback`
+возвращает предыдущий релиз (или `--to <хэш>`). Имена юнитов, каталоги и порт
+берутся из аргументов (`--mirror-unit`, `--observer-unit`, `--base`, `--config-dir`,
+`--units-dir`, `--canary-port`) или из `release.json` рядом с конфигом.
+
 Повторная установка дополняет точные `plans`, `roots` и `graph_sources`,
 сохраняет прежние пути, секретные ссылки и остальные поля конфигурации.
 Добавленные пути сравниваются как точные значения. `--sso-enabled` действует
