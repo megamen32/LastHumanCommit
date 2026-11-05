@@ -37,6 +37,9 @@ def make_plan(tmp_path, statuses=(("L01", "running"),), name="20261104-x"):
 @pytest.fixture(autouse=True)
 def state(tmp_path, monkeypatch):
     monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "cfg"))
+    (tmp_path / "cfg/lhc").mkdir(parents=True)
+    (tmp_path / "cfg/lhc/workflow.json").write_text('{"subagents": "on"}')  # these tests cover the Overseer-subagent text
     monkeypatch.delenv("LHC_OVERSEER", raising=False)
 
 
@@ -113,7 +116,7 @@ def test_failures_open_silently(tmp_path, monkeypatch):
 def run_entry(entry_path, flag, event, env, tmp_path):
     return subprocess.run([sys.executable, str(ROOT / entry_path), "--event", flag[0], flag[1]],
                           input=event if isinstance(event, str) else json.dumps(event),
-                          capture_output=True, text=True, env={**os.environ, **env, "HOME": str(tmp_path / "home")})
+                          capture_output=True, text=True, env={**os.environ, "XDG_CONFIG_HOME": str(tmp_path / "cfg"), **env, "HOME": str(tmp_path / "home")})
 
 
 @pytest.mark.parametrize("entry_path", ENTRIES)
@@ -165,3 +168,17 @@ def test_the_hook_runs_from_every_hooks_json(hook_file):
 def test_opencode_runs_the_same_stop_gate_on_idle():
     source = (ROOT / "plugins/last-human-commit/opencode/lhc-v2.ts").read_text()
     assert '"--stop-gate"' in source and "session.idle" in source
+
+
+def test_with_subagents_off_the_lead_reviews_itself_and_marks_it_with_self(tmp_path, monkeypatch):
+    (tmp_path / "cfg/lhc/workflow.json").write_text('{"subagents": "off"}')
+    repo, plan = make_plan(tmp_path)
+    event = {"cwd": str(repo), "session_id": "s1"}
+    now = time.time()
+    assert entry.overseer_review(event, ROOT, "stop", now=now) is None
+    text = entry.overseer_review(event, ROOT, "stop", now=now + HALF_HOUR + 60)
+    assert "agents/Overseer.md" in text and "3 lines" in text and "revisions" in text and "--self" in text
+    assert "zero-knowledge" not in text and "Call the Overseer" not in text
+    assert ack.main(["--self", "--plan", str(plan)]) == 0
+    assert ack.read_state(plan)["by"] == "self" and ack.read_state(plan)["last_review"] > now
+    assert entry.overseer_review(event, ROOT, "stop", now=time.time() + 600) is None   # the mark restarted the clock

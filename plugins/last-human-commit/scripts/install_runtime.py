@@ -4,9 +4,11 @@ from __future__ import annotations
 import argparse
 from datetime import datetime,timezone
 import json
+import hashlib
 import os
 from pathlib import Path
 import re
+import shutil
 import sys
 import uuid
 
@@ -104,6 +106,92 @@ def register_opencode_skills(home:Path,root:Path)->dict:
             link.symlink_to(skill.resolve());done.append(skill.name)
     return {"skills":done,"skills_kept":kept}
 
+def manifest_path(home:Path,runtime:str)->Path:
+    return home/".local/state/last-human-commit"/f"install-manifest-{runtime}.json"
+
+def digest(path:Path)->str:
+    """sha256 of a file, or of the target text of a link (a link is what the installer wrote)."""
+    data=os.readlink(path).encode() if path.is_symlink() else path.read_bytes()
+    return hashlib.sha256(data).hexdigest()
+
+def read_manifest(home:Path,runtime:str):
+    try:
+        data=json.loads(manifest_path(home,runtime).read_text(encoding="utf-8"))
+    except (OSError,ValueError):
+        return None
+    rows=data.get("files") if isinstance(data,dict) else None
+    return [r for r in rows if isinstance(r,dict) and isinstance(r.get("path"),str)] if isinstance(rows,list) else None
+
+def is_lhc_agent(file:Path)->bool:
+    """An agent file whose frontmatter names LastHumanCommit: written by an LHC installer, not by the owner."""
+    try:
+        text=file.read_text(encoding="utf-8")
+    except (OSError,UnicodeDecodeError):
+        return False
+    if not text.startswith("---"):
+        return False
+    return "lasthumancommit" in text.split("---",2)[1].lower().replace(" ","")
+
+def remove_with_backup(home:Path,runtime:str,path:Path)->None:
+    """Keep a copy in the backup folder, then delete the file or the link itself."""
+    backup=backup_path(home,runtime,"-removed-"+path.name)
+    backup.parent.mkdir(parents=True,exist_ok=True)
+    if path.is_symlink():
+        backup.write_text("symlink -> "+os.readlink(path)+"\n",encoding="utf-8")
+    else:
+        shutil.copy2(path,backup)
+    path.unlink()
+
+def prune_opencode(home:Path,root:Path,plugin_dir:Path,written:list)->dict:
+    """Delete what an earlier install wrote and this one no longer does; never a foreign file.
+
+    With a manifest from the previous install: its entries missing from the new one go (an entry the
+    owner edited since is kept). Without one (the first install of this version): only the known list,
+    the LHC orchestrator.md agent, dangling skill links into an LHC package and lhc-*.ts plugin files
+    that are not part of this package. Each deleted file is copied to the backup folder first.
+    """
+    config=(home/".config/opencode")
+    allowed=[config.resolve(),plugin_dir.resolve()]
+    keep={str(Path(p)) for p in written}
+    rows=[{"path":str(Path(p)),"sha256":digest(Path(p))} for p in sorted(keep) if os.path.lexists(p)]
+    old=read_manifest(home,"opencode")
+    removed=[];kept=[]
+    def inside(path:Path)->bool:
+        base=path.parent.resolve()/path.name
+        return any(a==base.parent or a in base.parents for a in allowed)
+    def drop(path:Path):
+        if str(path) in keep or not os.path.lexists(path) or not inside(path):
+            return
+        remove_with_backup(home,"opencode",path);removed.append(str(path))
+    if old is not None:
+        for row in old:
+            path=Path(row["path"])
+            if str(path) in keep or not os.path.lexists(path):
+                continue
+            if not inside(path):
+                continue
+            if row.get("sha256") and digest(path)!=row["sha256"]:
+                kept.append(str(path));continue
+            drop(path)
+    else:
+        orchestrator=config/"agents/orchestrator.md"
+        if orchestrator.is_file() and is_lhc_agent(orchestrator):
+            drop(orchestrator)
+        skills=config/"skills"
+        if skills.is_dir():
+            for link in sorted(skills.iterdir()):
+                if link.is_symlink() and not link.exists():
+                    target=os.readlink(link).lower()
+                    if str(root).lower() in target or "last-human-commit" in target or "lasthumancommit" in target:
+                        drop(link)
+        for file in sorted(plugin_dir.glob("lhc-*.ts")):
+            if file.name not in OPENCODE_PLUGIN_FILES:
+                drop(file)
+    manifest=manifest_path(home,"opencode")
+    manifest.parent.mkdir(parents=True,exist_ok=True)
+    manifest.write_text(json.dumps({"runtime":"opencode","writtenAt":datetime.now(timezone.utc).isoformat(),"files":rows},ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+    return {"removed":removed,"kept_modified":kept,"manifest":str(manifest)}
+
 def register_opencode_plugin(home:Path,root:Path,plugin_dir:Path)->dict:
     """Install the LHC OpenCode plugin so OpenCode auto-discovers it.
 
@@ -153,6 +241,10 @@ def register_opencode_plugin(home:Path,root:Path,plugin_dir:Path)->dict:
     extra={}
     if plugin_dir.parent==(home/".config/opencode").resolve():
         extra.update(register_opencode_mcp(home,root));extra.update(register_opencode_agents(home,root));extra.update(register_opencode_skills(home,root))
+        written=list(installed.values())+list((extra.get("agents") or {}).values())
+        if isinstance(extra.get("skills"),list):
+            written+=[str(home/".config/opencode/skills"/name) for name in extra["skills"]]
+        extra.update(prune_opencode(home,root,plugin_dir,written))
     return {"dir":str(plugin_dir),"files":installed,"state":str(state),**extra}
 
 def configure(home:Path,root:Path,runtime:str,replace_gsd:bool=False,opencode_plugin_dir:Path|None=None)->dict:
@@ -214,8 +306,10 @@ def configure(home:Path,root:Path,runtime:str,replace_gsd:bool=False,opencode_pl
         finally:temporary.unlink(missing_ok=True)
         result["changed"]=True
         result["backup"]=str(backup) if before else None
+    result["removed"]=[]
     if runtime=="opencode":
         result["plugin"]=register_opencode_plugin(home,root,plugin_dir)
+        result["removed"]=result["plugin"].get("removed",[])
     return result
 
 def main():

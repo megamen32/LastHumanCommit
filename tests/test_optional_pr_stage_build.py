@@ -12,7 +12,7 @@ spec.loader.exec_module(publisher)
 def test_both_generated_protocol_modes_are_valid():
     for stage in ("on", "off"):
         data = json.loads(publisher.workflow_config_bytes(stage))
-        assert data == {"pr_stage": stage}
+        assert data == {"pr_stage": stage, "subagents": "off"}
         router = (ROOT / "AGENTS.md").read_text()
         protocol = (ROOT / "src/common/protocols/SHARED_WORKTREE.md").read_text()
         assert "pr_stage" in router and "pr_stage" in protocol
@@ -44,7 +44,7 @@ def test_generated_package_protocols_on_and_off(tmp_path, monkeypatch):
         monkeypatch.setattr(sys, "argv", ["publish_package.py", "--pr-stage", stage])
         assert publisher.main() == 0
         for root in (package, package / "native/codex"):
-            assert json.loads((root / "config/workflow.json").read_text()) == {"pr_stage": stage}
+            assert json.loads((root / "config/workflow.json").read_text()) == {"pr_stage": stage, "subagents": "off"}
         protocol = (package / "AGENTS.md").read_text()
         assert "pr_stage" in protocol and "PR-off" in protocol
         assert "integrat" in protocol and "deploy" in protocol
