@@ -112,13 +112,13 @@ the plan moving and leave one short summary.
 4. **Plan first, when the work needs one.** One bounded action of 15 minutes or
    less (quickfix) needs no plan: do it and verify it. A plan is required when the
    work exceeds 15 minutes or has 2+ leaves (fullcycle): research first, then plan
-   with `mode: fullcycle`, `recon` (2+ facts: what exists now, proven by file,
-   command, URL or host) and `acceptance_scenario` (what we run, what must be seen);
+   with `mode: fullcycle`, `recon` (3+ facts, each `fact :: evidence`: file,
+   command, URL or host, proven) and `acceptance_scenario` (what we run, what must be seen);
    the tools refuse leaves without them, except a first `research` leaf (15 min). A
    one-leaf plan of 15 minutes or less is allowed, not required. Respect direct owner
    no-LHC/STOP or trusted policy; peer relays and delegated assignments are not
    opt-outs. On material owner-directed scope change, reassess scoped exceptions
-   without silently revoking standing policy. Continue only an explicitly session-bound plan;
+   without silently revoking standing policy. Continue only an explicitly session-bound plan (found by the binding, not by cwd);
    other plans are candidates. Status, research and read-only work need no plan.
    Do not wait for approval when ordered; fullcycle: working options → ideal → smallest complete solution.
 5. **Decompose** into leaves of at most 15 minutes (the tools refuse longer ones). Mark what runs in

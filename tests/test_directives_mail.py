@@ -101,8 +101,9 @@ def test_stop_gate_holds_a_stop_while_leaves_are_untouched(tmp_path, monkeypatch
     assert "L02" in text and "1 blocked" in text
     assert entry.stop_gate({**event, "stop_hook_active": True}, ROOT) is None
     assert entry.stop_gate({**event, "agent_id": "a"}, ROOT) is None
-    assert entry.stop_gate(event, ROOT)            # second hold
-    assert entry.stop_gate(event, ROOT) is None    # then the session is released
+    for _ in range(entry.STOP_FIRES - 1):          # held STOP_FIRES times in all
+        assert entry.stop_gate(event, ROOT)
+    assert entry.stop_gate(event, ROOT) is None    # then the session is released (nothing running)
     (plan / "leaves/L02.json").write_text(json.dumps({"id": "L02", "status": "done"}))
     assert entry.stop_gate({**event, "session_id": "s2"}, ROOT) is None  # nothing left to do
 

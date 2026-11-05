@@ -23,7 +23,9 @@ def plan(tmp_path, **fields):
     return tmp_path
 
 
-RECON = {"recon": ["файл a.conf: маршрут default", "хост gw: ip rule показывает таблицу 100"],
+RECON = {"recon": ["файл a.conf задаёт маршрут default через шлюз :: /etc/a.conf",
+                   "хост gw: ip rule показывает таблицу 100 для клиента :: ssh gw ip rule show",
+                   "сервис xray на узле слушает порт 443 и активен :: systemctl status xray"],
          "acceptance_scenario": "curl с клиента, в ответе виден IP шлюза"}
 
 

@@ -160,6 +160,39 @@ def link(plan, config_path=None):
     return url
 
 
+def published(plan):
+    """True when the observer has delivered this plan to the server at least once (local fact)."""
+    state = read(directory(plan) / 'mirror-state.json', {})
+    return bool(isinstance(state, dict) and state.get('last_successful_sync') and not state.get('error'))
+
+
+def pending_text(plan):
+    return ('plan page not yet published (sync pending); path: %s; '
+            'retry: lhc_plan_mirror.py status/once' % Path(plan).resolve())
+
+
+def probe_ok(url, timeout=5):
+    """HTTP 200 of the plan page itself; any failure (network, 404, timeout) is False."""
+    try:
+        req = urllib.request.Request(url, headers={'User-Agent': 'lhc-plan-link'})
+        with urllib.request.urlopen(req, timeout=timeout) as response:
+            return response.status == 200
+    except Exception:
+        return False
+
+
+def link_ready(plan, url, wait=45, *, probe=None, clock=time.monotonic, sleeper=time.sleep):
+    """Wait up to wait seconds for the server to ingest the plan; True only after HTTP 200."""
+    probe = probe or probe_ok
+    deadline = clock() + max(0, wait)
+    while True:
+        if probe(url):
+            return True
+        if clock() >= deadline:
+            return False
+        sleeper(min(3, max(0.1, deadline - clock())))
+
+
 def register(plan, config_path):
     """Local registration and identity only. Never render, sleep or use network."""
     plan = Path(plan).resolve()
@@ -351,12 +384,20 @@ def activate(plan, leaf_id, *, config_path=None, session=None, harness=None,
                        {'status': 'running', 'session': session, 'harness': harness,
                         'owner': owner.strip()},
                        note=note or 'Начал работу в текущей сессии')
+    leaves.record_session_plan(session, plan, leaf_id)
     if link:
         capture(plan)
-    return {'plan': str(plan), 'leaf_id': leaf_id, 'status': 'running',
-            'session': session, 'harness': harness, 'owner': owner.strip(),
-            'worktree': str(root), 'url': link['url'] if link else None,
-            'sync': 'pending' if link else 'local-only'}
+    result = {'plan': str(plan), 'leaf_id': leaf_id, 'status': 'running',
+              'session': session, 'harness': harness, 'owner': owner.strip(),
+              'worktree': str(root), 'url': None,
+              'sync': 'pending' if link else 'local-only'}
+    if link:
+        if published(plan):
+            result['url'], result['sync'] = link['url'], 'synced'
+        else:
+            result['pending_url'] = link['url']
+            result['note'] = pending_text(plan)
+    return result
 
 
 def local_publish(plan, config_path=None, reason=None):
@@ -1280,7 +1321,12 @@ def main(argv=None):
             run_observer(args.config, once=args.command == 'once',
                          price_refresh=None if args.command == 'once' else CatalogRefresh())
         elif args.command == 'link':
-            print(link(args.plan_dir, args.config))
+            url = link(args.plan_dir, args.config)
+            try:
+                wait = float(os.environ.get('LHC_LINK_WAIT_SECONDS', '45'))
+            except ValueError:
+                wait = 45
+            print(url if link_ready(args.plan_dir, url, wait) else pending_text(args.plan_dir))
         elif args.command == 'register':
             print(pub.encoded(register(args.plan_dir, args.config)), end='')
         else:

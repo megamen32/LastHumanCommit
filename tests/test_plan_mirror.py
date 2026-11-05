@@ -277,7 +277,7 @@ def test_activate_selected_codex_leaf_is_local_offline_and_preserves_r001(fixtur
         assert state['error'] is None
         assert 'Сохранено без сети' in (target / 'index.html').read_text()
         assert 'В работе' in (target / 'index.html').read_text()
-        assert url == activated['url']
+        assert activated['url'] is None and url == activated['pending_url']
 
         # A later raw edit is captured offline and reaches the same URL after
         # the mirror service returns, with the original r001 HTML unchanged.

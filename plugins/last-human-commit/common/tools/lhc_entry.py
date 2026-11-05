@@ -29,35 +29,51 @@ def _plan_entry(event, root):
     No prompt is classified and no plan is created, bound, registered or
     announced here. Only one unfinished leaf explicitly bound to this native
     session can be called a continuation; all other open plans remain candidates.
+    The plan of this session is found by its binding first (the index that activate and
+    create-leaf write: session -> plan dirs), then in the repository of the cwd, so a
+    session that works in one project on a plan of another is still held and reminded.
     """
     cwd = Path(event.get("cwd") or ".").expanduser().resolve()
     session = str(event.get("session_id") or event.get("sessionID") or "").strip()
     if not session:
         return None
     tools = method_root(Path(root).resolve()) / "tools"
-    git = sibling_tool(tools, "lhc_gitlayout.py")
-    repo = git.worktree_root(cwd) if git and hasattr(git, "worktree_root") else None
-    repo = Path(repo or cwd).resolve()
-    if not (repo / ".git").exists():
-        return None
     mirror = sibling_tool(tools, "lhc_plan_mirror.py")
     if mirror is None:
         return None
+    indexed = []
+    try:
+        pj = sibling_tool(tools, "lhc_plan_json.py")
+        indexed = [Path(p) for p in pj.session_plans(session)] if pj else []
+    except Exception:  # noqa: BLE001 - without the index the cwd repository is still searched
+        indexed = []
+    git = sibling_tool(tools, "lhc_gitlayout.py")
+    repo = git.worktree_root(cwd) if git and hasattr(git, "worktree_root") else None
+    repo = Path(repo or cwd).resolve()
+    scan = [(p, True) for p in indexed]
+    if (repo / ".git").exists():
+        for base in (repo / ".agents" / "tasks", repo / "docs" / "tasks"):
+            if base.is_dir():
+                scan += [(p, False) for p in sorted(p for p in base.iterdir() if (p / "plan.json").is_file())]
+    elif not indexed:
+        return None
     open_plans = []
     bound_leaves = []
-    for base in (repo / ".agents" / "tasks", repo / "docs" / "tasks"):
-        if not base.is_dir():
+    seen = set()
+    for plan, from_index in scan:
+        try:
+            plan = plan.resolve()
+        except OSError:
             continue
-        for plan in sorted(p for p in base.iterdir() if (p / "plan.json").is_file()):
-            leaves = [mirror.read(f, {}) for f in sorted((plan / "leaves").glob("*.json"))[:400]]
-            todo = [leaf for leaf in leaves if leaf.get("status") in {"queued", "running"}]
-            if todo:
-                plan = plan.resolve()
-                open_plans.append(plan)
-                bound_leaves.extend(
-                    {"plan": str(plan), "leaf": str(leaf.get("id"))}
-                    for leaf in todo if leaf.get("session") == session
-                )
+        if plan in seen or not (plan / "plan.json").is_file():
+            continue
+        leaves = [mirror.read(f, {}) for f in sorted((plan / "leaves").glob("*.json"))[:400]]
+        todo = [leaf for leaf in leaves if leaf.get("status") in {"queued", "running"}]
+        mine = [leaf for leaf in todo if leaf.get("session") == session]
+        if todo and (mine or not from_index):  # a stale index entry is not a candidate
+            seen.add(plan)
+            open_plans.append(plan)
+            bound_leaves.extend({"plan": str(plan), "leaf": str(leaf.get("id"))} for leaf in mine)
     continuation = bound_leaves[0] if len(bound_leaves) == 1 else None
     candidates = [str(plan) for plan in open_plans
                   if continuation is None or str(plan) != continuation["plan"]]
@@ -185,20 +201,46 @@ def _estimate_max(leaf):
         return None
 
 
-STOP_FIRES = 2          # a stop is held at most this many times per window
+STOP_FIRES = 4          # a stop is held this many times per window while only queued leaves remain
+STOP_MAX = 6            # hard limit per window, also for a running leaf nobody closed or escalated
 STOP_WINDOW = 6 * 3600  # a plan untouched this long is not this session's live work
+
+
+def _escalation_sent(session, starts, since, tools):
+    """True when this session wrote a question/result letter into a project's .agents/mail.
+
+    Facts of the files only: <primary>/.agents/mail/<to>[/done]/<time>-<session>-<kind>.md,
+    which lhc_mail.py send names after the sender. since is epoch seconds."""
+    try:
+        mail = sibling_tool(tools, "lhc_mail.py")
+        for start in starts:
+            try:
+                folder = mail.primary_root(start) / ".agents" / "mail"
+            except Exception:  # noqa: BLE001 - not a git directory
+                continue
+            if not folder.is_dir():
+                continue
+            for kind in ("question", "result"):
+                for path in list(folder.glob(f"*/*-{session}-{kind}.md")) + list(folder.glob(f"*/done/*-{session}-{kind}.md")):
+                    if path.stat().st_mtime >= since:
+                        return True
+    except Exception:  # noqa: BLE001 - fail open: unreadable mail is not a reason to hold
+        return False
+    return False
 
 
 def stop_gate(event, root, now=None):
     """Hold a stop while the session's plan still has untouched work.
 
     Facts only: queued or running leaves on disk. The text of the turn is never
-    read. The hold is bounded (stop_hook_active, STOP_FIRES per window), so a
-    session that truly cannot go on is released after two reminders.
+    read. "Part done, part not confirmed" is not an end state. The hold is bounded:
+    STOP_FIRES reminders for queued leaves; a leaf of this session still running goes on
+    holding (also after stop_hook_active) until it is closed (done/blocked/dropped) or a
+    question/result letter is on file in .agents/mail, and at most STOP_MAX times a window.
     """
     import time
     session = str(event.get("session_id") or event.get("sessionID") or "")
-    if not session or event.get("agent_id") or event.get("stop_hook_active"):
+    if not session or event.get("agent_id"):
         return None
     found = _plan_entry(event, root)
     if not found:
@@ -222,12 +264,17 @@ def stop_gate(event, root, now=None):
         if isinstance(leaf, dict):
             rows[str(leaf.get("id") or f.stem)] = leaf
     rows, _stages = _split_leaves(rows)
+    running = []
     for ident, leaf in rows.items():
         if leaf.get("status") in {"queued", "running"}:
             todo.append(ident)
+            if leaf.get("status") == "running" and leaf.get("session") == session:
+                running.append(ident)
         elif leaf.get("status") == "blocked":
             blocked += 1
     if not todo:
+        return None
+    if event.get("stop_hook_active") and not running:
         return None
     base = Path(os.environ.get("XDG_STATE_HOME") or Path.home() / ".local" / "state") / "lhc" / "pulse"
     mark = base / (re.sub(r"[^A-Za-z0-9_.-]", "_", session) + ".stop")
@@ -238,20 +285,36 @@ def stop_gate(event, root, now=None):
         pass
     if now - since > STOP_WINDOW:
         fires, since = 0, now
-    if fires >= STOP_FIRES:
+    if fires >= STOP_MAX:
         return None
+    if fires >= STOP_FIRES:
+        if not running:
+            return None
+        cwd = event.get("cwd")
+        starts = [plan] + ([Path(cwd)] if isinstance(cwd, str) and cwd else [])
+        tools = method_root(Path(root).resolve()) / "tools"
+        if _escalation_sent(session, starts, now - STOP_WINDOW, tools):
+            return None
     try:
         base.mkdir(parents=True, exist_ok=True)
         mark.write_text(json.dumps([fires + 1, since]))
     except OSError:
         return None
     shown = ", ".join(todo[:6]) + (" ..." if len(todo) > 6 else "")
+    if fires >= STOP_FIRES:
+        last = fires + 1 >= STOP_MAX
+        return (f"LHC: leaf {', '.join(running)} of plan {plan.name} is still running: part done, part not confirmed "
+                "is not an end state. Close it (done, blocked or dropped in the leaf) or escalate "
+                "(python3 common/tools/lhc_mail.py send --kind question|result to the duty session or "
+                "the chain, with what is done, what is unconfirmed and what you need)."
+                + (" This is the last reminder: escalate and stop." if last else ""))
     return (f"LHC: you are stopping, but plan {plan.name} still has {len(todo)} leaves not done ({shown}) "
-            f"and {blocked} blocked. A stop is right when the business result is reached or only the owner "
-            "can unblock it. Otherwise do not stop: take the next queued leaf that is not blocked and work it "
-            "now; for a blocked leaf send the blocker up the chain (python3 common/tools/lhc_mail.py send "
-            "to the L, Adviser or Overseer) and go on to the next leaf instead of waiting. Report when the "
-            "leaves are done or escalated, not when the first one is stuck.")
+            f"and {blocked} blocked. Part done, part not confirmed is not an end state. A stop is right when "
+            "the business result is reached or only the owner can unblock it. Otherwise do not stop: take the "
+            "next queued leaf that is not blocked and work it now; for a blocked leaf send the blocker up the "
+            "chain (python3 common/tools/lhc_mail.py send to the L, Adviser or Overseer) and go on to the "
+            "next leaf instead of waiting. Report when the leaves are done or escalated, not when the first "
+            "one is stuck.")
 
 
 def overseer_review(event, root, channel, now=None):
