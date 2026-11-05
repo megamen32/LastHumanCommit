@@ -475,3 +475,123 @@ def test_watch_process_plain_save_debounce_restart(fixture):
         proc.terminate()
         proc.wait(timeout=5)
         stop(server)
+
+
+# ---- 1.12.3: an existing plan is mirrored, never refused by a write-time gate ----
+
+def test_old_plan_with_unknown_fields_is_mirrored_with_a_warning(fixture):
+    plan, client, cfg = fixture
+    write(plan / 'plan.json', {'title': 'Старый', 'goal': 'g', 'legacy_plan_note': 'x'})
+    write(plan / 'leaves/A.json', {'id': 'A', 'label': 'Первая', 'status': 'queued', 'estimate_minutes': 10,
+                                   'title': 'лишнее', 'evidence': 'старое поле'})
+    with pytest.raises(leaves.LeafError):          # writes and strict reads stay gated
+        leaves.build_document(plan)
+    mirror.register(plan, client)
+    state = mirror.capture(plan)
+    assert state['error'] is None
+    assert 'evidence, title' in state['warning'] and 'legacy_plan_note' in state['warning']
+    task = state['pending']['document']['tasks'][0]
+    assert 'evidence' not in task and task['label'] == 'Первая'
+    check = mirror.inspect_source(plan)
+    assert check['source'] == 'warning'
+
+
+def test_decomposition_check_is_an_accepted_plan_field(fixture):
+    plan, client, cfg = fixture
+    write(plan / 'plan.json', {'title': 'T', 'goal': 'g', 'decomposition_check': {'checked_by': 'lead', 'edges_kept': []}})
+    assert leaves.build_document(plan)['title'] == 'T'
+    mirror.register(plan, client)
+    assert mirror.capture(plan)['warning'] is None
+
+
+def test_plan_without_plan_json_but_with_graph_is_mirrored(fixture):
+    plan, client, cfg = fixture
+    leaves.build_graph(plan)
+    (plan / 'plan.json').unlink()
+    assert mirror.inspect_source(plan)['source'] == 'ok'
+    mirror.register(plan, client)
+    state = mirror.capture(plan)
+    assert state['error'] is None and state['pending']['document']['title'] == 'Локальный план'
+
+
+def test_registered_source_that_is_gone_is_a_warning_not_an_error(fixture):
+    plan, client, cfg = fixture
+    mirror.register(plan, client)
+    mirror.capture(plan)
+    state_path = mirror.directory(plan) / 'mirror-state.json'
+    stale = mirror.read(state_path)
+    stale['error'] = 'LeafError: синхронизация или источник недоступны'
+    mirror.pub.atomic(state_path, stale)
+    (plan / 'plan.json').unlink()
+    shutil.rmtree(plan / 'leaves')
+    assert mirror.inspect_source(plan)['source'] == 'absent'
+    mirror.run_observer(client, once=True)
+    state = mirror.read(state_path)
+    assert state['error'] is None and 'отсутствует' in state['warning']
+    assert state['pending']            # the last good snapshot is kept
+
+
+def test_server_ahead_of_local_sequence_is_continued_not_refused(fixture):
+    plan, client, cfg = fixture
+    mirror.register(plan, client)
+    mirror.capture(plan)
+    state_path = mirror.directory(plan) / 'mirror-state.json'
+    first = mirror.read(state_path)
+    server = start(cfg)
+    try:
+        connect(client, server)
+        ccfg = mirror.config(client)
+        leaves.update_leaf(plan, 'A', {'status': 'running'})
+        mirror.capture(plan)
+        mirror.sync(plan, ccfg)                      # the server now holds seq 2
+        mirror.pub.atomic(state_path, first)         # the local state is rolled back to seq 1
+        leaves.update_leaf(plan, 'A', {'estimate_minutes': 12})
+        mirror.capture(plan)                         # local seq 2 again, different data
+        assert mirror.read(state_path)['seq'] == 2
+        mirror.sync(plan, ccfg)                      # 409 once, then continues after the server
+        state = mirror.read(state_path)
+        assert state['seq'] == 3 and state['error'] is None
+        assert state['server_receipt']['seq'] == 3
+    finally:
+        stop(server)
+
+
+def test_a_real_history_conflict_stays_a_conflict(fixture):
+    plan, client, cfg = fixture
+    mirror.register(plan, client)
+    mirror.capture(plan)
+    state_path = mirror.directory(plan) / 'mirror-state.json'
+    server = start(cfg)
+    try:
+        connect(client, server)
+        ccfg = mirror.config(client)
+        mirror.sync(plan, ccfg)
+        state = mirror.read(state_path)
+        state['pending']['revisions'][0]['reason'] = 'rewrite'
+        state['pending']['seq'] = state['seq'] = state['seq'] + 1
+        mirror.pub.atomic(state_path, state)
+        with pytest.raises(urllib.error.HTTPError) as caught:
+            mirror.sync(plan, ccfg)
+        assert caught.value.code == 409
+    finally:
+        stop(server)
+
+
+def test_tests_do_not_bind_plans_to_the_owners_live_mirror(tmp_path):
+    plan = tmp_path / 'repo/.agents/tasks/20261105-x'
+    (plan / 'leaves').mkdir(parents=True)
+    assert mirror.binding(plan) is None
+
+
+def test_old_hand_written_shapes_are_read_for_mirroring(fixture):
+    plan, client, cfg = fixture
+    write(plan / 'plan.json', {'title': 'T', 'goal': 'g', 'external_waits': ['ждём доступ', 'ещё']})
+    write(plan / 'leaves/B.json', {'id': 'B', 'title': 'Старый лист без label', 'status': 'done'})
+    with pytest.raises(leaves.LeafError):
+        leaves.build_document(plan)
+    mirror.register(plan, client)
+    state = mirror.capture(plan)
+    document = state['pending']['document']
+    assert document['external_waits'] == 'ждём доступ; ещё'
+    assert [t['label'] for t in document['tasks'] if t['id'] == 'B'] == ['Старый лист без label']
+    assert state['error'] is None and state['warning']

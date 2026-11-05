@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import contextvars
 import fcntl
 import hashlib
 from datetime import datetime, timezone
@@ -206,6 +207,7 @@ PLAN_FIELDS = (
     "planned_start_at",
     "started_at",
     "finished_at",
+    "decomposition_check",
 )
 
 CLOCK_RE = re.compile(r"^(?:[01]?\d|2[0-3]):[0-5]\d$")
@@ -213,6 +215,45 @@ CLOCK_RE = re.compile(r"^(?:[01]?\d|2[0-3]):[0-5]\d$")
 
 class LeafError(ValueError):
     """A leaf that cannot be collected. The message always names the file."""
+
+
+_LENIENT: contextvars.ContextVar = contextvars.ContextVar("lhc_lenient_reading", default=None)
+
+
+@contextlib.contextmanager
+def lenient_reading():
+    """Read an existing plan to mirror it: gates apply to writes, not to reading.
+
+    Inside the block a field the schema does not know is dropped and named in
+    the yielded list of warnings instead of raising LeafError. Creating and
+    updating a leaf stays strict, outside the block."""
+
+    warnings: list[str] = []
+    token = _LENIENT.set(warnings)
+    try:
+        yield warnings
+    finally:
+        _LENIENT.reset(token)
+
+
+def _lenient_note(path: Path, text: str) -> bool:
+    sink = _LENIENT.get()
+    if sink is None:
+        return False
+    message = f"{Path(path).name}: {text}"
+    if message not in sink:
+        sink.append(message)
+    return True
+
+
+def _tolerate_unknown(path: Path, unknown: list[str], kind: str) -> bool:
+    sink = _LENIENT.get()
+    if sink is None:
+        return False
+    message = f"{Path(path).name}: неизвестные поля {kind} не зеркалируются — {', '.join(unknown)}"
+    if message not in sink:
+        sink.append(message)
+    return True
 
 
 # --------------------------------------------------------------------------
@@ -443,7 +484,12 @@ def task_from_leaf(raw: Any, path: Path) -> dict[str, Any]:
         raise LeafError(f"{path}: лист должен быть объектом JSON")
     unknown = sorted(set(raw) - set(LEAF_FIELDS))
     if unknown:
-        raise unknown_field_error(path, unknown)
+        if not _tolerate_unknown(path, unknown, "листа"):
+            raise unknown_field_error(path, unknown)
+        legacy_title = raw.get("title")
+        raw = {key: value for key, value in raw.items() if key in LEAF_FIELDS}
+        if not raw.get("label") and isinstance(legacy_title, str) and legacy_title.strip():
+            raw["label"] = legacy_title.strip()  # old leaves named themselves title
 
     leaf_id = _text(raw, "id", path)
     if not leaf_id:
@@ -454,6 +500,8 @@ def task_from_leaf(raw: Any, path: Path) -> dict[str, Any]:
         )
 
     label = _text(raw, "label", path)
+    if not label and _lenient_note(path, "нет названия листа, показан id"):
+        label = leaf_id
     if not label:
         raise LeafError(f"{path}: нет названия листа (label)")
 
@@ -630,10 +678,12 @@ def _plan_fields(raw: dict[str, Any], path: Path) -> dict[str, Any]:
         raise LeafError(f"{path}: файл плана должен быть объектом JSON")
     unknown = sorted(set(raw) - set(PLAN_FIELDS))
     if unknown:
-        raise LeafError(
-            f"{path}: неизвестные поля: {', '.join(unknown)}; "
-            f"допустимые поля: {', '.join(sorted(PLAN_FIELDS))}"
-        )
+        if not _tolerate_unknown(path, unknown, "плана"):
+            raise LeafError(
+                f"{path}: неизвестные поля: {', '.join(unknown)}; "
+                f"допустимые поля: {', '.join(sorted(PLAN_FIELDS))}"
+            )
+        raw = {key: value for key, value in raw.items() if key in PLAN_FIELDS}
     fields: dict[str, Any] = {}
     if "default_model" in raw:
         value = raw["default_model"]
@@ -646,7 +696,11 @@ def _plan_fields(raw: dict[str, Any], path: Path) -> dict[str, Any]:
         if value is None:
             continue
         if not isinstance(value, str):
-            raise LeafError(f"{path}: поле {field} должно быть строкой")
+            if isinstance(value, list) and all(isinstance(item, str) for item in value) and _lenient_note(
+                    path, f"поле {field} — список, склеен в строку"):
+                value = "; ".join(item.strip() for item in value if item.strip())
+            else:
+                raise LeafError(f"{path}: поле {field} должно быть строкой")
         value = value.strip()
         if value:
             fields[field] = value
