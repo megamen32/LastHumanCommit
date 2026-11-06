@@ -18,8 +18,9 @@ real scenario on the dev environment. They are on only when the task says so («
 «council»), else `subagents: on` in `.agents/PROJECT.md`, else `~/.config/lhc/workflow.json` (`lhc_subagents.py` shows
 the result). With subagents=on L splits the work and starts Workers in parallel, one per leaf, plus a Zero-Knowledge
 Critic, and does no engineering itself. Always, also with subagents off: independent leaves of the same kind (one
-per environment, host or service) run in parallel, one Worker per leaf, each in its own worktree and run directory;
-its branch is merged and its worktree, branch and run directory removed before its leaf closes. This applies inside
+per environment, host or service) run in parallel, one Worker per leaf, each in its own worktree and run directory,
+registered with `worker_register`; `worker_finish` merges its branch and removes its worktree, branch and run
+directory before its leaf closes. This applies inside
 one session; L is not a Dispatcher.
 
 ## Finish line

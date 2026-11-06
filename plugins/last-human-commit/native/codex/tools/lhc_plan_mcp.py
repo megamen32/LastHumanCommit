@@ -398,6 +398,47 @@ def update_progress(arguments):
     return _mutation(arguments, "progress", arguments["leaf_id"], arguments.get("fields", {}))
 
 
+def _plan_cli(arguments, operation, *extra):
+    argv = [sys.executable, str(plan_json_cli()), operation, str(_plan_dir(arguments)), *extra]
+    return _render([run_cli(argv)])
+
+
+def show_plan(arguments):
+    extra = []
+    for leaf in arguments.get("current") or []:
+        extra += ["--current", str(leaf)]
+    return _plan_cli(arguments, "show", *extra)
+
+
+def update_plan(arguments):
+    extra = ["--fields", json.dumps(arguments.get("fields") or {}, ensure_ascii=False)]
+    if arguments.get("revision") is not None:
+        extra += ["--revision", json.dumps(arguments["revision"], ensure_ascii=False)]
+    return _plan_cli(arguments, "update-plan", *extra)
+
+
+def activate_leaf(arguments):
+    extra = [str(arguments["leaf_id"])]
+    for key in ("session", "harness", "note"):
+        if arguments.get(key):
+            extra += ["--" + key, str(arguments[key])]
+    return _plan_cli(arguments, "activate", *extra)
+
+
+def worker_register(arguments):
+    extra = [str(arguments["leaf_id"]), "--worker", str(arguments["worker"]),
+             "--branch", str(arguments["branch"]), "--worktree", str(arguments["worktree"])]
+    for key in ("run_dir", "run_host"):
+        if arguments.get(key):
+            extra += ["--" + key.replace("_", "-"), str(arguments[key])]
+    return _plan_cli(arguments, "worker-register", *extra)
+
+
+def worker_finish(arguments):
+    return _plan_cli(arguments, "worker-finish", str(arguments["leaf_id"]),
+                     "--task-worktree", str(arguments["task_worktree"]), "--result", str(arguments["result"]))
+
+
 def _publication(arguments, operation):
     argv = [sys.executable, str(find_cli("lhc_plan_publish.py")), operation, str(_plan_dir(arguments))]
     for key in ("config", "reason"):
@@ -509,6 +550,11 @@ OPERATIONS: dict[str, Callable[[dict[str, Any]], dict[str, Any]]] = {
     "build_plan": build_plan,
     "estimate_cost": estimate_cost,
     "update_progress": update_progress,
+    "show_plan": show_plan,
+    "update_plan": update_plan,
+    "activate_leaf": activate_leaf,
+    "worker_register": worker_register,
+    "worker_finish": worker_finish,
     "publish_html": publish_html,
     "revise_plan": revise_plan,
     "bug_register": bug_register,
@@ -639,6 +685,54 @@ TOOLS += [
     _schema("publish_html", {"plan_dir": {"type": "string"}, "config": {"type": "string"}, "autopublish": {"type": "boolean"}}, ["plan_dir"]),
     _schema("revise_plan", {"plan_dir": {"type": "string"}, "reason": {"type": "string"}}, ["plan_dir", "reason"]),
 ]
+def _tool(name, description, properties, required):
+    return {"name": name, "description": description,
+            "inputSchema": {"type": "object", "properties": properties, "required": required,
+                            "additionalProperties": False}}
+
+
+_PLAN = {"type": "string", "description": "Plan directory (holds plan.json and leaves/)."}
+_LEAF = {"type": "string", "description": "Leaf id, e.g. L07."}
+TOOLS += [
+    _tool("show_plan",
+          "Where the plan is: done leaves with their results, the current leaves with their last note, "
+          "what runs elsewhere, what is next, overruns and Workers not merged yet. Call it first after a "
+          "compaction or a resume, before anything else.",
+          {"plan_dir": _PLAN, "current": {"type": "array", "items": {"type": "string"},
+                                           "description": "Leaf ids of this session."}},
+          ["plan_dir"]),
+    _tool("update_plan",
+          "Set plan.json fields (goal, recon, acceptance_scenario, ...) and/or append one revision "
+          "{reason, summary}. Validated before writing; a wrong field or shape is an error that says the "
+          "allowed form. Never edit plan.json by hand.",
+          {"plan_dir": _PLAN, "fields": {"type": "object", "description": "Plan fields to set."},
+           "revision": {"type": "object", "description": "{\"reason\": why the plan changed, \"summary\": what changed}"}},
+          ["plan_dir"]),
+    _tool("activate_leaf",
+          "Start a leaf in this session (status running, bound to the session so the hooks show it after a "
+          "compaction).",
+          {"plan_dir": _PLAN, "leaf_id": _LEAF, "session": {"type": "string"}, "harness": {"type": "string"},
+           "note": {"type": "string"}},
+          ["plan_dir", "leaf_id"]),
+    _tool("worker_register",
+          "Bind the Worker of a leaf before it starts: its id, its branch, its own worktree and, on a shared "
+          "stand, its run directory (run_host for another machine).",
+          {"plan_dir": _PLAN, "leaf_id": _LEAF, "worker": {"type": "string"}, "branch": {"type": "string"},
+           "worktree": {"type": "string"}, "run_dir": {"type": "string"}, "run_host": {"type": "string"}},
+          ["plan_dir", "leaf_id", "worker", "branch", "worktree"]),
+    _tool("worker_finish",
+          "Close a Worker's leaf: merge its branch into the task branch (task_worktree), remove its worktree, "
+          "branch and run directory, then mark the leaf done with the result. A conflict aborts the merge and "
+          "leaves the leaf open.",
+          {"plan_dir": _PLAN, "leaf_id": _LEAF, "task_worktree": {"type": "string"},
+           "result": {"type": "string", "description": "What works; where: files, commit, receipt; not proven: ..."}},
+          ["plan_dir", "leaf_id", "task_worktree", "result"]),
+]
+for tool in TOOLS:
+    if tool["name"] == "update_progress":
+        tool["description"] = ("Add a progress note to a running leaf. Refused when the leaf is past twice its "
+                               "estimate and 45 minutes: then close the proven part and split the rest by object.")
+
 BUG_SCHEMA_PROPERTIES = {
     "plan_dir": {"type": "string", "description": "Existing LHC task/plan directory; records live in bugs/*.json."},
     "bug_id": {"type": "string", "description": "Optional for register (auto-ID); required otherwise."},
@@ -759,7 +853,8 @@ def handle(message: dict[str, Any]) -> Optional[dict[str, Any]]:
                 kind = shape["properties"][key].get("type")
                 if ((kind == "string" and not isinstance(value, str)) or
                     (kind == "object" and not isinstance(value, dict)) or
-                    (kind == "boolean" and not isinstance(value, bool))):
+                    (kind == "boolean" and not isinstance(value, bool)) or
+                    (kind == "array" and not isinstance(value, list))):
                     raise ValueError(f"invalid type for {key}")
             result = operation(arguments)
         except (ValueError, OSError, json.JSONDecodeError) as error:
