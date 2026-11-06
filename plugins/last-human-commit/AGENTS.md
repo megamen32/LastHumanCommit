@@ -41,8 +41,10 @@ acceptance", "next: deploy") is a failed turn: do them, then report.
 ## Every discovered bug must close before Done
 
 Record **every** observed bug/failed test (even baseline/not ours) via LhcPlan
-bug_register. Never delete records or silence tests. Fixed needs real passing
-test evidence, duplicate/false_positive needs reason. The last full-cycle
+bug_register. Never delete records or silence tests. Every bug fix is TDD: first a
+test that reproduces the bug and fails (RED, keep its output), then the fix, then the
+same test passes (GREEN), then the original scenario. bug_resolve `fixed` takes both
+outputs; duplicate/false_positive needs reason. The last full-cycle
 worker repairs **all** bugs, runs bug_check (zero unresolved) and proves the
 full applicable test suite green. Real approval refusals remain blockers.
 
@@ -128,8 +130,7 @@ the plan moving and leave one short summary.
    Do not wait for approval when ordered; fullcycle: working options → ideal → smallest complete solution.
 5. **Decompose** by the `plan` skill. Delivery time = critical path, not the sum.
 6. **Execute** the leaves yourself (subagents=on: through Workers on the cheapest model that passes acceptance).
-   Bugs: mandatory TDD, a regression for a fix: RED → fix → GREEN → original
-   scenario. A commit or a SHA is not the result.
+   Bugs: TDD, see «Every discovered bug». A commit or a SHA is not the result.
 7. **Review** the integrated diff once (fullcycle),
    after all implementation and integration leaves. Do not review each leaf or wave.
 8. **Deploy and manually exercise the real scenario** on the agreed user or test
