@@ -603,6 +603,21 @@ def task_from_leaf(raw: Any, path: Path) -> dict[str, Any]:
         value = _clock(raw, field, path)
         if value:
             task[field] = value
+    # The start and end of a leaf are in its own history even when nobody
+    # stamped them: the first move to running and the last move to a final
+    # status. Without them the page cannot show how long a leaf really took.
+    events = [event for event in raw.get("progress_events") or []
+              if isinstance(event, dict) and isinstance(event.get("changes"), dict)
+              and origin_time(str(event.get("at") or "")) is not None]
+    if "started_at" not in task:
+        began = next((event["at"] for event in events if event["changes"].get("status") == "running"), None)
+        if began:
+            task["started_at"] = began
+    if "finished_at" not in task and raw.get("status") in {"done", "dropped"}:
+        ended = next((event["at"] for event in reversed(events)
+                      if event["changes"].get("status") in {"done", "dropped"}), None)
+        if ended:
+            task["finished_at"] = ended
 
     details = raw.get("blocker_details")
     if details is not None:
@@ -1080,6 +1095,7 @@ def split_milestones(tasks, sources=None, strict=True):
             task["label"] = "Этап · " + label
         milestones.append({
             "id": task["id"], "label": label, "status": status, "children": list(ids),
+            "estimate_minutes": task.get("estimate_minutes"),
             "done": sum(1 for item in ids if by_id[item].get("status") == "done"),
             "total": len(ids),
         })

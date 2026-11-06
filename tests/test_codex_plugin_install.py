@@ -114,3 +114,24 @@ def test_a_broken_record_is_ignored_not_fatal(roots, tmp_path):
     native.chmod(0o700)
     assert installer.install(str(native), cache, source, record=record) == 0
     assert json.loads(record.read_text()) == ['1.6.2', '1.6.3', '1.6.4']
+
+
+def test_plugin_add_does_not_run_in_the_folder_the_upgrade_replaced(roots, tmp_path, monkeypatch):
+    """The marketplace upgrade replaces its checkout; plugin add from inside it failed with
+    «failed to load configuration: No such file or directory» (server-100, 1.15.1 rollout)."""
+    import shutil
+    cache, source = roots
+    shutil.rmtree(cache)
+    checkout = tmp_path / 'marketplace-checkout'
+    checkout.mkdir()
+    monkeypatch.chdir(checkout)
+    log = tmp_path / 'cwd.jsonl'
+    native = tmp_path / 'fake-codex'
+    native.write_text('#!/usr/bin/env python3\nimport json, os, shutil, sys\n'
+                      'try:\n    here = os.getcwd()\nexcept FileNotFoundError:\n'
+                      '    print("Error: failed to load configuration"); raise SystemExit(1)\n'
+                      f'open({str(log)!r}, "a").write(json.dumps(sys.argv[1:3])+"\\n")\n'
+                      f'if sys.argv[1:3] == ["plugin", "marketplace"]: shutil.rmtree({str(checkout)!r})\n')
+    native.chmod(0o700)
+    assert installer.install(str(native), cache, source, upgrade_marketplace=True) == 0
+    assert len(log.read_text().splitlines()) == 2

@@ -23,8 +23,11 @@ Every «needs checking» in `recon` becomes a research leaf with its question.
 
 ## 2. Stages, each ending in a release
 
-- Write the whole route to the owner's result as stages (`kind: milestone`, a rough estimate
-  in hours is fine).
+- At the start you cannot know every step, so write the whole route to the owner's result as
+  stages (`kind: milestone`) of at most 45 minutes each, with that estimate. A longer stage is
+  two stages.
+- Leaves of a stage get `parent: <stage id>`. Cut them when you start the stage and add more
+  as the work shows them; the page shows stages and opens each to its leaves.
 - Every stage ends by deploying what already works, so the owner gets value stage by stage:
   the last leaf of a stage is a release task leaf (a stage holds leaves, never other stages).
   Example: first the check of Codex and OpenCode on the installed service, then one stage per

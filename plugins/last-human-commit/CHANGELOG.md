@@ -1,3 +1,11 @@
+## 1.16.0
+
+- The plan page's Gantt is drawn on real time and grouped by stage. A stage (milestone) row shows its leaves done, its plan and its real time, and is closed by default; a click opens its leaves. «Всегда разворачивать» / «Всегда сворачивать» is remembered in localStorage (lhc-gantt-expand). Each leaf that ran sits where it ran: a hollow bar is its plan from its real start, the solid bar is how long it really took, and the part past the plan is red. Leaves not started yet are dashed, after «сейчас», in schedule order. Before this the rows were dependency waves on a planned axis, so a queued first leaf sat before finished ones and overrun was drawn nowhere.
+- A leaf's start and finish come from its own history (the first move to running, the last move to done) when nobody stamped them: in Codex the PostToolUse stamp does not fire, and every leaf showed «не измерено».
+- The plan skill: at the start write the route as stages of at most 45 minutes each; cut a stage's leaves (`parent: <stage>`) when the stage starts and add more as the work shows them.
+- Codex installer: `codex plugin add` failed with «failed to load configuration: No such file or directory» right after `--upgrade-marketplace`, because it ran from inside the marketplace checkout the upgrade had just replaced (server-100, 1.15.1 rollout). Codex now runs from the home folder.
+- Codex: a new session's SessionStart hook records its LHC version and gives the hook tools back to every recorded version Codex pruned by its own auto-upgrade, so open chats on an older version keep working between the daily updater runs.
+
 ## 1.15.1
 
 - Codex updates no longer cut off open chats. codex plugin marketplace upgrade (and Codex's own auto-upgrade) installs the new LHC and prunes the old version folders before install-codex-plugin.py runs, so the wrapper saw an empty cache and restored nothing; the daily lhc-harness-autoupdate.sh called the bare upgrade and never restored routes at all. The wrapper now keeps every version it has seen in ~/.local/state/lhc/codex-plugin-versions.json and restores the hook route of each, and with --upgrade-marketplace does the upgrade itself; the daily updater calls it that way. Checked on server-100: the upgrade pruned 1.11.0-1.14.0 again and the wrapper brought all of them back.

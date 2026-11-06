@@ -61,16 +61,19 @@ def install(codex_bin: str, cache_root: Path, tools_root: Path, *,
     if record is not None:
         versions = sorted(set(versions) | set(load_record(record)), key=version_order, reverse=True)
     status = 1
+    # The marketplace upgrade replaces its checkout. Codex run from inside it (the updater
+    # cds there) then has no working directory and fails «failed to load configuration».
+    home = str(Path.home())
     try:
         if upgrade_marketplace:
             refreshed = subprocess.run([codex_bin, 'plugin', 'marketplace', 'upgrade', 'megamen32-plugins'],
-                                       check=False).returncode
+                                       check=False, cwd=home).returncode
             if refreshed != 0:
                 print(f'LHC: marketplace upgrade exited {refreshed}; installing from the current checkout',
                       file=sys.stderr)
         # Native manager remains the installer; no retry after any result.
         status = subprocess.run([codex_bin, 'plugin', 'add',
-                                 'last-human-commit@megamen32-plugins', '--json'], check=False).returncode
+                                 'last-human-commit@megamen32-plugins', '--json'], check=False, cwd=home).returncode
     except OSError as error:
         print(f'LHC native install unavailable: {error}', file=sys.stderr)
         status = 127
