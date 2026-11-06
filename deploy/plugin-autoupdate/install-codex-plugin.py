@@ -22,7 +22,29 @@ def version_order(value: str) -> tuple:
     return (*map(int, core.split('.')), not bool(prerelease), identifiers)
 
 
-def install(codex_bin: str, cache_root: Path, tools_root: Path) -> int:
+def load_record(record) -> list[str]:
+    """Every LHC version this host had in the Codex cache; open chats may still use them."""
+    try:
+        data = json.loads(Path(record).read_text(encoding='utf-8'))
+    except (OSError, ValueError, TypeError):
+        return []
+    return [str(item) for item in data if isinstance(item, str) and compat.VERSION.fullmatch(item)] \
+        if isinstance(data, list) else []
+
+
+def save_record(record, versions) -> None:
+    path = Path(record)
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        temporary = path.with_suffix('.tmp')
+        temporary.write_text(json.dumps(sorted(set(versions), key=version_order), indent=1) + '\n', encoding='utf-8')
+        os.replace(temporary, path)
+    except OSError as error:
+        print(f'LHC: could not save the list of installed versions: {error}', file=sys.stderr)
+
+
+def install(codex_bin: str, cache_root: Path, tools_root: Path, *,
+            upgrade_marketplace: bool = False, record=None) -> int:
     tools = compat.validate_tools(tools_root)
     cache = cache_root.expanduser().resolve()
     if cache.name != 'last-human-commit':
@@ -33,8 +55,19 @@ def install(codex_bin: str, cache_root: Path, tools_root: Path) -> int:
     versions = sorted((path.name for path in cache.iterdir()
                        if compat.VERSION.fullmatch(path.name) and path.is_dir()),
                       key=version_order, reverse=True) if cache.exists() else []
+    # `codex plugin marketplace upgrade` (also Codex's own auto-upgrade) installs the new version
+    # and prunes the old ones before this script runs, so the cache alone forgets them: the
+    # record keeps every version seen here, and all of them get their hook route back.
+    if record is not None:
+        versions = sorted(set(versions) | set(load_record(record)), key=version_order, reverse=True)
     status = 1
     try:
+        if upgrade_marketplace:
+            refreshed = subprocess.run([codex_bin, 'plugin', 'marketplace', 'upgrade', 'megamen32-plugins'],
+                                       check=False).returncode
+            if refreshed != 0:
+                print(f'LHC: marketplace upgrade exited {refreshed}; installing from the current checkout',
+                      file=sys.stderr)
         # Native manager remains the installer; no retry after any result.
         status = subprocess.run([codex_bin, 'plugin', 'add',
                                  'last-human-commit@megamen32-plugins', '--json'], check=False).returncode
@@ -51,6 +84,9 @@ def install(codex_bin: str, cache_root: Path, tools_root: Path) -> int:
             print(f'LHC hook compatibility repair failed: {error}', file=sys.stderr)
             if status == 0:
                 status = 1
+        if record is not None and cache.exists():
+            save_record(record, [*versions, *(path.name for path in cache.iterdir()
+                                              if compat.VERSION.fullmatch(path.name) and path.is_dir())])
     return status
 
 
@@ -62,9 +98,15 @@ def main(argv=None):
                         default=codex_home / 'plugins/cache/megamen32-plugins/last-human-commit')
     parser.add_argument('--tools-root', type=Path,
                         default=codex_home / '.tmp/marketplaces/megamen32-plugins/plugins/last-human-commit/tools')
+    parser.add_argument('--upgrade-marketplace', action='store_true',
+                        help='refresh the megamen32-plugins marketplace first (it prunes old versions; their routes come back)')
+    parser.add_argument('--record', type=Path,
+                        default=Path(os.environ.get('XDG_STATE_HOME') or Path.home() / '.local/state')
+                        / 'lhc/codex-plugin-versions.json')
     args = parser.parse_args(argv)
     try:
-        return install(args.codex_bin, args.cache_root, args.tools_root)
+        return install(args.codex_bin, args.cache_root, args.tools_root,
+                       upgrade_marketplace=args.upgrade_marketplace, record=args.record)
     except (OSError, ValueError, TypeError) as error:
         parser.exit(2, f'LHC native install preflight: {error}\n')
 

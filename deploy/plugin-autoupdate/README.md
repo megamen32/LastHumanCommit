@@ -28,7 +28,11 @@ python3 deploy/plugin-autoupdate/install-codex-plugin.py
 
 It calls the native manager once and restores missing `tools` compatibility
 routes for prior version directories before returning, including on an install
-failure. It neither installs old manifests nor overwrites existing tool files.
+failure. `codex plugin marketplace upgrade` (and Codex's own auto-upgrade) prunes
+old versions before the wrapper runs, so the wrapper keeps every version it has
+seen in `~/.local/state/lhc/codex-plugin-versions.json` and restores all of them.
+`--upgrade-marketplace` makes the wrapper do the upgrade itself; the daily
+`lhc-harness-autoupdate.sh` calls it that way. It neither installs old manifests nor overwrites existing tool files.
 The target is the identified official marketplace LHC package. No background
 service, application restart or replay of a user's task is involved.
 

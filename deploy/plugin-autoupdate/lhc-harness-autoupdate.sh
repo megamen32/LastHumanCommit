@@ -28,8 +28,13 @@ if [[ ! -f "${PACKAGE_ROOT}/.claude-plugin/plugin.json" ]]; then
 fi
 
 # Refresh the shared source first. OpenCode consumes this checkout directly.
+# The Codex upgrade installs the new plugin and prunes the old versions that open chats
+# still run their hooks from; the installer does the upgrade and gives those routes back.
+CODEX_INSTALLER="${MARKETPLACE_ROOT}/deploy/plugin-autoupdate/install-codex-plugin.py"
 if command -v codex >/dev/null 2>&1; then
-  if codex plugin marketplace upgrade megamen32-plugins >/dev/null 2>&1; then
+  if [[ -f "$CODEX_INSTALLER" ]] && python3 "$CODEX_INSTALLER" --upgrade-marketplace >/dev/null 2>&1; then
+    log "refreshed shared megamen32-plugins checkout and the Codex plugin; older hook routes kept"
+  elif codex plugin marketplace upgrade megamen32-plugins >/dev/null 2>&1; then
     log "refreshed shared megamen32-plugins checkout"
   else
     log "WARN Codex marketplace refresh failed; trying a plain fast-forward"
