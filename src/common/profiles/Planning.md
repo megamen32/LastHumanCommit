@@ -19,11 +19,10 @@ not override new instructions. For architecture, use
    assigned leaf does not select the parent's mode or own the plan.
 5. Create and present the plan before implementation, without waiting for a
    second approval when execution is authorized.
-6. Use `../skills/model-routing/SKILL.md` and
-   `../skills/decompose-and-dispatch/SKILL.md` to assign every task to an allowed
-   Worker: fast tier glm-5.3-flash or minimax-3.1-flash, frontier tier gpt-6-luna,
-   glm-5.3 or gpt-6.1-sol, resolved to an exact live
-   catalog ID. The Lead coordinates only and never executes. No silent fallback.
+6. Cut the leaves with `../skills/plan/SKILL.md`. Worker models come from
+   `../skills/model-routing/SKILL.md`: fast tier glm-5.3-flash or minimax-3.1-flash,
+   frontier tier gpt-6-luna, glm-5.3 or gpt-6.1-sol, resolved to an exact live
+   catalog ID, no silent fallback. Who executes follows `AGENTS.md` (subagents).
 7. For a blocker or unclear route follow the escalation chain in `AGENTS.md`
    (L, then Adviser, then Overseer). Add technical review and fresh independent testing when
    the change’s risk and claim justify their cost.
@@ -122,6 +121,6 @@ discarded scope, advantages, disadvantages, cost and real canary. Recommend the 
 route that retains the needed result. Skip the two-approach presentation when one
 route is obvious; the design method still applies briefly to that single solution.
 
-Load `$task-decomposition` when work still spans parallel or multiple cycles.
+Load `$plan` when work still spans parallel or multiple cycles.
 Decompose into the smallest independent business-verifiable leaves; maximize
 parallelism only where dependencies, decisions, and writes do not conflict.

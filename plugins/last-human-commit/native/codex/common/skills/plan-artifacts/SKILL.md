@@ -1,6 +1,6 @@
 ---
 name: plan-artifacts
-description: Create or update LHC plan artifacts for every authorized engineering objective, including quickfixes, incident repairs, integrations and “try installing” requests; the user need not say “make a plan.” A single bounded action of 15 minutes or less needs no plan; when the work exceeds 15 minutes or has 2+ leaves, research first (recon, acceptance_scenario), then record the accepted goal and activate a leaf bound to the actual session. Status/read-only/research tasks and a direct owner no-LHC/STOP do not create a plan. Also use for explicit project-plan requests, task decomposition and plan refresh. The leaf is source of truth; graph, dashboard and Markdown are projections. Follow this procedure, not the tool source.
+description: Commands and file format of LHC plans - create and update leaves, build the page, publish the public link. The skill plan decides what the leaves are; this one says how to write them. Load it when you need a command or a field, not to decide the plan.
 ---
 
 # Plan artifacts

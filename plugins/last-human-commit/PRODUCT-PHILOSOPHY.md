@@ -300,11 +300,11 @@ Lead объясняет пользу человеку, что и кто меня
 | [1] восстановление замысла | `AGENTS.md` («Understand and deliver»), `common/agents/Lead.md` |
 | [2] дешёвое исследование | `common/protocols/WORKER_RESEARCH.md`, `skills/worker-research/`, `skills/model-routing/`, `skills/model-availability/` |
 | [3] выбор режима | `AGENTS.md` (quickfix / fullcycle / testing / research / status / coordination), `common/FACTORY.md` |
-| [4.1] план быстрого цикла | `skills/task-decomposition/`, `skills/decompose-and-dispatch/`, `skills/plan-artifacts/` |
+| [4.1] план быстрого цикла | `skills/plan/`, `skills/plan-artifacts/` |
 | [4.2] 2-3 решения → критика → идеальный план → парето | `skills/architecture-design/`, `skills/council/`, `skills/challenge-decision/`, `common/agents/Critic.md`, `common/agents/Adviser.md` |
 | [4.3] план фокус-группы | `skills/focus-groups/`, `skills/user-testing/` |
 | [5] декомпозиция ≤ 15 мин | `common/agents/Worker.md`, `common/protocols/STOP_RETHINK.md`, `common/templates/.agents/tasks/task_template.md` |
-| [6] параллелизация | `skills/decompose-and-dispatch/`, `common/protocols/TIME_CONTROL.md` |
+| [6] параллелизация | `skills/plan/`, `common/protocols/TIME_CONTROL.md` |
 | [7] оценка срока | `common/tools/lhc_task_budget.py`, `common/protocols/TIME_CONTROL.md` |
 | [8] исполнение | `common/agents/Worker.md`, `common/protocols/WORKER_IMPLEMENT.md`, `skills/worker-code/`, `skills/worker-bugfix/` |
 | [9] деплой | `common/protocols/REVIEW_TO_DELIVERY.md`, `skills/release/` |

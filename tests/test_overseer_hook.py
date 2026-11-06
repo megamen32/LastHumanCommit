@@ -170,15 +170,15 @@ def test_opencode_runs_the_same_stop_gate_on_idle():
     assert '"--stop-gate"' in source and "session.idle" in source
 
 
-def test_with_subagents_off_the_lead_reviews_itself_and_marks_it_with_self(tmp_path, monkeypatch):
+def test_with_subagents_off_the_hook_still_asks_for_a_fresh_overseer(tmp_path, monkeypatch):
     (tmp_path / "cfg/lhc/workflow.json").write_text('{"subagents": "off"}')
     repo, plan = make_plan(tmp_path)
     event = {"cwd": str(repo), "session_id": "s1"}
     now = time.time()
     assert entry.overseer_review(event, ROOT, "stop", now=now) is None
     text = entry.overseer_review(event, ROOT, "stop", now=now + HALF_HOUR + 60)
-    assert "agents/Overseer.md" in text and "3 lines" in text and "revisions" in text and "--self" in text
-    assert "zero-knowledge" not in text and "Call the Overseer" not in text
-    assert ack.main(["--self", "--plan", str(plan)]) == 0
-    assert ack.read_state(plan)["by"] == "self" and ack.read_state(plan)["last_review"] > now
+    assert "Call the Overseer" in text and "zero-knowledge" in text
+    assert "--self" not in text and "revisions" not in text
+    assert ack.main(["--plan", str(plan)]) == 0
+    assert ack.read_state(plan)["by"] == "overseer" and ack.read_state(plan)["last_review"] > now
     assert entry.overseer_review(event, ROOT, "stop", now=time.time() + 600) is None   # the mark restarted the clock

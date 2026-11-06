@@ -9,8 +9,7 @@ projections of it; edit the skill here and regenerate, never edit a copy.
 | [architecture-design](architecture-design/SKILL.md) | Resolve costly design uncertainty, prove boundaries and simplify into complete outcomes before dispatch | Lead / independent challenger |
 | [model-availability](model-availability/SKILL.md) | Verify catalog, read-only quotas and assignment capabilities | Lead / council / focus owner |
 | [model-routing](model-routing/SKILL.md) | Select/update models using capability and accepted-result cost | Lead / Overseer |
-| [decompose-and-dispatch](decompose-and-dispatch/SKILL.md) | Build coherent tasks, parallel lanes and integration joins | Lead |
-| [task-decomposition](task-decomposition/SKILL.md) | Plan the same leaves as a machine-readable task graph with a rendered dashboard | Lead |
+| [plan](plan/SKILL.md) | Research, stages, one leaf per object, parallel Workers, /plan | Lead |
 | [plan-artifacts](plan-artifacts/SKILL.md) | Create the task record, the machine-readable graph, the report and the dashboard in one pass, with the exact schema and the check that proves they agree | Lead / Worker |
 | [user-testing](user-testing/SKILL.md) | Attempt an actual user goal without implementation context | Tester |
 | [focus-groups](focus-groups/SKILL.md) | Diversify user goals; fix and retest observed obstacles | Lead + Testers |
