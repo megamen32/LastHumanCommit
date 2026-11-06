@@ -41,6 +41,8 @@ import importlib.util
 import json
 import os
 import re
+import shutil
+import subprocess
 import sys
 import ctypes
 import struct
@@ -180,6 +182,9 @@ LEAF_FIELDS = (
     "wave",
     "updated_at",
     "progress_events",
+    # The Worker that owns the leaf: id, branch, worktree, run_dir, run_host,
+    # registered_at and removed_at. worker-finish merges and removes it.
+    "worker",
     "supersedes",
     "origin",
     "duration_estimate_minutes",
@@ -1892,6 +1897,245 @@ def update_leaf(plan_dir: Path, leaf_id: str, fields: dict, *, create=False,
     return {"id": leaf_id, "sha256": own_hash}
 
 
+# --------------------------------------------------------------------------
+# the state of a plan, said in a few lines (hooks, show, every MCP answer)
+# --------------------------------------------------------------------------
+
+
+def _short(text: Any, limit: int) -> str:
+    text = " ".join(str(text or "").split())
+    return text if len(text) <= limit else text[:limit - 1] + "…"
+
+
+def _leaf_rows(plan_dir: Path) -> list[dict[str, Any]]:
+    rows = []
+    for path in sorted((Path(plan_dir) / LEAVES_DIRNAME).glob("*.json"))[:400]:
+        try:
+            leaf = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if isinstance(leaf, dict):
+            leaf.setdefault("id", path.stem)
+            rows.append(leaf)
+    return rows
+
+
+def _leaf_name(leaf: dict[str, Any]) -> str:
+    return f"{leaf.get('id')} «{_short(leaf.get('label') or leaf.get('title'), 90)}»"
+
+
+def _open_worker(leaf: dict[str, Any]) -> bool:
+    worker = leaf.get("worker")
+    return isinstance(worker, dict) and not worker.get("removed_at")
+
+
+def plan_summary(plan_dir: Path, current: Any = ()) -> list[str]:
+    """Done leaves with results, the current leaves with their last note, what
+    runs elsewhere, what is next, overruns and Workers not yet merged."""
+
+    rows = _leaf_rows(plan_dir)
+    current = [str(item) for item in current]
+    lines: list[str] = []
+    done = [leaf for leaf in rows if leaf.get("status") == "done" and leaf.get("kind") != "milestone"]
+    if done:
+        lines.append("Done:")
+        lines += [f"- {_leaf_name(leaf)} — {_short(leaf.get('result'), 220) or 'no result written'}"
+                  for leaf in done[-12:]]
+    for leaf in rows:
+        if str(leaf.get("id")) in current:
+            notes = [event.get("note") for event in leaf.get("progress_events") or []
+                     if isinstance(event, dict) and event.get("note")]
+            lines.append(f"Now: {_leaf_name(leaf)} — last note: {_short(notes[-1] if notes else '', 400) or 'none'}")
+    others = [leaf for leaf in rows if leaf.get("status") in {"queued", "running"}
+              and str(leaf.get("id")) not in current and leaf.get("kind") != "milestone"]
+    elsewhere = [_leaf_name(leaf) for leaf in others if leaf.get("status") == "running"]
+    later = [_leaf_name(leaf) for leaf in others if leaf.get("status") != "running"]
+    if elsewhere:
+        lines.append("Running in other sessions or Workers: " + "; ".join(elsewhere[:8]))
+    if later:
+        lines.append("Next: " + "; ".join(later[:8]))
+    late = [f"{leaf.get('id')} ({over[0]} of {over[1]} min)" for leaf in rows
+            if leaf.get("status") == "running" for over in [overrun(leaf)] if over]
+    if late:
+        lines.append("Past twice the estimate, split by object: " + ", ".join(late[:6]))
+    workers = [f"{leaf.get('id')} ({leaf['worker'].get('branch')})" for leaf in rows if _open_worker(leaf)]
+    if workers:
+        lines.append("Workers not merged and removed yet: " + ", ".join(workers[:8]))
+    lines.append(f"Whole plan: {Path(plan_dir) / 'plan.md'}")
+    return lines
+
+
+def plan_state(plan_dir: Path) -> str:
+    """One line for the end of every tool answer: where the plan is now."""
+
+    rows = [leaf for leaf in _leaf_rows(plan_dir) if leaf.get("kind") != "milestone"]
+    status = {str(leaf.get("id")): leaf.get("status") for leaf in rows}
+    done = sum(1 for value in status.values() if value == "done")
+    running = [str(leaf.get("id")) for leaf in rows if leaf.get("status") == "running"]
+    ready = [str(leaf.get("id")) for leaf in rows if leaf.get("status") == "queued"
+             and all(status.get(str(dep)) == "done" for dep in leaf.get("depends_on") or [])]
+    parts = [f"Plan {Path(plan_dir).name}: {done}/{len(rows)} done"]
+    if running:
+        parts.append("running " + ", ".join(running[:8]))
+    if ready:
+        parts.append("ready to start " + ", ".join(ready[:8]))
+    late = [f"{leaf.get('id')} {over[0]}/{over[1]} min" for leaf in rows
+            if leaf.get("status") == "running" for over in [overrun(leaf)] if over]
+    if late:
+        parts.append("split now: " + ", ".join(late[:6]))
+    workers = [str(leaf.get("id")) for leaf in rows if _open_worker(leaf)]
+    if workers:
+        parts.append("Workers to merge and remove: " + ", ".join(workers[:8]))
+    return "; ".join(parts) + "."
+
+
+# --------------------------------------------------------------------------
+# plan.json fields and revisions: a tool, so nobody edits the file by hand
+# --------------------------------------------------------------------------
+
+
+def update_plan(plan_dir: Path, fields: Optional[dict] = None, revision: Optional[dict] = None) -> dict:
+    """Set plan-level fields and/or append one revision, validated before writing."""
+
+    fields = {} if fields is None else fields
+    if not isinstance(fields, dict):
+        raise LeafError("fields: an object of plan fields")
+    unknown = sorted(set(fields) - set(PLAN_FIELDS))
+    if unknown:
+        raise LeafError(f"unknown plan fields: {', '.join(unknown)}; allowed: {', '.join(sorted(PLAN_FIELDS))}")
+    if "revisions" in fields:
+        raise LeafError('revisions are appended one at a time: pass revision {"reason": "...", "summary": "..."}')
+    if revision is not None:
+        if not isinstance(revision, dict) or not isinstance(revision.get("reason"), str) \
+                or not revision["reason"].strip():
+            raise LeafError('revision must be {"reason": "why the plan changed", "summary": "what changed"}')
+        extra = sorted(set(revision) - {"reason", "summary"})
+        if extra:
+            raise LeafError(f"revision has unknown keys: {', '.join(extra)}; allowed: reason, summary")
+    if not fields and revision is None:
+        raise LeafError("nothing to change: pass fields or revision")
+    path = Path(plan_dir) / PLAN_FILE
+    stamp = datetime.now().astimezone().isoformat(timespec="seconds")
+    with file_lock(Path(plan_dir) / ".lhc-leaves.lock"):
+        raw = _read_json(path) if path.is_file() else {}
+        if not isinstance(raw, dict):
+            raise LeafError(f"{path}: the plan file must be a JSON object")
+        merged = {**raw, **fields}
+        if revision is not None:
+            history = merged.get("revisions") if isinstance(merged.get("revisions"), list) else []
+            row = {"at": stamp, "reason": revision["reason"].strip()}
+            if str(revision.get("summary") or "").strip():
+                row["summary"] = str(revision["summary"]).strip()
+            merged["revisions"] = [*history, row]
+        merged["updated_at"] = stamp
+        _plan_fields(merged, path)  # the same check every reader applies: refuse before writing
+        _write_atomic(path, json.dumps(merged, ensure_ascii=False, indent=2) + "\n")
+    return {"plan": str(plan_dir), "changed": sorted(fields) + (["revisions"] if revision is not None else [])}
+
+
+# --------------------------------------------------------------------------
+# Workers: registered on their leaf, merged and removed before the leaf closes
+# --------------------------------------------------------------------------
+
+
+def _git(cwd: Any, *args: str, check: bool = True) -> subprocess.CompletedProcess:
+    done = subprocess.run(["git", "-C", str(cwd), *args], capture_output=True, text=True, check=False)
+    if check and done.returncode != 0:
+        raise LeafError(f"git {' '.join(args)} in {cwd}: {(done.stderr or done.stdout).strip()}")
+    return done
+
+
+def _safe_run_dir(path: str) -> str:
+    candidate = Path(path)
+    home = os.path.expanduser("~")
+    if not candidate.is_absolute() or len(candidate.parts) < 4 or str(candidate) in {home, "/"}:
+        raise LeafError(f"run_dir {path!r}: an absolute directory at least three levels deep, not home")
+    return str(candidate)
+
+
+def worker_register(plan_dir: Path, leaf_id: str, worker: str, branch: str, worktree: str,
+                    run_dir: Optional[str] = None, run_host: Optional[str] = None) -> dict:
+    """Bind one Worker, its branch, worktree and run directory to a leaf."""
+
+    path = Path(plan_dir) / LEAVES_DIRNAME / f"{leaf_id}.json"
+    if not path.is_file():
+        raise LeafError(f"no leaf {leaf_id}: create it first, one leaf per object")
+    leaf = _read_json(path)
+    if _open_worker(leaf):
+        raise LeafError(f"leaf {leaf_id} already has Worker {leaf['worker'].get('id')} on "
+                        f"{leaf['worker'].get('branch')}: finish it with worker-finish first")
+    if not str(worker or "").strip() or not str(branch or "").strip():
+        raise LeafError("worker and branch are required")
+    tree = Path(worktree).expanduser()
+    if not tree.is_dir():
+        raise LeafError(f"worktree {worktree} does not exist: create it with lhc_worktree.py create")
+    head = _git(tree, "rev-parse", "--abbrev-ref", "HEAD").stdout.strip()
+    if head != branch:
+        raise LeafError(f"worktree {worktree} is on {head}, not on {branch}")
+    if run_dir:
+        _safe_run_dir(run_dir)
+    record = {"id": worker.strip(), "branch": branch, "worktree": str(tree.resolve()),
+              "registered_at": datetime.now().astimezone().isoformat(timespec="seconds")}
+    if run_dir:
+        record["run_dir"] = run_dir
+    if run_host:
+        record["run_host"] = run_host
+    fields: dict[str, Any] = {"worker": record, "owner": worker.strip()}
+    if leaf.get("status") in {None, "queued"}:
+        fields["status"] = "running"
+    return update_leaf(plan_dir, leaf_id, fields, note=f"Worker {worker} registered on {branch}")
+
+
+def worker_finish(plan_dir: Path, leaf_id: str, task_worktree: str, result: str) -> dict:
+    """Merge the Worker branch into the task branch, remove its worktree, branch
+    and run directory, then close the leaf. Every step can be repeated."""
+
+    if not str(result or "").strip():
+        raise LeafError("result is required: what works; where: files, commit, receipt; not proven: ...")
+    path = Path(plan_dir) / LEAVES_DIRNAME / f"{leaf_id}.json"
+    if not path.is_file():
+        raise LeafError(f"no leaf {leaf_id}")
+    leaf = _read_json(path)
+    worker = leaf.get("worker")
+    if not isinstance(worker, dict):
+        raise LeafError(f"leaf {leaf_id} has no registered Worker; close it with update-leaf")
+    if worker.get("removed_at"):
+        raise LeafError(f"Worker of {leaf_id} was already merged and removed at {worker['removed_at']}")
+    task = Path(task_worktree).expanduser()
+    branch = str(worker.get("branch"))
+    tree = Path(str(worker.get("worktree")))
+    if _git(task, "status", "--porcelain").stdout.strip():
+        raise LeafError(f"task worktree {task} has uncommitted changes: commit them before merging {branch}")
+    exists = _git(task, "rev-parse", "--verify", "--quiet", f"refs/heads/{branch}", check=False).returncode == 0
+    if tree.is_dir() and _git(tree, "status", "--porcelain").stdout.strip():
+        raise LeafError(f"Worker worktree {tree} has uncommitted changes: commit them on {branch} first")
+    if exists and _git(task, "merge-base", "--is-ancestor", branch, "HEAD", check=False).returncode != 0:
+        merged = _git(task, "merge", "--no-edit", "--no-ff", branch, check=False)
+        if merged.returncode != 0:
+            _git(task, "merge", "--abort", check=False)
+            raise LeafError(f"merging {branch} into {task} conflicts; the merge was aborted and the leaf stays "
+                            f"open: resolve it on {branch} and run worker-finish again. "
+                            f"{(merged.stdout + merged.stderr).strip()[:400]}")
+    if tree.is_dir():
+        _git(task, "worktree", "remove", str(tree))
+    if exists:
+        _git(task, "branch", "-d", branch)
+    run_dir = worker.get("run_dir")
+    if run_dir:
+        target = _safe_run_dir(str(run_dir))
+        if worker.get("run_host"):
+            done = subprocess.run(["ssh", "-o", "BatchMode=yes", str(worker["run_host"]), "rm", "-rf", "--", target],
+                                  capture_output=True, text=True, check=False)
+            if done.returncode != 0:
+                raise LeafError(f"merged and worktree removed, but run directory {worker['run_host']}:{target} "
+                                f"was not removed: {done.stderr.strip()}; run worker-finish again")
+        elif Path(target).exists():
+            shutil.rmtree(target)
+    record = {**worker, "removed_at": datetime.now().astimezone().isoformat(timespec="seconds")}
+    return update_leaf(plan_dir, leaf_id, {"status": "done", "result": result.strip(), "worker": record},
+                       note=f"Worker {worker.get('id')}: {branch} merged, worktree, branch and run directory removed")
+
+
 def main(argv: Optional[list[str]] = None) -> int:
     parser = argparse.ArgumentParser(
         prog="lhc_plan_json.py",
@@ -1924,6 +2168,27 @@ def main(argv: Optional[list[str]] = None) -> int:
         edit.add_argument("--fields", default="{}", help="JSON object")
         edit.add_argument("--expected-hash")
         edit.add_argument("--note")
+    show = sub.add_parser("show", help="where the plan is: done leaves with results, current, next, overruns")
+    show.add_argument("plan_dir", type=Path)
+    show.add_argument("--current", action="append", default=[], help="leaf id of this session (repeatable)")
+    plan_edit = sub.add_parser("update-plan", help="set plan.json fields and/or append one revision, validated")
+    plan_edit.add_argument("plan_dir", type=Path)
+    plan_edit.add_argument("--fields", default="{}", help="JSON object of plan fields")
+    plan_edit.add_argument("--revision", help='JSON {"reason": "...", "summary": "..."}')
+    register = sub.add_parser("worker-register", help="bind a Worker, its branch, worktree and run dir to a leaf")
+    register.add_argument("plan_dir", type=Path)
+    register.add_argument("leaf_id")
+    register.add_argument("--worker", required=True)
+    register.add_argument("--branch", required=True)
+    register.add_argument("--worktree", required=True)
+    register.add_argument("--run-dir")
+    register.add_argument("--run-host")
+    finish = sub.add_parser("worker-finish",
+                            help="merge the Worker branch, remove its worktree, branch and run dir, close the leaf")
+    finish.add_argument("plan_dir", type=Path)
+    finish.add_argument("leaf_id")
+    finish.add_argument("--task-worktree", required=True)
+    finish.add_argument("--result", required=True)
     report = sub.add_parser(
         "report",
         help="print the canonical «## Plan» block of the task record",
@@ -1967,6 +2232,25 @@ def main(argv: Optional[list[str]] = None) -> int:
                                  expected_hash=args.expected_hash)
             build_graph(args.plan_dir)
             print(json.dumps(result, ensure_ascii=False))
+            print(plan_state(args.plan_dir))
+        elif args.command == "show":
+            print("\n".join(plan_summary(args.plan_dir, args.current)))
+        elif args.command == "update-plan":
+            revision = json.loads(args.revision) if args.revision else None
+            result = update_plan(args.plan_dir, json.loads(args.fields), revision)
+            print(json.dumps(result, ensure_ascii=False))
+            print(plan_state(args.plan_dir))
+        elif args.command == "worker-register":
+            result = worker_register(args.plan_dir, args.leaf_id, args.worker, args.branch, args.worktree,
+                                     args.run_dir, args.run_host)
+            build_graph(args.plan_dir)
+            print(json.dumps(result, ensure_ascii=False))
+            print(plan_state(args.plan_dir))
+        elif args.command == "worker-finish":
+            result = worker_finish(args.plan_dir, args.leaf_id, args.task_worktree, args.result)
+            build_graph(args.plan_dir)
+            print(json.dumps(result, ensure_ascii=False))
+            print(plan_state(args.plan_dir))
         elif args.command == "report":
             document = build_document(args.plan_dir)
             block = report_block_of(document)
@@ -2001,8 +2285,12 @@ def main(argv: Optional[list[str]] = None) -> int:
                         file=sys.stderr,
                     )
                 return 1
-    except (LeafError, OSError) as error:
+    except (LeafError, OSError, json.JSONDecodeError) as error:
         print(f"LHC: {error}", file=sys.stderr)
+        plan_dir = getattr(args, "plan_dir", None)
+        if plan_dir is not None and (Path(plan_dir) / LEAVES_DIRNAME).is_dir():
+            with contextlib.suppress(Exception):
+                print(plan_state(plan_dir), file=sys.stderr)
         return 1
     return 0
 

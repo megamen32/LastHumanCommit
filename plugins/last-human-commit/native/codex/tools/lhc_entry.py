@@ -109,11 +109,6 @@ def _plan_context(result):
 PULSE_AFTER = 1200  # seconds: how often one plan audit note may repeat
 
 
-def _short(text, limit):
-    text = " ".join(str(text or "").split())
-    return text if len(text) <= limit else text[:limit - 1] + "…"
-
-
 def plan_resume_context(event, root):
     """After a compaction or a resume: the plan bound to this session, as text.
 
@@ -131,22 +126,9 @@ def plan_resume_context(event, root):
     if not continuation and not bound:
         return None
     plan = Path((continuation or bound[0])["plan"])
-    rows = []
-    for f in sorted((plan / "leaves").glob("*.json"))[:400]:
-        try:
-            leaf = json.loads(f.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            continue
-        if isinstance(leaf, dict):
-            rows.append(leaf)
-    if not rows:
+    if not any((plan / "leaves").glob("*.json")):
         return None
-
-    def name(leaf):
-        return f"{leaf.get('id')} «{_short(leaf.get('label') or leaf.get('title'), 90)}»"
-
-    done = [leaf for leaf in rows if leaf.get("status") == "done" and leaf.get("kind") != "milestone"]
-    nxt = [leaf for leaf in rows if leaf.get("status") in {"queued", "running"}]
+    import lhc_plan_json
     current = [str(item["leaf"]) for item in ([continuation] if continuation else bound)]
     many = len(current) > 1
     lines = [f"LHC: you are in the middle of plan {plan.name} ({plan}). "
@@ -154,23 +136,7 @@ def plan_resume_context(event, root):
              "your current goal: the first request of this chat was already turned into this plan, so do not "
              "research or plan it again. Continue from the last note of "
              f"{'those leaves' if many else 'that leaf'}."]
-    if done:
-        lines.append("Done:")
-        lines += [f"- {name(leaf)} — {_short(leaf.get('result'), 220) or 'no result written'}"
-                  for leaf in done[-12:]]
-    for leaf in rows:
-        if str(leaf.get("id")) in current:
-            events = leaf.get("progress_events") or []
-            notes = [e.get("note") for e in events if isinstance(e, dict) and e.get("note")]
-            lines.append(f"Now: {name(leaf)} — last note: {_short(notes[-1] if notes else '', 400) or 'none'}")
-    others = [leaf for leaf in nxt if str(leaf.get("id")) not in current]
-    elsewhere = [name(leaf) for leaf in others if leaf.get("status") == "running"]
-    later = [name(leaf) for leaf in others if leaf.get("status") != "running"]
-    if elsewhere:
-        lines.append("Running in other sessions or Workers: " + "; ".join(elsewhere[:8]))
-    if later:
-        lines.append("Next: " + "; ".join(later[:8]))
-    lines.append(f"Whole plan: {plan / 'plan.md'}")
+    lines += lhc_plan_json.plan_summary(plan, current)
     return "\n".join(lines)[:4000]
 
 

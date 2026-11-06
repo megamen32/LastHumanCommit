@@ -1,3 +1,8 @@
+## 1.14.0
+
+- LhcPlan MCP is the way agents write plans: new tools show_plan, update_plan (plan.json fields and one revision {reason, summary}, validated before writing, so nobody edits plan.json by hand), activate_leaf, worker_register and worker_finish (merge the Worker branch into the task branch, remove its worktree, branch and run directory, local or over ssh, then close the leaf; a conflict aborts the merge and keeps the leaf open). Every leaf command and every refusal ends with one line of plan state: done/total, running, ready to start, leaves to split, Workers to merge. `lhc_plan_json.py show` prints the same summary the hook prints after a compaction.
+- The plan skill says directly that a leaf is at most 15 minutes (a 45-minute piece is three leaves), that the last leaf of a stage is a release task leaf and that recon goes with mode fullcycle: a fresh agent planning the agent-herder CI request wrote 30-45 minute leaves, mode "plan" and a nested release stage before this; after it, 15-minute leaves, a research leaf per unknown and a stage per environment.
+
 ## 1.13.0
 
 Why: a 20-hour Codex session (agent-herder CI with a fake model) planned one leaf at a time, packed five environments into one 15-minute leaf, ran it for hours, answered the overrun reminder with "revisions" lines the tool then dropped, and after three of four compactions went back to the first message of the chat and planned the task again.
