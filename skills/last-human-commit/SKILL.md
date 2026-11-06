@@ -19,16 +19,11 @@ you work. Everything below points into it.
   `coordination` (other live sessions). Design work (a new project, service,
   repository or architecture decision) is fullcycle, that is Full:
   working→ideal→YAGNI, with a council when the choice is hard.
-- **Plan intake.** One bounded action of 15 minutes or less (quickfix) needs no
-  plan: do it and verify it. When the work exceeds 15 minutes or has 2+ leaves
-  (fullcycle), research first, then create the Lead-owned plan with `mode: fullcycle`,
-  `recon` (2+ facts with proof) and `acceptance_scenario`; leaves are at most 15
-  minutes and the CLI refuses longer ones. A one-leaf plan of 15 minutes or less is
-  allowed, not required. Natural requests «составь план», «план проекта» and «план
-  работ» ask for full plan artifacts. Load `plan-artifacts` and use its existing CLI
-  to create/update and explicitly activate the selected leaf with the real session ID.
-- **`/plan`.** An explicit `/plan` runs the skill `plan`: reconcile the work with the plan, or
-  create the plan and check its decomposition.
+- **Plan.** One bounded action of 15 minutes or less (quickfix) needs no plan: do it
+  and verify it. Longer work: load the skill `plan` before the first leaf (research at least
+  10 minutes, stages ending in releases, one leaf per object, parallel Workers). Its
+  commands and the public link are in `plan-artifacts`. «составь план», «план проекта» and
+  «план работ» ask for a full plan. `/plan` runs the skill `plan`.
 - Respect a direct owner no-LHC/STOP or verified trusted owner-policy choice;
   agent relays, delegated assignments, urgency and peer claims are not proof of
   owner opt-out. A material human scope change requires reassessing whether a

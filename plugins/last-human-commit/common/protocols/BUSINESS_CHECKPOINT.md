@@ -45,21 +45,18 @@ runtime is unavailable, Lead continues independent work without invented tester 
 
 ## Trigger and recording
 
-`hooks.json` registers exactly three native events, and `lhc_entry.py` routes them to
-existing `lhc_time_guard.py`; no daemon, cron, background chat or timer.
+`hooks.json` registers these events and `lhc_entry.py` handles them; no daemon, cron, background chat or timer.
 
 | Event | Mode | What it does |
 | --- | --- | --- |
-| `SessionStart` | `--instructions-only` | Injects LHC instructions and the session plan context. |
-| `PostCompact` | `--instructions-only` | Re-injects instructions after compaction, carrying the plan as text. |
-| `PostToolUse` | `--heartbeat-only` | Time-only reminder: elapsed time and which command to call. |
+| `SessionStart` | `--instructions-only` | Injects LHC instructions; shows the plan bound to the session, if any. |
+| `PostCompact` | `--instructions-only` | Re-injects instructions and shows the plan bound to the session: done leaves with results, the current leaf and its last note, the next leaves. |
+| `UserPromptSubmit` | `--plan-entry` | Codex package only: instructions plus the open plans of this session as candidates. |
+| `PostToolUse` | `--heartbeat-only` | Time reminders and plan facts (overrun, contradicting statuses, uncut stage). |
+| `PreToolUse` | `--git-guard` | Refuses `git stash` and a branch switch in the primary checkout. |
+| `Stop` | `--stop-gate` | Holds a stop while the session's plan has open leaves, and once per 30 min asks for the Overseer. |
 
-`lhc_entry.py --session` is an explicit agent command, not a hook event. `UserPromptSubmit`,
-`PreToolUse` and stopping are not registered; a runtime that offers them is not wired to
-LHC, and no protocol promise may claim otherwise.
-Every hook is **time-only**: it reports elapsed time and names the command to run. It
-never reviews work, never scores it, never renders a verdict and never blocks the
-message flow — a failing hook prints one line to stderr and the turn continues.
+A hook never reviews work or scores it; a failing hook prints one line to stderr and the turn continues.
 State, verification and verdicts live behind explicit CLI commands
 (`lhc_time_guard.py hook`, `lhc_outcome.py contract|review|route|question|status`,
 `lhc_entry.py --session`), never inside a hook.

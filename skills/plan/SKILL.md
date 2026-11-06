@@ -1,61 +1,75 @@
 ---
 name: plan
-description: The owner typed /plan or asked to update or check the plan. Relate the current state of the work to the plan and check that the plan is still true; if there is no plan, create it and check its decomposition.
+description: Build and keep the plan of any engineering task longer than 15 minutes, and /plan. Load it before the first leaf, when the owner types /plan or asks to fix the plan, and when a leaf runs far past its estimate.
 ---
 
-# /plan
+# Plan
 
-One entry for plan work. It puts the steps in order and points to the skill that owns
-each part; it copies none of them. Text after `/plan` is the goal or a correction,
-read as it is: nothing in it is classified. A task of 15 minutes or less is one leaf
-with no independent check.
+The plan is what you will do and, as you go, what you have done. After a compaction the next
+you reads it to know where you are, so every finished leaf says what works and where.
+Write leaves with the LhcPlan MCP tools (`create_leaf`, `update_leaf`, `update_progress`); when
+the MCP is not connected, with `lhc_plan_json.py` (`plan-artifacts` has the commands). Never
+edit plan files by hand.
 
-## 1. Find the plan
+## 1. Research before you plan: at least 10 minutes
 
-The newest `.agents/tasks/<plan>/plan.json` of this checkout with a leaf not `done`,
-or the one the text names. Several open: take the one the current work belongs to and
-say which in one line. A plan whose leaves are all `done` while the work goes on: add
-leaves to it when the goal is the same, otherwise create a new plan (section 3).
-No plan: section 3.
+Research is the cheapest part of the work and makes the rest cheaper. Spend at least 10
+minutes, more while you still find new objects. Find what exists, what is broken and which
+objects the work touches: environments, hosts, services, endpoints, screens. Put them into
+`recon`. Every «needs checking» in `recon` becomes a research leaf with its question.
 
-## 2. A plan exists: reconcile it with the work
+## 2. Stages, each ending in a release
 
-1. Read `plan.json` and `leaves/L*.json`; the format belongs to `$plan-artifacts`.
-2. Write one line per leaf: `L# status -> evidence` (commit, file, run output). A leaf
-   without evidence is not `done`. Apply the facts the hooks also report:
-   - a leaf is `done` only when everything it depends on is `done`;
-   - a leaf running past its estimate is re-planned: keep it `done` for the part that is
-     proven (name the proof), or `deferred` with "replaced by L07-L10" when nothing is,
-     and put the rest into new leaves of about 15 minutes (`$task-decomposition`,
-     `TIME_CONTROL.md`);
-   - a dependency may be dropped only when the leaf does not read the other's output;
-     the dropped edge and what was checked go into `revisions`, and it never rescues a
-     leaf already marked `done`;
-   - work that matches no leaf gets a leaf.
-3. Freshness, in one sentence: what was learned since the plan was written, or
-   "nothing". If the text or that sentence changes the goal, re-plan the affected part
-   (`$planning`); otherwise leave the plan alone.
-4. Edges but no `decomposition_check`: run the check of section 3, step 3.
-5. If the goal, the edges or the leaves changed, append `{at, reason, summary}` to
-   `revisions` in `plan.json` (a status change alone is not a revision). Write the leaf
-   files first, then rebuild graph and page (`$plan-artifacts`).
+- Write the whole route to the owner's result as stages (`kind: milestone`, a rough estimate
+  in hours is fine).
+- Every stage ends by deploying what already works, so the owner gets value stage by stage.
+  Example: first the check of Codex and OpenCode on the installed service, then one stage per
+  added environment. Never one big release at the end.
+- Cut into leaves only the stage you start now. A plan with one leaf and no stages is not a plan.
+- A leaf is created before its work starts, never for work already done.
 
-## 3. No plan: create it
+## 3. One leaf per object
 
-1. Goal and the shortest route to the next real canary: `$planning`. The text is the
-   goal; without text, the owner's latest request.
-2. Stages to the next real canary; leaves of about 15 minutes with real dependencies only
-   for the nearest stage, and only after a look at the facts (`$planning`, Stages first; `$task-decomposition`;
-   `TASK_GRAPH.md`). Write the files per `$plan-artifacts`.
-3. Check the decomposition once (`TASK_GRAPH.md`, Check the decomposition) with a
-   separate subagent that is given only `plan.json` and the leaves, never yourself. Fix
-   what it flags, once, and record it as `decomposition_check` with its id in `who`.
-   Check again only after a re-plan changes edges.
-4. Lanes, models, parallel dispatch: `$decompose-and-dispatch`.
+- Each environment, host, service or endpoint gets its own leaf. Wrong: one leaf «ZCode,
+  MiniMax и остальные среды». Right: a leaf for ZCode, a leaf for MiniMax, a leaf for Claude.
+- An unknown («как установленный процесс достучится до тестового приложения?») is a
+  research leaf with that question, not a build leaf.
 
-## 4. Report, then go on
+## 4. Honest estimates
 
-The leaf lines of step 2.2, then four lines: running, next ready leaves, what changed
-(the `revisions` entry if any), and the public link once, on its own line. Then
-continue per `$decompose-and-dispatch`. With no ready leaf, name the blocker and who
-can remove it; do not invent work. `/plan` is a checkpoint, not a stop.
+- Estimate from what research showed. If a leaf does not fit in 15 minutes, split it or keep it
+  as a stage. Never write 15 only because the tool refuses more.
+- A leaf past twice its estimate and at least 45 minutes is split: close the proven part as
+  `done`, put the rest into new leaves, continue. Until then the tool refuses progress notes
+  on it.
+
+## 5. Parallel
+
+- `depends_on` only when a leaf reads another leaf's output. Leaves for different
+  environments or hosts do not depend on each other.
+- Independent ready leaves of the same kind start together: one Worker per leaf, also when
+  subagents are off. Each Worker gets its own worktree (`lhc_worktree.py create`) and its own
+  run directory on shared stands. When its leaf is done, merge its branch into the task branch
+  and remove the worktree, the branch and the run directory before closing the leaf. A Worker
+  that is not merged and removed is not finished. L keeps the critical path and the joins.
+
+## 6. Done means written down
+
+Close a finished leaf at once: `status: done` and a `result` that says what works; where:
+files, commit, receipt; not proven: … This line is what the next you reads after a compaction.
+
+## /plan
+
+When the owner types `/plan` (text after it is the goal or a correction): find the plan bound
+to this session, write one line per leaf `L# status -> evidence`, fix what is wrong by the
+rules above, and continue the work. No plan: build one by sections 1–5.
+
+## Which skill when
+
+| Step | Load |
+|---|---|
+| Plan files, commands, the public link | `plan-artifacts` |
+| Choosing a model for a Worker | `model-routing` |
+| Fixing a bug | `bugfix-tdd` |
+| Real-use check after deploy | `real-use-testing` |
+| Release | `release` |

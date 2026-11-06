@@ -72,7 +72,7 @@ global buffer. Keep the original estimate alongside any evidence-based remaining
 forecast.
 
 Use the smallest independent business-verifiable leaves and parallelize only
-non-conflicting work. Load `$task-decomposition` for the complete contract.
+non-conflicting work. Load `$plan` for the complete contract.
 
 The active harness owns approval policy. Repeated prompts do not manufacture user consent.
 

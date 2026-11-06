@@ -11,7 +11,7 @@ core:
 canonical_skills:
   - name: architecture-design
     owner: Lead
-  - name: planning
+  - name: plan
     owner: Lead
   - name: bugfix-tdd
     owner: Worker
@@ -24,8 +24,6 @@ canonical_skills:
   - name: release
     owner: Lead
   - name: model-routing
-    owner: Lead
-  - name: decompose-and-dispatch
     owner: Lead
   - name: user-testing
     owner: Tester

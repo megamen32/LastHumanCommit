@@ -1,3 +1,13 @@
+## 1.13.0
+
+Why: a 20-hour Codex session (agent-herder CI with a fake model) planned one leaf at a time, packed five environments into one 15-minute leaf, ran it for hours, answered the overrun reminder with "revisions" lines the tool then dropped, and after three of four compactions went back to the first message of the chat and planned the task again.
+
+- One skill `plan` replaces `plan`, `planning`, `task-decomposition` and `decompose-and-dispatch`: research at least 10 minutes, every «needs checking» in recon becomes a research leaf, stages that each end in a release, one leaf per object (environment, host, service), honest estimates, parallel Workers for same-kind leaves (each in its own worktree and run directory, merged and removed before the leaf closes), a finished leaf closes at once with its result. `plan-artifacts` is now only commands and format.
+- After a compaction or at session start the hook shows the plan bound to the session: done leaves with their results, the current leaf with its last note, the next leaves, and says the current leaf is the goal, not the first message of the chat. The intake text is short and points at the `plan` skill instead of `plan-artifacts`.
+- A running leaf past twice its estimate and at least 45 minutes: the tool refuses progress notes on it until it is closed or split; the hook says "split it now, one leaf per object". The "plan has not changed" pulse is gone (any write silenced it, hence 61 notes in that session), as are the decomposition_check reminder and the Overseer self-review: the 30-minute hook always asks for a fresh Overseer, also with subagents off.
+- Plain-text revisions are kept as reasons instead of being dropped silently.
+- AGENTS.md: research step, plan step and Time point at the `plan` skill; the plan is the task's memory. BUSINESS_CHECKPOINT.md lists the hooks that are really registered.
+
 ## 1.12.3
 
 - New tool lhc_plan_mirror_release.py (published with the tools): status, build, canary, switch, rollback of the plan mirror release. build copies the installed tools into releases/<hash> (hash = sha256 over relative names and bytes of every *.py, the rule of install-native.py) without switching; canary runs it on a spare port (18769) in a temporary directory with a copy of a plan (register, once, HTML built); switch backs up config, registry.json and units to backup-<date>, rewrites lhc-plan-mirror.service (serve) and lhc-plan-observer.service (watch), daemon-reload, stop watch, restart serve, start watch, never touches ingest.lock, and puts the previous release back if a step fails; rollback returns to the previous release. Names and paths come from arguments or release.json. Tests use a substituted systemctl. Documented in deploy/plan-mirror/README.md.

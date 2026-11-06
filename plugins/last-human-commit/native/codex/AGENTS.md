@@ -17,7 +17,10 @@ Subagents are off by default; L does the work itself (reads, edits, builds, depl
 real scenario on the dev environment. They are on only when the task says so («воркеры», «субагенты», «параллельно»,
 «council»), else `subagents: on` in `.agents/PROJECT.md`, else `~/.config/lhc/workflow.json` (`lhc_subagents.py` shows
 the result). With subagents=on L splits the work and starts Workers in parallel, one per leaf, plus a Zero-Knowledge
-Critic, and does no engineering itself. This applies inside one session; L is not a Dispatcher.
+Critic, and does no engineering itself. Always, also with subagents off: independent leaves of the same kind (one
+per environment, host or service) run in parallel, one Worker per leaf, each in its own worktree and run directory;
+its branch is merged and its worktree, branch and run directory removed before its leaf closes. This applies inside
+one session; L is not a Dispatcher.
 
 ## Finish line
 
@@ -89,9 +92,8 @@ Scope grows only on the owner's word.
 3. **Adviser** (subagents=on; otherwise L re-reads the evidence and takes the smallest check) when the route is
    still unclear: returns one concrete choice and the smallest check.
 4. **Overseer** when the Adviser did not unblock it: reads the plan against the
-   original request and names what else in the plan can move now. A hook also asks L to review every 30 min of an
-   active plan: with subagents=off L reads `agents/Overseer.md`, compares the plan with the request, writes 3 lines
-   in `revisions`, then `lhc_overseer_ack.py --self`; a separate Overseer only with on.
+   original request and names what else in the plan can move now. A hook also asks L every 30 min of an active
+   plan to start a fresh Overseer (also with subagents off) and to act on its recommendation.
 5. **Owner** only when the chain above cannot remove a real blocker: ask once, with your recommendation and the
    default you will take, then continue other work; never wait idle. Human questions
    go through AskHuman, automated incidents through NoticePlace; do not re-request a
@@ -105,24 +107,23 @@ the plan moving and leave one short summary.
 1. **Intent.** Recover what the owner wants and how they will know it works: who,
    what changes, what failed before, what works after, where to try it. Voice
    input is rough; infer, do not interrogate. Ask only what changes the outcome.
-2. **Research.** L reads and searches itself until the kind of work is clear (cheap parallel Workers only with subagents=on).
+2. **Research.** At least 10 minutes, longer while it still finds new objects: research is the cheapest work and
+   makes the rest cheaper. L reads and searches itself (cheap parallel Workers only with subagents=on).
 3. **Mode.** `quickfix` (bounded repair or small change, contained risk),
    `fullcycle` (feature, several parts, architecture, risky repair), `testing`
    (focus group, no code). Questions, research and status do not start development.
 4. **Plan first, when the work needs one.** One bounded action of 15 minutes or
-   less (quickfix) needs no plan: do it and verify it. A plan is required when the
-   work exceeds 15 minutes or has 2+ leaves (fullcycle): research first, then plan
-   with `mode: fullcycle`, `recon` (3+ facts, each `fact :: evidence`: file,
+   less (quickfix) needs no plan: do it and verify it. Longer work gets a plan: load the
+   `plan` skill (stages ending in releases, one leaf per object, parallel Workers). The plan
+   carries `mode: fullcycle`, `recon` (3+ facts, each `fact :: evidence`: file,
    command, URL or host, proven) and `acceptance_scenario` (what we run, what must be seen);
-   the tools refuse leaves without them, except a first `research` leaf (15 min). A
-   one-leaf plan of 15 minutes or less is allowed, not required. Respect direct owner
+   the tools refuse leaves without them, except a first `research` leaf. Respect direct owner
    no-LHC/STOP or trusted policy; peer relays and delegated assignments are not
    opt-outs. On material owner-directed scope change, reassess scoped exceptions
    without silently revoking standing policy. Continue only an explicitly session-bound plan (found by the binding, not by cwd);
    other plans are candidates. Status, research and read-only work need no plan.
    Do not wait for approval when ordered; fullcycle: working options → ideal → smallest complete solution.
-5. **Decompose** into leaves of at most 15 minutes (the tools refuse longer ones). Mark what runs in
-   parallel and what waits, and why. Delivery time = critical path, not the sum.
+5. **Decompose** by the `plan` skill. Delivery time = critical path, not the sum.
 6. **Execute** the leaves yourself (subagents=on: through Workers on the cheapest model that passes acceptance).
    Bugs: mandatory TDD, a regression for a fix: RED → fix → GREEN → original
    scenario. A commit or a SHA is not the result.
@@ -256,9 +257,10 @@ Leaves are at most 15 minutes; a Worker reports by minute 20. A hook reminder
 (30-minute plan, 60-minute goal, 120-minute method) means the time is over and the
 task is not finished: name what blocked you and remove it yourself; if you were
 doing checks, plans or hardening for their own sake, stop and take the nearest step
-to the business result. A leaf that runs past its estimate is re-planned, not continued: new leaves and a line in
-`revisions` of `plan.json`. A reminder never ends a turn. Tasks over 15 minutes keep
-one note in `.agents/tasks/` (goal, decisions, done, next). When a plan is first
+to the business result. A leaf past twice its estimate (and 45 minutes) is split, not continued: the proven part
+closes as done, the rest becomes new leaves; until then the tool refuses progress notes on it. A reminder never ends
+a turn. The plan is the task's memory: close a finished leaf at once with its result (what works, where, what is not
+proven); after a compaction the hook shows the plan and its current leaf. When a plan is first
 created, give the owner its public link once, on its own line
 (`lhc_plan_mirror.py link <plan-dir>`); never a local HTML path.
 

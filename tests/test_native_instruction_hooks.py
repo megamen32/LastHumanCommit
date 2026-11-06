@@ -82,16 +82,12 @@ def test_plan_entry_without_session_or_git_emits_actionable_intake_without_creat
 
     assert result.returncode == 0, result.stderr
     context = _plan_context(result)
-    assert "authorized engineering" in context.lower()
+    assert "engineering work" in context.lower()
     assert "quickfix" in context.lower() and "incident" in context.lower()
     assert "status" in context.lower() and "research" in context.lower()
     assert "explicit opt-out" in context.lower()
-    assert "peer/agent relay" in context.lower()
-    assert "does not prove human authorization" in context.lower()
-    assert "default_model" in context
-    assert "preliminary" in context.lower()
-    assert "actual usage" in context.lower()
-    assert str(ROOT / "skills/plan-artifacts/SKILL.md") in context
+    assert "relayed" in context.lower() and "is not that human" in context.lower()
+    assert str(ROOT / "skills/plan/SKILL.md") in context
     assert sorted(p.relative_to(empty).as_posix() for p in empty.rglob("*")) == before
 
 
@@ -103,8 +99,8 @@ def test_plan_entry_without_open_plan_still_emits_intake_for_a_git_session(tmp_p
 
     assert result.returncode == 0, result.stderr
     context = _plan_context(result)
-    assert "authorized engineering" in context.lower()
-    assert "Only the model may then use the existing CLI procedure" in context
+    assert "engineering work" in context.lower()
+    assert "skills/plan/SKILL.md" in context
     assert {p.relative_to(repo).as_posix(): p.read_bytes() for p in repo.rglob("*") if p.is_file()} == before
 
 
@@ -113,7 +109,7 @@ def test_plan_entry_malformed_input_emits_intake_without_crashing(tmp_path: Path
                      stdin="{malformed")
 
     assert result.returncode == 0, result.stderr
-    assert "mandatory plan intake" in _plan_context(result).lower()
+    assert "plan intake" in _plan_context(result).lower()
 
 
 def test_plan_entry_does_not_mutate_on_thanks_or_explicit_stop(tmp_path: Path, monkeypatch) -> None:
@@ -129,8 +125,8 @@ def test_plan_entry_does_not_mutate_on_thanks_or_explicit_stop(tmp_path: Path, m
                          stdin=json.dumps({"cwd": str(repo), "session_id": "current", "prompt": prompt}))
         assert result.returncode == 0, result.stderr
         context = _plan_context(result)
-        assert "latest human goal" in context.lower() and "stop" in context.lower()
-        assert "peer/agent relay" in context.lower()
+        assert "newer message of the human" in context.lower() and "stop" in context.lower()
+        assert "relayed" in context.lower()
         contexts.append(context)
 
     assert contexts[0] == contexts[1] == contexts[2]  # no prompt classification
@@ -180,7 +176,7 @@ def test_only_a_unique_unfinished_leaf_bound_to_this_session_can_be_a_continuati
     assert result["continuation"] == {"plan": str(own), "leaf": "L01"}
     assert result["candidates"] == [str(foreign)]
     context = entry.context_for({}, ROOT) + "\n" + entry._plan_context(result)
-    assert "latest human goal" in context.lower() and "stop" in context.lower()
+    assert "newer message of the human" in context.lower() and "stop" in context.lower()
     assert "L01" in context and str(own) in context
     assert json.loads((own / "leaves/L01.json").read_text(encoding="utf-8"))["status"] == "queued"
     assert not (own / ".lhc-publication/link-announced.json").exists()
@@ -431,12 +427,29 @@ def test_instruction_only_branch_does_not_import_or_touch_state(tmp_path: Path, 
 
     output = json.loads(capsys.readouterr().out)
     context = output["hookSpecificOutput"]["additionalContext"]
-    assert "mandatory plan intake" in context.lower()
+    assert "plan intake" in context.lower()
     assert "quickfix" in context.lower() and "incident" in context.lower()
     assert "explicit opt-out" in context.lower()
     assert str(tmp_path.resolve() / "AGENTS.md") in context
-    assert str(tmp_path.resolve() / "skills/plan-artifacts/SKILL.md") in context
+    assert str(tmp_path.resolve() / "skills/plan/SKILL.md") in context
     assert list(tmp_path.iterdir()) == []
+
+
+def test_post_compact_shows_the_session_plan_and_names_its_leaf_the_current_goal(tmp_path: Path) -> None:
+    repo = git_repo(tmp_path / "repo")
+    plan = _open_plan(repo, "20261106-ci", [
+        {"id": "L01", "label": "Codex", "status": "done", "result": "works: receipt-1.json"},
+        {"id": "L02", "label": "ZCode", "status": "running", "session": "s1"},
+    ])
+    before = {p: p.read_bytes() for p in plan.rglob("*") if p.is_file()}
+    completed = run_cli(entry, ["--root", str(ROOT), "--event", "PostCompact", "--instructions-only"],
+                        stdin=json.dumps({"cwd": str(repo), "session_id": "s1"}))
+    assert completed.returncode == 0, completed.stderr
+    context = _plan_context(completed)
+    assert str(ROOT / "skills/plan/SKILL.md") in context
+    assert "Leaf L02 of this session is your current goal" in context
+    assert "L01 «Codex» — works: receipt-1.json" in context
+    assert {p: p.read_bytes() for p in plan.rglob("*") if p.is_file()} == before
 
 
 def test_post_compact_instruction_only_uses_the_same_side_effect_free_path(tmp_path: Path) -> None:
@@ -445,11 +458,11 @@ def test_post_compact_instruction_only_uses_the_same_side_effect_free_path(tmp_p
     result = json.loads(completed.stdout)
     assert result["hookSpecificOutput"]["hookEventName"] == "PostCompact"
     context = result["hookSpecificOutput"]["additionalContext"]
-    assert "mandatory plan intake" in context.lower()
+    assert "plan intake" in context.lower()
     assert "quickfix" in context.lower() and "incident" in context.lower()
     assert "explicit opt-out" in context.lower()
     assert str(tmp_path.resolve() / "AGENTS.md") in context
-    assert str(tmp_path.resolve() / "skills/plan-artifacts/SKILL.md") in context
+    assert str(tmp_path.resolve() / "skills/plan/SKILL.md") in context
     assert list(tmp_path.iterdir()) == []
 
 

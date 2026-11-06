@@ -904,6 +904,8 @@ def _revisions(items):
     """The plan versions after the first: when the plan was rewritten and why."""
     out = []
     for item in items:
+        if isinstance(item, str) and item.strip():
+            item = {"reason": item}  # a plain line is a reason, never dropped
         if isinstance(item, dict):
             row = {k: str(item[k]).strip() for k in ("at", "reason", "summary") if item.get(k)}
             if row.get("reason"):
@@ -1768,6 +1770,46 @@ def check_activation(plan_dir: Path, leaf: dict[str, Any]) -> None:
         raise LeafError(NO_RECON_MESSAGE + (f" [{state['recon_problem']}]" if state["recon_problem"] else ""))
 
 
+OVERRUN_FLOOR_MINUTES = 45
+
+
+def overrun(leaf: dict, now=None, fallback_start=None):
+    """(elapsed, estimate) in minutes when a running leaf is past twice its
+    estimate and at least OVERRUN_FLOOR_MINUTES; otherwise None.
+
+    The start is started_at, else the last event that set the leaf running."""
+    began = leaf.get("started_at")
+    if not began:
+        for event in reversed(leaf.get("progress_events") or []):
+            if isinstance(event, dict) and (event.get("changes") or {}).get("status") == "running":
+                began = event.get("at")
+                break
+    began = began or fallback_start
+    if not began:
+        return None
+    try:
+        start = datetime.fromisoformat(str(began).replace("Z", "+00:00"))
+        if start.tzinfo is None:
+            start = start.astimezone()
+    except ValueError:
+        return None
+    if now is None:
+        wall = datetime.now().astimezone()
+    else:
+        wall = datetime.fromtimestamp(now).astimezone() if isinstance(now, (int, float)) else now
+    elapsed = (wall - start).total_seconds() / 60
+    planned = leaf.get("estimate_minutes") or leaf.get("estimate") or leaf.get("estimate_max")
+    if isinstance(planned, dict):
+        planned = planned.get("maximum", planned.get("max", planned.get("minimum")))
+    try:
+        planned = float(planned)
+    except (TypeError, ValueError):
+        planned = float(LEAF_ESTIMATE_CAP_MINUTES)
+    if elapsed > max(2 * planned, OVERRUN_FLOOR_MINUTES):
+        return int(elapsed), int(planned)
+    return None
+
+
 def update_leaf(plan_dir: Path, leaf_id: str, fields: dict, *, create=False,
                 note=None, expected_hash=None) -> dict:
     """Serialized read/merge/validate/replace; stale optimistic writes fail."""
@@ -1790,6 +1832,14 @@ def update_leaf(plan_dir: Path, leaf_id: str, fields: dict, *, create=False,
         if "id" in fields and fields["id"] != leaf_id:
             raise LeafError("id нельзя менять")
         merged = {**raw, **fields, "id": leaf_id}
+        if not create and raw.get("status") == "running" and merged.get("status") == "running":
+            late = overrun(raw)
+            if late:
+                raise LeafError(
+                    f"лист {leaf_id} идёт {late[0]} мин при оценке {late[1]} мин. Разбей его: доказанное "
+                    "закрой (status: done, result), остальное — новые листы, по листу на объект (среда, "
+                    "узел, сервис); независимые запускай параллельно. Заметки к этому листу не "
+                    "принимаются, пока он не закрыт.")
         _inherit_default_model(merged, plan_metadata(plan_dir).get("default_model"))
         stamp = datetime.now().astimezone().isoformat(timespec="seconds")
         if create:

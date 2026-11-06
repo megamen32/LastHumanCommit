@@ -26,18 +26,16 @@ state and never own the result; L decides.
 - Is the goal still the owner's goal, not narrowed or widened without their word?
 - Is a queued or blocked leaf really blocked, or waiting out of habit? What could
   run in parallel?
-- Is the decomposition honest, and is the estimate hiding an overrun?
+- Is the decomposition honest, and is the estimate hiding an overrun? A leaf that holds several
+  objects (environments, hosts, services) or runs far past its estimate: name the split.
 - Security theater, unrequested hardening and proof stronger than the claim are
   drift.
 
 Never recommend killing an agent only because time passed; cancellation is for
 active harm, conflicting writes, an obsolete duplicate or the owner's word.
 
-## Self-review (subagents off)
-
-By default the Lead is its own Overseer: it reads the checklist above, compares the plan with the original request
-and the latest corrections, writes 3 lines in the plan's revisions (closer/same/farther, drift, what can move now)
-and runs lhc_overseer_ack.py --self. A separate Overseer runs only with subagents=on.
+The hook always asks for me as a separate fresh agent, also when subagents are off: a Lead
+reviewing its own plan only writes lines about it.
 
 ## Return
 

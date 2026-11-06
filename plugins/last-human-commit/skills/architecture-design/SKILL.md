@@ -103,7 +103,7 @@ features before cutting behavior needed for the accepted outcome. Record what
 was discarded and why. A smaller rung is an intermediate delivery unless it
 already meets the user's selected scope; never rename partial work as completion.
 
-Use `../decompose-and-dispatch/SKILL.md` to turn the next complete outcome into
+Use `../plan/SKILL.md` to turn the next complete outcome into
 coherent measurable tasks with owned paths/resources, acceptance checks, dependencies,
 and estimates explained by work, proof and uncertainty. Use
 `../model-routing/SKILL.md` for suitable actual models. Resolve shared contracts

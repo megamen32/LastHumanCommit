@@ -214,15 +214,10 @@ The graph counts the leaves, not the stage. A milestone without leaves is shown 
 uncut stage is not finished. The hook tells once when a leaf is longer than about 15 minutes (split it, or make it a
 stage) and when the next stage has no leaves.
 
-## Check the decomposition
+## Dependencies
 
-One pass after the graph is written, before dispatch, by someone who did not
-draw it (Adviser or Critic, plan only): for every `depends_on` edge name the
-concrete output of the first leaf that the second one reads. No output named
-means no edge: drop it. Then ask of every leaf in a later wave whether it can
-start now, and move it forward when it can. Record the result in `plan.json`
-as `decomposition_check` (who checked, the edges kept with what they read, the
-leaves moved). A leaf is `done` only when everything it depends on is `done`.
+A `depends_on` edge exists only when the second leaf reads a concrete output of the first. A leaf is `done` only
+when everything it depends on is `done`.
 
 ## Checking it
 

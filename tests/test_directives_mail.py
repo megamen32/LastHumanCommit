@@ -63,26 +63,34 @@ def test_file_mail_round_trip_between_worktrees(tmp_path):
     assert mail.inbox(root, "s2") == [] and (path.parent / "done" / path.name).exists()
 
 
-def test_plan_pulse_fires_once_when_leaves_stand_still(tmp_path, monkeypatch):
-    import json, os, time
+def test_after_a_compaction_the_hook_shows_the_bound_plan_as_the_current_goal(tmp_path, monkeypatch):
+    import json
     import lhc_entry as entry
     repo = tmp_path / "repo"
     (repo / ".git").mkdir(parents=True)
-    plan = repo / ".agents/tasks/20261028-x"
+    plan = repo / ".agents/tasks/20261106-ci"
     (plan / "leaves").mkdir(parents=True)
     (plan / "plan.json").write_text("{}")
-    leaf = plan / "leaves/L01.json"
-    leaf.write_text(json.dumps({"id": "L01", "status": "running"}))
-    monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
-    event = {"cwd": str(repo), "session_id": "s1"}
-    now = time.time()
-    assert entry.plan_pulse(event, ROOT, now=now) is None  # leaf just changed
-    old = now - 3600
-    os.utime(leaf, (old, old))
-    text = entry.plan_pulse(event, ROOT, now=now)
-    assert "L01" in text and "has not changed" in text
-    assert entry.plan_pulse(event, ROOT, now=now + 60) is None  # once per window
-    assert entry.plan_pulse({**event, "agent_id": "a"}, ROOT, now=now + 9999) is None
+    leaves = [
+        {"id": "L01", "label": "Codex через лжемодель", "status": "done", "result": "2 сессии, транскрипт: receipt-1.json"},
+        {"id": "L02", "label": "ZCode через Herder", "status": "running", "session": "s1",
+         "progress_events": [{"at": "2026-11-06T10:00:00+03:00", "note": "создание прошло, жду транскрипт"}]},
+        {"id": "L03", "label": "MiniMax через Herder", "status": "queued"},
+        {"id": "L04", "label": "Чужой лист", "status": "running", "session": "other"},
+    ]
+    for leaf in leaves:
+        (plan / "leaves" / (leaf["id"] + ".json")).write_text(json.dumps(leaf, ensure_ascii=False))
+    before = {p: p.read_bytes() for p in plan.rglob("*") if p.is_file()}
+    text = entry.plan_resume_context({"cwd": str(repo), "session_id": "s1"}, ROOT)
+    assert "Leaf L02 of this session is your current goal" in text
+    assert "do not research or plan it again" in text
+    assert "L01 «Codex через лжемодель» — 2 сессии, транскрипт: receipt-1.json" in text
+    assert "last note: создание прошло, жду транскрипт" in text
+    assert "L03 «MiniMax через Herder»" in text
+    assert "Running in other sessions or Workers: L04 «Чужой лист»" in text
+    assert {p: p.read_bytes() for p in plan.rglob("*") if p.is_file()} == before  # read-only
+    assert entry.plan_resume_context({"cwd": str(repo), "session_id": "nobody"}, ROOT) is None
+    assert entry.plan_resume_context({"cwd": str(repo), "session_id": "s1", "agent_id": "w"}, ROOT) is None
 
 
 def test_stop_gate_holds_a_stop_while_leaves_are_untouched(tmp_path, monkeypatch):
@@ -207,17 +215,8 @@ def test_plan_audit_names_a_done_leaf_over_unfinished_dependencies(tmp_path, mon
     monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
     event = {"cwd": str(repo), "session_id": "s1"}
     text = entry.plan_audit(event, ROOT, now=1_800_000_000)
-    assert "L03 is done while L02" in text and "decomposition" in text
+    assert "L03 is done while L02" in text and "decomposition" not in text
     assert entry.plan_audit(event, ROOT, now=1_800_000_060) is None  # once per window
-
-
-def test_plan_audit_is_quiet_when_the_decomposition_was_checked(tmp_path, monkeypatch):
-    import lhc_entry as entry
-    repo, plan = _plan(tmp_path, [
-        {"id": "L01", "status": "done"}, {"id": "L02", "status": "running", "depends_on": ["L01"]},
-        {"id": "L03", "status": "queued", "depends_on": ["L02"]}], meta={"decomposition_check": {"by": "adviser"}})
-    monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
-    assert entry.plan_audit({"cwd": str(repo), "session_id": "s1"}, ROOT, now=1_800_000_000) is None
 
 
 def test_effort_falls_back_to_the_clock_span():
@@ -235,16 +234,39 @@ def test_plan_audit_demands_a_replan_when_a_leaf_runs_past_its_estimate(tmp_path
     import json, time
     from datetime import datetime, timedelta
     import lhc_entry as entry
-    began = (datetime.now().astimezone() - timedelta(minutes=118)).isoformat(timespec="seconds")
+    began = (datetime.now().astimezone() - timedelta(minutes=40)).isoformat(timespec="seconds")
     repo, plan = _plan(tmp_path, [{"id": "L01", "status": "running", "started_at": began,
-                                   "estimate_minutes": {"minimum": 60, "maximum": 120},
-                                   "estimate_over_limit_reason": "one long build"}])
+                                   "estimate_minutes": {"minimum": 10, "maximum": 15}}])
     monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
     event = {"cwd": str(repo), "session_id": "s1"}
-    assert entry.plan_audit(event, ROOT, now=time.time()) is None  # 118 of 120 min: still inside
-    later = entry.plan_audit(event, ROOT, now=time.time() + 15 * 60)
-    assert "L01 has run" in later and "re-plan" in later and "revisions" in later
-    assert entry.plan_audit(event, ROOT, now=time.time() + 15 * 60 + 30) is None  # once per 15 min
+    assert entry.plan_audit(event, ROOT, now=time.time()) is None  # 40 min: past 2x15 but under 45
+    later = entry.plan_audit(event, ROOT, now=time.time() + 10 * 60)
+    assert "L01 has run" in later and "Split it now" in later and "one leaf per object" in later
+    assert "revisions" not in later
+    assert entry.plan_audit(event, ROOT, now=time.time() + 10 * 60 + 30) is None  # once per 15 min
+
+
+def test_progress_on_an_overrun_leaf_is_refused_until_it_is_split(tmp_path):
+    import json
+    from datetime import datetime, timedelta
+    import lhc_plan_json as pj
+    began = (datetime.now().astimezone() - timedelta(minutes=190)).isoformat(timespec="seconds")
+    repo, plan = _plan(tmp_path, [{"id": "L04", "label": "ZCode, MiniMax и остальные среды", "status": "running",
+                                   "started_at": began, "estimate_minutes": 15}])
+    with pytest.raises(pj.LeafError) as refused:
+        pj.update_leaf(plan, "L04", {}, note="ещё прогресс")
+    assert "190 мин при оценке 15" in str(refused.value) and "по листу на объект" in str(refused.value)
+    pj.update_leaf(plan, "L04", {"status": "done", "result": "ZCode прошёл: receipt.json"})
+    assert json.loads((plan / "leaves/L04.json").read_text())["status"] == "done"
+    fresh = (datetime.now().astimezone() - timedelta(minutes=20)).isoformat(timespec="seconds")
+    repo2, plan2 = _plan(tmp_path / "b", [{"id": "L01", "label": "ZCode", "status": "running", "started_at": fresh, "estimate_minutes": 15}])
+    pj.update_leaf(plan2, "L01", {}, note="в пределах")  # 20 of 15 min: not refused
+
+
+def test_plain_text_revisions_are_kept_not_dropped(tmp_path):
+    import lhc_plan_json as pj
+    assert pj._revisions(["Ближе: ZCode прошёл", {"reason": "r", "summary": "s"}, "", 5]) == [
+        {"reason": "Ближе: ZCode прошёл"}, {"reason": "r", "summary": "s"}]
 
 
 def test_plan_revisions_reach_the_page(tmp_path):

@@ -29,7 +29,7 @@ Carry the latest objective, constraints and applicable verified project/LHC
 learning in the compact assignment. Retrieve relevant lessons before repeating
 research; preserve both product repair/retest and method improvement/reuse loops.
 
-Use the portable `model-routing` and `decompose-and-dispatch` skills. Include
+Use the portable `model-routing` and `plan` skills. Include
 dependencies, owned resources, frozen interfaces, selected model and suitability
 reason, acceptance and integration join. Resolve API identifiers from actual
 harness capabilities; never send example aliases blindly. Record actual model
