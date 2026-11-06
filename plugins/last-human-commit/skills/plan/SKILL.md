@@ -18,13 +18,15 @@ files by hand.
 Research is the cheapest part of the work and makes the rest cheaper. Spend at least 10
 minutes, more while you still find new objects. Find what exists, what is broken and which
 objects the work touches: environments, hosts, services, endpoints, screens. Put them into
-`recon`. Every «needs checking» in `recon` becomes a research leaf with its question.
+`recon` (3+ lines `fact :: evidence`) with `mode: fullcycle` and an `acceptance_scenario`.
+Every «needs checking» in `recon` becomes a research leaf with its question.
 
 ## 2. Stages, each ending in a release
 
 - Write the whole route to the owner's result as stages (`kind: milestone`, a rough estimate
   in hours is fine).
-- Every stage ends by deploying what already works, so the owner gets value stage by stage.
+- Every stage ends by deploying what already works, so the owner gets value stage by stage:
+  the last leaf of a stage is a release task leaf (a stage holds leaves, never other stages).
   Example: first the check of Codex and OpenCode on the installed service, then one stage per
   added environment. Never one big release at the end.
 - Cut into leaves only the stage you start now. A plan with one leaf and no stages is not a plan.
@@ -39,8 +41,9 @@ objects the work touches: environments, hosts, services, endpoints, screens. Put
 
 ## 4. Honest estimates
 
-- Estimate from what research showed. If a leaf does not fit in 15 minutes, split it or keep it
-  as a stage. Never write 15 only because the tool refuses more.
+- A leaf is at most 15 minutes; the tool refuses more. Estimate from what research showed; a
+  piece that needs 45 minutes is three leaves (for example: server, its stream format, its
+  test), not one leaf with 45 and not one leaf with a false 15.
 - A leaf past twice its estimate and at least 45 minutes is split: close the proven part as
   `done`, put the rest into new leaves, continue. Until then the tool refuses progress notes
   on it.
