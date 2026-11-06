@@ -110,8 +110,8 @@ the plan moving and leave one short summary.
    input is rough; infer, do not interrogate. Ask only what changes the outcome.
 2. **Research.** At least 10 minutes, longer while it still finds new objects: research is the cheapest work and
    makes the rest cheaper. L reads and searches itself (cheap parallel Workers only with subagents=on).
-   Search with `rg` (`rg --files`, `rg -n`), not `grep -r` or `find`: it is many times faster and skips
-   ignored files; `grep` only where `rg` is not installed.
+   Prefer `rg` (`rg --files`, `rg -n`) to `grep -r` and `find` when it is installed: it is many times
+   faster and skips ignored files. Without `rg`, `grep` and `find` are fine.
 3. **Mode.** `quickfix` (bounded repair or small change, contained risk),
    `fullcycle` (feature, several parts, architecture, risky repair), `testing`
    (focus group, no code). Questions, research and status do not start development.
