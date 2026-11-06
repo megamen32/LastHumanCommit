@@ -1,3 +1,8 @@
+## 1.14.0
+
+- LhcPlan MCP is the way agents write plans: new tools show_plan, update_plan (plan.json fields and one revision {reason, summary}, validated before writing, so nobody edits plan.json by hand), activate_leaf, worker_register and worker_finish (merge the Worker branch into the task branch, remove its worktree, branch and run directory, local or over ssh, then close the leaf; a conflict aborts the merge and keeps the leaf open). Every leaf command and every refusal ends with one line of plan state: done/total, running, ready to start, leaves to split, Workers to merge. `lhc_plan_json.py show` prints the same summary the hook prints after a compaction.
+- The plan skill says directly that a leaf is at most 15 minutes (a 45-minute piece is three leaves), that the last leaf of a stage is a release task leaf and that recon goes with mode fullcycle: a fresh agent planning the agent-herder CI request wrote 30-45 minute leaves, mode "plan" and a nested release stage before this; after it, 15-minute leaves, a research leaf per unknown and a stage per environment.
+
 ## 1.13.0
 
 Why: a 20-hour Codex session (agent-herder CI with a fake model) planned one leaf at a time, packed five environments into one 15-minute leaf, ran it for hours, answered the overrun reminder with "revisions" lines the tool then dropped, and after three of four compactions went back to the first message of the chat and planned the task again.
@@ -6,7 +11,6 @@ Why: a 20-hour Codex session (agent-herder CI with a fake model) planned one lea
 - After a compaction or at session start the hook shows the plan bound to the session: done leaves with their results, the current leaf with its last note, the next leaves, and says the current leaf is the goal, not the first message of the chat. The intake text is short and points at the `plan` skill instead of `plan-artifacts`.
 - A running leaf past twice its estimate and at least 45 minutes: the tool refuses progress notes on it until it is closed or split; the hook says "split it now, one leaf per object". The "plan has not changed" pulse is gone (any write silenced it, hence 61 notes in that session), as are the decomposition_check reminder and the Overseer self-review: the 30-minute hook always asks for a fresh Overseer, also with subagents off.
 - Plain-text revisions are kept as reasons instead of being dropped silently.
-- LhcPlan MCP is the way agents write plans: new tools show_plan, update_plan (plan.json fields and one revision {reason, summary}, validated before writing, so nobody edits plan.json by hand), activate_leaf, worker_register and worker_finish (merge the Worker branch into the task branch, remove its worktree, branch and run directory, local or over ssh, then close the leaf; a conflict aborts the merge and keeps the leaf open). Every leaf command and every refusal ends with one line of plan state: done/total, running, ready to start, leaves to split, Workers to merge. `lhc_plan_json.py show` prints the same summary the hook prints after a compaction.
 - AGENTS.md: research step, plan step and Time point at the `plan` skill; the plan is the task's memory. BUSINESS_CHECKPOINT.md lists the hooks that are really registered.
 
 ## 1.12.3
