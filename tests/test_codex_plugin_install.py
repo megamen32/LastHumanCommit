@@ -78,3 +78,39 @@ def test_partial_pruning_restores_newer_target_before_preserved_alias(roots, tmp
     assert installer.install(str(native), cache, source) == 0
     assert alias.is_symlink() and alias.readlink() == cache / '1.6.4/tools'
     assert (alias / 'lhc_progress_review.py').read_text() == '# canonical hook\n'
+
+
+def test_versions_pruned_before_the_installer_ran_come_back_from_the_record(roots, tmp_path):
+    import shutil
+    cache, source = roots
+    shutil.rmtree(cache)                      # the marketplace upgrade already pruned 1.6.2-1.6.4
+    shutil.copytree(source.parent, cache / '1.6.5')
+    record = tmp_path / 'state/lhc/codex-plugin-versions.json'
+    record.parent.mkdir(parents=True)
+    record.write_text(json.dumps(['1.6.2', '1.6.3', '1.6.4']))
+    log = tmp_path / 'calls.jsonl'
+    native = tmp_path / 'fake-codex'
+    native.write_text('#!/usr/bin/env python3\nimport json, sys\n'
+                      f'open({str(log)!r}, "a").write(json.dumps(sys.argv[1:])+"\\n")\n')
+    native.chmod(0o700)
+    assert installer.install(str(native), cache, source, upgrade_marketplace=True, record=record) == 0
+    assert [json.loads(line) for line in log.read_text().splitlines()] == [
+        ['plugin', 'marketplace', 'upgrade', 'megamen32-plugins'],
+        ['plugin', 'add', 'last-human-commit@megamen32-plugins', '--json']]
+    for version in ('1.6.2', '1.6.3', '1.6.4'):
+        assert (cache / version / 'tools/lhc_entry.py').read_text() == '# canonical hook\n'
+    assert json.loads(record.read_text()) == ['1.6.2', '1.6.3', '1.6.4', '1.6.5']
+
+
+def test_a_broken_record_is_ignored_not_fatal(roots, tmp_path):
+    import shutil
+    cache, source = roots
+    for version in ('1.6.2', '1.6.3', '1.6.4'):
+        shutil.copytree(source.parent, cache / version, dirs_exist_ok=True)
+    record = tmp_path / 'record.json'
+    record.write_text('{not json')
+    native = tmp_path / 'noop-codex'
+    native.write_text('#!/bin/sh\nexit 0\n')
+    native.chmod(0o700)
+    assert installer.install(str(native), cache, source, record=record) == 0
+    assert json.loads(record.read_text()) == ['1.6.2', '1.6.3', '1.6.4']

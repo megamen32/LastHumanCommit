@@ -1,3 +1,7 @@
+## 1.15.1
+
+- Codex updates no longer cut off open chats. codex plugin marketplace upgrade (and Codex's own auto-upgrade) installs the new LHC and prunes the old version folders before install-codex-plugin.py runs, so the wrapper saw an empty cache and restored nothing; the daily lhc-harness-autoupdate.sh called the bare upgrade and never restored routes at all. The wrapper now keeps every version it has seen in ~/.local/state/lhc/codex-plugin-versions.json and restores the hook route of each, and with --upgrade-marketplace does the upgrade itself; the daily updater calls it that way. Checked on server-100: the upgrade pruned 1.11.0-1.14.0 again and the wrapper brought all of them back.
+
 ## 1.15.0
 
 - TDD for every bug fix is its own line in AGENTS.md («Every discovered bug»), and bug_resolve `fixed` now needs the failing run too: evidence.red_proof_path and red_result (the test failing before the fix) next to the passing proof; without them the error says what TDD evidence is missing. Bugs closed before this keep passing bug_check.
