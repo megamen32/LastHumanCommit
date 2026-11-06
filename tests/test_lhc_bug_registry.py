@@ -82,10 +82,17 @@ def test_fixed_requires_existing_evidence_file_and_passing_test(tmp_path):
     receipt = p / "receipts" / "regression.txt"
     receipt.parent.mkdir()
     receipt.write_text("2 passed; reproduced failing test then fixed")
-    evidence = json.dumps({"proof_path":"receipts/regression.txt",
-                           "test_command":"pytest -q tests/test_existing.py",
-                           "result":"2 passed"})
+    green_only = json.dumps({"proof_path":"receipts/regression.txt",
+                             "test_command":"pytest -q tests/test_existing.py", "result":"2 passed"})
+    assert "TDD" in bad(*args, "--evidence", green_only)            # a fix without the failing run is refused
+    red = p / "receipts" / "red.txt"
+    red.write_text("1 failed: AssertionError: transcript has 2 of 3 pages")
+    not_red = json.dumps({**json.loads(green_only), "red_proof_path":"receipts/red.txt", "red_result":"2 passed"})
+    assert "failing line" in bad(*args, "--evidence", not_red)
+    evidence = json.dumps({**json.loads(green_only), "red_proof_path":"receipts/red.txt",
+                           "red_result":"1 failed: AssertionError"})
     resolved = good(*args, "--evidence", evidence)
+    assert resolved["bug"]["resolution"]["evidence"]["red_sha256"] == hashlib.sha256(red.read_bytes()).hexdigest()
     assert resolved["bug"]["status"] == "fixed"
     assert resolved["bug"]["resolution"]["evidence"]["sha256"] == hashlib.sha256(receipt.read_bytes()).hexdigest()
     assert resolved["bug"]["events"][0]["action"] == "register"
@@ -210,8 +217,9 @@ def test_claimed_fix_matches_proof_and_disappearing_proof_blocks_green(tmp_path)
     receipt=p/"receipts/test.txt"
     receipt.parent.mkdir()
     receipt.write_text("2 failed")
+    (p/"receipts/red.txt").write_text("1 failed")
     evidence=json.dumps({"proof_path":"receipts/test.txt","test_command":"pytest -q",
-                         "result":"2 passed"})
+                         "result":"2 passed","red_proof_path":"receipts/red.txt","red_result":"1 failed"})
     base=["resolve",p,"--bug-id","B01","--actor","tester",
           "--expected-sha256",r["sha256"],"--status","fixed","--evidence",evidence]
     assert "proof" in bad(*base)

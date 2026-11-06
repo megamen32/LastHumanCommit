@@ -226,30 +226,50 @@ def update(plan_dir: Path, bug_id: str, actor: str, expected_sha256: str,
         return saved
 
 
-def _evidence(plan_dir: Path, evidence: dict[str, Any] | None) -> dict[str, Any]:
+TDD_MESSAGE = ("fixed needs both runs of the same test (TDD: RED -> fix -> GREEN): evidence.red_proof_path, "
+               "a file in plan_dir with the output where the test failed before the fix, and evidence.red_result, "
+               "the failing line from it; plus evidence.proof_path, test_command and result of the passing run")
+
+
+def _proof(plan_dir: Path, ref: str, field: str) -> bytes:
+    root = Path(plan_dir).resolve()
+    rel = Path(ref)
+    if rel.is_absolute() or ".." in rel.parts:
+        raise BugError(f"evidence.{field} must be within plan_dir")
+    target = root / rel
+    if any(path.is_symlink() for path in [target, *target.parents] if path != root and root in path.parents):
+        raise BugError("evidence symlink forbidden")
+    if not target.is_file():
+        raise BugError(f"evidence.{field} must exist")
+    if target.stat().st_size > 4 * 1024 * 1024:
+        raise BugError(f"evidence.{field} too large")
+    return target.read_bytes()
+
+
+def _evidence(plan_dir: Path, evidence: dict[str, Any] | None, *, require_red: bool = True) -> dict[str, Any]:
     if not isinstance(evidence, dict):
-        raise BugError("fixed requires evidence object with real proof file")
+        raise BugError("fixed requires evidence object with real proof file; " + TDD_MESSAGE)
+    if require_red and not (evidence.get("red_proof_path") and evidence.get("red_result")):
+        raise BugError(TDD_MESSAGE)
     ref = _required(evidence.get("proof_path"), "evidence.proof_path")
     command = _required(evidence.get("test_command"), "evidence.test_command")
     result = _required(evidence.get("result"), "evidence.result")
     if not re.search(r"\b(passed|pass|success|green|успешн)\b", result, re.I):
         raise BugError("evidence.result must document a passing check")
-    root = Path(plan_dir).resolve()
-    rel = Path(ref)
-    if rel.is_absolute() or ".." in rel.parts:
-        raise BugError("evidence.proof_path must be within plan_dir")
-    target = root / rel
-    if any(path.is_symlink() for path in [target, *target.parents] if path != root and root in path.parents):
-        raise BugError("evidence symlink forbidden")
-    if not target.is_file():
-        raise BugError("evidence.proof_path must exist")
-    if target.stat().st_size > 4 * 1024 * 1024:
-        raise BugError("evidence.proof_path too large")
-    proof = target.read_bytes()
+    proof = _proof(plan_dir, ref, "proof_path")
     if result.casefold() not in proof.decode("utf-8", errors="replace").casefold():
         raise BugError("evidence.result is not supported by the actual proof file")
-    return {"proof_path": ref, "sha256": _hash(proof),
-            "test_command": command, "result": result}
+    fact = {"proof_path": ref, "sha256": _hash(proof), "test_command": command, "result": result}
+    if evidence.get("red_proof_path") or evidence.get("red_result"):
+        red_ref = _required(evidence.get("red_proof_path"), "evidence.red_proof_path")
+        red_result = _required(evidence.get("red_result"), "evidence.red_result")
+        if not re.search(r"(fail|error|assert|traceback|упал|ошибк)", red_result, re.I):
+            raise BugError("evidence.red_result must be the failing line of the run before the fix")
+        red = _proof(plan_dir, red_ref, "red_proof_path")
+        if red_result.casefold() not in red.decode("utf-8", errors="replace").casefold():
+            raise BugError("evidence.red_result is not in the red proof file")
+        fact.update(red_proof_path=red_ref, red_sha256=_hash(red), red_result=red_result)
+    return fact
 
 
 def resolve(plan_dir: Path, bug_id: str, actor: str, expected_sha256: str,
@@ -308,7 +328,8 @@ def check(plan_dir: Path) -> dict[str, Any]:
             if not isinstance(resolution, dict) or resolution.get("kind") != "fixed":
                 raise BugError("fixed bug missing resolution evidence: " + bug_id)
             recorded = resolution.get("evidence")
-            fresh = _evidence(plan_dir, recorded)
+            fresh = _evidence(plan_dir, recorded,
+                              require_red=isinstance(recorded, dict) and "red_proof_path" in recorded)
             if fresh != recorded:
                 raise BugError("fixed bug evidence changed: " + bug_id)
         elif status == "duplicate":

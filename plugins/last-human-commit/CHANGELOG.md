@@ -1,3 +1,8 @@
+## 1.15.0
+
+- TDD for every bug fix is its own line in AGENTS.md («Every discovered bug»), and bug_resolve `fixed` now needs the failing run too: evidence.red_proof_path and red_result (the test failing before the fix) next to the passing proof; without them the error says what TDD evidence is missing. Bugs closed before this keep passing bug_check.
+- AGENTS.md, research step: prefer rg to grep -r and find when it is installed; without rg, grep and find are fine. It was only in the Worker skills, which a Lead with subagents off never opens.
+
 ## 1.14.0
 
 - LhcPlan MCP is the way agents write plans: new tools show_plan, update_plan (plan.json fields and one revision {reason, summary}, validated before writing, so nobody edits plan.json by hand), activate_leaf, worker_register and worker_finish (merge the Worker branch into the task branch, remove its worktree, branch and run directory, local or over ssh, then close the leaf; a conflict aborts the merge and keeps the leaf open). Every leaf command and every refusal ends with one line of plan state: done/total, running, ready to start, leaves to split, Workers to merge. `lhc_plan_json.py show` prints the same summary the hook prints after a compaction.

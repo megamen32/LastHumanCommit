@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Any, Callable, Optional
 
 SERVER_NAME = "LhcPlan"
-SERVER_VERSION = "1.14.0"
+SERVER_VERSION = "1.15.0"
 DEFAULT_PROTOCOL_VERSION = "2024-11-05"
 SUPPORTED_PROTOCOL_VERSIONS = ("2024-11-05", "2025-03-26", "2025-06-18")
 
@@ -746,7 +746,7 @@ BUG_SCHEMA_PROPERTIES = {
     "status": {"type": "string", "description": "List filter or resolve state: fixed, duplicate, false_positive."},
     "reason": {"type": "string", "description": "Required for duplicate/false-positive or reopening."},
     "duplicate_of": {"type": "string", "description": "Registered original bug id when duplicate."},
-    "evidence": {"type": "object", "description": "Fixed only: proof_path, test_command, passing result. Proof file is hashed."},
+    "evidence": {"type": "object", "description": "Fixed only, TDD: red_proof_path + red_result (the test failing before the fix), proof_path + test_command + result (the same test passing after it). Proof files are hashed."},
 }
 
 def _bug_schema(name: str, keys: tuple[str, ...], required: tuple[str, ...], description: str):
@@ -769,7 +769,7 @@ TOOLS += [
                 "Update metadata or block/reopen one bug with CAS; cannot erase history or mark fixed."),
     _bug_schema("bug_resolve", ("plan_dir","bug_id","actor","expected_sha256","status","reason","duplicate_of","evidence"),
                 ("plan_dir","bug_id","actor","expected_sha256","status"),
-                "Fixed requires file-backed proof of passing test; duplicate/false-positive require explicit reason."),
+                "Fixed requires TDD proof: the failing run before the fix and the passing run after it, both as files; duplicate/false-positive require explicit reason."),
     _bug_schema("bug_check", ("plan_dir",), ("plan_dir",),
                 "Final-worker gate: fail if any recorded bug is open or blocked. Green tests and deploy still required."),
 ]
