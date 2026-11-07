@@ -128,7 +128,8 @@ def test_catalog_browser_filters_refresh_auth_expiry_mobile(fixture, browser, tm
     call('Emulation.setDeviceMetricsOverride', {'width': 390, 'height': 844, 'deviceScaleFactor': 1, 'mobile': True})
     call('Page.navigate', {'url': url})
     import time
-    for _ in range(100):
+    deadline = time.monotonic() + 30  # a deadline, not a count of tries: Chrome under load is slow
+    while time.monotonic() < deadline:
         if js("!!document.querySelector('main[data-lhc-catalog]')"):
             break
         time.sleep(.05)

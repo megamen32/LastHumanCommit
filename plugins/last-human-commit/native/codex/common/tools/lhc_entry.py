@@ -109,6 +109,57 @@ def _plan_context(result):
 PULSE_AFTER = 1200  # seconds: how often one plan audit note may repeat
 
 
+CODEX_VERSION = re.compile(r"[0-9]+\.[0-9]+\.[0-9]+(?:[-+][A-Za-z0-9.-]+)?")
+
+
+def restore_codex_routes(tools=None, codex_home=None, state_home=None):
+    """Give every Codex LHC version this host has seen its hook tools back.
+
+    Codex upgrades the plugin by itself and prunes the old version directory,
+    while chats opened on that version still call its hooks. A new session runs
+    this hook from the new version: it records its own version and links the
+    tools of every recorded version that lost them to the marketplace tools.
+    Existing files and links are never replaced. Returns the restored versions.
+    """
+    tools = Path(tools or Path(__file__).resolve().parent)
+    package, cache = tools.parent, tools.parent.parent
+    if cache.name != "last-human-commit" or not CODEX_VERSION.fullmatch(package.name):
+        return []
+    codex_home = Path(codex_home or os.environ.get("CODEX_HOME") or Path.home() / ".codex")
+    if codex_home.resolve() not in cache.resolve().parents:
+        return []
+    record = Path(state_home or os.environ.get("XDG_STATE_HOME") or Path.home() / ".local/state") \
+        / "lhc/codex-plugin-versions.json"
+    try:
+        seen = json.loads(record.read_text(encoding="utf-8"))
+        seen = [item for item in seen if isinstance(item, str) and CODEX_VERSION.fullmatch(item)]
+    except (OSError, ValueError, TypeError):
+        seen = []
+    present = [path.name for path in cache.iterdir() if path.is_dir() and CODEX_VERSION.fullmatch(path.name)]
+    versions = sorted(set(seen) | set(present) | {package.name})
+    if set(versions) != set(seen):
+        record.parent.mkdir(parents=True, exist_ok=True)
+        temporary = record.with_suffix(".tmp")
+        temporary.write_text(json.dumps(versions, indent=1) + "\n", encoding="utf-8")
+        os.replace(temporary, record)
+    source = codex_home / ".tmp/marketplaces/megamen32-plugins/plugins/last-human-commit/tools"
+    if not (source / "lhc_entry.py").is_file():
+        return []
+    restored = []
+    for version in versions:
+        target = cache / version / "tools"
+        if target.exists() or target.is_symlink() or (cache / version).is_symlink():
+            continue
+        (cache / version).mkdir(exist_ok=True)
+        try:
+            target.symlink_to(source.resolve(), target_is_directory=True)
+            restored.append(version)
+        except FileExistsError:
+            continue
+    return restored
+
+
+
 def plan_resume_context(event, root):
     """After a compaction or a resume: the plan bound to this session, as text.
 
@@ -928,6 +979,11 @@ def main():
     # Legacy hook invocations without this flag are intentionally inert.
     if not args.instructions_only or args.event not in {"SessionStart", "PostCompact"}:
         return
+    if args.event == "SessionStart":
+        try:
+            restore_codex_routes()
+        except Exception:  # noqa: BLE001 - fail open: routes are a repair, never a reason to stop
+            pass
     root = (args.root or Path(__file__).resolve().parents[1]).resolve()
     context = context_for(args.event, root)
     extra = owner_directives(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())

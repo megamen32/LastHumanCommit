@@ -266,6 +266,11 @@ class Leaf:
     wave: Optional[int] = None
     order: int = 0
     origin: str = ""
+    # The stage (milestone) the leaf belongs to; empty for a leaf outside stages.
+    parent: str = ""
+    # When a leaf that ran left running without finishing (back to the queue,
+    # blocked): the Gantt bar of its real work stops here.
+    paused_at: str = ""
     # True when the line of the report itself named the leaf (the projected
     # report carries "- L04 · …"). A named id anchors the reconciliation; a
     # positional id is only the row number of the report.
@@ -1167,6 +1172,31 @@ def match_live_item(body: str, leaves: list[Leaf]) -> Optional[Leaf]:
 # --------------------------------------------------------------------------
 
 
+def history_window(task: dict) -> tuple[str, str, str]:
+    """Start, finish and pause of a leaf read from its own history.
+
+    The start is the first move to running, the finish the last move to done
+    or dropped (only for a leaf that is finished now). Plans published by an
+    older client carry the history but not the stamps. A leaf that ran and
+    went back to the queue or got blocked has a pause: the moment it left
+    running, so its bar stops there instead of running on to now.
+    """
+    events = [event for event in task.get("progress_events") or []
+              if isinstance(event, dict) and isinstance(event.get("changes"), dict)
+              and absolute_time(str(event.get("at") or "")) is not None]
+    start = next((str(event["at"]) for event in events if event["changes"].get("status") == "running"), "")
+    finish = ""
+    if str(task.get("status") or "") in {"done", "dropped"}:
+        finish = next((str(event["at"]) for event in reversed(events)
+                       if event["changes"].get("status") in {"done", "dropped"}), "")
+    paused = ""
+    if str(task.get("status") or "") not in {"done", "dropped", "running"}:
+        moves = [event for event in events if event["changes"].get("status")]
+        if moves and moves[-1]["changes"].get("status") != "running":
+            paused = str(moves[-1]["at"])
+    return start, finish, paused
+
+
 def parse_graph_json(document: Any) -> Graph:
     if not isinstance(document, dict):
         raise ValueError("graph must be a JSON object")
@@ -1225,6 +1255,7 @@ def parse_graph_json(document: Any) -> Graph:
             or not all(isinstance(item, str) for item in raw_affected_files)
         ):
             raise ValueError(f"tasks[{index}].affected_files must be a list of strings")
+        history_start, history_finish, history_pause = history_window(task)
         leaf = Leaf(
             id=str(task.get("id") or f"task-{index + 1}"),
             label=normalize(str(task.get("label") or task.get("outcome") or task.get("acceptance") or "")),
@@ -1252,9 +1283,10 @@ def parse_graph_json(document: Any) -> Graph:
             result=normalize(str(task.get("result") or "")),
             depends_on=[str(item) for item in (task.get("depends_on") or [])],
             parallel_with=[str(item) for item in (task.get("parallel_with") or [])],
-            started_at=str(task.get("started_at") or ""),
+            started_at=str(task.get("started_at") or history_start),
             created_at=str(task.get("created_at") or ""),
-            finished_at=str(task.get("finished_at") or ""),
+            finished_at=str(task.get("finished_at") or history_finish),
+            paused_at=history_pause,
             blocker=normalize(str(task.get("blocker") or "")),
             blocker_details={
                 str(key): normalize(str(value))
@@ -1266,6 +1298,7 @@ def parse_graph_json(document: Any) -> Graph:
             wave=task.get("wave") if isinstance(task.get("wave"), int) else None,
             order=index,
             origin="graph",
+            parent=str(task.get("parent") or ""),
         )
         estimate = task.get("estimate_minutes")
         if isinstance(estimate, dict):
@@ -3395,40 +3428,130 @@ def render_html(
     )
 
     # ----- gantt ---------------------------------------------------------
-    # A leaf without an estimate has no duration. The time scale is drawn
-    # only when at least one leaf carries a known one; otherwise the panel
-    # says the time is unavailable instead of drawing a minute axis that
-    # promises a duration nobody measured.
-    scheduled = [leaf for leaf in leaves if leaf.id in schedule.waves]
-    deferred_leaves = [leaf for leaf in leaves if leaf.id not in schedule.waves]
-    timed_leaf_ids = {
-        leaf.id for leaf in scheduled
-        if leaf.estimate_min is not None or leaf.estimate_max is not None
-    }
-    timeline_available = bool(timed_leaf_ids)
+    # The Gantt is drawn on real time. A leaf that ran sits where it ran: a
+    # hollow bar is its plan from its real start, the solid bar is the time it
+    # really took, and the part past the plan is red. A leaf that has not run
+    # yet is placed after «now» in the order of the schedule, as a dashed plan.
+    # Leaves are grouped by their stage (milestone); a stage row is closed by
+    # default and opens to its leaves.
+    reference = absolute_time(graph.snapshot_at) or datetime.now(timezone.utc)
+    final_states = {STATUS_DONE, STATUS_DEFERRED}
+    iso_mode = any(absolute_time(leaf.started_at) for leaf in leaves)
+    clock_starts = [] if iso_mode else [parse_clock(leaf.started_at) for leaf in leaves]
+    clock_starts = [value for value in clock_starts if value is not None]
+
+    def real_window(leaf: Leaf) -> Optional[tuple[float, Optional[float]]]:
+        """Start and end of the real work in minutes from the first start, or None."""
+        if iso_mode:
+            start = absolute_time(leaf.started_at)
+            if start is None:
+                return None
+            end = absolute_time(leaf.finished_at)
+            if end is None and leaf.status not in final_states:
+                end = absolute_time(leaf.paused_at) or reference
+            begin = (start - origin_iso).total_seconds() / 60
+            return begin, (None if end is None else max((end - origin_iso).total_seconds() / 60, begin))
+        start = parse_clock(leaf.started_at)
+        if start is None:
+            return None
+        begin = float((start - origin_clock) % (24 * 60))
+        finish = parse_clock(leaf.finished_at)
+        if finish is None:
+            return begin, None
+        return begin, begin + float((finish - start) % (24 * 60))
+
+    origin_iso = min((absolute_time(leaf.started_at) for leaf in leaves if absolute_time(leaf.started_at)),
+                     default=reference)
+    origin_clock = min(clock_starts, default=0)
+    windows = {leaf.id: real_window(leaf) for leaf in leaves}
+    if iso_mode:
+        now_at: Optional[float] = max((reference - origin_iso).total_seconds() / 60, 0.0)
+    else:
+        ends = [end for window in windows.values() if window for end in window if end is not None]
+        now_at = max(ends, default=0.0)
+    # Not started: after now, in the order and the offsets of the schedule.
+    pending = [leaf for leaf in leaves if windows[leaf.id] is None and leaf.status not in final_states]
+    first_planned = min((schedule.starts.get(leaf.id, 0.0) for leaf in pending), default=0.0)
+    bars: dict[str, dict[str, Any]] = {}
+    for leaf in leaves:
+        window = windows[leaf.id]
+        plan = leaf.plan_minutes
+        if window is not None:
+            begin, end = window
+            bars[leaf.id] = {"start": begin, "plan": plan, "fact": None if end is None else end - begin}
+        elif leaf in pending and plan is not None:
+            bars[leaf.id] = {"start": now_at + schedule.starts.get(leaf.id, 0.0) - first_planned,
+                             "plan": plan, "fact": None, "pending": True}
+    milestone_ids = {str(item.get("id")) for item in graph.milestones}
+    groups: dict[str, list[Leaf]] = {}
+    loose: list[Leaf] = []
+    for leaf in leaves:
+        holder = leaf.parent if leaf.parent in milestone_ids else (leaf.id if leaf.id in milestone_ids else "")
+        if holder:
+            groups.setdefault(holder, []).append(leaf)
+        else:
+            loose.append(leaf)
+
+    def stage_plan(item: dict[str, Any], members: list[Leaf]) -> Optional[float]:
+        """The plan of a stage: its own estimate, else the sum of its leaves' plans."""
+        bounds = item.get("estimate_minutes") if isinstance(item.get("estimate_minutes"), dict) else {}
+        own = bounds.get("maximum") if bounds else None
+        if isinstance(own, (int, float)):
+            return float(own)
+        plans = [leaf.plan_minutes for leaf in members
+                 if leaf.id != str(item.get("id")) and leaf.plan_minutes is not None]
+        return sum(plans) if plans else None
+
+    stage_ends = []
+    for item in graph.milestones:
+        members = groups.get(str(item.get("id")), [])
+        starts = [bars[leaf.id]["start"] for leaf in members if leaf.id in bars]
+        plan = stage_plan(item, members)
+        if starts and plan is not None:
+            stage_ends.append(min(starts) + plan)
+    timeline_available = bool(bars)
+    horizon = max([1.0, now_at or 0.0] + stage_ends + [
+        bar["start"] + max(bar["plan"] or 0.0, bar["fact"] or 0.0) for bar in bars.values()
+    ])
     if timeline_available:
-        horizon = max(schedule.makespan, metrics["delivery_minutes_max"], 1.0)
         ticks = 6
+        now_drawn = any(not bar.get("pending") for bar in bars.values())
+        now_left = 100.0 * (now_at or 0.0) / horizon
+        # A tick under the «now» label would be unreadable: the label wins.
         axis = "".join(
             f'<div class="tick tick-{index}" style="left:{100.0 * index / ticks:.4f}%">'
             f"{fmt_minutes(horizon * index / ticks)}</div>"
             for index in range(ticks + 1)
+            if not (now_drawn and abs(100.0 * index / ticks - now_left) < 7.0)
         )
+        if now_drawn:
+            axis += f'<div class="gantt-now" style="left:{now_left:.4f}%">сейчас</div>'
     else:
-        horizon = 1.0
-        axis = (
-            '<div class="gantt-axis-note">Шкала времени недоступна</div>'
-        )
-    gantt_rows: list[str] = []
-    current_wave: Optional[int] = None
-    wave_counts: dict[int, int] = {}
+        axis = '<div class="gantt-axis-note">Шкала времени недоступна</div>'
+    now_line = (f'<i class="now-line" style="left:{100.0 * (now_at or 0.0) / horizon:.4f}%"></i>'
+                if timeline_available and any(not bar.get("pending") for bar in bars.values()) else "")
 
-    def gantt_row(leaf: Leaf, start: float, finish: float) -> str:
+    def pct(value: float) -> float:
+        return 100.0 * value / horizon
+
+    def draw(color: str, start: float, plan: Optional[float], fact: Optional[float],
+             pending_bar: bool, title: str) -> str:
+        parts = []
+        if plan is not None:
+            css = "bar bar-plan" + (" bar-pending" if pending_bar else "")
+            parts.append(f'<div class="{css}" style="left:{pct(start):.4f}%;width:{max(0.6, pct(plan)):.4f}%;'
+                         f'border-color:{color}" title="{title}"></div>')
+        if fact is not None:
+            inside = fact if plan is None else min(fact, plan)
+            parts.append(f'<div class="bar bar-fact" style="left:{pct(start):.4f}%;width:{max(0.6, pct(inside)):.4f}%;'
+                         f'background:{color}" title="{title}"></div>')
+            if plan is not None and fact > plan + 0.01:
+                parts.append(f'<div class="bar bar-over" style="left:{pct(start + plan):.4f}%;'
+                             f'width:{max(0.6, pct(fact - plan)):.4f}%" title="{title}"></div>')
+        return "".join(parts)
+
+    def gantt_row(leaf: Leaf) -> str:
         color = STATUS_CSS_VARS[leaf.status]
-        duration_known = leaf.id in timed_leaf_ids
-        # The critical path is a fact only when every leaf carries a
-        # duration; until then the marker would name an accident of the
-        # schedule, so it is not drawn.
         critical = metrics["critical_known"] and leaf.id in metrics["critical_path"]
         tooltip = (
             f"{leaf.id} · {leaf.label}\n"
@@ -3447,17 +3570,14 @@ def render_html(
         )
         title = escape(tooltip)
         critical_mark = '<span class="crit" title="критический путь">◆ критический путь</span>' if critical else ""
-        if duration_known and timeline_available:
-            left = 100.0 * start / horizon
-            width = max(0.6, 100.0 * max(finish - start, 0.0) / horizon)
-            bar = (
-                f'<div class="bar" style="left:{left:.4f}%;width:{width:.4f}%;background:{color}"'
-                f' title="{title}"></div>'
-            )
+        bar_data = bars.get(leaf.id)
+        if bar_data is not None:
+            bar = draw(color, bar_data["start"], bar_data["plan"], bar_data["fact"],
+                       bool(bar_data.get("pending")), title)
         else:
-            # No duration, no bar: a drawn width would read as a measured
-            # length of time.
-            bar = f'<span class="gantt-noduration" title="{title}">—</span>'
+            # No measured time and no estimate: a drawn width would be invented.
+            note = "время не записано" if leaf.status == STATUS_DONE else "—"
+            bar = f'<span class="gantt-noduration" title="{title}">{note}</span>'
         return (
             f'<div class="gantt-row" data-status="{leaf.status}" data-leaf="{escape(leaf.id)}">'
             f'<div class="gantt-label" title="{escape(leaf.label)}">'
@@ -3471,44 +3591,91 @@ def render_html(
             f"{critical_mark}"
             f"</span>"
             f'</div>'
-            f'<div class="gantt-track">'
-            f"{bar}</div></div>"
+            f'<div class="gantt-track">{now_line}{bar}</div></div>'
         )
 
-    for leaf in scheduled:
-        wave_counts[schedule.waves.get(leaf.id, 0)] = wave_counts.get(schedule.waves.get(leaf.id, 0), 0) + 1
-    for leaf in scheduled:
-        wave = schedule.waves.get(leaf.id, 0)
-        if wave != current_wave:
-            current_wave = wave
-            gantt_rows.append(
-                f'<div class="wave-row"><span>Волна {wave + 1}</span>'
-                f'<span class="wave-count">{wave_counts.get(wave, 0)} листьев</span></div>'
-            )
-        start = schedule.starts.get(leaf.id, 0.0)
-        finish = schedule.finishes.get(leaf.id, start)
-        gantt_rows.append(gantt_row(leaf, start, finish))
-    if deferred_leaves:
-        gantt_rows.append(
-            f'<div class="wave-row"><span>Отложено владельцем</span>'
-            f'<span class="wave-count">{len(deferred_leaves)} листьев</span></div>'
+    def place(leaf: Leaf) -> tuple:
+        bar_data = bars.get(leaf.id)
+        if bar_data is None:
+            # Finished without times first (they are the past), then the rest.
+            return (0 if leaf.status in final_states else 2, 0.0, leaf.order)
+        return (1, bar_data["start"], leaf.order)
+
+
+    def milestone_row(item: dict[str, Any], members: list[Leaf]) -> str:
+        ident = str(item.get("id", ""))
+        label = str(item.get("label", "")) or ident
+        status = str(item.get("status") or STATUS_QUEUED)
+        status = status if status in STATUS_CSS_VARS else STATUS_QUEUED
+        color = STATUS_CSS_VARS[status]
+        real = [leaf for leaf in members if leaf.id != ident]
+        done = sum(1 for leaf in real if leaf.status == STATUS_DONE)
+        drawn = [bars[leaf.id] for leaf in members if leaf.id in bars]
+        plan = stage_plan(item, members)
+        measured = [bar for bar in drawn if not bar.get("pending")]
+        start = min((bar["start"] for bar in drawn), default=None)
+        fact = None
+        if measured:
+            last = max(bar["start"] + (bar["fact"] or 0.0) for bar in measured)
+            fact = last - start
+        meta = [f"{done} из {len(real)} листьев готово" if real else "ещё не разложен на листы"]
+        if timeline_available and plan is not None:
+            meta.append(f"план {fmt_minutes(plan)}")
+        if timeline_available and fact is not None:
+            meta.append(f"факт {fmt_minutes(fact)}")
+            if plan is not None and fact > plan + 0.01:
+                meta.append(f'<span class="gantt-over">сверх плана {fmt_minutes(fact - plan)}</span>')
+        if start is not None:
+            bar = draw(color, start, plan, fact, not measured, escape(f"{ident} · {label}"))
+        else:
+            bar = '<span class="gantt-noduration">—</span>'
+        rows = "".join(gantt_row(leaf) for leaf in sorted(members, key=place))
+        return (
+            f'<details class="gantt-group" data-milestone="{escape(ident)}">'
+            f'<summary class="gantt-row gantt-milestone" data-status="{status}">'
+            f'<div class="gantt-label"><span class="gantt-line">'
+            f'<span class="gantt-caret" aria-hidden="true">▸</span>'
+            f'<span class="gantt-id">{escape(ident)}</span>'
+            f'<span class="gantt-text">{escape(label)}</span></span>'
+            f'<span class="gantt-line gantt-meta"><span class="gantt-ms-status">'
+            f'{STATUS_GLYPHS[status]} {STATUS_LABELS[status]} · {" · ".join(meta)}</span></span></div>'
+            f'<div class="gantt-track">{now_line}{bar}</div></summary>'
+            f'<div class="gantt-children">{rows}</div></details>'
         )
-        for leaf in deferred_leaves:
-            gantt_rows.append(gantt_row(leaf, 0.0, 0.0))
+
+    gantt_rows: list[str] = []
+    if groups:
+        ordered = [item for item in graph.milestones if str(item.get("id")) in groups]
+        first = {str(item.get("id")): min(place(leaf) for leaf in groups[str(item.get("id"))]) for item in ordered}
+        for item in sorted(ordered, key=lambda one: first[str(one.get("id"))]):
+            gantt_rows.append(milestone_row(item, groups[str(item.get("id"))]))
+        if loose:
+            gantt_rows.append(milestone_row({"id": "—", "label": "Без этапа", "status": (
+                STATUS_DONE if all(leaf.status == STATUS_DONE for leaf in loose) else STATUS_RUNNING
+                if any(leaf.status == STATUS_RUNNING for leaf in loose) else STATUS_QUEUED)}, loose))
+    else:
+        gantt_rows.extend(gantt_row(leaf) for leaf in sorted(leaves, key=place))
     gantt_html = "".join(gantt_rows)
+    gantt_controls = (
+        '<div class="gantt-controls" role="group" aria-label="Этапы в Ганте">'
+        '<button type="button" data-gantt-expand="all">Всегда разворачивать</button>'
+        '<button type="button" data-gantt-expand="none">Всегда сворачивать</button></div>'
+        if groups else ""
+    )
 
     # The panel states what its rows do and do not show.
     if timeline_available:
-        untimed = [leaf for leaf in scheduled if leaf.id not in timed_leaf_ids]
+        untimed = [leaf for leaf in pending if leaf.id not in bars]
         gantt_note = (
-            f'<div class="hint">Листьев без оценки длительности: {len(untimed)} — '
-            "они показаны знаком «—», без полосы длительности.</div>"
-            if untimed else ""
+            '<div class="hint">Полая полоса — план от реального начала, сплошная — сколько лист '
+            'реально шёл, красная — перерасход; пунктир — ещё не начатые листья после «сейчас».</div>'
+            + (f'<div class="hint">Листьев без оценки длительности: {len(untimed)} — '
+               "они показаны знаком «—», без полосы длительности.</div>" if untimed else "")
         )
     else:
         gantt_note = (
             '<div class="hint">Ни один лист не имеет оценки длительности: строки '
-            "показывают состояние и волны, а не длительность. "
+            "показывают состояние, а не длительность. "
             f"Оценок неизвестны: {metrics['unknown_estimate_all']}.</div>"
         )
 
@@ -4118,6 +4285,7 @@ def render_html(
         axis=axis,
         gantt=gantt_html,
         gantt_note=gantt_note,
+        gantt_controls=gantt_controls,
         blockers=blocker_html,
         sessions=sessions_html,
         leaves_table=leaves_table,
@@ -4345,6 +4513,25 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     border-left: 3px solid var(--accent); border-radius: 10px; color: var(--muted);
     font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }}
   .wave-count {{ text-transform: none; letter-spacing: 0; }}
+  .gantt-head {{ display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }}
+  .gantt-controls {{ display: flex; gap: 6px; }}
+  .gantt-controls button {{ font: inherit; font-size: 12px; padding: 4px 10px; border-radius: 8px; cursor: pointer;
+    border: 1px solid var(--line); background: var(--panel-2); color: var(--muted); }}
+  .gantt-controls button[aria-pressed="true"] {{ border-color: var(--accent); color: var(--text); }}
+  .gantt-group > summary {{ list-style: none; cursor: pointer; background: var(--panel-2); }}
+  .gantt-group > summary::-webkit-details-marker {{ display: none; }}
+  .gantt-group[open] > summary .gantt-caret {{ transform: rotate(90deg); }}
+  .gantt-caret {{ display: inline-block; flex: none; color: var(--muted); transition: transform .15s; }}
+  .gantt-milestone .gantt-text {{ font-weight: 600; }}
+  .gantt-ms-status {{ font-size: 11px; color: var(--muted); }}
+  .gantt-children .gantt-label {{ padding-left: 18px; }}
+  .gantt-over {{ color: var(--bad); font-weight: 600; }}
+  .bar-plan {{ background: transparent; border: 2px solid; box-shadow: none; box-sizing: border-box; opacity: .85; }}
+  .bar-pending {{ border-style: dashed; opacity: .6; }}
+  .bar-over {{ background: var(--bad); border-radius: 0 5px 5px 0; }}
+  .now-line {{ position: absolute; top: 0; bottom: 0; width: 0; border-left: 1px dashed var(--accent); opacity: .7; }}
+  .gantt-now {{ position: absolute; top: 2px; transform: translateX(-50%); font-size: 10px; color: var(--accent);
+    background: var(--panel); padding: 0 3px; white-space: nowrap; }}
 
   /* ---- two column work area ---- */
   .grid {{ display: grid; gap: 16px; grid-template-columns: minmax(0, 1.35fr) minmax(0, .65fr);
@@ -4532,7 +4719,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 </section>
 <section id="work-plan" class="plan-section" aria-label="План работ">
 <div class="panel panel-gantt" id="lhc-plan-gantt"{plan_gantt_hidden}>
-  <h2>Гант · листья и параллельные волны</h2>
+  <div class="gantt-head"><h2>Гант · этапы и листья по реальному времени</h2>{gantt_controls}</div>
   {gantt_note}
   <div class="gantt"><div class="gantt-inner">
     <div class="gantt-axis-row"><div class="gantt-axis-spacer"></div><div class="gantt-axis">{axis}</div></div>
@@ -4707,6 +4894,31 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       openDetails(row, row.dataset.detailsId);
     }});
   }});
+  // Stages of the Gantt: closed by default; «always open» or «always closed»
+  // is the reader's choice, remembered between openings.
+  (function () {{
+    var groups = document.querySelectorAll('details.gantt-group');
+    var buttons = document.querySelectorAll('[data-gantt-expand]');
+    if (!groups.length) {{ return; }}
+    function current() {{
+      var value = null;
+      try {{ value = window.localStorage.getItem('lhc-gantt-expand'); }} catch (error) {{ value = null; }}
+      return value === 'all' ? 'all' : 'none';
+    }}
+    function apply(mode) {{
+      groups.forEach(function (group) {{ group.open = mode === 'all'; }});
+      buttons.forEach(function (button) {{
+        button.setAttribute('aria-pressed', button.dataset.ganttExpand === mode ? 'true' : 'false');
+      }});
+    }}
+    apply(current());
+    buttons.forEach(function (button) {{
+      button.addEventListener('click', function () {{
+        try {{ window.localStorage.setItem('lhc-gantt-expand', button.dataset.ganttExpand); }} catch (error) {{ /* no storage */ }}
+        apply(button.dataset.ganttExpand);
+      }});
+    }});
+  }})();
   // A Gantt bar opens the same card as the table row: one card per task.
   document.querySelectorAll('.gantt-row[data-leaf]').forEach(function (bar) {{
     bar.setAttribute('tabindex', '0');

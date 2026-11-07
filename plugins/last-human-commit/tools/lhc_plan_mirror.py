@@ -27,6 +27,7 @@ import time
 import urllib.parse
 import urllib.request
 import urllib.error
+import zlib
 
 import lhc_directives as directives
 import lhc_plan_catalog as catalog
@@ -36,6 +37,10 @@ import lhc_plan_transport as transport
 
 CONFIG = Path.home() / '.config/lhc/plan-mirror/client.json'
 MAX_BYTES = 8 * 1024 * 1024
+# A snapshot carries every revision of the plan, so a long plan outgrows the 8 MB wire cap
+# (agent-herder, 386 leaves: 12 MB). Over the cap it travels gzip-compressed; this is the
+# limit of the snapshot itself, unpacked.
+MAX_SNAPSHOT_BYTES = 16 * MAX_BYTES
 
 class SourceAbsent(ValueError):
     """The registered source is gone or empty: a warning, not a failed mirror."""
@@ -492,11 +497,21 @@ def secret(path):
 
 def _post_snapshot(cfg, snapshot):
     data = pub.encoded(snapshot).encode()
+    headers = {'Authorization': 'Bearer ' + secret(cfg['token_file']), 'Content-Type': 'application/json'}
     if len(data) > MAX_BYTES:
-        raise ValueError('snapshot size limit exceeded')
+        # Only an oversized snapshot is compressed: a server that predates this still gets
+        # every snapshot it could take before.
+        data = gzip_bytes(data) if len(data) <= MAX_SNAPSHOT_BYTES else data
+        headers['Content-Encoding'] = 'gzip'
+        if len(data) > MAX_BYTES:
+            raise ValueError('snapshot size limit exceeded: %d bytes compressed, the limit is %d'
+                             % (len(data), MAX_BYTES))
     req = urllib.request.Request(cfg['endpoint'].rstrip('/') + '/v1/snapshots', data=data,
-                                 headers={'Authorization': 'Bearer ' + secret(cfg['token_file']), 'Content-Type': 'application/json'}, method='POST')
-    with urllib.request.urlopen(req, timeout=min(10, max(.1, cfg.get('timeout_seconds', 3)))) as response:
+                                 headers=headers, method='POST')
+    # The server renders every revision of the plan before it answers (a 539-leaf plan: about
+    # a minute), so the upload waits for a render, not for a probe: timeout_seconds stays
+    # the limit of status probes only.
+    with urllib.request.urlopen(req, timeout=max(300, cfg.get('timeout_seconds', 3))) as response:
         return json.loads(response.read(MAX_BYTES))
 
 
@@ -567,6 +582,20 @@ def record_warning(plan, error):
             pub.atomic(dest / 'mirror-state.json', state)
 
 
+def gzip_bytes(data):
+    import gzip
+    return gzip.compress(data, compresslevel=6, mtime=0)
+
+
+def gunzip_bounded(data, limit):
+    """Unpack a gzip body, refusing more than limit bytes (a small body can unpack huge)."""
+    unpacker = zlib.decompressobj(16 + zlib.MAX_WBITS)
+    result = unpacker.decompress(data, limit + 1)
+    if len(result) > limit or unpacker.unconsumed_tail:
+        raise ValueError('snapshot size limit exceeded')
+    return result + unpacker.flush()
+
+
 def record_error(plan, error):
     if isinstance(error, SourceAbsent):
         return record_warning(plan, error)
@@ -576,6 +605,7 @@ def record_error(plan, error):
         # Do not persist remote bodies (may include credentials or proxy details).
         message = ('HTTP 409: конфликт владельца, последовательности или неизменяемой истории; зеркало не перезаписано'
                           if isinstance(error, urllib.error.HTTPError) and error.code == 409
+                          else 'ValueError: ' + str(error) if isinstance(error, ValueError) and ('size limit' in str(error) or 'oversized' in str(error))
                           else type(error).__name__ + ': синхронизация или источник недоступны')
         if state.get('error') != message:
             state['error'] = message
@@ -1378,6 +1408,11 @@ def make_server(cfg):
                     return self.reply(413, {'error': 'invalid payload size'})
                 self.connection.settimeout(10)
                 data = self.rfile.read(length)
+                encoding = (self.headers.get('Content-Encoding') or '').strip().lower()
+                if encoding == 'gzip':
+                    data = gunzip_bounded(data, MAX_SNAPSHOT_BYTES)
+                elif encoding not in ('', 'identity'):
+                    return self.reply(415, {'error': 'unsupported content encoding'})
                 snapshot = json.loads(data, parse_constant=lambda value: (_ for _ in ()).throw(ValueError('nonfinite JSON')))
                 self.reply(200, replica.ingest(snapshot))
             except Conflict:

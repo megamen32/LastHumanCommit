@@ -36,7 +36,8 @@ def browser(tmp_path):
                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     socket = None
     try:
-        for _ in range(100):
+        deadline = time.monotonic() + 30  # a deadline, not a count of tries: Chrome under load is slow
+        while time.monotonic() < deadline:
             if (profile / 'DevToolsActivePort').exists():
                 break
             if process.poll() is not None:
@@ -101,7 +102,8 @@ def test_navigation_filters_refresh_mobile_print_and_task_details(browser, tmp_p
     call('Page.enable')
     navigation = call('Page.navigate', {'url': url})
     assert 'errorText' not in navigation, navigation
-    for _ in range(100):
+    deadline = time.monotonic() + 30  # a deadline, not a count of tries: Chrome under load is slow
+    while time.monotonic() < deadline:
         if js('!!document.getElementById("plan-app") && !!window.__lhcUI && !!document.querySelector(".plan-sidebar [aria-current]")'):
             break
         time.sleep(.05)
@@ -128,7 +130,8 @@ def test_navigation_filters_refresh_mobile_print_and_task_details(browser, tmp_p
     assert js('!!document.querySelector(".task-details-row")')
     js('window.dispatchEvent(new Event("lhc-before-swap"))')
     call('Page.reload')
-    for _ in range(100):
+    deadline = time.monotonic() + 30  # a deadline, not a count of tries: Chrome under load is slow
+    while time.monotonic() < deadline:
         if js('!!document.getElementById("search") && document.getElementById("search").value==="L001"'):
             break
         time.sleep(.05)
@@ -139,7 +142,8 @@ def test_navigation_filters_refresh_mobile_print_and_task_details(browser, tmp_p
     doc['title'] = 'Обновлённый план после обычного сохранения'
     graph = grid.parse_graph_json(doc)
     page.write_text(grid.render_html(graph, grid.build_metrics(graph)))
-    for _ in range(80):
+    deadline = time.monotonic() + 30  # a deadline, not a count of tries: Chrome under load is slow
+    while time.monotonic() < deadline:
         if js('document.title.startsWith("Обновлённый план")'):
             break
         time.sleep(.05)
@@ -177,7 +181,8 @@ def test_publication_reload_restores_position_but_deliberate_hash_wins(browser, 
     write('one')
     call('Page.enable')
     call('Page.navigate', {'url': url})
-    for _ in range(100):
+    deadline = time.monotonic() + 30  # a deadline, not a count of tries: Chrome under load is slow
+    while time.monotonic() < deadline:
         if js('!!document.querySelector(".plan-sidebar [aria-current]")'):
             break
         time.sleep(.05)
@@ -187,8 +192,15 @@ def test_publication_reload_restores_position_but_deliberate_hash_wins(browser, 
     js('scrollTo({top:scrollY-350,behavior:"instant"})')
     position = js('scrollY')
     assert js('Math.abs(document.getElementById("tasks").getBoundingClientRect().top-24)>100')
+    stamp = (tmp_path / 'plan.html').stat().st_mtime
     write('two')
-    for _ in range(300):
+    # The same Last-Modified as before: a plain reload gets 304 and the old page back, and
+    # the page reloaded forever (the test failed when both writes fell into one second).
+    os.utime(tmp_path / 'plan.html', (stamp, stamp))
+    # Returning to the tab checks for an update at once; the 12 s timer is not what is tested.
+    js('window.dispatchEvent(new Event("focus"))')
+    deadline = time.monotonic() + 30
+    while time.monotonic() < deadline:
         if js('document.getElementById("lhc-publication-live")?.textContent.includes("version=\'two\'") && !!document.querySelector(".plan-sidebar [aria-current]")'):
             break
         time.sleep(.05)
