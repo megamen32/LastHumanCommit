@@ -211,3 +211,36 @@ def test_fresh_contract_preserves_actual_native_input_not_canary_text(fresh):
     assert outcome['original_goal'] != outcome['canary']['scenario']
     assert outcome['bootstrap']['native_input']['journal_path'] == str(journal)
     assert outcome['bootstrap']['scope_origin'] == 'unknown'
+
+
+@pytest.mark.parametrize('fact', ['timer-runtime', 'timer-session', 'prior-native-id'])
+def test_conflicting_existing_native_facts_are_not_repaired_by_bootstrap(fresh, fact):
+    root, journal, state_path = fresh
+    guard.native_heartbeat(root, 'codex', 'bootstrap-owner')
+    state = guard.load_state(state_path)
+    if fact == 'timer-runtime':
+        state['native_heartbeat']['runtime'] = 'opencode'
+    elif fact == 'timer-session':
+        state['native_heartbeat']['session_id'] = 'another-owner'
+    else:
+        state['business'] = {'native_identity': {'verified': True, 'native_id': 'another-owner',
+            'logical_session_id': 'bootstrap-owner', 'native_cwd': str(root)}}
+    guard.write_state(state_path, state)
+    before = state_path.read_bytes()
+    result = contract(root, kind='testing')
+    assert result.returncode != 0, 'conflicting native state was silently adopted'
+    assert state_path.read_bytes() == before
+
+
+def test_incomplete_prior_identity_stays_unknown_without_fabricated_repair(fresh):
+    root, journal, state_path = fresh
+    guard.native_heartbeat(root, 'codex', 'bootstrap-owner')
+    state = guard.load_state(state_path)
+    unknown = {'verified': False, 'native_id': None, 'reason': 'historical identity unavailable'}
+    state['business'] = {'native_identity': unknown.copy()}
+    guard.write_state(state_path, state)
+    result = contract(root, kind='testing')
+    assert result.returncode == 0, result.stderr
+    saved = guard.load_state(state_path)
+    assert saved['business']['native_identity'] == unknown
+    assert saved['business']['outcome']['finish_verdict'] == 'pending'
