@@ -1,0 +1,75 @@
+FFFFF.                                                                   [100%]
+=================================== FAILURES ===================================
+______________ test_owner_limit_is_used_by_checks_and_both_pages _______________
+
+    def test_owner_limit_is_used_by_checks_and_both_pages():
+        graph = grid.parse_graph_json(document())
+>       assert grid.estimate_cap_findings(graph) == []
+E       AssertionError: assert [{'breach': T...': 60.0, ...}] == []
+E         
+E         Left contains one more item: {'breach': True, 'cap': 15, 'id': 'L01', 'minutes': 60.0, ...}
+E         Use -v to get more diff
+
+tests/test_grid_plan_policy.py:25: AssertionError
+_____________ test_smaller_plan_limit_is_not_replaced_with_default _____________
+
+    def test_smaller_plan_limit_is_not_replaced_with_default():
+        doc = document(5)
+        doc["tasks"][0]["estimate_minutes"] = {"minimum": 10, "maximum": 10}
+        graph = grid.parse_graph_json(doc)
+        findings = grid.estimate_cap_findings(graph)
+>       assert len(findings) == 1
+E       assert 0 == 1
+E        +  where 0 = len([])
+
+tests/test_grid_plan_policy.py:37: AssertionError
+_____________ test_export_and_refresh_retain_assignment_and_policy _____________
+
+    def test_export_and_refresh_retain_assignment_and_policy():
+        source = document()
+        exported = grid.export_graph(grid.parse_graph_json(source))
+        keys = ("estimate_policy", "deliverable", "decomposition", "decomposition_check")
+        for key in keys:
+>           assert exported.get(key) == source[key]
+E           AssertionError: assert None == {'leaf_cap_minutes': 60, 'reason': 'Owner explicitly requested this limit'}
+E            +  where None = <built-in method get of dict object at 0x7c40d2ea0500>('estimate_policy')
+E            +    where <built-in method get of dict object at 0x7c40d2ea0500> = {'acceptance_scenarios': [], 'business_result': '', 'business_results': [], 'current_progress': '', ...}.get
+
+tests/test_grid_plan_policy.py:48: AssertionError
+_____________ test_invalid_policy_is_not_silently_ignored[policy0] _____________
+
+policy = {'leaf_cap_minutes': True, 'reason': 'owner'}
+
+    @pytest.mark.parametrize("policy", [
+        {"leaf_cap_minutes": True, "reason": "owner"},
+        {"leaf_cap_minutes": 60, "reason": ""},
+    ])
+    def test_invalid_policy_is_not_silently_ignored(policy):
+        doc = document()
+        doc["estimate_policy"] = policy
+>       with pytest.raises(ValueError, match="estimate_policy"):
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+tests/test_grid_plan_policy.py:63: Failed
+_____________ test_invalid_policy_is_not_silently_ignored[policy1] _____________
+
+policy = {'leaf_cap_minutes': 60, 'reason': ''}
+
+    @pytest.mark.parametrize("policy", [
+        {"leaf_cap_minutes": True, "reason": "owner"},
+        {"leaf_cap_minutes": 60, "reason": ""},
+    ])
+    def test_invalid_policy_is_not_silently_ignored(policy):
+        doc = document()
+        doc["estimate_policy"] = policy
+>       with pytest.raises(ValueError, match="estimate_policy"):
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+tests/test_grid_plan_policy.py:63: Failed
+=========================== short test summary info ============================
+FAILED tests/test_grid_plan_policy.py::test_owner_limit_is_used_by_checks_and_both_pages
+FAILED tests/test_grid_plan_policy.py::test_smaller_plan_limit_is_not_replaced_with_default
+FAILED tests/test_grid_plan_policy.py::test_export_and_refresh_retain_assignment_and_policy
+FAILED tests/test_grid_plan_policy.py::test_invalid_policy_is_not_silently_ignored[policy0]
+FAILED tests/test_grid_plan_policy.py::test_invalid_policy_is_not_silently_ignored[policy1]
+5 failed, 1 passed in 0.25s

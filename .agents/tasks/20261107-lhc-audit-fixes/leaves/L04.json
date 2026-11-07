@@ -11,7 +11,7 @@
   "id": "L04",
   "model": "gpt-6-astra",
   "created_at": "2026-11-07T15:39:03+03:00",
-  "updated_at": "2026-11-07T15:41:10+03:00",
+  "updated_at": "2026-11-07T16:01:32+03:00",
   "progress_events": [
     {
       "at": "2026-11-07T15:39:03+03:00",
@@ -48,6 +48,21 @@
       },
       "session": "unknown",
       "harness": "unknown"
+    },
+    {
+      "at": "2026-11-07T16:01:32+03:00",
+      "note": "Worker run directory is local to server100; preserve registration and use local cleanup.",
+      "changes": {
+        "worker": {
+          "id": "/root/audit_revision",
+          "branch": "lhc/audit-hook-worker-20261107",
+          "worktree": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-hook-worker-20261107",
+          "registered_at": "2026-11-07T15:41:10+03:00",
+          "run_dir": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-hook-worker-20261107/.tmp/audit-hook"
+        }
+      },
+      "session": "unknown",
+      "harness": "unknown"
     }
   ],
   "worker": {
@@ -55,7 +70,6 @@
     "branch": "lhc/audit-hook-worker-20261107",
     "worktree": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-hook-worker-20261107",
     "registered_at": "2026-11-07T15:41:10+03:00",
-    "run_dir": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-hook-worker-20261107/.tmp/audit-hook",
-    "run_host": "roomhacker-server-100"
+    "run_dir": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-hook-worker-20261107/.tmp/audit-hook"
   }
 }

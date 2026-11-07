@@ -1,0 +1,226 @@
+(Linux uses --headless by default. To override, use --headed / --gui. For Xvfb mode instead, use --xvfb. Or you can hide this info by using --headless / --headless2 / --uc.)
+F...........FFFFFFFF..FF.                                                [100%]
+=================================== FAILURES ===================================
+______ test_scoped_cap_survives_restart_and_does_not_change_another_plan _______
+
+tmp_path = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-plan-worker-20261107/.tmp/pytest-3666047-d5eb3acb997986ae/test_scoped_cap_survives_resta0')
+
+    def test_scoped_cap_survives_restart_and_does_not_change_another_plan(tmp_path):
+        path = plan(tmp_path)
+>       pj.update_plan(path, {"estimate_policy": {"leaf_cap_minutes": 60,
+                                                  "reason": "The owner requested leaves up to one hour."}})
+
+tests/test_plan_audit_followup.py:53: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+plan_dir = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-plan-worker-20261107/.tmp/pytest-3666047-d5eb3acb997986ae/test_scoped_cap_survives_resta0/plan')
+fields = {'estimate_policy': {'leaf_cap_minutes': 60, 'reason': 'The owner requested leaves up to one hour.'}}
+revision = None
+
+    def update_plan(plan_dir: Path, fields: Optional[dict] = None, revision: Optional[dict] = None) -> dict:
+        """Set plan-level fields and/or append one revision, validated before writing."""
+    
+        fields = {} if fields is None else fields
+        if not isinstance(fields, dict):
+            raise LeafError("fields: an object of plan fields")
+        unknown = sorted(set(fields) - set(PLAN_FIELDS))
+        if unknown:
+>           raise LeafError(f"unknown plan fields: {', '.join(unknown)}; allowed: {', '.join(sorted(PLAN_FIELDS))}")
+E           lhc_plan_json_audit_test.LeafError: unknown plan fields: estimate_policy; allowed: acceptance_scenario, acceptance_scenarios, budget_usd, business_result, business_results, current_progress, decomposition_check, default_model, external_waits, finished_at, goal, journal, mode, planned_start_at, recon, revisions, slots, started_at, title, updated_at
+
+src/common/tools/lhc_plan_json.py:2021: LeafError
+_________ test_changing_a_large_stage_to_a_task_cannot_bypass_the_cap __________
+
+tmp_path = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-plan-worker-20261107/.tmp/pytest-3666047-d5eb3acb997986ae/test_changing_a_large_stage_to0')
+
+    def test_changing_a_large_stage_to_a_task_cannot_bypass_the_cap(tmp_path):
+        path = plan(tmp_path)
+        pj.update_leaf(path, "M01", {"label": "Stage", "kind": "milestone", "estimate_minutes": 60}, create=True)
+>       with pytest.raises(pj.LeafError):
+E       Failed: DID NOT RAISE <class 'lhc_plan_json_audit_test.LeafError'>
+
+tests/test_plan_audit_followup.py:89: Failed
+----------------------------- Captured stderr call -----------------------------
+LHC: предупреждение: лист M01 длиннее 15 мин; разбей его на листья по ≤15 мин
+______________ test_completed_current_leaf_is_not_reported_as_now ______________
+
+tmp_path = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-plan-worker-20261107/.tmp/pytest-3666047-d5eb3acb997986ae/test_completed_current_leaf_is0')
+
+    def test_completed_current_leaf_is_not_reported_as_now(tmp_path):
+        path = plan(tmp_path)
+        row(path, "L01", status="done", result="The change is verified")
+        summary = "\n".join(pj.plan_summary(path, current=["L01"]))
+        assert "Done:" in summary and "The change is verified" in summary
+>       assert "Now:" not in summary
+E       AssertionError: assert 'Now:' not in 'Done:\n- L0...plan/plan.md'
+E         
+E         'Now:' is contained here:
+E            verified
+E           Now: L01 «L01» — last note: none
+E         ? ++++
+E           Whole plan: /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-plan-worker-20261107/.tmp/pytest-3666047-d5eb3acb997986ae/test_completed_current_leaf_is0/plan/plan.md
+
+tests/test_plan_audit_followup.py:99: AssertionError
+______ test_empty_stage_remains_visible_when_all_created_leaves_are_done _______
+
+tmp_path = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-plan-worker-20261107/.tmp/pytest-3666047-d5eb3acb997986ae/test_empty_stage_remains_visib0')
+
+    def test_empty_stage_remains_visible_when_all_created_leaves_are_done(tmp_path):
+        path = plan(tmp_path)
+        row(path, "M01", kind="milestone")
+        row(path, "L01", parent="M01", status="done")
+        row(path, "M02", kind="milestone", depends_on=["M01"], estimate_minutes=180)
+        state = pj.plan_state(path)
+>       assert "1/2 done" in state and "undecomposed stages: M02" in state
+E       AssertionError: assert ('1/2 done' in 'Plan plan: 1/1 done.')
+
+tests/test_plan_audit_followup.py:108: AssertionError
+_________________ test_ready_state_expands_stage_dependencies __________________
+
+tmp_path = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-plan-worker-20261107/.tmp/pytest-3666047-d5eb3acb997986ae/test_ready_state_expands_stage0')
+
+    def test_ready_state_expands_stage_dependencies(tmp_path):
+        path = plan(tmp_path)
+        row(path, "M01", kind="milestone")
+        row(path, "L01", parent="M01", status="done")
+        row(path, "L02", depends_on=["M01"])
+>       assert "ready to start L02" in pj.plan_state(path)
+E       AssertionError: assert 'ready to start L02' in 'Plan plan: 1/2 done.'
+E        +  where 'Plan plan: 1/2 done.' = <function plan_state at 0x7bfe414256c0>(PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-plan-worker-20261107/.tmp/pytest-3666047-d5eb3acb997986ae/test_ready_state_expands_stage0/plan'))
+E        +    where <function plan_state at 0x7bfe414256c0> = pj.plan_state
+
+tests/test_plan_audit_followup.py:118: AssertionError
+_______________ test_plan_state_counts_beyond_the_display_limit ________________
+
+tmp_path = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-plan-worker-20261107/.tmp/pytest-3666047-d5eb3acb997986ae/test_plan_state_counts_beyond_0')
+
+    def test_plan_state_counts_beyond_the_display_limit(tmp_path):
+        path = plan(tmp_path)
+        for i in range(401):
+            row(path, f"L{i:03}", status="done" if i < 400 else "queued")
+>       assert "400/401 done" in pj.plan_state(path)
+E       AssertionError: assert '400/401 done' in 'Plan plan: 400/400 done.'
+E        +  where 'Plan plan: 400/400 done.' = <function plan_state at 0x7bfe414256c0>(PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-plan-worker-20261107/.tmp/pytest-3666047-d5eb3acb997986ae/test_plan_state_counts_beyond_0/plan'))
+E        +    where <function plan_state at 0x7bfe414256c0> = pj.plan_state
+
+tests/test_plan_audit_followup.py:125: AssertionError
+______ test_plan_intent_and_policy_survive_graph_projection_and_fallback _______
+
+tmp_path = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-plan-worker-20261107/.tmp/pytest-3666047-d5eb3acb997986ae/test_plan_intent_and_policy_su0')
+
+    def test_plan_intent_and_policy_survive_graph_projection_and_fallback(tmp_path):
+        path = plan(tmp_path)
+        policy = {"leaf_cap_minutes": 60, "reason": "Owner's one-hour limit"}
+        evidence = {"checked_by": "lead", "edges_kept": []}
+>       pj.update_plan(path, {"deliverable": "plan", "decomposition": "complete",
+                             "estimate_policy": policy, "decomposition_check": evidence})
+
+tests/test_plan_audit_followup.py:132: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+plan_dir = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-plan-worker-20261107/.tmp/pytest-3666047-d5eb3acb997986ae/test_plan_intent_and_policy_su0/plan')
+fields = {'decomposition': 'complete', 'decomposition_check': {'checked_by': 'lead', 'edges_kept': []}, 'deliverable': 'plan', 'estimate_policy': {'leaf_cap_minutes': 60, 'reason': "Owner's one-hour limit"}}
+revision = None
+
+    def update_plan(plan_dir: Path, fields: Optional[dict] = None, revision: Optional[dict] = None) -> dict:
+        """Set plan-level fields and/or append one revision, validated before writing."""
+    
+        fields = {} if fields is None else fields
+        if not isinstance(fields, dict):
+            raise LeafError("fields: an object of plan fields")
+        unknown = sorted(set(fields) - set(PLAN_FIELDS))
+        if unknown:
+>           raise LeafError(f"unknown plan fields: {', '.join(unknown)}; allowed: {', '.join(sorted(PLAN_FIELDS))}")
+E           lhc_plan_json_audit_test.LeafError: unknown plan fields: decomposition, deliverable, estimate_policy; allowed: acceptance_scenario, acceptance_scenarios, budget_usd, business_result, business_results, current_progress, decomposition_check, default_model, external_waits, finished_at, goal, journal, mode, planned_start_at, recon, revisions, slots, started_at, title, updated_at
+
+src/common/tools/lhc_plan_json.py:2021: LeafError
+_______ test_structural_check_and_complete_handoff_are_different_claims ________
+
+tmp_path = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-plan-worker-20261107/.tmp/pytest-3666047-d5eb3acb997986ae/test_structural_check_and_comp0')
+
+    def test_structural_check_and_complete_handoff_are_different_claims(tmp_path):
+        path = plan(tmp_path, deliverable="plan", decomposition="complete")
+        row(path, "M01", kind="milestone")
+        row(path, "L01", description="", acceptance="")
+        structural = cli("check", path)
+>       assert structural.returncode == 0, structural.stderr
+E       AssertionError: LHC: /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-plan-worker-20261107/.tmp/pytest-3666047-d5eb3acb997986ae/test_structural_check_and_comp0/plan/plan.json: неизвестные поля: decomposition, deliverable; допустимые поля: acceptance_scenario, acceptance_scenarios, budget_usd, business_result, business_results, current_progress, decomposition_check, default_model, external_waits, finished_at, goal, journal, mode, planned_start_at, recon, revisions, slots, started_at, title, updated_at
+E         Plan plan: 0/1 done; ready to start L01.
+E         
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['/usr/bin/python3', '/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-plan-wor... planned_start_at, recon, revisions, slots, started_at, title, updated_at\nPlan plan: 0/1 done; ready to start L01.\n').returncode
+
+tests/test_plan_audit_followup.py:151: AssertionError
+___________ test_progressive_handoff_does_not_claim_a_complete_plan ____________
+
+tmp_path = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-plan-worker-20261107/.tmp/pytest-3666047-d5eb3acb997986ae/test_progressive_handoff_does_0')
+
+    def test_progressive_handoff_does_not_claim_a_complete_plan(tmp_path):
+        path = plan(tmp_path)
+        row(path, "L01")
+        row(path, "M02", kind="milestone", estimate_minutes=180)
+        result = cli("check", path, "--handoff")
+>       assert result.returncode == 0, result.stderr
+E       AssertionError: usage: lhc_plan_json.py [-h]
+E                                 {build-plan,build,check,activate,create-leaf,update-leaf,progress,show,update-plan,worker-register,worker-finish,report}
+E                                 ...
+E         lhc_plan_json.py: error: unrecognized arguments: --handoff
+E         
+E       assert 2 == 0
+E        +  where 2 = CompletedProcess(args=['/usr/bin/python3', '/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-plan-wor...ster,worker-finish,report}\n                        ...\nlhc_plan_json.py: error: unrecognized arguments: --handoff\n').returncode
+
+tests/test_plan_audit_followup.py:167: AssertionError
+_____________ test_mcp_build_exposes_and_forwards_optional_handoff _____________
+
+tmp_path = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-plan-worker-20261107/.tmp/pytest-3666047-d5eb3acb997986ae/test_mcp_build_exposes_and_for0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7bfe40aa6c80>
+
+    def test_mcp_build_exposes_and_forwards_optional_handoff(tmp_path, monkeypatch):
+        path = plan(tmp_path)
+        seen = []
+        def run(argv):
+            seen.append(argv)
+            return {"argv": argv, "returncode": 0, "stdout": "", "stderr": ""}
+        monkeypatch.setattr(mcp, "run_cli", run)
+        definition = next(tool for tool in mcp.TOOLS if tool["name"] == "build_plan")
+>       assert definition["inputSchema"]["properties"]["handoff"]["type"] == "boolean"
+E       KeyError: 'handoff'
+
+tests/test_plan_audit_followup.py:187: KeyError
+_____________ test_missing_activation_session_is_a_short_cli_error _____________
+
+tmp_path = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-plan-worker-20261107/.tmp/pytest-3666047-d5eb3acb997986ae/test_missing_activation_sessio0')
+
+    def test_missing_activation_session_is_a_short_cli_error(tmp_path):
+        path = plan(tmp_path)
+        row(path, "L01")
+        result = cli("activate", path, "L01")
+        assert result.returncode == 1
+>       assert "--session" in result.stderr and "Traceback" not in result.stderr
+E       assert ('--session' in 'Traceback (most recent call last):\n  File "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-plan-wo...id with CODEX_THREAD_ID or --session\')\nValueError: provide the actual session id with CODEX_THREAD_ID or --session\n' and 'Traceback' not in 'Traceback (... --session\n'
+E        +  where 'Traceback (most recent call last):\n  File "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-plan-wo...id with CODEX_THREAD_ID or --session\')\nValueError: provide the actual session id with CODEX_THREAD_ID or --session\n' = CompletedProcess(args=['/usr/bin/python3', '/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-plan-wor...d with CODEX_THREAD_ID or --session\')\nValueError: provide the actual session id with CODEX_THREAD_ID or --session\n').stderr
+E         
+E         'Traceback' is contained here:
+E           Traceback (most recent call last):
+E         ? +++++++++
+E             File "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-plan-worker-20261107/src/common/tools/lhc_plan_json.py", line 2315, in <module>
+E               raise SystemExit(main())
+E             File "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-plan-worker-20261107/src/common/tools/lhc_plan_json.py", line 2239, in main...
+E         
+E         ...Full output truncated (4 lines hidden), use '-vv' to show)
+
+tests/test_plan_audit_followup.py:199: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_plan_audit_followup.py::test_scoped_cap_survives_restart_and_does_not_change_another_plan
+FAILED tests/test_plan_audit_followup.py::test_changing_a_large_stage_to_a_task_cannot_bypass_the_cap
+FAILED tests/test_plan_audit_followup.py::test_completed_current_leaf_is_not_reported_as_now
+FAILED tests/test_plan_audit_followup.py::test_empty_stage_remains_visible_when_all_created_leaves_are_done
+FAILED tests/test_plan_audit_followup.py::test_ready_state_expands_stage_dependencies
+FAILED tests/test_plan_audit_followup.py::test_plan_state_counts_beyond_the_display_limit
+FAILED tests/test_plan_audit_followup.py::test_plan_intent_and_policy_survive_graph_projection_and_fallback
+FAILED tests/test_plan_audit_followup.py::test_structural_check_and_complete_handoff_are_different_claims
+FAILED tests/test_plan_audit_followup.py::test_progressive_handoff_does_not_claim_a_complete_plan
+FAILED tests/test_plan_audit_followup.py::test_mcp_build_exposes_and_forwards_optional_handoff
+FAILED tests/test_plan_audit_followup.py::test_missing_activation_session_is_a_short_cli_error
+11 failed, 14 passed in 1.69s
+

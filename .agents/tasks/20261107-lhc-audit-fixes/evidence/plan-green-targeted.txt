@@ -1,0 +1,5 @@
+(Linux uses --headless by default. To override, use --headed / --gui. For Xvfb mode instead, use --xvfb. Or you can hide this info by using --headless / --headless2 / --uc.)
+........................................................................ [ 50%]
+........................................................................ [100%]
+144 passed in 15.33s
+

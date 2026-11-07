@@ -1,0 +1,6 @@
+.lhc-*.lock
+.lhc-publication/
+plan.graph.json
+plan.html
+plan.md
+plan.print.html
