@@ -140,3 +140,48 @@ def test_the_cli_prints_the_plan_state_and_explains_errors(tmp_path):
     assert bad.returncode == 1 and "revision must be" in bad.stderr and "Plan plan:" in bad.stderr
     shown = subprocess.run(cli + ["show", str(plan)], capture_output=True, text=True, env=env)
     assert "Next: L01 «A»" in shown.stdout
+
+
+def test_explicit_worker_accepts_only_after_merge_and_retries_cleanup_without_reaccepting(tmp_path, monkeypatch):
+    repo = make_repo(tmp_path)
+    tree = tmp_path / "worker-explicit"
+    git(repo, "worktree", "add", "-q", "-b", "lhc/explicit", str(tree))
+    plan = make_plan(tmp_path, [{"id": "L01", "label": "explicit", "status": "queued"}])
+    pj.worker_register(plan, "L01", "worker", "lhc/explicit", str(tree))
+    lead = {"host_id": "test-host", "harness": "codex", "session_id": "lead"}
+    executor = {**lead, "session_id": "worker"}
+    pj.assign_leaf(plan, "L01", {"schema_version": 1, "attempt_id": "attempt",
+        "executor_kind": "subagent", "lead": lead, "executor": executor, "parent": lead, "state": "assigned"})
+    pj.transition_leaf(plan, "L01", "attempt", "dispatching",
+                       receipt={"dispatch": {"request_id": "r", "status": "dispatching"}})
+    pj.transition_leaf(plan, "L01", "attempt", "submitted",
+                       receipt={"dispatch": {"request_id": "r", "status": "accepted", "turn_id": "t"}})
+    pj.transition_leaf(plan, "L01", "attempt", "result_ready",
+                       receipt={"observed_runtime": {"state": "completed", "turn_id": "t", "source": "native"}})
+    (tree / "result.txt").write_text("integrated result\n")
+    git(tree, "add", "result.txt")
+    git(tree, "commit", "-qm", "worker result")
+    original_git = pj._git
+    failed = False
+    def fail_first_cleanup(cwd, *args, **kwargs):
+        nonlocal failed
+        if args[:2] == ("worktree", "remove") and not failed:
+            failed = True
+            leaf = json.loads((plan / "leaves/L01.json").read_text())
+            assert (repo / "result.txt").read_text() == "integrated result\n"
+            assert leaf["assignment"]["state"] == "accepted"
+            raise pj.LeafError("temporary cleanup failure")
+        return original_git(cwd, *args, **kwargs)
+    monkeypatch.setattr(pj, "_git", fail_first_cleanup)
+    with pytest.raises(pj.LeafError, match="temporary cleanup failure"):
+        pj.worker_finish(plan, "L01", str(repo), "result accepted")
+    accepted = json.loads((plan / "leaves/L01.json").read_text())["assignment"]
+    assert accepted["events"][-1]["receipt"]["integration"]["commit"]
+    pj.worker_finish(plan, "L01", str(repo), "result accepted")
+    final = json.loads((plan / "leaves/L01.json").read_text())
+    assert final["assignment"] == accepted
+    assert final["status"] == "done" and final["result"] == "result accepted"
+    assert not tree.exists()
+    assert final["worker"]["removed_at"]
+    pj.worker_finish(plan, "L01", str(repo), "result accepted")
+    assert json.loads((plan / "leaves/L01.json").read_text()) == final

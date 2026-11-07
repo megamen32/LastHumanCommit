@@ -1913,7 +1913,13 @@ def update_leaf(plan_dir: Path, leaf_id: str, fields: dict, *, create=False,
             raise LeafError("конфликт: лист изменён, перечитайте его")
         raw = json.loads(before) if before else {}
         if raw.get("assignment") and fields.get("status") == "done":
-            raise LeafError("accept the explicit assignment through transition_leaf")
+            if raw["assignment"].get("state") != "accepted":
+                raise LeafError("accept the explicit assignment through transition_leaf")
+            if "result" in fields and fields["result"] != raw.get("result"):
+                raise LeafError("accepted result cannot be changed by a metadata refresh")
+        if (raw.get("assignment", {}).get("state") == "accepted" and
+                "result" in fields and fields["result"] != raw.get("result")):
+            raise LeafError("accepted result cannot be changed by a metadata refresh")
         if 'created_at' in fields and fields['created_at'] != raw.get('created_at'):
             raise LeafError('created_at устанавливается автоматически и не меняется')
         if "id" in fields and fields["id"] != leaf_id:
@@ -1937,6 +1943,8 @@ def update_leaf(plan_dir: Path, leaf_id: str, fields: dict, *, create=False,
                     receipt=op.get("receipt"), actor=who)
                 if op["state"] == "accepted":
                     merged["status"] = "done"
+                    if "result" in (op.get("receipt") or {}):
+                        merged["result"] = op["receipt"]["result"].strip()
             else:
                 raise LeafError("unknown assignment operation")
         if assignment_op is None and not create and raw.get("status") == "running" and merged.get("status") == "running":
@@ -1960,6 +1968,10 @@ def update_leaf(plan_dir: Path, leaf_id: str, fields: dict, *, create=False,
         merged["updated_at"] = stamp
         events = list(raw.get("progress_events", []))
         changes = {k: v for k, v in fields.items() if raw.get(k) != v}
+        if assignment_op is not None:
+            for key in ("status", "result"):
+                if raw.get(key) != merged.get(key):
+                    changes[key] = merged.get(key)
         if merged.get("model") and raw.get("model") != merged["model"]:
             changes["model"] = merged["model"]
         events.append({"at": stamp, "note": note or "", "changes": changes,
@@ -2253,7 +2265,16 @@ def worker_finish(plan_dir: Path, leaf_id: str, task_worktree: str, result: str)
     worker = leaf.get("worker")
     if not isinstance(worker, dict):
         raise LeafError(f"leaf {leaf_id} has no registered Worker; close it with update-leaf")
+    assignment = leaf.get("assignment")
+    if assignment:
+        if assignment.get("state") not in {"result_ready", "accepted"}:
+            raise LeafError("Worker result must be result_ready before integration and acceptance")
+        if assignment.get("state") == "accepted" and leaf.get("result") != result.strip():
+            raise LeafError("accepted Worker result differs; reread the accepted result")
     if worker.get("removed_at"):
+        if assignment and assignment.get("state") == "accepted":
+            return {"id": leaf_id, "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+                    "assignment": assignment, "reused": True}
         raise LeafError(f"Worker of {leaf_id} was already merged and removed at {worker['removed_at']}")
     task = Path(task_worktree).expanduser()
     branch = str(worker.get("branch"))
@@ -2263,6 +2284,8 @@ def worker_finish(plan_dir: Path, leaf_id: str, task_worktree: str, result: str)
     exists = _git(task, "rev-parse", "--verify", "--quiet", f"refs/heads/{branch}", check=False).returncode == 0
     if tree.is_dir() and _git(tree, "status", "--porcelain").stdout.strip():
         raise LeafError(f"Worker worktree {tree} has uncommitted changes: commit them on {branch} first")
+    if assignment and assignment.get("state") == "result_ready" and not exists:
+        raise LeafError("Worker branch is missing; cannot verify integration before acceptance")
     if exists and _git(task, "merge-base", "--is-ancestor", branch, "HEAD", check=False).returncode != 0:
         merged = _git(task, "merge", "--no-edit", "--no-ff", branch, check=False)
         if merged.returncode != 0:
@@ -2270,6 +2293,13 @@ def worker_finish(plan_dir: Path, leaf_id: str, task_worktree: str, result: str)
             raise LeafError(f"merging {branch} into {task} conflicts; the merge was aborted and the leaf stays "
                             f"open: resolve it on {branch} and run worker-finish again. "
                             f"{(merged.stdout + merged.stderr).strip()[:400]}")
+    if assignment and assignment.get("state") == "result_ready":
+        # Integration is visible before acceptance; cleanup can safely be retried later.
+        integrated = _git(task, "rev-parse", "HEAD").stdout.strip()
+        transition_leaf(plan_dir, leaf_id, assignment["attempt_id"], "accepted",
+                        receipt={"result": result.strip(),
+                                 "integration": {"branch": branch, "commit": integrated,
+                                                 "task_worktree": str(task.resolve())}})
     if tree.is_dir():
         _git(task, "worktree", "remove", str(tree))
     if exists:

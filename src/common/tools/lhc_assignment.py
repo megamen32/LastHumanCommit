@@ -128,11 +128,20 @@ def transition(current, state, *, attempt_id=None, receipt=None, actor=None, at=
     if state not in STATES or state not in ALLOWED[item["state"]]:
         raise ValueError(f"cannot transition {item['state']} to {state}")
     receipt = deepcopy(receipt or {})
-    if not isinstance(receipt, dict) or set(receipt) - {"dispatch", "wake", "observed_runtime"}:
-        raise ValueError("receipt accepts dispatch, wake, observed_runtime")
+    if not isinstance(receipt, dict) or set(receipt) - {"dispatch", "wake", "observed_runtime", "result", "integration"}:
+        raise ValueError("receipt accepts dispatch, wake, observed_runtime, result, integration")
     stamp = at or now()
     prior_dispatch = item.get("dispatch") or {}
+    if any(key in receipt for key in ("result", "integration")):
+        if state != "accepted":
+            raise ValueError("result and integration are acceptance receipts")
+        if "result" in receipt and (not isinstance(receipt["result"], str) or not receipt["result"].strip()):
+            raise ValueError("acceptance result must be nonempty")
+        if "integration" in receipt and not isinstance(receipt["integration"], dict):
+            raise ValueError("integration receipt must be an object")
     for key, record in receipt.items():
+        if key in {"result", "integration"}:
+            continue
         if not isinstance(record, dict):
             raise ValueError(f"receipt.{key} must be an object")
         for identity in ("executor", "target"):
