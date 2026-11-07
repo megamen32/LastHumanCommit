@@ -1,0 +1,125 @@
+{
+  "label": "C",
+  "id": "C",
+  "status": "queued",
+  "parent": "M",
+  "assignment": {
+    "schema_version": 1,
+    "attempt_id": "inherited-unfinished",
+    "executor_kind": "session",
+    "lead": {
+      "host_id": "test-host",
+      "harness": "codex",
+      "session_id": "lead"
+    },
+    "executor": {
+      "host_id": "test-host",
+      "harness": "codex",
+      "session_id": "worker"
+    },
+    "state": "dispatching",
+    "parent": null,
+    "dispatch": {
+      "request_id": "inherited-unfinished",
+      "status": "dispatching",
+      "observed_at": "2026-11-07T16:32:18+00:00"
+    },
+    "wake": null,
+    "observed_runtime": {
+      "state": "idle",
+      "source": "native_verified",
+      "observed_at": "2026-11-07T16:32:18+00:00"
+    },
+    "events": [
+      {
+        "at": "2026-11-07T16:32:18+00:00",
+        "actor": {
+          "host_id": null,
+          "harness": null,
+          "session_id": null,
+          "source": "unknown"
+        },
+        "from": null,
+        "to": "assigned"
+      },
+      {
+        "at": "2026-11-07T16:32:18+00:00",
+        "actor": {
+          "host_id": null,
+          "harness": null,
+          "session_id": null,
+          "source": "unknown"
+        },
+        "from": "assigned",
+        "to": "assigned",
+        "receipt": {
+          "observed_runtime": {
+            "state": "idle",
+            "source": "native_verified",
+            "observed_at": "2026-11-07T16:32:18+00:00"
+          }
+        }
+      },
+      {
+        "at": "2026-11-07T16:32:18+00:00",
+        "actor": {
+          "host_id": null,
+          "harness": null,
+          "session_id": null,
+          "source": "unknown"
+        },
+        "from": "assigned",
+        "to": "dispatching",
+        "receipt": {
+          "dispatch": {
+            "request_id": "inherited-unfinished",
+            "status": "dispatching"
+          }
+        }
+      }
+    ]
+  },
+  "assignment_history": [],
+  "updated_at": "2026-11-07T19:32:18+03:00",
+  "progress_events": [
+    {
+      "at": "2026-11-07T19:32:18+03:00",
+      "note": "",
+      "changes": {},
+      "actor": {
+        "host_id": null,
+        "harness": null,
+        "session_id": null,
+        "source": "unknown"
+      },
+      "session": "unknown",
+      "harness": "unknown"
+    },
+    {
+      "at": "2026-11-07T19:32:18+03:00",
+      "note": "",
+      "changes": {},
+      "actor": {
+        "host_id": null,
+        "harness": null,
+        "session_id": null,
+        "source": "unknown"
+      },
+      "session": "unknown",
+      "harness": "unknown"
+    },
+    {
+      "at": "2026-11-07T19:32:18+03:00",
+      "note": "",
+      "changes": {},
+      "actor": {
+        "host_id": null,
+        "harness": null,
+        "session_id": null,
+        "source": "unknown"
+      },
+      "session": "unknown",
+      "harness": "unknown"
+    }
+  ]
+}
