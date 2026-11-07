@@ -152,8 +152,9 @@ again:
   honestly why it has not started: it waits for a named leaf, or no executor has
   been dispatched for it yet.
 - «оценка» is the leaf's original estimate. It is never rewritten to fit reality.
-  A leaf is by definition no larger than 15 minutes (PRODUCT-PHILOSOPHY.md §5), so
-  «оценка» never exceeds 15 минут. The separate 20-minute worker checkpoint rule
+  The default limit is 15 minutes (PRODUCT-PHILOSOPHY.md §5). A direct owner
+  correction lives in the plan's `estimate_policy`, shared by all tools.
+  The separate 20-minute worker checkpoint rule
   bounds how long a worker runs before reporting; it is not a leaf estimate and
   never raises one.
 - «факт» and «прошло» are measured active time for that leaf: `lhc_time_guard.py`
@@ -302,10 +303,10 @@ The fields, one by one:
 - `depends_on` — the leaves that have to be finished before this one starts.
   `parallel_with` — the leaves it runs at the same time as.
 - `estimate_minutes` — the original estimate as `{"minimum": 10, "maximum": 15}`;
-  the maximum is normally 15 or less, because a leaf larger than 15 minutes is
-  not one leaf (PRODUCT-PHILOSOPHY.md §5). A leaf that is deliberately larger
-  says why in `estimate_over_limit_reason`, and only that reason lets it
-  through the collector. `{"min": 10, "max": 15}` is accepted as well. The
+  the maximum respects the plan's effective limit, normally 15 minutes.
+  A direct owner change is recorded in plan-level `estimate_policy` with its reason.
+  Legacy `estimate_over_limit_reason` explains historical oversized leaves; it does
+  not authorize a new oversized write. `{"min": 10, "max": 15}` is accepted as well. The
   estimate is never rewritten to fit reality.
 - `actual_minutes` — the measured active time of the leaf, when it was measured.
 - `started_at`, `finished_at` — when the leaf actually ran, as `ЧЧ:ММ` on a

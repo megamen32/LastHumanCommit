@@ -211,8 +211,9 @@ A leaf has `kind`: `task` (default) or `milestone`. A milestone is a stage whose
 never worked on, has no status of its own (it is read from its leaves: blocked, done when all are done, running,
 waiting, queued) and a leaf that depends on it waits for all of them. Its leaves name it in `parent`; one level only.
 The graph counts the leaves, not the stage. A milestone without leaves is shown as one queued leaf, so a plan with an
-uncut stage is not finished. The hook tells once when a leaf is longer than about 15 minutes (split it, or make it a
-stage) and when the next stage has no leaves.
+uncut stage is not finished. The effective leaf limit defaults to 15 minutes; a direct owner correction is recorded
+in plan-level `estimate_policy`. A structural check and handoff readiness are separate: with `decomposition: complete`,
+all active stages need executable leaves before handoff. Progressive plans keep later undecomposed stages visible.
 
 ## Dependencies
 

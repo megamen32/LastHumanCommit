@@ -1,7 +1,7 @@
 {
   "label": "Регрессия и исправление восстановления привязанного плана",
   "kind": "task",
-  "status": "running",
+  "status": "done",
   "estimate_minutes": 15,
   "depends_on": [],
   "description": "Регрессия и исправление восстановления привязанного плана",
@@ -11,7 +11,7 @@
   "id": "L04",
   "model": "gpt-6-astra",
   "created_at": "2026-11-07T15:39:03+03:00",
-  "updated_at": "2026-11-07T16:01:32+03:00",
+  "updated_at": "2026-11-07T16:08:06+03:00",
   "progress_events": [
     {
       "at": "2026-11-07T15:39:03+03:00",
@@ -63,6 +63,24 @@
       },
       "session": "unknown",
       "harness": "unknown"
+    },
+    {
+      "at": "2026-11-07T16:08:06+03:00",
+      "note": "Worker /root/audit_revision: lhc/audit-hook-worker-20261107 merged, worktree, branch and run directory removed",
+      "changes": {
+        "status": "done",
+        "result": "Bound-plan recovery fixes integrated: 10 RED/GREEN regressions and 76 hook/session tests pass. Evidence: hook-validation.txt. Independent packaged consumer acceptance remains in L05/L07.",
+        "worker": {
+          "id": "/root/audit_revision",
+          "branch": "lhc/audit-hook-worker-20261107",
+          "worktree": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-hook-worker-20261107",
+          "registered_at": "2026-11-07T15:41:10+03:00",
+          "run_dir": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-hook-worker-20261107/.tmp/audit-hook",
+          "removed_at": "2026-11-07T16:08:06+03:00"
+        }
+      },
+      "session": "unknown",
+      "harness": "unknown"
     }
   ],
   "worker": {
@@ -70,6 +88,8 @@
     "branch": "lhc/audit-hook-worker-20261107",
     "worktree": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-hook-worker-20261107",
     "registered_at": "2026-11-07T15:41:10+03:00",
-    "run_dir": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-hook-worker-20261107/.tmp/audit-hook"
-  }
+    "run_dir": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-hook-worker-20261107/.tmp/audit-hook",
+    "removed_at": "2026-11-07T16:08:06+03:00"
+  },
+  "result": "Bound-plan recovery fixes integrated: 10 RED/GREEN regressions and 76 hook/session tests pass. Evidence: hook-validation.txt. Independent packaged consumer acceptance remains in L05/L07."
 }

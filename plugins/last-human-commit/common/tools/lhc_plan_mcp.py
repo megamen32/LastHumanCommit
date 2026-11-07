@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Any, Callable, Optional
 
 SERVER_NAME = "LhcPlan"
-SERVER_VERSION = "1.16.0"
+SERVER_VERSION = "1.16.1"
 DEFAULT_PROTOCOL_VERSION = "2024-11-05"
 SUPPORTED_PROTOCOL_VERSIONS = ("2024-11-05", "2025-03-26", "2025-06-18")
 
@@ -475,12 +475,17 @@ def build_plan(arguments: dict[str, Any]) -> dict[str, Any]:
         for key in ("report", "graph"):
             if arguments.get(key):
                 argv += ["--" + key, str(arguments[key])]
+        if arguments.get("handoff"):
+            argv.append("--handoff")
         return _render([run_cli(argv)])
     calls = [run_cli([sys.executable, str(plan_json_cli()), "build", str(plan_dir)])]
     if calls[0]["returncode"] == 0:
         calls.append(run_cli([sys.executable, str(grid_cli()), "render", str(graph),
                               "--out-dir", str(plan_dir)]))
-        calls.append(run_cli([sys.executable, str(plan_json_cli()), "check", str(plan_dir)]))
+        check_args = [sys.executable, str(plan_json_cli()), "check", str(plan_dir)]
+        if arguments.get("handoff"):
+            check_args.append("--handoff")
+        calls.append(run_cli(check_args))
     return _render(calls)
 
 
@@ -674,7 +679,8 @@ for tool in TOOLS:
     if tool["name"] == "update_leaf":
         tool["inputSchema"]["properties"].update(expected_hash={"type": "string"}, note={"type": "string"})
     if tool["name"] == "build_plan":
-        tool["inputSchema"]["properties"].update(report={"type": "string"}, graph={"type": "string"})
+        tool["inputSchema"]["properties"].update(report={"type": "string"}, graph={"type": "string"},
+                                               handoff={"type": "boolean", "description": "Also check handoff readiness for the plan's declared decomposition; default false."})
 
 def _schema(name, properties, required):
     return {"name": name, "description": "Invoke the canonical CLI: " + name,
@@ -729,6 +735,18 @@ TOOLS += [
           ["plan_dir", "leaf_id", "task_worktree", "result"]),
 ]
 for tool in TOOLS:
+    if tool["name"] in {"create_leaf", "update_leaf"}:
+        key = "leaf" if tool["name"] == "create_leaf" else "fields"
+        tool["inputSchema"]["properties"][key]["properties"] = {
+            "kind": {"type": "string", "enum": list(collector_name("LEAF_KINDS", ("task", "milestone", "research")))}}
+    if tool["name"] == "update_plan":
+        tool["inputSchema"]["properties"]["fields"]["properties"] = {
+            "deliverable": {"type": "string", "enum": list(collector_name("DELIVERABLES", ("plan", "implementation")))},
+            "decomposition": {"type": "string", "enum": list(collector_name("DECOMPOSITIONS", ("progressive", "complete")))},
+            "estimate_policy": {"type": "object", "additionalProperties": False,
+                                "properties": {"leaf_cap_minutes": {"type": "integer", "minimum": 1},
+                                               "reason": {"type": "string", "minLength": 1}},
+                                "required": ["leaf_cap_minutes", "reason"]}}
     if tool["name"] == "update_progress":
         tool["description"] = ("Add a progress note to a running leaf. Refused when the leaf is past twice its "
                                "estimate and 45 minutes: then close the proven part and split the rest by object.")

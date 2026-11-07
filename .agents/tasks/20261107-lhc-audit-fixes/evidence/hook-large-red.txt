@@ -1,0 +1,56 @@
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+_______ test_resume_hook_recovers_a_bound_leaf_beyond_400[SessionStart] ________
+
+tmp_path = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/pytest-32447-2b10a44dbcc4e710/test_resume_hook_recovers_a_bo0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7baf77fedf90>
+hook_event = 'SessionStart'
+
+    @pytest.mark.parametrize("hook_event", ["SessionStart", "PostCompact"])
+    def test_resume_hook_recovers_a_bound_leaf_beyond_400(tmp_path: Path, monkeypatch, hook_event: str) -> None:
+        monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
+        repo = git_repo(tmp_path / "repo")
+        leaves = [{"id": f"D{number:03}", "label": "Completed", "status": "done",
+                   "result": "Recorded completion"} for number in range(400)]
+        leaves.append({"id": "L401", "label": "Current object", "status": "running",
+                       "session": "large-plan-session",
+                       "progress_events": [{"note": "CURRENT_LEAF_BEYOND_400"}]})
+        plan = _open_plan(repo, "large-bound-plan", leaves)
+        before = {p: p.read_bytes() for p in plan.rglob("*") if p.is_file()}
+        completed = run_cli(entry, ["--root", str(ROOT), "--event", hook_event, "--instructions-only"],
+                            stdin=json.dumps({"cwd": str(repo), "session_id": "large-plan-session"}))
+        assert completed.returncode == 0, completed.stderr
+        context = _plan_context(completed)
+>       assert "Now: L401" in context and "CURRENT_LEAF_BEYOND_400" in context
+E       AssertionError: assert ('Now: L401' in 'LHC plan intake. Read /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/AGENTS.md. ... human replaces the goal; a plan bound to this session, shown below when there is one, is the current goal until then.')
+
+tests/test_native_instruction_hooks.py:651: AssertionError
+________ test_resume_hook_recovers_a_bound_leaf_beyond_400[PostCompact] ________
+
+tmp_path = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/pytest-32447-2b10a44dbcc4e710/test_resume_hook_recovers_a_bo1')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7baf77fe3c10>
+hook_event = 'PostCompact'
+
+    @pytest.mark.parametrize("hook_event", ["SessionStart", "PostCompact"])
+    def test_resume_hook_recovers_a_bound_leaf_beyond_400(tmp_path: Path, monkeypatch, hook_event: str) -> None:
+        monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
+        repo = git_repo(tmp_path / "repo")
+        leaves = [{"id": f"D{number:03}", "label": "Completed", "status": "done",
+                   "result": "Recorded completion"} for number in range(400)]
+        leaves.append({"id": "L401", "label": "Current object", "status": "running",
+                       "session": "large-plan-session",
+                       "progress_events": [{"note": "CURRENT_LEAF_BEYOND_400"}]})
+        plan = _open_plan(repo, "large-bound-plan", leaves)
+        before = {p: p.read_bytes() for p in plan.rglob("*") if p.is_file()}
+        completed = run_cli(entry, ["--root", str(ROOT), "--event", hook_event, "--instructions-only"],
+                            stdin=json.dumps({"cwd": str(repo), "session_id": "large-plan-session"}))
+        assert completed.returncode == 0, completed.stderr
+        context = _plan_context(completed)
+>       assert "Now: L401" in context and "CURRENT_LEAF_BEYOND_400" in context
+E       AssertionError: assert ('Now: L401' in 'LHC plan intake. Read /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/AGENTS.md. ... human replaces the goal; a plan bound to this session, shown below when there is one, is the current goal until then.')
+
+tests/test_native_instruction_hooks.py:651: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_native_instruction_hooks.py::test_resume_hook_recovers_a_bound_leaf_beyond_400[SessionStart]
+FAILED tests/test_native_instruction_hooks.py::test_resume_hook_recovers_a_bound_leaf_beyond_400[PostCompact]
+2 failed, 43 deselected in 1.06s

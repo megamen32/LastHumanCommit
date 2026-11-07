@@ -12,13 +12,47 @@
         "status": "open",
         "title": "Активация без session ID печатает traceback"
       }
+    },
+    {
+      "action": "resolve",
+      "actor": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "at": "2026-11-07T13:21:33+00:00",
+      "changes": {
+        "resolution": {
+          "evidence": {
+            "proof_path": "evidence/full-validation.txt",
+            "red_proof_path": "evidence/plan-red.txt",
+            "red_result": "11 failed, 14 passed in 1.69s",
+            "red_sha256": "7252575cacdd4e2b4874e221d729f35b4d28aceac95dec0cf9057017db440cc2",
+            "result": "915 passed, 6 skipped in 99.37s (0:01:39)",
+            "sha256": "240a5ca2e9560846968684b708f2db8b09ac1f8498c54cf8621a64d1f024e9dc",
+            "test_command": "python3 tests/validate.py"
+          },
+          "kind": "fixed",
+          "reason": "Expected activation failures return an actionable message without a traceback."
+        },
+        "status": "fixed"
+      }
     }
   ],
   "id": "B05",
   "owner": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
   "reporter": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+  "resolution": {
+    "evidence": {
+      "proof_path": "evidence/full-validation.txt",
+      "red_proof_path": "evidence/plan-red.txt",
+      "red_result": "11 failed, 14 passed in 1.69s",
+      "red_sha256": "7252575cacdd4e2b4874e221d729f35b4d28aceac95dec0cf9057017db440cc2",
+      "result": "915 passed, 6 skipped in 99.37s (0:01:39)",
+      "sha256": "240a5ca2e9560846968684b708f2db8b09ac1f8498c54cf8621a64d1f024e9dc",
+      "test_command": "python3 tests/validate.py"
+    },
+    "kind": "fixed",
+    "reason": "Expected activation failures return an actionable message without a traceback."
+  },
   "source": "Аудит пользовательского журнала и source1.16.0",
-  "status": "open",
+  "status": "fixed",
   "title": "Активация без session ID печатает traceback",
-  "updated_at": "2026-11-07T12:41:11+00:00"
+  "updated_at": "2026-11-07T13:21:33+00:00"
 }

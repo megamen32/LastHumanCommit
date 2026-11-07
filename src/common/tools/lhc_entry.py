@@ -67,7 +67,7 @@ def _plan_entry(event, root):
             continue
         if plan in seen or not (plan / "plan.json").is_file():
             continue
-        leaves = [mirror.read(f, {}) for f in sorted((plan / "leaves").glob("*.json"))[:400]]
+        leaves = [mirror.read(f, {}) for f in sorted((plan / "leaves").glob("*.json"))]
         todo = [leaf for leaf in leaves if leaf.get("status") in {"queued", "running"}]
         mine = [leaf for leaf in todo if leaf.get("session") == session]
         if todo and (mine or not from_index):  # a stale index entry is not a candidate
@@ -226,9 +226,8 @@ def plan_resume_context(event, root):
 
 def _plan_leaf_cap(metadata):
     """Use the saved plan's scoped estimate policy, with the format default."""
-    policy = metadata.get("estimate_policy") if isinstance(metadata, dict) else None
-    cap = policy.get("leaf_cap_minutes") if isinstance(policy, dict) else None
-    return cap if type(cap) is int and cap > 0 else 15
+    import lhc_plan_json
+    return lhc_plan_json.leaf_estimate_cap(metadata)
 
 
 def _split_leaves(leaves):

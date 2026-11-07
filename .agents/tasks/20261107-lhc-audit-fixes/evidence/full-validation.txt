@@ -1,0 +1,41 @@
+$ python3 scripts/sync_version.py --check
+
+EXIT 0
+$ python3 scripts/publish_package.py --check
+проекции совпадают с каноном
+
+EXIT 0
+$ python3 plugins/last-human-commit/scripts/sync_skills.py --check
+parity: PASS (23 skills)
+
+EXIT 0
+$ python3 tests/validate.py
+warning: AGENTS.md has 295 lines; the soft limit is 250 - trim before adding more
+parity: PASS (23 skills)
+plugin validation: PASS skills=23 canonical=PASS (23) parity=PASS (23 skills)
+........................................................................ [  7%]
+........................................................................ [ 15%]
+........................................................................ [ 23%]
+........................................................................ [ 31%]
+........................................................................ [ 39%]
+........................................................................ [ 46%]
+........................................................................ [ 54%]
+................................................................ss...... [ 62%]
+......................s................................................. [ 70%]
+..............................................s......................... [ 78%]
+..s.................s................................................... [ 85%]
+........................................................................ [ 93%]
+.........................................................                [100%]
+915 passed, 6 skipped in 99.37s (0:01:39)
+valid block: /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/lhc-block-test.4ATnFL/project-agents
+applied block: /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/lhc-block-test.4ATnFL/project-agents
+applied block: /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/lhc-block-test.4ATnFL/project-agents
+initialized block: /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/lhc-block-test.4ATnFL/project-claude
+applied block: /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/lhc-block-test.4ATnFL/paths with spaces/project agents
+removed block: /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/lhc-block-test.4ATnFL/removable
+PASS: block adapter preserves project-owned instructions
+PASS: current LHC package, automatic entry, optional adapters and complete behavioral suite
+
+EXIT 0
+
+FINAL_EXIT 0

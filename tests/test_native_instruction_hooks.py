@@ -631,3 +631,22 @@ def test_plan_audit_respects_the_bound_plan_estimate_policy(
     if cap == 60:
         assert "15 minutes" not in context and "15 minute" not in context
     assert {p: p.read_bytes() for p in plan.rglob("*") if p.is_file()} == before
+
+
+@pytest.mark.parametrize("hook_event", ["SessionStart", "PostCompact"])
+def test_resume_hook_recovers_a_bound_leaf_beyond_400(tmp_path: Path, monkeypatch, hook_event: str) -> None:
+    monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
+    repo = git_repo(tmp_path / "repo")
+    leaves = [{"id": f"D{number:03}", "label": "Completed", "status": "done",
+               "result": "Recorded completion"} for number in range(400)]
+    leaves.append({"id": "L401", "label": "Current object", "status": "running",
+                   "session": "large-plan-session",
+                   "progress_events": [{"note": "CURRENT_LEAF_BEYOND_400"}]})
+    plan = _open_plan(repo, "large-bound-plan", leaves)
+    before = {p: p.read_bytes() for p in plan.rglob("*") if p.is_file()}
+    completed = run_cli(entry, ["--root", str(ROOT), "--event", hook_event, "--instructions-only"],
+                        stdin=json.dumps({"cwd": str(repo), "session_id": "large-plan-session"}))
+    assert completed.returncode == 0, completed.stderr
+    context = _plan_context(completed)
+    assert "Now: L401" in context and "CURRENT_LEAF_BEYOND_400" in context
+    assert {p: p.read_bytes() for p in plan.rglob("*") if p.is_file()} == before

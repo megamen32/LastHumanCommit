@@ -1,3 +1,12 @@
+## 1.16.1
+
+- A direct owner change to the leaf duration limit is recorded as plan-level `estimate_policy`. The same saved limit is used by CLI/MCP writes, checks, activation warnings, recovery hooks and graph/print views. The default stays 15 minutes; changing a large milestone into a task no longer bypasses the limit.
+- Plans retain `deliverable` and `decomposition`. Explicit `check --handoff` / MCP `build_plan(handoff=true)` distinguish structural validity from complete handoff readiness. Complete scope requires executable leaves for every active stage; progressive scope remains explicitly partial.
+- A completed leaf is not displayed as current work. State counters include undecomposed stages and respect milestone dependencies. Neither summaries nor session recovery silently discard leaves after the first 400.
+- SessionStart and PostCompact restore the bound plan's current goal, progress, latest revision, policy and running-leaf note. A long queue or Done history cannot replace the current work. Distinct bound plans retain their identities, and the latest direct human request and STOP retain precedence.
+- Expected activation errors, including a missing actual session ID, give a readable correction without a traceback. Programming errors remain visible.
+- Regression evidence records failing baseline runs and passing fixes; package parity and real stdio MCP/hook consumers are part of release acceptance.
+
 ## 1.16.0
 
 - The plan page's Gantt is drawn on real time and grouped by stage. A stage (milestone) row shows its leaves done, its plan and its real time, and is closed by default; a click opens its leaves. «Всегда разворачивать» / «Всегда сворачивать» is remembered in localStorage (lhc-gantt-expand). Each leaf that ran sits where it ran: a hollow bar is its plan from its real start, the solid bar is how long it really took, and the part past the plan is red. Leaves not started yet are dashed, after «сейчас», in schedule order. Before this the rows were dependency waves on a planned axis, so a queued first leaf sat before finished ones and overrun was drawn nowhere.

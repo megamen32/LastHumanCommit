@@ -431,6 +431,10 @@ class Graph:
     recon: list[str] = field(default_factory=list)
     current_progress: str = ""
     revisions: list = field(default_factory=list)
+    estimate_policy: Optional[dict[str, Any]] = None
+    deliverable: str = ""
+    decomposition: str = ""
+    decomposition_check: dict[str, Any] = field(default_factory=dict)
     milestones: list = field(default_factory=list)
     external_waits: str = ""
     leaves: list[Leaf] = field(default_factory=list)
@@ -456,6 +460,11 @@ class Graph:
     live_log: list[dict[str, Any]] = field(default_factory=list)
     journal: list[dict[str, Any]] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
+
+    @property
+    def leaf_cap_minutes(self) -> int:
+        metadata = {} if self.estimate_policy is None else {"estimate_policy": self.estimate_policy}
+        return _plan_policy_cap(metadata)
 
     def by_id(self) -> dict[str, Leaf]:
         return {leaf.id: leaf for leaf in self.leaves}
@@ -1197,6 +1206,20 @@ def history_window(task: dict) -> tuple[str, str, str]:
     return start, finish, paused
 
 
+def _plan_policy_cap(metadata: dict[str, Any]) -> int:
+    """Use the canonical policy validator when a graph declares a policy."""
+    if "estimate_policy" not in metadata:
+        return LEAF_ESTIMATE_CAP_MINUTES
+    try:
+        from lhc_plan_json import leaf_estimate_cap
+    except ModuleNotFoundError:
+        module = _load_sibling("lhc_plan_json")
+        if module is None:
+            raise ValueError("estimate_policy requires the canonical plan tool")
+        leaf_estimate_cap = module.leaf_estimate_cap
+    return leaf_estimate_cap(metadata)
+
+
 def parse_graph_json(document: Any) -> Graph:
     if not isinstance(document, dict):
         raise ValueError("graph must be a JSON object")
@@ -1219,6 +1242,12 @@ def parse_graph_json(document: Any) -> Graph:
     recon = document.get("recon") or []
     graph.recon = [str(i).strip() for i in recon if str(i).strip()] if isinstance(recon, list) else []
     graph.current_progress = str(document.get("current_progress") or "")
+    if "estimate_policy" in document:
+        _plan_policy_cap(document)
+        graph.estimate_policy = document["estimate_policy"]
+    graph.deliverable = str(document.get("deliverable") or "")
+    graph.decomposition = str(document.get("decomposition") or "")
+    graph.decomposition_check = dict(document.get("decomposition_check") or {})
     graph.revisions = [r for r in (document.get("revisions") or []) if isinstance(r, dict)]
     graph.milestones = [m for m in (document.get("milestones") or []) if isinstance(m, dict)]
     graph.external_waits = str(document.get("external_waits") or "")
@@ -4102,7 +4131,7 @@ def render_html(
         )
         cap_html = (
             "<div class='hint' id='lhc-estimate-cap'><b>Превышен предел оценки листа "
-            f"({LEAF_ESTIMATE_CAP_MINUTES} мин)</b>: {len(cap_breaches)} листьев. "
+            f"({graph.leaf_cap_minutes} мин)</b>: {len(cap_breaches)} листьев. "
             "Лист длиннее предела — это два листа. "
             "<ul>" + items + "</ul></div>"
         )
@@ -5189,9 +5218,9 @@ def render_print_html(graph: Graph, metrics: dict[str, Any]) -> str:
         estimate = leaf.duration_label
         if (
             leaf.estimate_max is not None
-            and leaf.estimate_max > LEAF_ESTIMATE_CAP_MINUTES
+            and leaf.estimate_max > graph.leaf_cap_minutes
         ):
-            estimate += f" — выше предела {LEAF_ESTIMATE_CAP_MINUTES} мин"
+            estimate += f"; выше предела {graph.leaf_cap_minutes} мин"
             estimate += (
                 f": {leaf.estimate_over_limit_reason}"
                 if leaf.estimate_over_limit_reason
@@ -5672,6 +5701,12 @@ def export_graph(graph: Graph) -> dict[str, Any]:
         "updated_at": graph.updated_at,
         "tasks": tasks,
     }
+    if graph.estimate_policy is not None:
+        document["estimate_policy"] = dict(graph.estimate_policy)
+    for name in ("deliverable", "decomposition", "decomposition_check"):
+        value = getattr(graph, name)
+        if value:
+            document[name] = value
     if graph.budget_usd is not None:
         document["budget_usd"] = graph.budget_usd
     if graph.plan_origin:
@@ -6332,7 +6367,7 @@ def merge_attribution(
             )
             if missing and source.get(field) is not None:
                 task[field] = source[field]
-    for field in ("current_progress", "revisions", "milestones", "external_waits", "acceptance_scenarios", "recon", "started_at", "finished_at", "updated_at", "plan_origin"):
+    for field in ("current_progress", "revisions", "estimate_policy", "deliverable", "decomposition", "decomposition_check", "milestones", "external_waits", "acceptance_scenarios", "recon", "started_at", "finished_at", "updated_at", "plan_origin"):
         if not document.get(field) and previous.get(field):
             document[field] = previous[field]
     # The title of the plan is the first line of the report. A title that was
@@ -6372,7 +6407,7 @@ def estimate_cap_findings(graph: Graph) -> list[dict[str, Any]]:
     a breach: the reason is the signpost, and only the reason lets it through.
     """
 
-    cap = LEAF_ESTIMATE_CAP_MINUTES
+    cap = graph.leaf_cap_minutes
     findings: list[dict[str, Any]] = []
     for leaf in graph.leaves:
         high = leaf.estimate_max
@@ -6398,7 +6433,7 @@ def estimate_cap_warnings(graph: Graph) -> list[str]:
     if not breaches:
         return []
     notes = [
-        f"ПРЕВЫШЕН ПРЕДЕЛ ОЦЕНКИ ЛИСТА ({LEAF_ESTIMATE_CAP_MINUTES} мин) — "
+        f"ПРЕВЫШЕН ПРЕДЕЛ ОЦЕНКИ ЛИСТА ({graph.leaf_cap_minutes} мин): "
         "длинную работу надо разбить на два листа, либо записать в листе "
         "estimate_over_limit_reason, почему он сознательно больше:"
     ]

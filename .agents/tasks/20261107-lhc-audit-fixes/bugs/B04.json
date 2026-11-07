@@ -12,13 +12,47 @@
         "status": "open",
         "title": "Восстановление после компакции требует ручного шага"
       }
+    },
+    {
+      "action": "resolve",
+      "actor": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "at": "2026-11-07T13:21:33+00:00",
+      "changes": {
+        "resolution": {
+          "evidence": {
+            "proof_path": "evidence/full-validation.txt",
+            "red_proof_path": "evidence/hook-red.txt",
+            "red_result": "8 failed, 33 deselected in 1.23s",
+            "red_sha256": "974a720ec6433577ad8d6d0a1884fb1f4fdeba61a14555719abebf6c4cdfbd04",
+            "result": "915 passed, 6 skipped in 99.37s (0:01:39)",
+            "sha256": "240a5ca2e9560846968684b708f2db8b09ac1f8498c54cf8621a64d1f024e9dc",
+            "test_command": "python3 tests/validate.py"
+          },
+          "kind": "fixed",
+          "reason": "Bound recovery preserves latest goal, progress, revision, policy and running note without treating a queue as the current goal."
+        },
+        "status": "fixed"
+      }
     }
   ],
   "id": "B04",
   "owner": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
   "reporter": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+  "resolution": {
+    "evidence": {
+      "proof_path": "evidence/full-validation.txt",
+      "red_proof_path": "evidence/hook-red.txt",
+      "red_result": "8 failed, 33 deselected in 1.23s",
+      "red_sha256": "974a720ec6433577ad8d6d0a1884fb1f4fdeba61a14555719abebf6c4cdfbd04",
+      "result": "915 passed, 6 skipped in 99.37s (0:01:39)",
+      "sha256": "240a5ca2e9560846968684b708f2db8b09ac1f8498c54cf8621a64d1f024e9dc",
+      "test_command": "python3 tests/validate.py"
+    },
+    "kind": "fixed",
+    "reason": "Bound recovery preserves latest goal, progress, revision, policy and running note without treating a queue as the current goal."
+  },
   "source": "Аудит пользовательского журнала и source1.16.0",
-  "status": "open",
+  "status": "fixed",
   "title": "Восстановление после компакции требует ручного шага",
-  "updated_at": "2026-11-07T12:41:11+00:00"
+  "updated_at": "2026-11-07T13:21:33+00:00"
 }

@@ -42,6 +42,10 @@ MAX_BYTES = 8 * 1024 * 1024
 # limit of the snapshot itself, unpacked.
 MAX_SNAPSHOT_BYTES = 16 * MAX_BYTES
 
+class ActivationError(ValueError):
+    """An expected activation input or state failure, safe to show without a traceback."""
+
+
 class SourceAbsent(ValueError):
     """The registered source is gone or empty: a warning, not a failed mirror."""
 
@@ -397,26 +401,29 @@ def activate(plan, leaf_id, *, config_path=None, session=None, harness=None,
     """Bind one explicitly selected leaf to this local session and observer."""
     plan = Path(plan).expanduser().resolve()
     if not plan.is_dir() or not (plan / 'plan.json').is_file() or not (plan / 'leaves').is_dir():
-        raise ValueError('activate requires one selected plan directory with plan.json and leaves/')
+        raise ActivationError('activate requires one selected plan directory with plan.json and leaves/')
     session = session or os.environ.get('CODEX_THREAD_ID', '')
     if not re.fullmatch(r'[A-Za-z0-9._:-]{1,200}', session or ''):
-        raise ValueError('provide the actual session id with CODEX_THREAD_ID or --session')
+        raise ActivationError('provide the actual session id with CODEX_THREAD_ID or --session')
     harness = harness or ('codex' if os.environ.get('CODEX_THREAD_ID') else '')
     if not re.fullmatch(r'[A-Za-z0-9._-]{1,40}', harness or ''):
-        raise ValueError('provide the actual harness with --harness')
+        raise ActivationError('provide the actual harness with --harness')
     owner = owner or os.environ.get('USER') or os.environ.get('USERNAME') or ''
     if not owner.strip():
-        raise ValueError('provide the actual owner with --owner')
+        raise ActivationError('provide the actual owner with --owner')
     root = worktree_root(plan)
     if root is None:
-        raise ValueError('selected plan is not inside a Git worktree; refusing to guess its workspace')
+        raise ActivationError('selected plan is not inside a Git worktree; refusing to guess its workspace')
     leaf_path = plan / 'leaves' / (leaf_id + '.json')
     leaf = read(leaf_path)
     if not isinstance(leaf, dict) or leaf.get('id') != leaf_id:
-        raise ValueError('selected leaf does not exist in this plan')
+        raise ActivationError('selected leaf does not exist in this plan')
     if leaf.get('status') in {'done', 'deferred', 'blocked', 'waiting'}:
-        raise ValueError('selected leaf is not ready to start; resolve its recorded state first')
-    leaves.check_activation(plan, leaf)
+        raise ActivationError('selected leaf is not ready to start; resolve its recorded state first')
+    try:
+        leaves.check_activation(plan, leaf)
+    except leaves.LeafError as error:
+        raise ActivationError(str(error)) from None
 
     config_path = Path(config_path or os.environ.get('LHC_PLAN_MIRROR_CONFIG', CONFIG)).expanduser().resolve()
     # The local plan lifecycle must remain usable when mirror configuration is
@@ -436,10 +443,13 @@ def activate(plan, leaf_id, *, config_path=None, session=None, harness=None,
             activations[leaf_id] = active
             saved['activations'] = activations
             pub.atomic(sidecar, saved)
-    leaves.update_leaf(plan, leaf_id,
-                       {'status': 'running', 'session': session, 'harness': harness,
-                        'owner': owner.strip()},
-                       note=note or 'Начал работу в текущей сессии')
+    try:
+        leaves.update_leaf(plan, leaf_id,
+                           {'status': 'running', 'session': session, 'harness': harness,
+                            'owner': owner.strip()},
+                           note=note or 'Начал работу в текущей сессии')
+    except leaves.LeafError as error:
+        raise ActivationError(str(error)) from None
     leaves.record_session_plan(session, plan, leaf_id)
     if link:
         capture(plan)

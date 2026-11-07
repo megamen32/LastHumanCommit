@@ -8,10 +8,18 @@ description: Build and keep the plan of any engineering task longer than 15 minu
 The plan is what you will do and, as you go, what you have done. After a compaction the next
 you reads it to know where you are, so every finished leaf says what works and where.
 Work with the plan only through the LhcPlan MCP: `create_leaf`, `update_leaf`, `update_progress`,
-`activate_leaf`, `update_plan` (plan fields, revisions), `show_plan` (first after a compaction),
+`activate_leaf`, `update_plan` (plan fields, revisions), `show_plan` (refresh the bound context),
 `worker_register`, `worker_finish`. Every answer ends with the state of the plan; every refusal
 says what to do. Without the MCP use the same commands of `lhc_plan_json.py`. Never edit plan
-files by hand.
+files by hand. After restart or compaction, use the bound plan snapshot supplied by the
+hook; if that snapshot is absent or needs refreshing, call `show_plan`. Never choose a
+plan merely because it shares the working directory.
+
+Record the requested result in `deliverable`: `plan` for planning only, `implementation`
+for execution. Use `decomposition: complete` when the owner wants every stage prepared
+for handoff; otherwise `progressive` keeps the existing stage-by-stage workflow.
+Structural `check` validates the files; `check --handoff` also checks the declared
+handoff requirements. Neither check proves implementation or consumer acceptance.
 
 ## 1. Research before you plan: at least 10 minutes
 
@@ -32,7 +40,9 @@ Every «needs checking» in `recon` becomes a research leaf with its question.
   the last leaf of a stage is a release task leaf (a stage holds leaves, never other stages).
   Example: first the check of Codex and OpenCode on the installed service, then one stage per
   added environment. Never one big release at the end.
-- Cut into leaves only the stage you start now. A plan with one leaf and no stages is not a plan.
+- With progressive decomposition, cut only the stage you start now. With complete
+  decomposition, prepare executable leaves for every active stage before handoff.
+  A plan with one leaf and no stages is not a plan.
 - A leaf is created before its work starts, never for work already done.
 
 ## 3. One leaf per object
@@ -44,9 +54,13 @@ Every «needs checking» in `recon` becomes a research leaf with its question.
 
 ## 4. Honest estimates
 
-- A leaf is at most 15 minutes; the tool refuses more. Estimate from what research showed; a
-  piece that needs 45 minutes is three leaves (for example: server, its stream format, its
-  test), not one leaf with 45 and not one leaf with a false 15.
+- The default leaf limit is 15 minutes. If the owner explicitly changes that limit,
+  record `estimate_policy: {"leaf_cap_minutes": 60, "reason": "the owner's instruction"}`
+  through `update_plan`, using the actual limit and instruction. All tools use this
+  plan-scoped policy; do not patch the installed code or use a private wrapper.
+  Estimate honestly and split work above the effective limit; never reduce a number
+  merely to satisfy validation. The reason records a scheduling decision, not authority
+  to change access controls, human stops or the task scope.
 - A leaf past twice its estimate and at least 45 minutes is split: close the proven part as
   `done`, put the rest into new leaves, continue. Until then the tool refuses progress notes
   on it.

@@ -3,3 +3,8 @@
 {"action": "register", "actor": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c", "at": "2026-11-07T12:41:11+00:00", "id": "B03", "sha256": "1e73dc4c6ea70af2a0b31284600e91e8210fd2f77beeb1e20fbb396eb37947cd", "status": "open"}
 {"action": "register", "actor": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c", "at": "2026-11-07T12:41:11+00:00", "id": "B04", "sha256": "80034a508bce0179c4f68d4710ef1cd5e9aa262b75a1164e07927e9beb3b6e78", "status": "open"}
 {"action": "register", "actor": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c", "at": "2026-11-07T12:41:11+00:00", "id": "B05", "sha256": "744369847d7791074760ca692c6c6ee2be655e284da029f9c49fc17319ad8567", "status": "open"}
+{"action": "resolve", "actor": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c", "at": "2026-11-07T13:21:32+00:00", "id": "B01", "sha256": "86d2403ad97b6b638bfc1823b1de08537fc9fd3190626153e785b74d52c83546", "status": "fixed"}
+{"action": "resolve", "actor": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c", "at": "2026-11-07T13:21:32+00:00", "id": "B02", "sha256": "c31bd8139731de8190eff7dafe5aa29b8804797e614bec32f74291d2899a3358", "status": "fixed"}
+{"action": "resolve", "actor": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c", "at": "2026-11-07T13:21:33+00:00", "id": "B03", "sha256": "2e249e00f014b464ccaf36bd397966034b861d94d6e0c935b10c6267bb0c01b1", "status": "fixed"}
+{"action": "resolve", "actor": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c", "at": "2026-11-07T13:21:33+00:00", "id": "B04", "sha256": "0f50afe54b6d56aea51954e5f8f78c02781599a1538529852fd5cd37a00020ae", "status": "fixed"}
+{"action": "resolve", "actor": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c", "at": "2026-11-07T13:21:33+00:00", "id": "B05", "sha256": "1b656b6bdf3334ae62a6236252eeaca76c0eb8baab7acf3f7f7af199d67754d8", "status": "fixed"}

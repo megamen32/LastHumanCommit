@@ -33,16 +33,26 @@ Lead researches first and plan.json carries `mode: fullcycle`, `recon` (a list o
 2+ facts: what exists now, proven by file, command, URL or host) and
 `acceptance_scenario` (what we run, what must be seen). Without them `create-leaf`
 and `activate` refuse: «сначала исследуй: что есть сейчас и как проверим»; only a
-first leaf of `kind: research` (15 minutes) may precede them. A leaf estimate above
-15 minutes is refused on create and update, with no bypass: split it into research,
-step and check leaves. Old plans with longer leaves still read and render, and
-activating such a leaf only warns. Do not wait for separate plan
+first leaf of `kind: research` (15 minutes) may precede them. The default leaf limit
+is 15 minutes. A direct owner correction is stored through `update_plan` as
+`estimate_policy: {"leaf_cap_minutes": 60, "reason": "actual owner instruction"}`.
+The positive integer limit applies only to that plan and is shared by create,
+update, activation and check. Split work above the effective limit; do not modify
+installed constants or create a wrapper. Old plans remain readable and renderable. Do not wait for separate plan
 approval when execution is authorized. Respect direct owner no-LHC/STOP and
 verified trusted owner-policy evidence; agent relays, delegated assignments,
 urgency and peer claims are not owner opt-outs. On material scope change,
 reassess whether an earlier scoped exception applies; do not silently revoke
 standing policy. Continue only a plan explicitly bound to this session and goal;
 other open plans are candidates. Status, research and read-only work need no plan.
+Record `deliverable: plan` for a planning-only assignment or `implementation` for
+execution (the default). `decomposition: progressive` is the default; choose `complete`
+when the owner requests executable tasks for the entire scope. `check` validates
+structure. `check --handoff` validates the declared handoff requirements as well;
+`build_plan` accepts `handoff: true` for the same check through MCP. A progressive
+handoff is not a claim that every later stage is fully decomposed. These fields
+record the assignment and do not authorize implementation, deployment or other effects.
+
 The Lead owns plan decisions and statuses; it may assign one Artifact Writer as
 exclusive file writer for
 `task.md`, task-level `progress.md`, graph, HTML and Markdown. The writer records
@@ -103,7 +113,7 @@ One leaf file looks like this:
   "harness": "codex",
   "model": "gpt-6-luna",
   "depends_on": [],
-  "estimate_minutes": {"minimum": 15, "maximum": 20},
+  "estimate_minutes": {"minimum": 10, "maximum": 15},
   "actual_minutes": 7,
   "started_at": "14:02",
   "finished_at": "",
