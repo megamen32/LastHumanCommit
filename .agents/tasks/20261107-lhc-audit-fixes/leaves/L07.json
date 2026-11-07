@@ -1,7 +1,7 @@
 {
   "label": "Установленный пакет: реальная проверка MCP и hooks",
   "kind": "task",
-  "status": "running",
+  "status": "done",
   "estimate_minutes": 15,
   "depends_on": [
     "L06"
@@ -13,7 +13,7 @@
   "id": "L07",
   "model": "gpt-6-astra",
   "created_at": "2026-11-07T15:39:04+03:00",
-  "updated_at": "2026-11-07T16:23:03+03:00",
+  "updated_at": "2026-11-07T16:31:26+03:00",
   "progress_events": [
     {
       "at": "2026-11-07T15:39:04+03:00",
@@ -43,6 +43,17 @@
       },
       "session": "unknown",
       "harness": "unknown"
+    },
+    {
+      "at": "2026-11-07T16:31:26+03:00",
+      "note": "",
+      "changes": {
+        "status": "done",
+        "result": "Independent copied native1.16.1 package:94 checks,26 MCP processes,25 tools/call; real SessionStart/PostCompact; all190 package files match. evidence/consumer/acceptance.json."
+      },
+      "session": "unknown",
+      "harness": "unknown"
     }
-  ]
+  ],
+  "result": "Independent copied native1.16.1 package:94 checks,26 MCP processes,25 tools/call; real SessionStart/PostCompact; all190 package files match. evidence/consumer/acceptance.json."
 }

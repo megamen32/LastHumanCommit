@@ -1,0 +1,12 @@
+Independent native package consumer acceptance: PASS
+Version: 1.16.1
+Copied package: /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/audit-consumer/runs/20261107T132704Z-05b5f518/package
+Source/copy file parity: True
+Checks: 94 passed, 0 failed
+MCP processes: 26
+Policy60 is persisted across processes and enforced by create/update/build/check, graph and UI.
+Done L01 is absent from Now; complete empty milestone handoff is refused, progressive status remains explicit.
+Actual SessionStart/PostCompact commands restore explicit binding across cwd, with active leaves after400.
+Fresh goal/progress/revision/policy survive compaction; hook source files remain unchanged.
+Missing-session activation reports readable CLI/MCP errors.
+No live install, trust changes, model sessions or public test-plan publication.

@@ -1,0 +1,81 @@
+{
+  "ok": true,
+  "version": "1.16.1",
+  "source": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/plugins/last-human-commit/native/codex",
+  "package": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/audit-consumer/runs/20261107T132704Z-05b5f518/package",
+  "file_count": 190,
+  "file_tree_sha256": "39cac5e4dc090f6af169cb12fcdecbdde0d6195595eac30eb8d5d16aa9746376",
+  "source_copy_parity": true,
+  "passed": 94,
+  "failed": 0,
+  "mcp_processes": 26,
+  "tool_calls": [
+    "update_plan",
+    "create_leaf",
+    "create_leaf",
+    "create_leaf",
+    "update_leaf",
+    "update_leaf",
+    "build_plan",
+    "update_leaf",
+    "create_leaf",
+    "show_plan",
+    "create_leaf",
+    "build_plan",
+    "update_plan",
+    "build_plan",
+    "update_plan",
+    "create_leaf",
+    "create_leaf",
+    "create_leaf",
+    "activate_leaf",
+    "activate_leaf",
+    "update_plan",
+    "create_leaf",
+    "create_leaf",
+    "update_plan",
+    "activate_leaf"
+  ],
+  "contexts": [
+    {
+      "file": "0055-SessionStart-context.txt",
+      "chars": 2023,
+      "old_goal": true,
+      "fresh_goal": false,
+      "fresh_progress": false,
+      "fresh_revision": false,
+      "fresh_policy_reason": false,
+      "decoy_goal": false
+    },
+    {
+      "file": "0059-PostCompact-context.txt",
+      "chars": 2088,
+      "old_goal": false,
+      "fresh_goal": true,
+      "fresh_progress": true,
+      "fresh_revision": true,
+      "fresh_policy_reason": true,
+      "decoy_goal": false
+    },
+    {
+      "file": "0061-PostCompact-context.txt",
+      "chars": 798,
+      "old_goal": false,
+      "fresh_goal": false,
+      "fresh_progress": false,
+      "fresh_revision": false,
+      "fresh_policy_reason": false,
+      "decoy_goal": false
+    }
+  ],
+  "home_unchanged": true,
+  "codex_home_unchanged": true,
+  "live_installations": 0,
+  "model_sessions_created": 0,
+  "mirror_registration_files": [],
+  "consumer_sha256": "5c50ace37a6e0261e9288275d4c5c57b0abcbb0b22fc1d485eee54d62ad440a9",
+  "limitations": [
+    "Synthetic local consumers and identities; no live plugin install, trust mutation, model session, or public test-plan publication.",
+    "Earlier runs stopped on corrected consumer-fixture expectations; their receipts remain intact."
+  ]
+}

@@ -1,0 +1,672 @@
+{
+  "checks": [
+    {
+      "ok": true,
+      "check": "copied native package has expected version",
+      "observation": "1.16.1"
+    },
+    {
+      "ok": true,
+      "check": "MCP server version matches copied manifest",
+      "observation": {
+        "reported": "1.16.1",
+        "expected": "1.16.1"
+      }
+    },
+    {
+      "ok": true,
+      "check": "published MCP schema exposes handoff",
+      "observation": {
+        "type": "object",
+        "properties": {
+          "plan_dir": {
+            "type": "string",
+            "description": "Directory holding the leaves/ folder."
+          },
+          "report": {
+            "type": "string"
+          },
+          "graph": {
+            "type": "string"
+          },
+          "handoff": {
+            "type": "boolean",
+            "description": "Also check handoff readiness for the plan's declared decomposition; default false."
+          }
+        },
+        "required": [
+          "plan_dir"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "ok": true,
+      "check": "CLI expected exit: git init --quiet",
+      "observation": {
+        "returncode": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "ok": true,
+      "check": "MCP server version matches copied manifest",
+      "observation": {
+        "reported": "1.16.1",
+        "expected": "1.16.1"
+      }
+    },
+    {
+      "ok": true,
+      "check": "MCP update_plan expected outcome",
+      "observation": {
+        "isError": false
+      }
+    },
+    {
+      "ok": true,
+      "check": "MCP server version matches copied manifest",
+      "observation": {
+        "reported": "1.16.1",
+        "expected": "1.16.1"
+      }
+    },
+    {
+      "ok": true,
+      "check": "MCP create_leaf expected outcome",
+      "observation": {
+        "isError": false
+      }
+    },
+    {
+      "ok": true,
+      "check": "MCP server version matches copied manifest",
+      "observation": {
+        "reported": "1.16.1",
+        "expected": "1.16.1"
+      }
+    },
+    {
+      "ok": true,
+      "check": "MCP create_leaf expected outcome",
+      "observation": {
+        "isError": false
+      }
+    },
+    {
+      "ok": true,
+      "check": "MCP server version matches copied manifest",
+      "observation": {
+        "reported": "1.16.1",
+        "expected": "1.16.1"
+      }
+    },
+    {
+      "ok": true,
+      "check": "MCP create_leaf expected outcome",
+      "observation": {
+        "isError": false
+      }
+    },
+    {
+      "ok": true,
+      "check": "MCP server version matches copied manifest",
+      "observation": {
+        "reported": "1.16.1",
+        "expected": "1.16.1"
+      }
+    },
+    {
+      "ok": true,
+      "check": "MCP update_leaf expected outcome",
+      "observation": {
+        "isError": false
+      }
+    },
+    {
+      "ok": true,
+      "check": "MCP server version matches copied manifest",
+      "observation": {
+        "reported": "1.16.1",
+        "expected": "1.16.1"
+      }
+    },
+    {
+      "ok": true,
+      "check": "MCP update_leaf expected outcome",
+      "observation": {
+        "isError": false
+      }
+    },
+    {
+      "ok": true,
+      "check": "explicit cap survives process restart",
+      "observation": {
+        "leaf_cap_minutes": 60,
+        "reason": "Owner explicitly requested leaves up to 60 minutes"
+      }
+    },
+    {
+      "ok": true,
+      "check": "MCP server version matches copied manifest",
+      "observation": {
+        "reported": "1.16.1",
+        "expected": "1.16.1"
+      }
+    },
+    {
+      "ok": true,
+      "check": "MCP build_plan expected outcome",
+      "observation": {
+        "isError": false
+      }
+    },
+    {
+      "ok": true,
+      "check": "CLI expected exit: python3 /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/audit-consumer/runs/20261107T132704Z-05b5f518/package/tools/lhc_plan_json.py check",
+      "observation": {
+        "returncode": 0,
+        "stdout": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/audit-consumer/runs/20261107T132704Z-05b5f518/fixtures/policy-project/.agents/tasks/policy60: листы согласованы\ndeliverable: plan; decomposition: complete; leaf cap: 60 min\nHandoff ready: complete decomposition of the declared active scope.\n",
+        "stderr": ""
+      }
+    },
+    {
+      "ok": true,
+      "check": "graph exports policy60",
+      "observation": [
+        {
+          "leaf_cap_minutes": 60,
+          "reason": "Owner explicitly requested leaves up to 60 minutes"
+        }
+      ]
+    },
+    {
+      "ok": true,
+      "check": "UI has no obsolete 15-minute over-limit warning",
+      "observation": []
+    },
+    {
+      "ok": true,
+      "check": "MCP server version matches copied manifest",
+      "observation": {
+        "reported": "1.16.1",
+        "expected": "1.16.1"
+      }
+    },
+    {
+      "ok": true,
+      "check": "MCP update_leaf expected outcome",
+      "observation": {
+        "isError": true
+      }
+    },
+    {
+      "ok": true,
+      "check": "over-cap update is atomic",
+      "observation": null
+    },
+    {
+      "ok": true,
+      "check": "MCP server version matches copied manifest",
+      "observation": {
+        "reported": "1.16.1",
+        "expected": "1.16.1"
+      }
+    },
+    {
+      "ok": true,
+      "check": "MCP create_leaf expected outcome",
+      "observation": {
+        "isError": true
+      }
+    },
+    {
+      "ok": true,
+      "check": "over-cap create leaves no invalid file",
+      "observation": null
+    },
+    {
+      "ok": true,
+      "check": "MCP server version matches copied manifest",
+      "observation": {
+        "reported": "1.16.1",
+        "expected": "1.16.1"
+      }
+    },
+    {
+      "ok": true,
+      "check": "MCP show_plan expected outcome",
+      "observation": {
+        "isError": false
+      }
+    },
+    {
+      "ok": true,
+      "check": "show_plan explicitly confirms L01 under Done",
+      "observation": "deliverable: plan; decomposition: complete; leaf cap: 60 min\nDone:\n- L01 «Consumer fixture L01» — Synthetic fixture construction is complete.\nNext: L02 «Consumer fixture L02»\nWhole plan: /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/audit-consumer/runs/20261107T132704Z-05b5f518/fixtures/policy-project/.agents/tasks/policy60/plan.md\n\ndeliverable: plan; decomposition: complete; leaf cap: 60 min\nDone:\n- L01 «Consumer fixture L01» — Synthetic fixture construction is complete.\nNext: L02 «Consumer fixture L02»\nWhole plan: /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/audit-consumer/runs/20261107T132704Z-05b5f518/fixtures/policy-project/.agents/tasks/policy60/plan.md\n\n"
+    },
+    {
+      "ok": true,
+      "check": "empty Now is omitted rather than unreadable",
+      "observation": "deliverable: plan; decomposition: complete; leaf cap: 60 min\nDone:\n- L01 «Consumer fixture L01» — Synthetic fixture construction is complete.\nNext: L02 «Consumer fixture L02»\nWhole plan: /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/audit-consumer/runs/20261107T132704Z-05b5f518/fixtures/policy-project/.agents/tasks/policy60/plan.md\n\ndeliverable: plan; decomposition: complete; leaf cap: 60 min\nDone:\n- L01 «Consumer fixture L01» — Synthetic fixture construction is complete.\nNext: L02 «Consumer fixture L02»\nWhole plan: /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/audit-consumer/runs/20261107T132704Z-05b5f518/fixtures/policy-project/.agents/tasks/policy60/plan.md\n\n"
+    },
+    {
+      "ok": true,
+      "check": "done L01 excluded from Now",
+      "observation": ""
+    },
+    {
+      "ok": true,
+      "check": "MCP server version matches copied manifest",
+      "observation": {
+        "reported": "1.16.1",
+        "expected": "1.16.1"
+      }
+    },
+    {
+      "ok": true,
+      "check": "MCP create_leaf expected outcome",
+      "observation": {
+        "isError": false
+      }
+    },
+    {
+      "ok": true,
+      "check": "MCP server version matches copied manifest",
+      "observation": {
+        "reported": "1.16.1",
+        "expected": "1.16.1"
+      }
+    },
+    {
+      "ok": true,
+      "check": "MCP build_plan expected outcome",
+      "observation": {
+        "isError": true
+      }
+    },
+    {
+      "ok": true,
+      "check": "complete handoff names the empty milestone",
+      "observation": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/audit-consumer/runs/20261107T132704Z-05b5f518/fixtures/policy-project/.agents/tasks/policy60/plan.graph.json\n/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/audit-consumer/runs/20261107T132704Z-05b5f518/fixtures/policy-project/.agents/tasks/policy60/plan.html\n/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/audit-consumer/runs/20261107T132704Z-05b5f518/fixtures/policy-project/.agents/tasks/policy60/plan.md\n/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/audit-consumer/runs/20261107T132704Z-05b5f518/fixtures/policy-project/.agents/tasks/policy60: листы согласованы\ndeliverable: plan; decomposition: complete; leaf cap: 60 min\nUndecomposed stages: M02\nLHC: план пока не готов к передаче:\n  - M02: этап не разложен на исполнимые листья\n\n/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/audit-consumer/runs/20261107T132704Z-05b5f518/fixtures/policy-project/.agents/tasks/policy60/plan.graph.json\n/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/audit-consumer/runs/20261107T132704Z-05b5f518/fixtures/policy-project/.agents/tasks/policy60/plan.html\n/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/audit-consumer/runs/20261107T132704Z-05b5f518/fixtures/policy-project/.agents/tasks/policy60/plan.md\n/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/audit-consumer/runs/20261107T132704Z-05b5f518/fixtures/policy-project/.agents/tasks/policy60: листы согласованы\ndeliverable: plan; decomposition: complete; leaf cap: 60 min\nUndecomposed stages: M02\n\nLHC: план пока не готов к передаче:\n  - M02: этап не разложен на исполнимые листья\n"
+    },
+    {
+      "ok": true,
+      "check": "CLI expected exit: python3 /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/audit-consumer/runs/20261107T132704Z-05b5f518/package/tools/lhc_plan_json.py check",
+      "observation": {
+        "returncode": 1,
+        "stdout": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/audit-consumer/runs/20261107T132704Z-05b5f518/fixtures/policy-project/.agents/tasks/policy60: листы согласованы\ndeliverable: plan; decomposition: complete; leaf cap: 60 min\nUndecomposed stages: M02\n",
+        "stderr": "LHC: план пока не готов к передаче:\n  - M02: этап не разложен на исполнимые листья\n"
+      }
+    },
+    {
+      "ok": true,
+      "check": "MCP server version matches copied manifest",
+      "observation": {
+        "reported": "1.16.1",
+        "expected": "1.16.1"
+      }
+    },
+    {
+      "ok": true,
+      "check": "MCP update_plan expected outcome",
+      "observation": {
+        "isError": false
+      }
+    },
+    {
+      "ok": true,
+      "check": "MCP server version matches copied manifest",
+      "observation": {
+        "reported": "1.16.1",
+        "expected": "1.16.1"
+      }
+    },
+    {
+      "ok": true,
+      "check": "MCP build_plan expected outcome",
+      "observation": {
+        "isError": false
+      }
+    },
+    {
+      "ok": true,
+      "check": "graph preserves progressive decomposition",
+      "observation": null
+    },
+    {
+      "ok": true,
+      "check": "progressive handoff explicitly reports partial decomposition",
+      "observation": "Граф задач: Independent consumer fixture\nРевизия плана: ddc4e186badd\nЭто снимок плана, а не панель управления: фактическое состояние работы приходит из API владельцев, а не из пересказа агента в графе.\nЦель: POLICY60_CONSUMER_GOAL\nКак проверим: Run this synthetic consumer through public MCP and hook commands.\nДекомпозиция: 3 листа · 2 параллельно · 1 волна · слотов: 2\nПрогресс (по листьям графа): 1/3 готово (33.3%) · в работе 0 · заблокировано 0 · ждёт листа 0 · ждёт исполнителя 0 · осталось 2\nцена не получена: под каталог нет сохранённого снимка ([Errno 2] No such file or directory: '/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/audit-consumer/runs/20261107T132704Z-05b5f518/config/catalog-not-configured.json')\nЛистьев в графе: 3 · слотов: 2 · волн: 1\nПараллельность: сейчас 0 из 2 слотов, пик по плану неизвестен\nИсполнители: занято 0 из 2 слотов · ждёт листа: 0 · ждёт исполнителя: 0 · готово к запуску: 2 (L02, M02)\nПрогноз: известная активная часть 1 ч (от 1 ч), финиш неизвестен: 1 листьев без оценки. отсчёт от последнего события 2026-11-07T16:27+03:00 · простой 0 мин · неточно: Листьев без оценки — 1\nКритический путь: неизвестен — оценки длительности не заданы\nЛистья плана (3):\n  - L01 · ✅ Готово · (Consumer fixture L01) · оценка 5 мин · усилие не измерено · волна 1 · зависит: — · стоимость — цена не получена\n      Описание задачи: Synthetic independent consumer work for L01\n      Приёмка: The public consumer observes the expected result for L01\n      Результат: Synthetic fixture construction is complete.\n  - L02 · ⋯ В очереди · (Consumer fixture L02) · оценка 1 ч · усилие не измерено · ждёт: причина не названа · волна 1 · зависит: — · стоимость — цена не получена\n      Описание задачи: Synthetic independent consumer work for L02\n      Приёмка: The public consumer observes the expected result for L02\n  - M02 · ⋯ В очереди · (Этап · Fixture milestone M02) · оценка — · усилие не измерено · ждёт: причина не названа · волна 1 · зависит: — · стоимость — цена не получена\n      Описание задачи: Consumer-visible stage\n      Приёмка: Its leaves are testable"
+    },
+    {
+      "ok": true,
+      "check": "CLI expected exit: git init --quiet",
+      "observation": {
+        "returncode": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "ok": true,
+      "check": "CLI expected exit: git init --quiet",
+      "observation": {
+        "returncode": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "ok": true,
+      "check": "MCP server version matches copied manifest",
+      "observation": {
+        "reported": "1.16.1",
+        "expected": "1.16.1"
+      }
+    },
+    {
+      "ok": true,
+      "check": "MCP update_plan expected outcome",
+      "observation": {
+        "isError": false
+      }
+    },
+    {
+      "ok": true,
+      "check": "MCP server version matches copied manifest",
+      "observation": {
+        "reported": "1.16.1",
+        "expected": "1.16.1"
+      }
+    },
+    {
+      "ok": true,
+      "check": "MCP create_leaf expected outcome",
+      "observation": {
+        "isError": false
+      }
+    },
+    {
+      "ok": true,
+      "check": "MCP server version matches copied manifest",
+      "observation": {
+        "reported": "1.16.1",
+        "expected": "1.16.1"
+      }
+    },
+    {
+      "ok": true,
+      "check": "MCP create_leaf expected outcome",
+      "observation": {
+        "isError": false
+      }
+    },
+    {
+      "ok": true,
+      "check": "MCP server version matches copied manifest",
+      "observation": {
+        "reported": "1.16.1",
+        "expected": "1.16.1"
+      }
+    },
+    {
+      "ok": true,
+      "check": "MCP create_leaf expected outcome",
+      "observation": {
+        "isError": false
+      }
+    },
+    {
+      "ok": true,
+      "check": "MCP server version matches copied manifest",
+      "observation": {
+        "reported": "1.16.1",
+        "expected": "1.16.1"
+      }
+    },
+    {
+      "ok": true,
+      "check": "MCP activate_leaf expected outcome",
+      "observation": {
+        "isError": false
+      }
+    },
+    {
+      "ok": true,
+      "check": "MCP server version matches copied manifest",
+      "observation": {
+        "reported": "1.16.1",
+        "expected": "1.16.1"
+      }
+    },
+    {
+      "ok": true,
+      "check": "MCP activate_leaf expected outcome",
+      "observation": {
+        "isError": false
+      }
+    },
+    {
+      "ok": true,
+      "check": "MCP server version matches copied manifest",
+      "observation": {
+        "reported": "1.16.1",
+        "expected": "1.16.1"
+      }
+    },
+    {
+      "ok": true,
+      "check": "MCP update_plan expected outcome",
+      "observation": {
+        "isError": false
+      }
+    },
+    {
+      "ok": true,
+      "check": "MCP server version matches copied manifest",
+      "observation": {
+        "reported": "1.16.1",
+        "expected": "1.16.1"
+      }
+    },
+    {
+      "ok": true,
+      "check": "MCP create_leaf expected outcome",
+      "observation": {
+        "isError": false
+      }
+    },
+    {
+      "ok": true,
+      "check": "MCP server version matches copied manifest",
+      "observation": {
+        "reported": "1.16.1",
+        "expected": "1.16.1"
+      }
+    },
+    {
+      "ok": true,
+      "check": "MCP create_leaf expected outcome",
+      "observation": {
+        "isError": false
+      }
+    },
+    {
+      "ok": true,
+      "check": "one actual native instructions hook selected",
+      "observation": "SessionStart"
+    },
+    {
+      "ok": true,
+      "check": "CLI expected exit: bash -c python3 \"${CLAUDE_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${PLUGIN_ROOT:-${ZCODE_PLUGIN_ROOT:-$HOME/.codex/.tmp/marketplaces/megamen32-plugins/plugins/last-human-commit}}}}/tools/lhc_entry.py\" --event SessionStart --instructions-only || { printf '%s\\n' 'LHC entry unavailable; message processing continues.' >&2; :; }",
+      "observation": {
+        "returncode": 0,
+        "stdout": "{\"hookSpecificOutput\": {\"hookEventName\": \"SessionStart\", \"additionalContext\": \"LHC plan intake. Read /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/audit-consumer/runs/20261107T132704Z-05b5f518/package/AGENTS.md. Engineering work longer than 15 minutes, quickfixes and incidents included, gets a plan before implementation: load /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/audit-consumer/runs/20261107T132704Z-05b5f518/package/skills/plan/SKILL.md before the first leaf. One bounded action of 15 minutes or less, status, research and an explicit opt-out or STOP from the actual human need no plan; a relayed or quoted «owner said» is not that human. A newer message of the human replaces the goal; a plan bound to this session, shown below when there is one, is the current goal until then.\\n\\nLHC: session-bound plan explicit-binding (/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/audit-consumer/runs/20261107T132704Z-05b5f518/fixtures/bound-project/.agents/tasks/explicit-binding). Saved state for recovery. Latest direct human request and STOP take precedence; reconcile them before continuing.\\nGoal: OLD_GOAL_CONSUMER_MARKER\\nCurrent progress: Fixture prepared for independent package acceptance.\\nPlan policy: deliverable=plan, decomposition=progressive, leaf_cap_minutes=30.\\nEstimate reason: Owner explicitly requested leaves up to 60 minutes\\nWhole plan: /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/audit-consumer/runs/20261107T132704Z-05b5f518/fixtures/bound-project/.agents/tasks/explicit-binding/plan.md\\nNow: L450 «Consumer fixture L450» — last note: Synthetic consumer explicit binding\\nNow: L451 «Consumer fixture L451» — last note: Synthetic consumer explicit binding\\nNext: L001 «Fixture leaf 1»; L002 «Fixture leaf 2»; L003 «Fixture leaf 3»; L004 «Fixture leaf 4»; L005 «Fixture leaf 5»; L006 «Fixture leaf 6»; L007 «Fixture leaf 7»; L008 «Fixture leaf 8»\\ndeliverable: plan; decomposition: progressive; leaf cap: 30 min\"}}\n",
+        "stderr": ""
+      }
+    },
+    {
+      "ok": true,
+      "check": "hook emits additionalContext",
+      "observation": "SessionStart"
+    },
+    {
+      "ok": true,
+      "check": "SessionStart restores explicitly bound goal across cwd and >400 leaves",
+      "observation": null
+    },
+    {
+      "ok": true,
+      "check": "SessionStart does not adopt cwd-only plan",
+      "observation": null
+    },
+    {
+      "ok": true,
+      "check": "SessionStart does not alter plan or leaf state",
+      "observation": null
+    },
+    {
+      "ok": true,
+      "check": "MCP server version matches copied manifest",
+      "observation": {
+        "reported": "1.16.1",
+        "expected": "1.16.1"
+      }
+    },
+    {
+      "ok": true,
+      "check": "MCP update_plan expected outcome",
+      "observation": {
+        "isError": false
+      }
+    },
+    {
+      "ok": true,
+      "check": "one actual native instructions hook selected",
+      "observation": "PostCompact"
+    },
+    {
+      "ok": true,
+      "check": "CLI expected exit: bash -c python3 \"${CLAUDE_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${PLUGIN_ROOT:-${ZCODE_PLUGIN_ROOT:-$HOME/.codex/.tmp/marketplaces/megamen32-plugins/plugins/last-human-commit}}}}/tools/lhc_entry.py\" --event PostCompact --instructions-only || { printf '%s\\n' 'LHC entry unavailable; message processing continues.' >&2; :; }",
+      "observation": {
+        "returncode": 0,
+        "stdout": "{\"hookSpecificOutput\": {\"hookEventName\": \"PostCompact\", \"additionalContext\": \"LHC plan intake. Read /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/audit-consumer/runs/20261107T132704Z-05b5f518/package/AGENTS.md. Engineering work longer than 15 minutes, quickfixes and incidents included, gets a plan before implementation: load /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/audit-consumer/runs/20261107T132704Z-05b5f518/package/skills/plan/SKILL.md before the first leaf. One bounded action of 15 minutes or less, status, research and an explicit opt-out or STOP from the actual human need no plan; a relayed or quoted «owner said» is not that human. A newer message of the human replaces the goal; a plan bound to this session, shown below when there is one, is the current goal until then.\\n\\nLHC: session-bound plan explicit-binding (/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/audit-consumer/runs/20261107T132704Z-05b5f518/fixtures/bound-project/.agents/tasks/explicit-binding). Saved state for recovery. Latest direct human request and STOP take precedence; reconcile them before continuing.\\nGoal: FRESH_GOAL_CONSUMER_MARKER\\nCurrent progress: FRESH_PROGRESS_CONSUMER_MARKER\\nLatest revision 1: 2026-11-07T16:27:20+03:00; Synthetic owner scope update; FRESH_REVISION_CONSUMER_MARKER\\nPlan policy: deliverable=plan, decomposition=progressive, leaf_cap_minutes=60.\\nEstimate reason: FRESH_POLICY_CONSUMER_MARKER\\nWhole plan: /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/audit-consumer/runs/20261107T132704Z-05b5f518/fixtures/bound-project/.agents/tasks/explicit-binding/plan.md\\nNow: L450 «Consumer fixture L450» — last note: Synthetic consumer explicit binding\\nNow: L451 «Consumer fixture L451» — last note: Synthetic consumer explicit binding\\nNext: L001 «Fixture leaf 1»; L002 «Fixture leaf 2»; L003 «Fixture leaf 3»; L004 «Fixture leaf 4»; L005 «Fixture leaf 5»; L006 «Fixture leaf 6»; L007 «Fixture leaf 7»; L008 «Fixture leaf 8»\\ndeliverable: plan; decomposition: progressive; leaf cap: 60 min\"}}\n",
+        "stderr": ""
+      }
+    },
+    {
+      "ok": true,
+      "check": "hook emits additionalContext",
+      "observation": "PostCompact"
+    },
+    {
+      "ok": true,
+      "check": "PostCompact restores current fact FRESH_GOAL_CONSUMER_MARKER",
+      "observation": null
+    },
+    {
+      "ok": true,
+      "check": "PostCompact restores current fact FRESH_PROGRESS_CONSUMER_MARKER",
+      "observation": null
+    },
+    {
+      "ok": true,
+      "check": "PostCompact restores current fact FRESH_REVISION_CONSUMER_MARKER",
+      "observation": null
+    },
+    {
+      "ok": true,
+      "check": "PostCompact restores fresh cap60 policy",
+      "observation": null
+    },
+    {
+      "ok": true,
+      "check": "PostCompact avoids obsolete goal and cwd-only goal",
+      "observation": null
+    },
+    {
+      "ok": true,
+      "check": "PostCompact does not alter plan or leaf state",
+      "observation": null
+    },
+    {
+      "ok": true,
+      "check": "one actual native instructions hook selected",
+      "observation": "PostCompact"
+    },
+    {
+      "ok": true,
+      "check": "CLI expected exit: bash -c python3 \"${CLAUDE_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${PLUGIN_ROOT:-${ZCODE_PLUGIN_ROOT:-$HOME/.codex/.tmp/marketplaces/megamen32-plugins/plugins/last-human-commit}}}}/tools/lhc_entry.py\" --event PostCompact --instructions-only || { printf '%s\\n' 'LHC entry unavailable; message processing continues.' >&2; :; }",
+      "observation": {
+        "returncode": 0,
+        "stdout": "{\"hookSpecificOutput\": {\"hookEventName\": \"PostCompact\", \"additionalContext\": \"LHC plan intake. Read /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/audit-consumer/runs/20261107T132704Z-05b5f518/package/AGENTS.md. Engineering work longer than 15 minutes, quickfixes and incidents included, gets a plan before implementation: load /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/audit-consumer/runs/20261107T132704Z-05b5f518/package/skills/plan/SKILL.md before the first leaf. One bounded action of 15 minutes or less, status, research and an explicit opt-out or STOP from the actual human need no plan; a relayed or quoted «owner said» is not that human. A newer message of the human replaces the goal; a plan bound to this session, shown below when there is one, is the current goal until then.\"}}\n",
+        "stderr": ""
+      }
+    },
+    {
+      "ok": true,
+      "check": "hook emits additionalContext",
+      "observation": "PostCompact"
+    },
+    {
+      "ok": true,
+      "check": "unbound session does not resume by cwd",
+      "observation": null
+    },
+    {
+      "ok": true,
+      "check": "CLI expected exit: python3 /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/audit-consumer/runs/20261107T132704Z-05b5f518/package/tools/lhc_plan_json.py activate",
+      "observation": {
+        "returncode": 1,
+        "stdout": "",
+        "stderr": "LHC: provide the actual session id with CODEX_THREAD_ID or --session\nPlan explicit-binding: 0/422 done; deliverable: plan; decomposition: progressive; leaf cap: 60 min; running L450, L451; ready to start L001, L002, L003, L004, L005, L006, L007, L008.\n"
+      }
+    },
+    {
+      "ok": true,
+      "check": "missing-session CLI activation is readable and actionable",
+      "observation": "\nLHC: provide the actual session id with CODEX_THREAD_ID or --session\nPlan explicit-binding: 0/422 done; deliverable: plan; decomposition: progressive; leaf cap: 60 min; running L450, L451; ready to start L001, L002, L003, L004, L005, L006, L007, L008.\n"
+    },
+    {
+      "ok": true,
+      "check": "MCP server version matches copied manifest",
+      "observation": {
+        "reported": "1.16.1",
+        "expected": "1.16.1"
+      }
+    },
+    {
+      "ok": true,
+      "check": "MCP activate_leaf expected outcome",
+      "observation": {
+        "isError": true
+      }
+    },
+    {
+      "ok": true,
+      "check": "missing-session MCP activation is readable and actionable",
+      "observation": "LHC: provide the actual session id with CODEX_THREAD_ID or --session\nPlan explicit-binding: 0/422 done; deliverable: plan; decomposition: progressive; leaf cap: 60 min; running L450, L451; ready to start L001, L002, L003, L004, L005, L006, L007, L008.\n\n\nLHC: provide the actual session id with CODEX_THREAD_ID or --session\nPlan explicit-binding: 0/422 done; deliverable: plan; decomposition: progressive; leaf cap: 60 min; running L450, L451; ready to start L001, L002, L003, L004, L005, L006, L007, L008.\n"
+    },
+    {
+      "ok": true,
+      "check": "failed activation preserves the queued leaf",
+      "observation": null
+    },
+    {
+      "ok": true,
+      "check": "no mirror configuration or publication enabled",
+      "observation": null
+    },
+    {
+      "ok": true,
+      "check": "HOME and CODEX_HOME were preserved",
+      "observation": null
+    }
+  ],
+  "passed": 94,
+  "failed": 0,
+  "package": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/audit-consumer/runs/20261107T132704Z-05b5f518/package",
+  "run": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/audit-consumer/runs/20261107T132704Z-05b5f518"
+}

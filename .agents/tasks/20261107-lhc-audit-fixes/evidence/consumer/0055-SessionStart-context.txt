@@ -1,0 +1,12 @@
+LHC plan intake. Read /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/audit-consumer/runs/20261107T132704Z-05b5f518/package/AGENTS.md. Engineering work longer than 15 minutes, quickfixes and incidents included, gets a plan before implementation: load /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/audit-consumer/runs/20261107T132704Z-05b5f518/package/skills/plan/SKILL.md before the first leaf. One bounded action of 15 minutes or less, status, research and an explicit opt-out or STOP from the actual human need no plan; a relayed or quoted «owner said» is not that human. A newer message of the human replaces the goal; a plan bound to this session, shown below when there is one, is the current goal until then.
+
+LHC: session-bound plan explicit-binding (/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/audit-consumer/runs/20261107T132704Z-05b5f518/fixtures/bound-project/.agents/tasks/explicit-binding). Saved state for recovery. Latest direct human request and STOP take precedence; reconcile them before continuing.
+Goal: OLD_GOAL_CONSUMER_MARKER
+Current progress: Fixture prepared for independent package acceptance.
+Plan policy: deliverable=plan, decomposition=progressive, leaf_cap_minutes=30.
+Estimate reason: Owner explicitly requested leaves up to 60 minutes
+Whole plan: /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/audit-consumer/runs/20261107T132704Z-05b5f518/fixtures/bound-project/.agents/tasks/explicit-binding/plan.md
+Now: L450 «Consumer fixture L450» — last note: Synthetic consumer explicit binding
+Now: L451 «Consumer fixture L451» — last note: Synthetic consumer explicit binding
+Next: L001 «Fixture leaf 1»; L002 «Fixture leaf 2»; L003 «Fixture leaf 3»; L004 «Fixture leaf 4»; L005 «Fixture leaf 5»; L006 «Fixture leaf 6»; L007 «Fixture leaf 7»; L008 «Fixture leaf 8»
+deliverable: plan; decomposition: progressive; leaf cap: 30 min
