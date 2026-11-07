@@ -1,0 +1,51 @@
+{
+  "created_at": "2026-11-07T22:00:00+00:00",
+  "details": "Independent Reviewer P1: actual source.subagent.thread_spawn.parent_thread_id is not recognized by current native identity/bootstrap; nested child is accepted as standalone in8a344996. Must reject unsupported/unverified child without creating outcome or fake provenance. H owns nativeidentity/glue and RED/GREEN; no I1 source edits.",
+  "events": [
+    {
+      "action": "register",
+      "actor": "native operational Lead01a1b7ae",
+      "at": "2026-11-07T22:00:00+00:00",
+      "changes": {
+        "details": "Independent Reviewer P1: actual source.subagent.thread_spawn.parent_thread_id is not recognized by current native identity/bootstrap; nested child is accepted as standalone in8a344996. Must reject unsupported/unverified child without creating outcome or fake provenance. H owns nativeidentity/glue and RED/GREEN; no I1 source edits.",
+        "source": "native identity/bootstrap; Reviewer R4",
+        "status": "open",
+        "title": "Nested native child header wrongly admitted as standalone pending bootstrap"
+      }
+    },
+    {
+      "action": "update",
+      "actor": "native operational Lead01a1b7ae",
+      "at": "2026-11-07T22:00:01+00:00",
+      "changes": {
+        "owner": "H source operator01a1b7ac-35d9-7992-9580-8c9d6b5fb9e6"
+      },
+      "reason": ""
+    },
+    {
+      "action": "resolve",
+      "actor": "native operational Lead01a1b7ae",
+      "at": "2026-11-07T22:02:15+00:00",
+      "changes": {
+        "resolution": {
+          "duplicate_of": "B25b78e5fc6fc44a88a89",
+          "kind": "duplicate",
+          "reason": "Same independently confirmed finding was concurrently registered by assigned H source owner. Keep H canonical identity for its actual TDD/proof resolution; preserve this earlier I1 report as an audited alias. Canonical target remains unresolved until source fix, no test failure hidden."
+        },
+        "status": "duplicate"
+      }
+    }
+  ],
+  "id": "B0d126f1d4b5b483c9756",
+  "owner": "H source operator01a1b7ac-35d9-7992-9580-8c9d6b5fb9e6",
+  "reporter": "native operational Lead01a1b7ae",
+  "resolution": {
+    "duplicate_of": "B25b78e5fc6fc44a88a89",
+    "kind": "duplicate",
+    "reason": "Same independently confirmed finding was concurrently registered by assigned H source owner. Keep H canonical identity for its actual TDD/proof resolution; preserve this earlier I1 report as an audited alias. Canonical target remains unresolved until source fix, no test failure hidden."
+  },
+  "source": "native identity/bootstrap; Reviewer R4",
+  "status": "duplicate",
+  "title": "Nested native child header wrongly admitted as standalone pending bootstrap",
+  "updated_at": "2026-11-07T22:02:15+00:00"
+}

@@ -1834,12 +1834,17 @@ def _bootstrap_contract(args, cwd, state):
             or (state.get('milestone') or {}).get('hold')):
         raise ValueError('pending bootstrap cannot reopen held or closed native state')
     business = state.setdefault('business', {})
-    heartbeat_cwd = (state.get('native_heartbeat') or {}).get('cwd')
+    heartbeat = state.get('native_heartbeat') or {}
+    heartbeat_cwd = heartbeat.get('cwd')
     previous_identity = business.get('native_identity') or {}
     if (business.get('runtime') not in {None, args.runtime}
+            or heartbeat.get('runtime') not in {None, args.runtime}
+            or heartbeat.get('session_id') not in {None, args.session_id}
             or heartbeat_cwd and Path(heartbeat_cwd).resolve() != cwd
-            or previous_identity.get('logical_session_id') not in {None, args.session_id}
-            or previous_identity.get('native_cwd') not in {None, str(cwd)}
+            or any(previous_identity.get(key) is not None and previous_identity[key] != identity.get(key)
+                   for key in ('native_id', 'logical_session_id', 'native_cwd', 'journal_path',
+                               'parent_thread_id', 'parent_native_id', 'parent_logical_id',
+                               'agent_path', 'dispatch_call_id', 'has_subagent_source'))
             or business.get('transcript_path') and
             Path(business['transcript_path']).resolve() != Path(identity['journal_path'])):
         raise ValueError('existing native state identity differs; bootstrap will not reset it')

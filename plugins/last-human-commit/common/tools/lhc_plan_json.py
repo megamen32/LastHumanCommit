@@ -198,6 +198,7 @@ LEAF_FIELDS = (
 # The plan-level fields. They belong to the plan, not to a leaf, so they live
 # in one file instead of being copied into every leaf.
 PLAN_FIELDS = (
+    "current_goal_lead",
     "default_model",
     "title",
     "goal",
@@ -741,6 +742,12 @@ def _plan_fields(raw: dict[str, Any], path: Path) -> dict[str, Any]:
             )
         raw = {key: value for key, value in raw.items() if key in PLAN_FIELDS}
     fields: dict[str, Any] = {}
+    if "current_goal_lead" in raw:
+        import lhc_plan_control
+        try:
+            fields["current_goal_lead"] = lhc_plan_control.validate_current_goal_lead(raw["current_goal_lead"])
+        except ValueError as error:
+            raise LeafError(f"{path}: current_goal_lead: {error}") from None
     for field, allowed in (("deliverable", DELIVERABLES), ("decomposition", DECOMPOSITIONS)):
         if field not in raw:
             continue
@@ -1221,7 +1228,7 @@ def build_document(plan_dir: Path) -> dict[str, Any]:
     }
     if milestones:
         document["milestones"] = milestones
-    for field in ("estimate_policy", "decomposition_check"):
+    for field in ("estimate_policy", "decomposition_check", "current_goal_lead"):
         if field in metadata:
             document[field] = metadata[field]
     budget = metadata.get("budget_usd")
@@ -2348,6 +2355,9 @@ def update_plan(plan_dir: Path, fields: Optional[dict] = None, revision: Optiona
         raw = _read_json(path) if path.is_file() else {}
         if not isinstance(raw, dict):
             raise LeafError(f"{path}: the plan file must be a JSON object")
+        if ("current_goal_lead" in fields and fields["current_goal_lead"] != raw.get("current_goal_lead")
+                and revision is None):
+            raise LeafError("current_goal_lead handoff requires an explicit revision and source_ref")
         merged = {**raw, **fields}
         if revision is not None:
             history = merged.get("revisions") if isinstance(merged.get("revisions"), list) else []

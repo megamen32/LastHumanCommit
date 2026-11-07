@@ -44,9 +44,89 @@ def evidence_fingerprint(outcome):
                     "canary", "integration_policy", "evidence_after")})
 
 
+def validate_current_goal_lead(value):
+    """Typed current-role reference, not acceptance or human authorization."""
+    import lhc_assignment
+    if not isinstance(value, dict) or set(value) - set(lhc_assignment.REF_FIELDS) - {"source_ref"}:
+        raise ValueError("current_goal_lead requires NativeRef fields and source_ref")
+    ref = lhc_assignment.validate_ref({key: value.get(key) for key in lhc_assignment.REF_FIELDS},
+                                      allow_unknown=False)
+    source = value.get("source_ref")
+    if not isinstance(source, str) or not source.strip():
+        raise ValueError("current_goal_lead.source_ref must name the explicit handoff evidence")
+    return {**ref, "source_ref": source.strip()}
+
+
+def _pointer_role_matches(metadata, session, runtime=None, host=None):
+    if "current_goal_lead" not in metadata:
+        return True
+    try:
+        current = validate_current_goal_lead(metadata["current_goal_lead"])
+    except ValueError:
+        return False
+    return (current["session_id"] == session and (runtime is None or current["harness"] == runtime)
+            and (host is None or current["host_id"] == host))
+
+
+def _active_typed_leads(rows):
+    """Only unresolved typed assignments can contradict a current role."""
+    import lhc_assignment
+    refs = set()
+    for row in rows:
+        assignment = row.get("assignment") or {}
+        if not assignment or row.get("status") in {"done", "deferred"} or assignment.get("state") in {"accepted", "cancelled"}:
+            continue
+        try:
+            ref = lhc_assignment.validate_ref(assignment.get("lead"), allow_unknown=False)
+        except ValueError:
+            return None
+        refs.add(tuple(ref[key] for key in lhc_assignment.REF_FIELDS))
+    return refs
+
+
+def _current_lead_ref(metadata, rows):
+    """Resolve the role before loading outcomes; never choose by PASS or mtime."""
+    import lhc_assignment
+    typed = _active_typed_leads(rows)
+    if "current_goal_lead" in metadata:
+        try:
+            current = validate_current_goal_lead(metadata["current_goal_lead"])
+        except ValueError:
+            return None, "current_goal_lead_invalid"
+        ref = tuple(current[key] for key in lhc_assignment.REF_FIELDS)
+        if typed is None:
+            return None, "current_goal_lead_unverified"
+        if any(other != ref for other in typed):
+            return None, "current_goal_lead_conflict"
+        def linked(row):
+            assignment = row.get("assignment") or {}
+            if assignment:
+                return assignment.get("lead") == {key: current[key] for key in lhc_assignment.REF_FIELDS}
+            return (row.get("session") == current["session_id"]
+                    and (row.get("harness") or row.get("runtime")) == current["harness"])
+        if not any(linked(row) for row in rows):
+            return None, "current_goal_lead_role_missing"
+        return ref, None
+    if typed is None:
+        return None, "native_lead_ref_unverified"
+    if typed:
+        return (next(iter(typed)), None) if len(typed) == 1 else (None, "native_lead_ref_ambiguous")
+    # Legacy single-owner plans remain readable. Mixed legacy refs cannot prove
+    # a current operational role, even when one happens to have a complete outcome.
+    refs = {(row.get("harness") or row.get("runtime"), row.get("session"))
+            for row in rows if not row.get("assignment")
+            and (row.get("harness") or row.get("runtime")) and row.get("session")}
+    if len(refs) != 1:
+        return None, "native_lead_ref_missing" if not refs else "native_lead_ref_ambiguous"
+    runtime, session = next(iter(refs))
+    return (None, runtime, session), None
+
+
 def _binding_matches(metadata, outcome, plan_dir):
     binding = outcome.get("plan_binding") or {}
-    return bool(plan_dir and binding.get("plan_dir") == str(plan_dir)
+    owner = outcome.get("owner") or {}
+    return bool(_pointer_role_matches(metadata, owner.get("session_id"), owner.get("harness"), owner.get("host_id"))
+                and plan_dir and binding.get("plan_dir") == str(plan_dir)
                 and binding.get("outcome_id") == outcome.get("id")
                 and binding.get("plan_scope") == plan_scope(metadata)
                 and binding.get("outcome_scope") == outcome_scope(outcome))
@@ -79,6 +159,9 @@ def evaluate(metadata, rows, outcome=None, state=None, readiness=None, *, plan_d
         import lhc_readiness
         readiness = lhc_readiness.evaluate(rows, slots=metadata.get("slots"))
     binding_matches = _binding_matches(metadata, outcome, plan_dir)
+    if metadata.get("current_goal_lead"):
+        _role, role_error = _current_lead_ref(metadata, rows)
+        binding_matches = binding_matches and role_error is None
     stages = outcome.get("stages") or {}
     accepted = bool(binding_matches and not (outcome.get("plan_binding") or {}).get("contract_required")
                     and outcome.get("task_class") not in {None, "status"}
@@ -174,6 +257,14 @@ def bind_session_plan(plan_dir, session_id, cwd, runtime=None):
     if str(plan) not in [str(Path(p).resolve()) for p in plans.session_plans(session_id)]:
         return {"binding": "unknown", "reason": "session_plan_binding_missing"}
     metadata, rows = read_plan(plan)
+    if not _pointer_role_matches(metadata, session_id, runtime):
+        return {"binding": "unknown", "reason": "current_goal_lead_mismatch"}
+    if metadata.get("current_goal_lead"):
+        _role, role_error = _current_lead_ref(metadata, rows)
+        if role_error:
+            return {"binding": "unknown", "reason": role_error}
+        if runtime is None:
+            runtime = validate_current_goal_lead(metadata["current_goal_lead"])["harness"]
     def lead_here(row):
         assignment = row.get("assignment") or {}
         if assignment:
@@ -230,6 +321,12 @@ def confirm_plan_contract(outcome, session_id):
     if str(plan) not in [str(Path(p).resolve()) for p in plans.session_plans(session_id)]:
         raise ValueError("explicit session-plan binding is missing for contract")
     metadata, rows = read_plan(plan)
+    if not _pointer_role_matches(metadata, session_id, (outcome.get("owner") or {}).get("harness")):
+        raise ValueError("current_goal_lead_mismatch for contract")
+    if metadata.get("current_goal_lead"):
+        _role, role_error = _current_lead_ref(metadata, rows)
+        if role_error:
+            raise ValueError(role_error + " for contract")
     if (outcome.get("owner") or {}).get("session_id") != session_id or not any(
             ((row.get("assignment") or {}).get("lead") or {}).get("session_id") == session_id
             if row.get("assignment") else row.get("session") == session_id for row in rows):
@@ -281,21 +378,19 @@ def resolve_control(plan_dir):
     except (OSError, ValueError, TypeError):
         return {"goal_status": "unknown", "frontier": "unknown", "next_decision": "none",
                 "fingerprint": None, "reason": "plan_unreadable"}
-    refs = set()
-    for row in rows:
-        assignment = row.get("assignment") or {}
-        lead = assignment.get("lead") or {} if assignment else {
-            "session_id": row.get("session"), "harness": row.get("harness") or row.get("runtime")}
-        if lead.get("session_id") and lead.get("harness"):
-            refs.add((lead["harness"], lead["session_id"]))
     unknown = evaluate(metadata, rows, plan_dir=plan)
-    if len(refs) != 1:
-        return {**unknown, "reason": "native_lead_ref_missing" if not refs else "native_lead_ref_ambiguous"}
-    runtime, session = next(iter(refs))
+    ref, reason = _current_lead_ref(metadata, rows)
+    if reason:
+        return {**unknown, "reason": reason}
+    host, runtime, session = ref
     try:
         path, state, saved = read_context(plan, session, plan, runtime)
         if path is None:
             return {**unknown, "reason": "native_outcome_missing"}
+        import lhc_plan_json as plans
+        if metadata.get("current_goal_lead") and str(plan) not in {
+                str(Path(value).resolve()) for value in plans.session_plans(session)}:
+            return {**unknown, "reason": "session_plan_binding_missing"}
         outcome = copy.deepcopy(saved)
         import lhc_outcome
         outcome["finish_verdict"] = lhc_outcome.verdict(outcome, state)
@@ -303,7 +398,8 @@ def resolve_control(plan_dir):
         if not _binding_matches(metadata, outcome, plan) and result["goal_status"] != "superseded":
             return {**unknown, "reason": "native_outcome_binding_stale"}
         return {**result, "reason": "bound_native_outcome",
-                "source": {"kind": "native_outcome", "harness": runtime, "session_id": session,
+                "source": {"kind": "native_outcome", "host_id": host, "harness": runtime, "session_id": session,
+                           "role_source_ref": (metadata.get("current_goal_lead") or {}).get("source_ref"),
                            "outcome_id": outcome.get("id"),
                            "source_fingerprint": digest([outcome_scope(outcome), evidence_fingerprint(outcome)])}}
     except (OSError, ValueError, KeyError, TypeError):
@@ -322,6 +418,12 @@ def record_session_decision(plan_dir, session_id, cwd, decision, runtime=None):
     if path is None:
         raise ValueError("exact native outcome is missing or ambiguous")
     metadata, rows = read_plan(plan)
+    if not _pointer_role_matches(metadata, session_id, runtime):
+        raise ValueError("current_goal_lead_mismatch for frontier decision")
+    if metadata.get("current_goal_lead"):
+        _role, role_error = _current_lead_ref(metadata, rows)
+        if role_error:
+            raise ValueError(role_error + " for frontier decision")
     def lead_here(row):
         assignment = row.get("assignment") or {}
         return ((assignment.get("lead") or {}).get("session_id") == session_id

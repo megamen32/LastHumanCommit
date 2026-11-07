@@ -126,7 +126,10 @@ standalone Codex session: the native `CODEX_THREAD_ID` must equal `--session-id`
 the existing bounded native identity reader must find exactly that session's
 journal under the configured Codex home, and its header cwd must match `--cwd`.
 An unverified child/parent relation, foreign ID, wrong cwd/runtime or missing
-native identity fails closed. Fresh bootstrap for other harnesses is explicitly
+native identity fails closed. A known `source.subagent` native source, including
+nested `thread_spawn.parent_thread_id`, is child provenance even when top-level
+parent/path fields are absent. Standalone bootstrap refuses it without inventing
+or resolving a parent. Existing verified child dispatch routes stay separate. Fresh bootstrap for other harnesses is explicitly
 unsupported until an equally verified native identity route exists; their existing
 observed-outcome workflows are unchanged. Do not manufacture a native ID variable
 or event payload to bypass these checks.
@@ -138,7 +141,11 @@ No ordinary-message classifier or inferred exclusion runs during bootstrap.
 Existing `--require-stage`, source/permission checks and `--not-applicable` rules
 still apply. Validation failure writes no outcome.
 
-Existing timer, input/source history, holds and identity are retained. A held or
+Existing timer, input/source history, holds and identity are retained. Existing
+heartbeat runtime/session/cwd and declared native identity facts must agree with
+the freshly verified native context. A contradiction refuses the whole contract
+without writing state. Missing/unknown prior facts are not replaced with a guessed
+verified identity; an ordinary nonconflicting time-only state still works. A held or
 closed state without an outcome cannot be reopened by bootstrap. An existing
 outcome uses its normal contract update path, with exact owner/runtime/cwd checks;
 it is never replaced with a fresh outcome or a fresh evidence clock just because

@@ -1,0 +1,29 @@
+warning: AGENTS.md has 295 lines; the soft limit is 250 - trim before adding more
+parity: PASS (23 skills)
+plugin validation: PASS skills=23 canonical=PASS (23) parity=PASS (23 skills)
+........................................................................ [  6%]
+..............................................................s......... [ 12%]
+........................................................................ [ 18%]
+........................................................................ [ 24%]
+........................................................................ [ 30%]
+........................................................................ [ 36%]
+........................................................................ [ 43%]
+........................................................................ [ 49%]
+........................................................................ [ 55%]
+........................................................................ [ 61%]
+..........................ss.........................................s.. [ 67%]
+........................................................................ [ 73%]
+......................s...........................................s..... [ 80%]
+............s........................................................... [ 86%]
+........................................................................ [ 92%]
+........................................................................ [ 98%]
+.................                                                        [100%]
+1162 passed, 7 skipped in 125.76s (0:02:05)
+valid block: /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/source-recovery-20261107/.tmp/lhc-block-test.9lTwgi/project-agents
+applied block: /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/source-recovery-20261107/.tmp/lhc-block-test.9lTwgi/project-agents
+applied block: /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/source-recovery-20261107/.tmp/lhc-block-test.9lTwgi/project-agents
+initialized block: /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/source-recovery-20261107/.tmp/lhc-block-test.9lTwgi/project-claude
+applied block: /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/source-recovery-20261107/.tmp/lhc-block-test.9lTwgi/paths with spaces/project agents
+removed block: /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/source-recovery-20261107/.tmp/lhc-block-test.9lTwgi/removable
+PASS: block adapter preserves project-owned instructions
+PASS: current LHC package, automatic entry, optional adapters and complete behavioral suite

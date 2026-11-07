@@ -1,0 +1,53 @@
+(Linux uses --headless by default. To override, use --headed / --gui. For Xvfb mode instead, use --xvfb. Or you can hide this info by using --headless / --headless2 / --uc.)
+F.F.                                                                     [100%]
+=================================== FAILURES ===================================
+____ test_nested_child_provenance_cannot_be_promoted_to_standalone[source0] ____
+
+fresh = (PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/pytest-10..._provenance_c0/.agents/shared-session/learning/09868839b3c8ccec12755d27c0ac8867143094f137fe3a8818ec38af8dc5edfa.json'))
+source = {'subagent': {'thread_spawn': {'depth': 1, 'parent_thread_id': 'known-parent'}}}
+
+    @pytest.mark.parametrize('source', [
+        {'subagent': {'thread_spawn': {'parent_thread_id': 'known-parent', 'depth': 1}}},
+        {'subagent': {'agent_path': '/known-child'}},
+        {'subagent': {'other': 'review'}},
+    ])
+    def test_nested_child_provenance_cannot_be_promoted_to_standalone(fresh, source):
+        root, journal, state_path = fresh
+        rows = journal.read_text().splitlines()
+        header = json.loads(rows[0])
+        header['payload']['source'] = source
+        journal.write_text(json.dumps(header) + '\n' + '\n'.join(rows[1:]) + '\n')
+        result = contract(root, kind='testing')
+>       assert result.returncode != 0, 'known nested child source was verified as standalone'
+E       AssertionError: known nested child source was verified as standalone
+E       assert 0 != 0
+E        +  where 0 = CompletedProcess(args=['/usr/bin/python3', '/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained...n": "2faeaa66da74fd40159baad9", "integration": "e6bd2faee16687c4e48c49fa"}, "finish_verdict": "pending"}\n', stderr='').returncode
+
+tests/test_native_identity_admission.py:18: AssertionError
+____ test_nested_child_provenance_cannot_be_promoted_to_standalone[source2] ____
+
+fresh = (PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/pytest-10..._provenance_c2/.agents/shared-session/learning/09868839b3c8ccec12755d27c0ac8867143094f137fe3a8818ec38af8dc5edfa.json'))
+source = {'subagent': {'other': 'review'}}
+
+    @pytest.mark.parametrize('source', [
+        {'subagent': {'thread_spawn': {'parent_thread_id': 'known-parent', 'depth': 1}}},
+        {'subagent': {'agent_path': '/known-child'}},
+        {'subagent': {'other': 'review'}},
+    ])
+    def test_nested_child_provenance_cannot_be_promoted_to_standalone(fresh, source):
+        root, journal, state_path = fresh
+        rows = journal.read_text().splitlines()
+        header = json.loads(rows[0])
+        header['payload']['source'] = source
+        journal.write_text(json.dumps(header) + '\n' + '\n'.join(rows[1:]) + '\n')
+        result = contract(root, kind='testing')
+>       assert result.returncode != 0, 'known nested child source was verified as standalone'
+E       AssertionError: known nested child source was verified as standalone
+E       assert 0 != 0
+E        +  where 0 = CompletedProcess(args=['/usr/bin/python3', '/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained...n": "2d079691840f28300c6ce253", "integration": "b0b490c369c518f46aacfb2b"}, "finish_verdict": "pending"}\n', stderr='').returncode
+
+tests/test_native_identity_admission.py:18: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_native_identity_admission.py::test_nested_child_provenance_cannot_be_promoted_to_standalone[source0]
+FAILED tests/test_native_identity_admission.py::test_nested_child_provenance_cannot_be_promoted_to_standalone[source2]
+2 failed, 2 passed in 0.81s
