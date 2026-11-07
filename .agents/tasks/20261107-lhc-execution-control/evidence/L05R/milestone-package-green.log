@@ -1,0 +1,46 @@
+[
+  {
+    "case": "inherited-unfinished",
+    "raw": {
+      "dependencies_satisfied": true,
+      "unmet_ids": [],
+      "executor_key": "native:[\"test-host\",\"codex\",\"worker\"]",
+      "candidate": true,
+      "dispatchable": true,
+      "reason_code": "dispatchable"
+    },
+    "expanded": {
+      "dependencies_satisfied": false,
+      "unmet_ids": [
+        "P"
+      ],
+      "executor_key": "native:[\"test-host\",\"codex\",\"worker\"]",
+      "candidate": false,
+      "dispatchable": false,
+      "reason_code": "dependencies_unmet"
+    },
+    "admission_error": "dispatch_not_admitted:dependencies_unmet"
+  },
+  {
+    "case": "milestone-completed",
+    "raw": {
+      "dependencies_satisfied": false,
+      "unmet_ids": [
+        "M"
+      ],
+      "executor_key": "native:[\"test-host\",\"codex\",\"worker\"]",
+      "candidate": false,
+      "dispatchable": false,
+      "reason_code": "dependencies_unmet"
+    },
+    "expanded": {
+      "dependencies_satisfied": true,
+      "unmet_ids": [],
+      "executor_key": "native:[\"test-host\",\"codex\",\"worker\"]",
+      "candidate": true,
+      "dispatchable": true,
+      "reason_code": "dispatchable"
+    },
+    "admission_result": "dispatching"
+  }
+]
