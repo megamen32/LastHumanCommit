@@ -1817,11 +1817,36 @@ def main():
     question = sub.add_parser('question')
     question.add_argument('--message', required=True)
     sub.add_parser('status')
+    bind = sub.add_parser('bind-plan', help='bind this native goal through the explicit session-plan ownership')
+    bind.add_argument('--plan-dir', type=Path, required=True)
+    frontier = sub.add_parser('frontier', help='record a useful current-frontier decision in this existing outcome')
+    frontier.add_argument('--plan-dir', type=Path, required=True)
+    frontier.add_argument('--decision', choices=('continue', 'need_fact', 'wait_external', 'human_stop'), required=True)
+    for field in ('evidence', 'action', 'owner', 'uncertainty'):
+        frontier.add_argument('--' + field, required=True)
+    frontier.add_argument('--action-kind', choices=('leaf', 'research', 'decompose'))
+    frontier.add_argument('--leaf-id')
+    frontier.add_argument('--resume-condition')
+    replace = sub.add_parser('replace-plan', help='record explicit replacement, never infer it from a changed binding')
+    replace.add_argument('--plan-dir', type=Path, required=True)
+    replace.add_argument('--replacement-plan-dir', type=Path, required=True)
+    replace.add_argument('--source-ref', required=True)
     args = parser.parse_args()
     cwd = args.cwd.resolve()
     path = guard.learning_path(cwd, args.runtime, args.session_id)
     if not path.is_file():
         raise ValueError(f'no LHC session state for {args.runtime}/{args.session_id} from session root {cwd}; no state was created')
+    if args.command in {'bind-plan', 'frontier'}:
+        import lhc_plan_control as control
+        if args.command == 'bind-plan':
+            result = control.bind_session_plan(args.plan_dir, args.session_id, cwd, args.runtime)
+        else:
+            decision = {key: getattr(args, key) for key in
+                        ('decision', 'evidence', 'action', 'owner', 'uncertainty',
+                         'action_kind', 'leaf_id', 'resume_condition') if getattr(args, key) is not None}
+            result = control.record_session_decision(args.plan_dir, args.session_id, cwd, decision, args.runtime)
+        print(json.dumps(result, ensure_ascii=False))
+        return
     with path.with_suffix('.lock').open('a') as lock:
         fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
         state = guard.load_state(path)
@@ -1997,9 +2022,33 @@ def main():
                           json.loads(native.read(args.testing_reuse_bindings)) if args.testing_reuse_bindings else None)
         elif args.command == 'question':
             result = question_plan(outcome, args.message)
+        elif args.command == 'replace-plan':
+            import lhc_plan_control as control
+            import lhc_plan_json as plans
+            old, new = args.plan_dir.resolve(), args.replacement_plan_dir.resolve()
+            known = {str(Path(value).resolve()) for value in plans.session_plans(args.session_id)}
+            if old == new or str(old) not in known or str(new) not in known or not args.source_ref.strip():
+                raise ValueError('replacement requires two distinct explicitly session-bound plans and its source reference')
+            old_metadata, _ = control.read_plan(old)
+            control.read_plan(new)
+            outcome['plan_replacement'] = {
+                'plan_dir': str(old), 'replacement_plan_dir': str(new), 'source_ref': args.source_ref,
+                'plan_scope': control.plan_scope(old_metadata), 'outcome_id': outcome['id']}
         if args.command == 'status':
             outcome['review_subject'] = review_subject(outcome)
         outcome['finish_verdict'] = verdict(outcome, state)
+        if args.command == 'review' and outcome.get('plan_binding'):
+            import lhc_plan_control as control
+            binding = outcome['plan_binding']
+            try:
+                metadata, _rows = control.read_plan(binding['plan_dir'])
+                if control._binding_matches(metadata, outcome, binding['plan_dir']):
+                    if outcome['finish_verdict'] == 'complete' and outcome.get('task_class') != 'status':
+                        binding['acceptance_fingerprint'] = control.evidence_fingerprint(outcome)
+                    else:
+                        binding.pop('acceptance_fingerprint', None)
+            except (OSError, ValueError, KeyError, TypeError):
+                binding.pop('acceptance_fingerprint', None)
         guard.write_state(path, state)
         print(json.dumps(result if args.command == 'question' else outcome, ensure_ascii=False))
 

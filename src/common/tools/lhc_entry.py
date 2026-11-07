@@ -182,7 +182,8 @@ def plan_resume_context(event, root):
     continuation = found.get("continuation")
     bindings = [continuation] if continuation else found.get("ambiguous_bindings") or []
     if not bindings:
-        return None
+        context = _goal_frontier_context(event)
+        return _frontier_text(context) if context else None
     precedence = "Latest direct human request and STOP take precedence; reconcile them before continuing."
     plans = {item["plan"]: item for item in reversed(bindings)}
     if len(plans) > 1:
@@ -260,6 +261,9 @@ def plan_resume_context(event, root):
     if not bound:
         lines.append("Next action: Lead checks the latest goal, selects a dependency candidate, and explicitly identifies an executor; legacy session metadata is not runtime proof.")
     lines += [line for line in summary if not line.startswith(priority + ("Whole plan:",))]
+    context = _goal_frontier_context(event)
+    if context:
+        lines.insert(1, _frontier_text(context))
     return "\n".join(lines)[:4000]
 
 
@@ -332,6 +336,103 @@ def _escalation_sent(session, starts, since, tools):
     return False
 
 
+
+def _goal_frontier_context(event):
+    """Only durable explicit Lead bindings can recover a finished frontier."""
+    session = str(event.get("session_id") or event.get("sessionID") or "")
+    if not session or event.get("agent_id"):
+        return None
+    import lhc_plan_control as control
+    import lhc_plan_json as plans
+    matches = []
+    for name in plans.session_plans(session):
+        plan = Path(name).resolve()
+        try:
+            metadata, rows = control.read_plan(plan)
+        except (OSError, ValueError, TypeError):
+            continue
+        def bound(row):
+            assignment = row.get("assignment") or {}
+            if assignment:
+                return (assignment.get("lead") or {}).get("session_id") == session
+            return row.get("session") == session
+        if not any(bound(row) for row in rows):
+            continue
+        if not metadata.get("goal") or metadata.get("deliverable", "implementation") != "implementation":
+            continue
+        _, state, outcome = control.read_context(plan, session, event.get("cwd") or ".", event.get("runtime"))
+        if outcome:
+            import copy
+            import lhc_outcome
+            outcome = copy.deepcopy(outcome)
+            try:
+                outcome["finish_verdict"] = lhc_outcome.verdict(outcome, state)
+            except (OSError, ValueError, KeyError, TypeError):
+                outcome["finish_verdict"] = "pending"
+        view = control.evaluate(metadata, rows, outcome, state, plan_dir=plan)
+        matches.append((plan, metadata, rows, outcome, view))
+    unfinished = [item for item in matches if item[-1]["goal_status"] not in {"accepted", "superseded"}]
+    if unfinished:
+        matches = unfinished
+    return matches[0] if len(matches) == 1 else None
+
+
+def _frontier_text(context):
+    plan, _metadata, _rows, _outcome, view = context
+    decision = view.get("decision") or {}
+    text = (f"LHC: plan {plan.name}: goal={view['goal_status']}; frontier={view['frontier']}; "
+            f"next decision={view['next_decision']}. ")
+    if view["frontier"] in {"admission_unknown", "admission_blocked"}:
+        return text + ("Inspect the exact native admission/attempt and existing blocker; runtime unknown is not an exhausted "
+                       "goal. Preserve UNKNOWN delivery and actual HumanStop/quota; never replay or dispatch automatically.")
+    if view["next_decision"] == "required":
+        return text + ("Finished cards do not accept the original goal. Lead compares the saved goal with the actual user result "
+                       "and records a concrete permitted next leaf, scoped research/decomposition, or a genuine external wait "
+                       "with owner, evidence and resume condition. Respect actual HumanStop/revocation and reconcile UNKNOWN "
+                       "delivery without replay. Use lhc_outcome.py bind-plan/frontier for this exact native outcome.")
+    if decision:
+        return text + f"Owner={decision['owner']}; action={decision['action']}; evidence={decision['evidence']}; " + (
+            f"resume condition={decision['resume_condition']}." if decision.get("resume_condition") else
+            f"uncertainty={decision['uncertainty']}.")
+    return text
+
+
+def _frontier_stop(event, now):
+    """Bounded once-per-frontier advice; never dispatch or reinterpret a Stop."""
+    if event.get("human_stop") is True:
+        return True, None
+    context = _goal_frontier_context(event)
+    if context is None:
+        return False, None
+    view = context[-1]
+    if view["next_decision"] in {"human_stop", "wait_external"} or view["goal_status"] in {"accepted", "superseded"}:
+        return True, None
+    if view["frontier"] not in {"exhausted", "admission_unknown", "admission_blocked"}:
+        return False, None
+    if event.get("stop_hook_active"):
+        return True, None
+    if view["next_decision"] == "work":
+        return True, None
+    session = str(event.get("session_id") or event.get("sessionID"))
+    base = Path(os.environ.get("XDG_STATE_HOME") or Path.home() / ".local/state") / "lhc/pulse"
+    mark = base / (re.sub(r"[^A-Za-z0-9_.-]", "_", session) + ".frontier")
+    try:
+        saved = json.loads(mark.read_text())
+    except (OSError, ValueError, TypeError):
+        saved = {}
+    if now - saved.get("since", now) > STOP_WINDOW:
+        saved = {}
+    fingerprints = saved.get("fingerprints", [])
+    if view["fingerprint"] in fingerprints or len(fingerprints) >= STOP_FIRES:
+        return True, None
+    try:
+        base.mkdir(parents=True, exist_ok=True)
+        mark.write_text(json.dumps({"since": saved.get("since", now),
+                                    "fingerprints": fingerprints + [view["fingerprint"]]}))
+    except OSError:
+        return True, None
+    return True, _frontier_text(context)
+
 def stop_gate(event, root, now=None):
     """Hold a stop while the session's plan still has untouched work.
 
@@ -345,6 +446,9 @@ def stop_gate(event, root, now=None):
     session = str(event.get("session_id") or event.get("sessionID") or "")
     if not session or event.get("agent_id"):
         return None
+    handled, reason = _frontier_stop(event, now or time.time())
+    if handled:
+        return reason
     found = _plan_entry(event, root)
     if not found:
         return None
