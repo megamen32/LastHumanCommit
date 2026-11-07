@@ -1,0 +1,11 @@
+{
+  "target": "origin/main",
+  "sha": "2988f0f8483a2a33a6fb762c86e597513b445d1a",
+  "version": "1.17.1",
+  "next": {
+    "ok": true,
+    "version": "1.18.0",
+    "level": "y",
+    "target_version": "1.17.1"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "bug": {
+    "created_at": "2026-11-07T21:09:13+00:00",
+    "details": "Integration RED: capture increments on new bound outcome evidence after fingerprint fix, but public_document drops goal_control; catalog can never see accepted goal. RED evidence/integration/dashboard-mcp-green.log test_capture_changes_when_bound_goal_evidence_changes KeyError goal_control. Publish only allowlisted display metadata, no decision/payload.",
+    "events": [
+      {
+        "action": "register",
+        "actor": "I1 native 01a1b7ae",
+        "at": "2026-11-07T21:09:13+00:00",
+        "changes": {
+          "details": "Integration RED: capture increments on new bound outcome evidence after fingerprint fix, but public_document drops goal_control; catalog can never see accepted goal. RED evidence/integration/dashboard-mcp-green.log test_capture_changes_when_bound_goal_evidence_changes KeyError goal_control. Publish only allowlisted display metadata, no decision/payload.",
+          "source": "src/common/tools/lhc_plan_publish.py public_document",
+          "status": "open",
+          "title": "Публичный снимок теряет bound goal-control проекцию"
+        }
+      }
+    ],
+    "id": "B081d703e49df496a835c",
+    "owner": "I1 native 01a1b7ae",
+    "reporter": "I1 native 01a1b7ae",
+    "source": "src/common/tools/lhc_plan_publish.py public_document",
+    "status": "open",
+    "title": "Публичный снимок теряет bound goal-control проекцию",
+    "updated_at": "2026-11-07T21:09:13+00:00"
+  },
+  "sha256": "38209de4d08ca3f6538d96ba6f8bb354376ad1a77c9ffa031e0aeeed4084f1a3"
+}

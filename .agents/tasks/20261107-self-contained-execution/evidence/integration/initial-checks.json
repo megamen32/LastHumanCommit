@@ -1,0 +1,26 @@
+[
+  {
+    "name": "publish-initial",
+    "argv": [
+      "python3",
+      "scripts/publish_package.py"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "sync-initial",
+    "argv": [
+      "python3",
+      "plugins/last-human-commit/scripts/sync_skills.py"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "validator-initial",
+    "argv": [
+      "python3",
+      "tests/validate.py"
+    ],
+    "exit_code": 1
+  }
+]

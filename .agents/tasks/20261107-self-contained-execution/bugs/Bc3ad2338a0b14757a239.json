@@ -1,0 +1,58 @@
+{
+  "created_at": "2026-11-07T21:06:50+00:00",
+  "details": "Distinct cause: test_plan_home.py:112 expects legacy done plan completed; intentional new behavior is awaiting with unknown goal. Preserve all sorting/security coverage and assert no accepted completion. RED evidence/integration/validator-initial.log.",
+  "events": [
+    {
+      "action": "register",
+      "actor": "I1 native 01a1b7ae",
+      "at": "2026-11-07T21:06:50+00:00",
+      "changes": {
+        "details": "Distinct cause: test_plan_home.py:112 expects legacy done plan completed; intentional new behavior is awaiting with unknown goal. Preserve all sorting/security coverage and assert no accepted completion. RED evidence/integration/validator-initial.log.",
+        "source": "tests/test_plan_home.py:112",
+        "status": "open",
+        "title": "Dashboard regression fixture подменяет done cards принятием цели"
+      }
+    },
+    {
+      "action": "resolve",
+      "actor": "I1 native 01a1b7ae",
+      "at": "2026-11-07T21:10:44+00:00",
+      "changes": {
+        "resolution": {
+          "evidence": {
+            "proof_path": "evidence/integration/dashboard-mcp-final-green.log",
+            "red_proof_path": "evidence/integration/validator-initial.log",
+            "red_result": "FAILED tests/test_plan_home.py::test_all_projects_plans_listed_sorted_safe_and_no_task_dump",
+            "red_sha256": "2a42c387ee5101f1914a3878a64833e3cebcaa5719e3d02623cd3d06e87a5f40",
+            "result": "89 passed, 2 skipped in 27.37s",
+            "sha256": "5445cf0a91661446be799a85a6221db16c9c205c2ed0ab9cac51e7bc1e3b0d05",
+            "test_command": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest -q tests/test_mirror_server_events.py tests/test_mirror_observer_events.py tests/test_mirror_observer_perf.py tests/test_plan_home.py tests/test_plan_mirror.py tests/test_single_plan_mcp.py tests/test_plan_publish.py"
+          },
+          "kind": "fixed",
+          "reason": ""
+        },
+        "status": "fixed"
+      }
+    }
+  ],
+  "id": "Bc3ad2338a0b14757a239",
+  "owner": "I1 native 01a1b7ae",
+  "reporter": "I1 native 01a1b7ae",
+  "resolution": {
+    "evidence": {
+      "proof_path": "evidence/integration/dashboard-mcp-final-green.log",
+      "red_proof_path": "evidence/integration/validator-initial.log",
+      "red_result": "FAILED tests/test_plan_home.py::test_all_projects_plans_listed_sorted_safe_and_no_task_dump",
+      "red_sha256": "2a42c387ee5101f1914a3878a64833e3cebcaa5719e3d02623cd3d06e87a5f40",
+      "result": "89 passed, 2 skipped in 27.37s",
+      "sha256": "5445cf0a91661446be799a85a6221db16c9c205c2ed0ab9cac51e7bc1e3b0d05",
+      "test_command": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest -q tests/test_mirror_server_events.py tests/test_mirror_observer_events.py tests/test_mirror_observer_perf.py tests/test_plan_home.py tests/test_plan_mirror.py tests/test_single_plan_mcp.py tests/test_plan_publish.py"
+    },
+    "kind": "fixed",
+    "reason": ""
+  },
+  "source": "tests/test_plan_home.py:112",
+  "status": "fixed",
+  "title": "Dashboard regression fixture подменяет done cards принятием цели",
+  "updated_at": "2026-11-07T21:10:44+00:00"
+}

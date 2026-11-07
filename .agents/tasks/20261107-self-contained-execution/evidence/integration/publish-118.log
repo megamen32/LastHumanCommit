@@ -1,0 +1,6 @@
+расхождений: 4
+   plugins/last-human-commit/tools/lhc_plan_mcp.py
+   plugins/last-human-commit/native/codex/tools/lhc_plan_mcp.py
+   plugins/last-human-commit/common/tools/lhc_plan_mcp.py
+   plugins/last-human-commit/native/codex/common/tools/lhc_plan_mcp.py
+опубликовано: 4

@@ -4,7 +4,7 @@
   "effective_pr_stage": "off",
   "scripts": {
     ".tmp/integration-01a1b7ae/check-candidate.py": "6b4f8e0fdfe757e2117240d2e12e7ed9ca518cfc0ff0192fbd7d898b98da7d3d",
-    ".tmp/integration-01a1b7ae/install-isolated.py": "8b1b43a1b1e02700e87af65dec285d2566b23c9a589c2e6ea42810259296e881"
+    ".tmp/integration-01a1b7ae/install-isolated.py": "d879307aa0d0aba919c7e19add9fb762000debd694ace8c126a7df117f9140de"
   },
   "script_execution": "prepared and syntax-checked only; no install/marketplace/runtime mutation",
   "official_reference": "https://developers.openai.com/plugins/build/plugins",
@@ -12,5 +12,6 @@
   "isolated_install": "git archive exact frozen native package; fresh CODEX_HOME; unique local marketplace; native plugin add once; list+version+full-byte equality+hooks/list+MCP initialize/tools/list; no auth copied; no trust mutation; no model turns",
   "shared_release": "not executed; requires verified lease owner/token/fence/CAS/finally",
   "preliminary_reader": "Q1 preflight read only; preliminary A/B goal-contract consumer is independent source evidence, not installed acceptance",
-  "infra_mirror": "HEAD=origin/main=remote main 1cb44b16d97c35db8673e295869a6d8454079fde; source instructions verified, no infra edits"
+  "infra_mirror": "HEAD=origin/main=remote main 1cb44b16d97c35db8673e295869a6d8454079fde; source instructions verified, no infra edits",
+  "isolated_native_route": "codex --no-daemon app-server --stdio; exact full pluginId name@marketplace from observed Codex 0.167 schema"
 }

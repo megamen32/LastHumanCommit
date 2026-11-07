@@ -1,0 +1,83 @@
+{
+  "package": {
+    "bug": {
+      "created_at": "2026-11-07T20:56:58+00:00",
+      "details": "5 failed: packaged Stop/PostToolUse hooks and plan publish fail after regeneration; lhc_plan_control and lhc_handoff absent in curated tools. RED evidence/integration/validator-initial.log.",
+      "events": [
+        {
+          "action": "register",
+          "actor": "I1 native 01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+          "at": "2026-11-07T20:56:58+00:00",
+          "changes": {
+            "details": "5 failed: packaged Stop/PostToolUse hooks and plan publish fail after regeneration; lhc_plan_control and lhc_handoff absent in curated tools. RED evidence/integration/validator-initial.log.",
+            "source": "scripts/publish_package.py TOOL_COPIES",
+            "status": "open",
+            "title": "Собранные tools не содержат новые зависимости handoff и goal control"
+          }
+        }
+      ],
+      "id": "B0dc7460e6941463984b6",
+      "owner": "I1 native 01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+      "reporter": "I1 native 01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+      "source": "scripts/publish_package.py TOOL_COPIES",
+      "status": "open",
+      "title": "Собранные tools не содержат новые зависимости handoff и goal control",
+      "updated_at": "2026-11-07T20:56:58+00:00"
+    },
+    "sha256": "c2b81753790231c9c1b4b612a38079e1f1aff1bbcb99478a7f476d887dec9c3d"
+  },
+  "mcp-schema": {
+    "bug": {
+      "created_at": "2026-11-07T20:56:58+00:00",
+      "details": "2 failed test_single_plan_mcp parameter variants: new read_goal_control and record_frontier_decision absent from exact expected schema. RED evidence/integration/validator-initial.log.",
+      "events": [
+        {
+          "action": "register",
+          "actor": "I1 native 01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+          "at": "2026-11-07T20:56:58+00:00",
+          "changes": {
+            "details": "2 failed test_single_plan_mcp parameter variants: new read_goal_control and record_frontier_decision absent from exact expected schema. RED evidence/integration/validator-initial.log.",
+            "source": "tests/test_single_plan_mcp.py:53",
+            "status": "open",
+            "title": "Standalone packaged MCP regression ожидает старый tool set"
+          }
+        }
+      ],
+      "id": "Ba9bd5a4ee21645f29db6",
+      "owner": "I1 native 01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+      "reporter": "I1 native 01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+      "source": "tests/test_single_plan_mcp.py:53",
+      "status": "open",
+      "title": "Standalone packaged MCP regression ожидает старый tool set",
+      "updated_at": "2026-11-07T20:56:58+00:00"
+    },
+    "sha256": "6d0121ce6ba4e3da2fe41519f6da64b5097bd3845b5c69e8fdb8ec57e16b7f06"
+  },
+  "views-integration": {
+    "bug": {
+      "created_at": "2026-11-07T20:56:58+00:00",
+      "details": "2 failed: test_plan_home old completed expectation; test_mirror_server_events awaiting refreshes each minute. New source semantics must preserve honest goal state and event driven inactive refresh. RED evidence/integration/validator-initial.log.",
+      "events": [
+        {
+          "action": "register",
+          "actor": "I1 native 01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+          "at": "2026-11-07T20:56:58+00:00",
+          "changes": {
+            "details": "2 failed: test_plan_home old completed expectation; test_mirror_server_events awaiting refreshes each minute. New source semantics must preserve honest goal state and event driven inactive refresh. RED evidence/integration/validator-initial.log.",
+            "source": "tests/test_mirror_server_events.py:141; tests/test_plan_home.py:112",
+            "status": "open",
+            "title": "Dashboard tests и inactive cache не согласованы с awaiting"
+          }
+        }
+      ],
+      "id": "B0fc5504fcdd6492ab0dc",
+      "owner": "I1 native 01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+      "reporter": "I1 native 01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+      "source": "tests/test_mirror_server_events.py:141; tests/test_plan_home.py:112",
+      "status": "open",
+      "title": "Dashboard tests и inactive cache не согласованы с awaiting",
+      "updated_at": "2026-11-07T20:56:58+00:00"
+    },
+    "sha256": "09089fdf8f6a1a8ec5ccf23f61ebfc17bcffd83f1b05200cf8896a3e17515c19"
+  }
+}

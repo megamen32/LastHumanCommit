@@ -1,0 +1,26 @@
+................................s..F.......................              [100%]
+=================================== FAILURES ===================================
+____________ test_capture_changes_when_bound_goal_evidence_changes _____________
+
+fixture = (PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/pytest-2916039-a6...up-20261107/.tmp/pytest-2916039-a64ccabfe7ade46a/test_capture_changes_when_boun0/replica', 'listen': '127.0.0.1', ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x79d35415c5b0>
+
+    def test_capture_changes_when_bound_goal_evidence_changes(fixture, monkeypatch):
+        plan, client, _cfg = fixture
+        mirror.register(plan, client)
+        projection = {'goal_status': 'unaccepted', 'fingerprint': 'a' * 64,
+                      'source': {'kind': 'native_outcome', 'session_id': 'lead',
+                                 'outcome_id': 'goal', 'source_fingerprint': 'b' * 64}}
+        monkeypatch.setattr(leaves, 'goal_control', lambda _plan: copy.deepcopy(projection))
+        first = mirror.capture(plan)
+        projection.update(goal_status='accepted', fingerprint='c' * 64)
+        projection['source']['source_fingerprint'] = 'd' * 64
+        second = mirror.capture(plan)
+        assert second['seq'] == first['seq'] + 1
+>       assert second['pending']['document']['goal_control']['goal_status'] == 'accepted'
+E       KeyError: 'goal_control'
+
+tests/test_plan_mirror.py:79: KeyError
+=========================== short test summary info ============================
+FAILED tests/test_plan_mirror.py::test_capture_changes_when_bound_goal_evidence_changes
+1 failed, 57 passed, 1 skipped in 23.55s

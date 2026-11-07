@@ -1,0 +1,152 @@
+{
+  "native_initialization": {
+    "userAgent": "lhc-reviewed-release/0.167.0 (Ubuntu 22.4.0; x86_64) dumb (lhc-reviewed-release; 1.17.1)",
+    "platformFamily": "unix",
+    "platformOs": "linux"
+  },
+  "response_keys": [
+    "data"
+  ],
+  "lhc_hooks": [
+    {
+      "key": "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:pre_tool_use:0:0",
+      "pluginId": "last-human-commit@megamen32-plugins",
+      "eventName": "preToolUse",
+      "enabled": true,
+      "trustStatus": "modified",
+      "currentHash": "sha256:f9970c9d03444e52f8b0e3aeae55ac0ad8ccfa824e534e548f95129824b9303d/sha256:d386e5a49b43640887ff388817fa706af268d424af64f557440c41613a89c065",
+      "sourcePath": "/home/roomhacker/.codex/plugins/cache/megamen32-plugins/last-human-commit/1.17.1/com.openai/hooks/hooks.json",
+      "handlerType": "command",
+      "source": "plugin"
+    },
+    {
+      "key": "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:post_tool_use:0:0",
+      "pluginId": "last-human-commit@megamen32-plugins",
+      "eventName": "postToolUse",
+      "enabled": true,
+      "trustStatus": "modified",
+      "currentHash": "sha256:b15d32b2233626071dc1ea1d9aa4e4899213c7ac64b0c85ff7e5e3a2a1a3979d/sha256:d386e5a49b43640887ff388817fa706af268d424af64f557440c41613a89c065",
+      "sourcePath": "/home/roomhacker/.codex/plugins/cache/megamen32-plugins/last-human-commit/1.17.1/com.openai/hooks/hooks.json",
+      "handlerType": "command",
+      "source": "plugin"
+    },
+    {
+      "key": "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:post_tool_use:1:0",
+      "pluginId": "last-human-commit@megamen32-plugins",
+      "eventName": "postToolUse",
+      "enabled": true,
+      "trustStatus": "modified",
+      "currentHash": "sha256:4e39bc5ae169e16f6ed3957ea6ce3dc29a11bd7672760da29e0689c2bbd1a46b/sha256:d386e5a49b43640887ff388817fa706af268d424af64f557440c41613a89c065",
+      "sourcePath": "/home/roomhacker/.codex/plugins/cache/megamen32-plugins/last-human-commit/1.17.1/com.openai/hooks/hooks.json",
+      "handlerType": "command",
+      "source": "plugin"
+    },
+    {
+      "key": "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:post_compact:0:0",
+      "pluginId": "last-human-commit@megamen32-plugins",
+      "eventName": "postCompact",
+      "enabled": true,
+      "trustStatus": "modified",
+      "currentHash": "sha256:35d1d7130275867cf677091e6779272ce93dd838246f404ca29571cad581c4c5/sha256:d386e5a49b43640887ff388817fa706af268d424af64f557440c41613a89c065",
+      "sourcePath": "/home/roomhacker/.codex/plugins/cache/megamen32-plugins/last-human-commit/1.17.1/com.openai/hooks/hooks.json",
+      "handlerType": "command",
+      "source": "plugin"
+    },
+    {
+      "key": "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:session_start:0:0",
+      "pluginId": "last-human-commit@megamen32-plugins",
+      "eventName": "sessionStart",
+      "enabled": true,
+      "trustStatus": "modified",
+      "currentHash": "sha256:b8369fea20d5b36df31b94ae1cb55db9d8627c2dca051e2c2ca07e86421b1539/sha256:d386e5a49b43640887ff388817fa706af268d424af64f557440c41613a89c065",
+      "sourcePath": "/home/roomhacker/.codex/plugins/cache/megamen32-plugins/last-human-commit/1.17.1/com.openai/hooks/hooks.json",
+      "handlerType": "command",
+      "source": "plugin"
+    },
+    {
+      "key": "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:session_end:0:0",
+      "pluginId": "last-human-commit@megamen32-plugins",
+      "eventName": "sessionEnd",
+      "enabled": true,
+      "trustStatus": "modified",
+      "currentHash": "sha256:fa9fb732fbaf4cdca83622b7f998ea32d897751846ffa3e0c92d5a0952dc4d96/sha256:d386e5a49b43640887ff388817fa706af268d424af64f557440c41613a89c065",
+      "sourcePath": "/home/roomhacker/.codex/plugins/cache/megamen32-plugins/last-human-commit/1.17.1/com.openai/hooks/hooks.json",
+      "handlerType": "command",
+      "source": "plugin"
+    },
+    {
+      "key": "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:user_prompt_submit:0:0",
+      "pluginId": "last-human-commit@megamen32-plugins",
+      "eventName": "userPromptSubmit",
+      "enabled": true,
+      "trustStatus": "modified",
+      "currentHash": "sha256:d9f26bad06b1931d318ff6251602ba8ec4fc6e998a9c0727e5d344ff990e9deb/sha256:d386e5a49b43640887ff388817fa706af268d424af64f557440c41613a89c065",
+      "sourcePath": "/home/roomhacker/.codex/plugins/cache/megamen32-plugins/last-human-commit/1.17.1/com.openai/hooks/hooks.json",
+      "handlerType": "command",
+      "source": "plugin"
+    },
+    {
+      "key": "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:user_prompt_submit:1:0",
+      "pluginId": "last-human-commit@megamen32-plugins",
+      "eventName": "userPromptSubmit",
+      "enabled": true,
+      "trustStatus": "modified",
+      "currentHash": "sha256:6bc7d06a7a31deba8c146c8e4fc70a1fe787315f2b31f2e5bea5f10e4edca230/sha256:d386e5a49b43640887ff388817fa706af268d424af64f557440c41613a89c065",
+      "sourcePath": "/home/roomhacker/.codex/plugins/cache/megamen32-plugins/last-human-commit/1.17.1/com.openai/hooks/hooks.json",
+      "handlerType": "command",
+      "source": "plugin"
+    },
+    {
+      "key": "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:stop:0:0",
+      "pluginId": "last-human-commit@megamen32-plugins",
+      "eventName": "stop",
+      "enabled": true,
+      "trustStatus": "modified",
+      "currentHash": "sha256:7d084d6b3b89e7b4e5630c7119f429fa6770420ae73780cfd3806fab7581afa4/sha256:d386e5a49b43640887ff388817fa706af268d424af64f557440c41613a89c065",
+      "sourcePath": "/home/roomhacker/.codex/plugins/cache/megamen32-plugins/last-human-commit/1.17.1/com.openai/hooks/hooks.json",
+      "handlerType": "command",
+      "source": "plugin"
+    },
+    {
+      "key": "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:stop:1:0",
+      "pluginId": "last-human-commit@megamen32-plugins",
+      "eventName": "stop",
+      "enabled": true,
+      "trustStatus": "modified",
+      "currentHash": "sha256:c1560dae0f9ca072afda1466d314143f8d982f8e6b11be846c94975c9e1eed15/sha256:d386e5a49b43640887ff388817fa706af268d424af64f557440c41613a89c065",
+      "sourcePath": "/home/roomhacker/.codex/plugins/cache/megamen32-plugins/last-human-commit/1.17.1/com.openai/hooks/hooks.json",
+      "handlerType": "command",
+      "source": "plugin"
+    },
+    {
+      "key": "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:interrupt:0:0",
+      "pluginId": "last-human-commit@megamen32-plugins",
+      "eventName": "interrupt",
+      "enabled": true,
+      "trustStatus": "modified",
+      "currentHash": "sha256:81319707735540d362b8c63bd255630795d3c2d2a982fe281d5a27c5bfed160d/sha256:d386e5a49b43640887ff388817fa706af268d424af64f557440c41613a89c065",
+      "sourcePath": "/home/roomhacker/.codex/plugins/cache/megamen32-plugins/last-human-commit/1.17.1/com.openai/hooks/hooks.json",
+      "handlerType": "command",
+      "source": "plugin"
+    }
+  ],
+  "rows_count": 11,
+  "model_sessions_created": 0,
+  "trust_mutations": 0,
+  "installed_root": "/home/roomhacker/.codex/plugins/cache/megamen32-plugins/last-human-commit/1.17.1",
+  "installed_manifest_version": "1.17.1",
+  "marketplace_revision": "2988f0f8483a2a33a6fb762c86e597513b445d1a",
+  "installed_helpers": {
+    "lhc_entry.py": true,
+    "lhc_time_guard.py": true,
+    "lhc_outcome.py": true,
+    "lhc_plan_control.py": false,
+    "lhc_handoff.py": false
+  },
+  "installed_learning_path": {
+    "path": "/home/roomhacker/agents-projects/LastHumanCommit/.agents/shared-session/learning/c80c02b16e39ffedd071fec1f22d0b648843bd1cc0aa9107adc19bdcdab8de9c.json",
+    "exists": false
+  },
+  "installed_guard_sha256": "008c634a393c47a884cb8c978a07c3209974e999c0ac134d4867aaad4711afd2",
+  "source_guard_sha256": "008c634a393c47a884cb8c978a07c3209974e999c0ac134d4867aaad4711afd2"
+}
