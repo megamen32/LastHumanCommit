@@ -2039,9 +2039,10 @@ def update_leaf(plan_dir: Path, leaf_id: str, fields: dict, *, create=False,
         stamp = datetime.now().astimezone().isoformat(timespec="seconds")
         if create:
             merged['created_at'] = stamp
-        # Only Codex's documented thread environment is auto-bound. Other
-        # harnesses pass explicit session/harness; no process-title inference.
-        if not merged.get("session"):
+        # Preserve legacy self-work binding only when no separate execution
+        # context exists. The writer of Worker/assignment progress is not its
+        # executor; explicit activate still supplies the selected self session.
+        if not merged.get("session") and not (merged.get("worker") or merged.get("assignment")):
             native = os.environ.get("CODEX_THREAD_ID", "")
             if re.fullmatch(r"[0-9a-f-]{36}", native):
                 merged["session"], merged["harness"] = native, "codex"

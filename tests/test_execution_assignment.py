@@ -199,3 +199,36 @@ def test_assignment_cas_rejects_stale_write(plan):
     with pytest.raises(ValueError):
         pj.transition_leaf(plan, "L01", "attempt-1", "blocked", expected_hash=digest)
     assert read(plan)["assignment"]["state"] == "assigned"
+
+
+@pytest.mark.parametrize("execution_context", ["worker", "assignment"])
+def test_generic_worker_progress_never_autobinds_the_actor_as_executor(plan, monkeypatch, execution_context):
+    leaf = read(plan)
+    leaf.pop("session", None)
+    leaf.pop("harness", None)
+    if execution_context == "worker":
+        leaf["worker"] = {"id": "different-worker", "branch": "lhc/different-worker",
+                          "worktree": str(plan / "different-worker")}
+    else:
+        leaf["assignment"] = assignment()
+    (plan / "leaves/L01.json").write_text(json.dumps(leaf))
+    actor = "11111111-1111-1111-1111-111111111111"
+    monkeypatch.setenv("CODEX_THREAD_ID", actor)
+    recorded = []
+    monkeypatch.setattr(pj, "record_session_plan", lambda *args: recorded.append(args))
+    pj.update_leaf(plan, "L01", {"status": "running", "note": "Lead records progress"})
+    updated = read(plan)
+    assert not updated.get("session")
+    assert not updated.get("harness")
+    assert updated["progress_events"][-1]["actor"]["session_id"] == actor
+    assert not recorded
+
+def test_generic_self_progress_keeps_legacy_environment_binding(plan, monkeypatch):
+    leaf = read(plan)
+    leaf.pop("session", None)
+    leaf.pop("harness", None)
+    (plan / "leaves/L01.json").write_text(json.dumps(leaf))
+    actor = "11111111-1111-1111-1111-111111111111"
+    monkeypatch.setenv("CODEX_THREAD_ID", actor)
+    pj.update_leaf(plan, "L01", {"note": "Self work"})
+    assert read(plan)["session"] == actor and read(plan)["harness"] == "codex"
