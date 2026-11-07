@@ -1,0 +1,33 @@
+{
+  "label": "Восстановление после компакции",
+  "kind": "milestone",
+  "status": "queued",
+  "estimate_minutes": 30,
+  "depends_on": [],
+  "description": "Восстановление после компакции",
+  "acceptance": "Поведение проверено адресными сценариями, результаты сохранены.",
+  "owner": "lead",
+  "id": "M02",
+  "model": "gpt-6-astra",
+  "created_at": "2026-11-07T15:39:03+03:00",
+  "updated_at": "2026-11-07T15:39:03+03:00",
+  "progress_events": [
+    {
+      "at": "2026-11-07T15:39:03+03:00",
+      "note": "",
+      "changes": {
+        "label": "Восстановление после компакции",
+        "kind": "milestone",
+        "status": "queued",
+        "estimate_minutes": 30,
+        "depends_on": [],
+        "description": "Восстановление после компакции",
+        "acceptance": "Поведение проверено адресными сценариями, результаты сохранены.",
+        "owner": "lead",
+        "model": "gpt-6-astra"
+      },
+      "session": "unknown",
+      "harness": "unknown"
+    }
+  ]
+}

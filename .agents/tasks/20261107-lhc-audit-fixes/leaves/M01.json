@@ -1,0 +1,33 @@
+{
+  "label": "Исправить канонический редактор",
+  "kind": "milestone",
+  "status": "queued",
+  "estimate_minutes": 45,
+  "depends_on": [],
+  "description": "Исправить канонический редактор",
+  "acceptance": "Поведение проверено адресными сценариями, результаты сохранены.",
+  "owner": "lead",
+  "id": "M01",
+  "model": "gpt-6-astra",
+  "created_at": "2026-11-07T15:39:02+03:00",
+  "updated_at": "2026-11-07T15:39:02+03:00",
+  "progress_events": [
+    {
+      "at": "2026-11-07T15:39:02+03:00",
+      "note": "",
+      "changes": {
+        "label": "Исправить канонический редактор",
+        "kind": "milestone",
+        "status": "queued",
+        "estimate_minutes": 45,
+        "depends_on": [],
+        "description": "Исправить канонический редактор",
+        "acceptance": "Поведение проверено адресными сценариями, результаты сохранены.",
+        "owner": "lead",
+        "model": "gpt-6-astra"
+      },
+      "session": "unknown",
+      "harness": "unknown"
+    }
+  ]
+}

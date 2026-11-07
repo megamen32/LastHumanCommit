@@ -1,0 +1,24 @@
+{
+  "created_at": "2026-11-07T12:41:11+00:00",
+  "details": "show --current L01 печатает одновременно Done и Now; footer теряет пустые этапы",
+  "events": [
+    {
+      "action": "register",
+      "actor": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "at": "2026-11-07T12:41:11+00:00",
+      "changes": {
+        "details": "show --current L01 печатает одновременно Done и Now; footer теряет пустые этапы",
+        "source": "Аудит пользовательского журнала и source1.16.0",
+        "status": "open",
+        "title": "Завершённый лист отображается как текущий"
+      }
+    }
+  ],
+  "id": "B01",
+  "owner": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+  "reporter": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+  "source": "Аудит пользовательского журнала и source1.16.0",
+  "status": "open",
+  "title": "Завершённый лист отображается как текущий",
+  "updated_at": "2026-11-07T12:41:11+00:00"
+}

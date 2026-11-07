@@ -1,0 +1,41 @@
+{
+  "label": "Проверяемая полнота плана для передачи",
+  "kind": "task",
+  "status": "queued",
+  "estimate_minutes": 15,
+  "depends_on": [
+    "L01",
+    "L02"
+  ],
+  "description": "Проверяемая полнота плана для передачи",
+  "acceptance": "Поведение проверено адресными сценариями, результаты сохранены.",
+  "owner": "unassigned",
+  "parent": "M01",
+  "id": "L03",
+  "model": "gpt-6-astra",
+  "created_at": "2026-11-07T15:39:02+03:00",
+  "updated_at": "2026-11-07T15:39:02+03:00",
+  "progress_events": [
+    {
+      "at": "2026-11-07T15:39:02+03:00",
+      "note": "",
+      "changes": {
+        "label": "Проверяемая полнота плана для передачи",
+        "kind": "task",
+        "status": "queued",
+        "estimate_minutes": 15,
+        "depends_on": [
+          "L01",
+          "L02"
+        ],
+        "description": "Проверяемая полнота плана для передачи",
+        "acceptance": "Поведение проверено адресными сценариями, результаты сохранены.",
+        "owner": "unassigned",
+        "parent": "M01",
+        "model": "gpt-6-astra"
+      },
+      "session": "unknown",
+      "harness": "unknown"
+    }
+  ]
+}

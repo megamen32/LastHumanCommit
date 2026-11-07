@@ -1,0 +1,41 @@
+{
+  "label": "Сборка и интегрированные проверки пакета",
+  "kind": "task",
+  "status": "queued",
+  "estimate_minutes": 15,
+  "depends_on": [
+    "L03",
+    "L05"
+  ],
+  "description": "Сборка и интегрированные проверки пакета",
+  "acceptance": "Поведение проверено адресными сценариями, результаты сохранены.",
+  "owner": "unassigned",
+  "parent": "M03",
+  "id": "L06",
+  "model": "gpt-6-astra",
+  "created_at": "2026-11-07T15:39:04+03:00",
+  "updated_at": "2026-11-07T15:39:04+03:00",
+  "progress_events": [
+    {
+      "at": "2026-11-07T15:39:04+03:00",
+      "note": "",
+      "changes": {
+        "label": "Сборка и интегрированные проверки пакета",
+        "kind": "task",
+        "status": "queued",
+        "estimate_minutes": 15,
+        "depends_on": [
+          "L03",
+          "L05"
+        ],
+        "description": "Сборка и интегрированные проверки пакета",
+        "acceptance": "Поведение проверено адресными сценариями, результаты сохранены.",
+        "owner": "unassigned",
+        "parent": "M03",
+        "model": "gpt-6-astra"
+      },
+      "session": "unknown",
+      "harness": "unknown"
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "label": "Доставка исправленного пакета",
+  "kind": "milestone",
+  "status": "queued",
+  "estimate_minutes": 45,
+  "depends_on": [
+    "M01",
+    "M02"
+  ],
+  "description": "Доставка исправленного пакета",
+  "acceptance": "Поведение проверено адресными сценариями, результаты сохранены.",
+  "owner": "lead",
+  "id": "M03",
+  "model": "gpt-6-astra",
+  "created_at": "2026-11-07T15:39:03+03:00",
+  "updated_at": "2026-11-07T15:39:03+03:00",
+  "progress_events": [
+    {
+      "at": "2026-11-07T15:39:03+03:00",
+      "note": "",
+      "changes": {
+        "label": "Доставка исправленного пакета",
+        "kind": "milestone",
+        "status": "queued",
+        "estimate_minutes": 45,
+        "depends_on": [
+          "M01",
+          "M02"
+        ],
+        "description": "Доставка исправленного пакета",
+        "acceptance": "Поведение проверено адресными сценариями, результаты сохранены.",
+        "owner": "lead",
+        "model": "gpt-6-astra"
+      },
+      "session": "unknown",
+      "harness": "unknown"
+    }
+  ]
+}

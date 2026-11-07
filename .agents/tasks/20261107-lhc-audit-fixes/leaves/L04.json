@@ -1,0 +1,61 @@
+{
+  "label": "Регрессия и исправление восстановления привязанного плана",
+  "kind": "task",
+  "status": "running",
+  "estimate_minutes": 15,
+  "depends_on": [],
+  "description": "Регрессия и исправление восстановления привязанного плана",
+  "acceptance": "Поведение проверено адресными сценариями, результаты сохранены.",
+  "owner": "/root/audit_revision",
+  "parent": "M02",
+  "id": "L04",
+  "model": "gpt-6-astra",
+  "created_at": "2026-11-07T15:39:03+03:00",
+  "updated_at": "2026-11-07T15:41:10+03:00",
+  "progress_events": [
+    {
+      "at": "2026-11-07T15:39:03+03:00",
+      "note": "",
+      "changes": {
+        "label": "Регрессия и исправление восстановления привязанного плана",
+        "kind": "task",
+        "status": "queued",
+        "estimate_minutes": 15,
+        "depends_on": [],
+        "description": "Регрессия и исправление восстановления привязанного плана",
+        "acceptance": "Поведение проверено адресными сценариями, результаты сохранены.",
+        "owner": "unassigned",
+        "parent": "M02",
+        "model": "gpt-6-astra"
+      },
+      "session": "unknown",
+      "harness": "unknown"
+    },
+    {
+      "at": "2026-11-07T15:41:10+03:00",
+      "note": "Worker /root/audit_revision registered on lhc/audit-hook-worker-20261107",
+      "changes": {
+        "worker": {
+          "id": "/root/audit_revision",
+          "branch": "lhc/audit-hook-worker-20261107",
+          "worktree": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-hook-worker-20261107",
+          "registered_at": "2026-11-07T15:41:10+03:00",
+          "run_dir": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-hook-worker-20261107/.tmp/audit-hook",
+          "run_host": "roomhacker-server-100"
+        },
+        "owner": "/root/audit_revision",
+        "status": "running"
+      },
+      "session": "unknown",
+      "harness": "unknown"
+    }
+  ],
+  "worker": {
+    "id": "/root/audit_revision",
+    "branch": "lhc/audit-hook-worker-20261107",
+    "worktree": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-hook-worker-20261107",
+    "registered_at": "2026-11-07T15:41:10+03:00",
+    "run_dir": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-hook-worker-20261107/.tmp/audit-hook",
+    "run_host": "roomhacker-server-100"
+  }
+}
