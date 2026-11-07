@@ -12,13 +12,47 @@
         "status": "open",
         "title": "Неизвестная регистрация wake не сверяется по request_id"
       }
+    },
+    {
+      "action": "resolve",
+      "actor": "root",
+      "at": "2026-11-07T16:20:45+00:00",
+      "changes": {
+        "resolution": {
+          "evidence": {
+            "proof_path": "evidence/L05D/B09-green.txt",
+            "red_proof_path": "evidence/L05C/B06-red.txt",
+            "red_result": "FAILED tests/test_lhc_execution.py::test_unknown_registration_recovers_exact_wait_read_only",
+            "red_sha256": "597f0ae978b60db84f6434d45b5d33d16daeece985d9822f6d3bae004f5c55d9",
+            "result": "28 passed",
+            "sha256": "3d6e5f36fba8bc6767123bd4b4081ac0b658b31fc15bc510fbf268a857210fd5",
+            "test_command": "python3 -m pytest -q tests/test_lhc_execution.py"
+          },
+          "kind": "fixed",
+          "reason": "Unknown wait registration is reconciled by deterministic existing Herder identity; exact owner/dependency/turn checked without replay."
+        },
+        "status": "fixed"
+      }
     }
   ],
   "id": "B07",
   "owner": "root",
   "reporter": "root",
+  "resolution": {
+    "evidence": {
+      "proof_path": "evidence/L05D/B09-green.txt",
+      "red_proof_path": "evidence/L05C/B06-red.txt",
+      "red_result": "FAILED tests/test_lhc_execution.py::test_unknown_registration_recovers_exact_wait_read_only",
+      "red_sha256": "597f0ae978b60db84f6434d45b5d33d16daeece985d9822f6d3bae004f5c55d9",
+      "result": "28 passed",
+      "sha256": "3d6e5f36fba8bc6767123bd4b4081ac0b658b31fc15bc510fbf268a857210fd5",
+      "test_command": "python3 -m pytest -q tests/test_lhc_execution.py"
+    },
+    "kind": "fixed",
+    "reason": "Unknown wait registration is reconciled by deterministic existing Herder identity; exact owner/dependency/turn checked without replay."
+  },
   "source": "integrated ef69654c src/common/tools/lhc_execution.py",
-  "status": "open",
+  "status": "fixed",
   "title": "Неизвестная регистрация wake не сверяется по request_id",
-  "updated_at": "2026-11-07T15:54:19+00:00"
+  "updated_at": "2026-11-07T16:20:45+00:00"
 }

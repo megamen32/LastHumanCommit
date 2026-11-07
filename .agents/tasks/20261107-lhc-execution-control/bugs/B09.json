@@ -12,13 +12,47 @@
         "status": "open",
         "title": "Наблюдение доступности смешивает текущий статус со старым turn"
       }
+    },
+    {
+      "action": "resolve",
+      "actor": "root",
+      "at": "2026-11-07T16:20:45+00:00",
+      "changes": {
+        "resolution": {
+          "evidence": {
+            "proof_path": "evidence/L05D/B09-green.txt",
+            "red_proof_path": "evidence/L05D/B09-red.txt",
+            "red_result": "FAILED tests/test_lhc_execution.py::test_availability_uses_current_state_not_historical_stop[running-cancelled-new-turn-False-busy]",
+            "red_sha256": "5fea10be5742edfb577cc5f4c5ba6c41de826d5979254be4a7e157e1dd725258",
+            "result": "28 passed",
+            "sha256": "3d6e5f36fba8bc6767123bd4b4081ac0b658b31fc15bc510fbf268a857210fd5",
+            "test_command": "python3 -m pytest -q tests/test_lhc_execution.py"
+          },
+          "kind": "fixed",
+          "reason": "Current native availability has precedence over historical turn results; stopped/permission remain authoritative and contradictory idle is unknown."
+        },
+        "status": "fixed"
+      }
     }
   ],
   "id": "B09",
   "owner": "root",
   "reporter": "root",
+  "resolution": {
+    "evidence": {
+      "proof_path": "evidence/L05D/B09-green.txt",
+      "red_proof_path": "evidence/L05D/B09-red.txt",
+      "red_result": "FAILED tests/test_lhc_execution.py::test_availability_uses_current_state_not_historical_stop[running-cancelled-new-turn-False-busy]",
+      "red_sha256": "5fea10be5742edfb577cc5f4c5ba6c41de826d5979254be4a7e157e1dd725258",
+      "result": "28 passed",
+      "sha256": "3d6e5f36fba8bc6767123bd4b4081ac0b658b31fc15bc510fbf268a857210fd5",
+      "test_command": "python3 -m pytest -q tests/test_lhc_execution.py"
+    },
+    "kind": "fixed",
+    "reason": "Current native availability has precedence over historical turn results; stopped/permission remain authoritative and contradictory idle is unknown."
+  },
   "source": "review lhc_execution.py observe_native on a10a7210",
-  "status": "open",
+  "status": "fixed",
   "title": "Наблюдение доступности смешивает текущий статус со старым turn",
-  "updated_at": "2026-11-07T16:16:06+00:00"
+  "updated_at": "2026-11-07T16:20:45+00:00"
 }

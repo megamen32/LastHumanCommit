@@ -12,13 +12,47 @@
         "status": "open",
         "title": "Generic progress подставляет автора исполнителем Worker"
       }
+    },
+    {
+      "action": "resolve",
+      "actor": "root",
+      "at": "2026-11-07T16:20:45+00:00",
+      "changes": {
+        "resolution": {
+          "evidence": {
+            "proof_path": "evidence/L05A/green-b08-executor-autobind.log",
+            "red_proof_path": "evidence/L05A/red-b08-executor-autobind.log",
+            "red_result": "FAILED tests/test_execution_assignment.py::test_generic_worker_progress_never_autobinds_the_actor_as_executor[worker]",
+            "red_sha256": "e346acfb7b35ff83d7054cda9db071c471489540ad5abc070f53292fc8e96970",
+            "result": "3 passed",
+            "sha256": "ecb49f27daf7fd3b689b4b0b3f8cdd0415f51314819dfbdd0eed618840c72ae0",
+            "test_command": "python3 -m pytest -q tests/test_execution_assignment.py -k 'generic_worker_progress or generic_self_progress'"
+          },
+          "kind": "fixed",
+          "reason": "Generic Worker/assignment updates retain actor without inventing executor; explicit self-work remains compatible."
+        },
+        "status": "fixed"
+      }
     }
   ],
   "id": "B08",
   "owner": "root",
   "reporter": "root",
+  "resolution": {
+    "evidence": {
+      "proof_path": "evidence/L05A/green-b08-executor-autobind.log",
+      "red_proof_path": "evidence/L05A/red-b08-executor-autobind.log",
+      "red_result": "FAILED tests/test_execution_assignment.py::test_generic_worker_progress_never_autobinds_the_actor_as_executor[worker]",
+      "red_sha256": "e346acfb7b35ff83d7054cda9db071c471489540ad5abc070f53292fc8e96970",
+      "result": "3 passed",
+      "sha256": "ecb49f27daf7fd3b689b4b0b3f8cdd0415f51314819dfbdd0eed618840c72ae0",
+      "test_command": "python3 -m pytest -q tests/test_execution_assignment.py -k 'generic_worker_progress or generic_self_progress'"
+    },
+    "kind": "fixed",
+    "reason": "Generic Worker/assignment updates retain actor without inventing executor; explicit self-work remains compatible."
+  },
   "source": "Sharedplan L05C + tests/test_execution_assignment.py",
-  "status": "open",
+  "status": "fixed",
   "title": "Generic progress подставляет автора исполнителем Worker",
-  "updated_at": "2026-11-07T16:14:36+00:00"
+  "updated_at": "2026-11-07T16:20:45+00:00"
 }

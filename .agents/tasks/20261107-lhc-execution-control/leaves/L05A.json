@@ -14,7 +14,7 @@
   "model": "gpt-6.1-sol",
   "id": "L05A",
   "created_at": "2026-11-07T18:46:00+03:00",
-  "updated_at": "2026-11-07T19:14:37+03:00",
+  "updated_at": "2026-11-07T19:20:46+03:00",
   "progress_events": [
     {
       "at": "2026-11-07T18:46:00+03:00",
@@ -99,6 +99,22 @@
       },
       "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
       "harness": "codex"
+    },
+    {
+      "at": "2026-11-07T19:20:46+03:00",
+      "note": "B08 repair: remove automatic writer-as-executor declaration; retain event actor and historical facts.",
+      "changes": {
+        "session": "",
+        "harness": ""
+      },
+      "actor": {
+        "host_id": null,
+        "harness": "codex",
+        "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+        "source": "native_environment"
+      },
+      "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "harness": "codex"
     }
   ],
   "worker": {
@@ -111,7 +127,7 @@
     "removed_at": "2026-11-07T19:14:37+03:00"
   },
   "owner": "audit_ci_plan",
-  "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
-  "harness": "codex",
+  "session": "",
+  "harness": "",
   "result": "CLI/MCP assignment control, atomic admission, request-scoped actor and no implicit Worker executor from caller. 8 public journey tests, 77 compatibility checks and 24 combined interface/repair checks passed. Evidence/L05A; commit6c69b0f9 integrated."
 }

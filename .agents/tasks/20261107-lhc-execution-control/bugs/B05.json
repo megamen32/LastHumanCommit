@@ -12,13 +12,47 @@
         "status": "open",
         "title": "План не связывает dispatch с durable wake"
       }
+    },
+    {
+      "action": "resolve",
+      "actor": "root",
+      "at": "2026-11-07T16:20:45+00:00",
+      "changes": {
+        "resolution": {
+          "evidence": {
+            "proof_path": "evidence/L05D/B09-green.txt",
+            "red_proof_path": "evidence/L04/red.txt",
+            "red_result": "FAILED tests/test_lhc_execution.py::test_real_http_dispatch_registers_exact_durable_wake",
+            "red_sha256": "5237cfcaf8686bbd78801b34ce0c6e22a7cf715de22a03a8c88a390410191c47",
+            "result": "28 passed",
+            "sha256": "3d6e5f36fba8bc6767123bd4b4081ac0b658b31fc15bc510fbf268a857210fd5",
+            "test_command": "python3 -m pytest -q tests/test_lhc_execution.py"
+          },
+          "kind": "fixed",
+          "reason": "Canonical attempt and existing Herder bridge correlate exact request/turn/wake; completion waits for explicit business acceptance."
+        },
+        "status": "fixed"
+      }
     }
   ],
   "id": "B05",
   "owner": "root",
   "reporter": "root",
+  "resolution": {
+    "evidence": {
+      "proof_path": "evidence/L05D/B09-green.txt",
+      "red_proof_path": "evidence/L04/red.txt",
+      "red_result": "FAILED tests/test_lhc_execution.py::test_real_http_dispatch_registers_exact_durable_wake",
+      "red_sha256": "5237cfcaf8686bbd78801b34ce0c6e22a7cf715de22a03a8c88a390410191c47",
+      "result": "28 passed",
+      "sha256": "3d6e5f36fba8bc6767123bd4b4081ac0b658b31fc15bc510fbf268a857210fd5",
+      "test_command": "python3 -m pytest -q tests/test_lhc_execution.py"
+    },
+    "kind": "fixed",
+    "reason": "Canonical attempt and existing Herder bridge correlate exact request/turn/wake; completion waits for explicit business acceptance."
+  },
   "source": "audit20261107",
-  "status": "open",
+  "status": "fixed",
   "title": "План не связывает dispatch с durable wake",
-  "updated_at": "2026-11-07T15:18:36+00:00"
+  "updated_at": "2026-11-07T16:20:45+00:00"
 }

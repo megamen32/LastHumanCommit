@@ -14,7 +14,7 @@
   "model": "gpt-6.1-sol",
   "id": "L05C",
   "created_at": "2026-11-07T18:46:00+03:00",
-  "updated_at": "2026-11-07T19:11:56+03:00",
+  "updated_at": "2026-11-07T19:20:46+03:00",
   "progress_events": [
     {
       "at": "2026-11-07T18:46:00+03:00",
@@ -116,6 +116,22 @@
       },
       "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
       "harness": "codex"
+    },
+    {
+      "at": "2026-11-07T19:20:46+03:00",
+      "note": "B08 repair: remove automatic writer-as-executor declaration; retain event actor and historical facts.",
+      "changes": {
+        "session": "",
+        "harness": ""
+      },
+      "actor": {
+        "host_id": null,
+        "harness": "codex",
+        "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+        "source": "native_environment"
+      },
+      "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "harness": "codex"
     }
   ],
   "worker": {
@@ -128,7 +144,7 @@
     "removed_at": "2026-11-07T19:11:56+03:00"
   },
   "owner": "audit_rust_plan",
-  "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
-  "harness": "codex",
+  "session": "",
+  "harness": "",
   "result": "Atomic admission bridge, assigned availability, source/turn/wake correlation and recovery without replay; concrete continuation instructions. 18 focused checks, actual6command CLI journey and read-only real session canary passed. Evidence/L05C; commite3d18481 integrated."
 }
