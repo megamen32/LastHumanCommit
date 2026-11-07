@@ -1,7 +1,7 @@
 {
   "label": "Контракт назначения и готовности",
   "kind": "task",
-  "status": "running",
+  "status": "done",
   "estimate_minutes": 15,
   "depends_on": [],
   "description": "Контракт назначения и готовности",
@@ -10,7 +10,7 @@
   "model": "gpt-6-astra",
   "id": "L01",
   "created_at": "2026-11-07T18:18:34+03:00",
-  "updated_at": "2026-11-07T18:18:36+03:00",
+  "updated_at": "2026-11-07T18:25:55+03:00",
   "progress_events": [
     {
       "at": "2026-11-07T18:18:34+03:00",
@@ -40,9 +40,20 @@
       },
       "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
       "harness": "codex"
+    },
+    {
+      "at": "2026-11-07T18:25:55+03:00",
+      "note": "",
+      "changes": {
+        "status": "done",
+        "result": "Контракт назначения, actor, readiness и Herder bridge согласован; design.md. Три независимых компонента готовы к параллельной реализации."
+      },
+      "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "harness": "codex"
     }
   ],
   "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
   "harness": "codex",
-  "owner": "root"
+  "owner": "root",
+  "result": "Контракт назначения, actor, readiness и Herder bridge согласован; design.md. Три независимых компонента готовы к параллельной реализации."
 }
