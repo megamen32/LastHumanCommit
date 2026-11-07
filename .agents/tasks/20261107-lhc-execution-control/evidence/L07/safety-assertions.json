@@ -1,0 +1,25 @@
+{
+  "result": "pass",
+  "effects_by_scenario": {
+    "normal": {
+      "deliver": 1,
+      "resume_after": 1,
+      "resume_after_status": 0
+    },
+    "unknown": {
+      "deliver": 1,
+      "resume_after": 0,
+      "resume_after_status": 0
+    },
+    "quota": {
+      "deliver": 1,
+      "resume_after": 0,
+      "resume_after_status": 0
+    }
+  },
+  "premature_acceptance_rejected": true,
+  "native_terminal_is_not_accepted": true,
+  "unknown_not_replayed": true,
+  "blocked_continuation_visible": true,
+  "limits": "Independent local HTTP fixture, no native worker launched. Parent is declared, not native relationship proof."
+}

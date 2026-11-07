@@ -1,0 +1,408 @@
+{
+  "id": "L01",
+  "label": "Child delivers synthetic artifact",
+  "status": "done",
+  "depends_on": [],
+  "assignment": {
+    "schema_version": 1,
+    "attempt_id": "L07-normal-1",
+    "executor_kind": "subagent",
+    "lead": {
+      "host_id": "roomhacker-server-100",
+      "harness": "codex",
+      "session_id": "lead-controller"
+    },
+    "executor": {
+      "host_id": "roomhacker-server-100",
+      "harness": "codex",
+      "session_id": "child-executor"
+    },
+    "parent": {
+      "host_id": "roomhacker-server-100",
+      "harness": "codex",
+      "session_id": "native-parent"
+    },
+    "state": "accepted",
+    "dispatch": {
+      "request_id": "lhc:bcda3d6c0f65b8400b7b39852a5b6e602d510392a103b1c6713059b443976968",
+      "status": "accepted",
+      "observed_at": "2026-11-07T16:59:26.926280+00:00",
+      "turn_id": "L07-turn-1",
+      "reason": null,
+      "receipt": {
+        "delivery": "accepted",
+        "ok": true,
+        "admitted": true,
+        "inputId": "lhc:bcda3d6c0f65b8400b7b39852a5b6e602d510392a103b1c6713059b443976968",
+        "turnId": "L07-turn-1",
+        "sessionId": "child-executor",
+        "harness": "codex"
+      }
+    },
+    "wake": {
+      "wait_id": "wait_a8eb1b713a1add2cd2e5c11313d6c7eb",
+      "state": "delivery_unknown",
+      "reason": "permission_denied",
+      "next_at": null,
+      "observed_at": "2026-11-07T16:59:27.303315+00:00",
+      "turn_id": "L07-turn-1",
+      "captured_turn_id": "L07-turn-1",
+      "request_id": "lhc:bcda3d6c0f65b8400b7b39852a5b6e602d510392a103b1c6713059b443976968:completion"
+    },
+    "observed_runtime": {
+      "state": "completed",
+      "observed_at": "2026-11-07T16:59:27.325570+00:00",
+      "source": "native_verified",
+      "turn_id": "L07-turn-1",
+      "model": "synthetic-no-LLM",
+      "worktree": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-consumer-child-20261107/.tmp/consumer-run-final"
+    },
+    "events": [
+      {
+        "at": "2026-11-07T16:59:26+00:00",
+        "actor": {
+          "host_id": null,
+          "harness": null,
+          "session_id": null,
+          "source": "unknown"
+        },
+        "from": null,
+        "to": "assigned"
+      },
+      {
+        "at": "2026-11-07T16:59:26+00:00",
+        "actor": {
+          "host_id": null,
+          "harness": null,
+          "session_id": null,
+          "source": "declared"
+        },
+        "from": "assigned",
+        "to": "assigned",
+        "receipt": {
+          "observed_runtime": {
+            "state": "idle",
+            "observed_at": "2026-11-07T16:59:26.909761+00:00",
+            "source": "native_verified",
+            "turn_id": "L07-turn-1",
+            "model": "synthetic-no-LLM",
+            "worktree": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-consumer-child-20261107/.tmp/consumer-run-final"
+          }
+        }
+      },
+      {
+        "at": "2026-11-07T16:59:26+00:00",
+        "actor": {
+          "host_id": null,
+          "harness": null,
+          "session_id": null,
+          "source": "declared"
+        },
+        "from": "assigned",
+        "to": "dispatching",
+        "receipt": {
+          "dispatch": {
+            "request_id": "lhc:bcda3d6c0f65b8400b7b39852a5b6e602d510392a103b1c6713059b443976968",
+            "status": "dispatching",
+            "observed_at": "2026-11-07T16:59:26.921085+00:00",
+            "turn_id": null,
+            "reason": null,
+            "receipt": null
+          }
+        }
+      },
+      {
+        "at": "2026-11-07T16:59:26+00:00",
+        "actor": {
+          "host_id": null,
+          "harness": null,
+          "session_id": null,
+          "source": "declared"
+        },
+        "from": "dispatching",
+        "to": "submitted",
+        "receipt": {
+          "dispatch": {
+            "request_id": "lhc:bcda3d6c0f65b8400b7b39852a5b6e602d510392a103b1c6713059b443976968",
+            "status": "accepted",
+            "observed_at": "2026-11-07T16:59:26.926280+00:00",
+            "turn_id": "L07-turn-1",
+            "reason": null,
+            "receipt": {
+              "delivery": "accepted",
+              "ok": true,
+              "admitted": true,
+              "inputId": "lhc:bcda3d6c0f65b8400b7b39852a5b6e602d510392a103b1c6713059b443976968",
+              "turnId": "L07-turn-1",
+              "sessionId": "child-executor",
+              "harness": "codex"
+            }
+          }
+        }
+      },
+      {
+        "at": "2026-11-07T16:59:26+00:00",
+        "actor": {
+          "host_id": null,
+          "harness": null,
+          "session_id": null,
+          "source": "declared"
+        },
+        "from": "submitted",
+        "to": "running",
+        "receipt": {
+          "observed_runtime": {
+            "state": "running",
+            "observed_at": "2026-11-07T16:59:26.930067+00:00",
+            "source": "native_verified",
+            "turn_id": "L07-turn-1",
+            "model": "synthetic-no-LLM",
+            "worktree": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-consumer-child-20261107/.tmp/consumer-run-final"
+          }
+        }
+      },
+      {
+        "at": "2026-11-07T16:59:26+00:00",
+        "actor": {
+          "host_id": null,
+          "harness": null,
+          "session_id": null,
+          "source": "declared"
+        },
+        "from": "running",
+        "to": "running",
+        "receipt": {
+          "wake": {
+            "wait_id": "wait_a8eb1b713a1add2cd2e5c11313d6c7eb",
+            "state": "registering",
+            "reason": "registration_in_progress",
+            "next_at": null,
+            "observed_at": "2026-11-07T16:59:26.933212+00:00",
+            "turn_id": "L07-turn-1",
+            "captured_turn_id": "L07-turn-1",
+            "request_id": "lhc:bcda3d6c0f65b8400b7b39852a5b6e602d510392a103b1c6713059b443976968:completion"
+          }
+        }
+      },
+      {
+        "at": "2026-11-07T16:59:26+00:00",
+        "actor": {
+          "host_id": null,
+          "harness": null,
+          "session_id": null,
+          "source": "declared"
+        },
+        "from": "running",
+        "to": "running",
+        "receipt": {
+          "wake": {
+            "wait_id": "wait_a8eb1b713a1add2cd2e5c11313d6c7eb",
+            "state": "delivery_unknown",
+            "reason": "permission_denied",
+            "next_at": null,
+            "observed_at": "2026-11-07T16:59:26.937456+00:00",
+            "turn_id": "L07-turn-1",
+            "captured_turn_id": "L07-turn-1",
+            "request_id": "lhc:bcda3d6c0f65b8400b7b39852a5b6e602d510392a103b1c6713059b443976968:completion"
+          }
+        }
+      },
+      {
+        "at": "2026-11-07T16:59:27+00:00",
+        "actor": {
+          "host_id": null,
+          "harness": null,
+          "session_id": null,
+          "source": "declared"
+        },
+        "from": "running",
+        "to": "running",
+        "receipt": {
+          "wake": {
+            "wait_id": "wait_a8eb1b713a1add2cd2e5c11313d6c7eb",
+            "state": "delivery_unknown",
+            "reason": "permission_denied",
+            "next_at": null,
+            "observed_at": "2026-11-07T16:59:27.303315+00:00",
+            "turn_id": "L07-turn-1",
+            "captured_turn_id": "L07-turn-1",
+            "request_id": "lhc:bcda3d6c0f65b8400b7b39852a5b6e602d510392a103b1c6713059b443976968:completion"
+          }
+        }
+      },
+      {
+        "at": "2026-11-07T16:59:27+00:00",
+        "actor": {
+          "host_id": null,
+          "harness": null,
+          "session_id": null,
+          "source": "declared"
+        },
+        "from": "running",
+        "to": "result_ready",
+        "receipt": {
+          "observed_runtime": {
+            "state": "completed",
+            "observed_at": "2026-11-07T16:59:27.325570+00:00",
+            "source": "native_verified",
+            "turn_id": "L07-turn-1",
+            "model": "synthetic-no-LLM",
+            "worktree": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-consumer-child-20261107/.tmp/consumer-run-final"
+          }
+        }
+      },
+      {
+        "at": "2026-11-07T16:59:27+00:00",
+        "actor": {
+          "host_id": null,
+          "harness": null,
+          "session_id": null,
+          "source": "unknown"
+        },
+        "from": "result_ready",
+        "to": "accepted",
+        "receipt": {
+          "result": "Verified synthetic artifact L07-child-output for exact L07-turn-1; disposable native observation only."
+        }
+      }
+    ]
+  },
+  "assignment_history": [],
+  "updated_at": "2026-11-07T19:59:27+03:00",
+  "progress_events": [
+    {
+      "at": "2026-11-07T19:59:26+03:00",
+      "note": "",
+      "changes": {},
+      "actor": {
+        "host_id": null,
+        "harness": null,
+        "session_id": null,
+        "source": "unknown"
+      },
+      "session": "unknown",
+      "harness": "unknown"
+    },
+    {
+      "at": "2026-11-07T19:59:26+03:00",
+      "note": "",
+      "changes": {},
+      "actor": {
+        "host_id": null,
+        "harness": null,
+        "session_id": null,
+        "source": "declared"
+      },
+      "session": "unknown",
+      "harness": "unknown"
+    },
+    {
+      "at": "2026-11-07T19:59:26+03:00",
+      "note": "",
+      "changes": {},
+      "actor": {
+        "host_id": null,
+        "harness": null,
+        "session_id": null,
+        "source": "declared"
+      },
+      "session": "unknown",
+      "harness": "unknown"
+    },
+    {
+      "at": "2026-11-07T19:59:26+03:00",
+      "note": "",
+      "changes": {},
+      "actor": {
+        "host_id": null,
+        "harness": null,
+        "session_id": null,
+        "source": "declared"
+      },
+      "session": "unknown",
+      "harness": "unknown"
+    },
+    {
+      "at": "2026-11-07T19:59:26+03:00",
+      "note": "",
+      "changes": {},
+      "actor": {
+        "host_id": null,
+        "harness": null,
+        "session_id": null,
+        "source": "declared"
+      },
+      "session": "unknown",
+      "harness": "unknown"
+    },
+    {
+      "at": "2026-11-07T19:59:26+03:00",
+      "note": "",
+      "changes": {},
+      "actor": {
+        "host_id": null,
+        "harness": null,
+        "session_id": null,
+        "source": "declared"
+      },
+      "session": "unknown",
+      "harness": "unknown"
+    },
+    {
+      "at": "2026-11-07T19:59:26+03:00",
+      "note": "",
+      "changes": {},
+      "actor": {
+        "host_id": null,
+        "harness": null,
+        "session_id": null,
+        "source": "declared"
+      },
+      "session": "unknown",
+      "harness": "unknown"
+    },
+    {
+      "at": "2026-11-07T19:59:27+03:00",
+      "note": "",
+      "changes": {},
+      "actor": {
+        "host_id": null,
+        "harness": null,
+        "session_id": null,
+        "source": "declared"
+      },
+      "session": "unknown",
+      "harness": "unknown"
+    },
+    {
+      "at": "2026-11-07T19:59:27+03:00",
+      "note": "",
+      "changes": {},
+      "actor": {
+        "host_id": null,
+        "harness": null,
+        "session_id": null,
+        "source": "declared"
+      },
+      "session": "unknown",
+      "harness": "unknown"
+    },
+    {
+      "at": "2026-11-07T19:59:27+03:00",
+      "note": "",
+      "changes": {
+        "status": "done",
+        "result": "Verified synthetic artifact L07-child-output for exact L07-turn-1; disposable native observation only."
+      },
+      "actor": {
+        "host_id": null,
+        "harness": null,
+        "session_id": null,
+        "source": "unknown"
+      },
+      "session": "unknown",
+      "harness": "unknown"
+    }
+  ],
+  "result": "Verified synthetic artifact L07-child-output for exact L07-turn-1; disposable native observation only."
+}
