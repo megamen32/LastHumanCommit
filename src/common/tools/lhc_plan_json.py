@@ -1892,6 +1892,62 @@ def overrun(leaf: dict, now=None, fallback_start=None):
     return None
 
 
+def repair_move_field(plan_dir: Path, leaf_id: str, *, source: str, target: str,
+                      expected_hash: str) -> dict:
+    """Move one unknown top-level field into result/note, with a byte-exact backup.
+
+    This recovery operation validates only the repaired leaf: a malformed sibling
+    must not prevent its repair. It does not normalize fields, rewrite timestamps
+    or append progress; an ordinary update records subsequent workflow changes.
+    The appended JSON object preserves the source name, value and JSON type.
+    """
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,79}", leaf_id):
+        raise LeafError("небезопасный id листа")
+    if source in LEAF_FIELDS:
+        raise LeafError("repair refuses known source fields")
+    if target not in {"result", "note"}:
+        raise LeafError("repair target must be result or note")
+    if not isinstance(expected_hash, str) or not re.fullmatch(r"[0-9a-f]{64}", expected_hash):
+        raise LeafError("repair requires an explicit SHA-256 expected hash")
+    plan_dir = Path(plan_dir)
+    path = plan_dir / LEAVES_DIRNAME / (leaf_id + ".json")
+    with file_lock(plan_dir / ".lhc-leaves.lock"):
+        if path.is_symlink():
+            raise LeafError("symlink листа запрещён")
+        before = path.read_bytes()
+        if hashlib.sha256(before).hexdigest() != expected_hash:
+            raise LeafError("конфликт: лист изменён, перечитайте его")
+        raw = json.loads(before)
+        if not isinstance(raw, dict) or source not in raw:
+            raise LeafError("repair source field is missing")
+        existing = raw.get(target, "")
+        if not isinstance(existing, str):
+            raise LeafError("repair target must contain text")
+        moved = json.dumps({source: raw[source]}, ensure_ascii=False)
+        repaired = {key: value for key, value in raw.items() if key != source}
+        repaired[target] = existing + ("\n\n" if existing else "") + moved
+        # Do not use a lenient projection as the repaired source of truth.
+        unknown = sorted(set(repaired) - set(LEAF_FIELDS))
+        if unknown:
+            raise unknown_field_error(path, unknown)
+        task_from_leaf(repaired, path)
+        serialized = json.dumps(repaired, ensure_ascii=False, indent=2) + "\n"
+        backup_dir = plan_dir / ".lhc-repair-backups"
+        backup_dir.mkdir(exist_ok=True)
+        backup = backup_dir / f"{leaf_id}.{expected_hash}.json"
+        # Exclusive creation prevents overwriting an earlier recovery artifact.
+        with backup.open("xb") as stream:
+            stream.write(before)
+            stream.flush()
+            os.fsync(stream.fileno())
+        _write_atomic(path, serialized)
+    return {"id": leaf_id, "operation": "repair-move-field",
+            "source": source, "target": target,
+            "before_sha256": expected_hash,
+            "sha256": hashlib.sha256(serialized.encode("utf-8")).hexdigest(),
+            "backup_path": str(backup.resolve())}
+
+
 def update_leaf(plan_dir: Path, leaf_id: str, fields: dict, *, create=False,
                 note=None, expected_hash=None, actor=None, assignment_op=None) -> dict:
     """Serialized read/merge/validate/replace; stale optimistic writes fail."""
@@ -2383,6 +2439,12 @@ def main(argv: Optional[list[str]] = None) -> int:
         edit.add_argument("--fields", default="{}", help="JSON object")
         edit.add_argument("--expected-hash")
         edit.add_argument("--note")
+    repair = sub.add_parser("repair-move-field", help="back up and move one unknown leaf field into result/note")
+    repair.add_argument("plan_dir", type=Path)
+    repair.add_argument("leaf_id")
+    repair.add_argument("--source", required=True)
+    repair.add_argument("--target", required=True, choices=("result", "note"))
+    repair.add_argument("--expected-hash", required=True)
     show = sub.add_parser("show", help="where the plan is: done leaves with results, current, next, overruns")
     show.add_argument("plan_dir", type=Path)
     show.add_argument("--current", action="append", default=[], help="leaf id of this session (repeatable)")
@@ -2449,6 +2511,10 @@ def main(argv: Optional[list[str]] = None) -> int:
                 )
             except lhc_plan_mirror.ActivationError as error:
                 raise LeafError(str(error)) from None
+            print(json.dumps(result, ensure_ascii=False))
+        elif args.command == "repair-move-field":
+            result = repair_move_field(args.plan_dir, args.leaf_id, source=args.source,
+                                       target=args.target, expected_hash=args.expected_hash)
             print(json.dumps(result, ensure_ascii=False))
         elif args.command in ("create-leaf", "update-leaf", "progress"):
             result = update_leaf(args.plan_dir, args.leaf_id, json.loads(args.fields),
