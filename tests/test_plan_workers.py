@@ -91,7 +91,7 @@ def test_a_worker_is_registered_then_merged_and_removed_when_its_leaf_closes(tmp
     plan = make_plan(tmp_path, [{"id": "L09", "label": "ZCode", "status": "queued"}])
     pj.worker_register(plan, "L09", "w-zcode", "lhc/w-zcode", str(worktree), run_dir=str(run_dir))
     leaf = json.loads((plan / "leaves/L09.json").read_text())
-    assert leaf["status"] == "running" and leaf["worker"]["branch"] == "lhc/w-zcode"
+    assert leaf["status"] == "queued" and leaf["worker"]["branch"] == "lhc/w-zcode"
     with pytest.raises(pj.LeafError, match="already has Worker"):
         pj.worker_register(plan, "L09", "other", "lhc/w-zcode", str(worktree))
 
@@ -125,7 +125,7 @@ def test_a_conflicting_worker_leaves_its_leaf_open_and_the_task_branch_clean(tmp
     with pytest.raises(pj.LeafError, match="conflicts; the merge was aborted"):
         pj.worker_finish(plan, "L10", str(repo), "Claude passes")
     assert git(repo, "status", "--porcelain") == ""
-    assert worktree.exists() and json.loads((plan / "leaves/L10.json").read_text())["status"] == "running"
+    assert worktree.exists() and json.loads((plan / "leaves/L10.json").read_text())["status"] == "queued"
 
 
 def test_the_cli_prints_the_plan_state_and_explains_errors(tmp_path):

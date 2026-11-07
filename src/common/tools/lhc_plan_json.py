@@ -33,6 +33,7 @@ from __future__ import annotations
 import argparse
 import contextlib
 import contextvars
+import lhc_assignment as assignments
 import fcntl
 import hashlib
 from datetime import datetime, timezone
@@ -184,6 +185,8 @@ LEAF_FIELDS = (
     "wave",
     "updated_at",
     "progress_events",
+    "assignment",
+    "assignment_history",
     # The Worker that owns the leaf: id, branch, worktree, run_dir, run_host,
     # registered_at and removed_at. worker-finish merges and removes it.
     "worker",
@@ -572,13 +575,23 @@ def task_from_leaf(raw: Any, path: Path) -> dict[str, Any]:
     task["supersedes"] = _string_list(raw, "supersedes", path)
     events = raw.get("progress_events", [])
     if not isinstance(events, list) or any(
-        not isinstance(e, dict) or set(e) - {"at", "note", "changes", "session", "harness"}
+        not isinstance(e, dict) or set(e) - {"at", "note", "changes", "session", "harness", "actor"}
         or not isinstance(e.get("at"), str) or not isinstance(e.get("note", ""), str)
         or not isinstance(e.get("changes", {}), dict) for e in events
     ):
         raise LeafError(f"{path}: неверные progress_events")
     if events:
         task["progress_events"] = events
+    for event in events:
+        if "actor" in event:
+            assignments.validate_actor(event["actor"])
+    if "assignment" in raw:
+        task["assignment"] = assignments.validate_assignment(raw["assignment"])
+    if "assignment_history" in raw:
+        history = raw["assignment_history"]
+        if not isinstance(history, list):
+            raise LeafError("assignment_history must be a list")
+        task["assignment_history"] = [assignments.validate_assignment(item) for item in history]
 
     affected = _string_list(raw, "affected_files", path)
     if affected:
@@ -1880,12 +1893,15 @@ def overrun(leaf: dict, now=None, fallback_start=None):
 
 
 def update_leaf(plan_dir: Path, leaf_id: str, fields: dict, *, create=False,
-                note=None, expected_hash=None) -> dict:
+                note=None, expected_hash=None, actor=None, assignment_op=None) -> dict:
     """Serialized read/merge/validate/replace; stale optimistic writes fail."""
     if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,79}", leaf_id):
         raise LeafError("небезопасный id листа")
     if not isinstance(fields, dict) or "progress_events" in fields:
         raise LeafError("fields: объект; историю меняет только progress")
+    if set(fields) & {"assignment", "assignment_history"}:
+        raise LeafError("use assign_leaf/transition_leaf to preserve assignment history")
+    who = assignments.resolve_actor(actor)
     path = Path(plan_dir) / LEAVES_DIRNAME / (leaf_id + ".json")
     with file_lock(Path(plan_dir) / ".lhc-leaves.lock"):
         if path.is_symlink():
@@ -1896,12 +1912,34 @@ def update_leaf(plan_dir: Path, leaf_id: str, fields: dict, *, create=False,
         if expected_hash and hashlib.sha256(before).hexdigest() != expected_hash:
             raise LeafError("конфликт: лист изменён, перечитайте его")
         raw = json.loads(before) if before else {}
+        if raw.get("assignment") and fields.get("status") == "done":
+            raise LeafError("accept the explicit assignment through transition_leaf")
         if 'created_at' in fields and fields['created_at'] != raw.get('created_at'):
             raise LeafError('created_at устанавливается автоматически и не меняется')
         if "id" in fields and fields["id"] != leaf_id:
             raise LeafError("id нельзя менять")
         merged = {**raw, **fields, "id": leaf_id}
-        if not create and raw.get("status") == "running" and merged.get("status") == "running":
+        if assignment_op is not None:
+            op = assignment_op
+            if op["operation"] == "assign":
+                history = list(raw.get("assignment_history", []))
+                previous = raw.get("assignment")
+                current = assignments.new_attempt(op["assignment"], previous=previous,
+                                                  history=history, actor=who)
+                if previous is not None:
+                    history.append(previous)
+                merged["assignment"], merged["assignment_history"] = current, history
+            elif op["operation"] == "transition":
+                if "assignment" not in raw:
+                    raise LeafError("leaf has no explicit assignment")
+                merged["assignment"] = assignments.transition(
+                    raw["assignment"], op["state"], attempt_id=op["attempt_id"],
+                    receipt=op.get("receipt"), actor=who)
+                if op["state"] == "accepted":
+                    merged["status"] = "done"
+            else:
+                raise LeafError("unknown assignment operation")
+        if assignment_op is None and not create and raw.get("status") == "running" and merged.get("status") == "running":
             late = overrun(raw)
             if late:
                 raise LeafError(
@@ -1925,8 +1963,9 @@ def update_leaf(plan_dir: Path, leaf_id: str, fields: dict, *, create=False,
         if merged.get("model") and raw.get("model") != merged["model"]:
             changes["model"] = merged["model"]
         events.append({"at": stamp, "note": note or "", "changes": changes,
-                       "session": merged.get("session", "unknown"),
-                       "harness": merged.get("harness", "unknown")})
+                       "actor": who,
+                       "session": who.get("session_id") or "unknown",
+                       "harness": who.get("harness") or "unknown"})
         merged["progress_events"] = events
         candidate = task_from_leaf(merged, path)
         tasks = [t for t in collect_leaves(plan_dir) if t["id"] != leaf_id] if (Path(plan_dir) / LEAVES_DIRNAME).is_dir() and any((Path(plan_dir) / LEAVES_DIRNAME).glob("*.json")) else []
@@ -1960,7 +1999,24 @@ def update_leaf(plan_dir: Path, leaf_id: str, fields: dict, *, create=False,
             mark(plan_dir)
     except Exception:
         print('LHC: лист сохранён; локальную отметку зеркала проверит наблюдатель', file=sys.stderr)
-    return {"id": leaf_id, "sha256": own_hash}
+    result = {"id": leaf_id, "sha256": own_hash}
+    if assignment_op is not None:
+        result["assignment"] = merged["assignment"]
+    return result
+
+
+def assign_leaf(plan_dir, leaf_id, assignment, actor=None, expected_hash=None):
+    """Atomically declare a new execution attempt without claiming native start."""
+    return update_leaf(plan_dir, leaf_id, {}, actor=actor, expected_hash=expected_hash,
+                       assignment_op={"operation": "assign", "assignment": assignment})
+
+
+def transition_leaf(plan_dir, leaf_id, attempt_id, state, receipt=None, actor=None,
+                    expected_hash=None):
+    """Append a receipt to the exact current attempt under the leaf lock/CAS."""
+    return update_leaf(plan_dir, leaf_id, {}, actor=actor, expected_hash=expected_hash,
+                       assignment_op={"operation": "transition", "attempt_id": attempt_id,
+                                      "state": state, "receipt": receipt})
 
 
 # --------------------------------------------------------------------------
@@ -2181,8 +2237,6 @@ def worker_register(plan_dir: Path, leaf_id: str, worker: str, branch: str, work
     if run_host:
         record["run_host"] = run_host
     fields: dict[str, Any] = {"worker": record, "owner": worker.strip()}
-    if leaf.get("status") in {None, "queued"}:
-        fields["status"] = "running"
     return update_leaf(plan_dir, leaf_id, fields, note=f"Worker {worker} registered on {branch}")
 
 
