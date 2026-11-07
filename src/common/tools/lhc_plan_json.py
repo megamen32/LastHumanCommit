@@ -1971,6 +1971,7 @@ def update_leaf(plan_dir: Path, leaf_id: str, fields: dict, *, create=False,
         raise LeafError("fields: объект; историю меняет только progress")
     if set(fields) & {"assignment", "assignment_history"}:
         raise LeafError("use assign_leaf/transition_leaf to preserve assignment history")
+    handoff_payload = None
     who = mutation_actor(actor)
     path = Path(plan_dir) / LEAVES_DIRNAME / (leaf_id + ".json")
     with file_lock(Path(plan_dir) / ".lhc-leaves.lock"):
@@ -2018,6 +2019,11 @@ def update_leaf(plan_dir: Path, leaf_id: str, fields: dict, *, create=False,
                     admitted = readiness["by_id"].get(leaf_id, {})
                     if admitted.get("dispatchable") is not True:
                         raise LeafError("dispatch_not_admitted:" + str(admitted.get("reason_code", "leaf_unknown")))
+                if op["operation"] == "admit" and op.get("handoff_message") is not None:
+                    from lhc_handoff import prepare
+                    identity, handoff_payload = prepare(plan_dir, leaf_id, raw["assignment"], before,
+                                                       op["handoff_message"], plan_metadata(plan_dir))
+                    op["receipt"]["dispatch"]["handoff"] = identity
                 merged["assignment"] = assignments.transition(
                     raw["assignment"], op["state"], attempt_id=op["attempt_id"],
                     receipt=op.get("receipt"), actor=who)
@@ -2077,6 +2083,9 @@ def update_leaf(plan_dir: Path, leaf_id: str, fields: dict, *, create=False,
         path.parent.mkdir(parents=True, exist_ok=True)
         serialized = json.dumps(merged, ensure_ascii=False, indent=2) + "\n"
         _write_atomic(path, serialized)
+        if handoff_payload is not None:
+            from lhc_handoff import sync_intent
+            sync_intent(path)
         own_hash = hashlib.sha256(serialized.encode()).hexdigest()
         if merged.get("session") and merged.get("status", "queued") in {"queued", "running"}:
             record_session_plan(merged["session"], plan_dir, leaf_id)
@@ -2095,6 +2104,8 @@ def update_leaf(plan_dir: Path, leaf_id: str, fields: dict, *, create=False,
     result = {"id": leaf_id, "sha256": own_hash}
     if assignment_op is not None:
         result["assignment"] = merged["assignment"]
+    if handoff_payload is not None:
+        result["handoff_payload"] = handoff_payload
     return result
 
 
@@ -2104,11 +2115,12 @@ def assign_leaf(plan_dir, leaf_id, assignment, actor=None, expected_hash=None):
                        assignment_op={"operation": "assign", "assignment": assignment})
 
 
-def admit_leaf(plan_dir, leaf_id, attempt_id, receipt, actor=None, expected_hash=None):
+def admit_leaf(plan_dir, leaf_id, attempt_id, receipt, actor=None, expected_hash=None, handoff_message=None):
     """Atomically gate real submission and persist its intent before network I/O."""
     return update_leaf(plan_dir, leaf_id, {}, actor=actor, expected_hash=expected_hash,
                        assignment_op={"operation": "admit", "attempt_id": attempt_id,
-                                      "state": "dispatching", "receipt": receipt})
+                                      "state": "dispatching", "receipt": receipt,
+                                      "handoff_message": handoff_message})
 
 
 def transition_leaf(plan_dir, leaf_id, attempt_id, state, receipt=None, actor=None,

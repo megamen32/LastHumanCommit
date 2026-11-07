@@ -333,7 +333,9 @@ def run_cli(argv: list[str]) -> dict[str, Any]:
         env["LHC_MCP_ACTOR_CONTEXT"] = json.dumps(actor, ensure_ascii=False)
     completed = subprocess.run(argv, capture_output=True, text=True, check=False, env=env)
     return {
-        "argv": list(argv),
+        # Scoped task messages are private even when the CLI rejects a call.
+        "argv": ["[private task message]" if i and argv[i - 1] == "--message" else arg
+                 for i, arg in enumerate(argv)],
         "stdout": completed.stdout,
         "stderr": completed.stderr,
         "returncode": completed.returncode,

@@ -213,6 +213,7 @@ def _join(a, transport, persist, runtime, now, context=None):
 
 
 def dispatch_assignment(assignment, message, *, transport=None, persist, observer=None, now=_now, context=None):
+    """Internal transport adapter; supported callers use canonical dispatch_leaf."""
     a = _assignment(assignment)
     if a['executor_kind'] == 'self':
         if a['executor'] != a['lead']:
@@ -243,7 +244,7 @@ def dispatch_assignment(assignment, message, *, transport=None, persist, observe
     try:
         receipt = transport.call('deliver', {'hostId': a['executor']['host_id'],
             'harness': a['executor']['harness'], 'sessionId': a['executor']['session_id'],
-            'inputId': request_id, 'message': message, 'create': 'never', 'activation': 'always', 'mode': 'queue',
+            'inputId': request_id, 'message': context.get('handoff_payload', message) if context else message, 'create': 'never', 'activation': 'always', 'mode': 'queue',
             'sourceHarness': a['lead']['harness'], 'sourceSessionId': a['lead']['session_id']})
     except TransportError as error:
         dispatch.update(status='unknown' if error.submitted else 'blocked', reason=error.reason, observed_at=now())
@@ -332,7 +333,7 @@ def reconcile_assignment(assignment, *, transport=None, persist, observer=None, 
     return _join(a, transport, persist, runtime, now, context=context)
 
 
-def _leaf_context(plan_dir, leaf_id, attempt_id, actor, expected_hash):
+def _leaf_context(plan_dir, leaf_id, attempt_id, actor, expected_hash, context=None):
     """Bind a bridge call to one CAS-protected canonical assignment."""
     import lhc_plan_json
     if not isinstance(leaf_id, str) or not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_-]{0,127}', leaf_id):
@@ -349,7 +350,10 @@ def _leaf_context(plan_dir, leaf_id, attempt_id, actor, expected_hash):
         nonlocal digest
         if state == 'dispatching':
             result = lhc_plan_json.admit_leaf(plan_dir, leaf_id, attempt_id, receipt,
-                        actor=actor, expected_hash=digest)
+                        actor=actor, expected_hash=digest,
+                        handoff_message=context.get('caller_message') if context else None)
+            if context is not None:
+                context['handoff_payload'] = result.get('handoff_payload')
         else:
             result = lhc_plan_json.transition_leaf(plan_dir, leaf_id, attempt_id, state,
                         receipt=receipt, actor=actor, expected_hash=digest)
@@ -360,11 +364,15 @@ def _leaf_context(plan_dir, leaf_id, attempt_id, actor, expected_hash):
 
 def dispatch_leaf(plan_dir, leaf_id, attempt_id, message, *, actor=None, expected_hash=None,
                   transport=None, observer=None, now=_now):
-    a, persist = _leaf_context(plan_dir, leaf_id, attempt_id, actor, expected_hash)
+    context = {'plan_dir': str(Path(plan_dir).resolve()), 'leaf_id': leaf_id,
+               'attempt_id': attempt_id, 'caller_message': message}
+    a, persist = _leaf_context(plan_dir, leaf_id, attempt_id, actor, expected_hash, context=context)
     if a.get('state') == 'assigned' and a.get('executor_kind') != 'self':
+        from lhc_handoff import read_brief
+        import lhc_plan_json
+        read_brief(plan_dir, leaf_id, a, lhc_plan_json.plan_metadata(plan_dir))
         transport = transport or HerderMcpClient()
         a = reconcile_assignment(a, transport=transport, persist=persist, observer=observer, now=now)
-    context = {'plan_dir': str(Path(plan_dir).resolve()), 'leaf_id': leaf_id, 'attempt_id': attempt_id}
     return dispatch_assignment(a, message, transport=transport, persist=persist, observer=observer, now=now, context=context)
 
 
