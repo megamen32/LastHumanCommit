@@ -1,0 +1,183 @@
+(Linux uses --headless by default. To override, use --headed / --gui. For Xvfb mode instead, use --xvfb. Or you can hide this info by using --headless / --headless2 / --uc.)
+FFFFFFFF                                                                 [100%]
+=================================== FAILURES ===================================
+_______________ test_parallel_waiting_json_is_a_real_cli_answer ________________
+
+tmp_path = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-readiness-20261107/.tmp/pytest-3232637-32e89059f5cd3fa6/test_parallel_waiting_json_is_0')
+
+    def test_parallel_waiting_json_is_a_real_cli_answer(tmp_path):
+        p = module("lhc_parallel")
+        document = {"slots": 2, "tasks": [{"id": "A", "status": "queued"},
+            {"id": "B", "status": "queued", "depends_on": ["A"]}]}
+>       result = p.to_dict(p.analyze(p.parse_graph_json(document)))
+
+tests/test_readiness.py:29: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/common/tools/lhc_parallel.py:588: in to_dict
+    record["waits_for"] = [
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+.0 = <list_iterator object at 0x752dd1bef520>
+
+    record["waits_for"] = [
+        {
+            "id": dep,
+>           "label": index[dep].label if dep in index else "",
+            "status": index[dep].status if dep in index else "unknown",
+        }
+        for dep in unmet
+    ]
+E   NameError: name 'index' is not defined
+
+src/common/tools/lhc_parallel.py:591: NameError
+___________ test_unassigned_is_a_candidate_without_a_dispatch_claim ____________
+
+    def test_unassigned_is_a_candidate_without_a_dispatch_claim():
+>       r = module("lhc_readiness").evaluate([{"id": "A", "status": "queued"}], slots=2, now=NOW)
+
+tests/test_readiness.py:39: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_readiness.py:16: in module
+    spec.loader.exec_module(value)
+<frozen importlib._bootstrap_external>:879: in exec_module
+    ???
+<frozen importlib._bootstrap_external>:1016: in get_code
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <_frozen_importlib_external.SourceFileLoader object at 0x752dcf26bb50>
+path = '/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-readiness-20261107/src/common/tools/lhc_readiness.py'
+
+>   ???
+E   FileNotFoundError: [Errno 2] No such file or directory: '/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-readiness-20261107/src/common/tools/lhc_readiness.py'
+
+<frozen importlib._bootstrap_external>:1073: FileNotFoundError
+__ test_known_idle_executor_can_dispatch_but_unknown_or_stale_runtime_cannot ___
+
+    def test_known_idle_executor_can_dispatch_but_unknown_or_stale_runtime_cannot():
+>       evaluate = module("lhc_readiness").evaluate
+
+tests/test_readiness.py:47: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_readiness.py:16: in module
+    spec.loader.exec_module(value)
+<frozen importlib._bootstrap_external>:879: in exec_module
+    ???
+<frozen importlib._bootstrap_external>:1016: in get_code
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <_frozen_importlib_external.SourceFileLoader object at 0x752dcfc098d0>
+path = '/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-readiness-20261107/src/common/tools/lhc_readiness.py'
+
+>   ???
+E   FileNotFoundError: [Errno 2] No such file or directory: '/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-readiness-20261107/src/common/tools/lhc_readiness.py'
+
+<frozen importlib._bootstrap_external>:1073: FileNotFoundError
+_______ test_owner_busy_and_deferred_dependency_agree_in_every_consumer ________
+
+    def test_owner_busy_and_deferred_dependency_agree_in_every_consumer():
+        p, g = module("lhc_parallel"), module("lhc_grid")
+        for tasks, reason in [([{ "id": "A", "status": "running", "owner": "worker"},
+                               {"id": "B", "status": "queued", "owner": "worker"}], "waiting_for_owner"),
+                              ([{"id": "A", "status": "deferred"},
+                                {"id": "B", "status": "queued", "depends_on": ["A"]}], "waiting_for_leaf")]:
+            graph = g.parse_graph_json({"schema_version": 2, "slots": 3, "tasks": tasks})
+>           assert [t.id for t in p.analyze(p.parse_graph_json({"schema_version": 2, "slots": 3, "tasks": tasks})).ready] == []
+E           AssertionError: assert ['B'] == []
+E             
+E             Left contains one more item: 'B'
+E             Use -v to get more diff
+
+tests/test_readiness.py:61: AssertionError
+____ test_one_native_executor_occupies_one_slot_even_if_owner_labels_differ ____
+
+    def test_one_native_executor_occupies_one_slot_even_if_owner_labels_differ():
+>       evaluate = module("lhc_readiness").evaluate
+
+tests/test_readiness.py:68: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_readiness.py:16: in module
+    spec.loader.exec_module(value)
+<frozen importlib._bootstrap_external>:879: in exec_module
+    ???
+<frozen importlib._bootstrap_external>:1016: in get_code
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <_frozen_importlib_external.SourceFileLoader object at 0x752dd1bef490>
+path = '/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-readiness-20261107/src/common/tools/lhc_readiness.py'
+
+>   ???
+E   FileNotFoundError: [Errno 2] No such file or directory: '/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-readiness-20261107/src/common/tools/lhc_readiness.py'
+
+<frozen importlib._bootstrap_external>:1073: FileNotFoundError
+_______________________ test_slot_zero_is_not_unlimited ________________________
+
+    def test_slot_zero_is_not_unlimited():
+        p, g = module("lhc_parallel"), module("lhc_grid")
+        tasks = [{"id": "A", "status": "queued"}]
+        assert p.analyze(p.parse_graph_json({"schema_version": 2, "slots": 0, "tasks": tasks})).ready == []
+        for answer in (g.plan_now(g.parse_graph_json({"schema_version": 2, "slots": 0, "tasks": tasks})),
+                       g._plan_now_port(g.parse_graph_json({"schema_version": 2, "slots": 0, "tasks": tasks}))):
+>           assert answer["ready"] == []
+E           AssertionError: assert [{'estimate':...nblocks': []}] == []
+E             
+E             Left contains one more item: {'estimate': 'оценка не указана', 'id': 'A', 'label': 'A', 'unblocks': []}
+E             Use -v to get more diff
+
+tests/test_readiness.py:82: AssertionError
+_ test_external_waiting_unknown_dependencies_and_unsafe_replay_never_dispatch __
+
+    def test_external_waiting_unknown_dependencies_and_unsafe_replay_never_dispatch():
+>       evaluate = module("lhc_readiness").evaluate
+
+tests/test_readiness.py:86: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_readiness.py:16: in module
+    spec.loader.exec_module(value)
+<frozen importlib._bootstrap_external>:879: in exec_module
+    ???
+<frozen importlib._bootstrap_external>:1016: in get_code
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <_frozen_importlib_external.SourceFileLoader object at 0x752dd1bed870>
+path = '/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-readiness-20261107/src/common/tools/lhc_readiness.py'
+
+>   ???
+E   FileNotFoundError: [Errno 2] No such file or directory: '/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-readiness-20261107/src/common/tools/lhc_readiness.py'
+
+<frozen importlib._bootstrap_external>:1073: FileNotFoundError
+____________ test_quota_stop_and_wake_delivery_blockers_are_visible ____________
+
+    def test_quota_stop_and_wake_delivery_blockers_are_visible():
+>       evaluate = module("lhc_readiness").evaluate
+
+tests/test_readiness.py:100: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_readiness.py:16: in module
+    spec.loader.exec_module(value)
+<frozen importlib._bootstrap_external>:879: in exec_module
+    ???
+<frozen importlib._bootstrap_external>:1016: in get_code
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <_frozen_importlib_external.SourceFileLoader object at 0x752dcfb8e800>
+path = '/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-readiness-20261107/src/common/tools/lhc_readiness.py'
+
+>   ???
+E   FileNotFoundError: [Errno 2] No such file or directory: '/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-readiness-20261107/src/common/tools/lhc_readiness.py'
+
+<frozen importlib._bootstrap_external>:1073: FileNotFoundError
+=========================== short test summary info ============================
+FAILED tests/test_readiness.py::test_parallel_waiting_json_is_a_real_cli_answer
+FAILED tests/test_readiness.py::test_unassigned_is_a_candidate_without_a_dispatch_claim
+FAILED tests/test_readiness.py::test_known_idle_executor_can_dispatch_but_unknown_or_stale_runtime_cannot
+FAILED tests/test_readiness.py::test_owner_busy_and_deferred_dependency_agree_in_every_consumer
+FAILED tests/test_readiness.py::test_one_native_executor_occupies_one_slot_even_if_owner_labels_differ
+FAILED tests/test_readiness.py::test_slot_zero_is_not_unlimited - AssertionEr...
+FAILED tests/test_readiness.py::test_external_waiting_unknown_dependencies_and_unsafe_replay_never_dispatch
+FAILED tests/test_readiness.py::test_quota_stop_and_wake_delivery_blockers_are_visible
+8 failed in 0.48s

@@ -1,0 +1,20 @@
+{
+  "at": "2026-11-07T15:38:44.417968+00:00",
+  "operation": "list_sessions(scope=node)",
+  "mode": "read_only",
+  "llm_turns": 0,
+  "messages_sent": 0,
+  "status": "ok",
+  "response_keys": [
+    "createHarnesses",
+    "generation",
+    "guardedNamedCreate",
+    "hostId",
+    "launchPolicy",
+    "nativeUser",
+    "platform"
+  ],
+  "host_id": "roomhacker-server-100",
+  "hostId": "roomhacker-server-100",
+  "nativeUser": "roomhacker"
+}

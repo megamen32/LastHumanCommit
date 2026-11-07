@@ -1,0 +1,21 @@
+(Linux uses --headless by default. To override, use --headed / --gui. For Xvfb mode instead, use --xvfb. Or you can hide this info by using --headless / --headless2 / --uc.)
+...........F                                                             [100%]
+=================================== FAILURES ===================================
+________ test_blocked_delivery_cannot_be_reset_to_repeat_accepted_send _________
+
+plan = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-identity-20261107/.tmp/pytest-3343976-2c4ab49728a5316c/test_blocked_delivery_cannot_b0')
+
+    def test_blocked_delivery_cannot_be_reset_to_repeat_accepted_send(plan):
+        pj.assign_leaf(plan, "L01", assignment())
+        pj.transition_leaf(plan, "L01", "attempt-1", "dispatching",
+                           receipt={"dispatch": {"request_id": "r", "status": "dispatching"}})
+        pj.transition_leaf(plan, "L01", "attempt-1", "submitted",
+                           receipt={"dispatch": {"request_id": "r", "status": "accepted", "turn_id": "t"}})
+        pj.transition_leaf(plan, "L01", "attempt-1", "blocked")
+>       with pytest.raises(ValueError):
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+tests/test_execution_assignment.py:174: Failed
+=========================== short test summary info ============================
+FAILED tests/test_execution_assignment.py::test_blocked_delivery_cannot_be_reset_to_repeat_accepted_send
+1 failed, 11 passed in 0.36s

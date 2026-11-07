@@ -1,0 +1,52 @@
+(Linux uses --headless by default. To override, use --headed / --gui. For Xvfb mode instead, use --xvfb. Or you can hide this info by using --headless / --headless2 / --uc.)
+.......FFF.                                                              [100%]
+=================================== FAILURES ===================================
+____ test_explicit_activation_preserves_assignment_without_claiming_runtime ____
+
+plan = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-identity-20261107/.tmp/pytest-3297984-1d14c29b87c1c817/test_explicit_activation_prese0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x79205bbb9810>
+
+    def test_explicit_activation_preserves_assignment_without_claiming_runtime(plan, monkeypatch):
+        import lhc_plan_mirror as mirror
+        monkeypatch.setattr(mirror, "worktree_root", lambda p: plan)
+        monkeypatch.setattr(pj, "check_activation", lambda *args: None)
+        pj.assign_leaf(plan, "L01", assignment())
+        result = mirror.activate(plan, "L01", session="test-lead", harness="codex", owner="lead",
+                                 config_path=plan / "absent")
+>       assert result["status"] == "assigned"
+E       AssertionError: assert 'running' == 'assigned'
+E         
+E         - assigned
+E         + running
+
+tests/test_execution_assignment.py:133: AssertionError
+___________ test_generic_done_cannot_skip_explicit_result_acceptance ___________
+
+plan = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-identity-20261107/.tmp/pytest-3297984-1d14c29b87c1c817/test_generic_done_cannot_skip_0')
+
+    def test_generic_done_cannot_skip_explicit_result_acceptance(plan):
+        pj.assign_leaf(plan, "L01", assignment())
+>       with pytest.raises(ValueError):
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+tests/test_execution_assignment.py:140: Failed
+__________ test_trusted_metadata_is_not_an_explicit_provenance_claim ___________
+
+plan = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-identity-20261107/.tmp/pytest-3297984-1d14c29b87c1c817/test_trusted_metadata_is_not_a0')
+
+    def test_trusted_metadata_is_not_an_explicit_provenance_claim(plan):
+        import lhc_assignment as a
+        actor = a.resolve_actor(trusted_caller=LEAD)
+        pj.update_leaf(plan, "L01", {"note": "metadata"}, actor=actor)
+>       assert read(plan)["progress_events"][-1]["actor"]["source"] == "native_metadata"
+E       AssertionError: assert 'declared' == 'native_metadata'
+E         
+E         - native_metadata
+E         + declared
+
+tests/test_execution_assignment.py:147: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_execution_assignment.py::test_explicit_activation_preserves_assignment_without_claiming_runtime
+FAILED tests/test_execution_assignment.py::test_generic_done_cannot_skip_explicit_result_acceptance
+FAILED tests/test_execution_assignment.py::test_trusted_metadata_is_not_an_explicit_provenance_claim
+3 failed, 8 passed in 0.36s

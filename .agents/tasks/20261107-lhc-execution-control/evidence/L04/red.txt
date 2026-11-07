@@ -1,0 +1,125 @@
+(Linux uses --headless by default. To override, use --headed / --gui. For Xvfb mode instead, use --xvfb. Or you can hide this info by using --headless / --headless2 / --uc.)
+FFFFF                                                                    [100%]
+=================================== FAILURES ===================================
+_____________ test_real_http_dispatch_registers_exact_durable_wake _____________
+
+endpoint = ('http://127.0.0.1:24435/mcp', [], {})
+
+    def test_real_http_dispatch_registers_exact_durable_wake(endpoint):
+>       execution = importlib.import_module('lhc_execution')
+
+tests/test_lhc_execution.py:81: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+<frozen importlib._bootstrap>:1050: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1027: in _find_and_load
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'lhc_execution', import_ = <function _gcd_import at 0x7f32c8d63400>
+
+>   ???
+E   ModuleNotFoundError: No module named 'lhc_execution'
+
+<frozen importlib._bootstrap>:1004: ModuleNotFoundError
+_______________ test_unknown_and_crash_intent_are_never_replayed _______________
+
+endpoint = ('http://127.0.0.1:39777/mcp', [], {})
+
+    def test_unknown_and_crash_intent_are_never_replayed(endpoint):
+>       execution = importlib.import_module('lhc_execution')
+
+tests/test_lhc_execution.py:95: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+<frozen importlib._bootstrap>:1050: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1027: in _find_and_load
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'lhc_execution', import_ = <function _gcd_import at 0x7f32c8d63400>
+
+>   ???
+E   ModuleNotFoundError: No module named 'lhc_execution'
+
+<frozen importlib._bootstrap>:1004: ModuleNotFoundError
+_________________ test_quota_and_missing_turn_do_not_schedule __________________
+
+endpoint = ('http://127.0.0.1:26265/mcp', [], {})
+
+    def test_quota_and_missing_turn_do_not_schedule(endpoint):
+>       execution = importlib.import_module('lhc_execution')
+
+tests/test_lhc_execution.py:109: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+<frozen importlib._bootstrap>:1050: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1027: in _find_and_load
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'lhc_execution', import_ = <function _gcd_import at 0x7f32c8d63400>
+
+>   ???
+E   ModuleNotFoundError: No module named 'lhc_execution'
+
+<frozen importlib._bootstrap>:1004: ModuleNotFoundError
+________________ test_other_turn_never_becomes_running_or_wake _________________
+
+endpoint = ('http://127.0.0.1:30035/mcp', [], {})
+
+    def test_other_turn_never_becomes_running_or_wake(endpoint):
+>       execution = importlib.import_module('lhc_execution')
+
+tests/test_lhc_execution.py:119: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+<frozen importlib._bootstrap>:1050: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1027: in _find_and_load
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'lhc_execution', import_ = <function _gcd_import at 0x7f32c8d63400>
+
+>   ???
+E   ModuleNotFoundError: No module named 'lhc_execution'
+
+<frozen importlib._bootstrap>:1004: ModuleNotFoundError
+_____________________ test_self_and_cross_host_do_not_send _____________________
+
+endpoint = ('http://127.0.0.1:30131/mcp', [], {})
+
+    def test_self_and_cross_host_do_not_send(endpoint):
+>       execution = importlib.import_module('lhc_execution')
+
+tests/test_lhc_execution.py:129: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+<frozen importlib._bootstrap>:1050: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1027: in _find_and_load
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'lhc_execution', import_ = <function _gcd_import at 0x7f32c8d63400>
+
+>   ???
+E   ModuleNotFoundError: No module named 'lhc_execution'
+
+<frozen importlib._bootstrap>:1004: ModuleNotFoundError
+=========================== short test summary info ============================
+FAILED tests/test_lhc_execution.py::test_real_http_dispatch_registers_exact_durable_wake
+FAILED tests/test_lhc_execution.py::test_unknown_and_crash_intent_are_never_replayed
+FAILED tests/test_lhc_execution.py::test_quota_and_missing_turn_do_not_schedule
+FAILED tests/test_lhc_execution.py::test_other_turn_never_becomes_running_or_wake
+FAILED tests/test_lhc_execution.py::test_self_and_cross_host_do_not_send - Mo...
+5 failed in 2.58s

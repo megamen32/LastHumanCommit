@@ -1,0 +1,17 @@
+{
+  "evidence/L02/readiness-red.log": "e16c691aaf76f3e585f50179d1d77da42a6b889b7acea5c6c499c21e7c51ab3c",
+  "evidence/L02/readiness-reservation-red.log": "bb1ed9a9227dd5d36ac40ff265228c2d565b61d8b9429231286a4c69fa9eddca",
+  "evidence/L02/readiness-green.log": "922656d9c5fca8682962b5a93efef9c281ceed3bacb42a538e4e833e3f8d6d62",
+  "evidence/L03/red.log": "0ac4b5f9d1da54eb93bbb4714f6bf8b93b6163b75379c3e0fe4e4af34789932a",
+  "evidence/L03/red-additional.log": "979a6fcc84ee7b32c2652bf4890a996a1ac86bc86ac6e15c6dd3e195588da9f3",
+  "evidence/L03/red-replay.log": "98b474ef8d94a2b5feed6441cfd73a464b0d19b35e0cf4a01b48f17d99fb65a6",
+  "evidence/L03/red-observation-refresh.log": "8f108b8c1019e2aabe894ae9167cb2e2add0f531969fd7a28c3199ec88ae97dc",
+  "evidence/L03/red-worker-acceptance.log": "d0a3d6a28c99493bc3f212f19ff0f89166501069181847c5327081ac9469f2f7",
+  "evidence/L03/green-assignment.log": "6997186f2def8de84d9ce28f812739004d5cacd1bc563e8f9ab2fd206568a65e",
+  "evidence/L03/green-focused.log": "d2127dc0807f5d9d00146330140cdae9112b2ea1ca2d265bfa4dc90ddebfd4fe",
+  "evidence/L03/green-worker-acceptance.log": "2f7edbc988b3e96c5ca9c597244c5c357d116bb26e8a2429b7e559378819c5ad",
+  "evidence/L04/red.txt": "5237cfcaf8686bbd78801b34ce0c6e22a7cf715de22a03a8c88a390410191c47",
+  "evidence/L04/green.txt": "41ca23f5ceb62746867205cc777e5226cf951341c85384f09fa4f24c47da8a4c",
+  "evidence/L04/integration.json": "d7ea122b88a861bc5735ad7a70c5fa2a47d47e73e14c9cfa12b3eed12f4263e3",
+  "evidence/L04/canary.json": "eaa2b2f550e3b80585dfdb70ce1fbce86027c70aa327cd83b4fec956348475a1"
+}

@@ -1,0 +1,32 @@
+{
+  "status": "ok",
+  "assignment_state": "result_ready",
+  "leaf_status": "queued",
+  "wake": {
+    "wait_id": "wait_fixture",
+    "state": "resumed",
+    "reason": null,
+    "next_at": null,
+    "observed_at": "2026-11-07T15:43:09.080724+00:00",
+    "turn_id": "turn-1",
+    "captured_turn_id": "turn-1",
+    "request_id": "lhc:a76092e7ffed7ec447b313e7544d44f95d1e34b51222d2c1626314a16039f6f5:completion"
+  },
+  "dispatch": {
+    "request_id": "lhc:a76092e7ffed7ec447b313e7544d44f95d1e34b51222d2c1626314a16039f6f5",
+    "status": "accepted",
+    "observed_at": "2026-11-07T15:43:09.051598+00:00",
+    "turn_id": "turn-1",
+    "reason": null,
+    "receipt": {
+      "delivery": "accepted",
+      "ok": true,
+      "admitted": true,
+      "inputId": "lhc:a76092e7ffed7ec447b313e7544d44f95d1e34b51222d2c1626314a16039f6f5",
+      "turnId": "turn-1",
+      "sessionId": "worker",
+      "harness": "codex"
+    }
+  },
+  "events": 8
+}

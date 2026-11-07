@@ -1,0 +1,33 @@
+(Linux uses --headless by default. To override, use --headed / --gui. For Xvfb mode instead, use --xvfb. Or you can hide this info by using --headless / --headless2 / --uc.)
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+________ test_unknown_candidate_does_not_reserve_the_only_dispatch_slot ________
+
+    def test_unknown_candidate_does_not_reserve_the_only_dispatch_slot():
+        evaluate = module("lhc_readiness").evaluate
+        result = evaluate([{"id": "legacy", "status": "queued"},
+                           {"id": "explicit", "status": "queued", "assignment": assignment()}], slots=1, now=NOW)
+>       assert result["dispatchable"] == ["explicit"]
+E       AssertionError: assert [] == ['explicit']
+E         
+E         Right contains one more item: 'explicit'
+E         Use -v to get more diff
+
+tests/test_readiness.py:134: AssertionError
+___________ test_blocked_assignment_preserves_specific_quota_reason ____________
+
+    def test_blocked_assignment_preserves_specific_quota_reason():
+        a = assignment(state="blocked", runtime="unknown")
+        a["observed_runtime"]["reason_code"] = "quota_guard"
+        r = module("lhc_readiness").evaluate([{"id": "A", "status": "queued", "assignment": a}], slots=1, now=NOW)
+>       assert r["by_id"]["A"]["reason_code"] == "quota_guard"
+E       AssertionError: assert 'assignment_blocked' == 'quota_guard'
+E         
+E         - quota_guard
+E         + assignment_blocked
+
+tests/test_readiness.py:143: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_readiness.py::test_unknown_candidate_does_not_reserve_the_only_dispatch_slot
+FAILED tests/test_readiness.py::test_blocked_assignment_preserves_specific_quota_reason
+2 failed, 10 deselected in 0.16s

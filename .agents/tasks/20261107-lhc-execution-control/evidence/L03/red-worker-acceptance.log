@@ -1,0 +1,72 @@
+(Linux uses --headless by default. To override, use --headed / --gui. For Xvfb mode instead, use --xvfb. Or you can hide this info by using --headless / --headless2 / --uc.)
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_ test_explicit_worker_accepts_only_after_merge_and_retries_cleanup_without_reaccepting _
+
+tmp_path = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-identity-20261107/.tmp/pytest-3486200-08ba7183a86e870f/test_explicit_worker_accepts_o0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x76394091c520>
+
+    def test_explicit_worker_accepts_only_after_merge_and_retries_cleanup_without_reaccepting(tmp_path, monkeypatch):
+        repo = make_repo(tmp_path)
+        tree = tmp_path / "worker-explicit"
+        git(repo, "worktree", "add", "-q", "-b", "lhc/explicit", str(tree))
+        plan = make_plan(tmp_path, [{"id": "L01", "label": "explicit", "status": "queued"}])
+        pj.worker_register(plan, "L01", "worker", "lhc/explicit", str(tree))
+        lead = {"host_id": "test-host", "harness": "codex", "session_id": "lead"}
+        executor = {**lead, "session_id": "worker"}
+        pj.assign_leaf(plan, "L01", {"schema_version": 1, "attempt_id": "attempt",
+            "executor_kind": "subagent", "lead": lead, "executor": executor, "parent": lead, "state": "assigned"})
+        pj.transition_leaf(plan, "L01", "attempt", "dispatching",
+                           receipt={"dispatch": {"request_id": "r", "status": "dispatching"}})
+        pj.transition_leaf(plan, "L01", "attempt", "submitted",
+                           receipt={"dispatch": {"request_id": "r", "status": "accepted", "turn_id": "t"}})
+        pj.transition_leaf(plan, "L01", "attempt", "result_ready",
+                           receipt={"observed_runtime": {"state": "completed", "turn_id": "t", "source": "native"}})
+        (tree / "result.txt").write_text("integrated result\n")
+        git(tree, "add", "result.txt")
+        git(tree, "commit", "-qm", "worker result")
+        original_git = pj._git
+        failed = False
+        def fail_first_cleanup(cwd, *args, **kwargs):
+            nonlocal failed
+            if args[:2] == ("worktree", "remove") and not failed:
+                failed = True
+                leaf = json.loads((plan / "leaves/L01.json").read_text())
+                assert (repo / "result.txt").read_text() == "integrated result\n"
+                assert leaf["assignment"]["state"] == "accepted"
+                raise pj.LeafError("temporary cleanup failure")
+            return original_git(cwd, *args, **kwargs)
+        monkeypatch.setattr(pj, "_git", fail_first_cleanup)
+        with pytest.raises(pj.LeafError, match="temporary cleanup failure"):
+>           pj.worker_finish(plan, "L01", str(repo), "result accepted")
+
+tests/test_plan_workers.py:177: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/common/tools/lhc_plan_json.py:2274: in worker_finish
+    _git(task, "worktree", "remove", str(tree))
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+cwd = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-identity-20261107/.tmp/pytest-3486200-08ba7183a86e870f/test_explicit_worker_accepts_o0/task')
+args = ('worktree', 'remove', '/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-identity-20261107/.tmp/pytest-3486200-08ba7183a86e870f/test_explicit_worker_accepts_o0/worker-explicit')
+kwargs = {}
+leaf = {'assignment': {'attempt_id': 'attempt', 'dispatch': {'observed_at': '2026-11-07T15:41:54+00:00', 'request_id': 'r', '...'host_id': 'test-host', 'session_id': 'worker'}, ...}, 'assignment_history': [], 'id': 'L01', 'label': 'explicit', ...}
+@py_assert1 = None, @py_assert3 = 'accepted', @py_assert4 = None
+@py_assert6 = None, @py_assert9 = None, @py_assert8 = None
+@py_assert0 = 'result_ready'
+
+    def fail_first_cleanup(cwd, *args, **kwargs):
+        nonlocal failed
+        if args[:2] == ("worktree", "remove") and not failed:
+            failed = True
+            leaf = json.loads((plan / "leaves/L01.json").read_text())
+            assert (repo / "result.txt").read_text() == "integrated result\n"
+>           assert leaf["assignment"]["state"] == "accepted"
+E           AssertionError: assert 'result_ready' == 'accepted'
+E             
+E             - accepted
+E             + result_ready
+
+tests/test_plan_workers.py:172: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_plan_workers.py::test_explicit_worker_accepts_only_after_merge_and_retries_cleanup_without_reaccepting
+1 failed, 5 deselected in 0.41s
