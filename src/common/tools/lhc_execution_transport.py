@@ -107,7 +107,7 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
 
 class HerderMcpClient:
     """A bounded connection to the existing loopback singleton, no polling."""
-    def __init__(self, *, url=None, token=None, host_id=None, timeout=10, environ=None):
+    def __init__(self, *, url=None, token=None, host_id=None, timeout=10, deliver_timeout=60, environ=None):
         env = os.environ if environ is None else environ
         self.url = url or env.get('AGENT_HERDER_HTTP_URL', 'http://127.0.0.1:18787/mcp')
         parsed = urllib.parse.urlsplit(self.url)
@@ -119,6 +119,9 @@ class HerderMcpClient:
         self._env = env
         self.host_id = host_id or socket.gethostname()
         self.timeout = timeout
+        # Native Codex admission allows a 30s RPC after preparation/quota reads.
+        # Leave delivery headroom without extending init/metadata read bounds.
+        self.deliver_timeout = deliver_timeout
         self._session = None
         self._initialized = False
         # A process-wide proxy must not receive the singleton credential.
@@ -137,8 +140,9 @@ class HerderMcpClient:
         if self._session:
             headers['Mcp-Session-Id'] = self._session
         submitted = method == 'tools/call'
+        timeout = self.deliver_timeout if submitted and params.get('name') == 'deliver' else self.timeout
         try:
-            response = self._opener.open(urllib.request.Request(self.url, json.dumps(payload).encode(), headers), timeout=self.timeout)
+            response = self._opener.open(urllib.request.Request(self.url, json.dumps(payload).encode(), headers), timeout=timeout)
             with response:
                 if method == 'initialize':
                     self._session = response.headers.get('Mcp-Session-Id')
