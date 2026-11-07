@@ -1,0 +1,33 @@
+{
+  "candidate": "d0c60f89fb3fea69ebcc2bfaaf07ecdb2be53487",
+  "command": "python3 tests/validate.py",
+  "returncode": 0,
+  "seconds": 114.51,
+  "sha256": "b6a85e977fa3724e39284799af6682134a3fedfe29b67243608e49d16da1509b",
+  "tail": [
+    "........................................................................ [  6%]",
+    "...............................................s........................ [ 13%]",
+    "........................................................................ [ 20%]",
+    "........................................................................ [ 27%]",
+    "........................................................................ [ 34%]",
+    "........................................................................ [ 41%]",
+    "........................................................................ [ 48%]",
+    "........................................................................ [ 55%]",
+    "................................................................ss...... [ 62%]",
+    "......................s................................................. [ 69%]",
+    "..............................................s......................... [ 76%]",
+    "..................s.................s................................... [ 83%]",
+    "........................................................................ [ 90%]",
+    "........................................................................ [ 97%]",
+    "..........................                                               [100%]",
+    "1027 passed, 7 skipped in 111.77s (0:01:51)",
+    "valid block: /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/lhc-block-test.9MxouB/project-agents",
+    "applied block: /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/lhc-block-test.9MxouB/project-agents",
+    "applied block: /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/lhc-block-test.9MxouB/project-agents",
+    "initialized block: /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/lhc-block-test.9MxouB/project-claude",
+    "applied block: /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/lhc-block-test.9MxouB/paths with spaces/project agents",
+    "removed block: /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/lhc-block-test.9MxouB/removable",
+    "PASS: block adapter preserves project-owned instructions",
+    "PASS: current LHC package, automatic entry, optional adapters and complete behavioral suite"
+  ]
+}
