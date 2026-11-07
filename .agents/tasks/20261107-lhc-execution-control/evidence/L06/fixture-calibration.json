@@ -1,0 +1,536 @@
+{
+  "commands": [
+    {
+      "argv": [
+        "/usr/bin/python3",
+        "/tmp/lhc-L06-sdyavfbt/package/common/tools/lhc_plan_json.py",
+        "assign-leaf",
+        "/tmp/lhc-L06-sdyavfbt/plan",
+        "L01",
+        "--assignment",
+        "{\"schema_version\": 1, \"attempt_id\": \"consumer-L06-1\", \"executor_kind\": \"session\", \"lead\": {\"host_id\": \"roomhacker-server-100\", \"harness\": \"codex\", \"session_id\": \"lead\"}, \"executor\": {\"host_id\": \"roomhacker-server-100\", \"harness\": \"codex\", \"session_id\": \"worker\"}, \"parent\": null, \"state\": \"assigned\"}",
+        "--actor",
+        "{\"host_id\": \"roomhacker-server-100\", \"harness\": \"codex\", \"session_id\": \"author\"}"
+      ],
+      "code": 0,
+      "stdout": "{\"id\": \"L01\", \"sha256\": \"57c5b1320f784fbd3b2e5b94ffc87b8d16961f10dd136eb8d3d9fcb48c836892\", \"assignment\": {\"schema_version\": 1, \"attempt_id\": \"consumer-L06-1\", \"executor_kind\": \"session\", \"lead\": {\"host_id\": \"roomhacker-server-100\", \"harness\": \"codex\", \"session_id\": \"lead\"}, \"executor\": {\"host_id\": \"roomhacker-server-100\", \"harness\": \"codex\", \"session_id\": \"worker\"}, \"parent\": null, \"state\": \"assigned\", \"dispatch\": null, \"wake\": null, \"observed_runtime\": null, \"events\": [{\"at\": \"2026-11-07T16:32:07+00:00\", \"actor\": {\"host_id\": \"roomhacker-server-100\", \"harness\": \"codex\", \"session_id\": \"author\", \"source\": \"declared\"}, \"from\": null, \"to\": \"assigned\"}]}}\nPlan plan: 0/2 done; deliverable: implementation; decomposition: progressive; leaf cap: 15 min; candidates by dependencies/capacity L01; dispatchable none; admission L01=runtime_unknown, L02=dependencies_unmet; execution L01: assignment=assigned, runtime=unknown, wake=unknown.\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/usr/bin/python3",
+        "/tmp/lhc-L06-sdyavfbt/package/common/tools/lhc_plan_json.py",
+        "dispatch-leaf",
+        "/tmp/lhc-L06-sdyavfbt/plan",
+        "L01",
+        "--attempt-id",
+        "consumer-L06-1",
+        "--message",
+        "Disposable fixture only. Prepare result for next dependent task."
+      ],
+      "code": 0,
+      "stdout": "{\"schema_version\": 1, \"attempt_id\": \"consumer-L06-1\", \"executor_kind\": \"session\", \"lead\": {\"host_id\": \"roomhacker-server-100\", \"harness\": \"codex\", \"session_id\": \"lead\"}, \"executor\": {\"host_id\": \"roomhacker-server-100\", \"harness\": \"codex\", \"session_id\": \"worker\"}, \"parent\": null, \"state\": \"running\", \"dispatch\": {\"request_id\": \"lhc:4201d9ac4ab1e749aab803f1fe21d91c0c80838886187683ec1be7c296b033d6\", \"status\": \"accepted\", \"observed_at\": \"2026-11-07T16:32:07.796996+00:00\", \"turn_id\": \"turn-consumer-1\", \"reason\": null, \"receipt\": {\"delivery\": \"accepted\", \"ok\": true, \"admitted\": true, \"inputId\": \"lhc:4201d9ac4ab1e749aab803f1fe21d91c0c80838886187683ec1be7c296b033d6\", \"turnId\": \"turn-consumer-1\", \"sessionId\": \"worker\", \"harness\": \"codex\"}}, \"wake\": {\"wait_id\": null, \"state\": \"blocked\", \"reason\": \"wake_turn_mismatch\", \"next_at\": null, \"observed_at\": \"2026-11-07T16:32:07.814297+00:00\", \"turn_id\": null, \"captured_turn_id\": null, \"request_id\": \"lhc:4201d9ac4ab1e749aab803f1fe21d91c0c80838886187683ec1be7c296b033d6:completion\"}, \"observed_runtime\": {\"state\": \"running\", \"observed_at\": \"2026-11-07T16:32:07.803350+00:00\", \"source\": \"native_verified\", \"turn_id\": \"turn-consumer-1\", \"model\": \"fixture-model\", \"worktree\": \"/tmp/lhc-L06-sdyavfbt\"}, \"events\": [{\"at\": \"2026-11-07T16:32:07+00:00\", \"actor\": {\"host_id\": \"roomhacker-server-100\", \"harness\": \"codex\", \"session_id\": \"author\", \"source\": \"declared\"}, \"from\": null, \"to\": \"assigned\"}, {\"at\": \"2026-11-07T16:32:07+00:00\", \"actor\": {\"host_id\": null, \"harness\": null, \"session_id\": null, \"source\": \"declared\"}, \"from\": \"assigned\", \"to\": \"assigned\", \"receipt\": {\"observed_runtime\": {\"state\": \"idle\", \"observed_at\": \"2026-11-07T16:32:07.773052+00:00\", \"source\": \"native_verified\", \"turn_id\": \"turn-consumer-1\", \"model\": \"fixture-model\", \"worktree\": \"/tmp/lhc-L06-sdyavfbt\"}}}, {\"at\": \"2026-11-07T16:32:07+00:00\", \"actor\": {\"host_id\": null, \"harness\": null, \"session_id\": null, \"source\": \"declared\"}, \"from\": \"assigned\", \"to\": \"dispatching\", \"receipt\": {\"dispatch\": {\"request_id\": \"lhc:4201d9ac4ab1e749aab803f1fe21d91c0c80838886187683ec1be7c296b033d6\", \"status\": \"dispatching\", \"observed_at\": \"2026-11-07T16:32:07.789809+00:00\", \"turn_id\": null, \"reason\": null, \"receipt\": null}}}, {\"at\": \"2026-11-07T16:32:07+00:00\", \"actor\": {\"host_id\": null, \"harness\": null, \"session_id\": null, \"source\": \"declared\"}, \"from\": \"dispatching\", \"to\": \"submitted\", \"receipt\": {\"dispatch\": {\"request_id\": \"lhc:4201d9ac4ab1e749aab803f1fe21d91c0c80838886187683ec1be7c296b033d6\", \"status\": \"accepted\", \"observed_at\": \"2026-11-07T16:32:07.796996+00:00\", \"turn_id\": \"turn-consumer-1\", \"reason\": null, \"receipt\": {\"delivery\": \"accepted\", \"ok\": true, \"admitted\": true, \"inputId\": \"lhc:4201d9ac4ab1e749aab803f1fe21d91c0c80838886187683ec1be7c296b033d6\", \"turnId\": \"turn-consumer-1\", \"sessionId\": \"worker\", \"harness\": \"codex\"}}}}, {\"at\": \"2026-11-07T16:32:07+00:00\", \"actor\": {\"host_id\": null, \"harness\": null, \"session_id\": null, \"source\": \"declared\"}, \"from\": \"submitted\", \"to\": \"running\", \"receipt\": {\"observed_runtime\": {\"state\": \"running\", \"observed_at\": \"2026-11-07T16:32:07.803350+00:00\", \"source\": \"native_verified\", \"turn_id\": \"turn-consumer-1\", \"model\": \"fixture-model\", \"worktree\": \"/tmp/lhc-L06-sdyavfbt\"}}}, {\"at\": \"2026-11-07T16:32:07+00:00\", \"actor\": {\"host_id\": null, \"harness\": null, \"session_id\": null, \"source\": \"declared\"}, \"from\": \"running\", \"to\": \"running\", \"receipt\": {\"wake\": {\"wait_id\": \"wait_d41f32c5c337bfb9d0f837e3b3f8783f\", \"state\": \"registering\", \"reason\": \"registration_in_progress\", \"next_at\": null, \"observed_at\": \"2026-11-07T16:32:07.807983+00:00\", \"turn_id\": \"turn-consumer-1\", \"captured_turn_id\": \"turn-consumer-1\", \"request_id\": \"lhc:4201d9ac4ab1e749aab803f1fe21d91c0c80838886187683ec1be7c296b033d6:completion\"}}}, {\"at\": \"2026-11-07T16:32:07+00:00\", \"actor\": {\"host_id\": null, \"harness\": null, \"session_id\": null, \"source\": \"declared\"}, \"from\": \"running\", \"to\": \"running\", \"receipt\": {\"wake\": {\"wait_id\": null, \"state\": \"blocked\", \"reason\": \"wake_turn_mismatch\", \"next_at\": null, \"observed_at\": \"2026-11-07T16:32:07.814297+00:00\", \"turn_id\": null, \"captured_turn_id\": null, \"request_id\": \"lhc:4201d9ac4ab1e749aab803f1fe21d91c0c80838886187683ec1be7c296b033d6:completion\"}}}]}\nPlan plan: 0/2 done; deliverable: implementation; decomposition: progressive; leaf cap: 15 min; candidates by dependencies/capacity none; dispatchable none; admission L01=assignment_running, L02=dependencies_unmet; execution L01: assignment=running, runtime=running, wake=blocked, reason=wake_turn_mismatch.\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/usr/bin/python3",
+        "/tmp/lhc-L06-sdyavfbt/package/common/tools/lhc_plan_json.py",
+        "dispatch-leaf",
+        "/tmp/lhc-L06-sdyavfbt/plan",
+        "L01",
+        "--attempt-id",
+        "consumer-L06-1",
+        "--message",
+        "Disposable fixture only. Prepare result for next dependent task."
+      ],
+      "code": 0,
+      "stdout": "{\"schema_version\": 1, \"attempt_id\": \"consumer-L06-1\", \"executor_kind\": \"session\", \"lead\": {\"host_id\": \"roomhacker-server-100\", \"harness\": \"codex\", \"session_id\": \"lead\"}, \"executor\": {\"host_id\": \"roomhacker-server-100\", \"harness\": \"codex\", \"session_id\": \"worker\"}, \"parent\": null, \"state\": \"running\", \"dispatch\": {\"request_id\": \"lhc:4201d9ac4ab1e749aab803f1fe21d91c0c80838886187683ec1be7c296b033d6\", \"status\": \"accepted\", \"observed_at\": \"2026-11-07T16:32:07.796996+00:00\", \"turn_id\": \"turn-consumer-1\", \"reason\": null, \"receipt\": {\"delivery\": \"accepted\", \"ok\": true, \"admitted\": true, \"inputId\": \"lhc:4201d9ac4ab1e749aab803f1fe21d91c0c80838886187683ec1be7c296b033d6\", \"turnId\": \"turn-consumer-1\", \"sessionId\": \"worker\", \"harness\": \"codex\"}}, \"wake\": {\"wait_id\": null, \"state\": \"blocked\", \"reason\": \"wake_turn_mismatch\", \"next_at\": null, \"observed_at\": \"2026-11-07T16:32:07.814297+00:00\", \"turn_id\": null, \"captured_turn_id\": null, \"request_id\": \"lhc:4201d9ac4ab1e749aab803f1fe21d91c0c80838886187683ec1be7c296b033d6:completion\"}, \"observed_runtime\": {\"state\": \"running\", \"observed_at\": \"2026-11-07T16:32:07.803350+00:00\", \"source\": \"native_verified\", \"turn_id\": \"turn-consumer-1\", \"model\": \"fixture-model\", \"worktree\": \"/tmp/lhc-L06-sdyavfbt\"}, \"events\": [{\"at\": \"2026-11-07T16:32:07+00:00\", \"actor\": {\"host_id\": \"roomhacker-server-100\", \"harness\": \"codex\", \"session_id\": \"author\", \"source\": \"declared\"}, \"from\": null, \"to\": \"assigned\"}, {\"at\": \"2026-11-07T16:32:07+00:00\", \"actor\": {\"host_id\": null, \"harness\": null, \"session_id\": null, \"source\": \"declared\"}, \"from\": \"assigned\", \"to\": \"assigned\", \"receipt\": {\"observed_runtime\": {\"state\": \"idle\", \"observed_at\": \"2026-11-07T16:32:07.773052+00:00\", \"source\": \"native_verified\", \"turn_id\": \"turn-consumer-1\", \"model\": \"fixture-model\", \"worktree\": \"/tmp/lhc-L06-sdyavfbt\"}}}, {\"at\": \"2026-11-07T16:32:07+00:00\", \"actor\": {\"host_id\": null, \"harness\": null, \"session_id\": null, \"source\": \"declared\"}, \"from\": \"assigned\", \"to\": \"dispatching\", \"receipt\": {\"dispatch\": {\"request_id\": \"lhc:4201d9ac4ab1e749aab803f1fe21d91c0c80838886187683ec1be7c296b033d6\", \"status\": \"dispatching\", \"observed_at\": \"2026-11-07T16:32:07.789809+00:00\", \"turn_id\": null, \"reason\": null, \"receipt\": null}}}, {\"at\": \"2026-11-07T16:32:07+00:00\", \"actor\": {\"host_id\": null, \"harness\": null, \"session_id\": null, \"source\": \"declared\"}, \"from\": \"dispatching\", \"to\": \"submitted\", \"receipt\": {\"dispatch\": {\"request_id\": \"lhc:4201d9ac4ab1e749aab803f1fe21d91c0c80838886187683ec1be7c296b033d6\", \"status\": \"accepted\", \"observed_at\": \"2026-11-07T16:32:07.796996+00:00\", \"turn_id\": \"turn-consumer-1\", \"reason\": null, \"receipt\": {\"delivery\": \"accepted\", \"ok\": true, \"admitted\": true, \"inputId\": \"lhc:4201d9ac4ab1e749aab803f1fe21d91c0c80838886187683ec1be7c296b033d6\", \"turnId\": \"turn-consumer-1\", \"sessionId\": \"worker\", \"harness\": \"codex\"}}}}, {\"at\": \"2026-11-07T16:32:07+00:00\", \"actor\": {\"host_id\": null, \"harness\": null, \"session_id\": null, \"source\": \"declared\"}, \"from\": \"submitted\", \"to\": \"running\", \"receipt\": {\"observed_runtime\": {\"state\": \"running\", \"observed_at\": \"2026-11-07T16:32:07.803350+00:00\", \"source\": \"native_verified\", \"turn_id\": \"turn-consumer-1\", \"model\": \"fixture-model\", \"worktree\": \"/tmp/lhc-L06-sdyavfbt\"}}}, {\"at\": \"2026-11-07T16:32:07+00:00\", \"actor\": {\"host_id\": null, \"harness\": null, \"session_id\": null, \"source\": \"declared\"}, \"from\": \"running\", \"to\": \"running\", \"receipt\": {\"wake\": {\"wait_id\": \"wait_d41f32c5c337bfb9d0f837e3b3f8783f\", \"state\": \"registering\", \"reason\": \"registration_in_progress\", \"next_at\": null, \"observed_at\": \"2026-11-07T16:32:07.807983+00:00\", \"turn_id\": \"turn-consumer-1\", \"captured_turn_id\": \"turn-consumer-1\", \"request_id\": \"lhc:4201d9ac4ab1e749aab803f1fe21d91c0c80838886187683ec1be7c296b033d6:completion\"}}}, {\"at\": \"2026-11-07T16:32:07+00:00\", \"actor\": {\"host_id\": null, \"harness\": null, \"session_id\": null, \"source\": \"declared\"}, \"from\": \"running\", \"to\": \"running\", \"receipt\": {\"wake\": {\"wait_id\": null, \"state\": \"blocked\", \"reason\": \"wake_turn_mismatch\", \"next_at\": null, \"observed_at\": \"2026-11-07T16:32:07.814297+00:00\", \"turn_id\": null, \"captured_turn_id\": null, \"request_id\": \"lhc:4201d9ac4ab1e749aab803f1fe21d91c0c80838886187683ec1be7c296b033d6:completion\"}}}]}\nPlan plan: 0/2 done; deliverable: implementation; decomposition: progressive; leaf cap: 15 min; candidates by dependencies/capacity none; dispatchable none; admission L01=assignment_running, L02=dependencies_unmet; execution L01: assignment=running, runtime=running, wake=blocked, reason=wake_turn_mismatch.\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/usr/bin/python3",
+        "/tmp/lhc-L06-sdyavfbt/package/common/tools/lhc_plan_json.py",
+        "reconcile-leaf",
+        "/tmp/lhc-L06-sdyavfbt/plan",
+        "L01",
+        "--attempt-id",
+        "consumer-L06-1"
+      ],
+      "code": 0,
+      "stdout": "{\"schema_version\": 1, \"attempt_id\": \"consumer-L06-1\", \"executor_kind\": \"session\", \"lead\": {\"host_id\": \"roomhacker-server-100\", \"harness\": \"codex\", \"session_id\": \"lead\"}, \"executor\": {\"host_id\": \"roomhacker-server-100\", \"harness\": \"codex\", \"session_id\": \"worker\"}, \"parent\": null, \"state\": \"result_ready\", \"dispatch\": {\"request_id\": \"lhc:4201d9ac4ab1e749aab803f1fe21d91c0c80838886187683ec1be7c296b033d6\", \"status\": \"accepted\", \"observed_at\": \"2026-11-07T16:32:07.796996+00:00\", \"turn_id\": \"turn-consumer-1\", \"reason\": null, \"receipt\": {\"delivery\": \"accepted\", \"ok\": true, \"admitted\": true, \"inputId\": \"lhc:4201d9ac4ab1e749aab803f1fe21d91c0c80838886187683ec1be7c296b033d6\", \"turnId\": \"turn-consumer-1\", \"sessionId\": \"worker\", \"harness\": \"codex\"}}, \"wake\": {\"wait_id\": null, \"state\": \"blocked\", \"reason\": \"wake_turn_mismatch\", \"next_at\": null, \"observed_at\": \"2026-11-07T16:32:07.814297+00:00\", \"turn_id\": null, \"captured_turn_id\": null, \"request_id\": \"lhc:4201d9ac4ab1e749aab803f1fe21d91c0c80838886187683ec1be7c296b033d6:completion\"}, \"observed_runtime\": {\"state\": \"completed\", \"observed_at\": \"2026-11-07T16:32:08.247671+00:00\", \"source\": \"native_verified\", \"turn_id\": \"turn-consumer-1\", \"model\": \"fixture-model\", \"worktree\": \"/tmp/lhc-L06-sdyavfbt\"}, \"events\": [{\"at\": \"2026-11-07T16:32:07+00:00\", \"actor\": {\"host_id\": \"roomhacker-server-100\", \"harness\": \"codex\", \"session_id\": \"author\", \"source\": \"declared\"}, \"from\": null, \"to\": \"assigned\"}, {\"at\": \"2026-11-07T16:32:07+00:00\", \"actor\": {\"host_id\": null, \"harness\": null, \"session_id\": null, \"source\": \"declared\"}, \"from\": \"assigned\", \"to\": \"assigned\", \"receipt\": {\"observed_runtime\": {\"state\": \"idle\", \"observed_at\": \"2026-11-07T16:32:07.773052+00:00\", \"source\": \"native_verified\", \"turn_id\": \"turn-consumer-1\", \"model\": \"fixture-model\", \"worktree\": \"/tmp/lhc-L06-sdyavfbt\"}}}, {\"at\": \"2026-11-07T16:32:07+00:00\", \"actor\": {\"host_id\": null, \"harness\": null, \"session_id\": null, \"source\": \"declared\"}, \"from\": \"assigned\", \"to\": \"dispatching\", \"receipt\": {\"dispatch\": {\"request_id\": \"lhc:4201d9ac4ab1e749aab803f1fe21d91c0c80838886187683ec1be7c296b033d6\", \"status\": \"dispatching\", \"observed_at\": \"2026-11-07T16:32:07.789809+00:00\", \"turn_id\": null, \"reason\": null, \"receipt\": null}}}, {\"at\": \"2026-11-07T16:32:07+00:00\", \"actor\": {\"host_id\": null, \"harness\": null, \"session_id\": null, \"source\": \"declared\"}, \"from\": \"dispatching\", \"to\": \"submitted\", \"receipt\": {\"dispatch\": {\"request_id\": \"lhc:4201d9ac4ab1e749aab803f1fe21d91c0c80838886187683ec1be7c296b033d6\", \"status\": \"accepted\", \"observed_at\": \"2026-11-07T16:32:07.796996+00:00\", \"turn_id\": \"turn-consumer-1\", \"reason\": null, \"receipt\": {\"delivery\": \"accepted\", \"ok\": true, \"admitted\": true, \"inputId\": \"lhc:4201d9ac4ab1e749aab803f1fe21d91c0c80838886187683ec1be7c296b033d6\", \"turnId\": \"turn-consumer-1\", \"sessionId\": \"worker\", \"harness\": \"codex\"}}}}, {\"at\": \"2026-11-07T16:32:07+00:00\", \"actor\": {\"host_id\": null, \"harness\": null, \"session_id\": null, \"source\": \"declared\"}, \"from\": \"submitted\", \"to\": \"running\", \"receipt\": {\"observed_runtime\": {\"state\": \"running\", \"observed_at\": \"2026-11-07T16:32:07.803350+00:00\", \"source\": \"native_verified\", \"turn_id\": \"turn-consumer-1\", \"model\": \"fixture-model\", \"worktree\": \"/tmp/lhc-L06-sdyavfbt\"}}}, {\"at\": \"2026-11-07T16:32:07+00:00\", \"actor\": {\"host_id\": null, \"harness\": null, \"session_id\": null, \"source\": \"declared\"}, \"from\": \"running\", \"to\": \"running\", \"receipt\": {\"wake\": {\"wait_id\": \"wait_d41f32c5c337bfb9d0f837e3b3f8783f\", \"state\": \"registering\", \"reason\": \"registration_in_progress\", \"next_at\": null, \"observed_at\": \"2026-11-07T16:32:07.807983+00:00\", \"turn_id\": \"turn-consumer-1\", \"captured_turn_id\": \"turn-consumer-1\", \"request_id\": \"lhc:4201d9ac4ab1e749aab803f1fe21d91c0c80838886187683ec1be7c296b033d6:completion\"}}}, {\"at\": \"2026-11-07T16:32:07+00:00\", \"actor\": {\"host_id\": null, \"harness\": null, \"session_id\": null, \"source\": \"declared\"}, \"from\": \"running\", \"to\": \"running\", \"receipt\": {\"wake\": {\"wait_id\": null, \"state\": \"blocked\", \"reason\": \"wake_turn_mismatch\", \"next_at\": null, \"observed_at\": \"2026-11-07T16:32:07.814297+00:00\", \"turn_id\": null, \"captured_turn_id\": null, \"request_id\": \"lhc:4201d9ac4ab1e749aab803f1fe21d91c0c80838886187683ec1be7c296b033d6:completion\"}}}, {\"at\": \"2026-11-07T16:32:08+00:00\", \"actor\": {\"host_id\": null, \"harness\": null, \"session_id\": null, \"source\": \"declared\"}, \"from\": \"running\", \"to\": \"result_ready\", \"receipt\": {\"observed_runtime\": {\"state\": \"completed\", \"observed_at\": \"2026-11-07T16:32:08.247671+00:00\", \"source\": \"native_verified\", \"turn_id\": \"turn-consumer-1\", \"model\": \"fixture-model\", \"worktree\": \"/tmp/lhc-L06-sdyavfbt\"}}}]}\nPlan plan: 0/2 done; deliverable: implementation; decomposition: progressive; leaf cap: 15 min; candidates by dependencies/capacity none; dispatchable none; admission L01=assignment_result_ready, L02=dependencies_unmet; execution L01: assignment=result_ready, runtime=completed, wake=blocked, reason=wake_turn_mismatch.\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/usr/bin/python3",
+        "/tmp/lhc-L06-sdyavfbt/package/common/tools/lhc_plan_json.py",
+        "accept-leaf",
+        "/tmp/lhc-L06-sdyavfbt/plan",
+        "L01",
+        "--attempt-id",
+        "consumer-L06-1",
+        "--result",
+        "Isolated fixture result inspected; dependent task may proceed."
+      ],
+      "code": 0,
+      "stdout": "{\"id\": \"L01\", \"sha256\": \"0e88fbc728c067a3ca25111da6a53b1260e09a8ce6757ea01dbf937ebd8d3885\", \"assignment\": {\"schema_version\": 1, \"attempt_id\": \"consumer-L06-1\", \"executor_kind\": \"session\", \"lead\": {\"host_id\": \"roomhacker-server-100\", \"harness\": \"codex\", \"session_id\": \"lead\"}, \"executor\": {\"host_id\": \"roomhacker-server-100\", \"harness\": \"codex\", \"session_id\": \"worker\"}, \"parent\": null, \"state\": \"accepted\", \"dispatch\": {\"request_id\": \"lhc:4201d9ac4ab1e749aab803f1fe21d91c0c80838886187683ec1be7c296b033d6\", \"status\": \"accepted\", \"observed_at\": \"2026-11-07T16:32:07.796996+00:00\", \"turn_id\": \"turn-consumer-1\", \"reason\": null, \"receipt\": {\"delivery\": \"accepted\", \"ok\": true, \"admitted\": true, \"inputId\": \"lhc:4201d9ac4ab1e749aab803f1fe21d91c0c80838886187683ec1be7c296b033d6\", \"turnId\": \"turn-consumer-1\", \"sessionId\": \"worker\", \"harness\": \"codex\"}}, \"wake\": {\"wait_id\": null, \"state\": \"blocked\", \"reason\": \"wake_turn_mismatch\", \"next_at\": null, \"observed_at\": \"2026-11-07T16:32:07.814297+00:00\", \"turn_id\": null, \"captured_turn_id\": null, \"request_id\": \"lhc:4201d9ac4ab1e749aab803f1fe21d91c0c80838886187683ec1be7c296b033d6:completion\"}, \"observed_runtime\": {\"state\": \"completed\", \"observed_at\": \"2026-11-07T16:32:08.247671+00:00\", \"source\": \"native_verified\", \"turn_id\": \"turn-consumer-1\", \"model\": \"fixture-model\", \"worktree\": \"/tmp/lhc-L06-sdyavfbt\"}, \"events\": [{\"at\": \"2026-11-07T16:32:07+00:00\", \"actor\": {\"host_id\": \"roomhacker-server-100\", \"harness\": \"codex\", \"session_id\": \"author\", \"source\": \"declared\"}, \"from\": null, \"to\": \"assigned\"}, {\"at\": \"2026-11-07T16:32:07+00:00\", \"actor\": {\"host_id\": null, \"harness\": null, \"session_id\": null, \"source\": \"declared\"}, \"from\": \"assigned\", \"to\": \"assigned\", \"receipt\": {\"observed_runtime\": {\"state\": \"idle\", \"observed_at\": \"2026-11-07T16:32:07.773052+00:00\", \"source\": \"native_verified\", \"turn_id\": \"turn-consumer-1\", \"model\": \"fixture-model\", \"worktree\": \"/tmp/lhc-L06-sdyavfbt\"}}}, {\"at\": \"2026-11-07T16:32:07+00:00\", \"actor\": {\"host_id\": null, \"harness\": null, \"session_id\": null, \"source\": \"declared\"}, \"from\": \"assigned\", \"to\": \"dispatching\", \"receipt\": {\"dispatch\": {\"request_id\": \"lhc:4201d9ac4ab1e749aab803f1fe21d91c0c80838886187683ec1be7c296b033d6\", \"status\": \"dispatching\", \"observed_at\": \"2026-11-07T16:32:07.789809+00:00\", \"turn_id\": null, \"reason\": null, \"receipt\": null}}}, {\"at\": \"2026-11-07T16:32:07+00:00\", \"actor\": {\"host_id\": null, \"harness\": null, \"session_id\": null, \"source\": \"declared\"}, \"from\": \"dispatching\", \"to\": \"submitted\", \"receipt\": {\"dispatch\": {\"request_id\": \"lhc:4201d9ac4ab1e749aab803f1fe21d91c0c80838886187683ec1be7c296b033d6\", \"status\": \"accepted\", \"observed_at\": \"2026-11-07T16:32:07.796996+00:00\", \"turn_id\": \"turn-consumer-1\", \"reason\": null, \"receipt\": {\"delivery\": \"accepted\", \"ok\": true, \"admitted\": true, \"inputId\": \"lhc:4201d9ac4ab1e749aab803f1fe21d91c0c80838886187683ec1be7c296b033d6\", \"turnId\": \"turn-consumer-1\", \"sessionId\": \"worker\", \"harness\": \"codex\"}}}}, {\"at\": \"2026-11-07T16:32:07+00:00\", \"actor\": {\"host_id\": null, \"harness\": null, \"session_id\": null, \"source\": \"declared\"}, \"from\": \"submitted\", \"to\": \"running\", \"receipt\": {\"observed_runtime\": {\"state\": \"running\", \"observed_at\": \"2026-11-07T16:32:07.803350+00:00\", \"source\": \"native_verified\", \"turn_id\": \"turn-consumer-1\", \"model\": \"fixture-model\", \"worktree\": \"/tmp/lhc-L06-sdyavfbt\"}}}, {\"at\": \"2026-11-07T16:32:07+00:00\", \"actor\": {\"host_id\": null, \"harness\": null, \"session_id\": null, \"source\": \"declared\"}, \"from\": \"running\", \"to\": \"running\", \"receipt\": {\"wake\": {\"wait_id\": \"wait_d41f32c5c337bfb9d0f837e3b3f8783f\", \"state\": \"registering\", \"reason\": \"registration_in_progress\", \"next_at\": null, \"observed_at\": \"2026-11-07T16:32:07.807983+00:00\", \"turn_id\": \"turn-consumer-1\", \"captured_turn_id\": \"turn-consumer-1\", \"request_id\": \"lhc:4201d9ac4ab1e749aab803f1fe21d91c0c80838886187683ec1be7c296b033d6:completion\"}}}, {\"at\": \"2026-11-07T16:32:07+00:00\", \"actor\": {\"host_id\": null, \"harness\": null, \"session_id\": null, \"source\": \"declared\"}, \"from\": \"running\", \"to\": \"running\", \"receipt\": {\"wake\": {\"wait_id\": null, \"state\": \"blocked\", \"reason\": \"wake_turn_mismatch\", \"next_at\": null, \"observed_at\": \"2026-11-07T16:32:07.814297+00:00\", \"turn_id\": null, \"captured_turn_id\": null, \"request_id\": \"lhc:4201d9ac4ab1e749aab803f1fe21d91c0c80838886187683ec1be7c296b033d6:completion\"}}}, {\"at\": \"2026-11-07T16:32:08+00:00\", \"actor\": {\"host_id\": null, \"harness\": null, \"session_id\": null, \"source\": \"declared\"}, \"from\": \"running\", \"to\": \"result_ready\", \"receipt\": {\"observed_runtime\": {\"state\": \"completed\", \"observed_at\": \"2026-11-07T16:32:08.247671+00:00\", \"source\": \"native_verified\", \"turn_id\": \"turn-consumer-1\", \"model\": \"fixture-model\", \"worktree\": \"/tmp/lhc-L06-sdyavfbt\"}}}, {\"at\": \"2026-11-07T16:32:08+00:00\", \"actor\": {\"host_id\": null, \"harness\": null, \"session_id\": null, \"source\": \"unknown\"}, \"from\": \"result_ready\", \"to\": \"accepted\", \"receipt\": {\"result\": \"Isolated fixture result inspected; dependent task may proceed.\"}}]}}\nPlan plan: 1/2 done; deliverable: implementation; decomposition: progressive; leaf cap: 15 min; candidates by dependencies/capacity L02; dispatchable none; admission L02=assignment_unknown; execution L01: assignment=accepted, runtime=completed, wake=blocked, reason=wake_turn_mismatch.\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/usr/bin/python3",
+        "/tmp/lhc-L06-sdyavfbt/package/common/tools/lhc_plan_json.py",
+        "show",
+        "/tmp/lhc-L06-sdyavfbt/plan"
+      ],
+      "code": 0,
+      "stdout": "deliverable: implementation; decomposition: progressive; leaf cap: 15 min\nDone:\n- L01 «Fixture work L01» — Isolated fixture result inspected; dependent task may proceed.\nNext: L02 «Fixture work L02»\nWhole plan: /tmp/lhc-L06-sdyavfbt/plan/plan.md\n",
+      "stderr": ""
+    }
+  ],
+  "fixture_calls": [
+    {
+      "name": "session_info",
+      "arguments": {
+        "detail": "agent",
+        "view": "compact",
+        "hostId": "roomhacker-server-100",
+        "harness": "codex",
+        "sessionId": "worker"
+      }
+    },
+    {
+      "name": "deliver",
+      "arguments": {
+        "hostId": "roomhacker-server-100",
+        "harness": "codex",
+        "sessionId": "worker",
+        "inputId": "lhc:4201d9ac4ab1e749aab803f1fe21d91c0c80838886187683ec1be7c296b033d6",
+        "message": "Disposable fixture only. Prepare result for next dependent task.",
+        "create": "never",
+        "activation": "always",
+        "mode": "queue",
+        "sourceHarness": "codex",
+        "sourceSessionId": "lead"
+      }
+    },
+    {
+      "name": "session_info",
+      "arguments": {
+        "detail": "agent",
+        "view": "compact",
+        "hostId": "roomhacker-server-100",
+        "harness": "codex",
+        "sessionId": "worker"
+      }
+    },
+    {
+      "name": "resume_after",
+      "arguments": {
+        "action": "wait",
+        "owner": {
+          "harness": "codex",
+          "sessionId": "lead"
+        },
+        "dependencies": [
+          {
+            "harness": "codex",
+            "sessionId": "worker"
+          }
+        ],
+        "requestId": "lhc:4201d9ac4ab1e749aab803f1fe21d91c0c80838886187683ec1be7c296b033d6:completion",
+        "message": "LHC assignment consumer-L06-1: read the latest user goal and current plan; verify the exact native result, integrate and accept it, then select the next ready work. Do not treat completion as acceptance or replay an unknown delivery. Canonical context: {\"attempt_id\": \"consumer-L06-1\", \"leaf_id\": \"L01\", \"plan_dir\": \"/tmp/lhc-L06-sdyavfbt/plan\"}"
+      }
+    },
+    {
+      "name": "session_info",
+      "arguments": {
+        "detail": "agent",
+        "view": "compact",
+        "hostId": "roomhacker-server-100",
+        "harness": "codex",
+        "sessionId": "worker"
+      }
+    }
+  ],
+  "leaves": {
+    "L02.json": {
+      "id": "L02",
+      "label": "Fixture work L02",
+      "status": "queued",
+      "depends_on": [
+        "L01"
+      ]
+    },
+    "L01.json": {
+      "id": "L01",
+      "label": "Fixture work L01",
+      "status": "done",
+      "depends_on": [],
+      "assignment": {
+        "schema_version": 1,
+        "attempt_id": "consumer-L06-1",
+        "executor_kind": "session",
+        "lead": {
+          "host_id": "roomhacker-server-100",
+          "harness": "codex",
+          "session_id": "lead"
+        },
+        "executor": {
+          "host_id": "roomhacker-server-100",
+          "harness": "codex",
+          "session_id": "worker"
+        },
+        "parent": null,
+        "state": "accepted",
+        "dispatch": {
+          "request_id": "lhc:4201d9ac4ab1e749aab803f1fe21d91c0c80838886187683ec1be7c296b033d6",
+          "status": "accepted",
+          "observed_at": "2026-11-07T16:32:07.796996+00:00",
+          "turn_id": "turn-consumer-1",
+          "reason": null,
+          "receipt": {
+            "delivery": "accepted",
+            "ok": true,
+            "admitted": true,
+            "inputId": "lhc:4201d9ac4ab1e749aab803f1fe21d91c0c80838886187683ec1be7c296b033d6",
+            "turnId": "turn-consumer-1",
+            "sessionId": "worker",
+            "harness": "codex"
+          }
+        },
+        "wake": {
+          "wait_id": null,
+          "state": "blocked",
+          "reason": "wake_turn_mismatch",
+          "next_at": null,
+          "observed_at": "2026-11-07T16:32:07.814297+00:00",
+          "turn_id": null,
+          "captured_turn_id": null,
+          "request_id": "lhc:4201d9ac4ab1e749aab803f1fe21d91c0c80838886187683ec1be7c296b033d6:completion"
+        },
+        "observed_runtime": {
+          "state": "completed",
+          "observed_at": "2026-11-07T16:32:08.247671+00:00",
+          "source": "native_verified",
+          "turn_id": "turn-consumer-1",
+          "model": "fixture-model",
+          "worktree": "/tmp/lhc-L06-sdyavfbt"
+        },
+        "events": [
+          {
+            "at": "2026-11-07T16:32:07+00:00",
+            "actor": {
+              "host_id": "roomhacker-server-100",
+              "harness": "codex",
+              "session_id": "author",
+              "source": "declared"
+            },
+            "from": null,
+            "to": "assigned"
+          },
+          {
+            "at": "2026-11-07T16:32:07+00:00",
+            "actor": {
+              "host_id": null,
+              "harness": null,
+              "session_id": null,
+              "source": "declared"
+            },
+            "from": "assigned",
+            "to": "assigned",
+            "receipt": {
+              "observed_runtime": {
+                "state": "idle",
+                "observed_at": "2026-11-07T16:32:07.773052+00:00",
+                "source": "native_verified",
+                "turn_id": "turn-consumer-1",
+                "model": "fixture-model",
+                "worktree": "/tmp/lhc-L06-sdyavfbt"
+              }
+            }
+          },
+          {
+            "at": "2026-11-07T16:32:07+00:00",
+            "actor": {
+              "host_id": null,
+              "harness": null,
+              "session_id": null,
+              "source": "declared"
+            },
+            "from": "assigned",
+            "to": "dispatching",
+            "receipt": {
+              "dispatch": {
+                "request_id": "lhc:4201d9ac4ab1e749aab803f1fe21d91c0c80838886187683ec1be7c296b033d6",
+                "status": "dispatching",
+                "observed_at": "2026-11-07T16:32:07.789809+00:00",
+                "turn_id": null,
+                "reason": null,
+                "receipt": null
+              }
+            }
+          },
+          {
+            "at": "2026-11-07T16:32:07+00:00",
+            "actor": {
+              "host_id": null,
+              "harness": null,
+              "session_id": null,
+              "source": "declared"
+            },
+            "from": "dispatching",
+            "to": "submitted",
+            "receipt": {
+              "dispatch": {
+                "request_id": "lhc:4201d9ac4ab1e749aab803f1fe21d91c0c80838886187683ec1be7c296b033d6",
+                "status": "accepted",
+                "observed_at": "2026-11-07T16:32:07.796996+00:00",
+                "turn_id": "turn-consumer-1",
+                "reason": null,
+                "receipt": {
+                  "delivery": "accepted",
+                  "ok": true,
+                  "admitted": true,
+                  "inputId": "lhc:4201d9ac4ab1e749aab803f1fe21d91c0c80838886187683ec1be7c296b033d6",
+                  "turnId": "turn-consumer-1",
+                  "sessionId": "worker",
+                  "harness": "codex"
+                }
+              }
+            }
+          },
+          {
+            "at": "2026-11-07T16:32:07+00:00",
+            "actor": {
+              "host_id": null,
+              "harness": null,
+              "session_id": null,
+              "source": "declared"
+            },
+            "from": "submitted",
+            "to": "running",
+            "receipt": {
+              "observed_runtime": {
+                "state": "running",
+                "observed_at": "2026-11-07T16:32:07.803350+00:00",
+                "source": "native_verified",
+                "turn_id": "turn-consumer-1",
+                "model": "fixture-model",
+                "worktree": "/tmp/lhc-L06-sdyavfbt"
+              }
+            }
+          },
+          {
+            "at": "2026-11-07T16:32:07+00:00",
+            "actor": {
+              "host_id": null,
+              "harness": null,
+              "session_id": null,
+              "source": "declared"
+            },
+            "from": "running",
+            "to": "running",
+            "receipt": {
+              "wake": {
+                "wait_id": "wait_d41f32c5c337bfb9d0f837e3b3f8783f",
+                "state": "registering",
+                "reason": "registration_in_progress",
+                "next_at": null,
+                "observed_at": "2026-11-07T16:32:07.807983+00:00",
+                "turn_id": "turn-consumer-1",
+                "captured_turn_id": "turn-consumer-1",
+                "request_id": "lhc:4201d9ac4ab1e749aab803f1fe21d91c0c80838886187683ec1be7c296b033d6:completion"
+              }
+            }
+          },
+          {
+            "at": "2026-11-07T16:32:07+00:00",
+            "actor": {
+              "host_id": null,
+              "harness": null,
+              "session_id": null,
+              "source": "declared"
+            },
+            "from": "running",
+            "to": "running",
+            "receipt": {
+              "wake": {
+                "wait_id": null,
+                "state": "blocked",
+                "reason": "wake_turn_mismatch",
+                "next_at": null,
+                "observed_at": "2026-11-07T16:32:07.814297+00:00",
+                "turn_id": null,
+                "captured_turn_id": null,
+                "request_id": "lhc:4201d9ac4ab1e749aab803f1fe21d91c0c80838886187683ec1be7c296b033d6:completion"
+              }
+            }
+          },
+          {
+            "at": "2026-11-07T16:32:08+00:00",
+            "actor": {
+              "host_id": null,
+              "harness": null,
+              "session_id": null,
+              "source": "declared"
+            },
+            "from": "running",
+            "to": "result_ready",
+            "receipt": {
+              "observed_runtime": {
+                "state": "completed",
+                "observed_at": "2026-11-07T16:32:08.247671+00:00",
+                "source": "native_verified",
+                "turn_id": "turn-consumer-1",
+                "model": "fixture-model",
+                "worktree": "/tmp/lhc-L06-sdyavfbt"
+              }
+            }
+          },
+          {
+            "at": "2026-11-07T16:32:08+00:00",
+            "actor": {
+              "host_id": null,
+              "harness": null,
+              "session_id": null,
+              "source": "unknown"
+            },
+            "from": "result_ready",
+            "to": "accepted",
+            "receipt": {
+              "result": "Isolated fixture result inspected; dependent task may proceed."
+            }
+          }
+        ]
+      },
+      "assignment_history": [],
+      "updated_at": "2026-11-07T19:32:08+03:00",
+      "progress_events": [
+        {
+          "at": "2026-11-07T19:32:07+03:00",
+          "note": "",
+          "changes": {},
+          "actor": {
+            "host_id": "roomhacker-server-100",
+            "harness": "codex",
+            "session_id": "author",
+            "source": "declared"
+          },
+          "session": "author",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-11-07T19:32:07+03:00",
+          "note": "",
+          "changes": {},
+          "actor": {
+            "host_id": null,
+            "harness": null,
+            "session_id": null,
+            "source": "declared"
+          },
+          "session": "unknown",
+          "harness": "unknown"
+        },
+        {
+          "at": "2026-11-07T19:32:07+03:00",
+          "note": "",
+          "changes": {},
+          "actor": {
+            "host_id": null,
+            "harness": null,
+            "session_id": null,
+            "source": "declared"
+          },
+          "session": "unknown",
+          "harness": "unknown"
+        },
+        {
+          "at": "2026-11-07T19:32:07+03:00",
+          "note": "",
+          "changes": {},
+          "actor": {
+            "host_id": null,
+            "harness": null,
+            "session_id": null,
+            "source": "declared"
+          },
+          "session": "unknown",
+          "harness": "unknown"
+        },
+        {
+          "at": "2026-11-07T19:32:07+03:00",
+          "note": "",
+          "changes": {},
+          "actor": {
+            "host_id": null,
+            "harness": null,
+            "session_id": null,
+            "source": "declared"
+          },
+          "session": "unknown",
+          "harness": "unknown"
+        },
+        {
+          "at": "2026-11-07T19:32:07+03:00",
+          "note": "",
+          "changes": {},
+          "actor": {
+            "host_id": null,
+            "harness": null,
+            "session_id": null,
+            "source": "declared"
+          },
+          "session": "unknown",
+          "harness": "unknown"
+        },
+        {
+          "at": "2026-11-07T19:32:07+03:00",
+          "note": "",
+          "changes": {},
+          "actor": {
+            "host_id": null,
+            "harness": null,
+            "session_id": null,
+            "source": "declared"
+          },
+          "session": "unknown",
+          "harness": "unknown"
+        },
+        {
+          "at": "2026-11-07T19:32:08+03:00",
+          "note": "",
+          "changes": {},
+          "actor": {
+            "host_id": null,
+            "harness": null,
+            "session_id": null,
+            "source": "declared"
+          },
+          "session": "unknown",
+          "harness": "unknown"
+        },
+        {
+          "at": "2026-11-07T19:32:08+03:00",
+          "note": "",
+          "changes": {
+            "status": "done",
+            "result": "Isolated fixture result inspected; dependent task may proceed."
+          },
+          "actor": {
+            "host_id": null,
+            "harness": null,
+            "session_id": null,
+            "source": "unknown"
+          },
+          "session": "unknown",
+          "harness": "unknown"
+        }
+      ],
+      "result": "Isolated fixture result inspected; dependent task may proceed."
+    }
+  }
+}

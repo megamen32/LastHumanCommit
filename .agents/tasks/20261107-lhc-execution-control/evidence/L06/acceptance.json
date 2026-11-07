@@ -1,0 +1,17 @@
+{
+  "verdict": "FAIL",
+  "candidate": "5bf8733ba00f7e681823d883688402d113cf478a",
+  "checks": {
+    "author_distinct_from_lead_and_worker": true,
+    "exact_turn_running": true,
+    "wake_captured_admitted_turn": true,
+    "wake_resumed_on_reconcile": true,
+    "completion_requires_acceptance": true,
+    "dependency_refused_before_acceptance": true,
+    "duplicate_dispatch_not_resent": true,
+    "dependent_dispatch_after_acceptance": true,
+    "active_assignment_not_offered_as_next": false
+  },
+  "mcp_show_after_L02_dispatch": "deliverable: implementation; decomposition: progressive; leaf cap: 15 min\nDone:\n- L01 «Fixture work L01» — Isolated fixture result inspected; dependent task may proceed.\nNext: L02 «Fixture work L02»\nWhole plan: /tmp/lhc-L06-qbogs5cu/plan/plan.md\n",
+  "fixture_only": true
+}
