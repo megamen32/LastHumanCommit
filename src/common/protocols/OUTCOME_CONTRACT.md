@@ -141,7 +141,11 @@ No ordinary-message classifier or inferred exclusion runs during bootstrap.
 Existing `--require-stage`, source/permission checks and `--not-applicable` rules
 still apply. Validation failure writes no outcome.
 
-Existing timer, input/source history, holds and identity are retained. A held or
+Existing timer, input/source history, holds and identity are retained. Existing
+heartbeat runtime/session/cwd and declared native identity facts must agree with
+the freshly verified native context. A contradiction refuses the whole contract
+without writing state. Missing/unknown prior facts are not replaced with a guessed
+verified identity; an ordinary nonconflicting time-only state still works. A held or
 closed state without an outcome cannot be reopened by bootstrap. An existing
 outcome uses its normal contract update path, with exact owner/runtime/cwd checks;
 it is never replaced with a fresh outcome or a fresh evidence clock just because
