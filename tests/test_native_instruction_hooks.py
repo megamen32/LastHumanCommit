@@ -435,7 +435,7 @@ def test_instruction_only_branch_does_not_import_or_touch_state(tmp_path: Path, 
     assert list(tmp_path.iterdir()) == []
 
 
-def test_post_compact_shows_the_session_plan_and_names_its_leaf_the_current_goal(tmp_path: Path) -> None:
+def test_post_compact_shows_the_session_plan_and_current_leaf_facts(tmp_path: Path) -> None:
     repo = git_repo(tmp_path / "repo")
     plan = _open_plan(repo, "20261106-ci", [
         {"id": "L01", "label": "Codex", "status": "done", "result": "works: receipt-1.json"},
@@ -447,7 +447,8 @@ def test_post_compact_shows_the_session_plan_and_names_its_leaf_the_current_goal
     assert completed.returncode == 0, completed.stderr
     context = _plan_context(completed)
     assert str(ROOT / "skills/plan/SKILL.md") in context
-    assert "Leaf L02 of this session is your current goal" in context
+    assert "Now: L02" in context
+    assert "is your current goal" not in context
     assert "L01 «Codex» — works: receipt-1.json" in context
     assert {p: p.read_bytes() for p in plan.rglob("*") if p.is_file()} == before
 
@@ -517,3 +518,116 @@ def test_legacy_control_event_invocation_is_inert_without_flag(tmp_path: Path, e
     assert completed.stdout == ""
     assert list(tmp_path.iterdir()) == []
 
+
+
+@pytest.mark.parametrize("hook_event", ["SessionStart", "PostCompact"])
+@pytest.mark.parametrize("has_running_leaf", [False, True])
+def test_resume_hook_recovers_latest_state_of_one_plan_with_many_bound_leaves(
+    tmp_path: Path, monkeypatch, hook_event: str, has_running_leaf: bool,
+) -> None:
+    monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
+    repo = git_repo(tmp_path / "repo")
+    leaves = [{"id": "L01", "label": "Original stage", "status": "done", "result": "original-stage-receipt"}]
+    for number in range(1, 133):
+        leaf = {"id": f"R{number:03}", "label": f"Replanned object {number}", "status": "queued", "session": "resume-session"}
+        if has_running_leaf and number == 42:
+            leaf.update(status="running", progress_events=[{"note": "CURRENT_OBJECT_NOTE"}])
+        leaves.append(leaf)
+    plan = _open_plan(repo, "revised-plan", leaves)
+    metadata = {
+        "goal": "CURRENT_GOAL: prepare the complete hourly plan",
+        "current_progress": "CURRENT_PROGRESS: the earlier stage is complete",
+        "deliverable": "plan", "decomposition": "complete",
+        "estimate_policy": {"leaf_cap_minutes": 60, "reason": "CURRENT_ESTIMATE_REASON: human requested hourly objects"},
+        "revisions": [
+            {"at": "2026-11-06T10:00:00Z", "reason": "SUPERSEDED_SCOPE_DO_NOT_REPLAY", "summary": "OBSOLETE_AUTHORITY"},
+            {"at": "2026-11-07T10:00:00Z", "reason": "CURRENT_REVISION_REASON", "summary": "CURRENT_REVISION_SUMMARY"},
+        ],
+    }
+    (plan / "plan.json").write_text(json.dumps(metadata), encoding="utf-8")
+    before = {p: p.read_bytes() for p in plan.rglob("*") if p.is_file()}
+    completed = run_cli(entry, ["--root", str(ROOT), "--event", hook_event, "--instructions-only"],
+                        stdin=json.dumps({"cwd": str(repo), "session_id": "resume-session"}))
+    assert completed.returncode == 0, completed.stderr
+    context = _plan_context(completed)
+    assert metadata["goal"] in context
+    assert metadata["current_progress"] in context
+    assert "CURRENT_REVISION_REASON" in context and "CURRENT_REVISION_SUMMARY" in context
+    assert "2026-11-07T10:00:00Z" in context
+    assert "SUPERSEDED_SCOPE_DO_NOT_REPLAY" not in context and "OBSOLETE_AUTHORITY" not in context
+    assert "leaf_cap_minutes=60" in context and "CURRENT_ESTIMATE_REASON" in context
+    assert "deliverable=plan" in context and "decomposition=complete" in context
+    assert "Next: R001" in context
+    assert "Now: R001" not in context and "Now: L01" not in context
+    if has_running_leaf:
+        assert "Now: R042" in context and "CURRENT_OBJECT_NOTE" in context
+    else:
+        assert "Now: no running leaf bound to this session" in context
+    assert "Latest direct human request and STOP take precedence" in context
+    assert "are your current goal" not in context
+    assert str(plan / "plan.md") in context
+    assert {p: p.read_bytes() for p in plan.rglob("*") if p.is_file()} == before
+
+
+@pytest.mark.parametrize("hook_event", ["SessionStart", "PostCompact"])
+def test_resume_hook_does_not_mix_leaves_from_distinct_bound_plans(tmp_path: Path, monkeypatch, hook_event: str) -> None:
+    monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
+    repo = git_repo(tmp_path / "repo")
+    first = _open_plan(repo, "a-first", [{"id": "L01", "label": "First object", "status": "running", "session": "resume-session"}])
+    second = _open_plan(repo, "b-second", [{"id": "L02", "label": "Second object", "status": "queued", "session": "resume-session"}])
+    before = {p: p.read_bytes() for plan in (first, second) for p in plan.rglob("*") if p.is_file()}
+    completed = run_cli(entry, ["--root", str(ROOT), "--event", hook_event, "--instructions-only"],
+                        stdin=json.dumps({"cwd": str(repo), "session_id": "resume-session"}))
+    assert completed.returncode == 0, completed.stderr
+    context = _plan_context(completed)
+    assert str(first) in context and str(second) in context
+    assert f"L01 в {first}" in context and f"L02 в {second}" in context
+    assert "не выбирать автоматически" in context
+    assert "Latest direct human request and STOP take precedence" in context
+    assert "Now:" not in context
+    assert "are your current goal" not in context
+    assert {p: p.read_bytes() for plan in (first, second) for p in plan.rglob("*") if p.is_file()} == before
+
+
+def test_resume_hook_keeps_current_note_when_done_history_exceeds_context_budget(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
+    repo = git_repo(tmp_path / "repo")
+    leaves = [{"id": f"D{number:02}", "label": "Completed object " + "x" * 180,
+               "status": "done", "result": "Completed result " + "y" * 220} for number in range(12)]
+    leaves.append({"id": "L99", "label": "Current object", "status": "running", "session": "resume-session",
+                   "progress_events": [{"note": "CURRENT_NOTE_SURVIVES_LONG_HISTORY"}]})
+    plan = _open_plan(repo, "large-history", leaves)
+    completed = run_cli(entry, ["--root", str(ROOT), "--event", "PostCompact", "--instructions-only"],
+                        stdin=json.dumps({"cwd": str(repo), "session_id": "resume-session"}))
+    assert completed.returncode == 0, completed.stderr
+    context = _plan_context(completed)
+    assert "Now: L99" in context and "CURRENT_NOTE_SURVIVES_LONG_HISTORY" in context
+    assert str(plan / "plan.md") in context
+    resume = entry.plan_resume_context({"cwd": str(repo), "session_id": "resume-session"}, ROOT)
+    assert resume is not None and len(resume) <= 4000
+
+
+@pytest.mark.parametrize("cap, allowed, oversized", [(None, 15, 20), (60, 60, 75)])
+def test_plan_audit_respects_the_bound_plan_estimate_policy(
+    tmp_path: Path, monkeypatch, cap: int | None, allowed: int, oversized: int,
+) -> None:
+    monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
+    repo = git_repo(tmp_path / "repo")
+    plan = _open_plan(repo, "scoped-estimate", [
+        {"id": "L01", "status": "queued", "session": "policy-session", "estimate_minutes": allowed},
+        {"id": "L02", "status": "queued", "estimate_minutes": oversized},
+    ])
+    metadata = {} if cap is None else {
+        "estimate_policy": {"leaf_cap_minutes": cap, "reason": "The human requested hourly objects"},
+    }
+    (plan / "plan.json").write_text(json.dumps(metadata), encoding="utf-8")
+    event = {"cwd": str(repo), "session_id": "policy-session"}
+    before = {p: p.read_bytes() for p in plan.rglob("*") if p.is_file()}
+    context = entry.plan_audit(event, ROOT, now=1_800_000_000)
+    assert context is not None
+    assert f"L02 ({oversized} min)" in context
+    assert "L01" not in context
+    assert f"{cap or 15} minutes" in context
+    if cap == 60:
+        assert "15 minutes" not in context and "15 minute" not in context
+    assert {p: p.read_bytes() for p in plan.rglob("*") if p.is_file()} == before

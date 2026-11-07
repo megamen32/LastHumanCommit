@@ -63,7 +63,7 @@ def test_file_mail_round_trip_between_worktrees(tmp_path):
     assert mail.inbox(root, "s2") == [] and (path.parent / "done" / path.name).exists()
 
 
-def test_after_a_compaction_the_hook_shows_the_bound_plan_as_the_current_goal(tmp_path, monkeypatch):
+def test_after_a_compaction_the_hook_shows_the_bound_plan_current_facts(tmp_path, monkeypatch):
     import json
     import lhc_entry as entry
     repo = tmp_path / "repo"
@@ -82,8 +82,9 @@ def test_after_a_compaction_the_hook_shows_the_bound_plan_as_the_current_goal(tm
         (plan / "leaves" / (leaf["id"] + ".json")).write_text(json.dumps(leaf, ensure_ascii=False))
     before = {p: p.read_bytes() for p in plan.rglob("*") if p.is_file()}
     text = entry.plan_resume_context({"cwd": str(repo), "session_id": "s1"}, ROOT)
-    assert "Leaf L02 of this session is your current goal" in text
-    assert "do not research or plan it again" in text
+    assert "Now: L02" in text
+    assert "Latest direct human request and STOP take precedence" in text
+    assert "do not research or plan it again" not in text
     assert "L01 «Codex через лжемодель» — 2 сессии, транскрипт: receipt-1.json" in text
     assert "last note: создание прошло, жду транскрипт" in text
     assert "L03 «MiniMax через Herder»" in text
