@@ -6,3 +6,5 @@
 {"action": "register", "actor": "root", "at": "2026-11-07T15:54:19+00:00", "id": "B06", "sha256": "36134cd760aab7cdb582a7544a598f740a36c42f73551ab46aa906569be28739", "status": "open"}
 {"action": "register", "actor": "root", "at": "2026-11-07T15:54:19+00:00", "id": "B07", "sha256": "2e57b744383049a942e1b0ab4530fb00f047a65382386b279f4eb50c2fdf25a8", "status": "open"}
 {"action": "resolve", "actor": "root", "at": "2026-11-07T15:54:19+00:00", "id": "B04", "sha256": "53c6c3c7bb1ffe27146c9701219d39b9b676a1084333c84a3e81b5be672aeb58", "status": "fixed"}
+{"action": "resolve", "actor": "root", "at": "2026-11-07T15:56:07+00:00", "id": "B01", "sha256": "ea09b1c9a54ee0095bbef546a2b1870b8982a9093cfd50e831d8e3888bf60af9", "status": "fixed"}
+{"action": "resolve", "actor": "root", "at": "2026-11-07T15:56:07+00:00", "id": "B02", "sha256": "e97eaa82a6d032d5f36debf952ffb4e9f258baa683ccabf87ac6d02100ad2fae", "status": "fixed"}
