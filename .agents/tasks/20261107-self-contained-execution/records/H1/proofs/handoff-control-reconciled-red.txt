@@ -1,0 +1,69 @@
+(Linux uses --headless by default. To override, use --headed / --gui. For Xvfb mode instead, use --xvfb. Or you can hide this info by using --headless / --headless2 / --uc.)
+FFF                                                                      [100%]
+=================================== FAILURES ===================================
+____ test_graph_and_show_derive_control_from_live_adapter_not_cached_claim _____
+
+plan = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/pytest-1904201-aef5eb0641eb08d3/test_graph_and_show_derive_con0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7cb117a098a0>
+
+    def test_graph_and_show_derive_control_from_live_adapter_not_cached_claim(plan, monkeypatch):
+        import types
+        control = {"goal_status": "unaccepted", "frontier": "exhausted", "next_decision": "required",
+                   "fingerprint": "fixture-live-fingerprint", "reason": "bound_native_outcome"}
+        seen = []
+        def resolve(path):
+            seen.append(str(Path(path).resolve()))
+            return dict(control)
+        monkeypatch.setitem(sys.modules, "lhc_plan_control", types.SimpleNamespace(resolve_control=resolve))
+        (plan / "plan.graph.json").write_text(json.dumps({"goal_control": {"goal_status": "accepted"}}))
+        document = pj.build_document(plan)
+>       assert document["goal_control"] == control
+E       KeyError: 'goal_control'
+
+tests/test_execution_handoff.py:224: KeyError
+_ test_explicit_cli_activation_binds_existing_outcome_with_actual_selected_identity _
+
+plan = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/pytest-1904201-aef5eb0641eb08d3/test_explicit_cli_activation_b0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7cb117966fb0>
+capsys = <_pytest.capture.CaptureFixture object at 0x7cb117966ef0>
+
+    def test_explicit_cli_activation_binds_existing_outcome_with_actual_selected_identity(plan, monkeypatch, capsys):
+        import types
+        called = []
+        def bind(path, session, cwd, runtime=None):
+            called.append((str(Path(path).resolve()), session, runtime))
+            return {"binding": "unknown", "reason": "native_outcome_missing"}
+        monkeypatch.setitem(sys.modules, "lhc_plan_control", types.SimpleNamespace(bind_session_plan=bind))
+        result = pj.main(["activate", str(plan), "L1", "--session", "lead", "--harness", "codex", "--owner", "fixture"])
+        assert result == 0
+>       assert called == [(str(plan.resolve()), "lead", "codex")]
+E       AssertionError: assert [] == [('/home/room...ad', 'codex')]
+E         
+E         Right contains one more item: ('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/pytest-1904201-aef5eb0641eb08d3/test_explicit_cli_activation_b0', 'lead', 'codex')
+E         Use -v to get more diff
+
+tests/test_execution_handoff.py:239: AssertionError
+----------------------------- Captured stdout call -----------------------------
+{"plan": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/pytest-1904201-aef5eb0641eb08d3/test_explicit_cli_activation_b0", "leaf_id": "L1", "status": "assigned", "session": "lead", "harness": "codex", "owner": "fixture", "worktree": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/pytest-1904201-aef5eb0641eb08d3", "url": null, "sync": "local-only"}
+____ test_mcp_exposes_live_control_and_explicit_decision_with_native_actor _____
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7cb11a37e890>
+plan = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/pytest-1904201-aef5eb0641eb08d3/test_mcp_exposes_live_control_0')
+
+    def test_mcp_exposes_live_control_and_explicit_decision_with_native_actor(monkeypatch, plan):
+        import importlib
+        mcp = importlib.import_module("lhc_plan_mcp")
+        names = {tool["name"] for tool in mcp.TOOLS}
+>       assert {"read_goal_control", "record_frontier_decision"} <= names
+E       AssertionError: assert {'read_goal_c...ier_decision'} <= {'accept_leaf...ug_list', ...}
+E         
+E         Extra items in the left set:
+E         'read_goal_control'
+E         'record_frontier_decision'
+
+tests/test_execution_handoff.py:247: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_execution_handoff.py::test_graph_and_show_derive_control_from_live_adapter_not_cached_claim
+FAILED tests/test_execution_handoff.py::test_explicit_cli_activation_binds_existing_outcome_with_actual_selected_identity
+FAILED tests/test_execution_handoff.py::test_mcp_exposes_live_control_and_explicit_decision_with_native_actor
+3 failed, 22 deselected in 0.40s

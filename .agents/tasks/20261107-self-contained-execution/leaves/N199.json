@@ -1,21 +1,21 @@
 {
-  "label": "Проверить и обновить второй ранее настроенный native host",
+  "label": "Независимое чтение установленного LHC на server100",
   "kind": "task",
-  "status": "queued",
-  "owner": "Lead",
-  "description": "Проверить и обновить второй ранее настроенный native host. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
-  "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+  "status": "blocked",
+  "owner": "независимый native reader послеN100",
+  "description": "По первичным квитанциям подтвержден один native host: roomhacker-server-100. Число199 в предыдущем release-summary означает число файлов, а не второй host. Проверить установленный пакет отдельным потребителем на подтвержденном host.",
+  "acceptance": "Отдельный readback подтверждает точную версию, SHA256 исходного пакета, активные hooks и доступные MCP команды на roomhacker-server-100; другие host не затрагиваются.",
   "estimate_minutes": 15,
   "depends_on": [
-    "R1"
+    "N100"
   ],
   "parent": "S2",
   "id": "N199",
   "model": "gpt-6.1-sol",
   "created_at": "2026-11-07T22:40:44+03:00",
-  "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+  "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
   "harness": "codex",
-  "updated_at": "2026-11-07T22:40:44+03:00",
+  "updated_at": "2026-11-08T00:47:48+03:00",
   "progress_events": [
     {
       "at": "2026-11-07T22:40:44+03:00",
@@ -42,6 +42,62 @@
       },
       "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
       "harness": "codex"
+    },
+    {
+      "at": "2026-11-07T23:06:40+03:00",
+      "note": "",
+      "changes": {
+        "label": "Независимое чтение установленного LHC на server100",
+        "description": "По первичным квитанциям подтвержден один native host: roomhacker-server-100. Число199 в предыдущем release-summary означает число файлов, а не второй host. Проверить установленный пакет отдельным потребителем на подтвержденном host.",
+        "acceptance": "Отдельный readback подтверждает точную версию, SHA256 исходного пакета, активные hooks и доступные MCP команды на roomhacker-server-100; другие host не затрагиваются."
+      },
+      "actor": {
+        "host_id": null,
+        "harness": null,
+        "session_id": null,
+        "source": "unknown"
+      },
+      "session": "unknown",
+      "harness": "unknown"
+    },
+    {
+      "at": "2026-11-08T00:41:24+03:00",
+      "note": "Owner correction preserved: one native host server100, independent reader after actual final install.",
+      "changes": {
+        "status": "blocked",
+        "depends_on": [
+          "N100"
+        ],
+        "blocker": "Нужен установленный final пакет послеN100 для независимого readback на том же roomhacker-server-100. 199 — историческое число файлов, не host.",
+        "result": "Final installed independent readback NOT_RUN. Новый isolated snapshot654 имел203файла; этот count также не означает host."
+      },
+      "actor": {
+        "host_id": "roomhacker-server-100",
+        "harness": "codex",
+        "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+        "source": "declared"
+      },
+      "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+      "harness": "codex"
+    },
+    {
+      "at": "2026-11-08T00:47:48+03:00",
+      "note": "Legacy root envID removed from current unassigned reader fields through API; it remains in immutable progress history. Current executor is unknown until assigned. Host remains server100.",
+      "changes": {
+        "owner": "независимый native reader послеN100",
+        "session": "",
+        "harness": ""
+      },
+      "actor": {
+        "host_id": "roomhacker-server-100",
+        "harness": "codex",
+        "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+        "source": "declared"
+      },
+      "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+      "harness": "codex"
     }
-  ]
+  ],
+  "blocker": "Нужен установленный final пакет послеN100 для независимого readback на том же roomhacker-server-100. 199 — историческое число файлов, не host.",
+  "result": "Final installed independent readback NOT_RUN. Новый isolated snapshot654 имел203файла; этот count также не означает host."
 }

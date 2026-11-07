@@ -1,0 +1,7 @@
+# Native acceptance context
+
+Q1 genuine nativeID01a1b7a4-2eb2-7471-83fd-2edb027f38c5, originalcwd ROOTWT, natural CODEX_THREAD_ID. После final freeze/install получит exact installedtools path. Запускает сам обычный public outcome contract из опубликованного OUTCOME_CONTRACT/help/usage. Public pending bootstrap не зависит от automatic hooks и не пишет synthetic state.
+
+Q2 namedempty genuine nativeID01a1b7f7-13f7-7a41-9b56-d9e322cff539 наserver100/codex/gpt-6.1-sol с ROOTWTcwd. Root ещё не отправлял первый task. Первый packet только native Lead через publicLHCassign/dispatch после finalfreeze иQ1. Canonical brief будет содержать exact frozenSHA/installedpath/plan/leaf/attempt/Lead returnaddress, цель/scope/inputs/output/checks/первое действие, ограничения no source/runtime/credential edits, own evidence/Q2, completion/result≠releaseAPPROVE. Q2 видит только package/help/protocol/packet, без implementationdiff/author tests/results. Неполное поручение проверяется без дублирующего реального send. Один tiny genuine child допускается только при реальном supported native lineage; иначе точная limitation.
+
+Trust/effect отдельны: official https://learn.chatgpt.com/docs/hooks требует review текущих hook definition+content, штатные /hooks либо Settings Hooks. В схеме установленного Codex0.167 доступны hooks/list и scoped config APIs, отдельного hooks/trust нет. No bypass flags, no managed-policy override, no manual hook stdin as physicalproof. До finalbytes только подготовка; старые654metadata не finalcanary. Current shared marketplace/trust не менялись.

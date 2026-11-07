@@ -1,0 +1,51 @@
+{
+  "label": "Отдельно проверить штатное доверие и observed hook effect",
+  "kind": "task",
+  "status": "blocked",
+  "parent": "S2",
+  "owner": "native operational Lead / IntegratorRelease",
+  "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+  "harness": "codex",
+  "depends_on": [
+    "I1"
+  ],
+  "description": "Отдельная от Q1 public CLI проверка доверия только verified installed final candidate hooks и реально наблюдаемого native lifecycle effect. /hooks/Settings Hooks или supported scoped config route после review; не bypass, не synthetic stdin, не запуск чужих sessions.",
+  "acceptance": "При доступном штатном маршруте сохранены native hook event/effect/status/path/revision/runtime/nativeID/cwd/state path; hooks/list/trusted metadata отдельно и недостаточно. При недоступности — exact limitation, не fabricated PASS.",
+  "blocker": "Final installed bytes отсутствуют; ранее isolated654 имел11untrusted hooks. Штатный review/trust изучен, actual effect не запускался. Q1 public bootstrap от этого не зависит.",
+  "estimate_unknown_reason": "Штатный lifecycle route и фактическое исполнение в dedicated harness ещё не подтверждены.",
+  "id": "HT",
+  "model": "gpt-6.1-sol",
+  "created_at": "2026-11-08T00:47:48+03:00",
+  "updated_at": "2026-11-08T00:47:48+03:00",
+  "progress_events": [
+    {
+      "at": "2026-11-08T00:47:48+03:00",
+      "note": "Separate native hook evidence from useful public CLI consumer; no new authority or acceptance inferred.",
+      "changes": {
+        "label": "Отдельно проверить штатное доверие и observed hook effect",
+        "kind": "task",
+        "status": "blocked",
+        "parent": "S2",
+        "owner": "native operational Lead / IntegratorRelease",
+        "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+        "harness": "codex",
+        "depends_on": [
+          "I1"
+        ],
+        "description": "Отдельная от Q1 public CLI проверка доверия только verified installed final candidate hooks и реально наблюдаемого native lifecycle effect. /hooks/Settings Hooks или supported scoped config route после review; не bypass, не synthetic stdin, не запуск чужих sessions.",
+        "acceptance": "При доступном штатном маршруте сохранены native hook event/effect/status/path/revision/runtime/nativeID/cwd/state path; hooks/list/trusted metadata отдельно и недостаточно. При недоступности — exact limitation, не fabricated PASS.",
+        "blocker": "Final installed bytes отсутствуют; ранее isolated654 имел11untrusted hooks. Штатный review/trust изучен, actual effect не запускался. Q1 public bootstrap от этого не зависит.",
+        "estimate_unknown_reason": "Штатный lifecycle route и фактическое исполнение в dedicated harness ещё не подтверждены.",
+        "model": "gpt-6.1-sol"
+      },
+      "actor": {
+        "host_id": "roomhacker-server-100",
+        "harness": "codex",
+        "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+        "source": "declared"
+      },
+      "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+      "harness": "codex"
+    }
+  ]
+}

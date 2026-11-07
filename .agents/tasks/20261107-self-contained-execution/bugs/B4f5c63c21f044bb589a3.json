@@ -1,5 +1,5 @@
 {
-  "blocker": "Existing I1 scope covers packaging/publishing/mirror and readback, not core outcome/entry. Owner explicitly reserved new corrections for a concrete scope decision. Smallest next action: Lead assigns opt-in, verified-native, pending-only bootstrap to an authorized core owner; no synthetic JSON seed or startup classifier. Then dedicated Q1 public consumer without replaying accepted operations.",
+  "blocker": "Prior scope blocker removed by direct core assignment; source implementation in progress.",
   "created_at": "2026-11-07T21:25:02+00:00",
   "details": "H read-only diagnosis verified matching source/installed state root and runtime/session keys. Actual Q1 outcome status exit1 is preserved in evidence/Q1/independent-goal-consumer-native-context.json. SessionStart is instruction-only, PostToolUse time-only, contract requires existing business.outcome; explicit time_guard hook does not invoke outcome.observe. No supported public bootstrap found. This does not diagnose the separate absence of timer-state or prove hooks did not run. See records/H1/native-state-diagnosis.md.",
   "events": [
@@ -23,13 +23,59 @@
         "status": "blocked"
       },
       "reason": ""
+    },
+    {
+      "action": "update",
+      "actor": "H bootstrap",
+      "at": "2026-11-07T21:35:25+00:00",
+      "changes": {
+        "blocker": "Prior scope blocker removed by direct core assignment; source implementation in progress.",
+        "owner": "H bootstrap 01a1b7ac-35d9-7992-9580-8c9d6b5fb9e6",
+        "source": "records/H1/native-state-diagnosis.md; lhc_outcome.py main contract prerequisite; records/H1/proofs/outcome-bootstrap-red.txt (4 failed, 13 passed)",
+        "status": "open"
+      },
+      "reason": ""
+    },
+    {
+      "action": "resolve",
+      "actor": "H bootstrap 01a1b7ac-35d9-7992-9580-8c9d6b5fb9e6",
+      "at": "2026-11-07T21:41:34+00:00",
+      "changes": {
+        "resolution": {
+          "evidence": {
+            "proof_path": "records/H1/proofs/outcome-bootstrap-green.txt",
+            "red_proof_path": "records/H1/proofs/outcome-bootstrap-red.txt",
+            "red_result": "4 failed",
+            "red_sha256": "8089778e7ef062ad47e632c96fd812ee81df915fc9f6872ac5a3cffe215ed098",
+            "result": "126 passed",
+            "sha256": "b169a28301f6558b4dd6cc4c78e77636d4c7e0b8469db99c4ddbdeef37e6d7ce",
+            "test_command": "python3 -m pytest -q tests/test_outcome_bootstrap.py tests/test_plan_binding_acceptance.py tests/test_plan_frontier_control.py tests/test_execution_handoff.py tests/test_lhc_outcome.py tests/test_native_instruction_hooks.py"
+          },
+          "kind": "fixed",
+          "reason": ""
+        },
+        "status": "fixed"
+      }
     }
   ],
   "id": "B4f5c63c21f044bb589a3",
-  "owner": "I1 native 01a1b7ae",
+  "owner": "H bootstrap 01a1b7ac-35d9-7992-9580-8c9d6b5fb9e6",
   "reporter": "I1 native 01a1b7ae",
-  "source": "records/H1/native-state-diagnosis.md; lhc_outcome.py main contract prerequisite",
-  "status": "blocked",
+  "resolution": {
+    "evidence": {
+      "proof_path": "records/H1/proofs/outcome-bootstrap-green.txt",
+      "red_proof_path": "records/H1/proofs/outcome-bootstrap-red.txt",
+      "red_result": "4 failed",
+      "red_sha256": "8089778e7ef062ad47e632c96fd812ee81df915fc9f6872ac5a3cffe215ed098",
+      "result": "126 passed",
+      "sha256": "b169a28301f6558b4dd6cc4c78e77636d4c7e0b8469db99c4ddbdeef37e6d7ce",
+      "test_command": "python3 -m pytest -q tests/test_outcome_bootstrap.py tests/test_plan_binding_acceptance.py tests/test_plan_frontier_control.py tests/test_execution_handoff.py tests/test_lhc_outcome.py tests/test_native_instruction_hooks.py"
+    },
+    "kind": "fixed",
+    "reason": ""
+  },
+  "source": "records/H1/native-state-diagnosis.md; lhc_outcome.py main contract prerequisite; records/H1/proofs/outcome-bootstrap-red.txt (4 failed, 13 passed)",
+  "status": "fixed",
   "title": "Нет public pending-outcome bootstrap для существующей native QA session",
-  "updated_at": "2026-11-07T21:25:02+00:00"
+  "updated_at": "2026-11-07T21:41:34+00:00"
 }

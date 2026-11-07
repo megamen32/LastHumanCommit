@@ -1,0 +1,22 @@
+(Linux uses --headless by default. To override, use --headed / --gui. For Xvfb mode instead, use --xvfb. Or you can hide this info by using --headless / --headless2 / --uc.)
+F                                                                        [100%]
+=================================== FAILURES ===================================
+______ test_fresh_contract_preserves_actual_native_input_not_canary_text _______
+
+fresh = (PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/pytest-37...ct_preserves_0/.agents/shared-session/learning/09868839b3c8ccec12755d27c0ac8867143094f137fe3a8818ec38af8dc5edfa.json'))
+
+    def test_fresh_contract_preserves_actual_native_input_not_canary_text(fresh):
+        root, journal, state_path = fresh
+        result = contract(root, kind='testing')
+        assert result.returncode == 0, result.stderr
+        outcome = json.loads(result.stdout)
+>       assert outcome['original_goal'] == 'Verify the local total CLI for the assigned empty basket.'
+E       AssertionError: assert 'Empty basket total' == 'Verify the l...empty basket.'
+E         
+E         - Verify the local total CLI for the assigned empty basket.
+E         + Empty basket total
+
+tests/test_outcome_bootstrap.py:208: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_outcome_bootstrap.py::test_fresh_contract_preserves_actual_native_input_not_canary_text
+1 failed in 0.43s

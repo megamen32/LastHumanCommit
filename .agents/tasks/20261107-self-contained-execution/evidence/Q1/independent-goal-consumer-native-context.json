@@ -1,0 +1,46 @@
+{
+  "kind": "preliminary_source_consumer_real_native_context_followup",
+  "recorded_at_utc": "2026-11-07T20:47:43.948262+00:00",
+  "verdict": "STOP_MISSING_REAL_NATIVE_SESSION_STATE",
+  "scope_clarification": "This is the disposable native QA session. Owner permits changing only its own real native LHC state via public CLI; outcomes A/B would be QA fixtures, not release/user acceptance.",
+  "native_session_id": "01a1b7a4-2eb2-7471-83fd-2edb027f38c5",
+  "native_cwd": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107",
+  "command_raw": {
+    "started_at_utc": "2026-11-07T20:47:11.712030+00:00",
+    "command": [
+      "python3",
+      "src/common/tools/lhc_outcome.py",
+      "--cwd",
+      "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107",
+      "--runtime",
+      "codex",
+      "--session-id",
+      "01a1b7a4-2eb2-7471-83fd-2edb027f38c5",
+      "status"
+    ],
+    "exit_code": 1,
+    "stdout": "",
+    "stderr": "LHC outcome: no LHC session state for codex/01a1b7a4-2eb2-7471-83fd-2edb027f38c5 from session root /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107; no state was created\n"
+  },
+  "observation": "Public status returned exit 1: no LHC session state for the real session at the original root worktree; no state was created.",
+  "interpretation": "Activation/bootstrap of installed hooks for this real session is UNVERIFIED. This result does not establish that hooks are absent or broken, or identify their cause.",
+  "cases": {
+    "a": "NOT_RUN: real native state prerequisite missing",
+    "b": "NOT_RUN: real native state prerequisite missing",
+    "c": "NOT_RUN: real native state prerequisite missing",
+    "d": "NOT_RUN: real native state prerequisite missing"
+  },
+  "next_action_for_integrator": "Verify the configured installed LHC hooks on this harness and exercise the supported real native lifecycle bootstrap for this disposable session/cwd. Confirm that the same public outcome status command can locate its state; then rerun the goal-contract scenarios against the frozen candidate. Do not hand-create session JSON or acceptance receipts.",
+  "actions_not_taken": [
+    "No manual state initialization",
+    "No native event or accepted outcome fabricated",
+    "No other session state accessed",
+    "No product/runtime/settings changes",
+    "No new sessions/agents",
+    "No external memory recall",
+    "No merge/commit/push/install",
+    "No UNKNOWN replay"
+  ],
+  "prior_evidence": "independent-goal-consumer.json remains preserved; its empty-cwd bootstrap limitation is superseded for next-action purposes by this real-context observation.",
+  "acceptance_limit": "Preliminary source consumer only. Neither installed/fullnative acceptance nor a verdict on goal-contract semantics."
+}

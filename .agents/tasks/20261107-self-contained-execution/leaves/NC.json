@@ -1,0 +1,83 @@
+{
+  "label": "Подготовить isolated native контекст на final bytes",
+  "kind": "task",
+  "status": "blocked",
+  "owner": "native operational Lead / IntegratorRelease",
+  "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+  "harness": "codex",
+  "parent": "S2",
+  "depends_on": [
+    "I1"
+  ],
+  "description": "Подготовить verified installed final candidate tools path и isolated public-CLI consumer context. Bootstrap Q1 запускает сама genuine Q1 session с естественным nativeID/cwd. Trust/automatic hook effect проверяется отдельно вHT и не блокирует полезный public CLI canary.",
+  "acceptance": "Exact final SHA/version/package bytes/MCP readback и installed tool paths переданы Q1. Без credentials/history copies, synthetic state и подмены native identity.",
+  "blocker": "Ожидаются final validator, exact freeze и установка finalbytes; старый654 package не подходит послеP1/bootstrap.",
+  "estimate_unknown_reason": "Длительность final candidate trust/native context и возможностей текущего harness не измерена.",
+  "id": "NC",
+  "model": "gpt-6.1-sol",
+  "created_at": "2026-11-08T00:41:23+03:00",
+  "updated_at": "2026-11-08T00:47:48+03:00",
+  "progress_events": [
+    {
+      "at": "2026-11-08T00:41:23+03:00",
+      "note": "Existing isolated snapshot metadata is preparation only; no native consumer PASS.",
+      "changes": {
+        "label": "Подготовить isolated native контекст на final bytes",
+        "kind": "task",
+        "status": "blocked",
+        "owner": "native Integrator/Release",
+        "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+        "harness": "codex",
+        "parent": "S2",
+        "depends_on": [
+          "I1"
+        ],
+        "description": "Установка точного final candidate в собственный CODEX_HOME; exact package bytes/version, MCP и штатное доверие только reviewed installed hooks. Защищённые credentials/history не копировать; shared runtime не менять.",
+        "acceptance": "Q1 получает supported isolated package/context и безопасный public bootstrap; штатный trust/readback отражён честно. Hook definitions/trusted metadata не подменяют observed lifecycle effect.",
+        "blocker": "Final candidate ещё отсутствует. Старый654 snapshot не покрываетP1/bootstrap; все11hooks в его isolated profile untrusted. Исследуется штатный scoped trust; bypass и ручной seed запрещены.",
+        "estimate_unknown_reason": "Длительность final candidate trust/native context и возможностей текущего harness не измерена.",
+        "model": "gpt-6.1-sol"
+      },
+      "actor": {
+        "host_id": "roomhacker-server-100",
+        "harness": "codex",
+        "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+        "source": "declared"
+      },
+      "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+      "harness": "codex"
+    },
+    {
+      "at": "2026-11-08T00:47:46+03:00",
+      "note": "Explicit human delegation: current native operational Lead and acceptance/release continuation owner. Historical authors/progress/receipts retained; old root envID is not verified native authority.",
+      "changes": {
+        "owner": "native operational Lead / IntegratorRelease"
+      },
+      "actor": {
+        "host_id": "roomhacker-server-100",
+        "harness": "codex",
+        "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+        "source": "declared"
+      },
+      "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+      "harness": "codex"
+    },
+    {
+      "at": "2026-11-08T00:47:48+03:00",
+      "note": "Owner: public native bootstrap canary is independent of automatic hook effects; remove UI-trust prerequisite from Q1 context.",
+      "changes": {
+        "description": "Подготовить verified installed final candidate tools path и isolated public-CLI consumer context. Bootstrap Q1 запускает сама genuine Q1 session с естественным nativeID/cwd. Trust/automatic hook effect проверяется отдельно вHT и не блокирует полезный public CLI canary.",
+        "acceptance": "Exact final SHA/version/package bytes/MCP readback и installed tool paths переданы Q1. Без credentials/history copies, synthetic state и подмены native identity.",
+        "blocker": "Ожидаются final validator, exact freeze и установка finalbytes; старый654 package не подходит послеP1/bootstrap."
+      },
+      "actor": {
+        "host_id": "roomhacker-server-100",
+        "harness": "codex",
+        "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+        "source": "declared"
+      },
+      "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+      "harness": "codex"
+    }
+  ]
+}

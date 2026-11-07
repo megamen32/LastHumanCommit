@@ -6,7 +6,7 @@ semantic comparison; this helper never interprets a tool receipt as business PAS
 """
 import argparse
 import copy
-from datetime import datetime
+from datetime import datetime, timedelta
 import fcntl
 import hashlib
 import json
@@ -1781,6 +1781,104 @@ def observe_question(outcome, event):
             # Answer availability is not an auth grant and does not accept work.
 
 
+def _bootstrap_native_identity(args, cwd):
+    """Verify an explicit contract's own standalone native session, not a hook."""
+    if args.runtime != 'codex':
+        raise ValueError('pending bootstrap currently supports verified standalone Codex sessions only')
+    if os.environ.get('CODEX_THREAD_ID') != args.session_id:
+        raise ValueError('pending bootstrap requires the current native CODEX_THREAD_ID to match --session-id')
+    if not args.task_class or args.task_class == 'status':
+        raise ValueError('pending bootstrap requires explicit non-status --task-class')
+    import lhc_native_identity as identity
+    journal = identity.find_native_journal(args.session_id)
+    return identity.resolve_standalone_identity(args.session_id, journal, observed_native_cwd=str(cwd))
+
+
+def _bootstrap_native_input(identity):
+    """Read only a bounded current-input window of this verified own journal."""
+    path = Path(identity['journal_path'])
+    limit, record_limit = 4 * 1024 * 1024, 2 * 1024 * 1024
+    selected = None
+    with path.open('rb') as stream:
+        end = path.stat().st_size
+        start = max(0, end - limit)
+        stream.seek(start)
+        if start:
+            stream.readline(record_limit + 1)  # discard the first partial record
+        while stream.tell() < end:
+            offset = stream.tell()
+            line = stream.readline(min(record_limit + 1, end - offset))
+            if not line:
+                break
+            if len(line) > record_limit or not line.endswith(b'\n'):
+                raise ValueError('native bootstrap input window has an oversized or incomplete record')
+            row = json.loads(line)
+            payload = row.get('payload') or {}
+            if (row.get('type') == 'response_item' and payload.get('type') == 'message'
+                    and payload.get('role') == 'user'):
+                prompt = native.content(payload.get('content'))
+                if prompt.strip():
+                    if len(prompt.encode('utf-8')) > 64 * 1024:
+                        raise ValueError('native bootstrap input exceeds 65536 bytes')
+                    selected = (prompt, {'journal_path': str(path), 'byte_offset': offset,
+                                        'sha256': hashlib.sha256(prompt.encode('utf-8')).hexdigest()})
+    if selected is None:
+        raise ValueError('native bootstrap needs a current user input in its bounded own journal window')
+    return selected
+
+
+def _bootstrap_contract(args, cwd, state):
+    """Prepare pending data in memory; only the validated contract is persisted."""
+    identity = _bootstrap_native_identity(args, cwd)
+    if ((state.get('native_entry') or {}).get('finish_hold')
+            or (state.get('milestone') or {}).get('hold')):
+        raise ValueError('pending bootstrap cannot reopen held or closed native state')
+    business = state.setdefault('business', {})
+    heartbeat_cwd = (state.get('native_heartbeat') or {}).get('cwd')
+    previous_identity = business.get('native_identity') or {}
+    if (business.get('runtime') not in {None, args.runtime}
+            or heartbeat_cwd and Path(heartbeat_cwd).resolve() != cwd
+            or previous_identity.get('logical_session_id') not in {None, args.session_id}
+            or previous_identity.get('native_cwd') not in {None, str(cwd)}
+            or business.get('transcript_path') and
+            Path(business['transcript_path']).resolve() != Path(identity['journal_path'])):
+        raise ValueError('existing native state identity differs; bootstrap will not reset it')
+    now = datetime.now().astimezone()
+    for key, value in {'schema_version': 1, 'started_at': now.isoformat(),
+                       'clock_source': 'explicit native contract; wall time only',
+                       'due_at': (now + timedelta(minutes=120)).isoformat(),
+                       'last_observed_at': now.isoformat(), 'last_checkpoint': None}.items():
+        state.setdefault(key, value)
+    goal = business.get('original_prompt_full') or business.get('original_prompt')
+    input_source = None
+    if not goal:
+        goal, input_source = _bootstrap_native_input(identity)
+    latest = business.get('latest_prompt_full') or business.get('latest_prompt') or goal
+    required = (set(STAGES) if args.task_class == 'fullcycle' else
+                {'technical', 'consumer'} if args.task_class == 'quickfix' else {'consumer'})
+    business['runtime'] = args.runtime
+    business.setdefault('native_identity', identity)
+    business['outcome'] = {
+        'id': digest([args.runtime, args.session_id, str(cwd), goal]),
+        'owner': {'harness': args.runtime, 'session_id': args.session_id},
+        'original_goal': goal, 'latest_correction': latest, 'task_class': args.task_class,
+        'started_at': now.isoformat(), 'cwd': str(cwd), 'native_source': identity['journal_path'],
+        'contract_confirmed': False, 'class_confirmed': False, 'evidence_after': now.isoformat(),
+        'bootstrap': {'source_kind': 'explicit-contract', 'scope_origin': 'unknown',
+                      'native_id': identity['native_id'], 'native_cwd': identity['native_cwd'],
+                      'native_input': input_source},
+        'canary': {'scenario': args.scenario, 'target': args.target, 'expected': args.expected, 'status': 'pending'},
+        'owned_paths': [], 'stages': {key: {'status': 'pending' if key in required else 'not-applicable',
+                                         'basis': 'explicit-task-class:' + args.task_class, 'evidence': []}
+                                    for key in STAGES},
+        'scope_sources': [scope_source_with_origin(row) for row in
+                          (business.get('execution_context') or {}).get('direct_user_messages', [])],
+        'used_continuations': [], 'actionable': True, 'sources': [],
+        'product_verdict': 'not-tested', 'blockers': [],
+    }
+    return state
+
+
 def main():
     import lhc_time_guard as guard
     parser = argparse.ArgumentParser(description=__doc__)
@@ -1791,7 +1889,8 @@ def main():
     contract = sub.add_parser('contract')
     for field in ('scenario', 'target', 'expected'):
         contract.add_argument('--' + field, required=True)
-    contract.add_argument('--task-class', choices=('quickfix', 'fullcycle', 'testing', 'research', 'status'))
+    contract.add_argument('--task-class', choices=('quickfix', 'fullcycle', 'testing', 'research', 'status'),
+                          help='required for pending-only bootstrap of a verified own Codex session; status cannot bootstrap')
     contract.add_argument('--scope-source', help='exact native user source reference for a semantic class correction')
     contract.add_argument('--verification-kind', choices=VERIFICATION_KINDS, default='standard',
                           help='source-publication binds native source readiness and exact Git publication evidence')
@@ -1834,8 +1933,10 @@ def main():
     args = parser.parse_args()
     cwd = args.cwd.resolve()
     path = guard.learning_path(cwd, args.runtime, args.session_id)
-    if not path.is_file():
+    if not path.is_file() and args.command != 'contract':
         raise ValueError(f'no LHC session state for {args.runtime}/{args.session_id} from session root {cwd}; no state was created')
+    if args.command == 'contract' and not path.is_file():
+        _bootstrap_native_identity(args, cwd)  # reject before creating a lock directory
     if args.command in {'bind-plan', 'frontier'}:
         import lhc_plan_control as control
         if args.command == 'bind-plan':
@@ -1847,12 +1948,25 @@ def main():
             result = control.record_session_decision(args.plan_dir, args.session_id, cwd, decision, args.runtime)
         print(json.dumps(result, ensure_ascii=False))
         return
+    if args.command == 'contract':
+        if path.is_symlink():
+            raise ValueError('native session state symlink forbidden')
+        path.parent.mkdir(parents=True, exist_ok=True)
     with path.with_suffix('.lock').open('a') as lock:
         fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
-        state = guard.load_state(path)
+        state = guard.load_state(path) or {}
         outcome = (state.get('business') or {}).get('outcome')
+        if outcome is None and args.command == 'contract':
+            state = _bootstrap_contract(args, cwd, state)
+            outcome = state['business']['outcome']
         if not isinstance(outcome, dict):
             raise ValueError(f'no LHC outcome for native session {args.session_id} at {path}; session root is {cwd}')
+        if args.command == 'contract':
+            if outcome.get('owner') != {'harness': args.runtime, 'session_id': args.session_id}:
+                raise ValueError('existing outcome owner differs; contract will not reset it')
+            if (args.runtime == 'codex' and os.environ.get('CODEX_THREAD_ID')
+                    and os.environ['CODEX_THREAD_ID'] != args.session_id):
+                raise ValueError('contract caller differs from the current native session')
         expected_session_root = Path(outcome.get('cwd', '/unknown')).resolve()
         if expected_session_root != cwd:
             raise ValueError(f'LHC state for native session {args.session_id} is bound to session root {expected_session_root}; --cwd {cwd} is not that root')
@@ -2012,6 +2126,9 @@ def main():
                 outcome['evidence_after'] = datetime.now().astimezone().isoformat()
             if 'consumer' in invalidated:
                 outcome['canary']['status'] = 'pending'
+            if outcome.get('plan_binding') or outcome.get('plan_binding_request'):
+                import lhc_plan_control as control
+                control.confirm_plan_contract(outcome, args.session_id)
         elif args.command == 'review':
             from lhc_outcome_review import accept_review, native_self_manifest, native_reviewer_manifest
             if not _permission_binding_valid(outcome, state):
@@ -2042,7 +2159,8 @@ def main():
             binding = outcome['plan_binding']
             try:
                 metadata, _rows = control.read_plan(binding['plan_dir'])
-                if control._binding_matches(metadata, outcome, binding['plan_dir']):
+                if (not binding.get('contract_required')
+                        and control._binding_matches(metadata, outcome, binding['plan_dir'])):
                     if outcome['finish_verdict'] == 'complete' and outcome.get('task_class') != 'status':
                         binding['acceptance_fingerprint'] = control.evidence_fingerprint(outcome)
                     else:

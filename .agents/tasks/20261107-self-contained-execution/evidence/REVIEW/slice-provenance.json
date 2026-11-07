@@ -1,0 +1,23 @@
+{
+  "src/common/protocols/BUSINESS_CHECKPOINT.md": "5f8e53b7555751c08937c43b977c79a8e130339b",
+  "src/common/tools/lhc_entry.py": "5f8e53b7555751c08937c43b977c79a8e130339b",
+  "src/common/tools/lhc_outcome.py": "5f8e53b7555751c08937c43b977c79a8e130339b",
+  "src/common/tools/lhc_plan_control.py": "5f8e53b7555751c08937c43b977c79a8e130339b",
+  "tests/test_plan_frontier_control.py": "5f8e53b7555751c08937c43b977c79a8e130339b",
+  "src/common/protocols/EXECUTION_CONSUMER.md": "c31f702b1fca54f5e10d132ea698612ec35813a9",
+  "src/common/protocols/ORCHESTRATION_RECORDS.md": "c31f702b1fca54f5e10d132ea698612ec35813a9",
+  "src/common/skills/plan/SKILL.md": "c31f702b1fca54f5e10d132ea698612ec35813a9",
+  "src/common/tools/lhc_assignment.py": "c31f702b1fca54f5e10d132ea698612ec35813a9",
+  "src/common/tools/lhc_execution.py": "c31f702b1fca54f5e10d132ea698612ec35813a9",
+  "src/common/tools/lhc_handoff.py": "c31f702b1fca54f5e10d132ea698612ec35813a9",
+  "src/common/tools/lhc_plan_json.py": "c31f702b1fca54f5e10d132ea698612ec35813a9",
+  "src/common/tools/lhc_plan_mcp.py": "c31f702b1fca54f5e10d132ea698612ec35813a9",
+  "tests/test_execution_handoff.py": "c31f702b1fca54f5e10d132ea698612ec35813a9",
+  "tests/test_execution_interface.py": "c31f702b1fca54f5e10d132ea698612ec35813a9",
+  "tests/test_lhc_plan_mcp.py": "c31f702b1fca54f5e10d132ea698612ec35813a9",
+  "src/common/protocols/PLAN_REPORT.md": "dcba0b3fd2f90b769ea71a634d37eb74816e1d17",
+  "src/common/tools/lhc_grid.py": "dcba0b3fd2f90b769ea71a634d37eb74816e1d17",
+  "src/common/tools/lhc_plan_catalog.py": "dcba0b3fd2f90b769ea71a634d37eb74816e1d17",
+  "tests/test_plan_catalog.py": "dcba0b3fd2f90b769ea71a634d37eb74816e1d17",
+  "tests/test_truthful_plan_views.py": "dcba0b3fd2f90b769ea71a634d37eb74816e1d17"
+}

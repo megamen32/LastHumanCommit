@@ -14,7 +14,7 @@
     "Реальный direct Herder self-wake RED передан текущему владельцу; LHC consumer proof не подменяется :: handoff lhc-audit-handoff-20261107T1935-herder-v1-core"
   ],
   "acceptance_scenario": "Через настоящий CLI/MCP: неполное поручение не отправляется; достаточное получает canonical plan/leaf/attempt и неизменяемую привязку контекста; UNKNOWN не повторяется. Новая сессия читает пакет и продолжает допустимый шаг. После принятия результата пустой frontier при незакрытой цели требует управленческого решения. Два независимых потребителя, regression и полный validator, native install/readback, публикация и разрешённый merge.",
-  "current_progress": "Аудит завершён; Herder получил delta. Создаётся изолированный кандидат от1.17.1; primary и чужой WIP сохранены.",
+  "current_progress": "Текущий native operational Lead: roomhacker-server-100/codex/01a1b7ae-4a6c-70c2-84cc-3288329a2425 по прямой делегации пользователя; Root сохраняет пользовательскую координацию. Исторический root envID/native journal на100 UNKNOWN, outcome для него не создаётся. Hfinal8a344996 integrated, source B4done; I1 final regeneration/validator выполняется. Затем clean frozenSHA+verified isolated installed tools → Q1 publicbootstrap → Q2 first packet только publicLHCdispatch → finalReviewer; globalmain/sharedruntime gate сохранён. HT hook effect отдельно от Q1.",
   "revisions": [
     {
       "at": "2026-11-07T22:40:41+03:00",
@@ -26,7 +26,29 @@
         "source": "native_environment"
       },
       "summary": "Три независимых implementation scope, затем общая интеграция, consumer proof и выпуск. Без нового scheduler и без правок продукта Herder."
+    },
+    {
+      "at": "2026-11-08T00:41:25+03:00",
+      "reason": "Прямое назначение владельца: сверить parent plan с фактическими source/test proofs до freeze; не подменять consumer acceptance.",
+      "actor": {
+        "host_id": null,
+        "harness": "codex",
+        "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+        "source": "native_environment"
+      },
+      "summary": "Source/fixture leaves закрыты отдельно; B4 и NC выделены явно; текущий frontier H bootstrap + I1 integration, реальные Q1/Q2/review/native blockers сохранены, исторические estimates не переписаны."
+    },
+    {
+      "at": "2026-11-08T00:47:49+03:00",
+      "reason": "Прямой handoff владельца: назначить current verified native operational Lead acceptance/release continuation; сохранить historical authors/receipts и неизвестность прежнего native root.",
+      "actor": {
+        "host_id": null,
+        "harness": "codex",
+        "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+        "source": "native_environment"
+      },
+      "summary": "Current owner roomhacker-server-100/codex/01a1b7ae-4a6c-70c2-84cc-3288329a2425; original Root01a1b2ea... native lineage unverified. Завершённые source H/F/V не переписаны. Q2 exact empty ID01a1b7f7...; первый task только послеfreeze publicdispatch. Q1 publicbootstrap не зависит отHT trust/effect."
     }
   ],
-  "updated_at": "2026-11-07T22:40:41+03:00"
+  "updated_at": "2026-11-08T00:47:49+03:00"
 }

@@ -1,0 +1,58 @@
+{
+  "created_at": "2026-11-07T20:05:48+00:00",
+  "details": "Discriminating fresh git-init plan test private_snapshot_self_excludes_from_git fails because only file0600 exists; normal git add can expose snapshot. RED .tmp/self-contained-run/handoff-gitprivacy-red.txt in H1 worktree.",
+  "events": [
+    {
+      "action": "register",
+      "actor": "H1 lhc_handoff_impl",
+      "at": "2026-11-07T20:05:48+00:00",
+      "changes": {
+        "details": "Discriminating fresh git-init plan test private_snapshot_self_excludes_from_git fails because only file0600 exists; normal git add can expose snapshot. RED .tmp/self-contained-run/handoff-gitprivacy-red.txt in H1 worktree.",
+        "source": "H1 Lead privacy follow-up + local regression",
+        "status": "open",
+        "title": "Private handoff receipts need default Git exclusion"
+      }
+    },
+    {
+      "action": "resolve",
+      "actor": "H1 recovery 01a1b7ac-35d9-7992-9580-8c9d6b5fb9e6",
+      "at": "2026-11-07T20:41:37+00:00",
+      "changes": {
+        "resolution": {
+          "evidence": {
+            "proof_path": "records/H1/proofs/handoff-regression-green.txt",
+            "red_proof_path": "records/H1/proofs/handoff-gitprivacy-red.txt",
+            "red_result": "1 failed",
+            "red_sha256": "23ebb73207c004ea81e207a1cde536fd714073c28b14160cc75d0059fbb5439d",
+            "result": "174 passed",
+            "sha256": "3a56d129dc5f1a1dc34f983440ed6529d812f3d1e1a380d75445e0c5c01f9e8d",
+            "test_command": "PYTHONPATH=<read-only F tools> python3 -m pytest -q tests/test_execution_handoff.py tests/test_execution_assignment.py tests/test_lhc_execution.py tests/test_execution_interface.py tests/test_execution_acceptance_regressions.py tests/test_lhc_plan_mcp.py tests/test_single_plan_mcp.py tests/test_session_plan_binding.py tests/test_plan_mirror.py"
+          },
+          "kind": "fixed",
+          "reason": ""
+        },
+        "status": "fixed"
+      }
+    }
+  ],
+  "id": "Bbe70132e8003406395a3",
+  "owner": "H1 lhc_handoff_impl",
+  "reporter": "H1 lhc_handoff_impl",
+  "resolution": {
+    "evidence": {
+      "proof_path": "records/H1/proofs/handoff-regression-green.txt",
+      "red_proof_path": "records/H1/proofs/handoff-gitprivacy-red.txt",
+      "red_result": "1 failed",
+      "red_sha256": "23ebb73207c004ea81e207a1cde536fd714073c28b14160cc75d0059fbb5439d",
+      "result": "174 passed",
+      "sha256": "3a56d129dc5f1a1dc34f983440ed6529d812f3d1e1a380d75445e0c5c01f9e8d",
+      "test_command": "PYTHONPATH=<read-only F tools> python3 -m pytest -q tests/test_execution_handoff.py tests/test_execution_assignment.py tests/test_lhc_execution.py tests/test_execution_interface.py tests/test_execution_acceptance_regressions.py tests/test_lhc_plan_mcp.py tests/test_single_plan_mcp.py tests/test_session_plan_binding.py tests/test_plan_mirror.py"
+    },
+    "kind": "fixed",
+    "reason": ""
+  },
+  "source": "H1 Lead privacy follow-up + local regression",
+  "status": "fixed",
+  "title": "Private handoff receipts need default Git exclusion",
+  "updated_at": "2026-11-07T20:41:37+00:00"
+}

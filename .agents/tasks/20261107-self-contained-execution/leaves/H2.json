@@ -1,7 +1,7 @@
 {
   "label": "Передавать пакет и сохранять связь с попыткой",
   "kind": "task",
-  "status": "queued",
+  "status": "done",
   "owner": "handoff",
   "description": "Передавать пакет и сохранять связь с попыткой. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
   "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
@@ -15,7 +15,7 @@
   "created_at": "2026-11-07T22:40:41+03:00",
   "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
   "harness": "codex",
-  "updated_at": "2026-11-07T22:40:41+03:00",
+  "updated_at": "2026-11-08T00:41:21+03:00",
   "progress_events": [
     {
       "at": "2026-11-07T22:40:41+03:00",
@@ -42,6 +42,23 @@
       },
       "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
       "harness": "codex"
+    },
+    {
+      "at": "2026-11-08T00:41:21+03:00",
+      "note": "Parent reconciliation authorized by owner: closes only completed source/fixture phase; real independent/native consumer remains in Q1/Q2/N100/N199.",
+      "changes": {
+        "status": "done",
+        "result": "SOURCE/FIXTURE_DONE: dispatch stores exact packet before I/O, UNKNOWN is not replayed; CLI/stdio/HTTP fixture paths verified174 relevant then200 P1 regression PASS. records/H1/proofs/handoff-regression-green.txt and p1-binding-regression-green.txt. Real native/separate-session handoff remains Q1/Q2, not claimed here."
+      },
+      "actor": {
+        "host_id": "roomhacker-server-100",
+        "harness": "codex",
+        "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+        "source": "declared"
+      },
+      "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+      "harness": "codex"
     }
-  ]
+  ],
+  "result": "SOURCE/FIXTURE_DONE: dispatch stores exact packet before I/O, UNKNOWN is not replayed; CLI/stdio/HTTP fixture paths verified174 relevant then200 P1 regression PASS. records/H1/proofs/handoff-regression-green.txt and p1-binding-regression-green.txt. Real native/separate-session handoff remains Q1/Q2, not claimed here."
 }

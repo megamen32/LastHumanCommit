@@ -1,7 +1,7 @@
 {
   "label": "Связать незавершённую цель с решением о продолжении",
   "kind": "task",
-  "status": "queued",
+  "status": "done",
   "owner": "frontier",
   "description": "Связать незавершённую цель с решением о продолжении. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
   "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
@@ -13,7 +13,7 @@
   "created_at": "2026-11-07T22:40:41+03:00",
   "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
   "harness": "codex",
-  "updated_at": "2026-11-07T22:43:40+03:00",
+  "updated_at": "2026-11-08T00:41:21+03:00",
   "progress_events": [
     {
       "at": "2026-11-07T22:40:41+03:00",
@@ -60,6 +60,37 @@
       },
       "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
       "harness": "codex"
+    },
+    {
+      "at": "2026-11-07T23:09:32+03:00",
+      "note": "",
+      "changes": {
+        "status": "running"
+      },
+      "actor": {
+        "host_id": null,
+        "harness": null,
+        "session_id": null,
+        "source": "unknown"
+      },
+      "session": "unknown",
+      "harness": "unknown"
+    },
+    {
+      "at": "2026-11-08T00:41:21+03:00",
+      "note": "Parent reconciliation authorized by owner: closes only completed source/fixture phase; real independent/native consumer remains in Q1/Q2/N100/N199.",
+      "changes": {
+        "status": "done",
+        "result": "SOURCE_DONE: goal frontier control F5f8e53b7 integrated; 58 relevant +13 final source PASS, RED/GREEN evidence/integration/F1-{red,green,final-green}.log. B27 resolved by canonical CLI; no installed/native acceptance claim."
+      },
+      "actor": {
+        "host_id": "roomhacker-server-100",
+        "harness": "codex",
+        "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+        "source": "declared"
+      },
+      "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+      "harness": "codex"
     }
   ],
   "worker": {
@@ -69,5 +100,6 @@
     "registered_at": "2026-11-07T22:43:40+03:00",
     "run_dir": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-frontier-20261107/.tmp/self-contained-run",
     "run_host": "roomhacker-server-100"
-  }
+  },
+  "result": "SOURCE_DONE: goal frontier control F5f8e53b7 integrated; 58 relevant +13 final source PASS, RED/GREEN evidence/integration/F1-{red,green,final-green}.log. B27 resolved by canonical CLI; no installed/native acceptance claim."
 }

@@ -1,21 +1,22 @@
 {
   "label": "Независимый CLI/MCP потребитель после потери контекста",
   "kind": "task",
-  "status": "queued",
-  "owner": "Lead",
+  "status": "blocked",
+  "owner": "Reader Q1",
   "description": "Независимый CLI/MCP потребитель после потери контекста. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
   "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
   "estimate_minutes": 15,
   "depends_on": [
-    "I1"
+    "I1",
+    "NC"
   ],
   "parent": "S2",
   "id": "Q1",
   "model": "gpt-6.1-sol",
   "created_at": "2026-11-07T22:40:43+03:00",
-  "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+  "session": "01a1b7a4-2eb2-7471-83fd-2edb027f38c5",
   "harness": "codex",
-  "updated_at": "2026-11-07T22:40:43+03:00",
+  "updated_at": "2026-11-08T00:41:23+03:00",
   "progress_events": [
     {
       "at": "2026-11-07T22:40:43+03:00",
@@ -42,6 +43,33 @@
       },
       "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
       "harness": "codex"
+    },
+    {
+      "at": "2026-11-08T00:41:23+03:00",
+      "note": "Do not mark Q1 done before genuine consumer on final candidate; Reader files remain owned and active.",
+      "changes": {
+        "status": "blocked",
+        "owner": "Reader Q1",
+        "session": "01a1b7a4-2eb2-7471-83fd-2edb027f38c5",
+        "depends_on": [
+          "I1",
+          "NC"
+        ],
+        "blocker": "Нужны final frozen SHA послеB4, соответствующий installed isolated package/context и supported public pending bootstrap. Preliminary real status exit1/no state; cases NOT_RUN, не PASS. Root запускает после exact candidate.",
+        "estimate_unknown_reason": "Исторические15мин сохранены; сквозная native проверка ещё не запускалась на finalbytes.",
+        "result": "PRELIMINARY_ONLY: evidence/Q1/native-preflight.json и independent-goal-consumer-native-context.json. Неверныйcwd/state key не подтверждён; причина отсутствия timer-state Q1 неизвестна. Старые metadata readbacks не являются installed acceptance."
+      },
+      "actor": {
+        "host_id": "roomhacker-server-100",
+        "harness": "codex",
+        "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+        "source": "declared"
+      },
+      "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+      "harness": "codex"
     }
-  ]
+  ],
+  "blocker": "Нужны final frozen SHA послеB4, соответствующий installed isolated package/context и supported public pending bootstrap. Preliminary real status exit1/no state; cases NOT_RUN, не PASS. Root запускает после exact candidate.",
+  "estimate_unknown_reason": "Исторические15мин сохранены; сквозная native проверка ещё не запускалась на finalbytes.",
+  "result": "PRELIMINARY_ONLY: evidence/Q1/native-preflight.json и independent-goal-consumer-native-context.json. Неверныйcwd/state key не подтверждён; причина отсутствия timer-state Q1 неизвестна. Старые metadata readbacks не являются installed acceptance."
 }

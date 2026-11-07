@@ -1,0 +1,107 @@
+{
+  "kind": "preliminary_source_consumer",
+  "verdict": "BLOCKED_PUBLIC_ISOLATED_STATE_BOOTSTRAP",
+  "observed_source_HEAD": "08b1a0fe83658a16f038abd9efc63cc0ab45e810",
+  "source_is_frozen_candidate": false,
+  "recorded_at_utc": "2026-11-07T20:41:39.533470+00:00",
+  "allowed_public_material_read": [
+    "src/common/protocols/BUSINESS_CHECKPOINT.md",
+    "lhc_outcome.py CLI --help and contract/review/status/bind-plan/frontier --help",
+    "lhc_plan_json.py CLI --help and activate/build-plan/update-plan/progress/create-leaf --help",
+    "lhc_time_guard.py CLI --help and hook/check --help",
+    "lhc_entry.py --help"
+  ],
+  "public_cli_observations": {
+    "state_root_support": "lhc_outcome.py contract --help: --product-root explicitly says --cwd remains the native session-state root",
+    "fixture_session": "independent-goal-consumer-fixture (synthetic fixture identifier, not a native evidence claim)",
+    "fixture_state_root": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/independent-goal-consumer/case-a-state",
+    "fixture_state_directory_entries": [],
+    "status": "exit 1: no LHC session state; no state was created",
+    "contract": "exit 1: no LHC session state; no state was created",
+    "bootstrap_boundary": "Inspected public help offers no isolated state initialize/import command. Both status and contract require pre-existing LHC session state. Native hook events/state/accepted outcomes were not fabricated.",
+    "review_boundary": "Public review requires --manifest, --native-self, or --native-reviewer; no genuine accepted native fixture outcome is available. No implementation-specific manifest schema or author evidence was read."
+  },
+  "cases": [
+    {
+      "id": "a",
+      "goal": "All cards closed, original goal never accepted",
+      "result": "NOT_RUN",
+      "reason": "No existing isolated native session state. Closed-card fixture was not created because the native goal path cannot be initialized with the inspected public CLI."
+    },
+    {
+      "id": "b",
+      "goal": "Complete status-only outcome must not accept implementation goal",
+      "result": "NOT_RUN",
+      "reason": "Cannot create a real complete status-only native outcome in this isolated fixture through the inspected CLI. No accepted state or receipts were manufactured."
+    },
+    {
+      "id": "c",
+      "goal": "Accepted non-status A must not accept differing B after activation or bind-plan",
+      "result": "NOT_RUN",
+      "reason": "Requires genuine accepted outcome A and isolated native ownership/binding. Neither precondition exists in this fixture."
+    },
+    {
+      "id": "d",
+      "goal": "Progress preserves correct goal binding; semantic goal change requires fresh check",
+      "result": "NOT_RUN",
+      "reason": "Requires a genuine bound native goal and semantic goal control state. No raw state mutation used to bypass the missing bootstrap."
+    }
+  ],
+  "commands_raw": [
+    {
+      "started_at_utc": "2026-11-07T20:39:29.103683+00:00",
+      "command": [
+        "python3",
+        "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/src/common/tools/lhc_outcome.py",
+        "--cwd",
+        "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/independent-goal-consumer/case-a-state",
+        "--runtime",
+        "codex",
+        "--session-id",
+        "independent-goal-consumer-fixture",
+        "status"
+      ],
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "LHC outcome: no LHC session state for codex/independent-goal-consumer-fixture from session root /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/independent-goal-consumer/case-a-state; no state was created\n"
+    },
+    {
+      "started_at_utc": "2026-11-07T20:40:16.465615+00:00",
+      "command": [
+        "python3",
+        "src/common/tools/lhc_outcome.py",
+        "--cwd",
+        "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/independent-goal-consumer/case-a-state",
+        "--runtime",
+        "codex",
+        "--session-id",
+        "independent-goal-consumer-fixture",
+        "contract",
+        "--scenario",
+        "Disposable fixture: reader opens the completed-card dashboard and sees whether the requested implementation goal is accepted",
+        "--target",
+        "disposable local fixture",
+        "--expected",
+        "Closed cards alone leave implementation goal unaccepted",
+        "--task-class",
+        "fullcycle"
+      ],
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "LHC outcome: no LHC session state for codex/independent-goal-consumer-fixture from session root /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/independent-goal-consumer/case-a-state; no state was created\n"
+    }
+  ],
+  "memory": "Prior successful project-scoped AgentMemory recall returned no relevant records. No dependency on backend recovery; no further recall is needed for this task.",
+  "scope_preserved": {
+    "implementation_diff_tests_author_logs_results_read": false,
+    "product_changed": false,
+    "foreign_plans_changed": false,
+    "current_native_session_state_changed": false,
+    "other_sessions_or_agents_started": false,
+    "native_evidence_fabricated": false,
+    "install_merge_push_performed": false,
+    "UNKNOWN_replayed": false
+  },
+  "next_required_precondition": "For the frozen-candidate rerun, use a supported isolated native test context with real source/evidence and explicitly separate state directory. Cases b/c additionally need a genuine accepted outcome for status/A. No author implementation/tests/reports are required by this reader.",
+  "acceptance_limit": "This is a preliminary source-consumer interface boundary. It proves neither installed/fullnative acceptance nor success/failure of the four goal semantics."
+}

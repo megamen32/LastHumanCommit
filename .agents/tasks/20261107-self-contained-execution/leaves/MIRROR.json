@@ -1,8 +1,8 @@
 {
   "label": "Обновить проекции и проверить реальный план",
   "kind": "task",
-  "status": "queued",
-  "owner": "Lead",
+  "status": "blocked",
+  "owner": "native operational Lead / IntegratorRelease",
   "description": "Обновить проекции и проверить реальный план. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
   "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
   "estimate_minutes": 15,
@@ -13,9 +13,9 @@
   "id": "MIRROR",
   "model": "gpt-6.1-sol",
   "created_at": "2026-11-07T22:40:44+03:00",
-  "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+  "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
   "harness": "codex",
-  "updated_at": "2026-11-07T22:40:44+03:00",
+  "updated_at": "2026-11-08T00:47:47+03:00",
   "progress_events": [
     {
       "at": "2026-11-07T22:40:44+03:00",
@@ -42,6 +42,39 @@
       },
       "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
       "harness": "codex"
+    },
+    {
+      "at": "2026-11-08T00:41:24+03:00",
+      "note": "Source R3/cache proof complete, shared mirror deployment not performed.",
+      "changes": {
+        "status": "blocked",
+        "blocker": "Shared mirror/runtime update только после finalReviewer+consumers/main и scoped release lease/CAS; source projection tests не равны deployed UI/business readback."
+      },
+      "actor": {
+        "host_id": "roomhacker-server-100",
+        "harness": "codex",
+        "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+        "source": "declared"
+      },
+      "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+      "harness": "codex"
+    },
+    {
+      "at": "2026-11-08T00:47:47+03:00",
+      "note": "Explicit human delegation: current native operational Lead and acceptance/release continuation owner. Historical authors/progress/receipts retained; old root envID is not verified native authority.",
+      "changes": {
+        "owner": "native operational Lead / IntegratorRelease",
+        "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425"
+      },
+      "actor": {
+        "host_id": "roomhacker-server-100",
+        "harness": "codex",
+        "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+        "source": "declared"
+      },
+      "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+      "harness": "codex"
     }
-  ]
+  ],
+  "blocker": "Shared mirror/runtime update только после finalReviewer+consumers/main и scoped release lease/CAS; source projection tests не равны deployed UI/business readback."
 }
