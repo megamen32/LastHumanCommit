@@ -1,7 +1,7 @@
 {
   "label": "Единый расчёт готовности и исправление JSON",
   "kind": "task",
-  "status": "running",
+  "status": "done",
   "estimate_minutes": 15,
   "depends_on": [
     "L01"
@@ -12,7 +12,7 @@
   "id": "L02",
   "model": "gpt-6.1-sol",
   "created_at": "2026-11-07T18:18:34+03:00",
-  "updated_at": "2026-11-07T18:27:17+03:00",
+  "updated_at": "2026-11-07T18:46:04+03:00",
   "progress_events": [
     {
       "at": "2026-11-07T18:18:34+03:00",
@@ -50,6 +50,25 @@
       },
       "session": "unknown",
       "harness": "unknown"
+    },
+    {
+      "at": "2026-11-07T18:46:04+03:00",
+      "note": "Worker audit_dispatch_contract: lhc/execution-readiness-20261107 merged, worktree, branch and run directory removed",
+      "changes": {
+        "status": "done",
+        "result": "Unified readiness and JSON scheduler. 136 focused checks passed; RED/GREEN evidence in evidence/L02. Commit 83287dce integrated.",
+        "worker": {
+          "id": "audit_dispatch_contract",
+          "branch": "lhc/execution-readiness-20261107",
+          "worktree": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-readiness-20261107",
+          "registered_at": "2026-11-07T18:27:17+03:00",
+          "run_dir": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-readiness-20261107/.tmp/worker-run",
+          "run_host": "roomhacker-server-100",
+          "removed_at": "2026-11-07T18:46:04+03:00"
+        }
+      },
+      "session": "unknown",
+      "harness": "unknown"
     }
   ],
   "worker": {
@@ -58,7 +77,9 @@
     "worktree": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-readiness-20261107",
     "registered_at": "2026-11-07T18:27:17+03:00",
     "run_dir": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-readiness-20261107/.tmp/worker-run",
-    "run_host": "roomhacker-server-100"
+    "run_host": "roomhacker-server-100",
+    "removed_at": "2026-11-07T18:46:04+03:00"
   },
-  "owner": "audit_dispatch_contract"
+  "owner": "audit_dispatch_contract",
+  "result": "Unified readiness and JSON scheduler. 136 focused checks passed; RED/GREEN evidence in evidence/L02. Commit 83287dce integrated."
 }
