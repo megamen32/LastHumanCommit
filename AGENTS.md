@@ -259,7 +259,8 @@ uses it again. Details: `src/common/protocols/SHARED_WORKTREE.md`, `COORDINATION
 
 ## Time
 
-Leaves are at most 15 minutes; a Worker reports by minute 20. A hook reminder
+Leaves default to at most 15 minutes; a direct owner exception belongs in the plan's
+`estimate_policy` and applies to every plan tool. A Worker reports by minute 20. A hook reminder
 (30-minute plan, 60-minute goal, 120-minute method) means the time is over and the
 task is not finished: name what blocked you and remove it yourself; if you were
 doing checks, plans or hardening for their own sake, stop and take the nearest step
