@@ -54,7 +54,7 @@ def _reason(value, fallback='native_delivery_blocked'):
     """Only fixed codes cross into a plan that may be publicly published."""
     if not isinstance(value, str):
         return fallback
-    for code, pattern in [('codex_quota_guard', r'quota'), ('human_stop', r'human.?stop|manual.?stop'),
+    for code, pattern in [('codex_quota_guard', r'quota'), ('human_stop', r'human.?stop|manual.?stop|остановлен|автопродолжение заблокировано'),
                           ('permission_declined', r'permission|approval'), ('scope_declined', r'scope|intake')]:
         if re.search(pattern, value, re.I):
             return code
@@ -69,7 +69,7 @@ def _public_receipt(receipt):
     return projection
 
 
-def observe_native(transport, executor, *, now=_now):
+def observe_native(transport, executor, *, now=_now, purpose='turn'):
     """Only a fresh, exact native read may produce runtime observations."""
     response = transport.call('session_info', {'detail': 'agent', 'view': 'compact',
         'hostId': executor['host_id'], 'harness': executor['harness'], 'sessionId': executor['session_id']})
@@ -77,9 +77,22 @@ def observe_native(transport, executor, *, now=_now):
     if not isinstance(session, dict) or any(session.get(native) != executor[key] for key, native in
             [('host_id', 'hostId'), ('harness', 'harness'), ('session_id', 'id')]):
         raise ValueError('native_identity_unverified')
-    turn = session.get('meta', {}).get('nativeLastTurn') or {}
+    meta = session.get('meta') or {}
+    turn = meta.get('nativeLastTurn') or {}
+    if purpose == 'availability':
+        status = session.get('status')
+        stopped = turn.get('status') in ('cancelled', 'interrupted') or status == 'stopped'
+        runtime_state = ('stopped' if stopped else 'blocked' if session.get('needsPermission')
+                         else 'idle' if status == 'idle' else 'busy' if status == 'running'
+                         else 'unavailable' if status == 'error' else 'unknown')
+        return {'state': runtime_state, 'observed_at': now(), 'source': 'native_verified',
+                'turn_id': turn.get('turnId'), 'model': session.get('model'), 'worktree': session.get('cwd')}
     state = turn.get('status')
-    if state in ('completed', 'failed', 'cancelled', 'interrupted'):
+    active_turn = meta.get('activeTurnId') or meta.get('nativeTurnId')
+    if session.get('status') == 'running' and isinstance(active_turn, str) and active_turn:
+        turn = {'turnId': active_turn}
+        runtime_state = 'running'
+    elif state in ('completed', 'failed', 'cancelled', 'interrupted'):
         runtime_state = state
     elif state in ('inProgress', 'running', 'in_progress') and session.get('status') == 'running':
         runtime_state = 'running'
@@ -89,10 +102,10 @@ def observe_native(transport, executor, *, now=_now):
             'turn_id': turn.get('turnId'), 'model': session.get('model'), 'worktree': session.get('cwd')}
 
 
-def _observation(transport, a, observer, now):
+def _observation(transport, a, observer, now, purpose='turn'):
     # Custom observers are trusted adapters, never model-supplied fields. Enforce
     # exact freshness even when the adapter was injected by an embedding caller.
-    runtime = (observer or observe_native)(transport, a['executor'], now=now)
+    runtime = (observer or observe_native)(transport, a['executor'], now=now, purpose=purpose)
     if not isinstance(runtime, dict) or runtime.get('source') != 'native_verified':
         raise ValueError('native_observation_required')
     try:
@@ -105,30 +118,51 @@ def _observation(transport, a, observer, now):
     return runtime
 
 
-def _join(a, transport, persist, runtime, now):
+def _expected_wait_id(a, request_id):
+    """The existing Herder register() request-id key, not a new wait ledger."""
+    owner_key = json.dumps([a['lead']['harness'], a['lead']['session_id']], separators=(',', ':'), ensure_ascii=False)
+    key = json.dumps([owner_key, request_id], separators=(',', ':'), ensure_ascii=False)
+    return 'wait_' + hashlib.sha256(key.encode()).hexdigest()[:32]
+
+
+def _wait_matches(wait, a, wait_id):
+    owner = {'harness': a['lead']['harness'], 'sessionId': a['lead']['session_id']}
+    dependency = {'harness': a['executor']['harness'], 'sessionId': a['executor']['session_id']}
+    key = json.dumps([dependency['harness'], dependency['sessionId']], separators=(',', ':'))
+    return (isinstance(wait, dict) and wait.get('id') == wait_id and wait.get('owner') == owner
+            and wait.get('dependencies') == [dependency]
+            and wait.get('dependencyTurns', {}).get(key) == a['dispatch'].get('turn_id'))
+
+
+def _join(a, transport, persist, runtime, now, context=None):
     turn_id = a['dispatch'].get('turn_id')
     if (a.get('wake') or {}).get('wait_id') or (a.get('wake') or {}).get('request_id'):
         return a
     # Persist before registration: after an interrupted registration reconcile
     # reads status using the known request id, it never creates a second wait.
     wait_request = a['dispatch']['request_id'] + ':completion'
-    pending = _wake('registration_in_progress', now(), state='registering', turn_id=turn_id)
+    expected_id = _expected_wait_id(a, wait_request)
+    pending = _wake('registration_in_progress', now(), state='registering', wait_id=expected_id, turn_id=turn_id)
     pending['request_id'] = wait_request
     a = _saved(persist, a, a['state'], wake=pending)
     try:
+        message = ('LHC assignment ' + a['attempt_id'] + ': read the latest user goal and current plan; '
+                   'verify the exact native result, integrate and accept it, then select the next ready work. '
+                   'Do not treat completion as acceptance or replay an unknown delivery.')
+        if context:
+            message += ' Canonical context: ' + json.dumps(context, ensure_ascii=False, sort_keys=True)
         response = transport.call('resume_after', {'action': 'wait',
             'owner': {'harness': a['lead']['harness'], 'sessionId': a['lead']['session_id']},
             'dependencies': [{'harness': a['executor']['harness'], 'sessionId': a['executor']['session_id']}],
             'requestId': wait_request,
-            'message': 'LHC assignment ' + a['attempt_id'] + ': read the current goal and native receipt, accept the result, then dispatch ready work.'})
+            'message': message})
         wait = response.get('wait', {})
         key = json.dumps([a['executor']['harness'], a['executor']['session_id']], separators=(',', ':'))
         captured = wait.get('dependencyTurns', {}).get(key)
-        owner = {'harness': a['lead']['harness'], 'sessionId': a['lead']['session_id']}
-        if captured != turn_id or wait.get('owner') != owner or not wait.get('id'):
+        if not _wait_matches(wait, a, expected_id):
             # A later turn must never cause this assignment's lead wake. Cancel
             # only the just-created mismatching wait, never a native execution.
-            if wait.get('id'):
+            if wait.get('id') == expected_id and wait.get('owner') == {'harness': a['lead']['harness'], 'sessionId': a['lead']['session_id']}:
                 transport.call('resume_after', {'action': 'cancel', 'waitId': wait['id'],
                     'owner': {'harness': a['lead']['harness'], 'sessionId': a['lead']['session_id']}})
             wake = _wake('wake_turn_mismatch', now())
@@ -138,12 +172,12 @@ def _join(a, transport, persist, runtime, now):
             wake['next_at'] = wait.get('scheduledAt')
         wake['request_id'] = wait_request
     except Exception:
-        wake = _wake('wake_registration_unknown', now(), state='delivery_unknown', turn_id=turn_id)
+        wake = _wake('wake_registration_unknown', now(), state='delivery_unknown', wait_id=expected_id, turn_id=turn_id)
         wake['request_id'] = wait_request
     return _saved(persist, a, a['state'], wake=wake)
 
 
-def dispatch_assignment(assignment, message, *, transport=None, persist, observer=None, now=_now):
+def dispatch_assignment(assignment, message, *, transport=None, persist, observer=None, now=_now, context=None):
     a = _assignment(assignment)
     if a['executor_kind'] == 'self':
         if a['executor'] != a['lead']:
@@ -167,11 +201,15 @@ def dispatch_assignment(assignment, message, *, transport=None, persist, observe
     if a['lead'] == a['executor']:
         dispatch.update(status='blocked', reason='self_dependency_unsupported')
         return _saved(persist, a, 'blocked', dispatch=dispatch)
+    if a['lead']['harness'] not in ('codex', 'zcode', 'opencode', 'fast-agent'):
+        dispatch.update(status='blocked', reason='source_harness_unsupported')
+        return _saved(persist, a, 'blocked', dispatch=dispatch)
     a = _saved(persist, a, 'dispatching', dispatch=dispatch)
     try:
         receipt = transport.call('deliver', {'hostId': a['executor']['host_id'],
             'harness': a['executor']['harness'], 'sessionId': a['executor']['session_id'],
-            'inputId': request_id, 'message': message, 'create': 'never', 'activation': 'always', 'mode': 'queue'})
+            'inputId': request_id, 'message': message, 'create': 'never', 'activation': 'always', 'mode': 'queue',
+            'sourceHarness': a['lead']['harness'], 'sourceSessionId': a['lead']['session_id']})
     except TransportError as error:
         dispatch.update(status='unknown' if error.submitted else 'blocked', reason=error.reason, observed_at=now())
         return _saved(persist, a, 'delivery_unknown' if error.submitted else 'blocked', dispatch=dispatch)
@@ -196,22 +234,40 @@ def dispatch_assignment(assignment, message, *, transport=None, persist, observe
     a = _saved(persist, a, 'submitted', dispatch=dispatch)
     if not dispatch['turn_id']:
         return _saved(persist, a, 'submitted', wake=_wake('dispatch_turn_unavailable', now()))
-    return reconcile_assignment(a, transport=transport, persist=persist, observer=observer, now=now)
+    return reconcile_assignment(a, transport=transport, persist=persist, observer=observer, now=now, context=context)
 
 
-def reconcile_assignment(assignment, *, transport=None, persist, observer=None, now=_now):
+def reconcile_assignment(assignment, *, transport=None, persist, observer=None, now=_now, context=None):
     a = _assignment(assignment)
     if a.get('state') == 'dispatching':
-        return dispatch_assignment(a, '', transport=transport, persist=persist, observer=observer, now=now)
-    if a.get('state') in ('assigned', 'accepted', 'cancelled', 'delivery_unknown', 'blocked'):
+        return dispatch_assignment(a, '', transport=transport, persist=persist, observer=observer, now=now, context=context)
+    if a.get('state') in ('accepted', 'cancelled', 'delivery_unknown', 'blocked'):
         return a
     transport = transport or HerderMcpClient()
+    if a.get('state') == 'assigned':
+        try:
+            runtime = _observation(transport, a, observer, now, purpose='availability')
+        except Exception:
+            runtime = {'state': 'unknown', 'source': 'native_unavailable', 'observed_at': now(),
+                       'reason_code': 'native_observation_unavailable'}
+        return _saved(persist, a, 'assigned', observed_runtime=runtime)
     wake = a.get('wake') or {}
+    if (not wake.get('wait_id') and wake.get('request_id')
+            and wake.get('state') in ('registering', 'delivery_unknown', 'unknown')
+            and (a.get('dispatch') or {}).get('turn_id')):
+        # Older bridge records retained the request id but lost the response.
+        # Deriving the owner's existing Herder key permits a read, not a replay.
+        wake = dict(wake, wait_id=_expected_wait_id(a, wake['request_id']),
+                    captured_turn_id=a['dispatch']['turn_id'], turn_id=a['dispatch']['turn_id'])
+        a = _saved(persist, a, a['state'], wake=wake)
     if wake.get('wait_id'):
         try:
             response = transport.call('resume_after', {'action': 'status', 'waitId': wake['wait_id']})
             wait = response.get('wait') or {}
-            wake = dict(wake, state=wait.get('state', 'unknown'), reason=_reason(wait.get('reason'), None), observed_at=now())
+            if not _wait_matches(wait, a, wake['wait_id']):
+                wake = dict(wake, state='unknown', reason='wake_identity_unverified', observed_at=now())
+            else:
+                wake = dict(wake, state=wait.get('state', 'unknown'), reason=_reason(wait.get('reason'), None), observed_at=now())
             a = _saved(persist, a, a['state'], wake=wake)
         except Exception:
             a = _saved(persist, a, a['state'], wake=dict(wake, state='unknown', reason='wake_status_unavailable', observed_at=now()))
@@ -232,7 +288,7 @@ def reconcile_assignment(assignment, *, transport=None, persist, observer=None, 
         return a
     if wake.get('state') in ('registering', 'delivery_unknown') and not wake.get('wait_id'):
         return a  # uncertain registration is read/reconciled, never replayed
-    return _join(a, transport, persist, runtime, now)
+    return _join(a, transport, persist, runtime, now, context=context)
 
 
 def _leaf_context(plan_dir, leaf_id, attempt_id, actor, expected_hash):
@@ -250,8 +306,12 @@ def _leaf_context(plan_dir, leaf_id, attempt_id, actor, expected_hash):
         raise ValueError('assignment_attempt_mismatch')
     def persist(state, receipt):
         nonlocal digest
-        result = lhc_plan_json.transition_leaf(plan_dir, leaf_id, attempt_id, state,
-                    receipt=receipt, actor=actor, expected_hash=digest)
+        if state == 'dispatching':
+            result = lhc_plan_json.admit_leaf(plan_dir, leaf_id, attempt_id, receipt,
+                        actor=actor, expected_hash=digest)
+        else:
+            result = lhc_plan_json.transition_leaf(plan_dir, leaf_id, attempt_id, state,
+                        receipt=receipt, actor=actor, expected_hash=digest)
         digest = result['sha256']
         return result
     return a, persist
@@ -260,10 +320,15 @@ def _leaf_context(plan_dir, leaf_id, attempt_id, actor, expected_hash):
 def dispatch_leaf(plan_dir, leaf_id, attempt_id, message, *, actor=None, expected_hash=None,
                   transport=None, observer=None, now=_now):
     a, persist = _leaf_context(plan_dir, leaf_id, attempt_id, actor, expected_hash)
-    return dispatch_assignment(a, message, transport=transport, persist=persist, observer=observer, now=now)
+    if a.get('state') == 'assigned' and a.get('executor_kind') != 'self':
+        transport = transport or HerderMcpClient()
+        a = reconcile_assignment(a, transport=transport, persist=persist, observer=observer, now=now)
+    context = {'plan_dir': str(Path(plan_dir).resolve()), 'leaf_id': leaf_id, 'attempt_id': attempt_id}
+    return dispatch_assignment(a, message, transport=transport, persist=persist, observer=observer, now=now, context=context)
 
 
 def reconcile_leaf(plan_dir, leaf_id, attempt_id, *, actor=None, expected_hash=None,
                    transport=None, observer=None, now=_now):
     a, persist = _leaf_context(plan_dir, leaf_id, attempt_id, actor, expected_hash)
-    return reconcile_assignment(a, transport=transport, persist=persist, observer=observer, now=now)
+    context = {'plan_dir': str(Path(plan_dir).resolve()), 'leaf_id': leaf_id, 'attempt_id': attempt_id}
+    return reconcile_assignment(a, transport=transport, persist=persist, observer=observer, now=now, context=context)

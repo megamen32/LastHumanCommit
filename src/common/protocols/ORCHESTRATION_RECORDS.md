@@ -162,3 +162,110 @@ result files. It verifies live source and receipts before resuming. A Worker rea
 its brief and own progress file before continuing. Chat history and memory are
 helpful pointers, not the authority or the only copy of task state. Never store
 credential values, personal session data or unrelated project records here.
+
+## Explicit assignment and Herder execution
+
+A durable brief and a registered worktree describe the work. The explicit
+`leaf.assignment` describes the current attempt and separates the Lead, executor,
+native parent, dispatch receipt, observed runtime and continuation wait. Use the
+LhcPlan operations; do not add these fields by editing JSON. The assignment is a
+record, not a new approval layer. Authorship is attributed from native caller
+metadata when available; `--actor` is declared attribution and never proves a
+native identity or authority.
+
+| MCP operation | CLI subcommand of `lhc_plan_json.py` | Effect |
+| --- | --- | --- |
+| `assign_leaf` | `assign-leaf PLAN LEAF --assignment JSON` | Record one explicit attempt and preserve previous attempts. |
+| `dispatch_leaf` | `dispatch-leaf PLAN LEAF --attempt-id ID --message TEXT` | Refresh availability, atomically admit a ready assignment, deliver through Herder and arm its exact completion wake. |
+| `reconcile_leaf` | `reconcile-leaf PLAN LEAF --attempt-id ID` | Read native state and the exact saved wait without sending another task. |
+| `accept_leaf` | `accept-leaf PLAN LEAF --attempt-id ID --result TEXT` | Record Lead acceptance and the proven leaf result. |
+
+These operations accept `expected_hash` in MCP or `--expected-hash` in CLI for
+compare-and-swap. They use the same canonical persistence path. An attempt ID is
+stable for this assignment and is not replaced to retry an uncertain effect.
+The required task message is scoped by the brief; it is not reconstructed from
+unrelated chat history. For example, with the real explicit refs already checked:
+
+```sh
+python3 "$LHC_TOOLS/lhc_plan_json.py" assign-leaf "$PLAN" L04 \
+  --assignment "$ASSIGNMENT_JSON"
+python3 "$LHC_TOOLS/lhc_plan_json.py" dispatch-leaf "$PLAN" L04 \
+  --attempt-id "$ATTEMPT_ID" --message "$SCOPED_TASK"
+```
+
+`ASSIGNMENT_JSON` has this shape. Replace the example values with real refs;
+this sample is not a target to send to:
+
+```json
+{
+  "schema_version": 1,
+  "attempt_id": "task-L04-attempt-1",
+  "executor_kind": "session",
+  "lead": {"host_id": "exact-host", "harness": "codex", "session_id": "exact-lead"},
+  "executor": {"host_id": "exact-host", "harness": "codex", "session_id": "exact-worker"},
+  "parent": null,
+  "state": "assigned"
+}
+```
+
+For a `subagent`, record its distinct parent ref and verified relation; the Lead
+and native parent need not be the same session. A `self` assignment records local
+work and sends nothing to itself. The initial bridge supports existing local
+sessions on one Herder singleton. A cross-host join and an unsupported native
+source harness return an explicit blocked reason. Do not route around the reason
+by dropping source attribution or choosing a different owner.
+
+### What the saved states prove
+
+`assigned` means assignment, not acceptance by the native session. `dispatching`
+is a durable intent saved before RPC. `submitted` means a correlated admission
+receipt was returned. `running` needs fresh observation of the same exact native
+turn. `result_ready` means that turn reached a terminal native outcome; a failed
+or stopped turn may produce a result to inspect. `accepted` records the Lead's
+separate acceptance and changes the leaf to done. Saved leaf status and observed
+runtime are displayed separately.
+
+The canonical dispatch path uses the unified evaluator for prerequisites,
+capacity and executor availability. It admits the assignment under the same
+plan lock that saves its dispatch intent, so two leaves cannot both reserve one
+session or the last slot. A dependency candidate is not proof of dispatchability.
+Only done satisfies a dependency; deferred does not. Missing runtime evidence is
+unknown, and blocked intake, quota and human Stop retain their reasons.
+
+The dispatch response also contains `wake`. A valid wait belongs to the Lead and
+captures the admitted executor turn, with its exact wait ID, observed time and
+state. The continuation message includes the canonical plan directory, leaf and
+attempt. After completion the existing Herder service wakes the Lead once.
+That wake is a trigger to reread the latest user goal and current readiness,
+inspect and integrate the result, perform acceptance, then choose the next
+available work. It does not authorize replaying the old task message or accepting
+whatever an idle session last said. Independent work does not wait for an
+unrelated wave.
+
+A missing, rejected or ambiguous continuation is visible in `wake.state` and
+`wake.reason`. Use `reconcile_leaf` for a read-only check. An uncertain registration
+is queried by the deterministic wait ID of the existing Herder request; it is
+never resubmitted to create another timer. A status receipt must match the wait,
+Lead, executor and captured turn before it can update this assignment. A quota
+or permission refusal stays blocked. An UNKNOWN delivery is never automatically
+replayed, even after restart or compaction.
+
+### Adopting a legacy plan
+
+Existing plans remain readable. A legacy owner label or `leaf.session` is a
+historical hint, not proof of an executor, host, model, parent or running turn.
+Inspect the existing result and native readback first. Record an explicit new
+assignment only for the remaining authorized work, preserving earlier events
+and unknown provenance. Do not retroactively invent a native start, mark deferred
+requirements accepted, or reset an uncertain previous dispatch. Local legacy
+self-work keeps its existing activate/saved-status workflow.
+
+For a registered worker use `worker_finish` for integration and cleanup before
+the leaf closes. For another explicit assignment use `accept_leaf` after the
+required checks. Both are separate from native completion. The public page must
+retain the distinction among source evidence, native evidence and installed
+consumer acceptance.
+
+Isolated setup for fresh CLI/stdio consumers is in
+`protocols/EXECUTION_CONSUMER.md`. It uses copied test data and a local fake Herder,
+with no real native sessions, messages or model turns.
