@@ -30,3 +30,7 @@
 safety-assertions.json фиксирует green safety критерии и отдельные effect counts. synthetic-renderer-plan содержит только synthetic accepted child plan для public renderer canary Lead. HTML проверялся как текст public renderer output, без визуального браузерного теста. Реальная native lineage, право запуска parent/child, настоящий автоматический wake и работа реального subagent не проверялись и не заявляются.
 
 Source unit tests и implementation для expected behavior не читались. Общий suite и release выполняет Lead. Два наблюдения выше переданы Lead сразу; продукт, canonical plan и чужие leaves не менялись.
+
+## Final narrow recheck
+
+Exact candidate d0c60f89fb3fea69ebcc2bfaaf07ecdb2be53487: PASS. B14 and B15 corrected in the same independent fixture. Original receipts above are retained unchanged. See final-d0c60f89/REPORT.md and acceptance-checks.json for final evidence.

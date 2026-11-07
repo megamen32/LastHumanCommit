@@ -1,0 +1,42 @@
+{
+  "verdict": "PASS",
+  "checks": {
+    "candidate_exact": true,
+    "permission_reason_preserved": true,
+    "unknown_not_false_blocked": true,
+    "saved_wait_and_turn": true,
+    "no_duplicate_deliver": true,
+    "one_wait_registration": true,
+    "one_status_reconcile": true,
+    "terminal_not_accepted": true,
+    "accepted_separate": true,
+    "premature_accept_rejected": true,
+    "unknown_maintained": true,
+    "quota_blocked": true,
+    "cli_unknown_show": true,
+    "cli_quota_show": true,
+    "cli_no_unconditional_next": true,
+    "mcp_unknown_show": true,
+    "mcp_quota_show": true,
+    "stdio_exit": true
+  },
+  "effect_counts": {
+    "normal": {
+      "deliver": 1,
+      "wait_registration": 1,
+      "wait_status_reads": 1
+    },
+    "unknown": {
+      "deliver": 1,
+      "wait_registration": 0,
+      "wait_status_reads": 0
+    },
+    "quota": {
+      "deliver": 1,
+      "wait_registration": 0,
+      "wait_status_reads": 0
+    }
+  },
+  "candidate": "d0c60f89fb3fea69ebcc2bfaaf07ecdb2be53487",
+  "limitations": "Synthetic native observations only; no actual LLM turns, existing native sessions, human messages, STOP/quota changes or canonical plan writes."
+}
