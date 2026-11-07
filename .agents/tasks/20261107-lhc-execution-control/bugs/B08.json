@@ -1,0 +1,24 @@
+{
+  "created_at": "2026-11-07T16:14:36+00:00",
+  "details": "После worker_register generic update без session брал CODEX_THREAD_ID и записывал root как executor. RED подтвердил worker и explicit assignment случаи; self compatibility должна сохраниться.",
+  "events": [
+    {
+      "action": "register",
+      "actor": "root",
+      "at": "2026-11-07T16:14:36+00:00",
+      "changes": {
+        "details": "После worker_register generic update без session брал CODEX_THREAD_ID и записывал root как executor. RED подтвердил worker и explicit assignment случаи; self compatibility должна сохраниться.",
+        "source": "Sharedplan L05C + tests/test_execution_assignment.py",
+        "status": "open",
+        "title": "Generic progress подставляет автора исполнителем Worker"
+      }
+    }
+  ],
+  "id": "B08",
+  "owner": "root",
+  "reporter": "root",
+  "source": "Sharedplan L05C + tests/test_execution_assignment.py",
+  "status": "open",
+  "title": "Generic progress подставляет автора исполнителем Worker",
+  "updated_at": "2026-11-07T16:14:36+00:00"
+}

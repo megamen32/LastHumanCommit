@@ -1,0 +1,65 @@
+(Linux uses --headless by default. To override, use --headed / --gui. For Xvfb mode instead, use --xvfb. Or you can hide this info by using --headless / --headless2 / --uc.)
+FF.                                                                      [100%]
+=================================== FAILURES ===================================
+__ test_generic_worker_progress_never_autobinds_the_actor_as_executor[worker] __
+
+plan = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-interface-20261107/.tmp/pytest-4172434-6a8c28d8e9eb7661/test_generic_worker_progress_n0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x72bbe1b04ee0>
+execution_context = 'worker'
+
+    @pytest.mark.parametrize("execution_context", ["worker", "assignment"])
+    def test_generic_worker_progress_never_autobinds_the_actor_as_executor(plan, monkeypatch, execution_context):
+        leaf = read(plan)
+        leaf.pop("session", None)
+        leaf.pop("harness", None)
+        if execution_context == "worker":
+            leaf["worker"] = {"id": "different-worker", "branch": "lhc/different-worker",
+                              "worktree": str(plan / "different-worker")}
+        else:
+            leaf["assignment"] = assignment()
+        (plan / "leaves/L01.json").write_text(json.dumps(leaf))
+        actor = "11111111-1111-1111-1111-111111111111"
+        monkeypatch.setenv("CODEX_THREAD_ID", actor)
+        recorded = []
+        monkeypatch.setattr(pj, "record_session_plan", lambda *args: recorded.append(args))
+        pj.update_leaf(plan, "L01", {"status": "running", "note": "Lead records progress"})
+        updated = read(plan)
+>       assert not updated.get("session")
+E       AssertionError: assert not '11111111-1111-1111-1111-111111111111'
+E        +  where '11111111-1111-1111-1111-111111111111' = <built-in method get of dict object at 0x72bbdf1f0040>('session')
+E        +    where <built-in method get of dict object at 0x72bbdf1f0040> = {'harness': 'codex', 'id': 'L01', 'label': 'test', 'note': 'Lead records progress', ...}.get
+
+tests/test_execution_assignment.py:221: AssertionError
+_ test_generic_worker_progress_never_autobinds_the_actor_as_executor[assignment] _
+
+plan = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-interface-20261107/.tmp/pytest-4172434-6a8c28d8e9eb7661/test_generic_worker_progress_n1')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x72bbe1107a30>
+execution_context = 'assignment'
+
+    @pytest.mark.parametrize("execution_context", ["worker", "assignment"])
+    def test_generic_worker_progress_never_autobinds_the_actor_as_executor(plan, monkeypatch, execution_context):
+        leaf = read(plan)
+        leaf.pop("session", None)
+        leaf.pop("harness", None)
+        if execution_context == "worker":
+            leaf["worker"] = {"id": "different-worker", "branch": "lhc/different-worker",
+                              "worktree": str(plan / "different-worker")}
+        else:
+            leaf["assignment"] = assignment()
+        (plan / "leaves/L01.json").write_text(json.dumps(leaf))
+        actor = "11111111-1111-1111-1111-111111111111"
+        monkeypatch.setenv("CODEX_THREAD_ID", actor)
+        recorded = []
+        monkeypatch.setattr(pj, "record_session_plan", lambda *args: recorded.append(args))
+        pj.update_leaf(plan, "L01", {"status": "running", "note": "Lead records progress"})
+        updated = read(plan)
+>       assert not updated.get("session")
+E       AssertionError: assert not '11111111-1111-1111-1111-111111111111'
+E        +  where '11111111-1111-1111-1111-111111111111' = <built-in method get of dict object at 0x72bbe112ce40>('session')
+E        +    where <built-in method get of dict object at 0x72bbe112ce40> = {'assignment': {'attempt_id': 'attempt-1', 'executor': {'harness': 'codex', 'host_id': 'test-host', 'session_id': 'tes...odex', 'host_id': 'test-host', 'session_id': 'test-lead'}, ...}, 'harness': 'codex', 'id': 'L01', 'label': 'test', ...}.get
+
+tests/test_execution_assignment.py:221: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_execution_assignment.py::test_generic_worker_progress_never_autobinds_the_actor_as_executor[worker]
+FAILED tests/test_execution_assignment.py::test_generic_worker_progress_never_autobinds_the_actor_as_executor[assignment]
+2 failed, 1 passed, 16 deselected in 0.25s
