@@ -2217,24 +2217,42 @@ def plan_summary(plan_dir: Path, current: Any = ()) -> list[str]:
 
 
 def plan_state(plan_dir: Path) -> str:
-    """One line for the end of every tool answer: where the plan is now."""
-
+    """Saved progress, dependency candidates and evidenced admission are separate."""
     rows, milestones = split_milestones(_leaf_rows(plan_dir), strict=False)
     status = {str(leaf.get("id")): leaf.get("status") for leaf in rows}
+    metadata = plan_metadata(plan_dir)
+    module = grid_module()._load_sibling("lhc_readiness")
+    decision = module.evaluate(rows, slots=metadata.get("slots")) if module else None
     done = sum(1 for value in status.values() if value == "done")
     running = [str(leaf.get("id")) for leaf in rows if leaf.get("status") == "running"]
-    ready = [str(leaf.get("id")) for leaf in rows if leaf.get("status") == "queued"
-             and leaf.get("kind") != "milestone"
-             and all(status.get(str(dep)) == "done" for dep in leaf.get("depends_on") or [])]
-    parts = [f"Plan {Path(plan_dir).name}: {done}/{len(rows)} done"]
-    parts.append(plan_intent(plan_metadata(plan_dir)))
+    parts = [f"Plan {Path(plan_dir).name}: {done}/{len(rows)} done", plan_intent(metadata)]
     pending_stages = undecomposed_stages(milestones)
     if pending_stages:
         parts.append("undecomposed stages: " + ", ".join(pending_stages))
     if running:
-        parts.append("running " + ", ".join(running[:8]))
-    if ready:
-        parts.append("ready to start " + ", ".join(ready[:8]))
+        parts.append("saved running " + ", ".join(running[:8]))
+    if decision is None:
+        parts.append("readiness unknown: evaluator unavailable; dispatchable none")
+    else:
+        parts.append("candidates by dependencies/capacity " + (", ".join(decision["ready"][:8]) or "none"))
+        parts.append("dispatchable " + (", ".join(decision["dispatchable"][:8]) or "none"))
+        reasons = [key + "=" + row["reason_code"] for key, row in decision["by_id"].items()
+                   if row["dispatchable"] is not True and status.get(key) in {"queued", "blocked", "waiting"}]
+        if reasons:
+            parts.append("admission " + ", ".join(reasons[:8]))
+    execution = []
+    for leaf in rows:
+        assignment = leaf.get("assignment")
+        if not isinstance(assignment, dict):
+            continue
+        runtime, wake = assignment.get("observed_runtime") or {}, assignment.get("wake") or {}
+        reason = wake.get("reason_code") or wake.get("reason") or (assignment.get("dispatch") or {}).get("reason")
+        execution.append(f"{leaf.get('id')}: assignment={assignment.get('state') or 'unknown'}, "
+                         f"runtime={runtime.get('state') or 'unknown'}, wake={wake.get('state') or 'unknown'}"
+                         + (f", reason={_short(reason, 160)}" if reason else "")
+                         + (f", next={wake['next_at']}" if wake.get("next_at") else ""))
+    if execution:
+        parts.append("execution " + " | ".join(execution[:4]))
     late = [f"{leaf.get('id')} {over[0]}/{over[1]} min" for leaf in rows
             if leaf.get("status") == "running" for over in [overrun(leaf)] if over]
     if late:

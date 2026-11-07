@@ -142,3 +142,20 @@ def test_blocked_assignment_preserves_specific_quota_reason():
     r = module("lhc_readiness").evaluate([{"id": "A", "status": "queued", "assignment": a}], slots=1, now=NOW)
     assert r["by_id"]["A"]["reason_code"] == "quota_guard"
     assert r["by_id"]["A"]["dispatchable"] is False
+
+
+def test_bridge_reason_strings_and_explicit_completion_control_capacity():
+    evaluate = module("lhc_readiness").evaluate
+    a = assignment(state="blocked")
+    a["dispatch"] = {"reason": "codex_quota_guard"}
+    assert evaluate([{"id": "A", "status": "queued", "assignment": a}], slots=1, now=NOW)["by_id"]["A"]["reason_code"] == "codex_quota_guard"
+
+
+def test_explicit_completion_releases_saved_running_capacity_but_unknown_reserves():
+    evaluate = module("lhc_readiness").evaluate
+    for state, occupied in [("result_ready", 0), ("accepted", 0), ("cancelled", 0), ("assigned", 0),
+                            ("running", 1), ("submitted", 1), ("dispatching", 1), ("delivery_unknown", 1)]:
+        result = evaluate([{"id": "A", "status": "running", "assignment": assignment(state=state)},
+                           {"id": "B", "status": "queued"}], slots=1, now=NOW)
+        assert result["occupied_slots"] == occupied, state
+        assert ("B" in result["ready"]) is (occupied == 0), state
