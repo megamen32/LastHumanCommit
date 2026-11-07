@@ -41,5 +41,13 @@
       "--check"
     ],
     "exit_code": 0
+  },
+  {
+    "step": "validator-118",
+    "command": [
+      "python3",
+      "tests/validate.py"
+    ],
+    "exit_code": 0
   }
 ]
