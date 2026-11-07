@@ -79,7 +79,8 @@ def test_show_names_results_overruns_and_open_workers(tmp_path):
     assert "Workers not merged and removed yet: L03 (lhc/w3)" in text
     state = pj.plan_state(plan)
     assert state.startswith("Plan plan: 1/3 done") and "split now: L02 190/15 min" in state
-    assert "ready to start L03" in state and "Workers to merge and remove: L03" in state
+    assert "candidates by dependencies/capacity L03" in state and "Workers to merge and remove: L03" in state
+    assert "dispatchable none" in state
 
 
 def test_a_worker_is_registered_then_merged_and_removed_when_its_leaf_closes(tmp_path):

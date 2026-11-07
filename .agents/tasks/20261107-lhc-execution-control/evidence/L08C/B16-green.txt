@@ -1,0 +1,6 @@
+$ python3 -m pytest -q tests/test_readiness.py tests/test_plan_audit_followup.py::test_empty_stage_remains_visible_when_all_created_leaves_are_done
+(Linux uses --headless by default. To override, use --headed / --gui. For Xvfb mode instead, use --xvfb. Or you can hide this info by using --headless / --headless2 / --uc.)
+.....................                                                    [100%]
+21 passed in 0.60s
+
+exit_code=0
