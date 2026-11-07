@@ -1,0 +1,24 @@
+{
+  "created_at": "2026-11-07T19:46:34+00:00",
+  "details": "Catalog исключает deferred и без goal receipt показывает completed.",
+  "events": [
+    {
+      "action": "register",
+      "actor": "Lead audit",
+      "at": "2026-11-07T19:46:34+00:00",
+      "changes": {
+        "details": "Catalog исключает deferred и без goal receipt показывает completed.",
+        "source": "src/common/tools/lhc_plan_catalog.py:89",
+        "status": "open",
+        "title": "Завершение активных шагов подменяет принятие цели"
+      }
+    }
+  ],
+  "id": "B7700e3a790214987b2e1",
+  "owner": "Lead audit",
+  "reporter": "Lead audit",
+  "source": "src/common/tools/lhc_plan_catalog.py:89",
+  "status": "open",
+  "title": "Завершение активных шагов подменяет принятие цели",
+  "updated_at": "2026-11-07T19:46:34+00:00"
+}

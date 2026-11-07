@@ -1,0 +1,24 @@
+{
+  "created_at": "2026-11-07T19:46:33+00:00",
+  "details": "Stop/Overseer молчат при отсутствии queued/running; accepted goal не проверяется.",
+  "events": [
+    {
+      "action": "register",
+      "actor": "Lead audit",
+      "at": "2026-11-07T19:46:33+00:00",
+      "changes": {
+        "details": "Stop/Overseer молчат при отсутствии queued/running; accepted goal не проверяется.",
+        "source": "src/common/tools/lhc_entry.py:378",
+        "status": "open",
+        "title": "Пустой frontier не требует решения по незавершённой цели"
+      }
+    }
+  ],
+  "id": "B27cbecd46bd749b99250",
+  "owner": "Lead audit",
+  "reporter": "Lead audit",
+  "source": "src/common/tools/lhc_entry.py:378",
+  "status": "open",
+  "title": "Пустой frontier не требует решения по незавершённой цели",
+  "updated_at": "2026-11-07T19:46:33+00:00"
+}

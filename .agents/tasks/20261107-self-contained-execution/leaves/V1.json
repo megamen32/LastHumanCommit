@@ -1,0 +1,73 @@
+{
+  "label": "Показать честные готовность и завершение",
+  "kind": "task",
+  "status": "queued",
+  "owner": "views",
+  "description": "Показать честные готовность и завершение. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+  "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+  "estimate_minutes": 15,
+  "depends_on": [],
+  "parent": "S1",
+  "id": "V1",
+  "model": "gpt-6.1-sol",
+  "created_at": "2026-11-07T22:40:42+03:00",
+  "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+  "harness": "codex",
+  "updated_at": "2026-11-07T22:43:40+03:00",
+  "progress_events": [
+    {
+      "at": "2026-11-07T22:40:42+03:00",
+      "note": "",
+      "changes": {
+        "label": "Показать честные готовность и завершение",
+        "kind": "task",
+        "status": "queued",
+        "owner": "views",
+        "description": "Показать честные готовность и завершение. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+        "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+        "estimate_minutes": 15,
+        "depends_on": [],
+        "parent": "S1",
+        "model": "gpt-6.1-sol"
+      },
+      "actor": {
+        "host_id": null,
+        "harness": "codex",
+        "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+        "source": "native_environment"
+      },
+      "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "harness": "codex"
+    },
+    {
+      "at": "2026-11-07T22:43:40+03:00",
+      "note": "Worker views registered on lhc/self-contained-views-20261107",
+      "changes": {
+        "worker": {
+          "id": "views",
+          "branch": "lhc/self-contained-views-20261107",
+          "worktree": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-views-20261107",
+          "registered_at": "2026-11-07T22:43:40+03:00",
+          "run_dir": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-views-20261107/.tmp/self-contained-run",
+          "run_host": "roomhacker-server-100"
+        }
+      },
+      "actor": {
+        "host_id": null,
+        "harness": "codex",
+        "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+        "source": "native_environment"
+      },
+      "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "harness": "codex"
+    }
+  ],
+  "worker": {
+    "id": "views",
+    "branch": "lhc/self-contained-views-20261107",
+    "worktree": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-views-20261107",
+    "registered_at": "2026-11-07T22:43:40+03:00",
+    "run_dir": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-views-20261107/.tmp/self-contained-run",
+    "run_host": "roomhacker-server-100"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "title": "LHC: самодостаточное поручение и продолжение цели",
+  "goal": "Новая сессия или субагент получает достаточный проверяемый контекст, возвращает результат нужному Lead, а незавершённая цель получает конкретное следующее действие.",
+  "business_result": "Перед отправкой LHC проверяет поручение, сохраняет его связь с попыткой и помогает продолжить цель после результата; проекции различают кандидата, допуск и принятую цель.",
+  "mode": "fullcycle",
+  "deliverable": "implementation",
+  "decomposition": "complete",
+  "default_model": "gpt-6.1-sol",
+  "slots": 3,
+  "recon": [
+    "Dispatch проверяет непустое сообщение и runtime, но не brief :: main2988 src/common/tools/lhc_execution.py:226 и lhc_plan_json.py:2013",
+    "Текстовая проекция ready названа готовностью к запуску при dispatchable none :: lhc_grid.py:5634 и CI plan live22:28",
+    "Stop/Overseer не требуют решения при пустом frontier незавершённой цели :: lhc_entry.py:378 и lhc_progress_review.py",
+    "Реальный direct Herder self-wake RED передан текущему владельцу; LHC consumer proof не подменяется :: handoff lhc-audit-handoff-20261107T1935-herder-v1-core"
+  ],
+  "acceptance_scenario": "Через настоящий CLI/MCP: неполное поручение не отправляется; достаточное получает canonical plan/leaf/attempt и неизменяемую привязку контекста; UNKNOWN не повторяется. Новая сессия читает пакет и продолжает допустимый шаг. После принятия результата пустой frontier при незакрытой цели требует управленческого решения. Два независимых потребителя, regression и полный validator, native install/readback, публикация и разрешённый merge.",
+  "current_progress": "Аудит завершён; Herder получил delta. Создаётся изолированный кандидат от1.17.1; primary и чужой WIP сохранены.",
+  "revisions": [
+    {
+      "at": "2026-11-07T22:40:41+03:00",
+      "reason": "Прямое поручение владельца исправить LHC по подробному аудиту; ранее разрешены merge и выпуск.",
+      "actor": {
+        "host_id": null,
+        "harness": "codex",
+        "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+        "source": "native_environment"
+      },
+      "summary": "Три независимых implementation scope, затем общая интеграция, consumer proof и выпуск. Без нового scheduler и без правок продукта Herder."
+    }
+  ],
+  "updated_at": "2026-11-07T22:40:41+03:00"
+}

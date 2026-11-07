@@ -1,0 +1,47 @@
+{
+  "label": "Проверить и обновить второй ранее настроенный native host",
+  "kind": "task",
+  "status": "queued",
+  "owner": "Lead",
+  "description": "Проверить и обновить второй ранее настроенный native host. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+  "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+  "estimate_minutes": 15,
+  "depends_on": [
+    "R1"
+  ],
+  "parent": "S2",
+  "id": "N199",
+  "model": "gpt-6.1-sol",
+  "created_at": "2026-11-07T22:40:44+03:00",
+  "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+  "harness": "codex",
+  "updated_at": "2026-11-07T22:40:44+03:00",
+  "progress_events": [
+    {
+      "at": "2026-11-07T22:40:44+03:00",
+      "note": "",
+      "changes": {
+        "label": "Проверить и обновить второй ранее настроенный native host",
+        "kind": "task",
+        "status": "queued",
+        "owner": "Lead",
+        "description": "Проверить и обновить второй ранее настроенный native host. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+        "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+        "estimate_minutes": 15,
+        "depends_on": [
+          "R1"
+        ],
+        "parent": "S2",
+        "model": "gpt-6.1-sol"
+      },
+      "actor": {
+        "host_id": null,
+        "harness": "codex",
+        "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+        "source": "native_environment"
+      },
+      "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "harness": "codex"
+    }
+  ]
+}

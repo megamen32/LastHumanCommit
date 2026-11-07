@@ -1,0 +1,795 @@
+{
+  "schema_version": 2,
+  "title": "LHC: самодостаточное поручение и продолжение цели",
+  "goal": "Новая сессия или субагент получает достаточный проверяемый контекст, возвращает результат нужному Lead, а незавершённая цель получает конкретное следующее действие.",
+  "business_result": "Перед отправкой LHC проверяет поручение, сохраняет его связь с попыткой и помогает продолжить цель после результата; проекции различают кандидата, допуск и принятую цель.",
+  "business_results": [
+    "Перед отправкой LHC проверяет поручение, сохраняет его связь с попыткой и помогает продолжить цель после результата; проекции различают кандидата, допуск и принятую цель."
+  ],
+  "acceptance_scenarios": [
+    "Через настоящий CLI/MCP: неполное поручение не отправляется; достаточное получает canonical plan/leaf/attempt и неизменяемую привязку контекста; UNKNOWN не повторяется. Новая сессия читает пакет и продолжает допустимый шаг. После принятия результата пустой frontier при незакрытой цели требует управленческого решения. Два независимых потребителя, regression и полный validator, native install/readback, публикация и разрешённый merge."
+  ],
+  "recon": [
+    "Dispatch проверяет непустое сообщение и runtime, но не brief :: main2988 src/common/tools/lhc_execution.py:226 и lhc_plan_json.py:2013",
+    "Текстовая проекция ready названа готовностью к запуску при dispatchable none :: lhc_grid.py:5634 и CI plan live22:28",
+    "Stop/Overseer не требуют решения при пустом frontier незавершённой цели :: lhc_entry.py:378 и lhc_progress_review.py",
+    "Реальный direct Herder self-wake RED передан текущему владельцу; LHC consumer proof не подменяется :: handoff lhc-audit-handoff-20261107T1935-herder-v1-core"
+  ],
+  "current_progress": "Аудит завершён; Herder получил delta. Создаётся изолированный кандидат от1.17.1; primary и чужой WIP сохранены.",
+  "deliverable": "implementation",
+  "decomposition": "complete",
+  "revisions": [
+    {
+      "at": "2026-11-07T22:40:41+03:00",
+      "reason": "Прямое поручение владельца исправить LHC по подробному аудиту; ранее разрешены merge и выпуск.",
+      "summary": "Три независимых implementation scope, затем общая интеграция, consumer proof и выпуск. Без нового scheduler и без правок продукта Herder."
+    }
+  ],
+  "external_waits": "",
+  "slots": 3,
+  "updated_at": "2026-11-07T22:43:40+03:00",
+  "tasks": [
+    {
+      "id": "F1",
+      "label": "Связать незавершённую цель с решением о продолжении",
+      "status": "queued",
+      "parent": "S1",
+      "description": "Связать незавершённую цель с решением о продолжении. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+      "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+      "owner": "frontier",
+      "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "harness": "codex",
+      "model": "gpt-6.1-sol",
+      "origin": "",
+      "supersedes": [],
+      "progress_events": [
+        {
+          "at": "2026-11-07T22:40:41+03:00",
+          "note": "",
+          "changes": {
+            "label": "Связать незавершённую цель с решением о продолжении",
+            "kind": "task",
+            "status": "queued",
+            "owner": "frontier",
+            "description": "Связать незавершённую цель с решением о продолжении. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+            "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+            "estimate_minutes": 15,
+            "depends_on": [],
+            "parent": "S1",
+            "model": "gpt-6.1-sol"
+          },
+          "actor": {
+            "host_id": null,
+            "harness": "codex",
+            "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+            "source": "native_environment"
+          },
+          "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-11-07T22:43:40+03:00",
+          "note": "Worker frontier registered on lhc/self-contained-frontier-20261107",
+          "changes": {
+            "worker": {
+              "id": "frontier",
+              "branch": "lhc/self-contained-frontier-20261107",
+              "worktree": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-frontier-20261107",
+              "registered_at": "2026-11-07T22:43:40+03:00",
+              "run_dir": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-frontier-20261107/.tmp/self-contained-run",
+              "run_host": "roomhacker-server-100"
+            }
+          },
+          "actor": {
+            "host_id": null,
+            "harness": "codex",
+            "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+            "source": "native_environment"
+          },
+          "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+          "harness": "codex"
+        }
+      ],
+      "depends_on": [],
+      "estimate_minutes": {
+        "minimum": 15.0,
+        "maximum": 15.0
+      },
+      "created_at": "2026-11-07T22:40:41+03:00"
+    },
+    {
+      "id": "H1",
+      "label": "Зафиксировать проверяемый пакет поручения",
+      "status": "queued",
+      "parent": "S1",
+      "description": "Зафиксировать проверяемый пакет поручения. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+      "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+      "owner": "handoff",
+      "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "harness": "codex",
+      "model": "gpt-6.1-sol",
+      "origin": "",
+      "supersedes": [],
+      "progress_events": [
+        {
+          "at": "2026-11-07T22:40:41+03:00",
+          "note": "",
+          "changes": {
+            "label": "Зафиксировать проверяемый пакет поручения",
+            "kind": "task",
+            "status": "queued",
+            "owner": "handoff",
+            "description": "Зафиксировать проверяемый пакет поручения. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+            "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+            "estimate_minutes": 15,
+            "depends_on": [],
+            "parent": "S1",
+            "model": "gpt-6.1-sol"
+          },
+          "actor": {
+            "host_id": null,
+            "harness": "codex",
+            "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+            "source": "native_environment"
+          },
+          "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-11-07T22:43:39+03:00",
+          "note": "Worker handoff registered on lhc/self-contained-handoff-20261107",
+          "changes": {
+            "worker": {
+              "id": "handoff",
+              "branch": "lhc/self-contained-handoff-20261107",
+              "worktree": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107",
+              "registered_at": "2026-11-07T22:43:39+03:00",
+              "run_dir": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/self-contained-run",
+              "run_host": "roomhacker-server-100"
+            }
+          },
+          "actor": {
+            "host_id": null,
+            "harness": "codex",
+            "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+            "source": "native_environment"
+          },
+          "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+          "harness": "codex"
+        }
+      ],
+      "depends_on": [],
+      "estimate_minutes": {
+        "minimum": 15.0,
+        "maximum": 15.0
+      },
+      "created_at": "2026-11-07T22:40:41+03:00"
+    },
+    {
+      "id": "V1",
+      "label": "Показать честные готовность и завершение",
+      "status": "queued",
+      "parent": "S1",
+      "description": "Показать честные готовность и завершение. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+      "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+      "owner": "views",
+      "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "harness": "codex",
+      "model": "gpt-6.1-sol",
+      "origin": "",
+      "supersedes": [],
+      "progress_events": [
+        {
+          "at": "2026-11-07T22:40:42+03:00",
+          "note": "",
+          "changes": {
+            "label": "Показать честные готовность и завершение",
+            "kind": "task",
+            "status": "queued",
+            "owner": "views",
+            "description": "Показать честные готовность и завершение. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+            "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+            "estimate_minutes": 15,
+            "depends_on": [],
+            "parent": "S1",
+            "model": "gpt-6.1-sol"
+          },
+          "actor": {
+            "host_id": null,
+            "harness": "codex",
+            "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+            "source": "native_environment"
+          },
+          "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-11-07T22:43:40+03:00",
+          "note": "Worker views registered on lhc/self-contained-views-20261107",
+          "changes": {
+            "worker": {
+              "id": "views",
+              "branch": "lhc/self-contained-views-20261107",
+              "worktree": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-views-20261107",
+              "registered_at": "2026-11-07T22:43:40+03:00",
+              "run_dir": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-views-20261107/.tmp/self-contained-run",
+              "run_host": "roomhacker-server-100"
+            }
+          },
+          "actor": {
+            "host_id": null,
+            "harness": "codex",
+            "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+            "source": "native_environment"
+          },
+          "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+          "harness": "codex"
+        }
+      ],
+      "depends_on": [],
+      "estimate_minutes": {
+        "minimum": 15.0,
+        "maximum": 15.0
+      },
+      "created_at": "2026-11-07T22:40:42+03:00"
+    },
+    {
+      "id": "F2",
+      "label": "Подключить решение к восстановлению и границе завершения",
+      "status": "queued",
+      "parent": "S1",
+      "description": "Подключить решение к восстановлению и границе завершения. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+      "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+      "owner": "frontier",
+      "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "harness": "codex",
+      "model": "gpt-6.1-sol",
+      "origin": "",
+      "supersedes": [],
+      "progress_events": [
+        {
+          "at": "2026-11-07T22:40:42+03:00",
+          "note": "",
+          "changes": {
+            "label": "Подключить решение к восстановлению и границе завершения",
+            "kind": "task",
+            "status": "queued",
+            "owner": "frontier",
+            "description": "Подключить решение к восстановлению и границе завершения. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+            "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+            "estimate_minutes": 15,
+            "depends_on": [
+              "F1"
+            ],
+            "parent": "S1",
+            "model": "gpt-6.1-sol"
+          },
+          "actor": {
+            "host_id": null,
+            "harness": "codex",
+            "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+            "source": "native_environment"
+          },
+          "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+          "harness": "codex"
+        }
+      ],
+      "depends_on": [
+        "F1"
+      ],
+      "estimate_minutes": {
+        "minimum": 15.0,
+        "maximum": 15.0
+      },
+      "created_at": "2026-11-07T22:40:42+03:00"
+    },
+    {
+      "id": "H2",
+      "label": "Передавать пакет и сохранять связь с попыткой",
+      "status": "queued",
+      "parent": "S1",
+      "description": "Передавать пакет и сохранять связь с попыткой. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+      "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+      "owner": "handoff",
+      "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "harness": "codex",
+      "model": "gpt-6.1-sol",
+      "origin": "",
+      "supersedes": [],
+      "progress_events": [
+        {
+          "at": "2026-11-07T22:40:41+03:00",
+          "note": "",
+          "changes": {
+            "label": "Передавать пакет и сохранять связь с попыткой",
+            "kind": "task",
+            "status": "queued",
+            "owner": "handoff",
+            "description": "Передавать пакет и сохранять связь с попыткой. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+            "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+            "estimate_minutes": 15,
+            "depends_on": [
+              "H1"
+            ],
+            "parent": "S1",
+            "model": "gpt-6.1-sol"
+          },
+          "actor": {
+            "host_id": null,
+            "harness": "codex",
+            "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+            "source": "native_environment"
+          },
+          "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+          "harness": "codex"
+        }
+      ],
+      "depends_on": [
+        "H1"
+      ],
+      "estimate_minutes": {
+        "minimum": 15.0,
+        "maximum": 15.0
+      },
+      "created_at": "2026-11-07T22:40:41+03:00"
+    },
+    {
+      "id": "I1",
+      "label": "Интегрировать и собрать согласованный пакет",
+      "status": "queued",
+      "parent": "S1",
+      "description": "Интегрировать и собрать согласованный пакет. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+      "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+      "owner": "Lead",
+      "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "harness": "codex",
+      "model": "gpt-6.1-sol",
+      "origin": "",
+      "supersedes": [],
+      "progress_events": [
+        {
+          "at": "2026-11-07T22:40:42+03:00",
+          "note": "",
+          "changes": {
+            "label": "Интегрировать и собрать согласованный пакет",
+            "kind": "task",
+            "status": "queued",
+            "owner": "Lead",
+            "description": "Интегрировать и собрать согласованный пакет. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+            "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+            "estimate_minutes": 15,
+            "depends_on": [
+              "H2",
+              "F2",
+              "V1"
+            ],
+            "parent": "S1",
+            "model": "gpt-6.1-sol"
+          },
+          "actor": {
+            "host_id": null,
+            "harness": "codex",
+            "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+            "source": "native_environment"
+          },
+          "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+          "harness": "codex"
+        }
+      ],
+      "depends_on": [
+        "H2",
+        "F2",
+        "V1"
+      ],
+      "estimate_minutes": {
+        "minimum": 15.0,
+        "maximum": 15.0
+      },
+      "created_at": "2026-11-07T22:40:42+03:00"
+    },
+    {
+      "id": "Q1",
+      "label": "Независимый CLI/MCP потребитель после потери контекста",
+      "status": "queued",
+      "parent": "S2",
+      "description": "Независимый CLI/MCP потребитель после потери контекста. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+      "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+      "owner": "Lead",
+      "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "harness": "codex",
+      "model": "gpt-6.1-sol",
+      "origin": "",
+      "supersedes": [],
+      "progress_events": [
+        {
+          "at": "2026-11-07T22:40:43+03:00",
+          "note": "",
+          "changes": {
+            "label": "Независимый CLI/MCP потребитель после потери контекста",
+            "kind": "task",
+            "status": "queued",
+            "owner": "Lead",
+            "description": "Независимый CLI/MCP потребитель после потери контекста. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+            "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+            "estimate_minutes": 15,
+            "depends_on": [
+              "I1"
+            ],
+            "parent": "S2",
+            "model": "gpt-6.1-sol"
+          },
+          "actor": {
+            "host_id": null,
+            "harness": "codex",
+            "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+            "source": "native_environment"
+          },
+          "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+          "harness": "codex"
+        }
+      ],
+      "depends_on": [
+        "I1"
+      ],
+      "estimate_minutes": {
+        "minimum": 15.0,
+        "maximum": 15.0
+      },
+      "created_at": "2026-11-07T22:40:43+03:00"
+    },
+    {
+      "id": "Q2",
+      "label": "Независимый consumer с назначением и возвратом результата",
+      "status": "queued",
+      "parent": "S2",
+      "description": "Независимый consumer с назначением и возвратом результата. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+      "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+      "owner": "Lead",
+      "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "harness": "codex",
+      "model": "gpt-6.1-sol",
+      "origin": "",
+      "supersedes": [],
+      "progress_events": [
+        {
+          "at": "2026-11-07T22:40:43+03:00",
+          "note": "",
+          "changes": {
+            "label": "Независимый consumer с назначением и возвратом результата",
+            "kind": "task",
+            "status": "queued",
+            "owner": "Lead",
+            "description": "Независимый consumer с назначением и возвратом результата. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+            "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+            "estimate_minutes": 15,
+            "depends_on": [
+              "I1"
+            ],
+            "parent": "S2",
+            "model": "gpt-6.1-sol"
+          },
+          "actor": {
+            "host_id": null,
+            "harness": "codex",
+            "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+            "source": "native_environment"
+          },
+          "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+          "harness": "codex"
+        }
+      ],
+      "depends_on": [
+        "I1"
+      ],
+      "estimate_minutes": {
+        "minimum": 15.0,
+        "maximum": 15.0
+      },
+      "created_at": "2026-11-07T22:40:43+03:00"
+    },
+    {
+      "id": "R1",
+      "label": "Review, версия и разрешённая интеграция",
+      "status": "queued",
+      "parent": "S2",
+      "description": "Review, версия и разрешённая интеграция. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+      "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+      "owner": "Lead",
+      "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "harness": "codex",
+      "model": "gpt-6.1-sol",
+      "origin": "",
+      "supersedes": [],
+      "progress_events": [
+        {
+          "at": "2026-11-07T22:40:43+03:00",
+          "note": "",
+          "changes": {
+            "label": "Review, версия и разрешённая интеграция",
+            "kind": "task",
+            "status": "queued",
+            "owner": "Lead",
+            "description": "Review, версия и разрешённая интеграция. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+            "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+            "estimate_minutes": 15,
+            "depends_on": [
+              "Q1",
+              "Q2"
+            ],
+            "parent": "S2",
+            "model": "gpt-6.1-sol"
+          },
+          "actor": {
+            "host_id": null,
+            "harness": "codex",
+            "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+            "source": "native_environment"
+          },
+          "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+          "harness": "codex"
+        }
+      ],
+      "depends_on": [
+        "Q1",
+        "Q2"
+      ],
+      "estimate_minutes": {
+        "minimum": 15.0,
+        "maximum": 15.0
+      },
+      "created_at": "2026-11-07T22:40:43+03:00"
+    },
+    {
+      "id": "MIRROR",
+      "label": "Обновить проекции и проверить реальный план",
+      "status": "queued",
+      "parent": "S2",
+      "description": "Обновить проекции и проверить реальный план. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+      "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+      "owner": "Lead",
+      "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "harness": "codex",
+      "model": "gpt-6.1-sol",
+      "origin": "",
+      "supersedes": [],
+      "progress_events": [
+        {
+          "at": "2026-11-07T22:40:44+03:00",
+          "note": "",
+          "changes": {
+            "label": "Обновить проекции и проверить реальный план",
+            "kind": "task",
+            "status": "queued",
+            "owner": "Lead",
+            "description": "Обновить проекции и проверить реальный план. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+            "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+            "estimate_minutes": 15,
+            "depends_on": [
+              "R1"
+            ],
+            "parent": "S2",
+            "model": "gpt-6.1-sol"
+          },
+          "actor": {
+            "host_id": null,
+            "harness": "codex",
+            "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+            "source": "native_environment"
+          },
+          "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+          "harness": "codex"
+        }
+      ],
+      "depends_on": [
+        "R1"
+      ],
+      "estimate_minutes": {
+        "minimum": 15.0,
+        "maximum": 15.0
+      },
+      "created_at": "2026-11-07T22:40:44+03:00"
+    },
+    {
+      "id": "N100",
+      "label": "Установить и проверить native LHC на server100",
+      "status": "queued",
+      "parent": "S2",
+      "description": "Установить и проверить native LHC на server100. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+      "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+      "owner": "Lead",
+      "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "harness": "codex",
+      "model": "gpt-6.1-sol",
+      "origin": "",
+      "supersedes": [],
+      "progress_events": [
+        {
+          "at": "2026-11-07T22:40:43+03:00",
+          "note": "",
+          "changes": {
+            "label": "Установить и проверить native LHC на server100",
+            "kind": "task",
+            "status": "queued",
+            "owner": "Lead",
+            "description": "Установить и проверить native LHC на server100. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+            "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+            "estimate_minutes": 15,
+            "depends_on": [
+              "R1"
+            ],
+            "parent": "S2",
+            "model": "gpt-6.1-sol"
+          },
+          "actor": {
+            "host_id": null,
+            "harness": "codex",
+            "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+            "source": "native_environment"
+          },
+          "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+          "harness": "codex"
+        }
+      ],
+      "depends_on": [
+        "R1"
+      ],
+      "estimate_minutes": {
+        "minimum": 15.0,
+        "maximum": 15.0
+      },
+      "created_at": "2026-11-07T22:40:43+03:00"
+    },
+    {
+      "id": "N199",
+      "label": "Проверить и обновить второй ранее настроенный native host",
+      "status": "queued",
+      "parent": "S2",
+      "description": "Проверить и обновить второй ранее настроенный native host. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+      "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+      "owner": "Lead",
+      "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "harness": "codex",
+      "model": "gpt-6.1-sol",
+      "origin": "",
+      "supersedes": [],
+      "progress_events": [
+        {
+          "at": "2026-11-07T22:40:44+03:00",
+          "note": "",
+          "changes": {
+            "label": "Проверить и обновить второй ранее настроенный native host",
+            "kind": "task",
+            "status": "queued",
+            "owner": "Lead",
+            "description": "Проверить и обновить второй ранее настроенный native host. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+            "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+            "estimate_minutes": 15,
+            "depends_on": [
+              "R1"
+            ],
+            "parent": "S2",
+            "model": "gpt-6.1-sol"
+          },
+          "actor": {
+            "host_id": null,
+            "harness": "codex",
+            "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+            "source": "native_environment"
+          },
+          "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+          "harness": "codex"
+        }
+      ],
+      "depends_on": [
+        "R1"
+      ],
+      "estimate_minutes": {
+        "minimum": 15.0,
+        "maximum": 15.0
+      },
+      "created_at": "2026-11-07T22:40:44+03:00"
+    },
+    {
+      "id": "FINAL",
+      "label": "Зафиксировать принятую поставку и остатки внешнего gate",
+      "status": "queued",
+      "parent": "S2",
+      "description": "Зафиксировать принятую поставку и остатки внешнего gate. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+      "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+      "owner": "Lead",
+      "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "harness": "codex",
+      "model": "gpt-6.1-sol",
+      "origin": "",
+      "supersedes": [],
+      "progress_events": [
+        {
+          "at": "2026-11-07T22:40:44+03:00",
+          "note": "",
+          "changes": {
+            "label": "Зафиксировать принятую поставку и остатки внешнего gate",
+            "kind": "task",
+            "status": "queued",
+            "owner": "Lead",
+            "description": "Зафиксировать принятую поставку и остатки внешнего gate. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+            "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+            "estimate_minutes": 15,
+            "depends_on": [
+              "N100",
+              "N199",
+              "MIRROR"
+            ],
+            "parent": "S2",
+            "model": "gpt-6.1-sol"
+          },
+          "actor": {
+            "host_id": null,
+            "harness": "codex",
+            "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+            "source": "native_environment"
+          },
+          "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+          "harness": "codex"
+        }
+      ],
+      "depends_on": [
+        "N100",
+        "N199",
+        "MIRROR"
+      ],
+      "estimate_minutes": {
+        "minimum": 15.0,
+        "maximum": 15.0
+      },
+      "created_at": "2026-11-07T22:40:44+03:00"
+    }
+  ],
+  "leaf_count": 13,
+  "milestones": [
+    {
+      "id": "S1",
+      "label": "Исправить управление поручением и целью",
+      "status": "queued",
+      "children": [
+        "F1",
+        "F2",
+        "H1",
+        "H2",
+        "I1",
+        "V1"
+      ],
+      "estimate_minutes": {
+        "minimum": 45.0,
+        "maximum": 45.0
+      },
+      "done": 0,
+      "total": 6
+    },
+    {
+      "id": "S2",
+      "label": "Проверить потребителей и выпустить версию",
+      "status": "queued",
+      "children": [
+        "FINAL",
+        "MIRROR",
+        "N100",
+        "N199",
+        "Q1",
+        "Q2",
+        "R1"
+      ],
+      "estimate_minutes": {
+        "minimum": 45.0,
+        "maximum": 45.0
+      },
+      "done": 0,
+      "total": 7
+    }
+  ],
+  "plan_origin": {
+    "at": "2026-11-07T22:40:41+03:00",
+    "source": "leaf_created_at",
+    "leaf_id": "S1",
+    "recorded_at": "2026-11-07T19:40:41.301551+00:00"
+  }
+}
