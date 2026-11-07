@@ -18,3 +18,15 @@ F/V source suite: 34 passed in 1.16s (evidence/integration/fv-source-green.log),
 H final c31f702b интегрирован. Source/package fixes b102b250 опубликованы. Первый full validator RED: 9 failed, 1095 passed, 7 skipped. После исправлений и regeneration full required validator GREEN: 1107 passed, 7 skipped in 109.53s; package validators и block adapter PASS. См. integration-fixes.md и evidence/integration/validator-fixed.log.
 
 Canonical bug_check: 15 total, 0 unresolved. Семь skipped проверок не заявляются PASS. Origin/main при свежем fetch остаётся 2988f0f8483a2a33a6fb762c86e597513b445d1a, VERSION 1.17.1. Version guard выбирает ровно следующий compatible release 1.18.0; VERSION и manifest parity подготовлены, финальный validator1.18 запущен. Заморозка ещё не заявлена до результата и обработки конкретного native-state диагноза. Shared install/main/tag/runtime не выполнялись.
+
+## Текущее состояние после review findings
+
+Version snapshot: 6544797b0435c30ed4b8329cb1ededcfbe00d468, опубликован; VERSION1.18.0, target2988f0f8/1.17.1. Validator1.18: 1107passed,7skipped in116.64s; version/projection parity и guard PASS. Native isolated metadata/package-bytes readback PASS, 11 hooks untrusted; observed lifecycle/LLM acceptance NOT_RUN.
+
+R3 sanitizer совпал с B081d703e49df496a835c, source fix был включён вb102b250. По поручению добавлен полный capture/replica/catalog roundtrip с privacy-negative, RED на старом sanitizer и GREEN на текущем. R3-roundtrip-result.md.
+
+Final candidate NOT_FROZEN. Конкретная зависимость: новый H tip с R1/R2 P1, затем scoped integration/regenerate/full validator и точный frozen SHA для Reviewer/consumer. H bootstrap source diagnosis принадлежит назначенному H operator, не присваивается I1.
+
+Parent delivery gate exit2: dirty canonical task metadata/evidence и root downloaded_files/dashboard.lock deletion; сохранены, не staged/не восстановлены. Worker commit не переносил lock deletion. Полная чистота root не заявлена. Имеющиеся product source/package bytes проверены отдельно от этого ownership gate.
+
+Main merge, tag, shared package/trust/mirror/runtime mutation не выполнялись. Чужие Q1/REVIEW/H records не менялись и не публиковались I1.

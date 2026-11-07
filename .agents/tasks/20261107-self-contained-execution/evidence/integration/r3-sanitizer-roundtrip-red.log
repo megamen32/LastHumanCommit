@@ -1,0 +1,34 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+____________ test_capture_changes_when_bound_goal_evidence_changes _____________
+
+fixture = (PosixPath('/tmp/pytest-of-roomhacker/pytest-101342/test_capture_changes_when_boun0/roots/plan'), PosixPath('/tmp/pyte...a_dir': '/tmp/pytest-of-roomhacker/pytest-101342/test_capture_changes_when_boun0/replica', 'listen': '127.0.0.1', ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x72a7c63859c0>
+
+    def test_capture_changes_when_bound_goal_evidence_changes(fixture, monkeypatch):
+        plan, client, cfg = fixture
+        leaves.update_leaf(plan, 'A', {'status': 'done'})
+        mirror.register(plan, client)
+        projection = {'goal_status': 'unaccepted', 'fingerprint': 'a' * 64,
+                      'source': {'kind': 'native_outcome', 'harness': 'codex', 'session_id': 'lead',
+                                 'outcome_id': 'goal', 'source_fingerprint': 'b' * 64,
+                                 'private_payload': 'PRIVATE-SOURCE'},
+                      'decision': {'evidence': 'PRIVATE-DECISION'}}
+        monkeypatch.setattr(leaves, 'goal_control', lambda _plan: copy.deepcopy(projection))
+        first = mirror.capture(plan)
+        replica = mirror.Replica(cfg)
+        replica.ingest(copy.deepcopy(first['pending']))
+        assert 'data-state="awaiting"' in replica.dashboard()
+        projection.update(goal_status='accepted', fingerprint='c' * 64)
+        projection['source']['source_fingerprint'] = 'd' * 64
+        second = mirror.capture(plan)
+        assert second['seq'] == first['seq'] + 1
+        replica.ingest(copy.deepcopy(second['pending']))
+        page = replica.dashboard()
+>       assert 'data-state="completed"' in page
+E       assert 'data-state="completed"' in '<!doctype html><html lang="ru"><head><meta charset="utf-8">\n<meta name="viewport" content="width=device-width,initia...\nif(/^https?:$/.test(location.protocol))setInterval(refresh,15000);setInterval(times,60000);\n</script></body></html>'
+
+tests/test_plan_mirror.py:87: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_plan_mirror.py::test_capture_changes_when_bound_goal_evidence_changes
+1 failed in 0.66s

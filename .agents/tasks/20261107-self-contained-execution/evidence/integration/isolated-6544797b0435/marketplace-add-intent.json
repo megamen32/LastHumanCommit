@@ -1,0 +1,12 @@
+{
+  "argv": [
+    "codex",
+    "plugin",
+    "marketplace",
+    "add",
+    "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/integration-01a1b7ae/isolated-6544797b0435/marketplace",
+    "--json"
+  ],
+  "candidate": "6544797b0435c30ed4b8329cb1ededcfbe00d468",
+  "isolated_codex_home": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/integration-01a1b7ae/isolated-6544797b0435/codex-home"
+}

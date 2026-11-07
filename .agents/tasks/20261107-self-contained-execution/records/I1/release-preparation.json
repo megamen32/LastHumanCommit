@@ -4,14 +4,15 @@
   "effective_pr_stage": "off",
   "scripts": {
     ".tmp/integration-01a1b7ae/check-candidate.py": "6b4f8e0fdfe757e2117240d2e12e7ed9ca518cfc0ff0192fbd7d898b98da7d3d",
-    ".tmp/integration-01a1b7ae/install-isolated.py": "d879307aa0d0aba919c7e19add9fb762000debd694ace8c126a7df117f9140de"
+    ".tmp/integration-01a1b7ae/install-isolated.py": "cb2af41a30b25961235e38ba27a2d19eaa3933b8f769677fb06877c38de8c951"
   },
-  "script_execution": "prepared and syntax-checked only; no install/marketplace/runtime mutation",
+  "script_execution": "isolated installer executed once for version snapshot 6544797b; package/version/bytes/hooks definitions/MCP metadata passed, all hooks untrusted, no trust/model/session mutation, not consumer acceptance",
   "official_reference": "https://developers.openai.com/plugins/build/plugins",
   "version_order": "H final + combined source GREEN; fetch main; version guard; compatible Y bump (1.18.0 if main=1.17.1); scripts/sync_version.py; regenerate; full validator/parity; publish frozen release candidate SHA; independent consumer/reviewer gates before main/shared install",
   "isolated_install": "git archive exact frozen native package; fresh CODEX_HOME; unique local marketplace; native plugin add once; list+version+full-byte equality+hooks/list+MCP initialize/tools/list; no auth copied; no trust mutation; no model turns",
   "shared_release": "not executed; requires verified lease owner/token/fence/CAS/finally",
   "preliminary_reader": "Q1 preflight read only; preliminary A/B goal-contract consumer is independent source evidence, not installed acceptance",
   "infra_mirror": "HEAD=origin/main=remote main 1cb44b16d97c35db8673e295869a6d8454079fde; source instructions verified, no infra edits",
-  "isolated_native_route": "codex --no-daemon app-server --stdio; exact full pluginId name@marketplace from observed Codex 0.167 schema"
+  "isolated_native_route": "codex --no-daemon app-server --stdio; exact full pluginId name@marketplace from observed Codex 0.167 schema",
+  "release_candidate_status": "NOT_FROZEN: await H R1/R2 final tip, merge, regenerate/full validator; reviewer final approve exact next frozen SHA"
 }

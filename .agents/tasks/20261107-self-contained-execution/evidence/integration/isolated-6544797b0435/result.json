@@ -1,0 +1,8 @@
+{
+  "status": "ISOLATED_INSTALL_READBACK_PASS",
+  "candidate": "6544797b0435c30ed4b8329cb1ededcfbe00d468",
+  "version": "1.18.0",
+  "installed_root": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/integration-01a1b7ae/isolated-6544797b0435/codex-home/plugins/cache/lhc-candidate-6544797b0435/last-human-commit/1.18.0",
+  "native_llm_turn_proven": false,
+  "physical_parent_wake_proven": false
+}
