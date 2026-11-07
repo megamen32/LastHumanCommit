@@ -1892,6 +1892,21 @@ def overrun(leaf: dict, now=None, fallback_start=None):
     return None
 
 
+def mutation_actor(actor=None):
+    """Internal request-local MCP attribution handoff, never an authority grant."""
+    context = os.environ.get("LHC_MCP_ACTOR_CONTEXT")
+    if context is not None:
+        try:
+            parsed = json.loads(context)
+            parsed = assignments.validate_actor(parsed)
+            if parsed["source"] not in {"mcp_metadata", "declared", "unknown"}:
+                raise ValueError("invalid request provenance")
+            return assignments.ActorRef(parsed)
+        except (ValueError, TypeError):
+            return assignments.resolve_actor(environ={})
+    return assignments.resolve_actor(actor)
+
+
 def update_leaf(plan_dir: Path, leaf_id: str, fields: dict, *, create=False,
                 note=None, expected_hash=None, actor=None, assignment_op=None) -> dict:
     """Serialized read/merge/validate/replace; stale optimistic writes fail."""
@@ -1901,7 +1916,7 @@ def update_leaf(plan_dir: Path, leaf_id: str, fields: dict, *, create=False,
         raise LeafError("fields: объект; историю меняет только progress")
     if set(fields) & {"assignment", "assignment_history"}:
         raise LeafError("use assign_leaf/transition_leaf to preserve assignment history")
-    who = assignments.resolve_actor(actor)
+    who = mutation_actor(actor)
     path = Path(plan_dir) / LEAVES_DIRNAME / (leaf_id + ".json")
     with file_lock(Path(plan_dir) / ".lhc-leaves.lock"):
         if path.is_symlink():
@@ -1935,9 +1950,19 @@ def update_leaf(plan_dir: Path, leaf_id: str, fields: dict, *, create=False,
                 if previous is not None:
                     history.append(previous)
                 merged["assignment"], merged["assignment_history"] = current, history
-            elif op["operation"] == "transition":
+            elif op["operation"] in {"transition", "admit"}:
                 if "assignment" not in raw:
                     raise LeafError("leaf has no explicit assignment")
+                if raw["assignment"].get("attempt_id") != op["attempt_id"]:
+                    raise LeafError("assignment_attempt_mismatch")
+                if op["operation"] == "admit":
+                    # One plan lock covers dependency/capacity admission and durable intent.
+                    from lhc_readiness import evaluate
+                    tasks = collect_leaves(plan_dir)
+                    readiness = evaluate(tasks, plan_metadata(plan_dir).get("slots"))
+                    admitted = readiness["by_id"].get(leaf_id, {})
+                    if admitted.get("dispatchable") is not True:
+                        raise LeafError("dispatch_not_admitted:" + str(admitted.get("reason_code", "leaf_unknown")))
                 merged["assignment"] = assignments.transition(
                     raw["assignment"], op["state"], attempt_id=op["attempt_id"],
                     receipt=op.get("receipt"), actor=who)
@@ -2021,6 +2046,13 @@ def assign_leaf(plan_dir, leaf_id, assignment, actor=None, expected_hash=None):
     """Atomically declare a new execution attempt without claiming native start."""
     return update_leaf(plan_dir, leaf_id, {}, actor=actor, expected_hash=expected_hash,
                        assignment_op={"operation": "assign", "assignment": assignment})
+
+
+def admit_leaf(plan_dir, leaf_id, attempt_id, receipt, actor=None, expected_hash=None):
+    """Atomically gate real submission and persist its intent before network I/O."""
+    return update_leaf(plan_dir, leaf_id, {}, actor=actor, expected_hash=expected_hash,
+                       assignment_op={"operation": "admit", "attempt_id": attempt_id,
+                                      "state": "dispatching", "receipt": receipt})
 
 
 def transition_leaf(plan_dir, leaf_id, attempt_id, state, receipt=None, actor=None,
@@ -2191,7 +2223,7 @@ def update_plan(plan_dir: Path, fields: Optional[dict] = None, revision: Optiona
         merged = {**raw, **fields}
         if revision is not None:
             history = merged.get("revisions") if isinstance(merged.get("revisions"), list) else []
-            row = {"at": stamp, "reason": revision["reason"].strip()}
+            row = {"at": stamp, "reason": revision["reason"].strip(), "actor": mutation_actor()}
             if str(revision.get("summary") or "").strip():
                 row["summary"] = str(revision["summary"]).strip()
             merged["revisions"] = [*history, row]
@@ -2383,6 +2415,21 @@ def main(argv: Optional[list[str]] = None) -> int:
         edit.add_argument("--fields", default="{}", help="JSON object")
         edit.add_argument("--expected-hash")
         edit.add_argument("--note")
+        edit.add_argument("--actor", help="Declared ref JSON")
+    for name in ("assign-leaf", "dispatch-leaf", "reconcile-leaf", "accept-leaf"):
+        operation = sub.add_parser(name)
+        operation.add_argument("plan_dir", type=Path)
+        operation.add_argument("leaf_id")
+        operation.add_argument("--expected-hash")
+        operation.add_argument("--actor", help="Declared ref JSON; never native caller metadata")
+        if name == "assign-leaf":
+            operation.add_argument("--assignment", required=True, help="Explicit Assignment v1 JSON")
+        else:
+            operation.add_argument("--attempt-id", required=True)
+        if name == "dispatch-leaf":
+            operation.add_argument("--message", required=True)
+        if name == "accept-leaf":
+            operation.add_argument("--result", required=True)
     show = sub.add_parser("show", help="where the plan is: done leaves with results, current, next, overruns")
     show.add_argument("plan_dir", type=Path)
     show.add_argument("--current", action="append", default=[], help="leaf id of this session (repeatable)")
@@ -2450,10 +2497,31 @@ def main(argv: Optional[list[str]] = None) -> int:
             except lhc_plan_mirror.ActivationError as error:
                 raise LeafError(str(error)) from None
             print(json.dumps(result, ensure_ascii=False))
+        elif args.command in ("assign-leaf", "dispatch-leaf", "reconcile-leaf", "accept-leaf"):
+            actor = json.loads(args.actor) if args.actor else None
+            if args.command == "assign-leaf":
+                result = assign_leaf(args.plan_dir, args.leaf_id, json.loads(args.assignment),
+                                     actor=actor, expected_hash=args.expected_hash)
+            elif args.command == "accept-leaf":
+                result = transition_leaf(args.plan_dir, args.leaf_id, args.attempt_id, "accepted",
+                                         receipt={"result": args.result}, actor=actor,
+                                         expected_hash=args.expected_hash)
+            else:
+                import lhc_execution
+                operation = (lhc_execution.dispatch_leaf if args.command == "dispatch-leaf"
+                             else lhc_execution.reconcile_leaf)
+                positional = [args.plan_dir, args.leaf_id, args.attempt_id]
+                if args.command == "dispatch-leaf":
+                    positional.append(args.message)
+                result = operation(*positional, actor=mutation_actor(actor),
+                                   expected_hash=args.expected_hash)
+            print(json.dumps(result, ensure_ascii=False))
+            print(plan_state(args.plan_dir))
         elif args.command in ("create-leaf", "update-leaf", "progress"):
             result = update_leaf(args.plan_dir, args.leaf_id, json.loads(args.fields),
                                  create=args.command == "create-leaf", note=args.note,
-                                 expected_hash=args.expected_hash)
+                                 expected_hash=args.expected_hash,
+                                 actor=json.loads(args.actor) if args.actor else None)
             build_graph(args.plan_dir)
             print(json.dumps(result, ensure_ascii=False))
             print(plan_state(args.plan_dir))
@@ -2492,7 +2560,7 @@ def main(argv: Optional[list[str]] = None) -> int:
                 sys.stdout.write(block)
         else:
             return check_plan(args.plan_dir, handoff=args.handoff)
-    except (LeafError, OSError, json.JSONDecodeError) as error:
+    except (LeafError, ValueError, OSError, json.JSONDecodeError) as error:
         print(f"LHC: {error}", file=sys.stderr)
         plan_dir = getattr(args, "plan_dir", None)
         if plan_dir is not None and (Path(plan_dir) / LEAVES_DIRNAME).is_dir():
