@@ -326,3 +326,34 @@ never the long-lived server's session. The decision records evidence, action,
 owner and uncertainty; external waits also require a resume condition, and a
 human stop requires an existing observed stop. It is not an automatic dispatch,
 new scheduler, or authority to override STOP, quota or UNKNOWN/no-replay gates.
+
+
+### Activation does not transfer an earlier acceptance
+
+An activation or `bind-plan` selects a plan; it does not assess its goal. An
+existing matching plan/outcome binding keeps its exact acceptance proof on a
+repeat activation or ordinary progress update. Selecting another plan, or a
+changed semantic scope, never creates a new acceptance fingerprint from the
+previous outcome's COMPLETE verdict. The previous binding and evidence remain
+in the private native state; a tentative `plan_binding_request` records the new
+selection when a prior binding exists. A private `plan_binding_history` retains
+the earlier binding/outcome snapshot before its contract can change.
+
+Continue the ordinary workflow: activate the selected plan, confirm its concrete
+contract with the existing outcome `contract` command, perform the work, and
+submit the normal `review`. Contract confirmation consumes that selection under
+the existing native-state lock, refreshes the scope binding and requires fresh
+assessment of completed stages for a different plan/scope. It does not accept
+the goal. Successful normal review can then accept the new goal without a
+second manual bind command. A review before the selected contract is confirmed
+cannot stamp acceptance onto the tentative binding. HumanStop and uncertain
+external effects retain their existing controls.
+
+The scope fingerprint includes `goal`, `deliverable`, `business_result`,
+`business_results` and canonical `acceptance_scenarios`, merging the supported
+singular `acceptance_scenario` alias as the plan schema does. Existing legacy
+`acceptance`, `scope` and `constraints` inputs remain scope-bearing. Operational
+progress, timestamps, capacity and estimates do not change that fingerprint.
+A substantive requirement change invalidates earlier acceptance even when the
+short goal text is unchanged. The public graph does not carry private binding
+history or native evidence snapshots.
