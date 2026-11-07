@@ -1155,6 +1155,25 @@ def split_milestones(tasks, sources=None, strict=True):
     return rest, milestones
 
 
+def _goal_control_adapter():
+    try:
+        import lhc_plan_control
+    except ModuleNotFoundError as error:
+        if error.name != "lhc_plan_control":
+            raise
+        return None
+    return lhc_plan_control
+
+
+def goal_control(plan_dir: Path) -> dict[str, Any]:
+    """Read current native control; graph projections are never authority."""
+    adapter = _goal_control_adapter()
+    if adapter is None:
+        return {"goal_status": "unknown", "frontier": "unknown", "next_decision": "none",
+                "fingerprint": None, "reason": "native_control_adapter_unavailable"}
+    return adapter.resolve_control(Path(plan_dir).resolve())
+
+
 def build_document(plan_dir: Path) -> dict[str, Any]:
     """The graph document of a plan, collected from its leaf files."""
 
@@ -1185,6 +1204,7 @@ def build_document(plan_dir: Path) -> dict[str, Any]:
         "schema_version": 2,
         "title": str(metadata.get("title") or plan_dir.name),
         "goal": str(metadata.get("goal") or ""),
+        "goal_control": goal_control(plan_dir),
         "business_result": business_result,
         "business_results": results,
         "acceptance_scenarios": list(metadata.get("acceptance_scenarios") or []),
@@ -2196,7 +2216,11 @@ def plan_summary(plan_dir: Path, current: Any = ()) -> list[str]:
     rows, milestones = split_milestones(_leaf_rows(plan_dir), strict=False)
     current = [str(item) for item in current]
     explicit = [leaf for leaf in rows if isinstance(leaf.get("assignment"), dict)]
-    lines: list[str] = [plan_intent(plan_metadata(plan_dir))]
+    control = goal_control(plan_dir)
+    lines: list[str] = [plan_intent(plan_metadata(plan_dir)),
+                        f"goal={control.get('goal_status', 'unknown')}, "
+                        f"frontier={control.get('frontier', 'unknown')}, "
+                        f"next_decision={control.get('next_decision', 'none')}"]
     pending_stages = undecomposed_stages(milestones)
     if pending_stages:
         lines.append("Undecomposed stages: " + ", ".join(pending_stages))
@@ -2249,7 +2273,11 @@ def plan_state(plan_dir: Path) -> str:
     decision = module.evaluate(rows, slots=metadata.get("slots")) if module else None
     done = sum(1 for value in status.values() if value == "done")
     running = [str(leaf.get("id")) for leaf in rows if leaf.get("status") == "running"]
-    parts = [f"Plan {Path(plan_dir).name}: {done}/{len(rows)} done", plan_intent(metadata)]
+    control = goal_control(plan_dir)
+    parts = [f"Plan {Path(plan_dir).name}: {done}/{len(rows)} done", plan_intent(metadata),
+             f"goal={control.get('goal_status', 'unknown')}, "
+             f"frontier={control.get('frontier', 'unknown')}, "
+             f"next_decision={control.get('next_decision', 'none')}"]
     pending_stages = undecomposed_stages(milestones)
     if pending_stages:
         parts.append("undecomposed stages: " + ", ".join(pending_stages))
@@ -2508,6 +2536,11 @@ def main(argv: Optional[list[str]] = None) -> int:
     activate.add_argument("--harness", help="actual harness when it cannot be inferred as Codex")
     activate.add_argument("--owner", help="actual leaf owner; defaults to the current OS user")
     activate.add_argument("--note", help="progress event note")
+    control = sub.add_parser("goal-control", help="read live native goal control or record an explicit frontier decision")
+    control.add_argument("plan_dir", type=Path)
+    control.add_argument("--session")
+    control.add_argument("--harness")
+    control.add_argument("--decision", help="explicit frontier decision JSON object")
     for name in ("create-leaf", "update-leaf", "progress"):
         edit = sub.add_parser(name)
         edit.add_argument("plan_dir", type=Path)
@@ -2603,6 +2636,27 @@ def main(argv: Optional[list[str]] = None) -> int:
                 )
             except lhc_plan_mirror.ActivationError as error:
                 raise LeafError(str(error)) from None
+            adapter = _goal_control_adapter()
+            result["goal_binding"] = (adapter.bind_session_plan(
+                args.plan_dir, result["session"], args.plan_dir, runtime=result["harness"])
+                if adapter else {"binding": "unknown", "reason": "native_control_adapter_unavailable"})
+            print(json.dumps(result, ensure_ascii=False))
+        elif args.command == "goal-control":
+            if args.decision is None:
+                result = goal_control(args.plan_dir)
+            else:
+                adapter = _goal_control_adapter()
+                if adapter is None:
+                    raise LeafError("native control adapter unavailable")
+                session = args.session or os.environ.get("CODEX_THREAD_ID")
+                if not session:
+                    raise LeafError("explicit native session required for a frontier decision")
+                harness = args.harness or ("codex" if session == os.environ.get("CODEX_THREAD_ID") else None)
+                decision = json.loads(args.decision)
+                if not isinstance(decision, dict):
+                    raise LeafError("frontier decision must be an object")
+                result = adapter.record_session_decision(args.plan_dir, session, args.plan_dir,
+                                                         decision, runtime=harness)
             print(json.dumps(result, ensure_ascii=False))
         elif args.command in ("assign-leaf", "dispatch-leaf", "reconcile-leaf", "accept-leaf"):
             try:

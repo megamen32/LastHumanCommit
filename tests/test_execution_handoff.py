@@ -47,6 +47,8 @@ class Transport:
 
 @pytest.fixture
 def plan(tmp_path, monkeypatch):
+    tmp_path = tmp_path / "fixture-task"
+    tmp_path.mkdir()
     monkeypatch.delenv("CODEX_THREAD_ID", raising=False)
     monkeypatch.delenv("LHC_MCP_ACTOR_CONTEXT", raising=False)
     monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
@@ -199,3 +201,181 @@ def test_oversize_packet_is_actionable_without_truncating_or_sending(plan, overs
     with pytest.raises(ValueError, match="too_large:limit_bytes"):
         ex.dispatch_leaf(plan, "L1", "attempt", message, transport=transport)
     assert not transport.sent
+
+def test_private_snapshot_self_excludes_from_git_in_any_plan_location(plan):
+    import subprocess
+    subprocess.run(["git", "init", "-q", str(plan)], check=True, capture_output=True)
+    (plan / "briefs/L1.md").write_text(BRIEF)
+    result = ex.dispatch_leaf(plan, "L1", "attempt", "private caller input", transport=Transport())
+    snapshot = result["dispatch"]["handoff"]["record_path"]
+    ignored = subprocess.run(["git", "check-ignore", "--no-index", snapshot],
+                             cwd=plan, capture_output=True, text=True)
+    assert ignored.returncode == 0, "private handoff must exclude itself without root ignore changes"
+
+def test_graph_and_show_derive_control_from_live_adapter_not_cached_claim(plan, monkeypatch):
+    import types
+    control = {"goal_status": "unaccepted", "frontier": "exhausted", "next_decision": "required",
+               "fingerprint": "fixture-live-fingerprint", "reason": "bound_native_outcome"}
+    seen = []
+    def resolve(path):
+        seen.append(str(Path(path).resolve()))
+        return dict(control)
+    monkeypatch.setitem(sys.modules, "lhc_plan_control", types.SimpleNamespace(resolve_control=resolve))
+    (plan / "plan.graph.json").write_text(json.dumps({"goal_control": {"goal_status": "accepted"}}))
+    document = pj.build_document(plan)
+    assert document["goal_control"] == control
+    assert "goal=unaccepted" in pj.plan_state(plan)
+    assert "next_decision=required" in "\\n".join(pj.plan_summary(plan))
+    assert seen and all(value == str(plan.resolve()) for value in seen)
+
+
+def test_explicit_cli_activation_binds_existing_outcome_with_actual_selected_identity(plan, monkeypatch, capsys):
+    import types
+    called = []
+    def bind(path, session, cwd, runtime=None):
+        called.append((str(Path(path).resolve()), session, runtime))
+        return {"binding": "unknown", "reason": "native_outcome_missing"}
+    monkeypatch.setitem(sys.modules, "lhc_plan_control", types.SimpleNamespace(bind_session_plan=bind))
+    result = pj.main(["activate", str(plan), "L1", "--session", "lead", "--harness", "codex", "--owner", "fixture"])
+    assert result == 0
+    assert called == [(str(plan.resolve()), "lead", "codex")]
+    assert "native_outcome_missing" in capsys.readouterr().out
+
+
+def test_mcp_exposes_live_control_and_explicit_decision_with_native_actor(monkeypatch, plan):
+    import importlib
+    mcp = importlib.import_module("lhc_plan_mcp")
+    names = {tool["name"] for tool in mcp.TOOLS}
+    assert {"read_goal_control", "record_frontier_decision"} <= names
+    calls = []
+    monkeypatch.setattr(mcp, "_plan_cli", lambda arguments, operation, *extra: calls.append((operation, extra)) or {})
+    token = mcp._request_actor.set({"source": "mcp_metadata", "harness": "codex", "session_id": "lead"})
+    try:
+        mcp.record_frontier_decision({"plan_dir": str(plan),
+            "decision": {"decision": "need_fact", "action_kind": "research", "action": "inspect fixture",
+                         "owner": "lead", "evidence": "missing proof", "uncertainty": "fixture not run"}})
+    finally:
+        mcp._request_actor.reset(token)
+    assert calls[0][0] == "goal-control" and "--decision" in calls[0][1]
+    assert "--session" in calls[0][1] and "lead" in calls[0][1]
+
+
+@pytest.mark.parametrize("linked", ["directory", "file"])
+def test_brief_symlinks_are_rejected_without_native_io(plan, linked):
+    outside = plan.parent / "outside"
+    outside.mkdir()
+    (outside / "L1.md").write_text(BRIEF)
+    if linked == "directory":
+        (plan / "briefs").rmdir()
+        (plan / "briefs").symlink_to(outside, target_is_directory=True)
+    else:
+        (plan / "briefs/L1.md").symlink_to(outside / "L1.md")
+    transport = Transport()
+    with pytest.raises(ValueError, match="brief"):
+        ex.dispatch_leaf(plan, "L1", "attempt", "repair now", transport=transport)
+    assert not transport.sent
+    assert read(plan)["assignment"]["state"] == "assigned"
+
+
+def test_fifo_brief_is_rejected_without_waiting_for_writer(plan):
+    import os
+    import subprocess
+    os.mkfifo(plan / "briefs/L1.md")
+    code = """import json, sys
+from pathlib import Path
+sys.path.insert(0, sys.argv[1])
+import lhc_handoff
+plan = Path(sys.argv[2])
+assignment = json.loads((plan / 'leaves/L1.json').read_text())['assignment']
+try:
+    lhc_handoff.read_brief(plan, 'L1', assignment, {})
+except ValueError as error:
+    print(error)
+else:
+    raise SystemExit('non-regular brief accepted')
+"""
+    try:
+        run = subprocess.run([sys.executable, "-c", code, str(TOOLS), str(plan)],
+                             capture_output=True, text=True, timeout=3)
+    except subprocess.TimeoutExpired:
+        pytest.fail("FIFO brief blocks admission before any native I/O")
+    assert run.returncode == 0 and "brief" in run.stdout
+    assert read(plan)["assignment"]["state"] == "assigned"
+
+
+@pytest.mark.parametrize("nested", [False, True])
+def test_duplicate_json_contract_keys_fail_closed(plan, nested):
+    import lhc_handoff
+    fields = lhc_handoff._fields(BRIEF)
+    fields["acceptance"] = {"output": "result", "destination": "records/L1/result.md", "checks": "run fixture"}
+    if nested:
+        fields["owner/session"] = read(plan)["assignment"]["executor"]
+        brief = json.dumps(fields).replace('"session_id": "worker"',
+                                          '"session_id": "different", "session_id": "worker"')
+    else:
+        brief = json.dumps(fields).replace('"leaf_id": "L1"', '"leaf_id": "OTHER", "leaf_id": "L1"')
+    (plan / "briefs/L1.md").write_text(brief)
+    transport = Transport()
+    with pytest.raises(ValueError, match="brief_duplicate"):
+        ex.dispatch_leaf(plan, "L1", "attempt", "repair now", transport=transport)
+    assert not transport.sent
+
+
+def test_task_identity_is_canonical_directory_not_optional_metadata(plan):
+    (plan / "briefs/L1.md").write_text(BRIEF.replace("fixture-task", "foreign-task"))
+    assert "task_id" not in pj.plan_metadata(plan)
+    transport = Transport()
+    with pytest.raises(ValueError, match="brief_task_mismatch"):
+        ex.dispatch_leaf(plan, "L1", "attempt", "repair now", transport=transport)
+    assert not transport.sent
+
+
+def test_public_cli_and_stdio_share_existing_native_control(plan):
+    import os
+    import subprocess
+    pytest.importorskip("lhc_plan_control")
+    import lhc_time_guard as guard
+    target = plan / "native-control"
+    (target / "leaves").mkdir(parents=True)
+    (target / "plan.json").write_text(json.dumps({"goal": "Deliver fixture", "deliverable": "implementation"}))
+    (target / "leaves/G1.json").write_text(json.dumps({"id": "G1", "label": "Fixture", "status": "queued"}))
+    outcome = {"id": "fixture-goal", "task_class": "fullcycle", "contract_confirmed": True,
+               "original_goal": "Deliver fixture", "latest_correction": "Deliver fixture",
+               "owner": {"harness": "codex", "session_id": "lead"}, "cwd": str(target),
+               "canary": {"scenario": "Run fixture", "target": "isolated", "expected": "Fixture result"},
+               "stages": {key: {"status": "pending", "basis": "fixture not accepted"}
+                          for key in ("technical", "deploy", "consumer", "publication", "integration")}}
+    state_path = guard.learning_path(target, "codex", "lead")
+    guard.write_state(state_path, {"business": {"outcome": outcome}})
+    def cli(*args):
+        run = subprocess.run([sys.executable, str(TOOLS / "lhc_plan_json.py"), *map(str, args)],
+                             capture_output=True, text=True, timeout=20)
+        assert run.returncode == 0, run.stderr
+        return json.loads(run.stdout)
+    activated = cli("activate", target, "G1", "--session", "lead", "--harness", "codex")
+    assert activated["goal_binding"]["binding"] == "bound"
+    pj.update_leaf(target, "G1", {"status": "done", "result": "Fixture implementation complete"})
+    view = cli("goal-control", target)
+    assert view["goal_status"] == "unaccepted" and view["next_decision"] == "required"
+    decision = {"decision": "need_fact", "action_kind": "research", "action": "Inspect fixture result",
+                "owner": "lead", "evidence": "Consumer proof missing", "uncertainty": "Fixture not accepted"}
+    request = {"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": {
+        "name": "record_frontier_decision", "arguments": {"plan_dir": str(target), "decision": decision},
+        "_meta": {"threadId": "lead"}}}
+    env = {**os.environ, "CODEX_THREAD_ID": "unrelated-server-thread"}
+    run = subprocess.run([sys.executable, str(TOOLS / "lhc_plan_mcp.py")],
+                         input=json.dumps(request) + "\n", capture_output=True, text=True, env=env, timeout=20)
+    reply = json.loads(run.stdout)
+    assert "error" not in reply and not reply["result"]["isError"], reply
+    saved = guard.load_state(state_path)["business"]["outcome"]
+    assert saved["frontier_decision"]["action"] == decision["action"]
+    assert saved["owner"]["session_id"] == "lead"
+    view = cli("goal-control", target)
+    assert view["goal_status"] == "unaccepted" and view["next_decision"] == "work"
+    assert pj.build_document(target)["goal_control"]["fingerprint"] == view["fingerprint"]
+    # Unknown MCP callers cannot borrow the server process's native thread.
+    request["params"].pop("_meta")
+    denied = subprocess.run([sys.executable, str(TOOLS / "lhc_plan_mcp.py")],
+                           input=json.dumps(request) + "\n", capture_output=True, text=True, env=env, timeout=20)
+    assert "explicit native session" in json.loads(denied.stdout)["error"]["message"]
+    assert guard.load_state(state_path)["business"]["outcome"] == saved

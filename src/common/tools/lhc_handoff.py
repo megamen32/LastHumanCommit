@@ -2,6 +2,7 @@
 import hashlib
 import json
 import os
+import stat
 from pathlib import Path
 
 MAX_BRIEF_BYTES = 128 * 1024
@@ -12,13 +13,22 @@ def _digest(value):
     return hashlib.sha256(value).hexdigest()
 
 
+def _unique_object(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError('brief_duplicate_field:' + key)
+        result[key] = value
+    return result
+
+
 def _fields(text):
     """Read explicit contract field records, without guessing prose semantics."""
     try:
-        parsed = json.loads(text)
+        parsed = json.loads(text, object_pairs_hook=_unique_object)
         if isinstance(parsed, dict):
             return parsed
-    except ValueError:
+    except json.JSONDecodeError:
         pass
     result, key, lines = {}, None, []
     for line in text.splitlines():
@@ -47,10 +57,10 @@ def _object(value):
         return value
     if isinstance(value, str):
         try:
-            parsed = json.loads(value)
+            parsed = json.loads(value, object_pairs_hook=_unique_object)
             if isinstance(parsed, dict):
                 return parsed
-        except ValueError:
+        except json.JSONDecodeError:
             pass
         return _fields('\n'.join(line.strip() for line in value.splitlines()))
     return {}
@@ -67,7 +77,7 @@ def _identity(value, expected):
     return parsed == expected if parsed else value == expected['session_id']
 
 
-def validate_brief(text, leaf_id, assignment, metadata):
+def validate_brief(text, leaf_id, assignment, metadata, *, task_id):
     fields = _fields(text)
     required = ('task_id', 'leaf_id', 'owner/session', 'parent_lead_identity',
                 'parent_task_id/session/route', 'role', 'mode', 'description',
@@ -80,7 +90,7 @@ def validate_brief(text, leaf_id, assignment, metadata):
         raise ValueError('brief_incomplete:' + ','.join(missing))
     if fields['leaf_id'] != leaf_id:
         raise ValueError('brief_leaf_mismatch')
-    if metadata.get('task_id') and fields['task_id'] != metadata['task_id']:
+    if fields['task_id'] != task_id:
         raise ValueError('brief_task_mismatch')
     if not _identity(fields['owner/session'], assignment['executor']):
         raise ValueError('brief_executor_mismatch')
@@ -121,18 +131,29 @@ def validate_brief(text, leaf_id, assignment, metadata):
 def read_brief(plan_dir, leaf_id, assignment, metadata):
     """Preflight gives actionable errors before opening a native transport."""
     root = Path(plan_dir).resolve()
-    brief_path = root / 'briefs' / (leaf_id + '.md')
-    if brief_path.is_symlink():
-        raise ValueError('brief_symlink_forbidden')
+    if not leaf_id or Path(leaf_id).name != leaf_id or leaf_id in {'.', '..'}:
+        raise ValueError('brief_leaf_invalid')
+    root_fd = briefs_fd = brief_fd = None
     try:
-        with brief_path.open('rb') as stream:
+        root_fd = os.open(root, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+        briefs_fd = os.open('briefs', os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=root_fd)
+        brief_fd = os.open(leaf_id + '.md', os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK,
+                           dir_fd=briefs_fd)
+        if not stat.S_ISREG(os.fstat(brief_fd).st_mode):
+            raise ValueError('brief_regular_file_required')
+        with os.fdopen(brief_fd, 'rb') as stream:
+            brief_fd = None
             brief_bytes = stream.read(MAX_BRIEF_BYTES + 1)
         if len(brief_bytes) > MAX_BRIEF_BYTES:
             raise ValueError('brief_too_large:limit_bytes=' + str(MAX_BRIEF_BYTES))
         brief = brief_bytes.decode('utf-8')
     except (OSError, UnicodeError):
         raise ValueError('brief_unavailable') from None
-    validate_brief(brief, leaf_id, assignment, metadata)
+    finally:
+        for fd in (brief_fd, briefs_fd, root_fd):
+            if fd is not None:
+                os.close(fd)
+    validate_brief(brief, leaf_id, assignment, metadata, task_id=root.name)
     return brief_bytes, brief
 
 
@@ -161,6 +182,19 @@ def prepare(plan_dir, leaf_id, assignment, leaf_bytes, message, metadata):
         if parent.is_symlink():
             raise ValueError('brief_record_symlink_forbidden')
         parent.mkdir(mode=0o700, exist_ok=True)
+    # Self-exclusion follows the private attempt even when the plan is outside
+    # the usual ignored .agents tree. Never rewrite the repository's ignores.
+    ignore = target.parent / '.gitignore'
+    try:
+        ignore_fd = os.open(ignore, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    except FileExistsError:
+        if ignore.is_symlink() or ignore.read_bytes() != b'*\n':
+            raise ValueError('brief_private_ignore_mismatch') from None
+    else:
+        with os.fdopen(ignore_fd, 'wb') as stream:
+            stream.write(b'*\n')
+            stream.flush()
+            os.fsync(stream.fileno())
     encoded = (json.dumps(record, ensure_ascii=False, sort_keys=True, indent=2) + '\n').encode()
     try:
         fd = os.open(target, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)

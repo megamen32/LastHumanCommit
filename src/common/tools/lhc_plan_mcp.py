@@ -480,6 +480,24 @@ def show_plan(arguments):
     return _plan_cli(arguments, "show", *extra)
 
 
+def read_goal_control(arguments):
+    return _plan_cli(arguments, "goal-control")
+
+
+def record_frontier_decision(arguments):
+    values = dict(arguments)
+    caller = _request_actor.get() or {}
+    if not values.get("session") and caller.get("source") == "mcp_metadata":
+        values["session"], values["harness"] = caller["session_id"], caller["harness"]
+    if not values.get("session"):
+        raise ValueError("explicit native session required for a frontier decision")
+    extra = ["--session", str(values["session"])]
+    if values.get("harness"):
+        extra += ["--harness", str(values["harness"])]
+    extra += ["--decision", json.dumps(arguments["decision"], ensure_ascii=False)]
+    return _plan_cli(arguments, "goal-control", *extra)
+
+
 def update_plan(arguments):
     extra = ["--fields", json.dumps(arguments.get("fields") or {}, ensure_ascii=False)]
     if arguments.get("revision") is not None:
@@ -634,6 +652,8 @@ OPERATIONS: dict[str, Callable[[dict[str, Any]], dict[str, Any]]] = {
     "estimate_cost": estimate_cost,
     "update_progress": update_progress,
     "show_plan": show_plan,
+    "read_goal_control": read_goal_control,
+    "record_frontier_decision": record_frontier_decision,
     "update_plan": update_plan,
     "activate_leaf": activate_leaf,
     "worker_register": worker_register,
@@ -778,6 +798,11 @@ def _tool(name, description, properties, required):
 _PLAN = {"type": "string", "description": "Plan directory (holds plan.json and leaves/)."}
 _LEAF = {"type": "string", "description": "Leaf id, e.g. L07."}
 TOOLS += [
+    _tool("read_goal_control", "Read current native goal/frontier control; cached graphs confer no authority.",
+          {"plan_dir": _PLAN}, ["plan_dir"]),
+    _tool("record_frontier_decision", "Record one explicit decision in the bound native outcome under its existing lock.",
+          {"plan_dir": _PLAN, "decision": {"type": "object"}, "session": {"type": "string"},
+           "harness": {"type": "string"}}, ["plan_dir", "decision"]),
     _tool("show_plan",
           "Where the plan is: done leaves with their results, the current leaves with their last note, "
           "what runs elsewhere, what is next, overruns and Workers not merged yet. Call it first after a "
