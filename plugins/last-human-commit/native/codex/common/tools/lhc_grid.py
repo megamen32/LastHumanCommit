@@ -1659,21 +1659,22 @@ def build_metrics(graph: Graph) -> dict[str, Any]:
     pending_max = schedule_graph(graph, use_max=True, only_pending=True)
     pending_min = schedule_graph(graph, use_max=False, only_pending=True)
 
-    # A missing estimate is not a zero estimate. The leaves whose duration is
-    # unknown are named here, so every number derived from the schedule can
+    # A missing or explicitly partial estimate is not a whole-plan estimate.
+    # Numeric work remains in the schedule; incomplete scope are named here, so every number derived from the schedule can
     # say "unknown" instead of quietly turning the missing time into zero.
     unknown_estimate_all = [
         leaf for leaf in graph.leaves
         if leaf.status != STATUS_DEFERRED
-        and leaf.estimate_min is None and leaf.estimate_max is None
+        and ((leaf.estimate_min is None and leaf.estimate_max is None)
+             or leaf.estimate_unknown_reason)
     ]
     unknown_estimate_pending = [
         leaf for leaf in unknown_estimate_all if leaf.status != STATUS_DONE
     ]
-    unknown_ids_all = {leaf.id for leaf in unknown_estimate_all}
     known_duration_count = sum(
         1 for leaf in graph.leaves
-        if leaf.status != STATUS_DEFERRED and leaf.id not in unknown_ids_all
+        if leaf.status != STATUS_DEFERRED
+        and (leaf.estimate_min is not None or leaf.estimate_max is not None)
     )
     # The effort, the critical path and the planned peak are whole-plan
     # numbers: one unknown leaf is enough to make all three unknown.
@@ -3513,7 +3514,7 @@ def render_html(
         f'<h3><span class="now-glyph">🔄</span> В работе <span class="now-count">'
         f'{len(plan["running"])}</span></h3>{running_html}</section>'
         '<section class="now-col">'
-        f'<h3><span class="now-glyph">🚀</span> Кандидаты по зависимостям <span class="now-count">'
+        f'<h3><span class="now-glyph">🚀</span> Кандидаты по зависимостям и вместимости <span class="now-count">'
         f'{len(plan["ready"])}</span></h3>{ready_html}{deferred_html}</section>'
         '<section class="now-col">'
         f'<h3><span class="now-glyph">⛔</span> Заблокированы <span class="now-count">'
@@ -5631,7 +5632,7 @@ def render_text(graph: Graph, metrics: dict[str, Any]) -> str:
     overload = " — исполнителей больше, чем слотов" if metrics["owner_overload"] else ""
     lines.append(
         "Исполнители: занято {busy} из {slots} слотов{overload} · "
-        "ждёт листа: {leaf_wait} · ждёт исполнителя: {owner_wait} · готово к запуску: {ready}".format(
+        "ждёт листа: {leaf_wait} · ждёт исполнителя: {owner_wait} · кандидаты по зависимостям и вместимости: {ready}".format(
             busy=metrics["busy_owners"], slots=metrics["slots"], overload=overload,
             leaf_wait=_count_with_ids(metrics["waiting_for_leaf_ids"]),
             owner_wait=_count_with_ids(metrics["waiting_for_owner_ids"]),

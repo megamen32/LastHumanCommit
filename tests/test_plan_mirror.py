@@ -64,6 +64,24 @@ import lhc_plan_mirror as mirror
 import lhc_plan_mcp as mcp
 
 
+def test_capture_changes_when_bound_goal_evidence_changes(fixture, monkeypatch):
+    plan, client, _cfg = fixture
+    mirror.register(plan, client)
+    projection = {'goal_status': 'unaccepted', 'fingerprint': 'a' * 64,
+                  'source': {'kind': 'native_outcome', 'harness': 'codex', 'session_id': 'lead',
+                             'outcome_id': 'goal', 'source_fingerprint': 'b' * 64,
+                             'private_payload': 'PRIVATE-SOURCE'},
+                  'decision': {'evidence': 'PRIVATE-DECISION'}}
+    monkeypatch.setattr(leaves, 'goal_control', lambda _plan: copy.deepcopy(projection))
+    first = mirror.capture(plan)
+    projection.update(goal_status='accepted', fingerprint='c' * 64)
+    projection['source']['source_fingerprint'] = 'd' * 64
+    second = mirror.capture(plan)
+    assert second['seq'] == first['seq'] + 1
+    assert second['pending']['document']['goal_control']['goal_status'] == 'accepted'
+    assert 'PRIVATE-' not in json.dumps(second['pending']['document'])
+
+
 def write(path, value):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(value, ensure_ascii=False))

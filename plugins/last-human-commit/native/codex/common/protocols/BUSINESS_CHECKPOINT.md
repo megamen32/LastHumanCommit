@@ -85,3 +85,39 @@ actual milestone evidence when the claim requires it. The command checks record
 completeness, not free-text truth; Lead owns references and assigns the selected action to a Worker.
 Use English for new internal records. Tell the user only a material result, problem
 or needed decision; mandatory internal checks do not require empty hourly reports.
+## Empty frontier still needs a goal decision
+
+Closing every card is a task fact. Acceptance of the original goal remains in
+the existing native outcome, bound to the exact canonical plan, semantic goal
+scope and current acceptance evidence. A status-only outcome cannot accept an
+implementation goal. Explicit plan activation binds an existing native outcome
+when Lead ownership is known; a legacy or unreadable outcome stays unknown.
+
+When no useful next leaf is available and the goal is unaccepted, Lead chooses
+one concrete next leaf, scoped research/decomposition, a genuine external wait
+with owner, evidence and resume condition, or preserves an actual human stop or
+revocation. Record decision, evidence, action, owner and uncertainty through
+LhcPlan frontier or the existing outcome CLI:
+
+```sh
+python3 <LHC>/tools/lhc_outcome.py --cwd <project> --runtime <runtime> \
+  --session-id <native-id> frontier --plan-dir <canonical-plan> \
+  --decision need_fact --action-kind research --evidence '<observed gap>' \
+  --action '<one bounded permitted investigation>' --owner '<executor>' \
+  --uncertainty '<fact the investigation will resolve>'
+```
+
+Use decision `continue` with `--action-kind leaf --leaf-id <existing-ready-id>`,
+or `wait_external` with `--resume-condition '<observable resumption condition>'`.
+A work decision selects execution; writing the record does not perform the work.
+A human-stop record requires an existing structured native stop or refusal, and
+cannot create authority to stop. Unknown delivery is reconciled, never replayed.
+
+A missing binding can be repaired by `bind-plan --plan-dir <canonical-plan>`;
+`replace-plan --plan-dir <old> --replacement-plan-dir <new> --source-ref <evidence>`
+records an explicit replacement, separately from ordinary binding changes.
+The hook reads these facts, gives bounded advice once per changed frontier, and
+does not classify prose, accept a goal, call an LLM, dispatch, or create a wake.
+Admission unknown/blocked remains distinct from an exhausted frontier. Graph and
+catalog goal-control snapshots are derived views with source fingerprints, never
+acceptance authority. Changed goal scope or evidence invalidates stale decisions.
