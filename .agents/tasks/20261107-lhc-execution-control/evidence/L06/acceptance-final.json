@@ -1,0 +1,20 @@
+{
+  "verdict": "PASS",
+  "candidate": "d0c60f89fb3fea69ebcc2bfaaf07ecdb2be53487",
+  "checks": {
+    "author_distinct_from_lead_and_worker": true,
+    "exact_turn_running": true,
+    "wake_captured_admitted_turn": true,
+    "wake_resumed_on_reconcile": true,
+    "completion_requires_acceptance": true,
+    "dependency_refused_before_acceptance": true,
+    "duplicate_dispatch_not_resent": true,
+    "dependent_dispatch_after_acceptance": true,
+    "active_assignment_not_offered_as_next": true,
+    "running_runtime_visible": true,
+    "continuation_state_visible": true,
+    "admission_visible": true
+  },
+  "mcp_show_after_L02_dispatch": "deliverable: implementation; decomposition: progressive; leaf cap: 15 min\nDone:\n- L01 «Fixture work L01» — Isolated fixture result inspected; dependent task may proceed.\nSaved queue: L02 «Fixture work L02»\nPlan plan: 1/2 done; deliverable: implementation; decomposition: progressive; leaf cap: 15 min; candidates by dependencies/capacity none; dispatchable none; admission L02=assignment_running; execution L02: assignment=running, runtime=running, wake=waiting, next=2026-11-07T16:00:00Z | L01: assignment=accepted, runtime=completed, wake=resumed, next=2026-11-07T16:00:00Z.\nNext action: inspect current execution, recorded blockers and admission before dispatch.\nWhole plan: /tmp/lhc-L06-dbldt_7q/plan/plan.md\n",
+  "fixture_only": true
+}
