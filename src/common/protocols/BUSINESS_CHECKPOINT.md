@@ -121,3 +121,34 @@ does not classify prose, accept a goal, call an LLM, dispatch, or create a wake.
 Admission unknown/blocked remains distinct from an exhausted frontier. Graph and
 catalog goal-control snapshots are derived views with source fingerprints, never
 acceptance authority. Changed goal scope or evidence invalidates stale decisions.
+## Current goal Lead during handoff
+
+Historical leaf sessions and attempt authors remain history. A goal-level handoff
+uses the existing public `update-plan` operation and its revision, with the typed
+`current_goal_lead` NativeRef plus the source reference of the explicit delegation:
+
+```sh
+python3 <LHC>/tools/lhc_plan_json.py update-plan <canonical-plan> \
+  --fields '{"current_goal_lead":{"host_id":"<actual-host>","harness":"codex","session_id":"<actual-native-id>","source_ref":"records/<handoff>.md"}}' \
+  --revision '{"reason":"Explicit operational Lead handoff","summary":"Current goal role transferred; historical authors retained"}'
+```
+
+Use the actual verified host and native identity from the handoff. Do not infer
+them from a working directory or from the prose of an assignment. This pointer
+names the current role; it neither grants human authority nor carries acceptance.
+Changing it requires an explicit revision and source reference. It does not alter
+the semantic business-goal fingerprint or erase prior authors, attempts or evidence.
+
+Normal activation, contract, work and review continue to use the existing native
+outcome binding. They cannot replace the goal-role pointer. Ordinary Worker
+activation remains a leaf action and cannot acquire another Lead's goal binding.
+The generic view resolves the selected current role, then verifies its exact
+native outcome and canonical plan binding. Pending remains unaccepted, and a new
+role never receives an older owner's accepted outcome automatically.
+
+Conflicting unresolved typed Lead assignments keep the result unknown, including
+when one contender has accepted evidence. Completed historical assignments and
+legacy executor sessions do not override an explicit current role. Without the
+pointer, a unique current typed Lead is supported; mixed legacy references remain
+honestly ambiguous. Missing or unreadable native state remains unknown. A handoff
+does not require a separate manual rebind command or an acceptance shortcut.
