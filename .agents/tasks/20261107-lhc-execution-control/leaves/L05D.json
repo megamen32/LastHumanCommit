@@ -1,7 +1,7 @@
 {
   "label": "Сверить текущую доступность с native turn",
   "kind": "task",
-  "status": "running",
+  "status": "done",
   "estimate_minutes": 10,
   "depends_on": [
     "L05A",
@@ -13,7 +13,7 @@
   "model": "gpt-6.1-sol",
   "id": "L05D",
   "created_at": "2026-11-07T19:16:06+03:00",
-  "updated_at": "2026-11-07T19:16:06+03:00",
+  "updated_at": "2026-11-07T19:20:44+03:00",
   "progress_events": [
     {
       "at": "2026-11-07T19:16:06+03:00",
@@ -78,6 +78,31 @@
       },
       "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
       "harness": "codex"
+    },
+    {
+      "at": "2026-11-07T19:20:44+03:00",
+      "note": "Worker audit_rust_plan: lhc/execution-observation-20261107 merged, worktree, branch and run directory removed",
+      "changes": {
+        "status": "done",
+        "result": "Current availability distinguishes active busy/Stop/permission from historical terminal turns; contradictory native state remains unknown. 28 bridge tests and real fixture setup/cleanup passed; evidence/L05D; e1197edb integrated.",
+        "worker": {
+          "id": "audit_rust_plan",
+          "branch": "lhc/execution-observation-20261107",
+          "worktree": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-observation-20261107",
+          "registered_at": "2026-11-07T19:16:06+03:00",
+          "run_dir": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-observation-20261107/.tmp/worker-run",
+          "run_host": "roomhacker-server-100",
+          "removed_at": "2026-11-07T19:20:44+03:00"
+        }
+      },
+      "actor": {
+        "host_id": null,
+        "harness": "codex",
+        "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+        "source": "native_environment"
+      },
+      "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "harness": "codex"
     }
   ],
   "worker": {
@@ -86,7 +111,9 @@
     "worktree": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-observation-20261107",
     "registered_at": "2026-11-07T19:16:06+03:00",
     "run_dir": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-observation-20261107/.tmp/worker-run",
-    "run_host": "roomhacker-server-100"
+    "run_host": "roomhacker-server-100",
+    "removed_at": "2026-11-07T19:20:44+03:00"
   },
-  "owner": "audit_rust_plan"
+  "owner": "audit_rust_plan",
+  "result": "Current availability distinguishes active busy/Stop/permission from historical terminal turns; contradictory native state remains unknown. 28 bridge tests and real fixture setup/cleanup passed; evidence/L05D; e1197edb integrated."
 }
