@@ -102,7 +102,10 @@ def observe_native(transport, executor, *, now=_now, purpose='turn'):
         runtime_state = 'running'
     elif state in ('completed', 'failed', 'cancelled', 'interrupted'):
         runtime_state = state
-    elif state in ('inProgress', 'running', 'in_progress') and session.get('status') == 'running':
+    # The session summary can lag an admitted native turn. Its exact turn is
+    # checked by reconcile_assignment before arming the completion wait; an
+    # explicit stopped session must not be promoted by this fallback.
+    elif state in ('inProgress', 'running', 'in_progress') and session.get('status') in ('running', 'idle'):
         runtime_state = 'running'
     else:
         runtime_state = 'unknown'

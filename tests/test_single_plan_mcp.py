@@ -69,7 +69,11 @@ def test_standalone_entrypoint_calls_plan_tools_and_exposes_bug_crud(tmp_path, f
     assert (plan / ".lhc-bugs.jsonl").is_file()
 
 
-def test_cli_mutations_and_default_mcp_preserve_the_same_data(tmp_path):
+def test_cli_mutations_and_default_mcp_preserve_the_same_data(tmp_path, monkeypatch):
+    # Both callers have no native identity in this parity scenario. A CLI
+    # inherits the harness environment, whereas MCP uses request metadata.
+    # Explicit attribution and spoofing are covered in test_execution_interface.
+    monkeypatch.delenv("CODEX_THREAD_ID", raising=False)
     via_mcp, via_cli = tmp_path / "mcp", tmp_path / "cli"
     operations = [
         ("create_leaf", "create-leaf", {"id": "A", "label": "Проверка"}, None),
