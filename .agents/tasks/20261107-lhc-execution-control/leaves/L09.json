@@ -1,7 +1,7 @@
 {
   "label": "Merge и установка новой версии",
   "kind": "task",
-  "status": "running",
+  "status": "done",
   "estimate_minutes": 15,
   "depends_on": [
     "L08"
@@ -12,7 +12,7 @@
   "model": "gpt-6-astra",
   "id": "L09",
   "created_at": "2026-11-07T18:18:35+03:00",
-  "updated_at": "2026-11-07T20:05:13+03:00",
+  "updated_at": "2026-11-07T20:24:07+03:00",
   "progress_events": [
     {
       "at": "2026-11-07T18:18:35+03:00",
@@ -50,9 +50,26 @@
       },
       "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
       "harness": "codex"
+    },
+    {
+      "at": "2026-11-07T20:24:07+03:00",
+      "note": "",
+      "changes": {
+        "status": "done",
+        "result": "Merged main3e37f1a7. Native1.17.0 installed:199files exact accepted tree cfa088dd;11hooks enabled/trusted, foreign config unchanged, four execution MCP operations exposed. Stale marketplace reconciled and fast-forwarded without reset; real Herder lease released. evidence/L09/native."
+      },
+      "actor": {
+        "host_id": null,
+        "harness": "codex",
+        "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+        "source": "native_environment"
+      },
+      "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "harness": "codex"
     }
   ],
   "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
   "harness": "codex",
-  "owner": "root"
+  "owner": "root",
+  "result": "Merged main3e37f1a7. Native1.17.0 installed:199files exact accepted tree cfa088dd;11hooks enabled/trusted, foreign config unchanged, four execution MCP operations exposed. Stale marketplace reconciled and fast-forwarded without reset; real Herder lease released. evidence/L09/native."
 }

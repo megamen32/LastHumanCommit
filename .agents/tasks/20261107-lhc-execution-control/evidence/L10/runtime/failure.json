@@ -1,0 +1,7 @@
+{
+  "at": "2026-11-07T17:23:01.929137+00:00",
+  "ok": false,
+  "type": "URLError",
+  "reason": "readback_required",
+  "automatic_replay": false
+}

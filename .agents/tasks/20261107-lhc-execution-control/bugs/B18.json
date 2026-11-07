@@ -1,0 +1,40 @@
+{
+  "created_at": "2026-11-07T17:29:35+00:00",
+  "details": "Canonical switch completed and both service processes were active; immediate loopback health probe returned connection refused during startup. Later read-only health200 and public200 proved readiness without repeating switch or modifying product source.",
+  "events": [
+    {
+      "action": "register",
+      "actor": "root",
+      "at": "2026-11-07T17:29:35+00:00",
+      "changes": {
+        "details": "Canonical switch completed and both service processes were active; immediate loopback health probe returned connection refused during startup. Later read-only health200 and public200 proved readiness without repeating switch or modifying product source.",
+        "source": "evidence/L10/runtime/failure.json",
+        "status": "open",
+        "title": "Immediate mirror health probe preceded HTTP readiness"
+      }
+    },
+    {
+      "action": "resolve",
+      "actor": "root",
+      "at": "2026-11-07T17:29:35+00:00",
+      "changes": {
+        "resolution": {
+          "kind": "false_positive",
+          "reason": "Transient startup observation, not a renderer regression. Runtime readback in evidence/L10/runtime/complete.json confirms exact accepted renderer, active services and HTTP200; no switch replay. Initial failed observation is preserved."
+        },
+        "status": "false_positive"
+      }
+    }
+  ],
+  "id": "B18",
+  "owner": "root",
+  "reporter": "root",
+  "resolution": {
+    "kind": "false_positive",
+    "reason": "Transient startup observation, not a renderer regression. Runtime readback in evidence/L10/runtime/complete.json confirms exact accepted renderer, active services and HTTP200; no switch replay. Initial failed observation is preserved."
+  },
+  "source": "evidence/L10/runtime/failure.json",
+  "status": "false_positive",
+  "title": "Immediate mirror health probe preceded HTTP readiness",
+  "updated_at": "2026-11-07T17:29:35+00:00"
+}

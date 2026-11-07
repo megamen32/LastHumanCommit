@@ -1,0 +1,12 @@
+{
+  "attempt": "20261107T172019Z-92927e2e",
+  "at": "2026-11-07T17:20:37.071175+00:00",
+  "version": "1.17.0",
+  "tools": [
+    "accept_leaf",
+    "assign_leaf",
+    "dispatch_leaf",
+    "reconcile_leaf"
+  ],
+  "model_sessions_created": 0
+}

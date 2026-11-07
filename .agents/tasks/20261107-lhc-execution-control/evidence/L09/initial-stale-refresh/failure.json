@@ -1,0 +1,8 @@
+{
+  "attempt": "20261107T170859Z-b597bc5a",
+  "at": "2026-11-07T17:09:47.325002+00:00",
+  "ok": false,
+  "reason": "installed_marketplace_revision_mismatch",
+  "type": "DeploymentError",
+  "automatic_replay": false
+}

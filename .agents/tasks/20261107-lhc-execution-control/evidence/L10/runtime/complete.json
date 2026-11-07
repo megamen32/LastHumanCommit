@@ -1,0 +1,30 @@
+{
+  "at": "2026-11-07T17:29:34.773370+00:00",
+  "ok": true,
+  "candidate": "3e37f1a7b1995f74fdcacc3a966e8003223a78f8",
+  "version": "1.17.0",
+  "release": "c3fc6160ab8dfa42",
+  "previous": "1d61809d99a120dc",
+  "matching_isolated_canary": true,
+  "units": {
+    "mirror": {
+      "file": "/home/roomhacker/.config/systemd/user/lhc-plan-mirror.service",
+      "release": "c3fc6160ab8dfa42",
+      "state": "active"
+    },
+    "observer": {
+      "file": "/home/roomhacker/.config/systemd/user/lhc-plan-observer.service",
+      "release": "c3fc6160ab8dfa42",
+      "state": "active"
+    }
+  },
+  "health": {
+    "url": "http://127.0.0.1:8769/health",
+    "status": 200,
+    "body": {
+      "status": "ok"
+    }
+  },
+  "lease_released": true,
+  "startup_readiness_reconciled_without_switch_replay": true
+}

@@ -1,0 +1,72 @@
+{
+  "version": "1.17.0",
+  "release_source_commit": "3e37f1a7b1995f74fdcacc3a966e8003223a78f8",
+  "accepted_product_candidate": "d0c60f89fb3fea69ebcc2bfaaf07ecdb2be53487",
+  "product_unchanged_since_acceptance": true,
+  "pytest": {
+    "passed": 1027,
+    "skipped": 7
+  },
+  "independent_consumers": {
+    "session": "12/12 PASS",
+    "child_failures": "18/18 PASS"
+  },
+  "review": "APPROVE",
+  "native": {
+    "version": "1.17.0",
+    "files": 199,
+    "tree_sha256": "cfa088dd4ccc06dec5abc818dafd318fe88819ac4944dc483377a59e60b7ec02",
+    "hooks_enabled": 11,
+    "hooks_trusted": 11,
+    "foreign_settings_unchanged": true,
+    "lease_released": true
+  },
+  "mirror": {
+    "at": "2026-11-07T17:29:34.773370+00:00",
+    "ok": true,
+    "candidate": "3e37f1a7b1995f74fdcacc3a966e8003223a78f8",
+    "version": "1.17.0",
+    "release": "c3fc6160ab8dfa42",
+    "previous": "1d61809d99a120dc",
+    "matching_isolated_canary": true,
+    "units": {
+      "mirror": {
+        "file": "/home/roomhacker/.config/systemd/user/lhc-plan-mirror.service",
+        "release": "c3fc6160ab8dfa42",
+        "state": "active"
+      },
+      "observer": {
+        "file": "/home/roomhacker/.config/systemd/user/lhc-plan-observer.service",
+        "release": "c3fc6160ab8dfa42",
+        "state": "active"
+      }
+    },
+    "health": {
+      "url": "http://127.0.0.1:8769/health",
+      "status": 200,
+      "body": {
+        "status": "ok"
+      }
+    },
+    "lease_released": true,
+    "startup_readiness_reconciled_without_switch_replay": true
+  },
+  "public": {
+    "url": "https://lhc.bezrabotnyi.com/lasthumancommit/plan-20261107-1818-56a7d30d6759fff6f0705fe2/",
+    "status": 200,
+    "bytes": 335409,
+    "sha256": "4384605accf8a02914a605f5fe4acd642abb40fbee696ab0aa4088e2b9878cb8",
+    "final_leaf_result_visible": true,
+    "all17_leaves_done_visible": true,
+    "renderer_release": "c3fc6160ab8dfa42",
+    "at": "2026-11-07T17:33:59.158625+00:00"
+  },
+  "bugs": {
+    "all_registered_bugs_resolved": true,
+    "tests_green_required_separately": true,
+    "total": 18,
+    "unresolved": 0
+  },
+  "proof_scope": "Real public CLI/MCP processes with independent loopback fixtures; installed Herder read-only access. Real LLM turn, physical native wake and native child lineage were not exercised.",
+  "publication_policy": "Frozen code release is main3e37; post-deployment receipts remain on the published task branch without changing the release payload."
+}

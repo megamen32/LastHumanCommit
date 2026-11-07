@@ -1,0 +1,22 @@
+{
+  "attempt": "20261107T172019Z-92927e2e",
+  "at": "2026-11-07T17:20:36.547971+00:00",
+  "filePath": "/home/roomhacker/.codex/config.toml",
+  "expectedVersion": "sha256:8f3bb8250a5b542a8e8a6f6789454929b7feefe771a7399ed4c4c9c0c071accb",
+  "keys": [
+    "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:interrupt:0:0",
+    "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:post_compact:0:0",
+    "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:post_tool_use:0:0",
+    "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:post_tool_use:1:0",
+    "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:pre_tool_use:0:0",
+    "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:session_end:0:0",
+    "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:session_start:0:0",
+    "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:stop:0:0",
+    "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:stop:1:0",
+    "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:user_prompt_submit:0:0",
+    "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:user_prompt_submit:1:0"
+  ],
+  "before_config_sha256": "cc9d9821f561d7108bb548ef486988b4b3e42c71bbe1d9fc402ed23134dff06a",
+  "expected_config_sha256": "f3e24bdf6d091da617de828fc877d923b56e3b25c2cb82b94de4d35f9ef5f561",
+  "foreign_state_sha256": "2ec51b950c548ea1bb9172ec936d2ad2e9b0d8a212f5a5f49ac5547ddbeb6b20"
+}

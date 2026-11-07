@@ -1,0 +1,58 @@
+{
+  "created_at": "2026-11-07T17:29:34+00:00",
+  "details": "Canonical installer completed after marketplace refresh retained old1.16.1 checkout; deployment freshness guard correctly stopped release. Under a fresh Herder lease, clean existing marketplace was explicitly fast-forwarded to exact accepted main, then native installer and the same version/revision readback succeeded. No source change; initial native refresh cause was not retained.",
+  "events": [
+    {
+      "action": "register",
+      "actor": "root",
+      "at": "2026-11-07T17:29:34+00:00",
+      "changes": {
+        "details": "Canonical installer completed after marketplace refresh retained old1.16.1 checkout; deployment freshness guard correctly stopped release. Under a fresh Herder lease, clean existing marketplace was explicitly fast-forwarded to exact accepted main, then native installer and the same version/revision readback succeeded. No source change; initial native refresh cause was not retained.",
+        "source": "evidence/L09/initial-stale-refresh/failure.json",
+        "status": "open",
+        "title": "Stale marketplace prevented native1.17.0 rollout"
+      }
+    },
+    {
+      "action": "resolve",
+      "actor": "root",
+      "at": "2026-11-07T17:29:35+00:00",
+      "changes": {
+        "resolution": {
+          "evidence": {
+            "proof_path": "evidence/L09/native/reconciled-green.json",
+            "red_proof_path": "evidence/L09/initial-stale-refresh/failure.json",
+            "red_result": "DeploymentError",
+            "red_sha256": "ec64fd5032be60e3af457880a57d8f749332fa4c2de5c87cc0412df2c02f9616",
+            "result": "passed",
+            "sha256": "84bc331b50f6527c82fc06b3d25e308b0296641bf291f496e0718828ee9e4ed2",
+            "test_command": "python3 .tmp/release-v117/recover-native2.py (same marketplace/native-version readback before and after repair)"
+          },
+          "kind": "fixed",
+          "reason": "Stale deployment state repaired without reset or replay of unknown effects; actual native1.17.0, exact199file parity,11trusted hooks and four live MCP tools verified. Product source remains accepted3e37."
+        },
+        "status": "fixed"
+      }
+    }
+  ],
+  "id": "B17",
+  "owner": "root",
+  "reporter": "root",
+  "resolution": {
+    "evidence": {
+      "proof_path": "evidence/L09/native/reconciled-green.json",
+      "red_proof_path": "evidence/L09/initial-stale-refresh/failure.json",
+      "red_result": "DeploymentError",
+      "red_sha256": "ec64fd5032be60e3af457880a57d8f749332fa4c2de5c87cc0412df2c02f9616",
+      "result": "passed",
+      "sha256": "84bc331b50f6527c82fc06b3d25e308b0296641bf291f496e0718828ee9e4ed2",
+      "test_command": "python3 .tmp/release-v117/recover-native2.py (same marketplace/native-version readback before and after repair)"
+    },
+    "kind": "fixed",
+    "reason": "Stale deployment state repaired without reset or replay of unknown effects; actual native1.17.0, exact199file parity,11trusted hooks and four live MCP tools verified. Product source remains accepted3e37."
+  },
+  "source": "evidence/L09/initial-stale-refresh/failure.json",
+  "status": "fixed",
+  "title": "Stale marketplace prevented native1.17.0 rollout",
+  "updated_at": "2026-11-07T17:29:35+00:00"
+}

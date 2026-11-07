@@ -1,0 +1,10 @@
+{
+  "at": "2026-11-07T17:23:01.764063+00:00",
+  "release": "c3fc6160ab8dfa42",
+  "from": "1d61809d99a120dc",
+  "backup": "/home/roomhacker/.local/share/lhc-plan-mirror/backup-20261107-202300-2",
+  "units": {
+    "mirror": "c3fc6160ab8dfa42",
+    "observer": "c3fc6160ab8dfa42"
+  }
+}

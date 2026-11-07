@@ -1,0 +1,12 @@
+{
+  "at": "2026-11-07T17:22:58.186083+00:00",
+  "project": "/home/roomhacker/agents-projects/LastHumanCommit/.git",
+  "owner": {
+    "hostId": "roomhacker-server-100",
+    "harness": "codex",
+    "nativeSessionId": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c"
+  },
+  "fence": 3,
+  "acquiredAt": 1794072178179,
+  "expiresAt": 1794073078179
+}

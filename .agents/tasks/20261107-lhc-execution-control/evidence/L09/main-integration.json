@@ -1,0 +1,17 @@
+{
+  "at": "2026-11-07T17:06:59.330949+00:00",
+  "owner_authorization": "Current user explicitly authorized merge and release",
+  "pr_stage": "off",
+  "target_before": "fd039303dbd548dd25c7030d6aa15622bb47d8b7",
+  "main": "3e37f1a7b1995f74fdcacc3a966e8003223a78f8",
+  "branch": "lhc/execution-control-20261107",
+  "normal_fast_forward_push": true,
+  "version": {
+    "ok": true,
+    "version": "1.17.0",
+    "level": "y",
+    "target_version": "1.16.1",
+    "tag_free": true
+  },
+  "primary_checkout_modified": false
+}

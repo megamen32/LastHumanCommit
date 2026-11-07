@@ -1,0 +1,16 @@
+{
+  "attempt": "20261107T172019Z-92927e2e",
+  "at": "2026-11-07T17:20:34.362554+00:00",
+  "ok": true,
+  "candidate": "3e37f1a7b1995f74fdcacc3a966e8003223a78f8",
+  "version": "1.17.0",
+  "files": 199,
+  "file_tree_sha256": "cfa088dd4ccc06dec5abc818dafd318fe88819ac4944dc483377a59e60b7ec02",
+  "source_copy_parity": true,
+  "native_manager": {
+    "pluginId": "last-human-commit@megamen32-plugins",
+    "version": "1.17.0",
+    "installed": true,
+    "enabled": true
+  }
+}

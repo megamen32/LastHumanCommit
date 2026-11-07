@@ -2,7 +2,7 @@
   "label": "Обновить renderer и observer планов",
   "kind": "task",
   "parent": "M03",
-  "status": "queued",
+  "status": "done",
   "estimate_minutes": 15,
   "depends_on": [
     "L09"
@@ -12,7 +12,7 @@
   "model": "gpt-6-astra",
   "id": "L10",
   "created_at": "2026-11-07T18:31:53+03:00",
-  "updated_at": "2026-11-07T18:31:53+03:00",
+  "updated_at": "2026-11-07T20:29:35+03:00",
   "progress_events": [
     {
       "at": "2026-11-07T18:31:53+03:00",
@@ -32,6 +32,44 @@
       },
       "session": "unknown",
       "harness": "unknown"
+    },
+    {
+      "at": "2026-11-07T20:24:07+03:00",
+      "note": "Начал работу в текущей сессии",
+      "changes": {
+        "status": "running",
+        "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+        "harness": "codex",
+        "owner": "root"
+      },
+      "actor": {
+        "host_id": null,
+        "harness": "codex",
+        "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+        "source": "native_environment"
+      },
+      "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "harness": "codex"
+    },
+    {
+      "at": "2026-11-07T20:29:35+03:00",
+      "note": "",
+      "changes": {
+        "status": "done",
+        "result": "Публичный просмотр LHC1.17.0 обновлён до c3fc6160ab8dfa42. Mirror и observer активны; health HTTP200, изолированный сценарий assignment проверен. Релиз принят после фактической готовности HTTP."
+      },
+      "actor": {
+        "host_id": null,
+        "harness": "codex",
+        "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+        "source": "native_environment"
+      },
+      "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "harness": "codex"
     }
-  ]
+  ],
+  "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+  "harness": "codex",
+  "owner": "root",
+  "result": "Публичный просмотр LHC1.17.0 обновлён до c3fc6160ab8dfa42. Mirror и observer активны; health HTTP200, изолированный сценарий assignment проверен. Релиз принят после фактической готовности HTTP."
 }

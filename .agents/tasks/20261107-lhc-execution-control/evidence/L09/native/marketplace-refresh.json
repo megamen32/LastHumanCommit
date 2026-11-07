@@ -1,0 +1,8 @@
+{
+  "attempt": "20261107T172019Z-92927e2e",
+  "at": "2026-11-07T17:20:31.936154+00:00",
+  "from": "4b440fa45bb9794974c3fde0ec888a69303a8a5b",
+  "to": "3e37f1a7b1995f74fdcacc3a966e8003223a78f8",
+  "mode": "git fetch then merge --ff-only",
+  "package_parity": true
+}
