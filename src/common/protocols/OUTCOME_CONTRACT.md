@@ -110,9 +110,56 @@ not a required message format or an interview):
 
 ```sh
 python3 <package>/tools/lhc_outcome.py --cwd <project> --runtime codex --session-id <native-id> contract \
-  --scenario 'Empty basket total' --target 'python3 total.py' --expected '0' \
+  --task-class quickfix --scenario 'Empty basket total' --target 'python3 total.py' --expected '0' \
   --owned-path total.py
 ```
+
+### Starting without an observed outcome
+
+The existing mutating `contract` command can create its own **pending-only**
+outcome when no outcome exists, including over an ordinary time-only state.
+No timer or startup hook has to run first. A read-only `status` on a missing state
+continues to return a missing-state error and creates no state or lock.
+
+Initial creation requires an explicit non-status `--task-class` and a verified
+standalone Codex session: the native `CODEX_THREAD_ID` must equal `--session-id`,
+the existing bounded native identity reader must find exactly that session's
+journal under the configured Codex home, and its header cwd must match `--cwd`.
+An unverified child/parent relation, foreign ID, wrong cwd/runtime or missing
+native identity fails closed. Fresh bootstrap for other harnesses is explicitly
+unsupported until an equally verified native identity route exists; their existing
+observed-outcome workflows are unchanged. Do not manufacture a native ID variable
+or event payload to bypass these checks.
+
+The initial class sets pending obligations directly: quickfix requires technical
+and consumer, fullcycle requires every stage, testing/research require consumer.
+Testing also requires explicit `--coverage`; engineering requires `--owned-path`.
+No ordinary-message classifier or inferred exclusion runs during bootstrap.
+Existing `--require-stage`, source/permission checks and `--not-applicable` rules
+still apply. Validation failure writes no outcome.
+
+Existing timer, input/source history, holds and identity are retained. A held or
+closed state without an outcome cannot be reopened by bootstrap. An existing
+outcome uses its normal contract update path, with exact owner/runtime/cwd checks;
+it is never replaced with a fresh outcome or a fresh evidence clock just because
+`contract` was repeated. Identical repeated contract preserves its ID, start,
+evidence and completed review. HumanStop is not cleared. Existing mismatched or
+malformed outcome data fails closed.
+
+When no previously captured original input exists, bootstrap reads the latest
+nonempty native user input from a bounded 4 MiB tail window of that verified own
+journal (2 MiB record limit, 64 KiB input limit), preserving exact text and a
+path/byte-offset/hash reference. No whole foreign transcript is loaded. Missing or
+oversized input fails closed rather than substituting the canary scenario for the
+native assignment. Existing captured original/latest input remains unchanged.
+`bootstrap.source_kind` is `explicit-contract`, with `scope_origin=unknown`; a
+role=user source can itself be a relay and is not promoted to human authorization.
+This records no execution receipt or synthetic native event.
+The command records an explicit wall-clock start and pending contract data only,
+with no acceptance, completed stages or native delivery claim. Permission sources
+are not minted from CLI text. Work and the normal independent/self review route
+must still provide the applicable evidence; no special bootstrap acceptance path
+or manual state-file editing exists.
 
 Class is a hypothesis: Lead may correct it with `--task-class <class>` and
 `--scope-source <exact native user source from status>`; no permission comes from
