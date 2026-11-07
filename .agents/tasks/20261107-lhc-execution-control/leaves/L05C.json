@@ -1,7 +1,7 @@
 {
   "label": "Связать атомарный допуск, wake и инструкции",
   "kind": "task",
-  "status": "running",
+  "status": "done",
   "estimate_minutes": 15,
   "depends_on": [
     "L02",
@@ -14,7 +14,7 @@
   "model": "gpt-6.1-sol",
   "id": "L05C",
   "created_at": "2026-11-07T18:46:00+03:00",
-  "updated_at": "2026-11-07T18:54:19+03:00",
+  "updated_at": "2026-11-07T19:11:56+03:00",
   "progress_events": [
     {
       "at": "2026-11-07T18:46:00+03:00",
@@ -91,6 +91,31 @@
       },
       "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
       "harness": "codex"
+    },
+    {
+      "at": "2026-11-07T19:11:56+03:00",
+      "note": "Worker audit_rust_plan: lhc/execution-guidance-20261107 merged, worktree, branch and run directory removed",
+      "changes": {
+        "status": "done",
+        "result": "Atomic admission bridge, assigned availability, source/turn/wake correlation and recovery without replay; concrete continuation instructions. 18 focused checks, actual6command CLI journey and read-only real session canary passed. Evidence/L05C; commite3d18481 integrated.",
+        "worker": {
+          "id": "audit_rust_plan",
+          "branch": "lhc/execution-guidance-20261107",
+          "worktree": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-guidance-20261107",
+          "registered_at": "2026-11-07T18:48:23+03:00",
+          "run_dir": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-guidance-20261107/.tmp/worker-run",
+          "run_host": "roomhacker-server-100",
+          "removed_at": "2026-11-07T19:11:56+03:00"
+        }
+      },
+      "actor": {
+        "host_id": null,
+        "harness": "codex",
+        "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+        "source": "native_environment"
+      },
+      "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "harness": "codex"
     }
   ],
   "worker": {
@@ -99,9 +124,11 @@
     "worktree": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-guidance-20261107",
     "registered_at": "2026-11-07T18:48:23+03:00",
     "run_dir": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-guidance-20261107/.tmp/worker-run",
-    "run_host": "roomhacker-server-100"
+    "run_host": "roomhacker-server-100",
+    "removed_at": "2026-11-07T19:11:56+03:00"
   },
   "owner": "audit_rust_plan",
   "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
-  "harness": "codex"
+  "harness": "codex",
+  "result": "Atomic admission bridge, assigned availability, source/turn/wake correlation and recovery without replay; concrete continuation instructions. 18 focused checks, actual6command CLI journey and read-only real session canary passed. Evidence/L05C; commite3d18481 integrated."
 }
