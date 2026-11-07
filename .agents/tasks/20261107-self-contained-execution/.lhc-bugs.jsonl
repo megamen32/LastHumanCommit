@@ -20,3 +20,5 @@
 {"action": "resolve", "actor": "I1 native 01a1b7ae", "at": "2026-11-07T21:10:44+00:00", "id": "B0fc5504fcdd6492ab0dc", "sha256": "7177d0073766c82f662e42c1287302e3c39a6272f5839f7486bf1b541c94ddd6", "status": "fixed"}
 {"action": "resolve", "actor": "I1 native 01a1b7ae", "at": "2026-11-07T21:10:44+00:00", "id": "Bc3ad2338a0b14757a239", "sha256": "a0a80e6462f6694dad06303fa399ae6d6add5867d7ea2daeaab37d6263f120d8", "status": "fixed"}
 {"action": "resolve", "actor": "I1 native 01a1b7ae", "at": "2026-11-07T21:10:45+00:00", "id": "B081d703e49df496a835c", "sha256": "6cddb251835661cf5c5f47f51034f10f03b424651561b051deac2472494dab1d", "status": "fixed"}
+{"action": "register", "actor": "I1 native 01a1b7ae", "at": "2026-11-07T21:25:02+00:00", "id": "B4f5c63c21f044bb589a3", "sha256": "1193cb3d029622f4e02e2447d73b16b959dd16425a64dab8479b02013e206d1e", "status": "open"}
+{"action": "update", "actor": "I1 native 01a1b7ae", "at": "2026-11-07T21:25:02+00:00", "id": "B4f5c63c21f044bb589a3", "sha256": "d9501cc0718d26a7a77057607f4f7b94d5419b974dbfb160d1d617552f94d924", "status": "blocked"}

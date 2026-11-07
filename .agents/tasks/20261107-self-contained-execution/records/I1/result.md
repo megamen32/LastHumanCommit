@@ -30,3 +30,9 @@ Final candidate NOT_FROZEN. Конкретная зависимость: нов�
 Parent delivery gate exit2: dirty canonical task metadata/evidence и root downloaded_files/dashboard.lock deletion; сохранены, не staged/не восстановлены. Worker commit не переносил lock deletion. Полная чистота root не заявлена. Имеющиеся product source/package bytes проверены отдельно от этого ownership gate.
 
 Main merge, tag, shared package/trust/mirror/runtime mutation не выполнялись. Чужие Q1/REVIEW/H records не менялись и не публиковались I1.
+
+## Native bootstrap и ownership уточнение
+
+Прочитан завершённый records/H1/native-state-diagnosis.md. Public bootstrap gap зарегистрирован B4f5c63c21f044bb589a3, status blocked по конкретному core-scope gate: существующие contract/status не создают pending outcome; startup intentionally instruction-only/time-only. Причина отсутствия timer файла Q1 остаётся неизвестной. Нужен отдельно назначенный core fix; I1 не изменяет F/helper/outcome/entry P1 scope и не создаёт synthetic state.
+
+Владелец подтвердил: завершённые task-local H/F/V/Q1/Reviewer records/evidence принадлежат parent deliverable и могут быть приняты I1 после завершения записи/отсутствия pending операций. Активные Q1/REVIEW и текущий H P1 followup пока сохраняются без stage; private attempts/locks остаются ignored. Чужой dashboard.lock и другие tasks исключены. После окончательных proof-only commits будут зафиксированы product-reviewed SHA и published evidence SHA с точным совпадением product/package bytes. Непроверенные source delta после acceptance не допускаются.
