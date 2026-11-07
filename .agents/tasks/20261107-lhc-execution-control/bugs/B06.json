@@ -1,0 +1,24 @@
+{
+  "created_at": "2026-11-07T15:54:19+00:00",
+  "details": "Интегрированный dispatch_leaf не проверяет зависимости и вместимость; assigned reconcile не получает fresh idle. Проверка и durable intent должны быть атомарны под общим plan lock.",
+  "events": [
+    {
+      "action": "register",
+      "actor": "root",
+      "at": "2026-11-07T15:54:19+00:00",
+      "changes": {
+        "details": "Интегрированный dispatch_leaf не проверяет зависимости и вместимость; assigned reconcile не получает fresh idle. Проверка и durable intent должны быть атомарны под общим plan lock.",
+        "source": "integrated ef69654c src/common/tools/lhc_execution.py",
+        "status": "open",
+        "title": "Dispatch не связан с атомарным допуском плана"
+      }
+    }
+  ],
+  "id": "B06",
+  "owner": "root",
+  "reporter": "root",
+  "source": "integrated ef69654c src/common/tools/lhc_execution.py",
+  "status": "open",
+  "title": "Dispatch не связан с атомарным допуском плана",
+  "updated_at": "2026-11-07T15:54:19+00:00"
+}
