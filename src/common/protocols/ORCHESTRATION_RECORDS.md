@@ -183,6 +183,40 @@ native identity or authority.
 These operations accept `expected_hash` in MCP or `--expected-hash` in CLI for
 compare-and-swap. They use the same canonical persistence path. An attempt ID is
 stable for this assignment and is not replaced to retry an uncertain effect.
+Before a new external dispatch, `briefs/<leaf-id>.md` must contain explicit
+`task_id`, `leaf_id`, `owner/session`, `parent_lead_identity`,
+`parent_task_id/session/route`, `role`, `mode`, `description`, `acceptance`,
+`read_paths`, `write_paths`, `excluded_scope` and `next_action` fields.
+`task_id` is the canonical plan directory's name, not a second metadata ID.
+Owner and Lead identities must match the assignment; the return route names that
+same task and Lead session. `acceptance` states `output`, `destination`, and
+`checks`. A reader/tester may explicitly use `write_paths: []`; execution and
+artifact writers require a write scope. `read_paths: []` requires supplied `input`.
+Artifact writers also require `exclusive_plan_write_paths` and
+`artifact_writer_acceptance` as described above. These are structural records,
+not an automated judgment of prose quality or an instruction to copy unrelated
+chat history. Use a JSON object or the explicit field format above, without
+repeating keys, including keys in nested JSON objects.
+
+The gate reads a regular UTF-8 file through the canonical plan and its real
+`briefs` directory. Directory/file symlinks and non-regular inputs are refused;
+FIFO input cannot block admission. The brief limit is 128 KiB and the delivered
+payload limit is 256 KiB; an oversized input is refused with its byte limit and
+is never silently truncated.
+
+Under the existing admission lock/CAS, the gate saves the exact brief, leaf hash,
+caller input and composed message in an immutable private attempt receipt at
+`records/<leaf-id>/attempts/<sha256(attempt-id)>/handoff.json`. The file uses mode
+0600, new directories use 0700, and an attempt-local 0600 `.gitignore` containing
+`*` excludes the private receipt from ordinary Git adds even outside `.agents`.
+This does not change repository-level ignores or protect an explicit forced add.
+Public assignment/graph state retains only the immutable identity, hashes and
+receipt path. CLI/MCP error argv hides `--message`. The saved intent is flushed
+before external I/O. A changed brief after admission cannot change the delivered
+snapshot; an existing conflicting snapshot fails closed. Reconciliation reads the
+saved attempt and does not send it again. Self work retains its verified local
+identity path and sends nothing.
+
 The required task message is scoped by the brief; it is not reconstructed from
 unrelated chat history. For example, with the real explicit refs already checked:
 
@@ -269,3 +303,26 @@ consumer acceptance.
 Isolated setup for fresh CLI/stdio consumers is in
 `protocols/EXECUTION_CONSUMER.md`. It uses copied test data and a local fake Herder,
 with no real native sessions, messages or model turns.
+
+
+### Current goal and frontier
+
+`activate PLAN LEAF` also binds the selected actual session/harness to its existing
+native outcome through `lhc_plan_control.bind_session_plan`. Missing historical
+native state remains an explicit unknown binding; reading or activating an old
+plan does not create an outcome or migrate it into a second store.
+
+Use `goal-control PLAN` (`read_goal_control` in MCP) to read current native
+`goal_status`, `frontier`, `next_decision` and fingerprint. `show` and newly built
+graphs include the same derived control. The graph's `goal_control` is a display
+snapshot; always reread the live adapter before a decision. Finished cards and a
+completed native turn do not prove acceptance of the current goal.
+
+Use `goal-control PLAN --session ID --harness NAME --decision JSON`
+(`record_frontier_decision` in MCP) for an explicit frontier decision. The adapter
+verifies current Lead ownership, session-plan index and exact outcome binding
+under the existing native state lock. MCP defaults to the request's native caller,
+never the long-lived server's session. The decision records evidence, action,
+owner and uncertainty; external waits also require a resume condition, and a
+human stop requires an existing observed stop. It is not an automatic dispatch,
+new scheduler, or authority to override STOP, quota or UNKNOWN/no-replay gates.
