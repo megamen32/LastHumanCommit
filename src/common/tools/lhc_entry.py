@@ -161,37 +161,74 @@ def restore_codex_routes(tools=None, codex_home=None, state_home=None):
 
 
 def plan_resume_context(event, root):
-    """After a compaction or a resume: the plan bound to this session, as text.
-
-    Read-only facts of the leaf files. A session that lost its context must
-    continue the plan it was working on, not answer the first message of the
-    chat again; the plan is its memory, so the hook shows it.
-    """
+    """Read-only recovery of the session-bound plan and its latest saved state."""
     if not isinstance(event, dict) or event.get("agent_id"):
         return None
     found = _plan_entry(event, root)
     if not found:
         return None
-    bound = found.get("ambiguous_bindings") or []
     continuation = found.get("continuation")
-    if not continuation and not bound:
+    bindings = [continuation] if continuation else found.get("ambiguous_bindings") or []
+    if not bindings:
         return None
-    plan = Path((continuation or bound[0])["plan"])
+    precedence = "Latest direct human request and STOP take precedence; reconcile them before continuing."
+    plans = {item["plan"]: item for item in reversed(bindings)}
+    if len(plans) > 1:
+        # Several leaves in one plan do not make the plan ambiguous. Several
+        # plans do: preserve their identities without borrowing another's IDs.
+        return ("LHC: several plans are bound to this session. " + precedence + "\n" +
+                _plan_context({"ambiguous_bindings": list(plans.values())}))[:4000]
+    plan = Path(bindings[0]["plan"])
     if not any((plan / "leaves").glob("*.json")):
         return None
     import lhc_plan_json
-    current = [str(item["leaf"]) for item in ([continuation] if continuation else bound)]
-    many = len(current) > 1
-    lines = [f"LHC: you are in the middle of plan {plan.name} ({plan}). "
-             f"{'Leaves' if many else 'Leaf'} {', '.join(current)} of this session {'are' if many else 'is'} "
-             "your current goal: the first request of this chat was already turned into this plan, so do not "
-             "research or plan it again. Continue from the last note of "
-             f"{'those leaves' if many else 'that leaf'}."]
-    lines += lhc_plan_json.plan_summary(plan, current)
+    try:
+        metadata = json.loads((plan / "plan.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        metadata = {}
+    if not isinstance(metadata, dict):
+        metadata = {}
+    short = lhc_plan_json._short
+    lines = [f"LHC: session-bound plan {plan.name} ({plan}). Saved state for recovery. " + precedence]
+    for key, label, limit in (("goal", "Goal", 600), ("current_progress", "Current progress", 500)):
+        if metadata.get(key):
+            lines.append(f"{label}: {short(metadata[key], limit)}")
+    revisions = metadata.get("revisions")
+    if isinstance(revisions, list) and revisions:
+        latest = revisions[-1]
+        latest = {"reason": latest} if isinstance(latest, str) else latest
+        if isinstance(latest, dict):
+            lines.append(f"Latest revision {len(revisions)}: " + "; ".join(
+                short(latest[key], limit) for key, limit in (("at", 50), ("reason", 200), ("summary", 400))
+                if latest.get(key)))
+    policy = metadata.get("estimate_policy") or {}
+    policy = policy if isinstance(policy, dict) else {}
+    cap = _plan_leaf_cap(metadata)
+    lines.append(f"Plan policy: deliverable={short(metadata.get('deliverable') or 'implementation', 40)}, "
+                 f"decomposition={short(metadata.get('decomposition') or 'progressive', 40)}, leaf_cap_minutes={cap}.")
+    if policy.get("reason"):
+        lines.append("Estimate reason: " + short(policy["reason"], 200))
+    lines.append(f"Whole plan: {plan / 'plan.md'}")
+    bound_ids = {str(item["leaf"]) for item in bindings}
+    current = [str(leaf.get("id")) for leaf in lhc_plan_json._leaf_rows(plan)
+               if str(leaf.get("id")) in bound_ids and leaf.get("status") == "running"
+               and leaf.get("kind") != "milestone"]
+    summary = lhc_plan_json.plan_summary(plan, current)
+    if not current:
+        lines.append("Now: no running leaf bound to this session.")
+    # Keep the current note and next work ahead of potentially long Done history.
+    # The canonical summary owns the status wording and leaf facts.
+    priority = ("Now:", "Next:", "Running in other sessions or Workers:")
+    lines += [line for line in summary if line.startswith(priority)]
+    lines += [line for line in summary if not line.startswith(priority + ("Whole plan:",))]
     return "\n".join(lines)[:4000]
 
 
-LEAF_CAP_MINUTES = 20   # a leaf is about 15 minutes; past this the hook says so once
+def _plan_leaf_cap(metadata):
+    """Use the saved plan's scoped estimate policy, with the format default."""
+    policy = metadata.get("estimate_policy") if isinstance(metadata, dict) else None
+    cap = policy.get("leaf_cap_minutes") if isinstance(policy, dict) else None
+    return cap if type(cap) is int and cap > 0 else 15
 
 
 def _split_leaves(leaves):
@@ -739,17 +776,18 @@ def plan_audit(event, root, now=None):
         notes.append("LHC: " + "; ".join(late[:3]) + ". Split it now: close what is proven as done with its "
                      "result, put the rest into new leaves, one leaf per object (environment, host, service), and "
                      "start the independent ones in parallel. Until it is split the tool refuses progress notes on it.")
+    cap = _plan_leaf_cap(meta)
     big = [f"{ident} ({int(high)} min)" for ident, leaf in leaves.items()
            if leaf.get("kind") != "milestone" and leaf.get("status") not in {"done", "deferred"}
            and not leaf.get("estimate_over_limit_reason")
-           for high in [_estimate_max(leaf)] if high and high > LEAF_CAP_MINUTES]
+           for high in [_estimate_max(leaf)] if high and high > cap]
     if big and _due(session, "audit-cap-" + plan.name + "-" + re.sub(r"[^A-Za-z0-9]+", "-", "-".join(sorted(big))),
                     now, 6 * 3600):
-        notes.append("LHC: a leaf is about 15 minutes and these are longer: " + "; ".join(big[:4]) + ". Split each into "
-                     "leaves of about 15 minutes. If you cannot yet name what the parts are, it is a stage: make it a "
-                     "milestone (kind: milestone), make the first leaf of it a 15 minute look at the facts (a list, a "
-                     "command output), then cut the stage into leaves from what you found (parent: its id). One leaf per "
-                     "object (environment, host, service).")
+        notes.append(f"LHC: this plan's leaf cap is {cap} minutes and these are longer: " + "; ".join(big[:4]) +
+                     f". Split each into leaves of at most {cap} minutes. If you cannot yet name what the parts are, "
+                     "it is a stage: make it a milestone (kind: milestone), make the first leaf a bounded look at the "
+                     "facts (a list, a command output), then cut the stage into leaves from what you found (parent: its "
+                     "id). One leaf per object (environment, host, service).")
     pending = []
     for index, stage in enumerate(stages):
         if stage["children"] or stage["status"] in {"done", "deferred"}:
@@ -759,7 +797,7 @@ def plan_audit(event, root, now=None):
         break
     if pending and _due(session, "audit-stage-" + plan.name + "-" + pending[0], now, 3600):
         notes.append(f"LHC: {pending[0]} is a milestone with no leaves and it is the next one. Cut it into leaves of "
-                     "about 15 minutes now, from facts: if you cannot name the parts, the first leaf is a 15 minute "
+                     f"at most {cap} minutes now, from facts: if you cannot name the parts, the first leaf is a bounded "
                      "look at what is there. Give the leaves parent: " + pending[0] + ". A milestone is not worked on itself.")
     return "\n\n".join(notes) or None
 
