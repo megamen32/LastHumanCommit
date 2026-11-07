@@ -1,44 +1,17 @@
 #!/usr/bin/env python3
-"""Answer one operational question about an LHC task graph: what can start now.
+"""Read a plan's dependency candidates and runtime dispatch evidence.
 
-The task graph is the machine artifact of a plan. It knows the leaves, their
-status, their dependencies, their estimates and how many lanes may run at the
-same time. This tool turns that artifact into a dispatch decision:
-
-    which lines can be started right now, what is already running, what is
-    still in the way, and which slot each ready line belongs to.
-
-Usage::
-
-    python3 lhc_parallel.py PLAN_GRAPH [--json] [--slot]
-
-The readable answer is in Russian, because it is read by a Russian-speaking
-operator and by the agent that dispatches the work. The machine answer
-(``--json``) carries the same facts for a caller that parses them.
-
-The module is self-contained on purpose: it parses the graph on its own and
-never imports the sibling task-graph renderer, so both tools can change
-without one another. It uses the standard library only.
-
-Rules
------
-A line is *ready to start* when all of the following hold:
-
-* its status is ``queued`` (it was never started and is not held);
-* it carries no blocker text (a concrete obstacle means it is not ready);
-* every id in ``depends_on`` exists in the graph and is ``done``;
-* a free slot exists: ``slots`` minus the number of running lines.
-
-A queued line whose dependencies are not met is *waiting*: the tool names the
-dependency that is not ready and its current status. A line whose status is
-``blocked``, or that carries blocker text, is *blocked*: the tool prints the
-reason. A ready line that does not fit into a free slot is *deferred*: it is
-ready in every other respect and only capacity holds it back.
+``ready`` is the compatible candidate list after dependencies, executor capacity
+and slots. It is not a successful launch or proof that an executor is available.
+``dispatchable`` additionally requires an explicit assignment and fresh idle
+runtime. Both JSON and text preserve the reason why admission is unknown/false.
+No session is changed, resumed or created by this tool.
 """
 
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import sys
 from dataclasses import dataclass, field
@@ -109,6 +82,8 @@ class Task:
     note: str = ""
     owner: str = ""
     session: str = ""
+    harness: str = ""
+    assignment: dict[str, Any] = field(default_factory=dict)
     started_at: str = ""
     finished_at: str = ""
     wave: Optional[int] = None
@@ -176,7 +151,7 @@ class Graph:
 
 @dataclass
 class Summary:
-    """The answer to "what can start right now", computed from one graph."""
+    """Dependency candidates and separately evidenced dispatch admission."""
 
     graph: Graph
     ready: list[Task] = field(default_factory=list)
@@ -188,6 +163,10 @@ class Summary:
     free_slots: Optional[int] = None
     critical_path: list[str] = field(default_factory=list)
     slot_of: dict[str, int] = field(default_factory=dict)
+    readiness: dict[str, dict[str, Any]] = field(default_factory=dict)
+    dispatchable: list[Task] = field(default_factory=list)
+    dependency_ready: list[Task] = field(default_factory=list)
+    occupied_slots: int = 0
 
     @property
     def slots(self) -> Optional[int]:
@@ -332,6 +311,8 @@ def parse_graph_json(document: Any) -> Graph:
                 note=_text(task.get("note")),
                 owner=_text(task.get("owner")),
                 session=_text(task.get("session")),
+                harness=_text(task.get("harness")),
+                assignment=dict(task["assignment"]) if isinstance(task.get("assignment"), dict) else {},
                 started_at=_text(task.get("started_at")),
                 finished_at=_text(task.get("finished_at")),
                 wave=wave if isinstance(wave, int) and not isinstance(wave, bool) else None,
@@ -441,14 +422,31 @@ def _critical_path(tasks: dict[str, Task], order: list[str]) -> list[str]:
     return best_chain
 
 
+_READINESS = None
+
+
+def readiness_module():
+    """Load the canonical sibling even when this tool is imported by file path."""
+    global _READINESS
+    if _READINESS is None:
+        spec = importlib.util.spec_from_file_location("lhc_parallel_readiness", Path(__file__).with_name("lhc_readiness.py"))
+        if spec is None or spec.loader is None:
+            raise ImportError("lhc_readiness.py is required next to the planner")
+        _READINESS = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(_READINESS)
+    return _READINESS
+
+
 def analyze(graph: Graph) -> Summary:
-    """Compute the dispatch answer for one graph."""
-
+    """Compute legacy candidates and explicit dispatch admission separately."""
     tasks = graph.by_id()
-    order = [task.id for task in graph.tasks]
-    layers = _layers(tasks, order)
-    summary = Summary(graph=graph)
-
+    decision = readiness_module().evaluate(graph.tasks, graph.slots)
+    summary = Summary(graph=graph, free_slots=decision["free_slots"],
+                      occupied_slots=decision["occupied_slots"], readiness=decision["by_id"])
+    summary.ready = [tasks[key] for key in decision["ready"]]
+    summary.deferred = [tasks[key] for key in decision["deferred"]]
+    summary.dispatchable = [tasks[key] for key in decision["dispatchable"]]
+    summary.dependency_ready = [tasks[key] for key in decision["dependency_ready"]]
     for task in graph.tasks:
         if task.status == STATUS_RUNNING:
             summary.running.append(task)
@@ -456,54 +454,15 @@ def analyze(graph: Graph) -> Summary:
             summary.blocked.append((task, task.blocker_reason))
         elif task.status == STATUS_WAITING:
             summary.waiting.append((task, []))
-        elif task.status == STATUS_DEFERRED:
-            # The owner deferred this line: no answer is expected, so it waits
-            # for nothing and it takes no slot.
-            continue
         elif task.status not in STATUSES:
             summary.unknown_status.append(task)
-
-    running_count = len(summary.running)
-    if graph.slots is None:
-        summary.free_slots = None
-    else:
-        summary.free_slots = max(0, graph.slots - running_count)
-
-    # One rule of the count of blockers: a line is blocked when its status says
-    # so. A blocker text alone does not change the state of a queued line.
-    for task in graph.tasks:
-        if task.status != STATUS_QUEUED:
-            continue
-        unmet: list[str] = []
-        for dep in task.depends_on:
-            dependency = tasks.get(dep)
-            if dependency is None:
-                unmet.append(dep)
-            elif dependency.status != STATUS_DONE:
-                unmet.append(dep)
-        if unmet:
-            summary.waiting.append((task, unmet))
-            continue
-        summary.ready.append(task)
-
-    def sort_key(task: Task) -> tuple[int, int]:
-        wave = task.wave if task.wave is not None else layers.get(task.id, 0)
-        return (wave, task.order)
-
-    summary.ready.sort(key=sort_key)
-    summary.waiting.sort(key=lambda item: sort_key(item[0]))
-    summary.blocked.sort(key=lambda item: sort_key(item[0]))
-
-    if summary.free_slots is None:
-        summary.deferred = []
-    else:
-        summary.deferred = summary.ready[summary.free_slots:]
-        summary.ready = summary.ready[:summary.free_slots]
-
+    waiting_ids = decision["waiting_for_leaf"] + decision["waiting_for_owner"] + decision["external_waiting"]
+    for key in waiting_ids:
+        if tasks[key].status == STATUS_QUEUED:
+            summary.waiting.append((tasks[key], decision["by_id"][key]["unmet_ids"]))
     for index, task in enumerate(summary.ready, start=1):
         summary.slot_of[task.id] = index
-
-    summary.critical_path = _critical_path(tasks, order)
+    summary.critical_path = _critical_path(tasks, list(tasks))
     return summary
 
 
@@ -522,6 +481,7 @@ def _task_dict(summary: Summary, task: Task) -> dict[str, Any]:
     """One task as a machine-readable record."""
 
     payload: dict[str, Any] = {
+        **summary.readiness.get(task.id, {}),
         "id": task.id,
         "label": task.label,
         "status": task.status,
@@ -549,6 +509,7 @@ def to_dict(summary: Summary, *, show_slots: bool = False) -> dict[str, Any]:
     """The whole answer as a machine-readable object."""
 
     graph = summary.graph
+    index = graph.by_id()
     payload: dict[str, Any] = {
         "source": graph.source_path,
         "title": graph.title,
@@ -558,6 +519,10 @@ def to_dict(summary: Summary, *, show_slots: bool = False) -> dict[str, Any]:
         "slots": graph.slots,
         "slots_declared": graph.slots is not None,
         "free_slots": summary.free_slots,
+        "occupied_slots": summary.occupied_slots,
+        "readiness": summary.readiness,
+        "dependency_ready": [_task_dict(summary, task) for task in summary.dependency_ready],
+        "dispatchable": [_task_dict(summary, task) for task in summary.dispatchable],
         "counts": {
             "total": len(graph.tasks),
             "done": sum(1 for task in graph.tasks if task.status == STATUS_DONE),
@@ -645,7 +610,7 @@ def render_text(summary: Summary, *, show_slots: bool = False) -> str:
         summary.free_slots if summary.free_slots is not None else "без ограничения"
     )
     lines.append("")
-    lines.append(f"Готовы к запуску ({free_text}):")
+    lines.append(f"Кандидаты по зависимостям и вместимости ({free_text}):")
     if summary.ready:
         for task in summary.ready:
             parts = [f"  - {task.id}", f"«{task.label}»" if task.label else "", task.estimate_label]
@@ -656,18 +621,18 @@ def render_text(summary: Summary, *, show_slots: bool = False) -> str:
                 parts.append("разблокирует: " + ", ".join(dependents))
             lines.append(" · ".join(part for part in parts if part))
     else:
-        lines.append("  — сейчас запускать нечего")
+        lines.append("  Нет кандидатов по текущему плану.")
 
     if summary.deferred:
         lines.append("")
-        lines.append(f"Готовы, но ждут свободного слота ({len(summary.deferred)}):")
+        lines.append(f"Кандидаты ждут свободного слота ({len(summary.deferred)}):")
         for task in summary.deferred:
             parts = [f"  - {task.id}", f"«{task.label}»" if task.label else "", task.estimate_label]
             lines.append(" · ".join(part for part in parts if part))
 
     if summary.waiting:
         lines.append("")
-        lines.append(f"Ждут зависимостей ({len(summary.waiting)}):")
+        lines.append(f"Ждут зависимостей, исполнителя или внешнего условия ({len(summary.waiting)}):")
         for task, unmet in summary.waiting:
             details = []
             for dep in unmet:
@@ -677,7 +642,8 @@ def render_text(summary: Summary, *, show_slots: bool = False) -> str:
                 else:
                     label = f" «{dependency.label}»" if dependency.label else ""
                     details.append(f"{dep}{label} — {STATUS_LABELS.get(dependency.status, dependency.status)}")
-            lines.append(f"  - {task.id} «{task.label}» — ждёт: " + ", ".join(details))
+            detail = ", ".join(details) or summary.readiness[task.id]["reason_code"]
+            lines.append(f"  - {task.id} «{task.label}»: ждёт {detail}")
 
     if summary.blocked:
         lines.append("")
@@ -701,12 +667,15 @@ def render_text(summary: Summary, *, show_slots: bool = False) -> str:
             lines.append(f"  - {task.id} «{task.label}» — статус «{task.status}»")
 
     lines.append("")
+    lines.append(f"Подтверждённый допуск к запуску: {len(summary.dispatchable)}. "
+                 "Кандидат без назначения и свежего runtime не подтверждает запуск.")
     if summary.critical_path:
         lines.append("Критический путь: " + " → ".join(summary.critical_path))
     next_task = summary.next_step()
     if next_task is not None:
         lines.append(
-            f"Следующий шаг: запустить {next_task.id} «{next_task.label}»"
+            f"Следующий кандидат: {next_task.id} «{next_task.label}»; допуск: "
+            + summary.readiness[next_task.id]["reason_code"]
             + (f" (слот {summary.slot_of.get(next_task.id)})" if show_slots else "")
         )
     elif summary.running:
@@ -724,7 +693,7 @@ def render_text(summary: Summary, *, show_slots: bool = False) -> str:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="lhc_parallel.py",
-        description="Показать, какие параллельные линии плана можно запустить прямо сейчас.",
+        description="Показать кандидатов плана и отдельный подтверждённый допуск к запуску.",
     )
     parser.add_argument("plan_graph", type=Path, help="файл графа задач (plan.graph.json)")
     parser.add_argument("--json", action="store_true", help="вывести машинный JSON вместо текста")
