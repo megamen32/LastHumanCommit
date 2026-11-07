@@ -1,0 +1,24 @@
+{
+  "created_at": "2026-11-07T16:37:51+00:00",
+  "details": "Свежий L07 consumer: CLI/MCP show после UNKNOWN/quota пишет Next без состояния и причины. Safe dispatch не replay, но рекомендованный первый recovery call теряет важную информацию.",
+  "events": [
+    {
+      "action": "register",
+      "actor": "root",
+      "at": "2026-11-07T16:37:51+00:00",
+      "changes": {
+        "details": "Свежий L07 consumer: CLI/MCP show после UNKNOWN/quota пишет Next без состояния и причины. Safe dispatch не replay, но рекомендованный первый recovery call теряет важную информацию.",
+        "source": "independent consumers/review and full validation on5bf8733",
+        "status": "open",
+        "title": "Public show скрывает execution blockers"
+      }
+    }
+  ],
+  "id": "B15",
+  "owner": "root",
+  "reporter": "root",
+  "source": "independent consumers/review and full validation on5bf8733",
+  "status": "open",
+  "title": "Public show скрывает execution blockers",
+  "updated_at": "2026-11-07T16:37:51+00:00"
+}

@@ -1,0 +1,25 @@
+(Linux uses --headless by default. To override, use --headed / --gui. For Xvfb mode instead, use --xvfb. Or you can hide this info by using --headless / --headless2 / --uc.)
+....................F.....................................               [100%]
+=================================== FAILURES ===================================
+______ test_empty_stage_remains_visible_when_all_created_leaves_are_done _______
+
+tmp_path = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/pytest-651809-11d9ecb61dc98850/test_empty_stage_remains_visib0')
+
+    def test_empty_stage_remains_visible_when_all_created_leaves_are_done(tmp_path):
+        path = plan(tmp_path)
+        row(path, "M01", kind="milestone")
+        row(path, "L01", parent="M01", status="done")
+        row(path, "M02", kind="milestone", depends_on=["M01"], estimate_minutes=180)
+        state = pj.plan_state(path)
+        assert "1/2 done" in state and "undecomposed stages: M02" in state
+>       assert "candidates by dependencies/capacity M02" not in state
+E       AssertionError: assert 'candidates ...capacity M02' not in 'Plan plan: ...ent_unknown.'
+E         
+E         'candidates by dependencies/capacity M02' is contained here:
+E           ges: M02; candidates by dependencies/capacity M02; dispatchable none; admission M02=assignment_unknown.
+E         ?           +++++++++++++++++++++++++++++++++++++++
+
+tests/test_plan_audit_followup.py:109: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_plan_audit_followup.py::test_empty_stage_remains_visible_when_all_created_leaves_are_done
+1 failed, 57 passed in 16.37s

@@ -1,0 +1,211 @@
+(Linux uses --headless by default. To override, use --headed / --gui. For Xvfb mode instead, use --xvfb. Or you can hide this info by using --headless / --headless2 / --uc.)
+FFFFFF                                                                   [100%]
+=================================== FAILURES ===================================
+____________ test_atomic_admission_inherits_milestone_prerequisite _____________
+
+tmp_path = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/pytest-611412-5258690dcdd044bb/test_atomic_admission_inherits0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x79f7f035ee90>
+
+    def test_atomic_admission_inherits_milestone_prerequisite(tmp_path, monkeypatch):
+        plan = make_plan(tmp_path, monkeypatch, [
+            {"id": "P"}, {"id": "M", "kind": "milestone", "depends_on": ["P"]},
+            {"id": "C", "parent": "M"}])
+        receipt = assign_idle(plan, "C")
+>       with pytest.raises(pj.LeafError, match="dependencies_unmet"):
+E       Failed: DID NOT RAISE <class 'lhc_release_acceptance_regressions.LeafError'>
+
+tests/test_execution_acceptance_regressions.py:42: Failed
+__________ test_atomic_admission_uses_completed_children_of_milestone __________
+
+tmp_path = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/pytest-611412-5258690dcdd044bb/test_atomic_admission_uses_com0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x79f7ef623b20>
+
+    def test_atomic_admission_uses_completed_children_of_milestone(tmp_path, monkeypatch):
+        plan = make_plan(tmp_path, monkeypatch, [
+            {"id": "M", "kind": "milestone"}, {"id": "C", "parent": "M", "status": "done"},
+            {"id": "N", "depends_on": ["M"]}])
+        receipt = assign_idle(plan, "N")
+>       accepted = pj.admit_leaf(plan, "N", "attempt", receipt)
+
+tests/test_execution_acceptance_regressions.py:51: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/common/tools/lhc_plan_json.py:2109: in admit_leaf
+    return update_leaf(plan_dir, leaf_id, {}, actor=actor, expected_hash=expected_hash,
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+plan_dir = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/pytest-611412-5258690dcdd044bb/test_atomic_admission_uses_com0/plan')
+leaf_id = 'N', fields = {}
+
+    def update_leaf(plan_dir: Path, leaf_id: str, fields: dict, *, create=False,
+                    note=None, expected_hash=None, actor=None, assignment_op=None) -> dict:
+        """Serialized read/merge/validate/replace; stale optimistic writes fail."""
+        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,79}", leaf_id):
+            raise LeafError("небезопасный id листа")
+        if not isinstance(fields, dict) or "progress_events" in fields:
+            raise LeafError("fields: объект; историю меняет только progress")
+        if set(fields) & {"assignment", "assignment_history"}:
+            raise LeafError("use assign_leaf/transition_leaf to preserve assignment history")
+        who = mutation_actor(actor)
+        path = Path(plan_dir) / LEAVES_DIRNAME / (leaf_id + ".json")
+        with file_lock(Path(plan_dir) / ".lhc-leaves.lock"):
+            if path.is_symlink():
+                raise LeafError("symlink листа запрещён")
+            if create and path.exists():
+                raise LeafError("лист уже существует")
+            before = path.read_bytes() if not create else b""
+            if expected_hash and hashlib.sha256(before).hexdigest() != expected_hash:
+                raise LeafError("конфликт: лист изменён, перечитайте его")
+            raw = json.loads(before) if before else {}
+            if raw.get("assignment") and fields.get("status") == "done":
+                if raw["assignment"].get("state") != "accepted":
+                    raise LeafError("accept the explicit assignment through transition_leaf")
+                if "result" in fields and fields["result"] != raw.get("result"):
+                    raise LeafError("accepted result cannot be changed by a metadata refresh")
+            if (raw.get("assignment", {}).get("state") == "accepted" and
+                    "result" in fields and fields["result"] != raw.get("result")):
+                raise LeafError("accepted result cannot be changed by a metadata refresh")
+            if 'created_at' in fields and fields['created_at'] != raw.get('created_at'):
+                raise LeafError('created_at устанавливается автоматически и не меняется')
+            if "id" in fields and fields["id"] != leaf_id:
+                raise LeafError("id нельзя менять")
+            merged = {**raw, **fields, "id": leaf_id}
+            if assignment_op is not None:
+                op = assignment_op
+                if op["operation"] == "assign":
+                    history = list(raw.get("assignment_history", []))
+                    previous = raw.get("assignment")
+                    current = assignments.new_attempt(op["assignment"], previous=previous,
+                                                      history=history, actor=who)
+                    if previous is not None:
+                        history.append(previous)
+                    merged["assignment"], merged["assignment_history"] = current, history
+                elif op["operation"] in {"transition", "admit"}:
+                    if "assignment" not in raw:
+                        raise LeafError("leaf has no explicit assignment")
+                    if raw["assignment"].get("attempt_id") != op["attempt_id"]:
+                        raise LeafError("assignment_attempt_mismatch")
+                    if op["operation"] == "admit":
+                        # One plan lock covers dependency/capacity admission and durable intent.
+                        from lhc_readiness import evaluate
+                        tasks = collect_leaves(plan_dir)
+                        readiness = evaluate(tasks, plan_metadata(plan_dir).get("slots"))
+                        admitted = readiness["by_id"].get(leaf_id, {})
+                        if admitted.get("dispatchable") is not True:
+>                           raise LeafError("dispatch_not_admitted:" + str(admitted.get("reason_code", "leaf_unknown")))
+E                           lhc_release_acceptance_regressions.LeafError: dispatch_not_admitted:dependencies_unmet
+
+src/common/tools/lhc_plan_json.py:2020: LeafError
+_ test_public_show_names_execution_instead_of_an_unconditional_next[delivery_unknown-delivery_unknown] _
+
+tmp_path = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/pytest-611412-5258690dcdd044bb/test_public_show_names_executi0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x79f7f02f5de0>
+state = 'delivery_unknown', reason = 'delivery_unknown'
+
+    @pytest.mark.parametrize("state,reason", [
+        ("delivery_unknown", "delivery_unknown"), ("blocked", "codex_quota_guard"),
+        ("running", "assignment_running")])
+    def test_public_show_names_execution_instead_of_an_unconditional_next(tmp_path, monkeypatch, state, reason):
+        value = execution_leaf(state=state)
+        if state == "running":
+            value["assignment"]["observed_runtime"]["state"] = "running"
+            value["assignment"]["wake"].update(state="waiting", reason=None)
+        plan = make_plan(tmp_path, monkeypatch, [value])
+        result = subprocess.run([sys.executable, str(TOOLS / "lhc_plan_json.py"), "show", str(plan)],
+                                text=True, capture_output=True, timeout=20)
+        assert result.returncode == 0, result.stderr
+>       assert "Next: L01" not in result.stdout
+E       AssertionError: assert 'Next: L01' not in 'deliverable...an/plan.md\n'
+E         
+E         'Next: L01' is contained here:
+E           p: 15 min
+E           Next: L01 «Executor evidence»
+E         ? +++++++++
+E           Whole plan: /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/pytest-611412-5258690dcdd044bb/test_public_show_names_executi0/plan/plan.md
+
+tests/test_execution_acceptance_regressions.py:66: AssertionError
+_ test_public_show_names_execution_instead_of_an_unconditional_next[blocked-codex_quota_guard] _
+
+tmp_path = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/pytest-611412-5258690dcdd044bb/test_public_show_names_executi1')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x79f7ef621ae0>
+state = 'blocked', reason = 'codex_quota_guard'
+
+    @pytest.mark.parametrize("state,reason", [
+        ("delivery_unknown", "delivery_unknown"), ("blocked", "codex_quota_guard"),
+        ("running", "assignment_running")])
+    def test_public_show_names_execution_instead_of_an_unconditional_next(tmp_path, monkeypatch, state, reason):
+        value = execution_leaf(state=state)
+        if state == "running":
+            value["assignment"]["observed_runtime"]["state"] = "running"
+            value["assignment"]["wake"].update(state="waiting", reason=None)
+        plan = make_plan(tmp_path, monkeypatch, [value])
+        result = subprocess.run([sys.executable, str(TOOLS / "lhc_plan_json.py"), "show", str(plan)],
+                                text=True, capture_output=True, timeout=20)
+        assert result.returncode == 0, result.stderr
+>       assert "Next: L01" not in result.stdout
+E       AssertionError: assert 'Next: L01' not in 'deliverable...an/plan.md\n'
+E         
+E         'Next: L01' is contained here:
+E           p: 15 min
+E           Next: L01 «Executor evidence»
+E         ? +++++++++
+E           Whole plan: /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/pytest-611412-5258690dcdd044bb/test_public_show_names_executi1/plan/plan.md
+
+tests/test_execution_acceptance_regressions.py:66: AssertionError
+_ test_public_show_names_execution_instead_of_an_unconditional_next[running-assignment_running] _
+
+tmp_path = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/pytest-611412-5258690dcdd044bb/test_public_show_names_executi2')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x79f7f02f7cd0>
+state = 'running', reason = 'assignment_running'
+
+    @pytest.mark.parametrize("state,reason", [
+        ("delivery_unknown", "delivery_unknown"), ("blocked", "codex_quota_guard"),
+        ("running", "assignment_running")])
+    def test_public_show_names_execution_instead_of_an_unconditional_next(tmp_path, monkeypatch, state, reason):
+        value = execution_leaf(state=state)
+        if state == "running":
+            value["assignment"]["observed_runtime"]["state"] = "running"
+            value["assignment"]["wake"].update(state="waiting", reason=None)
+        plan = make_plan(tmp_path, monkeypatch, [value])
+        result = subprocess.run([sys.executable, str(TOOLS / "lhc_plan_json.py"), "show", str(plan)],
+                                text=True, capture_output=True, timeout=20)
+        assert result.returncode == 0, result.stderr
+>       assert "Next: L01" not in result.stdout
+E       AssertionError: assert 'Next: L01' not in 'deliverable...an/plan.md\n'
+E         
+E         'Next: L01' is contained here:
+E           p: 15 min
+E           Next: L01 «Executor evidence»
+E         ? +++++++++
+E           Whole plan: /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/pytest-611412-5258690dcdd044bb/test_public_show_names_executi2/plan/plan.md
+
+tests/test_execution_acceptance_regressions.py:66: AssertionError
+_______ test_show_prioritizes_pending_attempt_over_old_accepted_history ________
+
+tmp_path = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/pytest-611412-5258690dcdd044bb/test_show_prioritizes_pending_0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x79f7f02f4a60>
+
+    def test_show_prioritizes_pending_attempt_over_old_accepted_history(tmp_path, monkeypatch):
+        rows = []
+        for i in range(4):
+            done = execution_leaf(state="accepted", status="done")
+            done.update(id="A" + str(i))
+            rows.append(done)
+        pending = execution_leaf(state="delivery_unknown")
+        pending.update(id="Z99")
+        plan = make_plan(tmp_path, monkeypatch, rows + [pending])
+>       assert "Z99: assignment=delivery_unknown" in "\n".join(pj.plan_summary(plan))
+E       AssertionError: assert 'Z99: assignment=delivery_unknown' in 'deliverable: implementation; decomposition: progressive; leaf cap: 15 min\nDone:\n- A0 «Executor evidence» — no resul...it/.worktrees/audit-followup-20261107/.tmp/pytest-611412-5258690dcdd044bb/test_show_prioritizes_pending_0/plan/plan.md'
+E        +  where 'deliverable: implementation; decomposition: progressive; leaf cap: 15 min\nDone:\n- A0 «Executor evidence» — no resul...it/.worktrees/audit-followup-20261107/.tmp/pytest-611412-5258690dcdd044bb/test_show_prioritizes_pending_0/plan/plan.md' = <built-in method join of str object at 0x79f7f37a0570>(['deliverable: implementation; decomposition: progressive; leaf cap: 15 min', 'Done:', '- A0 «Executor evidence» — no ...o result written', '- A2 «Executor evidence» — no result written', '- A3 «Executor evidence» — no result written', ...])
+E        +    where <built-in method join of str object at 0x79f7f37a0570> = '\n'.join
+E        +    and   ['deliverable: implementation; decomposition: progressive; leaf cap: 15 min', 'Done:', '- A0 «Executor evidence» — no ...o result written', '- A2 «Executor evidence» — no result written', '- A3 «Executor evidence» — no result written', ...] = <function plan_summary at 0x79f7f1928ca0>(PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/pytest-611412-5258690dcdd044bb/test_show_prioritizes_pending_0/plan'))
+E        +      where <function plan_summary at 0x79f7f1928ca0> = pj.plan_summary
+
+tests/test_execution_acceptance_regressions.py:80: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_execution_acceptance_regressions.py::test_atomic_admission_inherits_milestone_prerequisite
+FAILED tests/test_execution_acceptance_regressions.py::test_atomic_admission_uses_completed_children_of_milestone
+FAILED tests/test_execution_acceptance_regressions.py::test_public_show_names_execution_instead_of_an_unconditional_next[delivery_unknown-delivery_unknown]
+FAILED tests/test_execution_acceptance_regressions.py::test_public_show_names_execution_instead_of_an_unconditional_next[blocked-codex_quota_guard]
+FAILED tests/test_execution_acceptance_regressions.py::test_public_show_names_execution_instead_of_an_unconditional_next[running-assignment_running]
+FAILED tests/test_execution_acceptance_regressions.py::test_show_prioritizes_pending_attempt_over_old_accepted_history
+6 failed in 0.97s
