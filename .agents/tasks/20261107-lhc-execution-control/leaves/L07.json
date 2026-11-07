@@ -1,7 +1,7 @@
 {
   "label": "Независимая приёмка сабагента и блокировок",
   "kind": "task",
-  "status": "queued",
+  "status": "running",
   "estimate_minutes": 15,
   "depends_on": [
     "L05"
@@ -12,7 +12,7 @@
   "id": "L07",
   "model": "gpt-6.1-sol",
   "created_at": "2026-11-07T18:18:35+03:00",
-  "updated_at": "2026-11-07T19:26:12+03:00",
+  "updated_at": "2026-11-07T19:28:26+03:00",
   "progress_events": [
     {
       "at": "2026-11-07T18:18:35+03:00",
@@ -46,6 +46,21 @@
           "run_host": "roomhacker-server-100"
         },
         "owner": "consumer_child_v117"
+      },
+      "actor": {
+        "host_id": null,
+        "harness": "codex",
+        "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+        "source": "native_environment"
+      },
+      "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "harness": "codex"
+    },
+    {
+      "at": "2026-11-07T19:28:26+03:00",
+      "note": "",
+      "changes": {
+        "status": "running"
       },
       "actor": {
         "host_id": null,
