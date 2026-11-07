@@ -15,5 +15,12 @@
   ],
   "acceptance_scenario": "Собранный пакет через реальные MCP/CLI ведёт самостоятельную сессию и native child: автор не подменяется исполнителем, единая readiness, подтверждённые dispatch/wake receipts, completed turn требует acceptance. Два независимых потребителя проверяют success, quota_blocked, UNKNOWN, stale and STOP без сообщений людям. Регрессии RED/GREEN, full validation, merge и установленный пакет подтверждены.",
   "current_progress": "Аудит подтверждён. Формализуем совместимый контракт, затем три параллельных исправления и установленная приёмка.",
-  "updated_at": "2026-11-07T18:18:33+03:00"
+  "updated_at": "2026-11-07T18:31:53+03:00",
+  "revisions": [
+    {
+      "at": "2026-11-07T18:31:53+03:00",
+      "reason": "Новые поля должны работать и на публичном renderer, отдельном от native cache.",
+      "summary": "Добавлен L10: штатное обновление renderer/observer после canary с сохранением конфигурации и старых планов."
+    }
+  ]
 }

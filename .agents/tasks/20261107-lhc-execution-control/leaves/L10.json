@@ -1,0 +1,37 @@
+{
+  "label": "Обновить renderer и observer планов",
+  "kind": "task",
+  "parent": "M03",
+  "status": "queued",
+  "estimate_minutes": 15,
+  "depends_on": [
+    "L09"
+  ],
+  "description": "Через штатный immutable release проверить canary, переключить два user units и подтвердить опубликованный fixture.",
+  "acceptance": "Новый release hash активен, source unchanged, опубликованный fixture показывает actor/assignment/readiness.",
+  "model": "gpt-6-astra",
+  "id": "L10",
+  "created_at": "2026-11-07T18:31:53+03:00",
+  "updated_at": "2026-11-07T18:31:53+03:00",
+  "progress_events": [
+    {
+      "at": "2026-11-07T18:31:53+03:00",
+      "note": "",
+      "changes": {
+        "label": "Обновить renderer и observer планов",
+        "kind": "task",
+        "parent": "M03",
+        "status": "queued",
+        "estimate_minutes": 15,
+        "depends_on": [
+          "L09"
+        ],
+        "description": "Через штатный immutable release проверить canary, переключить два user units и подтвердить опубликованный fixture.",
+        "acceptance": "Новый release hash активен, source unchanged, опубликованный fixture показывает actor/assignment/readiness.",
+        "model": "gpt-6-astra"
+      },
+      "session": "unknown",
+      "harness": "unknown"
+    }
+  ]
+}
