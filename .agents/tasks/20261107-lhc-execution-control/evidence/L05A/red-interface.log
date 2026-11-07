@@ -1,0 +1,115 @@
+(Linux uses --headless by default. To override, use --headed / --gui. For Xvfb mode instead, use --xvfb. Or you can hide this info by using --headless / --headless2 / --uc.)
+FFFF                                                                     [100%]
+=================================== FAILURES ===================================
+________ test_real_stdio_request_actor_never_leaks_or_borrows_assignee _________
+
+plan = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-interface-20261107/.tmp/pytest-3748061-90a9e0e00542b114/test_real_stdio_request_actor_0')
+
+    def test_real_stdio_request_actor_never_leaks_or_borrows_assignee(plan):
+        providers = [
+            ({"threadId": "codex-one"}, "codex", "codex-one"),
+            ({"ai.opencode/sessionID": "ses_two"}, "opencode", "ses_two"),
+            ({"com.zcode/request-context": {"session_id": "zcode-three"}}, "zcode", "zcode-three"),
+            (None, None, None),
+            ({"threadId": "conflict", "ai.opencode/sessionID": "ses_conflict"}, None, None),
+            ({"ai.opencode/sessionID": "wrong-prefix"}, None, None),
+            ({"threadId": 12}, None, None),
+            ({"threadId": "x" * 513}, None, None),
+        ]
+        messages = [rpc("update_leaf", {"plan_dir": str(plan), "leaf_id": "L01",
+                      "fields": {"note": f"request {i}"}}, meta, i)
+                    for i, (meta, _, _) in enumerate(providers)]
+        # An inherited native environment is the server's identity, not the caller.
+        env = {**os.environ, "CODEX_THREAD_ID": "11111111-1111-1111-1111-111111111111",
+               "LHC_MCP_ACTOR_CONTEXT": json.dumps({**assignment()["lead"], "source": "mcp_metadata"})}
+        replies = serve(messages, env)
+        assert all("error" not in x and not x["result"]["isError"] for x in replies), replies
+        events = read(plan)["progress_events"]
+        assert len(events) == len(providers)
+        for event, (_, harness, session) in zip(events, providers):
+            actor = event["actor"]
+>           assert actor["session_id"] == session and actor["harness"] == harness
+E           AssertionError: assert ('11111111-111...-111111111111' == 'codex-one'
+E             
+E             - codex-one
+E             + 11111111-1111-1111-1111-111111111111)
+
+tests/test_execution_interface.py:73: AssertionError
+_______ test_public_mcp_surface_and_error_does_not_retain_previous_actor _______
+
+plan = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-interface-20261107/.tmp/pytest-3748061-90a9e0e00542b114/test_public_mcp_surface_and_er0')
+
+    def test_public_mcp_surface_and_error_does_not_retain_previous_actor(plan):
+        messages = [
+            {"jsonrpc": "2.0", "id": 0, "method": "tools/list"},
+            rpc("assign_leaf", {"plan_dir": str(plan), "leaf_id": "L01", "assignment": assignment()},
+                {"threadId": "native-assigner"}, 1),
+            rpc("dispatch_leaf", {"plan_dir": str(plan), "leaf_id": "L01", "attempt_id": "wrong",
+                                 "message": "do test"}, {"threadId": "error-caller"}, 2),
+            rpc("reconcile_leaf", {"plan_dir": str(plan), "leaf_id": "L01", "attempt_id": "wrong"}, None, 3),
+            rpc("update_leaf", {"plan_dir": str(plan), "leaf_id": "L01", "fields": {"note": "after error"}}, None, 4),
+        ]
+        replies = serve(messages)
+        names = {x["name"] for x in replies[0]["result"]["tools"]}
+>       assert {"assign_leaf", "dispatch_leaf", "reconcile_leaf", "accept_leaf"} <= names
+E       AssertionError: assert {'accept_leaf...concile_leaf'} <= {'activate_le...resolve', ...}
+E         
+E         Extra items in the left set:
+E         'reconcile_leaf'
+E         'accept_leaf'
+E         'dispatch_leaf'
+E         'assign_leaf'
+
+tests/test_execution_interface.py:89: AssertionError
+____________ test_actual_cli_assign_accept_and_strict_attempt_error ____________
+
+plan = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-interface-20261107/.tmp/pytest-3748061-90a9e0e00542b114/test_actual_cli_assign_accept_0')
+
+    def test_actual_cli_assign_accept_and_strict_attempt_error(plan):
+        created = run_cli("assign-leaf", plan, "L01", "--assignment", json.dumps(assignment()))
+>       assert created.returncode == 0, created.stderr
+E       AssertionError: usage: lhc_plan_json.py [-h]
+E                                 {build-plan,build,check,activate,create-leaf,update-leaf,progress,show,update-plan,worker-register,worker-finish,report}
+E                                 ...
+E         lhc_plan_json.py: error: argument command: invalid choice: 'assign-leaf' (choose from 'build-plan', 'build', 'check', 'activate', 'create-leaf', 'update-leaf', 'progress', 'show', 'update-plan', 'worker-register', 'worker-finish', 'report')
+E         
+E       assert 2 == 0
+E        +  where 2 = CompletedProcess(args=['/usr/bin/python3', '/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-inte...te', 'create-leaf', 'update-leaf', 'progress', 'show', 'update-plan', 'worker-register', 'worker-finish', 'report')\n").returncode
+
+tests/test_execution_interface.py:97: AssertionError
+____ test_atomic_admission_blocks_dependency_and_second_leaf_same_executor _____
+
+plan = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-interface-20261107/.tmp/pytest-3748061-90a9e0e00542b114/test_atomic_admission_blocks_d0')
+
+    def test_atomic_admission_blocks_dependency_and_second_leaf_same_executor(plan):
+        pj.assign_leaf(plan, "L01", assignment())
+>       pj.transition_leaf(plan, "L01", "attempt", "assigned",
+            receipt={"observed_runtime": {"state": "idle", "source": "native_verified",
+                                         "observed_at": pj.assignments.now()}})
+
+tests/test_execution_interface.py:115: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/common/tools/lhc_plan_json.py:2029: in transition_leaf
+    return update_leaf(plan_dir, leaf_id, {}, actor=actor, expected_hash=expected_hash,
+src/common/tools/lhc_plan_json.py:1941: in update_leaf
+    merged["assignment"] = assignments.transition(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+current = {'attempt_id': 'attempt', 'dispatch': None, 'events': [{'actor': {'harness': None, 'host_id': None, 'session_id': None...None, 'to': 'assigned'}], 'executor': {'harness': 'codex', 'host_id': 'test-host', 'session_id': 'test-executor'}, ...}
+state = 'assigned'
+
+    def transition(current, state, *, attempt_id=None, receipt=None, actor=None, at=None):
+        item = validate_assignment(current)
+        if attempt_id is not None and attempt_id != item["attempt_id"]:
+            raise ValueError("attempt_id mismatch; reread current assignment")
+        if state not in STATES or state not in ALLOWED[item["state"]]:
+>           raise ValueError(f"cannot transition {item['state']} to {state}")
+E           ValueError: cannot transition assigned to assigned
+
+src/common/tools/lhc_assignment.py:129: ValueError
+=========================== short test summary info ============================
+FAILED tests/test_execution_interface.py::test_real_stdio_request_actor_never_leaks_or_borrows_assignee
+FAILED tests/test_execution_interface.py::test_public_mcp_surface_and_error_does_not_retain_previous_actor
+FAILED tests/test_execution_interface.py::test_actual_cli_assign_accept_and_strict_attempt_error
+FAILED tests/test_execution_interface.py::test_atomic_admission_blocks_dependency_and_second_leaf_same_executor
+4 failed in 2.38s

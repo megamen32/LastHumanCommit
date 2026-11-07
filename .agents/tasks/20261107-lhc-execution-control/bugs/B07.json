@@ -1,0 +1,24 @@
+{
+  "created_at": "2026-11-07T15:54:19+00:00",
+  "details": "Bridge сохраняет registration_unknown, но последующий reconcile не ищет подтверждение по сохранённому request_id. Нужна read-only корреляция owner и captured turn без повторной регистрации.",
+  "events": [
+    {
+      "action": "register",
+      "actor": "root",
+      "at": "2026-11-07T15:54:19+00:00",
+      "changes": {
+        "details": "Bridge сохраняет registration_unknown, но последующий reconcile не ищет подтверждение по сохранённому request_id. Нужна read-only корреляция owner и captured turn без повторной регистрации.",
+        "source": "integrated ef69654c src/common/tools/lhc_execution.py",
+        "status": "open",
+        "title": "Неизвестная регистрация wake не сверяется по request_id"
+      }
+    }
+  ],
+  "id": "B07",
+  "owner": "root",
+  "reporter": "root",
+  "source": "integrated ef69654c src/common/tools/lhc_execution.py",
+  "status": "open",
+  "title": "Неизвестная регистрация wake не сверяется по request_id",
+  "updated_at": "2026-11-07T15:54:19+00:00"
+}

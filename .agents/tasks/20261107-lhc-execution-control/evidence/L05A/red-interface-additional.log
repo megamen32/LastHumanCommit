@@ -1,0 +1,28 @@
+(Linux uses --headless by default. To override, use --headed / --gui. For Xvfb mode instead, use --xvfb. Or you can hide this info by using --headless / --headless2 / --uc.)
+....F.                                                                   [100%]
+=================================== FAILURES ===================================
+________ test_declared_actor_and_malformed_metadata_cannot_claim_native ________
+
+plan = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-interface-20261107/.tmp/pytest-3827543-132a0706bfafa29a/test_declared_actor_and_malfor0')
+
+    def test_declared_actor_and_malformed_metadata_cannot_claim_native(plan):
+        declared = {**assignment()["lead"], "source": "mcp_metadata"}
+        first = rpc("update_leaf", {"plan_dir": str(plan), "leaf_id": "L01",
+                    "fields": {"note": "declared"}, "actor": declared}, identifier=1)
+        second = rpc("update_leaf", {"plan_dir": str(plan), "leaf_id": "L01",
+                     "fields": {"note": "malformed"}, "actor": declared}, identifier=2)
+        second["params"]["_meta"] = None
+        replies = serve([first, second])
+        assert all(not x["result"]["isError"] for x in replies)
+        actors = [e["actor"] for e in read(plan)["progress_events"]]
+        assert actors[0]["source"] == "declared"
+>       assert actors[1]["source"] == "unknown"
+E       AssertionError: assert 'declared' == 'unknown'
+E         
+E         - unknown
+E         + declared
+
+tests/test_execution_interface.py:143: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_execution_interface.py::test_declared_actor_and_malformed_metadata_cannot_claim_native
+1 failed, 5 passed in 3.63s

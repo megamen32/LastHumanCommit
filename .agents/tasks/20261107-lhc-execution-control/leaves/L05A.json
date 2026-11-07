@@ -1,7 +1,7 @@
 {
   "label": "Команды и MCP управления выполнением",
   "kind": "task",
-  "status": "queued",
+  "status": "running",
   "estimate_minutes": 15,
   "depends_on": [
     "L02",
@@ -14,7 +14,7 @@
   "model": "gpt-6.1-sol",
   "id": "L05A",
   "created_at": "2026-11-07T18:46:00+03:00",
-  "updated_at": "2026-11-07T18:46:00+03:00",
+  "updated_at": "2026-11-07T18:48:21+03:00",
   "progress_events": [
     {
       "at": "2026-11-07T18:46:00+03:00",
@@ -36,6 +36,55 @@
       },
       "session": "unknown",
       "harness": "unknown"
+    },
+    {
+      "at": "2026-11-07T18:47:24+03:00",
+      "note": "Worker audit_ci_plan registered on lhc/execution-interface-20261107",
+      "changes": {
+        "worker": {
+          "id": "audit_ci_plan",
+          "branch": "lhc/execution-interface-20261107",
+          "worktree": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-interface-20261107",
+          "registered_at": "2026-11-07T18:47:24+03:00",
+          "run_dir": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-interface-20261107/.tmp/worker-run",
+          "run_host": "roomhacker-server-100"
+        },
+        "owner": "audit_ci_plan"
+      },
+      "actor": {
+        "host_id": null,
+        "harness": "codex",
+        "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+        "source": "native_environment"
+      },
+      "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "harness": "codex"
+    },
+    {
+      "at": "2026-11-07T18:48:21+03:00",
+      "note": "",
+      "changes": {
+        "status": "running"
+      },
+      "actor": {
+        "host_id": null,
+        "harness": "codex",
+        "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+        "source": "native_environment"
+      },
+      "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "harness": "codex"
     }
-  ]
+  ],
+  "worker": {
+    "id": "audit_ci_plan",
+    "branch": "lhc/execution-interface-20261107",
+    "worktree": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-interface-20261107",
+    "registered_at": "2026-11-07T18:47:24+03:00",
+    "run_dir": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-interface-20261107/.tmp/worker-run",
+    "run_host": "roomhacker-server-100"
+  },
+  "owner": "audit_ci_plan",
+  "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+  "harness": "codex"
 }
