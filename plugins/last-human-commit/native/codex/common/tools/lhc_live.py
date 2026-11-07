@@ -25,6 +25,7 @@ Usage::
 
 from __future__ import annotations
 
+import hashlib
 import json
 from typing import Optional
 
@@ -32,6 +33,9 @@ LIVE_SCRIPT_ID = "lhc-live"
 # The marker that tells the swap not to run the poller again.
 LIVE_MARKER = "data-lhc-live"
 DEFAULT_INTERVAL_MS = 2000
+# The fingerprint of the built page. The open page is changed by its own scripts, so
+# its text never equals the text of the file; the fingerprint in <head> is not touched.
+DIGEST_META = "lhc-live-digest"
 
 
 _SCRIPT_TEMPLATE = """
@@ -53,6 +57,22 @@ _SCRIPT_TEMPLATE = """
     return text.replace(/\\s+/g, ' ').trim();
   }
 
+  function digest_of(doc) {
+    var meta = doc && doc.querySelector('meta[name="__LHC_DIGEST__"]');
+    return meta ? meta.getAttribute('content') : '';
+  }
+  var last_text = null;
+
+  function changed(parsed, text) {
+    var mine = digest_of(document), theirs = digest_of(parsed);
+    if (mine && theirs) { return mine !== theirs; }
+    // A page without a fingerprint: compare the file with the file fetched before.
+    var body = text_of(parsed.body);
+    var before = last_text;
+    last_text = body;
+    return before !== null && before !== body;
+  }
+
   function swap(parsed) {
     if (!parsed || !parsed.body) { return false; }
     var body = document.body;
@@ -67,6 +87,8 @@ _SCRIPT_TEMPLATE = """
     while (body.firstChild) { body.removeChild(body.firstChild); }
     while (parsed.body.firstChild) { body.appendChild(document.adoptNode(parsed.body.firstChild)); }
     if (parsed.title) { document.title = parsed.title; }
+    var fresh_digest = digest_of(parsed), meta = document.querySelector('meta[name="__LHC_DIGEST__"]');
+    if (meta && fresh_digest) { meta.setAttribute('content', fresh_digest); }
     scripts.forEach(function (old) {
       if (old.getAttribute('__LHC_MARKER__') === '1') { return; }
       var fresh = document.createElement('script');
@@ -85,7 +107,7 @@ _SCRIPT_TEMPLATE = """
         if (!text) { return; }
         var parsed = new DOMParser().parseFromString(text, 'text/html');
         if (!parsed || !parsed.body) { return; }
-        if (text_of(parsed.body) === text_of(document.body)) { return; }
+        if (!changed(parsed, text)) { return; }
         swap(parsed);
       })
       .catch(function () {
@@ -113,6 +135,7 @@ def live_script(*, url: str = "", interval_ms: int = DEFAULT_INTERVAL_MS) -> str
         .replace("__LHC_URL__", source)
         .replace("__LHC_INTERVAL__", str(interval))
         .replace("__LHC_MARKER__", LIVE_MARKER)
+        .replace("__LHC_DIGEST__", DIGEST_META)
         .strip()
     )
 
@@ -145,6 +168,10 @@ def inject_live(
     if LIVE_MARKER in text:
         return text
     snippet = live_snippet(url=url, interval_ms=interval_ms)
+    head = text.find("</head>")
+    if head >= 0:
+        digest = hashlib.sha256(text.encode("utf-8")).hexdigest()[:24]
+        text = text[:head] + f'<meta name="{DIGEST_META}" content="{digest}">' + text[head:]
     closing = text.rfind("</body>")
     if closing < 0:
         return text + snippet

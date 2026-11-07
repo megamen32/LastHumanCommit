@@ -69,3 +69,12 @@ def test_a_snapshot_too_big_even_compressed_says_so(setup, monkeypatch):
     mirror.run_observer(client, once=True)
     error = mirror.read(mirror.directory(plan) / 'mirror-state.json')['error']
     assert 'snapshot size limit exceeded' in error, error
+
+
+def test_leaf_markers_are_filled_in_one_pass_and_removed_leaves_come_back():
+    import lhc_plan_publish as pub
+    page = 'a<!--leaf-delta:L1-->b<!--leaf-compare:L1-->c<!--leaf-compare:L&lt;3-->d<!--leaf-delta:L9-->'
+    parts = {'L1': ('Δ1', 'card1'), 'L<3': ('Δ3', 'card3'), 'gone': ('Δg', 'cardg')}
+    filled, removed = pub.fill_leaf_markers(page, parts)
+    assert filled == 'aΔ1bcard1ccard3d<!--leaf-delta:L9-->'
+    assert removed == ['<details class="panel"><summary>gone · Δg</summary>cardg</details>']
