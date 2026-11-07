@@ -1,0 +1,92 @@
+{
+  "label": "Сверить текущую доступность с native turn",
+  "kind": "task",
+  "status": "running",
+  "estimate_minutes": 10,
+  "depends_on": [
+    "L05A",
+    "L05C"
+  ],
+  "description": "Отделить текущий STOP/busy от старого cancelled turn; противоречивое idle/in-progress не выдавать за свободный executor.",
+  "acceptance": "RED/GREEN на old cancelled+current idle/running и active native turn; actual authority STOP сохраняется.",
+  "parent": "M01",
+  "model": "gpt-6.1-sol",
+  "id": "L05D",
+  "created_at": "2026-11-07T19:16:06+03:00",
+  "updated_at": "2026-11-07T19:16:06+03:00",
+  "progress_events": [
+    {
+      "at": "2026-11-07T19:16:06+03:00",
+      "note": "",
+      "changes": {
+        "label": "Сверить текущую доступность с native turn",
+        "kind": "task",
+        "status": "queued",
+        "estimate_minutes": 10,
+        "depends_on": [
+          "L05A",
+          "L05C"
+        ],
+        "description": "Отделить текущий STOP/busy от старого cancelled turn; противоречивое idle/in-progress не выдавать за свободный executor.",
+        "acceptance": "RED/GREEN на old cancelled+current idle/running и active native turn; actual authority STOP сохраняется.",
+        "parent": "M01",
+        "model": "gpt-6.1-sol"
+      },
+      "actor": {
+        "host_id": null,
+        "harness": null,
+        "session_id": null,
+        "source": "unknown"
+      },
+      "session": "unknown",
+      "harness": "unknown"
+    },
+    {
+      "at": "2026-11-07T19:16:06+03:00",
+      "note": "Worker audit_rust_plan registered on lhc/execution-observation-20261107",
+      "changes": {
+        "worker": {
+          "id": "audit_rust_plan",
+          "branch": "lhc/execution-observation-20261107",
+          "worktree": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-observation-20261107",
+          "registered_at": "2026-11-07T19:16:06+03:00",
+          "run_dir": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-observation-20261107/.tmp/worker-run",
+          "run_host": "roomhacker-server-100"
+        },
+        "owner": "audit_rust_plan"
+      },
+      "actor": {
+        "host_id": null,
+        "harness": "codex",
+        "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+        "source": "native_environment"
+      },
+      "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "harness": "codex"
+    },
+    {
+      "at": "2026-11-07T19:16:06+03:00",
+      "note": "",
+      "changes": {
+        "status": "running"
+      },
+      "actor": {
+        "host_id": null,
+        "harness": "codex",
+        "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+        "source": "native_environment"
+      },
+      "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "harness": "codex"
+    }
+  ],
+  "worker": {
+    "id": "audit_rust_plan",
+    "branch": "lhc/execution-observation-20261107",
+    "worktree": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-observation-20261107",
+    "registered_at": "2026-11-07T19:16:06+03:00",
+    "run_dir": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-observation-20261107/.tmp/worker-run",
+    "run_host": "roomhacker-server-100"
+  },
+  "owner": "audit_rust_plan"
+}

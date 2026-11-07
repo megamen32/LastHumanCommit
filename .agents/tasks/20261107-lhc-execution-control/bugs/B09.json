@@ -1,0 +1,24 @@
+{
+  "created_at": "2026-11-07T16:16:06+00:00",
+  "details": "purpose=availability считает старый cancelled/interrupted действующим STOP даже при новом running и не проверяет конфликт idle с active/native in-progress turn. Требуется свежая availability без неподтверждённых выводов.",
+  "events": [
+    {
+      "action": "register",
+      "actor": "root",
+      "at": "2026-11-07T16:16:06+00:00",
+      "changes": {
+        "details": "purpose=availability считает старый cancelled/interrupted действующим STOP даже при новом running и не проверяет конфликт idle с active/native in-progress turn. Требуется свежая availability без неподтверждённых выводов.",
+        "source": "review lhc_execution.py observe_native on a10a7210",
+        "status": "open",
+        "title": "Наблюдение доступности смешивает текущий статус со старым turn"
+      }
+    }
+  ],
+  "id": "B09",
+  "owner": "root",
+  "reporter": "root",
+  "source": "review lhc_execution.py observe_native on a10a7210",
+  "status": "open",
+  "title": "Наблюдение доступности смешивает текущий статус со старым turn",
+  "updated_at": "2026-11-07T16:16:06+00:00"
+}

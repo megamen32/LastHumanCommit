@@ -6,7 +6,8 @@
   "depends_on": [
     "L05A",
     "L05B",
-    "L05C"
+    "L05C",
+    "L05D"
   ],
   "description": "Интеграция MCP, страницы и пробного пакета",
   "acceptance": "Поведение подтверждено сохранённым результатом реального потребителя.",
@@ -14,7 +15,7 @@
   "id": "L05",
   "model": "gpt-6.1-sol",
   "created_at": "2026-11-07T18:18:35+03:00",
-  "updated_at": "2026-11-07T18:46:00+03:00",
+  "updated_at": "2026-11-07T19:16:06+03:00",
   "progress_events": [
     {
       "at": "2026-11-07T18:18:35+03:00",
@@ -50,6 +51,28 @@
       },
       "session": "unknown",
       "harness": "unknown"
+    },
+    {
+      "at": "2026-11-07T19:16:06+03:00",
+      "note": "",
+      "changes": {
+        "depends_on": [
+          "L05A",
+          "L05B",
+          "L05C",
+          "L05D"
+        ]
+      },
+      "actor": {
+        "host_id": null,
+        "harness": "codex",
+        "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+        "source": "native_environment"
+      },
+      "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "harness": "codex"
     }
-  ]
+  ],
+  "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+  "harness": "codex"
 }
