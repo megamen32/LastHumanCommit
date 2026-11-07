@@ -81,10 +81,18 @@ def observe_native(transport, executor, *, now=_now, purpose='turn'):
     turn = meta.get('nativeLastTurn') or {}
     if purpose == 'availability':
         status = session.get('status')
-        stopped = turn.get('status') in ('cancelled', 'interrupted') or status == 'stopped'
-        runtime_state = ('stopped' if stopped else 'blocked' if session.get('needsPermission')
-                         else 'idle' if status == 'idle' else 'busy' if status == 'running'
-                         else 'unavailable' if status == 'error' else 'unknown')
+        active = meta.get('activeTurnId')
+        has_active_turn = isinstance(active, str) and bool(active.strip())
+        # A last terminal outcome is history, not the current HumanStop hold.
+        # Current activity wins; contradictory idle/in-progress is never free.
+        runtime_state = (
+            'stopped' if status == 'stopped'
+            else 'blocked' if session.get('needsPermission')
+            else 'busy' if status in ('running', 'busy') or has_active_turn
+            else 'unknown' if status == 'idle' and turn.get('status') in ('inProgress', 'running', 'in_progress')
+            else 'idle' if status == 'idle'
+            else 'unavailable' if status == 'error'
+            else 'unknown')
         return {'state': runtime_state, 'observed_at': now(), 'source': 'native_verified',
                 'turn_id': turn.get('turnId'), 'model': session.get('model'), 'worktree': session.get('cwd')}
     state = turn.get('status')

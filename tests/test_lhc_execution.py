@@ -304,3 +304,33 @@ def test_actual_herder_human_stop_message_retains_stop_reason(endpoint):
     h = Harness(); a = execution.dispatch_assignment(h.assignment, 'task', transport=client(endpoint), persist=h.persist)
     assert a['state'] == 'blocked' and a['dispatch']['reason'] == 'human_stop'
     assert not any(b.get('params', {}).get('name') == 'resume_after' for b, _ in endpoint[1])
+
+
+@pytest.mark.parametrize("status,last_state,active,needs_permission,expected", [
+    ("running", "cancelled", "new-turn", False, "busy"),
+    ("busy", "interrupted", None, False, "busy"),
+    ("idle", "cancelled", None, False, "idle"),
+    ("idle", "interrupted", None, False, "idle"),
+    ("stopped", "completed", None, False, "stopped"),
+    ("running", "cancelled", "new-turn", True, "blocked"),
+    ("idle", "completed", "active-turn", False, "busy"),
+    ("idle", "inProgress", None, False, "unknown"),
+    ("idle", "in_progress", None, False, "unknown"),
+    ("idle", "completed", None, False, "idle"),
+])
+def test_availability_uses_current_state_not_historical_stop(
+        status, last_state, active, needs_permission, expected):
+    execution = importlib.import_module("lhc_execution")
+    ref = assignment()["executor"]
+    class NativeRead:
+        def call(self, name, args):
+            assert name == "session_info" and args["sessionId"] == ref["session_id"]
+            return {"session": {
+                "id": ref["session_id"], "harness": ref["harness"], "hostId": ref["host_id"],
+                "status": status, "needsPermission": needs_permission,
+                "meta": {"activeTurnId": active,
+                         "nativeLastTurn": {"turnId": "historical-turn", "status": last_state}}
+            }}
+    runtime = execution.observe_native(NativeRead(), ref, purpose="availability")
+    assert runtime["state"] == expected
+    assert runtime["source"] == "native_verified"
