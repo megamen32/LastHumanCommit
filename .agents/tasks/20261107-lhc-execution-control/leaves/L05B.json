@@ -1,7 +1,7 @@
 {
   "label": "План и восстановление с фактическим исполнителем",
   "kind": "task",
-  "status": "running",
+  "status": "done",
   "estimate_minutes": 15,
   "depends_on": [
     "L02",
@@ -14,7 +14,7 @@
   "model": "gpt-6.1-sol",
   "id": "L05B",
   "created_at": "2026-11-07T18:46:00+03:00",
-  "updated_at": "2026-11-07T18:48:22+03:00",
+  "updated_at": "2026-11-07T19:16:58+03:00",
   "progress_events": [
     {
       "at": "2026-11-07T18:46:00+03:00",
@@ -74,6 +74,31 @@
       },
       "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
       "harness": "codex"
+    },
+    {
+      "at": "2026-11-07T19:16:58+03:00",
+      "note": "Worker audit_dispatch_contract: lhc/execution-display-20261107 merged, worktree, branch and run directory removed",
+      "changes": {
+        "status": "done",
+        "result": "Consistent HTML/text/JSON and recovery: declared refs, actor, runtime, models, turn/wake, blockers and safe capacity; published executor navigation. 265 targeted checks passed, Chrome desktop/mobile passed. Evidence/L05B; commit516166cd integrated.",
+        "worker": {
+          "id": "audit_dispatch_contract",
+          "branch": "lhc/execution-display-20261107",
+          "worktree": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-display-20261107",
+          "registered_at": "2026-11-07T18:48:21+03:00",
+          "run_dir": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-display-20261107/.tmp/worker-run",
+          "run_host": "roomhacker-server-100",
+          "removed_at": "2026-11-07T19:16:58+03:00"
+        }
+      },
+      "actor": {
+        "host_id": null,
+        "harness": "codex",
+        "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+        "source": "native_environment"
+      },
+      "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "harness": "codex"
     }
   ],
   "worker": {
@@ -82,9 +107,11 @@
     "worktree": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-display-20261107",
     "registered_at": "2026-11-07T18:48:21+03:00",
     "run_dir": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-display-20261107/.tmp/worker-run",
-    "run_host": "roomhacker-server-100"
+    "run_host": "roomhacker-server-100",
+    "removed_at": "2026-11-07T19:16:58+03:00"
   },
   "owner": "audit_dispatch_contract",
   "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
-  "harness": "codex"
+  "harness": "codex",
+  "result": "Consistent HTML/text/JSON and recovery: declared refs, actor, runtime, models, turn/wake, blockers and safe capacity; published executor navigation. 265 targeted checks passed, Chrome desktop/mobile passed. Evidence/L05B; commit516166cd integrated."
 }
