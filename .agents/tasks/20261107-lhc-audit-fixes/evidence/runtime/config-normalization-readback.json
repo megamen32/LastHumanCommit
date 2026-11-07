@@ -1,0 +1,333 @@
+{
+  "attempt": "20261107T140902Z-7f1b6ed3",
+  "at": "2026-11-07T14:09:04.030008+00:00",
+  "ok": true,
+  "version": "1.16.1",
+  "enabled": 11,
+  "trusted": 11,
+  "foreign_user_settings_unchanged": true,
+  "non_hooks_settings_unchanged": true,
+  "foreign_and_old_hook_entries_preserved": 72,
+  "foreign_state_sha256": "2ec51b950c548ea1bb9172ec936d2ad2e9b0d8a212f5a5f49ac5547ddbeb6b20",
+  "user_config_version": "sha256:0e07a0a605bb3cfb54f3ab5acce67d7ee11fce7d418d947723e75c0f80c3d48b",
+  "actual_user_config_sha256": "c7bb4dc1691c0ff6c7c117413f99d464a5797d7b4324e23799bc50257c16dd28",
+  "normalized_user_config_sha256": "cc6045ee3260cf494f29e5572c372a428e77d56af15d22f83d852ccb0a92fe02",
+  "expected_user_config_sha256": "cc6045ee3260cf494f29e5572c372a428e77d56af15d22f83d852ccb0a92fe02",
+  "full_config_equality_after_scoped_representation_normalization": true,
+  "normalization": "Native API stores the reviewed composite trusted hash as trusted_hash and trusted_content_hash. Joining these two fields for exactly the 11 reviewed current LHC entries and removing only the split content field reproduces the complete pre-write expected configuration hash.",
+  "normalized_key_paths": [
+    [
+      "hooks",
+      "state",
+      "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:pre_tool_use:0:0",
+      "trusted_hash"
+    ],
+    [
+      "hooks",
+      "state",
+      "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:pre_tool_use:0:0",
+      "trusted_content_hash"
+    ],
+    [
+      "hooks",
+      "state",
+      "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:post_tool_use:0:0",
+      "trusted_hash"
+    ],
+    [
+      "hooks",
+      "state",
+      "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:post_tool_use:0:0",
+      "trusted_content_hash"
+    ],
+    [
+      "hooks",
+      "state",
+      "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:post_tool_use:1:0",
+      "trusted_hash"
+    ],
+    [
+      "hooks",
+      "state",
+      "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:post_tool_use:1:0",
+      "trusted_content_hash"
+    ],
+    [
+      "hooks",
+      "state",
+      "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:post_compact:0:0",
+      "trusted_hash"
+    ],
+    [
+      "hooks",
+      "state",
+      "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:post_compact:0:0",
+      "trusted_content_hash"
+    ],
+    [
+      "hooks",
+      "state",
+      "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:session_start:0:0",
+      "trusted_hash"
+    ],
+    [
+      "hooks",
+      "state",
+      "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:session_start:0:0",
+      "trusted_content_hash"
+    ],
+    [
+      "hooks",
+      "state",
+      "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:session_end:0:0",
+      "trusted_hash"
+    ],
+    [
+      "hooks",
+      "state",
+      "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:session_end:0:0",
+      "trusted_content_hash"
+    ],
+    [
+      "hooks",
+      "state",
+      "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:user_prompt_submit:0:0",
+      "trusted_hash"
+    ],
+    [
+      "hooks",
+      "state",
+      "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:user_prompt_submit:0:0",
+      "trusted_content_hash"
+    ],
+    [
+      "hooks",
+      "state",
+      "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:user_prompt_submit:1:0",
+      "trusted_hash"
+    ],
+    [
+      "hooks",
+      "state",
+      "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:user_prompt_submit:1:0",
+      "trusted_content_hash"
+    ],
+    [
+      "hooks",
+      "state",
+      "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:stop:0:0",
+      "trusted_hash"
+    ],
+    [
+      "hooks",
+      "state",
+      "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:stop:0:0",
+      "trusted_content_hash"
+    ],
+    [
+      "hooks",
+      "state",
+      "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:stop:1:0",
+      "trusted_hash"
+    ],
+    [
+      "hooks",
+      "state",
+      "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:stop:1:0",
+      "trusted_content_hash"
+    ],
+    [
+      "hooks",
+      "state",
+      "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:interrupt:0:0",
+      "trusted_hash"
+    ],
+    [
+      "hooks",
+      "state",
+      "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:interrupt:0:0",
+      "trusted_content_hash"
+    ]
+  ],
+  "normalization_details": [
+    {
+      "key": "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:pre_tool_use:0:0",
+      "representation_fields": [
+        "trusted_hash",
+        "trusted_content_hash"
+      ],
+      "reviewed_composite": "sha256:f9970c9d03444e52f8b0e3aeae55ac0ad8ccfa824e534e548f95129824b9303d/sha256:d2117094a354b69ec301fd2d648e4654530d005c73b9aeaf337796c33bb9729f",
+      "exact_match": true
+    },
+    {
+      "key": "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:post_tool_use:0:0",
+      "representation_fields": [
+        "trusted_hash",
+        "trusted_content_hash"
+      ],
+      "reviewed_composite": "sha256:b15d32b2233626071dc1ea1d9aa4e4899213c7ac64b0c85ff7e5e3a2a1a3979d/sha256:d2117094a354b69ec301fd2d648e4654530d005c73b9aeaf337796c33bb9729f",
+      "exact_match": true
+    },
+    {
+      "key": "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:post_tool_use:1:0",
+      "representation_fields": [
+        "trusted_hash",
+        "trusted_content_hash"
+      ],
+      "reviewed_composite": "sha256:4e39bc5ae169e16f6ed3957ea6ce3dc29a11bd7672760da29e0689c2bbd1a46b/sha256:d2117094a354b69ec301fd2d648e4654530d005c73b9aeaf337796c33bb9729f",
+      "exact_match": true
+    },
+    {
+      "key": "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:post_compact:0:0",
+      "representation_fields": [
+        "trusted_hash",
+        "trusted_content_hash"
+      ],
+      "reviewed_composite": "sha256:35d1d7130275867cf677091e6779272ce93dd838246f404ca29571cad581c4c5/sha256:d2117094a354b69ec301fd2d648e4654530d005c73b9aeaf337796c33bb9729f",
+      "exact_match": true
+    },
+    {
+      "key": "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:session_start:0:0",
+      "representation_fields": [
+        "trusted_hash",
+        "trusted_content_hash"
+      ],
+      "reviewed_composite": "sha256:b8369fea20d5b36df31b94ae1cb55db9d8627c2dca051e2c2ca07e86421b1539/sha256:d2117094a354b69ec301fd2d648e4654530d005c73b9aeaf337796c33bb9729f",
+      "exact_match": true
+    },
+    {
+      "key": "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:session_end:0:0",
+      "representation_fields": [
+        "trusted_hash",
+        "trusted_content_hash"
+      ],
+      "reviewed_composite": "sha256:fa9fb732fbaf4cdca83622b7f998ea32d897751846ffa3e0c92d5a0952dc4d96/sha256:d2117094a354b69ec301fd2d648e4654530d005c73b9aeaf337796c33bb9729f",
+      "exact_match": true
+    },
+    {
+      "key": "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:user_prompt_submit:0:0",
+      "representation_fields": [
+        "trusted_hash",
+        "trusted_content_hash"
+      ],
+      "reviewed_composite": "sha256:d9f26bad06b1931d318ff6251602ba8ec4fc6e998a9c0727e5d344ff990e9deb/sha256:d2117094a354b69ec301fd2d648e4654530d005c73b9aeaf337796c33bb9729f",
+      "exact_match": true
+    },
+    {
+      "key": "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:user_prompt_submit:1:0",
+      "representation_fields": [
+        "trusted_hash",
+        "trusted_content_hash"
+      ],
+      "reviewed_composite": "sha256:6bc7d06a7a31deba8c146c8e4fc70a1fe787315f2b31f2e5bea5f10e4edca230/sha256:d2117094a354b69ec301fd2d648e4654530d005c73b9aeaf337796c33bb9729f",
+      "exact_match": true
+    },
+    {
+      "key": "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:stop:0:0",
+      "representation_fields": [
+        "trusted_hash",
+        "trusted_content_hash"
+      ],
+      "reviewed_composite": "sha256:7d084d6b3b89e7b4e5630c7119f429fa6770420ae73780cfd3806fab7581afa4/sha256:d2117094a354b69ec301fd2d648e4654530d005c73b9aeaf337796c33bb9729f",
+      "exact_match": true
+    },
+    {
+      "key": "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:stop:1:0",
+      "representation_fields": [
+        "trusted_hash",
+        "trusted_content_hash"
+      ],
+      "reviewed_composite": "sha256:c1560dae0f9ca072afda1466d314143f8d982f8e6b11be846c94975c9e1eed15/sha256:d2117094a354b69ec301fd2d648e4654530d005c73b9aeaf337796c33bb9729f",
+      "exact_match": true
+    },
+    {
+      "key": "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:interrupt:0:0",
+      "representation_fields": [
+        "trusted_hash",
+        "trusted_content_hash"
+      ],
+      "reviewed_composite": "sha256:81319707735540d362b8c63bd255630795d3c2d2a982fe281d5a27c5bfed160d/sha256:d2117094a354b69ec301fd2d648e4654530d005c73b9aeaf337796c33bb9729f",
+      "exact_match": true
+    }
+  ],
+  "hooks": [
+    {
+      "key": "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:pre_tool_use:0:0",
+      "currentHash": "sha256:f9970c9d03444e52f8b0e3aeae55ac0ad8ccfa824e534e548f95129824b9303d/sha256:d2117094a354b69ec301fd2d648e4654530d005c73b9aeaf337796c33bb9729f",
+      "trustStatus": "trusted",
+      "enabled": true,
+      "sourcePath": "/home/roomhacker/.codex/plugins/cache/megamen32-plugins/last-human-commit/1.16.1/com.openai/hooks/hooks.json"
+    },
+    {
+      "key": "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:post_tool_use:0:0",
+      "currentHash": "sha256:b15d32b2233626071dc1ea1d9aa4e4899213c7ac64b0c85ff7e5e3a2a1a3979d/sha256:d2117094a354b69ec301fd2d648e4654530d005c73b9aeaf337796c33bb9729f",
+      "trustStatus": "trusted",
+      "enabled": true,
+      "sourcePath": "/home/roomhacker/.codex/plugins/cache/megamen32-plugins/last-human-commit/1.16.1/com.openai/hooks/hooks.json"
+    },
+    {
+      "key": "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:post_tool_use:1:0",
+      "currentHash": "sha256:4e39bc5ae169e16f6ed3957ea6ce3dc29a11bd7672760da29e0689c2bbd1a46b/sha256:d2117094a354b69ec301fd2d648e4654530d005c73b9aeaf337796c33bb9729f",
+      "trustStatus": "trusted",
+      "enabled": true,
+      "sourcePath": "/home/roomhacker/.codex/plugins/cache/megamen32-plugins/last-human-commit/1.16.1/com.openai/hooks/hooks.json"
+    },
+    {
+      "key": "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:post_compact:0:0",
+      "currentHash": "sha256:35d1d7130275867cf677091e6779272ce93dd838246f404ca29571cad581c4c5/sha256:d2117094a354b69ec301fd2d648e4654530d005c73b9aeaf337796c33bb9729f",
+      "trustStatus": "trusted",
+      "enabled": true,
+      "sourcePath": "/home/roomhacker/.codex/plugins/cache/megamen32-plugins/last-human-commit/1.16.1/com.openai/hooks/hooks.json"
+    },
+    {
+      "key": "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:session_start:0:0",
+      "currentHash": "sha256:b8369fea20d5b36df31b94ae1cb55db9d8627c2dca051e2c2ca07e86421b1539/sha256:d2117094a354b69ec301fd2d648e4654530d005c73b9aeaf337796c33bb9729f",
+      "trustStatus": "trusted",
+      "enabled": true,
+      "sourcePath": "/home/roomhacker/.codex/plugins/cache/megamen32-plugins/last-human-commit/1.16.1/com.openai/hooks/hooks.json"
+    },
+    {
+      "key": "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:session_end:0:0",
+      "currentHash": "sha256:fa9fb732fbaf4cdca83622b7f998ea32d897751846ffa3e0c92d5a0952dc4d96/sha256:d2117094a354b69ec301fd2d648e4654530d005c73b9aeaf337796c33bb9729f",
+      "trustStatus": "trusted",
+      "enabled": true,
+      "sourcePath": "/home/roomhacker/.codex/plugins/cache/megamen32-plugins/last-human-commit/1.16.1/com.openai/hooks/hooks.json"
+    },
+    {
+      "key": "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:user_prompt_submit:0:0",
+      "currentHash": "sha256:d9f26bad06b1931d318ff6251602ba8ec4fc6e998a9c0727e5d344ff990e9deb/sha256:d2117094a354b69ec301fd2d648e4654530d005c73b9aeaf337796c33bb9729f",
+      "trustStatus": "trusted",
+      "enabled": true,
+      "sourcePath": "/home/roomhacker/.codex/plugins/cache/megamen32-plugins/last-human-commit/1.16.1/com.openai/hooks/hooks.json"
+    },
+    {
+      "key": "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:user_prompt_submit:1:0",
+      "currentHash": "sha256:6bc7d06a7a31deba8c146c8e4fc70a1fe787315f2b31f2e5bea5f10e4edca230/sha256:d2117094a354b69ec301fd2d648e4654530d005c73b9aeaf337796c33bb9729f",
+      "trustStatus": "trusted",
+      "enabled": true,
+      "sourcePath": "/home/roomhacker/.codex/plugins/cache/megamen32-plugins/last-human-commit/1.16.1/com.openai/hooks/hooks.json"
+    },
+    {
+      "key": "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:stop:0:0",
+      "currentHash": "sha256:7d084d6b3b89e7b4e5630c7119f429fa6770420ae73780cfd3806fab7581afa4/sha256:d2117094a354b69ec301fd2d648e4654530d005c73b9aeaf337796c33bb9729f",
+      "trustStatus": "trusted",
+      "enabled": true,
+      "sourcePath": "/home/roomhacker/.codex/plugins/cache/megamen32-plugins/last-human-commit/1.16.1/com.openai/hooks/hooks.json"
+    },
+    {
+      "key": "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:stop:1:0",
+      "currentHash": "sha256:c1560dae0f9ca072afda1466d314143f8d982f8e6b11be846c94975c9e1eed15/sha256:d2117094a354b69ec301fd2d648e4654530d005c73b9aeaf337796c33bb9729f",
+      "trustStatus": "trusted",
+      "enabled": true,
+      "sourcePath": "/home/roomhacker/.codex/plugins/cache/megamen32-plugins/last-human-commit/1.16.1/com.openai/hooks/hooks.json"
+    },
+    {
+      "key": "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:interrupt:0:0",
+      "currentHash": "sha256:81319707735540d362b8c63bd255630795d3c2d2a982fe281d5a27c5bfed160d/sha256:d2117094a354b69ec301fd2d648e4654530d005c73b9aeaf337796c33bb9729f",
+      "trustStatus": "trusted",
+      "enabled": true,
+      "sourcePath": "/home/roomhacker/.codex/plugins/cache/megamen32-plugins/last-human-commit/1.16.1/com.openai/hooks/hooks.json"
+    }
+  ],
+  "native_config_writes_in_this_readback": 0
+}

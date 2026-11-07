@@ -1,0 +1,7 @@
+{
+  "attempt": "20261107T140052Z-77846b3a",
+  "at": "2026-11-07T14:00:58.000529+00:00",
+  "returncode": 0,
+  "stdout": "{\"ok\": true, \"version\": \"1.16.1\", \"level\": \"z\", \"target_version\": \"1.16.0\", \"tag_free\": true}\n",
+  "stderr": ""
+}

@@ -1,0 +1,98 @@
+{
+  "attempt": "20261107T140902Z-7f1b6ed3",
+  "at": "2026-11-07T14:09:04.025693+00:00",
+  "ok": true,
+  "executable": "/home/roomhacker/.codex/plugins/cache/megamen32-plugins/last-human-commit/1.16.1/scripts/plan_mcp.py",
+  "initialize": {
+    "protocolVersion": "2024-11-05",
+    "capabilities": {
+      "tools": {}
+    },
+    "serverInfo": {
+      "name": "LhcPlan",
+      "version": "1.16.1"
+    }
+  },
+  "build_plan_schema": {
+    "type": "object",
+    "properties": {
+      "plan_dir": {
+        "type": "string",
+        "description": "Directory holding the leaves/ folder."
+      },
+      "report": {
+        "type": "string"
+      },
+      "graph": {
+        "type": "string"
+      },
+      "handoff": {
+        "type": "boolean",
+        "description": "Also check handoff readiness for the plan's declared decomposition; default false."
+      }
+    },
+    "required": [
+      "plan_dir"
+    ],
+    "additionalProperties": false
+  },
+  "update_plan_fields_schema": {
+    "type": "object",
+    "description": "Plan fields to set.",
+    "properties": {
+      "deliverable": {
+        "type": "string",
+        "enum": [
+          "plan",
+          "implementation"
+        ]
+      },
+      "decomposition": {
+        "type": "string",
+        "enum": [
+          "progressive",
+          "complete"
+        ]
+      },
+      "estimate_policy": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "leaf_cap_minutes": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "leaf_cap_minutes",
+          "reason"
+        ]
+      }
+    }
+  },
+  "tools": [
+    "activate_leaf",
+    "bug_check",
+    "bug_get",
+    "bug_list",
+    "bug_register",
+    "bug_resolve",
+    "bug_update",
+    "build_plan",
+    "create_leaf",
+    "estimate_cost",
+    "publish_html",
+    "revise_plan",
+    "show_plan",
+    "update_leaf",
+    "update_plan",
+    "update_progress",
+    "worker_finish",
+    "worker_register"
+  ],
+  "model_sessions_created": 0
+}

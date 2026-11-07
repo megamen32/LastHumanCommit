@@ -11,6 +11,6 @@
   ],
   "acceptance_scenario": "Изолированный установленный пакет: нормальный MCP/CLI создаёт и меняет разрешённый60-минутный лист; Done не появляется как Now; compact hook восстанавливает только привязанный план и последнюю ревизию; проверка различает структуру и готовность передачи; activation без ID даёт исправимый ответ без traceback. Регрессии RED/GREEN, пакет и публикация проверены.",
   "slots": 2,
-  "current_progress": "915 tests and94 independent package-consumer checks pass. All190 native package files match the tested copy. Publishing and native runtime verification remain.",
-  "updated_at": "2026-11-07T16:31:27+03:00"
+  "current_progress": "Complete:1.16.1 integrated into main and installed on server100;915 tests pass,6 skipped;94 independent consumer checks;190 file parity;11 trusted/enabled hooks;actual installed MCP verified. All five registered bugs fixed and all eight task leaves done. Runtime receipts are in evidence/runtime.",
+  "updated_at": "2026-11-07T17:10:26+03:00"
 }

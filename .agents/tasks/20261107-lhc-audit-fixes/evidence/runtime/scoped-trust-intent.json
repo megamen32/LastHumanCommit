@@ -1,0 +1,22 @@
+{
+  "attempt": "20261107T140052Z-77846b3a",
+  "at": "2026-11-07T14:01:20.129676+00:00",
+  "user_version": "sha256:60dbfc15e24e644113204aff390944ee21a8f02d672d9733f5b8275e3dba2e8d",
+  "current_keys": [
+    "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:interrupt:0:0",
+    "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:post_compact:0:0",
+    "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:post_tool_use:0:0",
+    "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:post_tool_use:1:0",
+    "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:pre_tool_use:0:0",
+    "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:session_end:0:0",
+    "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:session_start:0:0",
+    "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:stop:0:0",
+    "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:stop:1:0",
+    "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:user_prompt_submit:0:0",
+    "last-human-commit@megamen32-plugins:com.openai/hooks/hooks.json:user_prompt_submit:1:0"
+  ],
+  "preserved_foreign_keys": 72,
+  "foreign_state_sha256": "2ec51b950c548ea1bb9172ec936d2ad2e9b0d8a212f5a5f49ac5547ddbeb6b20",
+  "before_user_config_sha256": "f727542a75ca7f4091ccf227ee8c178803f1c2233d6221fea11666e9840aad9f",
+  "expected_user_config_sha256": "cc6045ee3260cf494f29e5572c372a428e77d56af15d22f83d852ccb0a92fe02"
+}

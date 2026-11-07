@@ -1,0 +1,7 @@
+{
+  "attempt": "20261107T140052Z-77846b3a",
+  "at": "2026-11-07T14:01:03.950728+00:00",
+  "returncode": 0,
+  "stdout": "{\"action\": \"acquire\", \"commit\": \"c355b5cb60c35205e7535d13aa186343b4e14a23\", \"expires\": 1794060961, \"ok\": true, \"ref\": \"refs/lhc/release/LastHumanCommit\", \"took_over_expired\": false}\n",
+  "stderr": ""
+}

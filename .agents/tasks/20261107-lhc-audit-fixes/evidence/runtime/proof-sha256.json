@@ -1,0 +1,24 @@
+{
+  "at": "2026-11-07T14:10:26.371497+00:00",
+  "product_candidate": "4b440fa45bb9794974c3fde0ec888a69303a8a5b",
+  "sha256": {
+    "accepted-artifact.json": "ecb1b910b920d103d865aa0e038519004cb67b48ca0202e59589de8e1a177d61",
+    "version-check.json": "012b27c0c41bd0665374e49ed80b8e0878d4d74369cf223dc3bcd0dc3ecdc828",
+    "integrate-main.json": "9facee5b5396c1043590bb2fa6d5c61c43e870ea17512ed015fb61b9f3ca0bd2",
+    "lease-acquire.json": "bf7f75d321260bd4ff1c1e01bccd3d25d62bcb06f90767aa4efe5d0f244eacab",
+    "lease-check.json": "c0289c5e6655749b3010079c9255a3bcb13a0b3ba2140e437a4c2f70b5668681",
+    "native-install.json": "a46981774d33daa267dd9e58838bac58b19953629e6f07dedfce02dd6724524d",
+    "installed-artifact.json": "ab0d4a4910115e6dd95249fce8f24180d2f6b6dbaf20d851e0fb0686bf6123cb",
+    "reviewed-current-hooks.json": "3a8f12139c3cf137ab75f8b607005b86a21555f4dad17f6d45bd448b5ee1da5d",
+    "scoped-trust-intent.json": "c590a3eafe3a983586911411999b043d43169894221da80423775f6561e73818",
+    "scoped-trust-write.json": "45bf514d9db45b811813fc8fc85eba17d6a4bb5be387f78cf8325e6940fa7e55",
+    "config-normalization-readback.json": "841fd5658fee13122b8eb276d5eeb2bde1ab51eabf371caaad2575c6fe13e5a5",
+    "native-hooks-verified.json": "0855a860bf842dc09cabadd357a64213fdf387ba414573b2fa379ee6d2ee0995",
+    "installed-mcp-readback.json": "bb7767e8f9f7258285a70a4b8512526bf120eb07a48994fa9c5a481fc91baca7",
+    "final-runtime-readback.json": "bcdbd9e1c164c72916a48176acdfad82ce78b376a85a6fef55d8166bebd3c6da",
+    "failure.json": "e50b3ce1d4f2e684ec01470912023617f4807fdd7c5f4f31bdc9520fb68b1754",
+    "lease-release.json": "1e0bdd680c1e216c2686d1fa4eb5a0c64d23e4ee49edad029bf7d76bf9597d1f",
+    "complete.json": "b787a7d9331c939bc45bb5ddfedd3709bebe01177326fa39ce859f94adceb262",
+    "receipt-manifest.json": "c6dbe045a8acb75d9bf2be007c64d9c63fed57c2a11a9d37b56c1baf3e0c0e34"
+  }
+}

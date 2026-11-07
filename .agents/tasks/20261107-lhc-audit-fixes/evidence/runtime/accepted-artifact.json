@@ -1,0 +1,10 @@
+{
+  "attempt": "20261107T140052Z-77846b3a",
+  "at": "2026-11-07T14:00:54.637592+00:00",
+  "ok": true,
+  "candidate": "4b440fa45bb9794974c3fde0ec888a69303a8a5b",
+  "version": "1.16.1",
+  "files": 190,
+  "file_tree_sha256": "39cac5e4dc090f6af169cb12fcdecbdde0d6195595eac30eb8d5d16aa9746376",
+  "pr_stage": "off"
+}

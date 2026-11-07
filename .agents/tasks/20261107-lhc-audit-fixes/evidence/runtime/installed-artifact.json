@@ -1,0 +1,29 @@
+{
+  "attempt": "20261107T140052Z-77846b3a",
+  "at": "2026-11-07T14:01:19.038109+00:00",
+  "ok": true,
+  "candidate": "4b440fa45bb9794974c3fde0ec888a69303a8a5b",
+  "version": "1.16.1",
+  "cache": "/home/roomhacker/.codex/plugins/cache/megamen32-plugins/last-human-commit/1.16.1",
+  "file_count": 190,
+  "file_tree_sha256": "39cac5e4dc090f6af169cb12fcdecbdde0d6195595eac30eb8d5d16aa9746376",
+  "source_copy_parity": true,
+  "native_manager": {
+    "pluginId": "last-human-commit@megamen32-plugins",
+    "name": "last-human-commit",
+    "marketplaceName": "megamen32-plugins",
+    "version": "1.16.1",
+    "installed": true,
+    "enabled": true,
+    "source": {
+      "source": "local",
+      "path": "/home/roomhacker/.codex/.tmp/marketplaces/megamen32-plugins/plugins/last-human-commit/native/codex"
+    },
+    "marketplaceSource": {
+      "sourceType": "git",
+      "source": "https://github.com/megamen32/LastHumanCommit.git"
+    },
+    "installPolicy": "AVAILABLE",
+    "authPolicy": "ON_INSTALL"
+  }
+}

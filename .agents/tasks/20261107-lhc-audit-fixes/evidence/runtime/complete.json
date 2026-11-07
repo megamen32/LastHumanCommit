@@ -1,0 +1,48 @@
+{
+  "attempt": "20261107T140902Z-7f1b6ed3",
+  "at": "2026-11-07T14:09:04.032354+00:00",
+  "ok": true,
+  "candidate": "4b440fa45bb9794974c3fde0ec888a69303a8a5b",
+  "version": "1.16.1",
+  "main": "4b440fa45bb9794974c3fde0ec888a69303a8a5b",
+  "marketplace": "4b440fa45bb9794974c3fde0ec888a69303a8a5b",
+  "file_count": 190,
+  "file_tree_sha256": "39cac5e4dc090f6af169cb12fcdecbdde0d6195595eac30eb8d5d16aa9746376",
+  "source_copy_parity": true,
+  "cache": "/home/roomhacker/.codex/plugins/cache/megamen32-plugins/last-human-commit/1.16.1",
+  "native_manager": {
+    "pluginId": "last-human-commit@megamen32-plugins",
+    "name": "last-human-commit",
+    "marketplaceName": "megamen32-plugins",
+    "version": "1.16.1",
+    "installed": true,
+    "enabled": true,
+    "source": {
+      "source": "local",
+      "path": "/home/roomhacker/.codex/.tmp/marketplaces/megamen32-plugins/plugins/last-human-commit/native/codex"
+    },
+    "marketplaceSource": {
+      "sourceType": "git",
+      "source": "https://github.com/megamen32/LastHumanCommit.git"
+    },
+    "installPolicy": "AVAILABLE",
+    "authPolicy": "ON_INSTALL"
+  },
+  "lease_released": true,
+  "release_ref_absent": true,
+  "native_hooks": {
+    "enabled": 11,
+    "trusted": 11,
+    "foreign_user_settings_unchanged": true
+  },
+  "mcp": {
+    "version": "1.16.1",
+    "handoff": true,
+    "executable": "/home/roomhacker/.codex/plugins/cache/megamen32-plugins/last-human-commit/1.16.1/scripts/plan_mcp.py"
+  },
+  "model_sessions_created": 0,
+  "previous_failure_resolved": true,
+  "previous_failure_preserved": "failure.json",
+  "resolution": "The earlier coordinator's equality assertion rejected native hash field normalization. A fresh read proves complete expected configuration equality after combining only the 11 scoped native hash field pairs. No second install or trust write was performed.",
+  "runtime_mutations_in_this_readback": 0
+}

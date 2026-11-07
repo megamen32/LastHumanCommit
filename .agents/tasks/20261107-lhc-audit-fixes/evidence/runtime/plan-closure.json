@@ -1,0 +1,9 @@
+{
+  "at": "2026-11-07T14:11:34.497879+00:00",
+  "product_candidate": "4b440fa45bb9794974c3fde0ec888a69303a8a5b",
+  "version": "1.16.1",
+  "task_leaves_done": 8,
+  "task_leaves_total": 8,
+  "bug_check": "{\"all_registered_bugs_resolved\": true, \"tests_green_required_separately\": true, \"total\": 5, \"unresolved\": 0}",
+  "evidence_commit_scope": "Only this audit plan and final receipts. The installed product candidate remains unchanged."
+}

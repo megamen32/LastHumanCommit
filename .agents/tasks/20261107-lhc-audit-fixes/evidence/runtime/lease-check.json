@@ -1,0 +1,7 @@
+{
+  "attempt": "20261107T140052Z-77846b3a",
+  "at": "2026-11-07T14:01:07.249036+00:00",
+  "returncode": 0,
+  "stdout": "{\"action\": \"check\", \"checks\": {\"candidate_in_origin_main\": true, \"expected_revision_matches_live\": true, \"live_is_ancestor_of_candidate\": true, \"own_unexpired_lease\": true, \"version_is_greater_than_live\": true, \"worktree_clean\": true}, \"ok\": true, \"ref\": \"refs/lhc/release/LastHumanCommit\"}\n",
+  "stderr": ""
+}

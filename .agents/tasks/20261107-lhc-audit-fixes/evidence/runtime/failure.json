@@ -1,0 +1,9 @@
+{
+  "attempt": "20261107T140052Z-77846b3a",
+  "at": "2026-11-07T14:01:20.233250+00:00",
+  "ok": false,
+  "candidate": "4b440fa45bb9794974c3fde0ec888a69303a8a5b",
+  "version": "1.16.1",
+  "type": "ReleaseError",
+  "error": "Native user config differs beyond the exact permitted trust update"
+}

@@ -1,0 +1,10 @@
+{
+  "attempt": "20261107T140052Z-77846b3a",
+  "at": "2026-11-07T14:01:20.171197+00:00",
+  "ok": true,
+  "status": "ok",
+  "version": "sha256:0e07a0a605bb3cfb54f3ab5acce67d7ee11fce7d418d947723e75c0f80c3d48b",
+  "changed_scope": "current verified LHC trusted_hash only",
+  "current_key_count": 11,
+  "preserved_foreign_keys": 72
+}
