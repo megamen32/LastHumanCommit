@@ -1,7 +1,7 @@
 {
   "label": "Исполнитель, автор и история попыток",
   "kind": "task",
-  "status": "running",
+  "status": "done",
   "estimate_minutes": 15,
   "depends_on": [
     "L01"
@@ -12,7 +12,7 @@
   "id": "L03",
   "model": "gpt-6.1-sol",
   "created_at": "2026-11-07T18:18:34+03:00",
-  "updated_at": "2026-11-07T18:27:17+03:00",
+  "updated_at": "2026-11-07T18:46:05+03:00",
   "progress_events": [
     {
       "at": "2026-11-07T18:18:34+03:00",
@@ -50,6 +50,25 @@
       },
       "session": "unknown",
       "harness": "unknown"
+    },
+    {
+      "at": "2026-11-07T18:46:05+03:00",
+      "note": "Worker audit_ci_plan: lhc/execution-identity-20261107 merged, worktree, branch and run directory removed",
+      "changes": {
+        "status": "done",
+        "result": "Actor and assignment lifecycle, native intent separation, idempotent worker acceptance after Git integration. Focused 77 checks and 22 acceptance checks passed; evidence/L03. Commits c6ed44d8 and e4a56a39 integrated.",
+        "worker": {
+          "id": "audit_ci_plan",
+          "branch": "lhc/execution-identity-20261107",
+          "worktree": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-identity-20261107",
+          "registered_at": "2026-11-07T18:27:17+03:00",
+          "run_dir": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-identity-20261107/.tmp/worker-run",
+          "run_host": "roomhacker-server-100",
+          "removed_at": "2026-11-07T18:46:05+03:00"
+        }
+      },
+      "session": "unknown",
+      "harness": "unknown"
     }
   ],
   "worker": {
@@ -58,7 +77,9 @@
     "worktree": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-identity-20261107",
     "registered_at": "2026-11-07T18:27:17+03:00",
     "run_dir": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-identity-20261107/.tmp/worker-run",
-    "run_host": "roomhacker-server-100"
+    "run_host": "roomhacker-server-100",
+    "removed_at": "2026-11-07T18:46:05+03:00"
   },
-  "owner": "audit_ci_plan"
+  "owner": "audit_ci_plan",
+  "result": "Actor and assignment lifecycle, native intent separation, idempotent worker acceptance after Git integration. Focused 77 checks and 22 acceptance checks passed; evidence/L03. Commits c6ed44d8 and e4a56a39 integrated."
 }
