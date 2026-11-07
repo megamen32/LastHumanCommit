@@ -1,0 +1,30 @@
+{
+  "candidate": "5bf8733ba00f7e681823d883688402d113cf478a",
+  "tested_head": "73e55e8f113b844885479a6e55167557b037860f",
+  "command": "python3 tests/validate.py",
+  "returncode": 1,
+  "duration_seconds": 110.34,
+  "log_sha256": "0639966ffeeb885327420c24737716793644078a6295df9cbba37f4be7a19409",
+  "tail": [
+    "            \"show_plan\", \"update_plan\", \"activate_leaf\", \"worker_register\", \"worker_finish\",",
+    "        }",
+    "E       AssertionError: assert {'accept_leaf...ug_list', ...} == {'activate_le...resolve', ...}",
+    "E         ",
+    "E         Extra items in the left set:",
+    "E         'accept_leaf'",
+    "E         'assign_leaf'",
+    "E         'reconcile_leaf'",
+    "E         'dispatch_leaf'",
+    "E         Use -v to get more diff",
+    "",
+    "tests/test_single_plan_mcp.py:53: AssertionError",
+    "=========================== short test summary info ============================",
+    "FAILED tests/test_plan_audit_followup.py::test_ready_state_expands_stage_dependencies",
+    "FAILED tests/test_plan_audit_followup.py::test_unexpected_activation_value_error_is_not_mislabelled_as_user_input",
+    "FAILED tests/test_plan_workers.py::test_show_names_results_overruns_and_open_workers",
+    "FAILED tests/test_single_plan_mcp.py::test_standalone_entrypoint_calls_plan_tools_and_exposes_bug_crud[]",
+    "FAILED tests/test_single_plan_mcp.py::test_standalone_entrypoint_calls_plan_tools_and_exposes_bug_crud[native/codex]",
+    "5 failed, 1008 passed, 7 skipped in 107.34s (0:01:47)",
+    "warning: AGENTS.md has 295 lines; the soft limit is 250 - trim before adding more"
+  ]
+}

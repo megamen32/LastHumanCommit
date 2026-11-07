@@ -1,0 +1,90 @@
+{
+  "label": "Сохранить причину отказа продолжения",
+  "kind": "task",
+  "status": "running",
+  "estimate_minutes": 10,
+  "depends_on": [
+    "L05C"
+  ],
+  "description": "Исправить подтверждённый L07 consumer отказ resume_after без потери причины и без replay.",
+  "acceptance": "Самостоятельный consumer повторяет сценарий после фиксированной delta; RED/GREEN bridge сохранён.",
+  "parent": "M02",
+  "model": "gpt-6.1-sol",
+  "id": "L08B",
+  "created_at": "2026-11-07T19:37:52+03:00",
+  "updated_at": "2026-11-07T19:37:53+03:00",
+  "progress_events": [
+    {
+      "at": "2026-11-07T19:37:52+03:00",
+      "note": "",
+      "changes": {
+        "label": "Сохранить причину отказа продолжения",
+        "kind": "task",
+        "status": "queued",
+        "estimate_minutes": 10,
+        "depends_on": [
+          "L05C"
+        ],
+        "description": "Исправить подтверждённый L07 consumer отказ resume_after без потери причины и без replay.",
+        "acceptance": "Самостоятельный consumer повторяет сценарий после фиксированной delta; RED/GREEN bridge сохранён.",
+        "parent": "M02",
+        "model": "gpt-6.1-sol"
+      },
+      "actor": {
+        "host_id": null,
+        "harness": null,
+        "session_id": null,
+        "source": "unknown"
+      },
+      "session": "unknown",
+      "harness": "unknown"
+    },
+    {
+      "at": "2026-11-07T19:37:53+03:00",
+      "note": "Worker audit_rust_plan registered on lhc/execution-wake-errors-20261107",
+      "changes": {
+        "worker": {
+          "id": "audit_rust_plan",
+          "branch": "lhc/execution-wake-errors-20261107",
+          "worktree": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-wake-errors-20261107",
+          "registered_at": "2026-11-07T19:37:53+03:00",
+          "run_dir": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-wake-errors-20261107/.tmp/worker-run",
+          "run_host": "roomhacker-server-100"
+        },
+        "owner": "audit_rust_plan"
+      },
+      "actor": {
+        "host_id": null,
+        "harness": "codex",
+        "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+        "source": "native_environment"
+      },
+      "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "harness": "codex"
+    },
+    {
+      "at": "2026-11-07T19:37:53+03:00",
+      "note": "",
+      "changes": {
+        "status": "running"
+      },
+      "actor": {
+        "host_id": null,
+        "harness": "codex",
+        "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+        "source": "native_environment"
+      },
+      "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "harness": "codex"
+    }
+  ],
+  "worker": {
+    "id": "audit_rust_plan",
+    "branch": "lhc/execution-wake-errors-20261107",
+    "worktree": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-wake-errors-20261107",
+    "registered_at": "2026-11-07T19:37:53+03:00",
+    "run_dir": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-wake-errors-20261107/.tmp/worker-run",
+    "run_host": "roomhacker-server-100"
+  },
+  "owner": "audit_rust_plan"
+}
