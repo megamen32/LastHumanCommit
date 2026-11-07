@@ -1,0 +1,6 @@
+$ python3 -m pytest tests/test_native_instruction_hooks.py -q -k resume_hook or post_compact_shows --tb=short
+(Linux uses --headless by default. To override, use --headed / --gui. For Xvfb mode instead, use --xvfb. Or you can hide this info by using --headless / --headless2 / --uc.)
+........                                                                 [100%]
+8 passed, 33 deselected in 0.53s
+
+EXIT 0

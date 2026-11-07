@@ -1,0 +1,19 @@
+(Linux uses --headless by default. To override, use --headed / --gui. For Xvfb mode instead, use --xvfb. Or you can hide this info by using --headless / --headless2 / --uc.)
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+_____ test_plan_audit_respects_the_bound_plan_estimate_policy[None-15-20] ______
+tests/test_native_instruction_hooks.py:627: in test_plan_audit_respects_the_bound_plan_estimate_policy
+    assert context is not None
+E   assert None is not None
+______ test_plan_audit_respects_the_bound_plan_estimate_policy[60-60-75] _______
+tests/test_native_instruction_hooks.py:629: in test_plan_audit_respects_the_bound_plan_estimate_policy
+    assert "L01" not in context
+E   AssertionError: assert 'L01' not in 'LHC: a leaf...t, service).'
+E     
+E     'L01' is contained here:
+E       e longer: L01 (60 min); L02 (75 min). Split each into leaves of about 15 minutes. If you cannot yet name what the parts are, it is a stage: make it a milestone (kind: milestone), make the first leaf of it a 15 minute look at the facts (a list, a command output), then cut the stage into leaves from what you found (parent: its id). One leaf per object (environment, host, service).
+E     ?           +++
+=========================== short test summary info ============================
+FAILED tests/test_native_instruction_hooks.py::test_plan_audit_respects_the_bound_plan_estimate_policy[None-15-20]
+FAILED tests/test_native_instruction_hooks.py::test_plan_audit_respects_the_bound_plan_estimate_policy[60-60-75]
+2 failed, 41 deselected in 0.57s

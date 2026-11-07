@@ -1,0 +1,60 @@
+$ python3 -m pytest tests/test_native_instruction_hooks.py -q -k resume_hook or post_compact_shows --tb=short
+(Linux uses --headless by default. To override, use --headed / --gui. For Xvfb mode instead, use --xvfb. Or you can hide this info by using --headless / --headless2 / --uc.)
+FFFFFFFF                                                                 [100%]
+=================================== FAILURES ===================================
+_______ test_post_compact_shows_the_session_plan_and_current_leaf_facts ________
+tests/test_native_instruction_hooks.py:451: in test_post_compact_shows_the_session_plan_and_current_leaf_facts
+    assert "is your current goal" not in context
+E   AssertionError: assert 'is your current goal' not in 'LHC plan in...6-ci/plan.md'
+E     
+E     'is your current goal' is contained here:
+E       s session is your current goal: the first request of this chat was already turned into this plan, so do not research or plan it again. Continue from the last note of that leaf.
+E     ?           ++++++++++++++++++++
+E       Done:
+E       - L01 «Codex» — works: receipt-1.json
+E       Now: L02 «ZCode» — last note: none
+E       Whole plan: /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-hook-worker-20261107/.tmp/pytest-3807014-c38920983c924e5f/test_post_compact_shows_the_se0/repo/.agents/tasks/20261106-ci/plan.md
+_ test_resume_hook_recovers_latest_state_of_one_plan_with_many_bound_leaves[False-SessionStart] _
+tests/test_native_instruction_hooks.py:553: in test_resume_hook_recovers_latest_state_of_one_plan_with_many_bound_leaves
+    assert metadata["goal"] in context
+E   AssertionError: assert 'CURRENT_GOAL: prepare the complete hourly plan' in 'LHC plan intake. Read /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-hook-worker-20261107/AGENTS.m...anned object 53» — last note: none\nNow: R054 «Replanned object 54» — last note: none\nNow: R055 «Replanned object 55»'
+_ test_resume_hook_recovers_latest_state_of_one_plan_with_many_bound_leaves[False-PostCompact] _
+tests/test_native_instruction_hooks.py:553: in test_resume_hook_recovers_latest_state_of_one_plan_with_many_bound_leaves
+    assert metadata["goal"] in context
+E   AssertionError: assert 'CURRENT_GOAL: prepare the complete hourly plan' in 'LHC plan intake. Read /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-hook-worker-20261107/AGENTS.m...anned object 53» — last note: none\nNow: R054 «Replanned object 54» — last note: none\nNow: R055 «Replanned object 55»'
+_ test_resume_hook_recovers_latest_state_of_one_plan_with_many_bound_leaves[True-SessionStart] _
+tests/test_native_instruction_hooks.py:553: in test_resume_hook_recovers_latest_state_of_one_plan_with_many_bound_leaves
+    assert metadata["goal"] in context
+E   AssertionError: assert 'CURRENT_GOAL: prepare the complete hourly plan' in 'LHC plan intake. Read /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-hook-worker-20261107/AGENTS.m...Now: R053 «Replanned object 53» — last note: none\nNow: R054 «Replanned object 54» — last note: none\nNow: R055 «Repla'
+_ test_resume_hook_recovers_latest_state_of_one_plan_with_many_bound_leaves[True-PostCompact] _
+tests/test_native_instruction_hooks.py:553: in test_resume_hook_recovers_latest_state_of_one_plan_with_many_bound_leaves
+    assert metadata["goal"] in context
+E   AssertionError: assert 'CURRENT_GOAL: prepare the complete hourly plan' in 'LHC plan intake. Read /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-hook-worker-20261107/AGENTS.m...Now: R053 «Replanned object 53» — last note: none\nNow: R054 «Replanned object 54» — last note: none\nNow: R055 «Repla'
+_ test_resume_hook_does_not_mix_leaves_from_distinct_bound_plans[SessionStart] _
+tests/test_native_instruction_hooks.py:583: in test_resume_hook_does_not_mix_leaves_from_distinct_bound_plans
+    assert str(first) in context and str(second) in context
+E   AssertionError: assert ('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-hook-worker-20261107/.tmp/pytest-3807014-c38920983c924e5f/test_resume_hook_does_not_mix_0/repo/.agents/tasks/a-first' in 'LHC plan intake. Read /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-hook-worker-20261107/AGENTS.m...orker-20261107/.tmp/pytest-3807014-c38920983c924e5f/test_resume_hook_does_not_mix_0/repo/.agents/tasks/a-first/plan.md' and '/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-hook-worker-20261107/.tmp/pytest-3807014-c38920983c924e5f/test_resume_hook_does_not_mix_0/repo/.agents/tasks/b-second' in 'LHC plan intake. Read /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-hook-worker-20261107/AGENTS.m...orker-20261107/.tmp/pytest-3807014-c38920983c924e5f/test_resume_hook_does_not_mix_0/repo/.agents/tasks/a-first/plan.md')
+E    +  where '/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-hook-worker-20261107/.tmp/pytest-3807014-c38920983c924e5f/test_resume_hook_does_not_mix_0/repo/.agents/tasks/a-first' = str(PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-hook-worker-20261107/.tmp/pytest-3807014-c38920983c924e5f/test_resume_hook_does_not_mix_0/repo/.agents/tasks/a-first'))
+E    +  and   '/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-hook-worker-20261107/.tmp/pytest-3807014-c38920983c924e5f/test_resume_hook_does_not_mix_0/repo/.agents/tasks/b-second' = str(PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-hook-worker-20261107/.tmp/pytest-3807014-c38920983c924e5f/test_resume_hook_does_not_mix_0/repo/.agents/tasks/b-second'))
+_ test_resume_hook_does_not_mix_leaves_from_distinct_bound_plans[PostCompact] __
+tests/test_native_instruction_hooks.py:583: in test_resume_hook_does_not_mix_leaves_from_distinct_bound_plans
+    assert str(first) in context and str(second) in context
+E   AssertionError: assert ('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-hook-worker-20261107/.tmp/pytest-3807014-c38920983c924e5f/test_resume_hook_does_not_mix_1/repo/.agents/tasks/a-first' in 'LHC plan intake. Read /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-hook-worker-20261107/AGENTS.m...orker-20261107/.tmp/pytest-3807014-c38920983c924e5f/test_resume_hook_does_not_mix_1/repo/.agents/tasks/a-first/plan.md' and '/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-hook-worker-20261107/.tmp/pytest-3807014-c38920983c924e5f/test_resume_hook_does_not_mix_1/repo/.agents/tasks/b-second' in 'LHC plan intake. Read /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-hook-worker-20261107/AGENTS.m...orker-20261107/.tmp/pytest-3807014-c38920983c924e5f/test_resume_hook_does_not_mix_1/repo/.agents/tasks/a-first/plan.md')
+E    +  where '/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-hook-worker-20261107/.tmp/pytest-3807014-c38920983c924e5f/test_resume_hook_does_not_mix_1/repo/.agents/tasks/a-first' = str(PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-hook-worker-20261107/.tmp/pytest-3807014-c38920983c924e5f/test_resume_hook_does_not_mix_1/repo/.agents/tasks/a-first'))
+E    +  and   '/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-hook-worker-20261107/.tmp/pytest-3807014-c38920983c924e5f/test_resume_hook_does_not_mix_1/repo/.agents/tasks/b-second' = str(PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-hook-worker-20261107/.tmp/pytest-3807014-c38920983c924e5f/test_resume_hook_does_not_mix_1/repo/.agents/tasks/b-second'))
+_ test_resume_hook_keeps_current_note_when_done_history_exceeds_context_budget _
+tests/test_native_instruction_hooks.py:604: in test_resume_hook_keeps_current_note_when_done_history_exceeds_context_budget
+    assert "Now: L99" in context and "CURRENT_NOTE_SURVIVES_LONG_HISTORY" in context
+E   AssertionError: assert ('Now: L99' in 'LHC plan intake. Read /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-hook-worker-20261107/AGENTS.m...yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy…\n- D11 «Completed ob')
+=========================== short test summary info ============================
+FAILED tests/test_native_instruction_hooks.py::test_post_compact_shows_the_session_plan_and_current_leaf_facts
+FAILED tests/test_native_instruction_hooks.py::test_resume_hook_recovers_latest_state_of_one_plan_with_many_bound_leaves[False-SessionStart]
+FAILED tests/test_native_instruction_hooks.py::test_resume_hook_recovers_latest_state_of_one_plan_with_many_bound_leaves[False-PostCompact]
+FAILED tests/test_native_instruction_hooks.py::test_resume_hook_recovers_latest_state_of_one_plan_with_many_bound_leaves[True-SessionStart]
+FAILED tests/test_native_instruction_hooks.py::test_resume_hook_recovers_latest_state_of_one_plan_with_many_bound_leaves[True-PostCompact]
+FAILED tests/test_native_instruction_hooks.py::test_resume_hook_does_not_mix_leaves_from_distinct_bound_plans[SessionStart]
+FAILED tests/test_native_instruction_hooks.py::test_resume_hook_does_not_mix_leaves_from_distinct_bound_plans[PostCompact]
+FAILED tests/test_native_instruction_hooks.py::test_resume_hook_keeps_current_note_when_done_history_exceeds_context_budget
+8 failed, 33 deselected in 1.23s
+
+EXIT 1
