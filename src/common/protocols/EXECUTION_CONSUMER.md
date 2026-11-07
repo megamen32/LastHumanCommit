@@ -57,7 +57,7 @@ hostname = socket.gethostname()
 def native_read(args):
     terminal = phase["complete"]
     status = "idle" if terminal or not phase["submitted"] else "running"
-    turn = "completed" if terminal else "inProgress"
+    turn = "completed" if terminal or not phase["submitted"] else "inProgress"
     return {"session": {
         "id": args["sessionId"], "harness": args["harness"],
         "hostId": hostname, "status": status,
@@ -91,7 +91,13 @@ def cli(*args):
 
 # Create the copied plan/assignment below, then exercise CLI or stdio.
 # Set phase["complete"] = True only after the dispatch result was inspected.
-# Close with fixture_scope.close() when the consumer finishes.
+def close_fixture():
+    try:
+        next(fixture_scope)
+    except StopIteration:
+        pass
+
+# Call close_fixture() at the end of the consumer journey.
 ```
 
 Create `plan/leaves/L01.json` with `id`, `label`, `status: "queued"` and no
