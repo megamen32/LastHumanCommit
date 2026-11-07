@@ -1,0 +1,317 @@
+(Linux uses --headless by default. To override, use --headed / --gui. For Xvfb mode instead, use --xvfb. Or you can hide this info by using --headless / --headless2 / --uc.)
+FFFF.FFFF.                                                               [100%]
+=================================== FAILURES ===================================
+_ test_availability_uses_current_state_not_historical_stop[running-cancelled-new-turn-False-busy] _
+
+status = 'running', last_state = 'cancelled', active = 'new-turn'
+needs_permission = False, expected = 'busy'
+
+    @pytest.mark.parametrize("status,last_state,active,needs_permission,expected", [
+        ("running", "cancelled", "new-turn", False, "busy"),
+        ("busy", "interrupted", None, False, "busy"),
+        ("idle", "cancelled", None, False, "idle"),
+        ("idle", "interrupted", None, False, "idle"),
+        ("stopped", "completed", None, False, "stopped"),
+        ("running", "cancelled", "new-turn", True, "blocked"),
+        ("idle", "completed", "active-turn", False, "busy"),
+        ("idle", "inProgress", None, False, "unknown"),
+        ("idle", "in_progress", None, False, "unknown"),
+        ("idle", "completed", None, False, "idle"),
+    ])
+    def test_availability_uses_current_state_not_historical_stop(
+            status, last_state, active, needs_permission, expected):
+        execution = importlib.import_module("lhc_execution")
+        ref = assignment()["executor"]
+        class NativeRead:
+            def call(self, name, args):
+                assert name == "session_info" and args["sessionId"] == ref["session_id"]
+                return {"session": {
+                    "id": ref["session_id"], "harness": ref["harness"], "hostId": ref["host_id"],
+                    "status": status, "needsPermission": needs_permission,
+                    "meta": {"activeTurnId": active,
+                             "nativeLastTurn": {"turnId": "historical-turn", "status": last_state}}
+                }}
+        runtime = execution.observe_native(NativeRead(), ref, purpose="availability")
+>       assert runtime["state"] == expected
+E       AssertionError: assert 'stopped' == 'busy'
+E         
+E         - busy
+E         + stopped
+
+tests/test_lhc_execution.py:335: AssertionError
+_ test_availability_uses_current_state_not_historical_stop[busy-interrupted-None-False-busy] _
+
+status = 'busy', last_state = 'interrupted', active = None
+needs_permission = False, expected = 'busy'
+
+    @pytest.mark.parametrize("status,last_state,active,needs_permission,expected", [
+        ("running", "cancelled", "new-turn", False, "busy"),
+        ("busy", "interrupted", None, False, "busy"),
+        ("idle", "cancelled", None, False, "idle"),
+        ("idle", "interrupted", None, False, "idle"),
+        ("stopped", "completed", None, False, "stopped"),
+        ("running", "cancelled", "new-turn", True, "blocked"),
+        ("idle", "completed", "active-turn", False, "busy"),
+        ("idle", "inProgress", None, False, "unknown"),
+        ("idle", "in_progress", None, False, "unknown"),
+        ("idle", "completed", None, False, "idle"),
+    ])
+    def test_availability_uses_current_state_not_historical_stop(
+            status, last_state, active, needs_permission, expected):
+        execution = importlib.import_module("lhc_execution")
+        ref = assignment()["executor"]
+        class NativeRead:
+            def call(self, name, args):
+                assert name == "session_info" and args["sessionId"] == ref["session_id"]
+                return {"session": {
+                    "id": ref["session_id"], "harness": ref["harness"], "hostId": ref["host_id"],
+                    "status": status, "needsPermission": needs_permission,
+                    "meta": {"activeTurnId": active,
+                             "nativeLastTurn": {"turnId": "historical-turn", "status": last_state}}
+                }}
+        runtime = execution.observe_native(NativeRead(), ref, purpose="availability")
+>       assert runtime["state"] == expected
+E       AssertionError: assert 'stopped' == 'busy'
+E         
+E         - busy
+E         + stopped
+
+tests/test_lhc_execution.py:335: AssertionError
+_ test_availability_uses_current_state_not_historical_stop[idle-cancelled-None-False-idle] _
+
+status = 'idle', last_state = 'cancelled', active = None
+needs_permission = False, expected = 'idle'
+
+    @pytest.mark.parametrize("status,last_state,active,needs_permission,expected", [
+        ("running", "cancelled", "new-turn", False, "busy"),
+        ("busy", "interrupted", None, False, "busy"),
+        ("idle", "cancelled", None, False, "idle"),
+        ("idle", "interrupted", None, False, "idle"),
+        ("stopped", "completed", None, False, "stopped"),
+        ("running", "cancelled", "new-turn", True, "blocked"),
+        ("idle", "completed", "active-turn", False, "busy"),
+        ("idle", "inProgress", None, False, "unknown"),
+        ("idle", "in_progress", None, False, "unknown"),
+        ("idle", "completed", None, False, "idle"),
+    ])
+    def test_availability_uses_current_state_not_historical_stop(
+            status, last_state, active, needs_permission, expected):
+        execution = importlib.import_module("lhc_execution")
+        ref = assignment()["executor"]
+        class NativeRead:
+            def call(self, name, args):
+                assert name == "session_info" and args["sessionId"] == ref["session_id"]
+                return {"session": {
+                    "id": ref["session_id"], "harness": ref["harness"], "hostId": ref["host_id"],
+                    "status": status, "needsPermission": needs_permission,
+                    "meta": {"activeTurnId": active,
+                             "nativeLastTurn": {"turnId": "historical-turn", "status": last_state}}
+                }}
+        runtime = execution.observe_native(NativeRead(), ref, purpose="availability")
+>       assert runtime["state"] == expected
+E       AssertionError: assert 'stopped' == 'idle'
+E         
+E         - idle
+E         + stopped
+
+tests/test_lhc_execution.py:335: AssertionError
+_ test_availability_uses_current_state_not_historical_stop[idle-interrupted-None-False-idle] _
+
+status = 'idle', last_state = 'interrupted', active = None
+needs_permission = False, expected = 'idle'
+
+    @pytest.mark.parametrize("status,last_state,active,needs_permission,expected", [
+        ("running", "cancelled", "new-turn", False, "busy"),
+        ("busy", "interrupted", None, False, "busy"),
+        ("idle", "cancelled", None, False, "idle"),
+        ("idle", "interrupted", None, False, "idle"),
+        ("stopped", "completed", None, False, "stopped"),
+        ("running", "cancelled", "new-turn", True, "blocked"),
+        ("idle", "completed", "active-turn", False, "busy"),
+        ("idle", "inProgress", None, False, "unknown"),
+        ("idle", "in_progress", None, False, "unknown"),
+        ("idle", "completed", None, False, "idle"),
+    ])
+    def test_availability_uses_current_state_not_historical_stop(
+            status, last_state, active, needs_permission, expected):
+        execution = importlib.import_module("lhc_execution")
+        ref = assignment()["executor"]
+        class NativeRead:
+            def call(self, name, args):
+                assert name == "session_info" and args["sessionId"] == ref["session_id"]
+                return {"session": {
+                    "id": ref["session_id"], "harness": ref["harness"], "hostId": ref["host_id"],
+                    "status": status, "needsPermission": needs_permission,
+                    "meta": {"activeTurnId": active,
+                             "nativeLastTurn": {"turnId": "historical-turn", "status": last_state}}
+                }}
+        runtime = execution.observe_native(NativeRead(), ref, purpose="availability")
+>       assert runtime["state"] == expected
+E       AssertionError: assert 'stopped' == 'idle'
+E         
+E         - idle
+E         + stopped
+
+tests/test_lhc_execution.py:335: AssertionError
+_ test_availability_uses_current_state_not_historical_stop[running-cancelled-new-turn-True-blocked] _
+
+status = 'running', last_state = 'cancelled', active = 'new-turn'
+needs_permission = True, expected = 'blocked'
+
+    @pytest.mark.parametrize("status,last_state,active,needs_permission,expected", [
+        ("running", "cancelled", "new-turn", False, "busy"),
+        ("busy", "interrupted", None, False, "busy"),
+        ("idle", "cancelled", None, False, "idle"),
+        ("idle", "interrupted", None, False, "idle"),
+        ("stopped", "completed", None, False, "stopped"),
+        ("running", "cancelled", "new-turn", True, "blocked"),
+        ("idle", "completed", "active-turn", False, "busy"),
+        ("idle", "inProgress", None, False, "unknown"),
+        ("idle", "in_progress", None, False, "unknown"),
+        ("idle", "completed", None, False, "idle"),
+    ])
+    def test_availability_uses_current_state_not_historical_stop(
+            status, last_state, active, needs_permission, expected):
+        execution = importlib.import_module("lhc_execution")
+        ref = assignment()["executor"]
+        class NativeRead:
+            def call(self, name, args):
+                assert name == "session_info" and args["sessionId"] == ref["session_id"]
+                return {"session": {
+                    "id": ref["session_id"], "harness": ref["harness"], "hostId": ref["host_id"],
+                    "status": status, "needsPermission": needs_permission,
+                    "meta": {"activeTurnId": active,
+                             "nativeLastTurn": {"turnId": "historical-turn", "status": last_state}}
+                }}
+        runtime = execution.observe_native(NativeRead(), ref, purpose="availability")
+>       assert runtime["state"] == expected
+E       AssertionError: assert 'stopped' == 'blocked'
+E         
+E         - blocked
+E         + stopped
+
+tests/test_lhc_execution.py:335: AssertionError
+_ test_availability_uses_current_state_not_historical_stop[idle-completed-active-turn-False-busy] _
+
+status = 'idle', last_state = 'completed', active = 'active-turn'
+needs_permission = False, expected = 'busy'
+
+    @pytest.mark.parametrize("status,last_state,active,needs_permission,expected", [
+        ("running", "cancelled", "new-turn", False, "busy"),
+        ("busy", "interrupted", None, False, "busy"),
+        ("idle", "cancelled", None, False, "idle"),
+        ("idle", "interrupted", None, False, "idle"),
+        ("stopped", "completed", None, False, "stopped"),
+        ("running", "cancelled", "new-turn", True, "blocked"),
+        ("idle", "completed", "active-turn", False, "busy"),
+        ("idle", "inProgress", None, False, "unknown"),
+        ("idle", "in_progress", None, False, "unknown"),
+        ("idle", "completed", None, False, "idle"),
+    ])
+    def test_availability_uses_current_state_not_historical_stop(
+            status, last_state, active, needs_permission, expected):
+        execution = importlib.import_module("lhc_execution")
+        ref = assignment()["executor"]
+        class NativeRead:
+            def call(self, name, args):
+                assert name == "session_info" and args["sessionId"] == ref["session_id"]
+                return {"session": {
+                    "id": ref["session_id"], "harness": ref["harness"], "hostId": ref["host_id"],
+                    "status": status, "needsPermission": needs_permission,
+                    "meta": {"activeTurnId": active,
+                             "nativeLastTurn": {"turnId": "historical-turn", "status": last_state}}
+                }}
+        runtime = execution.observe_native(NativeRead(), ref, purpose="availability")
+>       assert runtime["state"] == expected
+E       AssertionError: assert 'idle' == 'busy'
+E         
+E         - busy
+E         + idle
+
+tests/test_lhc_execution.py:335: AssertionError
+_ test_availability_uses_current_state_not_historical_stop[idle-inProgress-None-False-unknown] _
+
+status = 'idle', last_state = 'inProgress', active = None
+needs_permission = False, expected = 'unknown'
+
+    @pytest.mark.parametrize("status,last_state,active,needs_permission,expected", [
+        ("running", "cancelled", "new-turn", False, "busy"),
+        ("busy", "interrupted", None, False, "busy"),
+        ("idle", "cancelled", None, False, "idle"),
+        ("idle", "interrupted", None, False, "idle"),
+        ("stopped", "completed", None, False, "stopped"),
+        ("running", "cancelled", "new-turn", True, "blocked"),
+        ("idle", "completed", "active-turn", False, "busy"),
+        ("idle", "inProgress", None, False, "unknown"),
+        ("idle", "in_progress", None, False, "unknown"),
+        ("idle", "completed", None, False, "idle"),
+    ])
+    def test_availability_uses_current_state_not_historical_stop(
+            status, last_state, active, needs_permission, expected):
+        execution = importlib.import_module("lhc_execution")
+        ref = assignment()["executor"]
+        class NativeRead:
+            def call(self, name, args):
+                assert name == "session_info" and args["sessionId"] == ref["session_id"]
+                return {"session": {
+                    "id": ref["session_id"], "harness": ref["harness"], "hostId": ref["host_id"],
+                    "status": status, "needsPermission": needs_permission,
+                    "meta": {"activeTurnId": active,
+                             "nativeLastTurn": {"turnId": "historical-turn", "status": last_state}}
+                }}
+        runtime = execution.observe_native(NativeRead(), ref, purpose="availability")
+>       assert runtime["state"] == expected
+E       AssertionError: assert 'idle' == 'unknown'
+E         
+E         - unknown
+E         + idle
+
+tests/test_lhc_execution.py:335: AssertionError
+_ test_availability_uses_current_state_not_historical_stop[idle-in_progress-None-False-unknown] _
+
+status = 'idle', last_state = 'in_progress', active = None
+needs_permission = False, expected = 'unknown'
+
+    @pytest.mark.parametrize("status,last_state,active,needs_permission,expected", [
+        ("running", "cancelled", "new-turn", False, "busy"),
+        ("busy", "interrupted", None, False, "busy"),
+        ("idle", "cancelled", None, False, "idle"),
+        ("idle", "interrupted", None, False, "idle"),
+        ("stopped", "completed", None, False, "stopped"),
+        ("running", "cancelled", "new-turn", True, "blocked"),
+        ("idle", "completed", "active-turn", False, "busy"),
+        ("idle", "inProgress", None, False, "unknown"),
+        ("idle", "in_progress", None, False, "unknown"),
+        ("idle", "completed", None, False, "idle"),
+    ])
+    def test_availability_uses_current_state_not_historical_stop(
+            status, last_state, active, needs_permission, expected):
+        execution = importlib.import_module("lhc_execution")
+        ref = assignment()["executor"]
+        class NativeRead:
+            def call(self, name, args):
+                assert name == "session_info" and args["sessionId"] == ref["session_id"]
+                return {"session": {
+                    "id": ref["session_id"], "harness": ref["harness"], "hostId": ref["host_id"],
+                    "status": status, "needsPermission": needs_permission,
+                    "meta": {"activeTurnId": active,
+                             "nativeLastTurn": {"turnId": "historical-turn", "status": last_state}}
+                }}
+        runtime = execution.observe_native(NativeRead(), ref, purpose="availability")
+>       assert runtime["state"] == expected
+E       AssertionError: assert 'idle' == 'unknown'
+E         
+E         - unknown
+E         + idle
+
+tests/test_lhc_execution.py:335: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_lhc_execution.py::test_availability_uses_current_state_not_historical_stop[running-cancelled-new-turn-False-busy]
+FAILED tests/test_lhc_execution.py::test_availability_uses_current_state_not_historical_stop[busy-interrupted-None-False-busy]
+FAILED tests/test_lhc_execution.py::test_availability_uses_current_state_not_historical_stop[idle-cancelled-None-False-idle]
+FAILED tests/test_lhc_execution.py::test_availability_uses_current_state_not_historical_stop[idle-interrupted-None-False-idle]
+FAILED tests/test_lhc_execution.py::test_availability_uses_current_state_not_historical_stop[running-cancelled-new-turn-True-blocked]
+FAILED tests/test_lhc_execution.py::test_availability_uses_current_state_not_historical_stop[idle-completed-active-turn-False-busy]
+FAILED tests/test_lhc_execution.py::test_availability_uses_current_state_not_historical_stop[idle-inProgress-None-False-unknown]
+FAILED tests/test_lhc_execution.py::test_availability_uses_current_state_not_historical_stop[idle-in_progress-None-False-unknown]
+8 failed, 2 passed, 18 deselected in 0.53s

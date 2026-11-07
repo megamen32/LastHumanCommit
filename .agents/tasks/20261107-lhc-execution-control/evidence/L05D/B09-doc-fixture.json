@@ -1,0 +1,23 @@
+{
+  "status": "ok",
+  "python_blocks": 2,
+  "fixture_phases": [
+    {
+      "submitted": false,
+      "complete": false,
+      "availability": "idle"
+    },
+    {
+      "submitted": true,
+      "complete": false,
+      "availability": "busy"
+    },
+    {
+      "submitted": true,
+      "complete": true,
+      "availability": "idle"
+    }
+  ],
+  "llm_turns": 0,
+  "native_messages": 0
+}
