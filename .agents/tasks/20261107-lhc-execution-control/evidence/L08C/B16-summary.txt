@@ -1,0 +1,6 @@
+B16 / L08C: undecomposed milestone readiness
+Scope: src/common/tools/lhc_readiness.py; tests/test_readiness.py only.
+RED: 6 failing cases, 14 deselected. Bare milestone; fresh idle explicit assignment; ordinary leaf sharing owner/executor at slots=1 with bare/assigned/running/delivery_unknown milestone.
+GREEN: 21 passed. All tests/test_readiness.py plus tests/test_plan_audit_followup.py::test_empty_stage_remains_visible_when_all_created_leaves_are_done.
+Fix: milestone remains in by_id with candidate=false and dispatchable=false; unfinished stage reason stage_undecomposed; excluded from dependency_ready, ready, dispatchable and all capacity/executor reservations. Existing stage status is not mutated.
+No real plans or runtime changed. Generated files and VERSION unchanged.

@@ -1,0 +1,112 @@
+$ python3 -m pytest -q tests/test_readiness.py -k undecomposed_stage
+(Linux uses --headless by default. To override, use --headed / --gui. For Xvfb mode instead, use --xvfb. Or you can hide this info by using --headless / --headless2 / --uc.)
+FFFFFF                                                                   [100%]
+=================================== FAILURES ===================================
+___________ test_undecomposed_stage_is_visible_but_never_a_candidate ___________
+
+    def test_undecomposed_stage_is_visible_but_never_a_candidate():
+        result = module("lhc_readiness").evaluate(
+            [{"id": "M01", "kind": "milestone", "status": "queued"}], slots=1, now=NOW)
+        row = result["by_id"]["M01"]
+>       assert row["reason_code"] == "stage_undecomposed"
+E       AssertionError: assert 'assignment_unknown' == 'stage_undecomposed'
+E         
+E         - stage_undecomposed
+E         + assignment_unknown
+
+tests/test_readiness.py:170: AssertionError
+__ test_fresh_idle_assignment_cannot_make_an_undecomposed_stage_dispatchable ___
+
+    def test_fresh_idle_assignment_cannot_make_an_undecomposed_stage_dispatchable():
+        result = module("lhc_readiness").evaluate(
+            [{"id": "M01", "kind": "milestone", "status": "queued", "assignment": assignment()}],
+            slots=1, now=NOW)
+        row = result["by_id"]["M01"]
+>       assert row["dispatchable"] is False and row["candidate"] is False
+E       assert (True is False)
+
+tests/test_readiness.py:181: AssertionError
+_ test_undecomposed_stage_does_not_reserve_capacity_or_owner_for_a_leaf[None] __
+
+stage_state = None
+
+    @pytest.mark.parametrize("stage_state", [None, "assigned", "running", "delivery_unknown"])
+    def test_undecomposed_stage_does_not_reserve_capacity_or_owner_for_a_leaf(stage_state):
+        stage = {"id": "M01", "kind": "milestone", "status": "queued", "owner": "worker"}
+        if stage_state is not None:
+            stage["assignment"] = assignment(state=stage_state)
+        leaf = {"id": "L01", "status": "queued", "owner": "worker", "assignment": assignment()}
+        result = module("lhc_readiness").evaluate([stage, leaf], slots=1, now=NOW)
+        assert result["ready"] == result["dispatchable"] == ["L01"]
+>       assert result["dependency_ready"] == ["L01"]
+E       AssertionError: assert ['M01', 'L01'] == ['L01']
+E         
+E         At index 0 diff: 'M01' != 'L01'
+E         Left contains one more item: 'L01'
+E         Use -v to get more diff
+
+tests/test_readiness.py:194: AssertionError
+_ test_undecomposed_stage_does_not_reserve_capacity_or_owner_for_a_leaf[assigned] _
+
+stage_state = 'assigned'
+
+    @pytest.mark.parametrize("stage_state", [None, "assigned", "running", "delivery_unknown"])
+    def test_undecomposed_stage_does_not_reserve_capacity_or_owner_for_a_leaf(stage_state):
+        stage = {"id": "M01", "kind": "milestone", "status": "queued", "owner": "worker"}
+        if stage_state is not None:
+            stage["assignment"] = assignment(state=stage_state)
+        leaf = {"id": "L01", "status": "queued", "owner": "worker", "assignment": assignment()}
+        result = module("lhc_readiness").evaluate([stage, leaf], slots=1, now=NOW)
+>       assert result["ready"] == result["dispatchable"] == ["L01"]
+E       AssertionError: assert ['M01'] == ['L01']
+E         
+E         At index 0 diff: 'M01' != 'L01'
+E         Use -v to get more diff
+
+tests/test_readiness.py:193: AssertionError
+_ test_undecomposed_stage_does_not_reserve_capacity_or_owner_for_a_leaf[running] _
+
+stage_state = 'running'
+
+    @pytest.mark.parametrize("stage_state", [None, "assigned", "running", "delivery_unknown"])
+    def test_undecomposed_stage_does_not_reserve_capacity_or_owner_for_a_leaf(stage_state):
+        stage = {"id": "M01", "kind": "milestone", "status": "queued", "owner": "worker"}
+        if stage_state is not None:
+            stage["assignment"] = assignment(state=stage_state)
+        leaf = {"id": "L01", "status": "queued", "owner": "worker", "assignment": assignment()}
+        result = module("lhc_readiness").evaluate([stage, leaf], slots=1, now=NOW)
+>       assert result["ready"] == result["dispatchable"] == ["L01"]
+E       AssertionError: assert [] == ['L01']
+E         
+E         Right contains one more item: 'L01'
+E         Use -v to get more diff
+
+tests/test_readiness.py:193: AssertionError
+_ test_undecomposed_stage_does_not_reserve_capacity_or_owner_for_a_leaf[delivery_unknown] _
+
+stage_state = 'delivery_unknown'
+
+    @pytest.mark.parametrize("stage_state", [None, "assigned", "running", "delivery_unknown"])
+    def test_undecomposed_stage_does_not_reserve_capacity_or_owner_for_a_leaf(stage_state):
+        stage = {"id": "M01", "kind": "milestone", "status": "queued", "owner": "worker"}
+        if stage_state is not None:
+            stage["assignment"] = assignment(state=stage_state)
+        leaf = {"id": "L01", "status": "queued", "owner": "worker", "assignment": assignment()}
+        result = module("lhc_readiness").evaluate([stage, leaf], slots=1, now=NOW)
+>       assert result["ready"] == result["dispatchable"] == ["L01"]
+E       AssertionError: assert [] == ['L01']
+E         
+E         Right contains one more item: 'L01'
+E         Use -v to get more diff
+
+tests/test_readiness.py:193: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_readiness.py::test_undecomposed_stage_is_visible_but_never_a_candidate
+FAILED tests/test_readiness.py::test_fresh_idle_assignment_cannot_make_an_undecomposed_stage_dispatchable
+FAILED tests/test_readiness.py::test_undecomposed_stage_does_not_reserve_capacity_or_owner_for_a_leaf[None]
+FAILED tests/test_readiness.py::test_undecomposed_stage_does_not_reserve_capacity_or_owner_for_a_leaf[assigned]
+FAILED tests/test_readiness.py::test_undecomposed_stage_does_not_reserve_capacity_or_owner_for_a_leaf[running]
+FAILED tests/test_readiness.py::test_undecomposed_stage_does_not_reserve_capacity_or_owner_for_a_leaf[delivery_unknown]
+6 failed, 14 deselected in 0.39s
+
+exit_code=1
