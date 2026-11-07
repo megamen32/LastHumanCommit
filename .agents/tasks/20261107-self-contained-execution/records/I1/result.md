@@ -7,6 +7,8 @@ F source: 5f8e53b7555751c08937c43b977c79a8e130339b; интегрирован mer
 V source: dcba0b3fd2f90b769ea71a634d37eb74816e1d17; UNKNOWN reconciled, недостающий commit/push выполнен; интегрирован merge 2eb47da7.
 F/V source suite: 34 passed in 1.16s (evidence/integration/fv-source-green.log), из общей ветки без соседнего PYTHONPATH. Четыре V bugs и B27cbecd46bd749b99250 закрыты canonical CLI с RED/GREEN (evidence/integration/fv-bug-resolutions.json).
 
-Точная зависимость: H final SHA ещё не передан; baseline b084c156 не интегрирован. После H final: интеграция source, генерация publish_package + sync_skills, validator со всем applicable pytest, generated parity. Только после зелёного общего candidate — freeze/push SHA для независимых QA и Reviewer. VERSION остаётся 1.17.1 до финального version gate.
+Точная зависимость: H final SHA ещё не передан; baseline b084c156 не интегрирован. Порядок по уточнению владельца: H final → интеграция и общий source GREEN → fetch main → version guard и compatible Y bump (1.18.0 при target 1.17.1) → sync_version, publish_package + sync_skills → validator со всем applicable pytest и generated parity → frozen release candidate SHA для независимых QA и Reviewer. VERSION станет последней продуктовой правкой до приёмки; QA проверяет будущий release package. Пока VERSION 1.17.1, version gate ещё не наступил.
 
 Не выполнены и не заявлены: whole-candidate acceptance, main merge, tag, native install, mirror/runtime, physical-parent wake. Никаких запросов GPTAdmin, Airlock, новых агентов или сообщений другим сессиям. Q1 evidence и чужие plan/WIP paths сохранены вне I1 commits.
+
+Подготовка isolated native install/readback: release-preparation.json. Скрипты только подготовлены и syntax-checked; установка не запускалась.
