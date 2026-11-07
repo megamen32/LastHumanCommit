@@ -224,6 +224,7 @@ class Leaf:
     status: str = STATUS_QUEUED
     owner: str = ""
     session: str = ""
+    assignment: dict[str, Any] = field(default_factory=dict)
     harness: str = ""
     model: str = ""
     model_class: str = ""
@@ -1255,7 +1256,7 @@ def parse_graph_json(document: Any) -> Graph:
     graph.started_at = str(document.get("started_at") or "")
     graph.plan_origin = document.get('plan_origin') or {}
     graph.finished_at = str(document.get("finished_at") or "")
-    graph.slots = int(document.get("slots") or 1)
+    graph.slots = int(document["slots"]) if document.get("slots") is not None else 1
     graph.declared_parallel = document.get("parallel")
     graph.declared_leaves = document.get("leaf_count")
     graph.declared_waves = document.get("wave_count")
@@ -1294,6 +1295,7 @@ def parse_graph_json(document: Any) -> Graph:
             status=normalize_status(task.get("status") or STATUS_QUEUED),
             owner=str(task.get("owner") or task.get("role") or ""),
             session=str(task.get("session") or ""),
+            assignment=dict(task["assignment"]) if isinstance(task.get("assignment"), dict) else {},
             harness=str(task.get("harness") or ""),
             model=str(task.get("model") or ""),
             model_class=str(task.get("model_class") or ""),
@@ -1604,47 +1606,24 @@ def owner_key(leaf: Leaf) -> str:
     graph that names no owners does not collapse its leaves into one worker.
     """
 
+    if leaf.assignment:
+        module = _load_sibling("lhc_readiness")
+        if module is not None:
+            return module.executor_key(leaf)
     return normalize(leaf.owner or leaf.session or leaf.id).lower()
 
 
+def readiness_decision(graph: Graph) -> dict[str, Any]:
+    """The same read-only evaluator powers metrics and both Now paths."""
+    module = _load_sibling("lhc_readiness")
+    if module is None:
+        raise ImportError("lhc_readiness.py is required next to the grid")
+    return module.evaluate(graph.leaves, graph.slots)
+
+
 def wait_reasons(graph: Graph) -> dict[str, list[str]]:
-    """Why each open leaf is not running, split the way the owner asks.
-
-    «ждёт листа» and «ждёт исполнителя» are different problems: the first is
-    answered by reordering the graph, the second by adding or freeing a worker.
-    A blocked leaf is a third thing — it waits outside the plan — and stays in
-    its own count.
-    """
-
-    by_id = graph.by_id()
-    busy = {
-        owner_key(leaf)
-        for leaf in graph.leaves
-        if leaf.status == STATUS_RUNNING
-    }
-    waiting_for_leaf: list[str] = []
-    waiting_for_owner: list[str] = []
-    ready: list[str] = []
-    for leaf in graph.leaves:
-        if leaf.status not in (STATUS_QUEUED, STATUS_WAITING):
-            continue
-        unfinished = [
-            dep for dep in leaf.depends_on
-            if dep in by_id and by_id[dep].status not in (STATUS_DONE, STATUS_DEFERRED)
-        ]
-        if unfinished:
-            waiting_for_leaf.append(leaf.id)
-        elif owner_key(leaf) in busy and (leaf.owner or leaf.session):
-            # The leaf could start: nothing in the graph holds it, and the one
-            # executor named for it is already busy with another leaf.
-            waiting_for_owner.append(leaf.id)
-        else:
-            ready.append(leaf.id)
-    return {
-        "waiting_for_leaf": waiting_for_leaf,
-        "waiting_for_owner": waiting_for_owner,
-        "ready": ready,
-    }
+    decision = readiness_decision(graph)
+    return {key: decision[key] for key in ("waiting_for_leaf", "waiting_for_owner", "ready")}
 
 
 def build_metrics(graph: Graph) -> dict[str, Any]:
@@ -1708,10 +1687,11 @@ def build_metrics(graph: Graph) -> dict[str, Any]:
     if not use_live:
         active = [leaf for leaf in graph.leaves if leaf.status == STATUS_RUNNING]
         current_peak = len({
-            (leaf.harness, leaf.session) if leaf.session else ("unknown", leaf.id)
+            owner_key(leaf) if leaf.assignment else
+            ((leaf.harness, leaf.session) if leaf.session else ("unknown", leaf.id))
             for leaf in active
         })
-    slot_limit = graph.slots or 1
+    slot_limit = graph.slots
     # The same moment read by hands instead of rows: how many distinct
     # executors actually hold work, and whether the plan is over-subscribed at
     # that level. `current_parallel` stays the leaf count it always was — the
@@ -2648,6 +2628,8 @@ def _parallel_graph(module: Any, graph: Graph) -> Any:
             note=leaf.note,
             owner=leaf.owner,
             session=leaf.session,
+            harness=leaf.harness,
+            assignment=dict(leaf.assignment),
             started_at=leaf.started_at,
             finished_at=leaf.finished_at,
             wave=leaf.wave,
@@ -2659,7 +2641,7 @@ def _parallel_graph(module: Any, graph: Graph) -> Any:
         title=graph.title,
         goal=graph.goal,
         business_result=graph.business_result,
-        slots=graph.slots or None,
+        slots=graph.slots,
         updated_at=graph.updated_at,
         tasks=tasks,
     )
@@ -2672,6 +2654,7 @@ def _plan_from_summary(summary: Any, source: str) -> dict[str, Any]:
 
     def line(task: Any, **extra: Any) -> dict[str, Any]:
         data: dict[str, Any] = {
+            **summary.readiness.get(task.id, {}),
             "id": task.id,
             "label": task.label or task.id,
             "estimate": task.estimate_label,
@@ -2684,6 +2667,10 @@ def _plan_from_summary(summary: Any, source: str) -> dict[str, Any]:
         "source": source,
         "slots": summary.slots,
         "free_slots": summary.free_slots,
+        "occupied_slots": summary.occupied_slots,
+        "readiness": summary.readiness,
+        "dependency_ready": [line(task) for task in summary.dependency_ready],
+        "dispatchable": [line(task) for task in summary.dispatchable],
         "running": [line(task, since=task.started_at) for task in summary.running],
         "ready": [line(task) for task in summary.ready],
         "deferred": [line(task) for task in summary.deferred],
@@ -2747,90 +2734,31 @@ def _port_layers(tasks: dict[str, Leaf], order: list[str]) -> dict[str, int]:
 
 
 def _plan_now_port(graph: Graph) -> dict[str, Any]:
-    """The planner's answer, ported for a checkout without ``lhc_parallel``.
-
-    The rules are the planner's own: a queued line whose dependencies are all
-    done and that still fits into a free slot is ready to launch. This is a
-    port of ``lhc_parallel.analyze()``, not a second opinion about it.
-    """
-
-    tasks = {leaf.id: leaf for leaf in graph.leaves}
-    order = [leaf.id for leaf in graph.leaves]
-    layers = _port_layers(tasks, order)
-
-    running: list[Leaf] = []
-    blocked: list[tuple[Leaf, str]] = []
-    waiting: list[tuple[Leaf, list[str]]] = []
-    ready: list[Leaf] = []
-
-    for leaf in graph.leaves:
-        if leaf.status == STATUS_RUNNING:
-            running.append(leaf)
-        elif leaf.status == STATUS_BLOCKED:
-            blocked.append((leaf, _port_reason(leaf)))
-        elif leaf.status == STATUS_WAITING:
-            waiting.append((leaf, []))
-        elif leaf.status == STATUS_DEFERRED:
-            # The owner deferred this leaf: no answer is expected, so it waits
-            # for nothing and it takes no slot.
-            continue
-        elif leaf.status not in STATUSES:
-            continue
-
-    for leaf in graph.leaves:
-        if leaf.status != STATUS_QUEUED:
-            continue
-        unmet = [
-            dep for dep in leaf.depends_on
-            if dep not in tasks or tasks[dep].status != STATUS_DONE
-        ]
-        if unmet:
-            waiting.append((leaf, unmet))
-        else:
-            ready.append(leaf)
-
-    def sort_key(leaf: Leaf) -> tuple[int, int]:
-        wave = leaf.wave if leaf.wave is not None else layers.get(leaf.id, 0)
-        return (wave, leaf.order)
-
-    ready.sort(key=sort_key)
-    waiting.sort(key=lambda item: sort_key(item[0]))
-    blocked.sort(key=lambda item: sort_key(item[0]))
-
-    slots = graph.slots or None
-    free = None if slots is None else max(0, slots - len(running))
-    deferred: list[Leaf] = []
-    if free is not None:
-        deferred = ready[free:]
-        ready = ready[:free]
-
+    """Fallback rendering adapter; readiness still comes from the canonical evaluator."""
+    decision = readiness_decision(graph)
+    tasks = graph.by_id()
     labels = {leaf.id: (leaf.label or leaf.id) for leaf in graph.leaves}
 
     def line(leaf: Leaf, **extra: Any) -> dict[str, Any]:
-        data: dict[str, Any] = {
-            "id": leaf.id,
-            "label": leaf.label or leaf.id,
-            "estimate": _port_estimate(leaf),
-            "unblocks": [
-                labels.get(other.id, other.id)
-                for other in graph.leaves if leaf.id in other.depends_on
-            ],
-        }
-        data.update(extra)
-        return data
+        return {**decision["by_id"][leaf.id], "id": leaf.id, "label": leaf.label or leaf.id,
+                "estimate": _port_estimate(leaf),
+                "unblocks": [labels[other.id] for other in graph.leaves if leaf.id in other.depends_on], **extra}
 
+    waiting = [leaf.id for leaf in graph.leaves if leaf.status == STATUS_WAITING]
+    waiting += [key for key in decision["waiting_for_leaf"] + decision["waiting_for_owner"] + decision["external_waiting"]
+                if tasks[key].status == STATUS_QUEUED]
     return {
-        "source": "порядок lhc_parallel (перенос)",
-        "slots": slots,
-        "free_slots": free,
-        "running": [line(leaf, since=leaf.started_at) for leaf in running],
-        "ready": [line(leaf) for leaf in ready],
-        "deferred": [line(leaf) for leaf in deferred],
-        "blocked": [line(leaf, reason=reason) for leaf, reason in blocked],
-        "waiting": [
-            line(leaf, unmet=[labels.get(item, item) for item in unmet], unmet_ids=list(unmet))
-            for leaf, unmet in waiting
-        ],
+        "source": "canonical readiness (fallback)", "slots": graph.slots,
+        "free_slots": decision["free_slots"], "occupied_slots": decision["occupied_slots"],
+        "readiness": decision["by_id"],
+        "dependency_ready": [line(tasks[key]) for key in decision["dependency_ready"]],
+        "dispatchable": [line(tasks[key]) for key in decision["dispatchable"]],
+        "running": [line(leaf, since=leaf.started_at) for leaf in graph.leaves if leaf.status == STATUS_RUNNING],
+        "ready": [line(tasks[key]) for key in decision["ready"]],
+        "deferred": [line(tasks[key]) for key in decision["deferred"]],
+        "blocked": [line(leaf, reason=_port_reason(leaf)) for leaf in graph.leaves if leaf.status == STATUS_BLOCKED],
+        "waiting": [line(tasks[key], unmet=[labels.get(dep, dep) for dep in decision["by_id"][key]["unmet_ids"]],
+                         unmet_ids=decision["by_id"][key]["unmet_ids"]) for key in waiting],
     }
 
 
