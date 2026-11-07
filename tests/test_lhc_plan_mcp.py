@@ -141,7 +141,8 @@ def test_tools_list_exposes_exactly_the_seven_operations():
     response = plan_mcp.handle({"jsonrpc": "2.0", "id": 1, "method": "tools/list"})
     names = {tool["name"] for tool in response["result"]["tools"]}
     assert names == {"create_leaf", "update_leaf", "build_plan", "estimate_cost", "update_progress", "publish_html", "revise_plan", "bug_register", "bug_get", "bug_list", "bug_update", "bug_resolve", "bug_check",
-                     "show_plan", "update_plan", "activate_leaf", "worker_register", "worker_finish"}
+                     "show_plan", "update_plan", "activate_leaf", "worker_register", "worker_finish",
+                     "assign_leaf", "dispatch_leaf", "reconcile_leaf", "accept_leaf"}
     for tool in response["result"]["tools"]:
         assert tool["description"]
         assert tool["inputSchema"]["type"] == "object"
@@ -725,7 +726,8 @@ def test_real_stdio_handshake_spawns_the_server_and_calls_every_tool(tmp_path):
     assert {tool["name"] for tool in tools["result"]["tools"]} == {
         "create_leaf", "update_leaf", "build_plan", "estimate_cost", "update_progress", "publish_html", "revise_plan",
         "bug_register", "bug_get", "bug_list", "bug_update", "bug_resolve", "bug_check",
-        "show_plan", "update_plan", "activate_leaf", "worker_register", "worker_finish"}
+        "show_plan", "update_plan", "activate_leaf", "worker_register", "worker_finish",
+                     "assign_leaf", "dispatch_leaf", "reconcile_leaf", "accept_leaf"}
     for reply in (created, updated, built, priced):
         assert reply["result"]["isError"] is False, reply["result"]
     assert (plan_dir / "leaves" / "L01.json").is_file()

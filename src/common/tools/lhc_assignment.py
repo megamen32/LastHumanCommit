@@ -10,7 +10,7 @@ STATES = ("assigned", "dispatching", "submitted", "running", "result_ready",
 REF_FIELDS = ("host_id", "harness", "session_id")
 TERMINAL = {"accepted", "cancelled"}
 ALLOWED = {
-    "assigned": {"dispatching", "blocked", "cancelled"},
+    "assigned": {"assigned", "dispatching", "blocked", "cancelled"},
     "dispatching": {"submitted", "running", "delivery_unknown", "blocked", "cancelled"},
     "submitted": {"submitted", "running", "result_ready", "blocked", "delivery_unknown", "cancelled"},
     "running": {"running", "result_ready", "blocked", "delivery_unknown", "cancelled"},
