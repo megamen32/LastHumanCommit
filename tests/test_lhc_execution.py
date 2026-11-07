@@ -372,3 +372,96 @@ def test_real_http_wake_tool_error_preserves_reason_without_replay(
                if body.get("params", {}).get("name") == "resume_after"]
     assert actions == ["wait", "status", "status"]
     assert "synthetic" not in json.dumps(a)
+
+
+@pytest.fixture
+def stale_idle_transport():
+    """An admitted exact native turn with a lagging session summary; no network."""
+    class NativeTransport:
+        host_id = 'test-host'
+
+        def __init__(self):
+            self.calls = []
+            self.status = 'idle'
+            self.turn = {'turnId': 'turn-1', 'status': 'inProgress'}
+            self.delivery = 'accepted'
+            self.wait = None
+
+        def call(self, name, args):
+            self.calls.append((name, copy.deepcopy(args)))
+            if name == 'deliver':
+                return {'delivery': self.delivery, 'inputId': args['inputId'],
+                        'turnId': 'turn-1', 'sessionId': 'worker', 'harness': 'codex'}
+            if name == 'session_info':
+                return {'session': {'id': 'worker', 'harness': 'codex', 'hostId': self.host_id,
+                                    'status': self.status, 'meta': {'nativeLastTurn': self.turn}}}
+            assert name == 'resume_after'
+            if args['action'] == 'wait':
+                assert self.wait is None, 'duplicate completion wait'
+                self.wait = fixture_wait(args)
+            else:
+                assert args['action'] == 'status' and args['waitId'] == self.wait['id']
+            return {'wait': copy.deepcopy(self.wait)}
+
+    return NativeTransport()
+
+
+@pytest.mark.parametrize('native_state', ['inProgress', 'in_progress', 'running'])
+def test_stale_idle_exact_native_turn_arms_one_wake_and_requires_acceptance(stale_idle_transport, native_state):
+    execution = importlib.import_module('lhc_execution')
+    transport = stale_idle_transport
+    transport.turn['status'] = native_state
+    h = Harness()
+    a = execution.dispatch_assignment(h.assignment, 'task', transport=transport, persist=h.persist)
+    assert a['state'] == 'running'
+    assert a['wake']['state'] == 'waiting' and a['wake']['turn_id'] == 'turn-1'
+    # Reentry must read the existing wait, never resend the accepted task.
+    a = execution.dispatch_assignment(a, 'do not resend', transport=transport, persist=h.persist)
+    a = execution.reconcile_assignment(a, transport=transport, persist=h.persist)
+    transport.turn['status'] = 'completed'
+    a = execution.reconcile_assignment(a, transport=transport, persist=h.persist)
+    assert a['state'] == 'result_ready' and a['state'] != 'accepted'
+    assert a['observed_runtime']['turn_id'] == 'turn-1'
+    assert sum(name == 'deliver' for name, _ in transport.calls) == 1
+    assert [args['action'] for name, args in transport.calls if name == 'resume_after'] == ['wait', 'status', 'status']
+
+
+@pytest.mark.parametrize('status,turn', [
+    ('idle', {'turnId': 'foreign-turn', 'status': 'inProgress'}),
+    ('idle', {'turnId': 'foreign-turn', 'status': 'in_progress'}),
+    ('idle', {}),
+    ('idle', {'status': 'inProgress'}),
+    ('stopped', {'turnId': 'turn-1', 'status': 'inProgress'}),
+    ('stopped', {'turnId': 'turn-1', 'status': 'in_progress'}),
+])
+def test_stale_idle_repair_never_arms_unknown_foreign_or_stopped_turn(stale_idle_transport, status, turn):
+    execution = importlib.import_module('lhc_execution')
+    transport = stale_idle_transport
+    transport.status, transport.turn = status, turn
+    h = Harness()
+    a = execution.dispatch_assignment(h.assignment, 'task', transport=transport, persist=h.persist)
+    assert a['state'] == 'submitted'
+    assert not any(name == 'resume_after' for name, _ in transport.calls)
+
+
+def test_stale_idle_unknown_delivery_is_not_replayed_or_armed(stale_idle_transport):
+    execution = importlib.import_module('lhc_execution')
+    transport = stale_idle_transport
+    transport.delivery = 'unknown'
+    h = Harness()
+    a = execution.dispatch_assignment(h.assignment, 'task', transport=transport, persist=h.persist)
+    a = execution.reconcile_assignment(a, transport=transport, persist=h.persist)
+    a = execution.dispatch_assignment(a, 'do not retry', transport=transport, persist=h.persist)
+    assert a['state'] == 'delivery_unknown'
+    assert [name for name, _ in transport.calls] == ['deliver']
+
+
+def test_fast_child_completed_before_join_still_arms_exact_wake(stale_idle_transport):
+    execution = importlib.import_module('lhc_execution')
+    transport = stale_idle_transport
+    transport.turn['status'] = 'completed'
+    h = Harness()
+    a = execution.dispatch_assignment(h.assignment, 'task', transport=transport, persist=h.persist)
+    assert a['state'] == 'result_ready' and a['wake']['turn_id'] == 'turn-1'
+    assert a['wake']['state'] == 'waiting'
+    assert [name for name, _ in transport.calls] == ['deliver', 'session_info', 'resume_after']
