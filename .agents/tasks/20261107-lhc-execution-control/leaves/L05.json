@@ -1,0 +1,41 @@
+{
+  "label": "Интеграция MCP, страницы и пробного пакета",
+  "kind": "task",
+  "status": "queued",
+  "estimate_minutes": 15,
+  "depends_on": [
+    "L02",
+    "L03",
+    "L04"
+  ],
+  "description": "Интеграция MCP, страницы и пробного пакета",
+  "acceptance": "Поведение подтверждено сохранённым результатом реального потребителя.",
+  "parent": "M01",
+  "id": "L05",
+  "model": "gpt-6.1-sol",
+  "created_at": "2026-11-07T18:18:35+03:00",
+  "updated_at": "2026-11-07T18:18:35+03:00",
+  "progress_events": [
+    {
+      "at": "2026-11-07T18:18:35+03:00",
+      "note": "",
+      "changes": {
+        "label": "Интеграция MCP, страницы и пробного пакета",
+        "kind": "task",
+        "status": "queued",
+        "estimate_minutes": 15,
+        "depends_on": [
+          "L02",
+          "L03",
+          "L04"
+        ],
+        "description": "Интеграция MCP, страницы и пробного пакета",
+        "acceptance": "Поведение подтверждено сохранённым результатом реального потребителя.",
+        "parent": "M01",
+        "model": "gpt-6.1-sol"
+      },
+      "session": "unknown",
+      "harness": "unknown"
+    }
+  ]
+}

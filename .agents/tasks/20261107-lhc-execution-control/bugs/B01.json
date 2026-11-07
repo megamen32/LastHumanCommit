@@ -1,0 +1,24 @@
+{
+  "created_at": "2026-11-07T15:18:36+00:00",
+  "details": "progress_event копирует leaf.session; root updates L15/L16 приписаны старым child.",
+  "events": [
+    {
+      "action": "register",
+      "actor": "root",
+      "at": "2026-11-07T15:18:36+00:00",
+      "changes": {
+        "details": "progress_event копирует leaf.session; root updates L15/L16 приписаны старым child.",
+        "source": "audit20261107",
+        "status": "open",
+        "title": "Автор события подменяется исполнителем"
+      }
+    }
+  ],
+  "id": "B01",
+  "owner": "root",
+  "reporter": "root",
+  "source": "audit20261107",
+  "status": "open",
+  "title": "Автор события подменяется исполнителем",
+  "updated_at": "2026-11-07T15:18:36+00:00"
+}

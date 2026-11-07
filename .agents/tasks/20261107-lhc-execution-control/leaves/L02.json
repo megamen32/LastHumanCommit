@@ -1,0 +1,37 @@
+{
+  "label": "Единый расчёт готовности и исправление JSON",
+  "kind": "task",
+  "status": "queued",
+  "estimate_minutes": 15,
+  "depends_on": [
+    "L01"
+  ],
+  "description": "Единый расчёт готовности и исправление JSON",
+  "acceptance": "Поведение подтверждено сохранённым результатом реального потребителя.",
+  "parent": "M01",
+  "id": "L02",
+  "model": "gpt-6.1-sol",
+  "created_at": "2026-11-07T18:18:34+03:00",
+  "updated_at": "2026-11-07T18:18:34+03:00",
+  "progress_events": [
+    {
+      "at": "2026-11-07T18:18:34+03:00",
+      "note": "",
+      "changes": {
+        "label": "Единый расчёт готовности и исправление JSON",
+        "kind": "task",
+        "status": "queued",
+        "estimate_minutes": 15,
+        "depends_on": [
+          "L01"
+        ],
+        "description": "Единый расчёт готовности и исправление JSON",
+        "acceptance": "Поведение подтверждено сохранённым результатом реального потребителя.",
+        "parent": "M01",
+        "model": "gpt-6.1-sol"
+      },
+      "session": "unknown",
+      "harness": "unknown"
+    }
+  ]
+}
