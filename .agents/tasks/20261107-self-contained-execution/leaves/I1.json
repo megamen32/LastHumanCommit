@@ -17,7 +17,7 @@
   "created_at": "2026-11-07T22:40:42+03:00",
   "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
   "harness": "codex",
-  "updated_at": "2026-11-07T22:40:42+03:00",
+  "updated_at": "2026-11-07T23:29:38+03:00",
   "progress_events": [
     {
       "at": "2026-11-07T22:40:42+03:00",
@@ -45,6 +45,19 @@
         "source": "native_environment"
       },
       "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "harness": "codex"
+    },
+    {
+      "at": "2026-11-07T23:29:38+03:00",
+      "note": "I1 native integrator 01a1b7ae-4a6c-70c2-84cc-3288329a2425: direct delegated stage 1. F 5f8e53b7 and V dcba0b3f integrated; joint source 34 passed. H final required for candidate freeze; baseline excluded. No main merge/tag/install/runtime.",
+      "changes": {},
+      "actor": {
+        "host_id": "roomhacker-server-100",
+        "harness": "codex",
+        "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+        "source": "declared"
+      },
+      "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
       "harness": "codex"
     }
   ]

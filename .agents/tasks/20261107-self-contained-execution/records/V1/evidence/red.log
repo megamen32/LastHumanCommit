@@ -1,0 +1,57 @@
+(Linux uses --headless by default. To override, use --headed / --gui. For Xvfb mode instead, use --xvfb. Or you can hide this info by using --headless / --headless2 / --uc.)
+FF.FFF                                                                   [100%]
+=================================== FAILURES ===================================
+_____________ test_candidate_wording_never_claims_launch_admission _____________
+
+    def test_candidate_wording_never_claims_launch_admission():
+        graph = grid.parse_graph_json({"schema_version": 2, "slots": 1, "tasks": [
+            {"id": "L01", "label": "Шаг", "status": "queued", "estimate_minutes": 10}]})
+>       metrics = grid.graph_metrics(graph)
+E       AttributeError: module 'lhc_grid' has no attribute 'graph_metrics'
+
+tests/test_truthful_plan_views.py:18: AttributeError
+____________ test_unknown_leaf_does_not_get_default_whole_plan_eta _____________
+
+    def test_unknown_leaf_does_not_get_default_whole_plan_eta():
+        item = entry([
+            {"id": "L01", "status": "queued", "estimate_minutes": 10},
+            {"id": "L02", "status": "queued", "estimate_unknown_reason": "нужен замер"}])
+        summary = catalog.summarize(item, NOW)
+>       assert summary["eta"] is None
+E       assert datetime.datetime(2026, 11, 7, 12, 15, tzinfo=datetime.timezone.utc) is None
+
+tests/test_truthful_plan_views.py:31: AssertionError
+_____ test_completed_cards_never_accept_legacy_goal_or_hide_deferred_work ______
+
+    def test_completed_cards_never_accept_legacy_goal_or_hide_deferred_work():
+        summary = catalog.summarize(entry([
+            {"id": "L01", "status": "done"},
+            {"id": "L02", "status": "deferred"}]), NOW)
+>       assert summary["state"] != "completed"
+E       AssertionError: assert 'completed' != 'completed'
+
+tests/test_truthful_plan_views.py:49: AssertionError
+_______________ test_all_done_cards_only_complete_work_not_goal ________________
+
+    def test_all_done_cards_only_complete_work_not_goal():
+        summary = catalog.summarize(entry([{"id": "L01", "status": "done"}]), NOW)
+>       assert summary["state"] != "completed"
+E       AssertionError: assert 'completed' != 'completed'
+
+tests/test_truthful_plan_views.py:57: AssertionError
+_________________ test_superseded_plan_never_appears_completed _________________
+
+    def test_superseded_plan_never_appears_completed():
+        summary = catalog.summarize(entry([{"id": "L01", "status": "done"}],
+                                          plan_status="superseded"), NOW)
+>       assert summary["state"] != "completed"
+E       AssertionError: assert 'completed' != 'completed'
+
+tests/test_truthful_plan_views.py:65: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_truthful_plan_views.py::test_candidate_wording_never_claims_launch_admission
+FAILED tests/test_truthful_plan_views.py::test_unknown_leaf_does_not_get_default_whole_plan_eta
+FAILED tests/test_truthful_plan_views.py::test_completed_cards_never_accept_legacy_goal_or_hide_deferred_work
+FAILED tests/test_truthful_plan_views.py::test_all_done_cards_only_complete_work_not_goal
+FAILED tests/test_truthful_plan_views.py::test_superseded_plan_never_appears_completed
+5 failed, 1 passed in 0.27s

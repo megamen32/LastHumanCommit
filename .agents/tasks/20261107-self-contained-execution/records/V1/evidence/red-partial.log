@@ -1,0 +1,42 @@
+(Linux uses --headless by default. To override, use --headed / --gui. For Xvfb mode instead, use --xvfb. Or you can hide this info by using --headless / --headless2 / --uc.)
+FFF                                                                      [100%]
+=================================== FAILURES ===================================
+________ test_partial_scope_keeps_numeric_work_but_hides_catalog_finish ________
+
+    def test_partial_scope_keeps_numeric_work_but_hides_catalog_finish():
+        summary = catalog.summarize(entry([
+            {"id": "L01", "status": "queued", "estimate_minutes": 10,
+             "estimate_unknown_reason": "старое диагностическое поле"}]), NOW)
+>       assert summary["eta"] is None
+E       assert datetime.datetime(2026, 11, 7, 12, 10, tzinfo=datetime.timezone.utc) is None
+
+tests/test_truthful_plan_views.py:43: AssertionError
+___________ test_known_work_keeps_dependencies_through_unknown_leaf ____________
+
+    def test_known_work_keeps_dependencies_through_unknown_leaf():
+        summary = catalog.summarize(entry([
+            {"id": "A", "status": "queued", "estimate_minutes": 10},
+            {"id": "B", "status": "queued", "depends_on": ["A"]},
+            {"id": "C", "status": "queued", "estimate_minutes": 10, "depends_on": ["B"]}]), NOW)
+        assert summary["eta"] is None
+>       assert summary["known_remaining_minutes"] == 20
+E       assert 10.0 == 20
+
+tests/test_truthful_plan_views.py:75: AssertionError
+_________ test_partial_scope_keeps_numeric_work_but_hides_grid_finish __________
+
+    def test_partial_scope_keeps_numeric_work_but_hides_grid_finish():
+        graph = grid.parse_graph_json({"schema_version": 2, "slots": 1, "tasks": [
+            {"id": "L01", "label": "Измерить часть", "status": "queued", "estimate_minutes": 10,
+             "estimate_unknown_reason": "оценена только диагностика"}]})
+        metrics = grid.build_metrics(graph)
+        assert metrics["remaining_minutes_max"] == 10
+>       assert not metrics["eta_exact"]
+E       assert not True
+
+tests/test_truthful_plan_views.py:83: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_truthful_plan_views.py::test_partial_scope_keeps_numeric_work_but_hides_catalog_finish
+FAILED tests/test_truthful_plan_views.py::test_known_work_keeps_dependencies_through_unknown_leaf
+FAILED tests/test_truthful_plan_views.py::test_partial_scope_keeps_numeric_work_but_hides_grid_finish
+3 failed, 6 deselected in 0.25s

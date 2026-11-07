@@ -1,0 +1,28 @@
+(Linux uses --headless by default. To override, use --headed / --gui. For Xvfb mode instead, use --xvfb. Or you can hide this info by using --headless / --headless2 / --uc.)
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_____________ test_candidate_wording_never_claims_launch_admission _____________
+
+    def test_candidate_wording_never_claims_launch_admission():
+        graph = grid.parse_graph_json({"schema_version": 2, "slots": 1, "tasks": [
+            {"id": "L01", "label": "Шаг", "status": "queued", "estimate_minutes": 10}]})
+        metrics = grid.build_metrics(graph)
+        text = grid.render_text(graph, metrics)
+        html = grid.render_html(graph, metrics)
+        assert "Подтверждённый допуск к запуску: нет" in text
+>       assert "готово к запуску:" not in text
+E       AssertionError: assert 'готово к запуску:' not in 'Граф задач:... не записана'
+E         
+E         'готово к запуску:' is contained here:
+E           теля: 0 · готово к запуску: 1 (L01)
+E           Прогноз: осталось 10 мин (от 10 мин), финиш 23:01. остаток стартует сейчас
+E           Критический путь: Шаг
+E           Листья плана (1):
+E             - L01 · ⋯ В очереди · (Шаг) · оценка 10 мин · усилие не измерено · ждёт: причина не названа · волна 1 · зависит: — · стоимость — модель не выбрана · лист не назвал ни модель, ни класс...
+E         
+E         ...Full output truncated (16 lines hidden), use '-vv' to show
+
+tests/test_truthful_plan_views.py:22: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_truthful_plan_views.py::test_candidate_wording_never_claims_launch_admission
+1 failed in 0.19s

@@ -1,0 +1,34 @@
+(Linux uses --headless by default. To override, use --headed / --gui. For Xvfb mode instead, use --xvfb. Or you can hide this info by using --headless / --headless2 / --uc.)
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+__________ test_explicit_goal_acceptance_keeps_deferred_cards_visible __________
+
+    def test_explicit_goal_acceptance_keeps_deferred_cards_visible():
+        item = entry([{"id": "L01", "status": "done"}, {"id": "L02", "status": "deferred"}],
+                     goal_control=projection("accepted"))
+        summary = catalog.summarize(item, NOW)
+        assert summary["goal_status"] == "accepted"
+>       assert "Цель принята по исходному снимку" in summary["stage"]
+E       AssertionError: assert 'Цель принята по исходному снимку' in 'Завершены доступные шаги; Цель не подтверждена; отложено: 1'
+
+tests/test_truthful_plan_views.py:115: AssertionError
+___________ test_no_known_work_does_not_display_one_invented_minute ____________
+
+    def test_no_known_work_does_not_display_one_invented_minute():
+        item = entry([{"id": "L01", "status": "queued", "estimate_unknown_reason": "не оценено"}])
+        assert catalog.summarize(item, NOW)["known_remaining_minutes"] == 0
+        page = catalog.render([item], now=NOW)
+>       assert "Известная работа: 1 мин" not in page
+E       assert 'Известная работа: 1 мин' not in '<!doctype h...body></html>'
+E         
+E         'Известная работа: 1 мин' is contained here:
+E           звестен · Известная работа: 1 мин · без оценки: L01</p><p class="dates">Создан <time class="abs" datetime="2026-11-07T12:00:00Z">07.11 12:00 UTC</time> · обновлён <time class="ago" datetime="2026-11-07T12:00:00Z">07.11 12:00 UTC</time></p></article></div><div id="catalog-projects" role="tabpanel" aria-labelledby="catalog-tab-projects" hidden><section class="project-group" data-project-group="lhc" hidden><h2>lhc <span class="project-count"></span></h2><div class="plan-grid project-plans"></div></section></div></main>
+E         ?           ...
+E         
+E         ...Full output truncated (46 lines hidden), use '-vv' to show
+
+tests/test_truthful_plan_views.py:124: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_truthful_plan_views.py::test_explicit_goal_acceptance_keeps_deferred_cards_visible
+FAILED tests/test_truthful_plan_views.py::test_no_known_work_does_not_display_one_invented_minute
+2 failed, 11 deselected in 0.28s
