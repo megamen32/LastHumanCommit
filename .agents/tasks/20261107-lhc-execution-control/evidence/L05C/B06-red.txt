@@ -1,0 +1,109 @@
+(Linux uses --headless by default. To override, use --headed / --gui. For Xvfb mode instead, use --xvfb. Or you can hide this info by using --headless / --headless2 / --uc.)
+F.........F.FFF                                                          [100%]
+=================================== FAILURES ===================================
+_____________ test_real_http_dispatch_registers_exact_durable_wake _____________
+
+endpoint = ('http://127.0.0.1:37845/mcp', [({'id': '6a5099e2-383f-4e9c-b780-d7c85fa1a3c1', 'jsonrpc': '2.0', 'method': 'initializ...figure.<locals>.<lambda> at 0x78abea732680>, 'session_info': <function configure.<locals>.<lambda> at 0x78abea7325f0>})
+
+    def test_real_http_dispatch_registers_exact_durable_wake(endpoint):
+        execution = importlib.import_module('lhc_execution')
+        configure(endpoint); harness = Harness()
+        result = execution.dispatch_assignment(harness.assignment, 'one task', transport=client(endpoint), persist=harness.persist)
+        assert [s for s, _ in harness.saved] == ['dispatching', 'submitted', 'running', 'running', 'running']
+        assert harness.saved[0][1]['dispatch']['status'] == 'dispatching'
+        assert result['wake']['state'] == 'waiting'
+        assert result['wake']['turn_id'] == 'turn-1'
+        assert result['observed_runtime']['model'] == 'actual-model'
+        calls = [b['params']['name'] for b, _ in endpoint[1] if b['method'] == 'tools/call']
+        assert calls == ['deliver', 'session_info', 'resume_after']
+        deliver = endpoint[1][2][0]['params']['arguments']
+        assert deliver['create'] == 'never' and deliver['activation'] == 'always'
+>       assert deliver['sourceHarness'] == 'codex' and deliver['sourceSessionId'] == 'lead'
+E       KeyError: 'sourceHarness'
+
+tests/test_lhc_execution.py:103: KeyError
+_________________ test_unknown_wake_registration_never_replays _________________
+
+endpoint = ('http://127.0.0.1:15031/mcp', [({'id': '8e14fd26-0a31-4531-9b1f-2fdefcedd05e', 'jsonrpc': '2.0', 'method': 'initializ...figure.<locals>.<lambda> at 0x78abea67c550>, 'session_info': <function configure.<locals>.<lambda> at 0x78abea67c4c0>})
+
+    def test_unknown_wake_registration_never_replays(endpoint):
+        execution = importlib.import_module('lhc_execution')
+        configure(endpoint)
+        transport = client(endpoint)
+        original = transport.call
+        attempts = []
+        def call(name, args):
+            if name == 'resume_after':
+                attempts.append(args)
+                raise TimeoutError('injected uncertain registration')
+            return original(name, args)
+        transport.call = call
+        h = Harness(); a = execution.dispatch_assignment(h.assignment, 'task', transport=transport, persist=h.persist)
+        assert a['wake']['state'] == 'delivery_unknown'
+        execution.reconcile_assignment(a, transport=transport, persist=h.persist)
+>       assert [args['action'] for args in attempts] == ['wait', 'status']
+E       AssertionError: assert ['wait'] == ['wait', 'status']
+E         
+E         Right contains one more item: 'status'
+E         Use -v to get more diff
+
+tests/test_lhc_execution.py:223: AssertionError
+_ test_assigned_reconcile_observes_availability_separately_from_old_completion _
+
+endpoint = ('http://127.0.0.1:27819/mcp', [], {'deliver': <function configure.<locals>.<lambda> at 0x78abeba07490>, 'resume_after...ion test_assigned_reconcile_observes_availability_separately_from_old_completion.<locals>.<lambda> at 0x78abea85bac0>})
+
+    def test_assigned_reconcile_observes_availability_separately_from_old_completion(endpoint):
+        execution = importlib.import_module('lhc_execution')
+        configure(endpoint)
+        endpoint[2]['session_info'] = lambda args: {'session': {'id': 'worker', 'harness': 'codex', 'hostId': 'test-host',
+            'status': 'idle', 'meta': {'nativeLastTurn': {'turnId': 'old-turn', 'status': 'completed'}}}}
+        h = Harness(); a = execution.reconcile_assignment(h.assignment, transport=client(endpoint), persist=h.persist)
+>       assert a['state'] == 'assigned' and a['observed_runtime']['state'] == 'idle'
+E       TypeError: 'NoneType' object is not subscriptable
+
+tests/test_lhc_execution.py:242: TypeError
+___________ test_unknown_registration_recovers_exact_wait_read_only ____________
+
+endpoint = ('http://127.0.0.1:24729/mcp', [({'id': 'e03f1ee5-0f1b-48de-b620-023003f38624', 'jsonrpc': '2.0', 'method': 'initializ...figure.<locals>.<lambda> at 0x78abea731630>, 'session_info': <function configure.<locals>.<lambda> at 0x78abea7311b0>})
+
+    def test_unknown_registration_recovers_exact_wait_read_only(endpoint):
+        execution = importlib.import_module('lhc_execution')
+        configure(endpoint); transport = client(endpoint); original = transport.call
+        actions = []
+        def call(name, args):
+            if name == 'resume_after':
+                actions.append(args['action'])
+                if args['action'] == 'wait':
+                    raise TimeoutError('lost response after durable registration')
+                return {'wait': fixture_wait(args, state='waiting')}
+            return original(name, args)
+        transport.call = call
+        h = Harness(); a = execution.dispatch_assignment(h.assignment, 'task', transport=transport, persist=h.persist)
+>       assert a['wake']['state'] == 'delivery_unknown' and a['wake']['wait_id'].startswith('wait_')
+E       AttributeError: 'NoneType' object has no attribute 'startswith'
+
+tests/test_lhc_execution.py:260: AttributeError
+____________ test_foreign_wait_status_cannot_update_this_assignment ____________
+
+endpoint = ('http://127.0.0.1:35279/mcp', [({'id': '6f62cf53-9d5e-4209-a39c-a16552fc1241', 'jsonrpc': '2.0', 'method': 'initializ...gnment.<locals>.<lambda> at 0x78abea67c3a0>, 'session_info': <function configure.<locals>.<lambda> at 0x78abea85b640>})
+
+    def test_foreign_wait_status_cannot_update_this_assignment(endpoint):
+        execution = importlib.import_module('lhc_execution')
+        configure(endpoint); h = Harness(); transport = client(endpoint)
+        a = execution.dispatch_assignment(h.assignment, 'task', transport=transport, persist=h.persist)
+        endpoint[2]['resume_after'] = lambda args: {'wait': dict(fixture_wait(args, state='resumed'), owner={'harness': 'codex', 'sessionId': 'foreign'})}
+        a = execution.reconcile_assignment(a, transport=transport, persist=h.persist)
+>       assert a['wake']['state'] == 'unknown' and a['wake']['reason'] == 'wake_identity_unverified'
+E       AssertionError: assert ('resumed' == 'unknown'
+E         
+E         - unknown
+E         + resumed)
+
+tests/test_lhc_execution.py:272: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_lhc_execution.py::test_real_http_dispatch_registers_exact_durable_wake
+FAILED tests/test_lhc_execution.py::test_unknown_wake_registration_never_replays
+FAILED tests/test_lhc_execution.py::test_assigned_reconcile_observes_availability_separately_from_old_completion
+FAILED tests/test_lhc_execution.py::test_unknown_registration_recovers_exact_wait_read_only
+FAILED tests/test_lhc_execution.py::test_foreign_wait_status_cannot_update_this_assignment
+5 failed, 10 passed in 7.35s

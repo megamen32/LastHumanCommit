@@ -1,0 +1,20 @@
+{
+  "at": "2026-11-07T16:01:41.149516+00:00",
+  "mode": "read_only",
+  "llm_turns": 0,
+  "messages_sent": 0,
+  "executor": {
+    "host_id": "roomhacker-server-100",
+    "harness": "codex",
+    "session_id": "01a1b398-e44e-72c0-bb56-ba4b572d8af8"
+  },
+  "status": "ok",
+  "observed_runtime": {
+    "state": "idle",
+    "observed_at": "2026-11-07T16:01:42.069725+00:00",
+    "source": "native_verified",
+    "turn_id": null,
+    "model": null,
+    "worktree": "/home/roomhacker/.codex/worktrees/herder-compatibility/agent-herder"
+  }
+}

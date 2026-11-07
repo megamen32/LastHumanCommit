@@ -1,0 +1,10 @@
+{
+  "status": "ok",
+  "authored_long_dashes": 0,
+  "python_example_blocks": 2,
+  "documents": [
+    "src/common/protocols/EXECUTION_CONSUMER.md",
+    "src/common/protocols/ORCHESTRATION_RECORDS.md",
+    "src/common/skills/plan/SKILL.md"
+  ]
+}
