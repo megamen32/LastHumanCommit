@@ -503,11 +503,11 @@ def test_the_opened_task_carries_the_whole_of_it():
         "venv без пакета mcp",
         "Следующий шаг",
         "Поставить пакет в venv",
-        "Сессия",
+        "Записанная leaf.session",
         "mvs_92b7a29fcb6147ae848063c2e62bf864",
-        "Модель",
+        "Плановая модель",
         "MiniMax-M3.1-Flash",
-        "Рантайм",
+        "Записанный harness",
         "minimax-code",
     ):
         assert probe in html, f"в карточке задачи нет: {probe}"

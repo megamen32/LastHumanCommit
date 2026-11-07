@@ -69,8 +69,9 @@ def _execution_gate(task: Any, now: float, max_age: float) -> tuple[bool | None,
     if state == "blocked":
         for field in ("observed_runtime", "dispatch", "wake"):
             detail = assignment.get(field)
-            if isinstance(detail, dict) and detail.get("reason_code"):
-                return False, str(detail["reason_code"])
+            reason = (detail.get("reason_code") or detail.get("reason")) if isinstance(detail, dict) else None
+            if isinstance(reason, str) and reason.strip():
+                return False, reason[:500]
         return False, "assignment_blocked"
     if state != "assigned":
         return False, "assignment_" + str(state)
@@ -78,7 +79,8 @@ def _execution_gate(task: Any, now: float, max_age: float) -> tuple[bool | None,
     runtime = runtime if isinstance(runtime, dict) else {}
     wake = assignment.get("wake") or {}
     if isinstance(wake, dict) and wake.get("state") in {"delivery_blocked", "blocked", "stopped", "cancelled"}:
-        return False, "wake_" + str(wake["state"])
+        reason = wake.get("reason_code") or wake.get("reason")
+        return False, reason[:500] if isinstance(reason, str) and reason else "wake_" + str(wake["state"])
     runtime_state = str(runtime.get("state") or "unknown")
     reason = str(runtime.get("reason_code") or "")
     if runtime_state in {"quota_guard", "quota_blocked", "stopped", "stop", "stopping", "blocked", "unavailable", "running", "busy"}:
@@ -115,8 +117,12 @@ def evaluate(tasks: Any, slots: int | None = None, *, now: Any = None,
         raise ValueError("now must include a timezone or be epoch seconds")
     if slots is not None and (not isinstance(slots, int) or isinstance(slots, bool) or slots < 0):
         raise ValueError("slots must be a nonnegative integer or None")
-    busy = {executor_key(task) for task in rows
-            if _get(task, "status", "queued") == "running" or _assignment(task).get("state") in _IN_FLIGHT}
+    def reserved(task):
+        assignment = _assignment(task)
+        if assignment:
+            return assignment.get("state") in _IN_FLIGHT | {"delivery_unknown"}
+        return _get(task, "status", "queued") == "running"
+    busy = {executor_key(task) for task in rows if reserved(task)}
     free = None if slots is None else max(0, slots - len(busy))
     remaining = free
     allocated: set[str] = set()
@@ -141,7 +147,8 @@ def evaluate(tasks: Any, slots: int | None = None, *, now: Any = None,
     indexed.sort(key=lambda pair: _execution_gate(pair[1], current, runtime_max_age)[0] is not True)
     result: dict[str, Any] = {name: [] for name in ("dependency_ready", "ready", "dispatchable", "deferred",
         "waiting_for_leaf", "waiting_for_owner", "external_waiting", "unknown")}
-    result.update(by_id={}, occupied_slots=len(busy), free_slots=free)
+    result.update(by_id={}, occupied_slots=len(busy), free_slots=free, occupied_executor_keys=sorted(busy),
+                  reserved_unknown=[str(_get(task, "id")) for task in rows if _assignment(task).get("state") == "delivery_unknown"])
     for _, task in indexed:
         task_id = str(_get(task, "id"))
         status = _get(task, "status", "queued")

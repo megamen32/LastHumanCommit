@@ -68,8 +68,20 @@ def _plan_entry(event, root):
         if plan in seen or not (plan / "plan.json").is_file():
             continue
         leaves = [mirror.read(f, {}) for f in sorted((plan / "leaves").glob("*.json"))]
-        todo = [leaf for leaf in leaves if leaf.get("status") in {"queued", "running"}]
-        mine = [leaf for leaf in todo if leaf.get("session") == session]
+        def explicit_open(leaf):
+            assignment = leaf.get("assignment")
+            return (isinstance(assignment, dict) and assignment.get("state") not in {"accepted", "cancelled"}
+                    and leaf.get("status") not in {"done", "deferred"})
+        todo = [leaf for leaf in leaves if leaf.get("status") in {"queued", "running"} or explicit_open(leaf)]
+        def bound_here(leaf):
+            assignment = leaf.get("assignment") or {}
+            if isinstance(assignment, dict) and any(
+                isinstance(assignment.get(role), dict) and assignment[role].get("session_id") == session
+                for role in ("lead", "executor")
+            ):
+                return True
+            return leaf.get("session") == session
+        mine = [leaf for leaf in todo if bound_here(leaf)]
         if todo and (mine or not from_index):  # a stale index entry is not a candidate
             seen.add(plan)
             open_plans.append(plan)
@@ -220,6 +232,33 @@ def plan_resume_context(event, root):
     # The canonical summary owns the status wording and leaf facts.
     priority = ("Now:", "Next:", "Running in other sessions or Workers:")
     lines += [line for line in summary if line.startswith(priority)]
+    rows, _milestones = lhc_plan_json.split_milestones(lhc_plan_json._leaf_rows(plan), strict=False)
+    grid = lhc_plan_json.grid_module()
+    readiness = grid._load_sibling("lhc_readiness")
+    decision = readiness.evaluate(rows, slots=metadata.get("slots")) if readiness else None
+    if decision:
+        lines.append("Readiness: candidates by dependencies/capacity=" + (", ".join(decision["ready"][:8]) or "none")
+                     + "; dispatchable=" + (", ".join(decision["dispatchable"][:8]) or "none") + ".")
+    lines.append("Do not automatically retry ambiguous delivery, bypass STOP/quota, or create another wake for a recorded wait.")
+    bound = [leaf for leaf in rows if str(leaf.get("id")) in bound_ids and isinstance(leaf.get("assignment"), dict)]
+    bound.sort(key=lambda leaf: (leaf["assignment"].get("state") not in {"blocked", "delivery_unknown", "result_ready"},
+                                 leaf.get("status") != "running"))
+    for leaf in bound[:2]:
+        assignment = leaf["assignment"]
+        view = grid.execution_view(leaf, (decision or {}).get("by_id", {}).get(str(leaf.get("id"))))
+        state = assignment.get("state")
+        if state == "result_ready":
+            action = "Lead reviews and accepts/rejects this exact attempt result, then recomputes readiness."
+        elif state in {"blocked", "delivery_unknown", "dispatching"} or view["wake"].get("state") in {"blocked", "delivery_blocked", "delivery_unknown"}:
+            action = "Reconcile the exact attempt/turn and recorded wake; inspect the blocker before any new dispatch."
+        elif state in {"submitted", "running"}:
+            action = "Reconcile the exact native turn and reuse its recorded wake; turn completion still needs Lead acceptance."
+        else:
+            action = "Observe the exact executor and latest human goal; dispatch only an explicitly assigned candidate with confirmed admission."
+        lines.append(f"Next action: {leaf.get('id')} attempt={assignment.get('attempt_id') or 'unknown'}: " + action)
+        lines.append(short("Execution " + str(leaf.get("id")) + ": " + " | ".join(grid.execution_lines(leaf, view["readiness"])), 1800))
+    if not bound:
+        lines.append("Next action: Lead checks the latest goal, selects a dependency candidate, and explicitly identifies an executor; legacy session metadata is not runtime proof.")
     lines += [line for line in summary if not line.startswith(priority + ("Whole plan:",))]
     return "\n".join(lines)[:4000]
 

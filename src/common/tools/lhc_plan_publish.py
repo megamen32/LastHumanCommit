@@ -341,6 +341,32 @@ def fill_leaf_markers(result, parts):
     return result, removed
 
 
+def herder_targets(tasks):
+    """Adapt explicit executor declarations to the existing supported session links.
+
+    The route has no host parameter, so the declared host stays visible in the
+    option label. Never replace a missing explicit target with a legacy planner.
+    The input plan and its historical session field remain unchanged.
+    """
+    targets = []
+    for task in tasks:
+        assignment = task.get("assignment")
+        if not isinstance(assignment, dict) or not assignment:
+            targets.append(dict(task))
+            continue
+        ref = assignment.get("executor") or {}
+        if not isinstance(ref, dict) or not all(ref.get(key) for key in ("host_id", "harness", "session_id")):
+            continue
+        runtime, dispatch = assignment.get("observed_runtime") or {}, assignment.get("dispatch") or {}
+        running = (assignment.get("state") == "running" and runtime.get("state") == "running"
+                   and runtime.get("turn_id") and runtime.get("turn_id") == dispatch.get("turn_id"))
+        targets.append({"session": ref["session_id"], "harness": ref["harness"],
+                        "status": "running" if running else "queued",
+                        "label": str(task.get("label") or task.get("id") or ref["session_id"])
+                                 + " · host_id=" + str(ref["host_id"]) + " · исполнитель заявлен"})
+    return targets
+
+
 def page(baseline, selected, current, revisions, revision_id, updated, live, version="", observed=None):
     import lhc_grid
     import lhc_plan_ui
@@ -350,7 +376,7 @@ def page(baseline, selected, current, revisions, revision_id, updated, live, ver
     graph.time_live = live
     graph.snapshot_at = updated if not live else ""
     result = lhc_grid.render_html(graph, lhc_grid.build_metrics(graph))
-    result = result.replace('<div class="head-actions">', '<div class="head-actions">' + lhc_plan_ui.herder_panel(current.get('tasks', [])), 1)
+    result = result.replace('<div class="head-actions">', '<div class="head-actions">' + lhc_plan_ui.herder_panel(herder_targets(current.get('tasks', []))), 1)
     result = result.replace('</body>', lhc_plan_ui.HERDER_SCRIPT + '</body>', 1)
     # Replace the existing self-HTML poller with metadata polling, HTTP only.
     result = re.sub(r'<script[^>]*id="lhc-live"[^>]*>.*?</script>', "", result, flags=re.S)
