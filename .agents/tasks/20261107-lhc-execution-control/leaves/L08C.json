@@ -1,7 +1,7 @@
 {
   "label": "Исключить неразложенный этап из запуска",
   "kind": "task",
-  "status": "running",
+  "status": "done",
   "estimate_minutes": 10,
   "depends_on": [
     "L05B"
@@ -12,7 +12,7 @@
   "model": "gpt-6.1-sol",
   "id": "L08C",
   "created_at": "2026-11-07T19:48:15+03:00",
-  "updated_at": "2026-11-07T19:48:22+03:00",
+  "updated_at": "2026-11-07T19:53:34+03:00",
   "progress_events": [
     {
       "at": "2026-11-07T19:48:15+03:00",
@@ -76,6 +76,31 @@
       },
       "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
       "harness": "codex"
+    },
+    {
+      "at": "2026-11-07T19:53:34+03:00",
+      "note": "Worker audit_ci_plan: lhc/execution-stage-readiness-20261107 merged, worktree, branch and run directory removed",
+      "changes": {
+        "status": "done",
+        "result": "B16 fixed: undecomposed stages remain visible but cannot dispatch or reserve capacity. 21 tests passed, RED/GREEN evidence/L08C.",
+        "worker": {
+          "id": "audit_ci_plan",
+          "branch": "lhc/execution-stage-readiness-20261107",
+          "worktree": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-stage-readiness-20261107",
+          "registered_at": "2026-11-07T19:48:22+03:00",
+          "run_dir": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-stage-readiness-20261107/.tmp/worker-run",
+          "run_host": "roomhacker-server-100",
+          "removed_at": "2026-11-07T19:53:34+03:00"
+        }
+      },
+      "actor": {
+        "host_id": null,
+        "harness": "codex",
+        "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+        "source": "native_environment"
+      },
+      "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "harness": "codex"
     }
   ],
   "worker": {
@@ -84,7 +109,9 @@
     "worktree": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-stage-readiness-20261107",
     "registered_at": "2026-11-07T19:48:22+03:00",
     "run_dir": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-stage-readiness-20261107/.tmp/worker-run",
-    "run_host": "roomhacker-server-100"
+    "run_host": "roomhacker-server-100",
+    "removed_at": "2026-11-07T19:53:34+03:00"
   },
-  "owner": "audit_ci_plan"
+  "owner": "audit_ci_plan",
+  "result": "B16 fixed: undecomposed stages remain visible but cannot dispatch or reserve capacity. 21 tests passed, RED/GREEN evidence/L08C."
 }
