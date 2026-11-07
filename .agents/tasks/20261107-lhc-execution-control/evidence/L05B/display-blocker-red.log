@@ -1,0 +1,30 @@
+(Linux uses --headless by default. To override, use --headed / --gui. For Xvfb mode instead, use --xvfb. Or you can hide this info by using --headless / --headless2 / --uc.)
+F                                                                        [100%]
+=================================== FAILURES ===================================
+__________ test_html_shows_exact_roles_models_runtime_wake_and_reason __________
+
+    def test_html_shows_exact_roles_models_runtime_wake_and_reason():
+        graph = grid.parse_graph_json(document([leaf()]))
+        html = grid.render_html(graph, grid.build_metrics(graph))
+        text = page_text(html)
+        for expected in ("Автор последнего события", "ACTUAL_ACTOR", "mcp_metadata", "Lead", "ROOT_LEAD", "Native parent", "NATIVE_PARENT",
+                         "Исполнитель", "CHILD_EXECUTOR", "Сохранённый статус", "Назначение", "blocked", "Наблюдаемый runtime", "idle",
+                         "Плановая модель", "PLANNED_MODEL", "Наблюдаемая модель", "OBSERVED_MODEL", "ATTEMPT-7", "TURN-7",
+                         "WAIT-7", "delivery_blocked", "NEXT_WAKE", "codex_quota_guard", "server100"):
+            assert expected in text, expected
+        assert "Кандидаты по зависимостям" in text
+        assert "Подтверждённый допуск к запуску" in text
+        assert "Готовы к запуску" not in text
+>       assert "Ничего не блокировано и от меня ничего не нужно" not in text
+E       AssertionError: assert 'Ничего не б...его не нужно' not in 'Execution c...,p)}); })();'
+E         
+E         'Ничего не блокиров...еня ничего не нужно' is contained here:
+E         ?           ^
+E           блокирует Ничего не блокировано и от меня ничего не нужно. Цель и результат Цель CURRENT_GOAL Как проверим Сценарии проверки ещё не описаны Это декларация плана. Статус задач сам по себе не подтверждает приёмку результата. Текущий факт и внешние ожидания Гант · этапы и листья по реальному времени Полая полоса — план от реального начала, сплошная — сколько лист реально шёл, красная — перерасход; пунктир — ещё не начатые листья после «сейчас». 0 мин 0 мин 1 мин 2 мин 3 мин 4 мин 5 мин L01 Executor...
+E         
+E         ...Full output truncated (2 lines hidden), use '-vv' to show
+
+tests/test_execution_display.py:56: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_execution_display.py::test_html_shows_exact_roles_models_runtime_wake_and_reason
+1 failed in 2.82s

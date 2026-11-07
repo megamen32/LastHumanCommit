@@ -1,0 +1,19 @@
+(Linux uses --headless by default. To override, use --headed / --gui. For Xvfb mode instead, use --xvfb. Or you can hide this info by using --headless / --headless2 / --uc.)
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_ test_published_navigation_prefers_exact_executor_and_keeps_legacy_unchanged __
+
+    def test_published_navigation_prefers_exact_executor_and_keeps_legacy_unchanged():
+        pub = load_module(TOOLS / "lhc_plan_publish.py", name="lhc_plan_publish_execution_display")
+        source = leaf()
+        before = json.loads(json.dumps(source))
+        doc = document([source])
+        page = pub.page(doc, doc, doc, [{"id": "r001", "document": doc, "reason": "test"}],
+                        "r001", datetime.now(timezone.utc).isoformat(), True)
+>       assert "#/session/codex%3ACHILD_EXECUTOR" in page
+E       assert '#/session/codex%3ACHILD_EXECUTOR' in '<!DOCTYPE html>\n<html lang="ru">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width,...l);document.addEventListener(\'visibilitychange\',()=>{if(!document.hidden)poll()});})();\n</script></body>\n</html>\n'
+
+tests/test_execution_display.py:123: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_execution_display.py::test_published_navigation_prefers_exact_executor_and_keeps_legacy_unchanged
+1 failed, 7 deselected in 0.27s

@@ -1,0 +1,33 @@
+(Linux uses --headless by default. To override, use --headed / --gui. For Xvfb mode instead, use --xvfb. Or you can hide this info by using --headless / --headless2 / --uc.)
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+_____ test_bridge_reason_strings_and_explicit_completion_control_capacity ______
+
+    def test_bridge_reason_strings_and_explicit_completion_control_capacity():
+        evaluate = module("lhc_readiness").evaluate
+        a = assignment(state="blocked")
+        a["dispatch"] = {"reason": "codex_quota_guard"}
+>       assert evaluate([{"id": "A", "status": "queued", "assignment": a}], slots=1, now=NOW)["by_id"]["A"]["reason_code"] == "codex_quota_guard"
+E       AssertionError: assert 'assignment_blocked' == 'codex_quota_guard'
+E         
+E         - codex_quota_guard
+E         + assignment_blocked
+
+tests/test_readiness.py:151: AssertionError
+_ test_explicit_completion_releases_saved_running_capacity_but_unknown_reserves _
+
+    def test_explicit_completion_releases_saved_running_capacity_but_unknown_reserves():
+        evaluate = module("lhc_readiness").evaluate
+        for state, occupied in [("result_ready", 0), ("accepted", 0), ("cancelled", 0), ("assigned", 0),
+                                ("running", 1), ("submitted", 1), ("dispatching", 1), ("delivery_unknown", 1)]:
+            result = evaluate([{"id": "A", "status": "running", "assignment": assignment(state=state)},
+                               {"id": "B", "status": "queued"}], slots=1, now=NOW)
+>           assert result["occupied_slots"] == occupied, state
+E           AssertionError: result_ready
+E           assert 1 == 0
+
+tests/test_readiness.py:160: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_readiness.py::test_bridge_reason_strings_and_explicit_completion_control_capacity
+FAILED tests/test_readiness.py::test_explicit_completion_releases_saved_running_capacity_but_unknown_reserves
+2 failed, 12 deselected in 0.16s

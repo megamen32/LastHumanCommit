@@ -1,0 +1,103 @@
+(Linux uses --headless by default. To override, use --headed / --gui. For Xvfb mode instead, use --xvfb. Or you can hide this info by using --headless / --headless2 / --uc.)
+FFFFFF                                                                   [100%]
+=================================== FAILURES ===================================
+__________ test_html_shows_exact_roles_models_runtime_wake_and_reason __________
+
+    def test_html_shows_exact_roles_models_runtime_wake_and_reason():
+        graph = grid.parse_graph_json(document([leaf()]))
+        html = grid.render_html(graph, grid.build_metrics(graph))
+        text = page_text(html)
+        for expected in ("Автор последнего события", "ACTUAL_ACTOR", "mcp_metadata", "Lead", "ROOT_LEAD", "Native parent", "NATIVE_PARENT",
+                         "Исполнитель", "CHILD_EXECUTOR", "Сохранённый статус", "Назначение", "blocked", "Наблюдаемый runtime", "idle",
+                         "Плановая модель", "PLANNED_MODEL", "Наблюдаемая модель", "OBSERVED_MODEL", "ATTEMPT-7", "TURN-7",
+                         "WAIT-7", "delivery_blocked", "NEXT_WAKE", "codex_quota_guard", "server100"):
+>           assert expected in text, expected
+E           AssertionError: Автор последнего события
+E           assert 'Автор последнего события' in 'Execution control · LHC :root, :root[data-theme="dark"] { --bg: #0d1117; --panel: #151b26; --panel-2: #1b2331; --line...details\'),s=document.createElement(\'summary\');s.textContent=\'Читать полностью\';p.before(d);d.append(s,p)}); })();'
+
+tests/test_execution_display.py:52: AssertionError
+________ test_export_round_trip_preserves_author_assignment_and_history ________
+
+    def test_export_round_trip_preserves_author_assignment_and_history():
+        original = leaf()
+        original["assignment_history"] = [{"attempt_id": "OLD_ATTEMPT", "state": "cancelled"}]
+        exported = grid.export_graph(grid.parse_graph_json(document([original])))
+        task = exported["tasks"][0]
+>       assert task["assignment"] == original["assignment"]
+E       KeyError: 'assignment'
+
+tests/test_execution_display.py:63: KeyError
+__ test_text_separates_roles_and_does_not_promote_legacy_session_to_executor ___
+
+    def test_text_separates_roles_and_does_not_promote_legacy_session_to_executor():
+        graph = grid.parse_graph_json(document([leaf(), {"id": "L02", "label": "Legacy", "status": "queued", "session": "ONLY_LEGACY"}]))
+        text = grid.render_text(graph, grid.build_metrics(graph))
+        for expected in ("ACTUAL_ACTOR", "CHILD_EXECUTOR", "ROOT_LEAD", "NATIVE_PARENT", "PLANNED_MODEL", "OBSERVED_MODEL", "WAIT-7", "codex_quota_guard"):
+>           assert expected in text
+E           AssertionError: assert 'ACTUAL_ACTOR' in 'Граф задач: Execution control\nРевизия плана: 4474a616be28\nЭто снимок плана, а не панель управления: фактическое сос...gacy) · оценка — · усилие не измерено · ждёт: причина не названа · волна 1 · зависит: — · стоимость — цена не получена'
+
+tests/test_execution_display.py:73: AssertionError
+______ test_plan_state_uses_canonical_owner_and_deferred_dependency_rules ______
+
+tmp_path = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-display-20261107/.tmp/pytest-3754270-c4cbcf4c613daeb5/test_plan_state_uses_canonical0')
+
+    def test_plan_state_uses_canonical_owner_and_deferred_dependency_rules(tmp_path):
+        plan = tmp_path / "plan"; (plan / "leaves").mkdir(parents=True)
+        (plan / "plan.json").write_text(json.dumps({"slots": 2}))
+        tasks = [{"id": "A", "status": "running", "owner": "busy"},
+                 {"id": "B", "status": "queued", "owner": "busy"},
+                 {"id": "D", "status": "deferred"},
+                 {"id": "C", "status": "queued", "depends_on": ["D"]}]
+        for task in tasks:(plan / "leaves" / (task["id"] + ".json")).write_text(json.dumps(task))
+        state = pj.plan_state(plan)
+>       assert "ready to start" not in state
+E       AssertionError: assert 'ready to start' not in 'Plan plan: ... to start B.'
+E         
+E         'ready to start' is contained here:
+E           unning A; ready to start B.
+
+tests/test_execution_display.py:89: AssertionError
+___ test_recovery_finds_explicit_lead_and_keeps_no_retry_and_goal_precedence ___
+
+tmp_path = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-display-20261107/.tmp/pytest-3754270-c4cbcf4c613daeb5/test_recovery_finds_explicit_l0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x71eaaa849450>
+
+    def test_recovery_finds_explicit_lead_and_keeps_no_retry_and_goal_precedence(tmp_path, monkeypatch):
+        repo = tmp_path / "repo"; (repo / ".git").mkdir(parents=True)
+        plan = repo / ".agents/tasks/execution"; (plan / "leaves").mkdir(parents=True)
+        (plan / "plan.json").write_text(json.dumps({"goal": "CURRENT_GOAL", "slots": 2}))
+        value = leaf(status="blocked")
+        (plan / "leaves/L01.json").write_text(json.dumps(value))
+        before = {p: p.read_bytes() for p in plan.rglob("*") if p.is_file()}
+        monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
+        text = entry.plan_resume_context({"cwd": str(repo), "session_id": "ROOT_LEAD"}, ROOT)
+>       assert text is not None
+E       assert None is not None
+
+tests/test_execution_display.py:103: AssertionError
+_____________ test_revision_changes_when_execution_receipt_changes _____________
+
+    def test_revision_changes_when_execution_receipt_changes():
+        a = leaf(); b = json.loads(json.dumps(a)); b["assignment"]["wake"]["state"] = "resumed"
+>       assert grid.graph_revision(grid.parse_graph_json(document([a]))) != grid.graph_revision(grid.parse_graph_json(document([b])))
+E       AssertionError: assert 'd46ea006d3e9' != 'd46ea006d3e9'
+E        +  where 'd46ea006d3e9' = <function graph_revision at 0x71eaaaaeee60>(Graph(title='Execution control', goal='CURRENT_GOAL', business_result='', business_results=[], acceptance_scenarios=[]..._origin={}, time_live=True, source_path='', source_kind='graph-json', live_items=[], live_log=[], journal=[], notes=[]))
+E        +    where <function graph_revision at 0x71eaaaaeee60> = grid.graph_revision
+E        +    and   Graph(title='Execution control', goal='CURRENT_GOAL', business_result='', business_results=[], acceptance_scenarios=[]..._origin={}, time_live=True, source_path='', source_kind='graph-json', live_items=[], live_log=[], journal=[], notes=[]) = <function parse_graph_json at 0x71eaaa80f880>({'goal': 'CURRENT_GOAL', 'schema_version': 2, 'slots': 2, 'tasks': [{'assignment': {'attempt_id': 'ATTEMPT-7', 'dispat...'server100', 'session_id': 'CHILD_EXECUTOR'}, ...}, 'estimate_minutes': 5, 'harness': 'codex', 'id': 'L01', ...}], ...})
+E        +      where <function parse_graph_json at 0x71eaaa80f880> = grid.parse_graph_json
+E        +      and   {'goal': 'CURRENT_GOAL', 'schema_version': 2, 'slots': 2, 'tasks': [{'assignment': {'attempt_id': 'ATTEMPT-7', 'dispat...'server100', 'session_id': 'CHILD_EXECUTOR'}, ...}, 'estimate_minutes': 5, 'harness': 'codex', 'id': 'L01', ...}], ...} = document([{'assignment': {'attempt_id': 'ATTEMPT-7', 'dispatch': {'reason': 'codex_quota_guard', 'request_id': 'REQUEST-7', 'st..._id': 'server100', 'session_id': 'CHILD_EXECUTOR'}, ...}, 'estimate_minutes': 5, 'harness': 'codex', 'id': 'L01', ...}])
+E        +  and   'd46ea006d3e9' = <function graph_revision at 0x71eaaaaeee60>(Graph(title='Execution control', goal='CURRENT_GOAL', business_result='', business_results=[], acceptance_scenarios=[]..._origin={}, time_live=True, source_path='', source_kind='graph-json', live_items=[], live_log=[], journal=[], notes=[]))
+E        +    where <function graph_revision at 0x71eaaaaeee60> = grid.graph_revision
+E        +    and   Graph(title='Execution control', goal='CURRENT_GOAL', business_result='', business_results=[], acceptance_scenarios=[]..._origin={}, time_live=True, source_path='', source_kind='graph-json', live_items=[], live_log=[], journal=[], notes=[]) = <function parse_graph_json at 0x71eaaa80f880>({'goal': 'CURRENT_GOAL', 'schema_version': 2, 'slots': 2, 'tasks': [{'assignment': {'attempt_id': 'ATTEMPT-7', 'dispat...'server100', 'session_id': 'CHILD_EXECUTOR'}, ...}, 'estimate_minutes': 5, 'harness': 'codex', 'id': 'L01', ...}], ...})
+E        +      where <function parse_graph_json at 0x71eaaa80f880> = grid.parse_graph_json
+E        +      and   {'goal': 'CURRENT_GOAL', 'schema_version': 2, 'slots': 2, 'tasks': [{'assignment': {'attempt_id': 'ATTEMPT-7', 'dispat...'server100', 'session_id': 'CHILD_EXECUTOR'}, ...}, 'estimate_minutes': 5, 'harness': 'codex', 'id': 'L01', ...}], ...} = document([{'assignment': {'attempt_id': 'ATTEMPT-7', 'dispatch': {'reason': 'codex_quota_guard', 'request_id': 'REQUEST-7', 'st..._id': 'server100', 'session_id': 'CHILD_EXECUTOR'}, ...}, 'estimate_minutes': 5, 'harness': 'codex', 'id': 'L01', ...}])
+
+tests/test_execution_display.py:113: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_execution_display.py::test_html_shows_exact_roles_models_runtime_wake_and_reason
+FAILED tests/test_execution_display.py::test_export_round_trip_preserves_author_assignment_and_history
+FAILED tests/test_execution_display.py::test_text_separates_roles_and_does_not_promote_legacy_session_to_executor
+FAILED tests/test_execution_display.py::test_plan_state_uses_canonical_owner_and_deferred_dependency_rules
+FAILED tests/test_execution_display.py::test_recovery_finds_explicit_lead_and_keeps_no_retry_and_goal_precedence
+FAILED tests/test_execution_display.py::test_revision_changes_when_execution_receipt_changes
+6 failed in 0.65s
