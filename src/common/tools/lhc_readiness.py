@@ -118,6 +118,8 @@ def evaluate(tasks: Any, slots: int | None = None, *, now: Any = None,
     if slots is not None and (not isinstance(slots, int) or isinstance(slots, bool) or slots < 0):
         raise ValueError("slots must be a nonnegative integer or None")
     def reserved(task):
+        if _get(task, "kind") == "milestone":
+            return False
         assignment = _assignment(task)
         if assignment:
             return assignment.get("state") in _IN_FLIGHT | {"delivery_unknown"}
@@ -148,7 +150,9 @@ def evaluate(tasks: Any, slots: int | None = None, *, now: Any = None,
     result: dict[str, Any] = {name: [] for name in ("dependency_ready", "ready", "dispatchable", "deferred",
         "waiting_for_leaf", "waiting_for_owner", "external_waiting", "unknown")}
     result.update(by_id={}, occupied_slots=len(busy), free_slots=free, occupied_executor_keys=sorted(busy),
-                  reserved_unknown=[str(_get(task, "id")) for task in rows if _assignment(task).get("state") == "delivery_unknown"])
+                  reserved_unknown=[str(_get(task, "id")) for task in rows
+                                    if _get(task, "kind") != "milestone"
+                                    and _assignment(task).get("state") == "delivery_unknown"])
     for _, task in indexed:
         task_id = str(_get(task, "id"))
         status = _get(task, "status", "queued")
@@ -158,6 +162,11 @@ def evaluate(tasks: Any, slots: int | None = None, *, now: Any = None,
         row = {"dependencies_satisfied": not unmet, "unmet_ids": unmet,
                "executor_key": key, "candidate": False, "dispatchable": False, "reason_code": "not_queued"}
         result["by_id"][task_id] = row
+        # An undecomposed stage is visible unfinished scope, never executable work.
+        if _get(task, "kind") == "milestone":
+            if status != "done":
+                row["reason_code"] = "stage_undecomposed"
+            continue
         if status not in _STATUSES:
             row.update(dispatchable=None, reason_code="status_unknown")
             result["unknown"].append(task_id)
