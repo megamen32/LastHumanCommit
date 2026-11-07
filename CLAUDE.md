@@ -46,7 +46,9 @@ test that reproduces the bug and fails (RED, keep its output), then the fix, the
 same test passes (GREEN), then the original scenario. bug_resolve `fixed` takes both
 outputs; duplicate/false_positive needs reason. The last full-cycle
 worker repairs **all** bugs, runs bug_check (zero unresolved) and proves the
-full applicable test suite green. Real approval refusals remain blockers.
+full applicable test suite green. A test that also fails on main or only under load is
+your bug too: fix it in this task. «Fails on main too», «flaky», «unrelated» is never a
+result. Real approval refusals remain blockers.
 
 ## Not blockers: do them yourself, never ask
 

@@ -94,7 +94,8 @@ def test_browser_forecast_range_status_overtime_and_mobile_layout(browser, tmp_p
     '''})
     call('Emulation.setTimezoneOverride', {'timezoneId': 'Europe/Moscow'})
     call('Page.navigate', {'url': url})
-    for _ in range(100):
+    deadline = time.monotonic() + 30  # a deadline, not a count of tries: Chrome under load is slow
+    while time.monotonic() < deadline:
         if js('!!window.__lhcUI && !!document.querySelector(".time-rail-now")'):
             break
         time.sleep(.03)
@@ -276,7 +277,8 @@ def test_browser_clock_marker_widths_and_archived_snapshot(browser, tmp_path):
     '''})
     call('Emulation.setTimezoneOverride', {'timezoneId': 'Europe/Berlin'})
     call('Page.navigate', {'url': url})
-    for _ in range(100):
+    deadline = time.monotonic() + 30  # a deadline, not a count of tries: Chrome under load is slow
+    while time.monotonic() < deadline:
         if js('!!document.querySelector(".time-rail-now") && !!window.__lhcUI'):
             break
         time.sleep(.03)
@@ -301,7 +303,8 @@ def test_browser_clock_marker_widths_and_archived_snapshot(browser, tmp_path):
         assert all(left>=-1 and right<=1 and width>0 for _,left,right,width in layout), layout
     page.write_text(pub.page(doc, doc, doc, revs, 'r001', revs[0]['created_at'], False))
     call('Page.navigate', {'url': url + '?snapshot'})
-    for _ in range(100):
+    deadline = time.monotonic() + 30  # a deadline, not a count of tries: Chrome under load is slow
+    while time.monotonic() < deadline:
         if js('!!window.__lhcUI && document.querySelector(".time-rail-clock")?.textContent.startsWith("На момент снимка")'):
             break
         time.sleep(.03)
@@ -311,7 +314,8 @@ def test_browser_clock_marker_widths_and_archived_snapshot(browser, tmp_path):
     # A downloaded current page is a labelled snapshot even if its source was live.
     page.write_text(pub.page(doc, doc, doc, revs, 'r001', revs[0]['created_at'], True))
     call('Page.navigate', {'url': page.as_uri()})
-    for _ in range(100):
+    deadline = time.monotonic() + 30  # a deadline, not a count of tries: Chrome under load is slow
+    while time.monotonic() < deadline:
         if js('location.protocol==="file:" && !!window.__lhcUI && document.querySelector(".time-rail-clock")?.textContent.startsWith("На момент снимка")'):
             break
         time.sleep(.03)

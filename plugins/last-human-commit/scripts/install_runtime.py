@@ -181,8 +181,14 @@ def prune_opencode(home:Path,root:Path,plugin_dir:Path,written:list)->dict:
         if skills.is_dir():
             for link in sorted(skills.iterdir()):
                 if link.is_symlink() and not link.exists():
-                    target=os.readlink(link).lower()
-                    if str(root).lower() in target or "last-human-commit" in target or "lasthumancommit" in target:
+                    target=os.readlink(link)
+                    parts=[part.lower() for part in Path(target).parts]
+                    # An LHC skill link points into the package (a last-human-commit folder, or
+                    # <checkout>/skills/<name>); a path that merely passes a folder named
+                    # LastHumanCommit on its way somewhere else is not ours.
+                    ours=(Path(target).is_relative_to(root) or "last-human-commit" in parts
+                          or (len(parts)>=3 and parts[-2]=="skills" and parts[-3] in {"lasthumancommit","last-human-commit"}))
+                    if ours:
                         drop(link)
         for file in sorted(plugin_dir.glob("lhc-*.ts")):
             if file.name not in OPENCODE_PLUGIN_FILES:
