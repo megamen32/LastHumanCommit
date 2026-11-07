@@ -55,6 +55,7 @@ def test_standalone_entrypoint_calls_plan_tools_and_exposes_bug_crud(tmp_path, f
         "publish_html", "revise_plan", "bug_register", "bug_get", "bug_list",
         "bug_update", "bug_resolve", "bug_check",
         "show_plan", "update_plan", "activate_leaf", "worker_register", "worker_finish",
+        "assign_leaf", "dispatch_leaf", "reconcile_leaf", "accept_leaf",
     }
     for reply in replies[2:]:
         result = reply["result"]

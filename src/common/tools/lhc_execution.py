@@ -142,6 +142,24 @@ def _wait_matches(wait, a, wait_id):
             and wait.get('dependencyTurns', {}).get(key) == a['dispatch'].get('turn_id'))
 
 
+def _wake_tool_failure(response):
+    """Tool errors describe registration failure, not a mismatching turn."""
+    if not (response.get('isError') or response.get('error')):
+        return None
+    code = response.get('code')
+    reason = (code if isinstance(code, str) and re.fullmatch(r'[a-z][a-z0-9_]{0,95}', code)
+              else _reason(response.get('reason') or response.get('error'), 'herder_tool_error'))
+    # An error by itself cannot prove that no durable registration happened.
+    return reason, response.get('notSubmitted') is True
+
+
+def _wake_read_reason(wake, fallback):
+    reason = wake.get('reason')
+    generic = {'registration_in_progress', 'wake_registration_unknown',
+               'wake_status_unavailable', 'wake_identity_unverified', 'wake_not_found'}
+    return reason if reason and reason not in generic else fallback
+
+
 def _join(a, transport, persist, runtime, now, context=None):
     turn_id = a['dispatch'].get('turn_id')
     if (a.get('wake') or {}).get('wait_id') or (a.get('wake') or {}).get('request_id'):
@@ -164,20 +182,26 @@ def _join(a, transport, persist, runtime, now, context=None):
             'dependencies': [{'harness': a['executor']['harness'], 'sessionId': a['executor']['session_id']}],
             'requestId': wait_request,
             'message': message})
-        wait = response.get('wait', {})
-        key = json.dumps([a['executor']['harness'], a['executor']['session_id']], separators=(',', ':'))
-        captured = wait.get('dependencyTurns', {}).get(key)
-        if not _wait_matches(wait, a, expected_id):
-            # A later turn must never cause this assignment's lead wake. Cancel
-            # only the just-created mismatching wait, never a native execution.
-            if wait.get('id') == expected_id and wait.get('owner') == {'harness': a['lead']['harness'], 'sessionId': a['lead']['session_id']}:
-                transport.call('resume_after', {'action': 'cancel', 'waitId': wait['id'],
-                    'owner': {'harness': a['lead']['harness'], 'sessionId': a['lead']['session_id']}})
-            wake = _wake('wake_turn_mismatch', now())
+        failure = _wake_tool_failure(response)
+        if failure:
+            reason, not_submitted = failure
+            wake = _wake(reason, now(), state='blocked' if not_submitted else 'delivery_unknown',
+                         wait_id=expected_id, turn_id=turn_id)
         else:
-            wake = _wake(_reason(wait.get('reason'), None), now(), state=wait.get('state', 'unknown'),
-                wait_id=wait.get('id'), turn_id=captured)
-            wake['next_at'] = wait.get('scheduledAt')
+            wait = response.get('wait', {})
+            key = json.dumps([a['executor']['harness'], a['executor']['session_id']], separators=(',', ':'))
+            captured = wait.get('dependencyTurns', {}).get(key)
+            if not _wait_matches(wait, a, expected_id):
+                # A later turn must never cause this assignment's lead wake. Cancel
+                # only the just-created mismatching wait, never a native execution.
+                if wait.get('id') == expected_id and wait.get('owner') == {'harness': a['lead']['harness'], 'sessionId': a['lead']['session_id']}:
+                    transport.call('resume_after', {'action': 'cancel', 'waitId': wait['id'],
+                        'owner': {'harness': a['lead']['harness'], 'sessionId': a['lead']['session_id']}})
+                wake = _wake('wake_turn_mismatch', now())
+            else:
+                wake = _wake(_reason(wait.get('reason'), None), now(), state=wait.get('state', 'unknown'),
+                    wait_id=wait.get('id'), turn_id=captured)
+                wake['next_at'] = wait.get('scheduledAt')
         wake['request_id'] = wait_request
     except Exception:
         wake = _wake('wake_registration_unknown', now(), state='delivery_unknown', wait_id=expected_id, turn_id=turn_id)
@@ -271,14 +295,20 @@ def reconcile_assignment(assignment, *, transport=None, persist, observer=None, 
     if wake.get('wait_id'):
         try:
             response = transport.call('resume_after', {'action': 'status', 'waitId': wake['wait_id']})
-            wait = response.get('wait') or {}
-            if not _wait_matches(wait, a, wake['wait_id']):
+            failure = _wake_tool_failure(response)
+            wait = response.get('wait')
+            if failure or wait is None:
+                state = wake['state'] if wake.get('state') in ('blocked', 'delivery_unknown') else 'unknown'
+                reason = _wake_read_reason(wake, failure[0] if failure else 'wake_not_found')
+                wake = dict(wake, state=state, reason=reason, observed_at=now())
+            elif not _wait_matches(wait, a, wake['wait_id']):
                 wake = dict(wake, state='unknown', reason='wake_identity_unverified', observed_at=now())
             else:
                 wake = dict(wake, state=wait.get('state', 'unknown'), reason=_reason(wait.get('reason'), None), observed_at=now())
             a = _saved(persist, a, a['state'], wake=wake)
         except Exception:
-            a = _saved(persist, a, a['state'], wake=dict(wake, state='unknown', reason='wake_status_unavailable', observed_at=now()))
+            state = wake['state'] if wake.get('state') in ('blocked', 'delivery_unknown') else 'unknown'
+            a = _saved(persist, a, a['state'], wake=dict(wake, state=state, reason=_wake_read_reason(wake, 'wake_status_unavailable'), observed_at=now()))
     turn_id = (a.get('dispatch') or {}).get('turn_id')
     if not turn_id:
         return a

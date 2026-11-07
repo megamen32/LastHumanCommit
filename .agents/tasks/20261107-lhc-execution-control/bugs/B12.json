@@ -1,0 +1,24 @@
+{
+  "created_at": "2026-11-07T16:37:51+00:00",
+  "details": "Full validation: unexpected Activation ValueError попадает в расширенный глобальный catch ValueError; требуется сохранение typed activation error distinction.",
+  "events": [
+    {
+      "action": "register",
+      "actor": "root",
+      "at": "2026-11-07T16:37:51+00:00",
+      "changes": {
+        "details": "Full validation: unexpected Activation ValueError попадает в расширенный глобальный catch ValueError; требуется сохранение typed activation error distinction.",
+        "source": "independent consumers/review and full validation on5bf8733",
+        "status": "open",
+        "title": "CLI маскирует внутреннюю ошибку активации под входные данные"
+      }
+    }
+  ],
+  "id": "B12",
+  "owner": "root",
+  "reporter": "root",
+  "source": "independent consumers/review and full validation on5bf8733",
+  "status": "open",
+  "title": "CLI маскирует внутреннюю ошибку активации под входные данные",
+  "updated_at": "2026-11-07T16:37:51+00:00"
+}

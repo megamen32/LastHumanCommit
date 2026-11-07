@@ -106,7 +106,7 @@ def test_empty_stage_remains_visible_when_all_created_leaves_are_done(tmp_path):
     row(path, "M02", kind="milestone", depends_on=["M01"], estimate_minutes=180)
     state = pj.plan_state(path)
     assert "1/2 done" in state and "undecomposed stages: M02" in state
-    assert "ready to start M02" not in state
+    assert "candidates by dependencies/capacity M02" not in state
     assert "M02" in "\n".join(pj.plan_summary(path))
 
 
@@ -115,7 +115,9 @@ def test_ready_state_expands_stage_dependencies(tmp_path):
     row(path, "M01", kind="milestone")
     row(path, "L01", parent="M01", status="done")
     row(path, "L02", depends_on=["M01"])
-    assert "ready to start L02" in pj.plan_state(path)
+    state = pj.plan_state(path)
+    assert "candidates by dependencies/capacity L02" in state
+    assert "dispatchable none" in state
 
 
 def test_plan_state_counts_beyond_the_display_limit(tmp_path):

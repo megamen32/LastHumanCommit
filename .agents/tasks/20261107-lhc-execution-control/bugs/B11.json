@@ -1,0 +1,24 @@
+{
+  "created_at": "2026-11-07T16:37:51+00:00",
+  "details": "Reviewer воспроизвёл dispatch child до milestone prerequisite и отказ downstream после завершённых children. split_milestones отсутствует внутри lock перед evaluate.",
+  "events": [
+    {
+      "action": "register",
+      "actor": "root",
+      "at": "2026-11-07T16:37:51+00:00",
+      "changes": {
+        "details": "Reviewer воспроизвёл dispatch child до milestone prerequisite и отказ downstream после завершённых children. split_milestones отсутствует внутри lock перед evaluate.",
+        "source": "independent consumers/review and full validation on5bf8733",
+        "status": "open",
+        "title": "Atomic admission пропускает зависимости этапов"
+      }
+    }
+  ],
+  "id": "B11",
+  "owner": "root",
+  "reporter": "root",
+  "source": "independent consumers/review and full validation on5bf8733",
+  "status": "open",
+  "title": "Atomic admission пропускает зависимости этапов",
+  "updated_at": "2026-11-07T16:37:51+00:00"
+}

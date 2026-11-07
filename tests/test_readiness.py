@@ -2,6 +2,8 @@
 import importlib.util
 import json
 import sys
+
+import pytest
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -159,3 +161,37 @@ def test_explicit_completion_releases_saved_running_capacity_but_unknown_reserve
                            {"id": "B", "status": "queued"}], slots=1, now=NOW)
         assert result["occupied_slots"] == occupied, state
         assert ("B" in result["ready"]) is (occupied == 0), state
+
+
+def test_undecomposed_stage_is_visible_but_never_a_candidate():
+    result = module("lhc_readiness").evaluate(
+        [{"id": "M01", "kind": "milestone", "status": "queued"}], slots=1, now=NOW)
+    row = result["by_id"]["M01"]
+    assert row["reason_code"] == "stage_undecomposed"
+    assert row["candidate"] is False and row["dispatchable"] is False
+    assert result["ready"] == result["dispatchable"] == result["dependency_ready"] == []
+    assert result["occupied_slots"] == 0 and result["free_slots"] == 1
+
+
+def test_fresh_idle_assignment_cannot_make_an_undecomposed_stage_dispatchable():
+    result = module("lhc_readiness").evaluate(
+        [{"id": "M01", "kind": "milestone", "status": "queued", "assignment": assignment()}],
+        slots=1, now=NOW)
+    row = result["by_id"]["M01"]
+    assert row["dispatchable"] is False and row["candidate"] is False
+    assert row["reason_code"] == "stage_undecomposed"
+    assert result["dispatchable"] == result["ready"] == []
+
+
+@pytest.mark.parametrize("stage_state", [None, "assigned", "running", "delivery_unknown"])
+def test_undecomposed_stage_does_not_reserve_capacity_or_owner_for_a_leaf(stage_state):
+    stage = {"id": "M01", "kind": "milestone", "status": "queued", "owner": "worker"}
+    if stage_state is not None:
+        stage["assignment"] = assignment(state=stage_state)
+    leaf = {"id": "L01", "status": "queued", "owner": "worker", "assignment": assignment()}
+    result = module("lhc_readiness").evaluate([stage, leaf], slots=1, now=NOW)
+    assert result["ready"] == result["dispatchable"] == ["L01"]
+    assert result["dependency_ready"] == ["L01"]
+    assert result["occupied_slots"] == 0 and result["free_slots"] == 1
+    assert result["occupied_executor_keys"] == result["reserved_unknown"] == []
+    assert result["by_id"]["M01"]["reason_code"] == "stage_undecomposed"

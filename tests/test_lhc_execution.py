@@ -50,7 +50,8 @@ def endpoint():
                 assert self.headers['Mcp-Session-Id'] == 'fixture-session'
                 params = body['params']; name = params['name']
                 result = responses[name](params['arguments'])
-                result = {'content': [{'type': 'text', 'text': json.dumps(result)}]}
+                if not (result.get('isError') and isinstance(result.get('content'), list)):
+                    result = {'content': [{'type': 'text', 'text': json.dumps(result)}]}
             payload = 'data: ' + json.dumps({'jsonrpc': '2.0', 'id': body['id'], 'result': result}) + '\n\n'
             self.send_response(200); self.send_header('Content-Type', 'text/event-stream')
             self.send_header('Mcp-Session-Id', 'fixture-session'); self.end_headers()
@@ -334,3 +335,40 @@ def test_availability_uses_current_state_not_historical_stop(
     runtime = execution.observe_native(NativeRead(), ref, purpose="availability")
     assert runtime["state"] == expected
     assert runtime["source"] == "native_verified"
+
+
+@pytest.mark.parametrize("not_submitted,expected_state", [
+    (False, "delivery_unknown"),
+    (True, "blocked"),
+])
+def test_real_http_wake_tool_error_preserves_reason_without_replay(
+        endpoint, not_submitted, expected_state):
+    execution = importlib.import_module("lhc_execution")
+    configure(endpoint)
+    def resume(args):
+        if args["action"] == "status":
+            return {"wait": None}
+        payload = {"error": "permission denied: synthetic continuation blocked",
+                   "code": "permission_denied"}
+        if not_submitted:
+            payload["notSubmitted"] = True
+        return {"isError": True, "structuredContent": payload,
+                "content": [{"type": "text", "text": json.dumps(payload)}]}
+    endpoint[2]["resume_after"] = resume
+    h = Harness(); transport = client(endpoint)
+    a = execution.dispatch_assignment(h.assignment, "task", transport=transport, persist=h.persist)
+    assert a["wake"]["state"] == expected_state
+    assert a["wake"]["reason"] == "permission_denied"
+    expected_wait_id = a["wake"]["wait_id"]
+    request_id = a["wake"]["request_id"]
+    assert expected_wait_id.startswith("wait_") and request_id.endswith(":completion")
+    for _ in range(2):
+        a = execution.reconcile_assignment(a, transport=transport, persist=h.persist)
+        assert a["wake"]["reason"] == "permission_denied"
+        assert a["wake"]["state"] == expected_state
+        assert a["wake"]["wait_id"] == expected_wait_id
+    execution.dispatch_assignment(a, "must not retry", transport=transport, persist=h.persist)
+    actions = [body["params"]["arguments"]["action"] for body, _ in endpoint[1]
+               if body.get("params", {}).get("name") == "resume_after"]
+    assert actions == ["wait", "status", "status"]
+    assert "synthetic" not in json.dumps(a)

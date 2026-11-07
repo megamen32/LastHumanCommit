@@ -1,0 +1,189 @@
+parity: PASS (23 skills)
+plugin validation: PASS skills=23 canonical=PASS (23) parity=PASS (23 skills)
+........................................................................ [  7%]
+.........................................s.............................. [ 14%]
+........................................................................ [ 21%]
+........................................................................ [ 28%]
+........................................................................ [ 35%]
+........................................................................ [ 42%]
+........................................................................ [ 49%]
+........................................................................ [ 56%]
+......................................F........F........ss.............. [ 63%]
+..............s......................................................... [ 70%]
+......................................s................................. [ 77%]
+..........s.................s......................F.................... [ 84%]
+.................................................FF..................... [ 91%]
+........................................................................ [ 98%]
+............                                                             [100%]
+=================================== FAILURES ===================================
+_________________ test_ready_state_expands_stage_dependencies __________________
+
+tmp_path = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/pytest-327609-dce1fe1b93239428/test_ready_state_expands_stage0')
+
+    def test_ready_state_expands_stage_dependencies(tmp_path):
+        path = plan(tmp_path)
+        row(path, "M01", kind="milestone")
+        row(path, "L01", parent="M01", status="done")
+        row(path, "L02", depends_on=["M01"])
+>       assert "ready to start L02" in pj.plan_state(path)
+E       AssertionError: assert 'ready to start L02' in 'Plan plan: 1/2 done; deliverable: implementation; decomposition: progressive; leaf cap: 15 min; candidates by dependencies/capacity L02; dispatchable none; admission L02=assignment_unknown.'
+E        +  where 'Plan plan: 1/2 done; deliverable: implementation; decomposition: progressive; leaf cap: 15 min; candidates by dependencies/capacity L02; dispatchable none; admission L02=assignment_unknown.' = <function plan_state at 0x728b60f98d30>(PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/pytest-327609-dce1fe1b93239428/test_ready_state_expands_stage0/plan'))
+E        +    where <function plan_state at 0x728b60f98d30> = pj.plan_state
+
+tests/test_plan_audit_followup.py:118: AssertionError
+___ test_unexpected_activation_value_error_is_not_mislabelled_as_user_input ____
+
+tmp_path = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/pytest-327609-dce1fe1b93239428/test_unexpected_activation_val0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x728b5ac007f0>
+
+    def test_unexpected_activation_value_error_is_not_mislabelled_as_user_input(tmp_path, monkeypatch):
+        def broken(*args, **kwargs):
+            raise ValueError("programming error")
+        expected = type("ActivationError", (ValueError,), {})
+        monkeypatch.setitem(sys.modules, "lhc_plan_mirror", SimpleNamespace(activate=broken, ActivationError=expected))
+>       with pytest.raises(ValueError, match="programming error"):
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+tests/test_plan_audit_followup.py:208: Failed
+----------------------------- Captured stderr call -----------------------------
+LHC: programming error
+______________ test_show_names_results_overruns_and_open_workers _______________
+
+tmp_path = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/pytest-327609-dce1fe1b93239428/test_show_names_results_overru0')
+
+    def test_show_names_results_overruns_and_open_workers(tmp_path):
+        began = (datetime.now().astimezone() - timedelta(minutes=190)).isoformat(timespec="seconds")
+        plan = make_plan(tmp_path, [
+            {"id": "L01", "label": "Codex", "status": "done", "result": "works: receipt-1.json"},
+            {"id": "L02", "label": "ZCode", "status": "running", "started_at": began, "estimate_minutes": 15},
+            {"id": "L03", "label": "MiniMax", "status": "queued", "worker": {"id": "w3", "branch": "lhc/w3"}},
+        ])
+        text = "\n".join(pj.plan_summary(plan, ["L02"]))
+        assert "L01 «Codex» — works: receipt-1.json" in text
+        assert "Now: L02 «ZCode»" in text and "Next: L03 «MiniMax»" in text
+        assert "Past twice the estimate, split by object: L02 (190 of 15 min)" in text
+        assert "Workers not merged and removed yet: L03 (lhc/w3)" in text
+        state = pj.plan_state(plan)
+        assert state.startswith("Plan plan: 1/3 done") and "split now: L02 190/15 min" in state
+>       assert "ready to start L03" in state and "Workers to merge and remove: L03" in state
+E       AssertionError: assert ('ready to start L03' in 'Plan plan: 1/3 done; deliverable: implementation; decomposition: progressive; leaf cap: 15 min; saved running L02; ca...L03; dispatchable none; admission L03=assignment_unknown; split now: L02 190/15 min; Workers to merge and remove: L03.')
+
+tests/test_plan_workers.py:82: AssertionError
+______ test_standalone_entrypoint_calls_plan_tools_and_exposes_bug_crud[] ______
+
+tmp_path = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/pytest-327609-dce1fe1b93239428/test_standalone_entrypoint_cal0')
+flavour = ''
+
+    @pytest.mark.parametrize("flavour", ["", "native/codex"])
+    def test_standalone_entrypoint_calls_plan_tools_and_exposes_bug_crud(tmp_path, flavour):
+        package = tmp_path / "package"
+        shutil.copytree(PLUGIN / flavour, package)
+        home = tmp_path / "home"
+        home.mkdir()
+        plan = tmp_path / "plan"
+        config = tmp_path / "publish.json"
+        config.write_text(json.dumps({"webroot": str(tmp_path / "web"), "base_url": "https://example.invalid"}))
+        catalog = write_catalog(tmp_path / "catalog.json")
+        operations = [
+            ("create_leaf", {"plan_dir": str(plan), "leaf": {"id": "A", "label": "Проверка"}}),
+            ("update_leaf", {"plan_dir": str(plan), "leaf_id": "A", "fields": {"note": "Изменено"}}),
+            ("update_progress", {"plan_dir": str(plan), "leaf_id": "A", "note": "Проверено"}),
+            ("build_plan", {"plan_dir": str(plan)}),
+            ("estimate_cost", {"model": "acme-flash", "minutes": "15", "offline": True, "catalog": str(catalog)}),
+            ("publish_html", {"plan_dir": str(plan), "config": str(config)}),
+            ("revise_plan", {"plan_dir": str(plan), "reason": "Уточнение"}),
+            ("bug_register", {"plan_dir": str(plan), "bug_id": "B01",
+                              "title": "Pre-existing failed test", "details": "Observed failure",
+                              "reporter": "offline-tester", "source": "pytest"}),
+            ("bug_get", {"plan_dir": str(plan), "bug_id": "B01"}),
+            ("bug_list", {"plan_dir": str(plan)}),
+        ]
+        messages = [request(0, "initialize"), request(1, "tools/list")]
+        messages += [request(i + 2, "tools/call", {"name": name, "arguments": args})
+                     for i, (name, args) in enumerate(operations)]
+        env = {**os.environ, "HOME": str(home), "PYTHONPATH": ""}
+        proc = subprocess.run([sys.executable, str(package / "scripts/plan_mcp.py")],
+                              input="\n".join(map(json.dumps, messages)) + "\n",
+                              cwd=home, env=env, text=True, capture_output=True, timeout=30)
+        assert proc.returncode == 0, proc.stderr
+        replies = [json.loads(line) for line in proc.stdout.splitlines()]
+        assert len(replies) == len(messages)
+>       assert {t["name"] for t in replies[1]["result"]["tools"]} == {
+            "create_leaf", "update_leaf", "build_plan", "estimate_cost", "update_progress",
+            "publish_html", "revise_plan", "bug_register", "bug_get", "bug_list",
+            "bug_update", "bug_resolve", "bug_check",
+            "show_plan", "update_plan", "activate_leaf", "worker_register", "worker_finish",
+        }
+E       AssertionError: assert {'accept_leaf...ug_list', ...} == {'activate_le...resolve', ...}
+E         
+E         Extra items in the left set:
+E         'accept_leaf'
+E         'assign_leaf'
+E         'reconcile_leaf'
+E         'dispatch_leaf'
+E         Use -v to get more diff
+
+tests/test_single_plan_mcp.py:53: AssertionError
+_ test_standalone_entrypoint_calls_plan_tools_and_exposes_bug_crud[native/codex] _
+
+tmp_path = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/pytest-327609-dce1fe1b93239428/test_standalone_entrypoint_cal1')
+flavour = 'native/codex'
+
+    @pytest.mark.parametrize("flavour", ["", "native/codex"])
+    def test_standalone_entrypoint_calls_plan_tools_and_exposes_bug_crud(tmp_path, flavour):
+        package = tmp_path / "package"
+        shutil.copytree(PLUGIN / flavour, package)
+        home = tmp_path / "home"
+        home.mkdir()
+        plan = tmp_path / "plan"
+        config = tmp_path / "publish.json"
+        config.write_text(json.dumps({"webroot": str(tmp_path / "web"), "base_url": "https://example.invalid"}))
+        catalog = write_catalog(tmp_path / "catalog.json")
+        operations = [
+            ("create_leaf", {"plan_dir": str(plan), "leaf": {"id": "A", "label": "Проверка"}}),
+            ("update_leaf", {"plan_dir": str(plan), "leaf_id": "A", "fields": {"note": "Изменено"}}),
+            ("update_progress", {"plan_dir": str(plan), "leaf_id": "A", "note": "Проверено"}),
+            ("build_plan", {"plan_dir": str(plan)}),
+            ("estimate_cost", {"model": "acme-flash", "minutes": "15", "offline": True, "catalog": str(catalog)}),
+            ("publish_html", {"plan_dir": str(plan), "config": str(config)}),
+            ("revise_plan", {"plan_dir": str(plan), "reason": "Уточнение"}),
+            ("bug_register", {"plan_dir": str(plan), "bug_id": "B01",
+                              "title": "Pre-existing failed test", "details": "Observed failure",
+                              "reporter": "offline-tester", "source": "pytest"}),
+            ("bug_get", {"plan_dir": str(plan), "bug_id": "B01"}),
+            ("bug_list", {"plan_dir": str(plan)}),
+        ]
+        messages = [request(0, "initialize"), request(1, "tools/list")]
+        messages += [request(i + 2, "tools/call", {"name": name, "arguments": args})
+                     for i, (name, args) in enumerate(operations)]
+        env = {**os.environ, "HOME": str(home), "PYTHONPATH": ""}
+        proc = subprocess.run([sys.executable, str(package / "scripts/plan_mcp.py")],
+                              input="\n".join(map(json.dumps, messages)) + "\n",
+                              cwd=home, env=env, text=True, capture_output=True, timeout=30)
+        assert proc.returncode == 0, proc.stderr
+        replies = [json.loads(line) for line in proc.stdout.splitlines()]
+        assert len(replies) == len(messages)
+>       assert {t["name"] for t in replies[1]["result"]["tools"]} == {
+            "create_leaf", "update_leaf", "build_plan", "estimate_cost", "update_progress",
+            "publish_html", "revise_plan", "bug_register", "bug_get", "bug_list",
+            "bug_update", "bug_resolve", "bug_check",
+            "show_plan", "update_plan", "activate_leaf", "worker_register", "worker_finish",
+        }
+E       AssertionError: assert {'accept_leaf...ug_list', ...} == {'activate_le...resolve', ...}
+E         
+E         Extra items in the left set:
+E         'accept_leaf'
+E         'assign_leaf'
+E         'reconcile_leaf'
+E         'dispatch_leaf'
+E         Use -v to get more diff
+
+tests/test_single_plan_mcp.py:53: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_plan_audit_followup.py::test_ready_state_expands_stage_dependencies
+FAILED tests/test_plan_audit_followup.py::test_unexpected_activation_value_error_is_not_mislabelled_as_user_input
+FAILED tests/test_plan_workers.py::test_show_names_results_overruns_and_open_workers
+FAILED tests/test_single_plan_mcp.py::test_standalone_entrypoint_calls_plan_tools_and_exposes_bug_crud[]
+FAILED tests/test_single_plan_mcp.py::test_standalone_entrypoint_calls_plan_tools_and_exposes_bug_crud[native/codex]
+5 failed, 1008 passed, 7 skipped in 107.34s (0:01:47)
+warning: AGENTS.md has 295 lines; the soft limit is 250 - trim before adding more
