@@ -1,0 +1,29 @@
+..................................................................F..... [ 44%]
+........................................................................ [ 88%]
+...................                                                      [100%]
+=================================== FAILURES ===================================
+______ test_lhc_grid_fix_is_present_in_every_installed_package_projection ______
+
+    def test_lhc_grid_fix_is_present_in_every_installed_package_projection():
+        source = TOOL.read_bytes()
+        package = ROOT / "plugins/last-human-commit"
+        projections = {
+            "tools/lhc_grid.py": source,
+            "common/tools/lhc_grid.py": source.replace(b"src/common/", b"common/"),
+            "native/codex/tools/lhc_grid.py": source,
+            "native/codex/common/tools/lhc_grid.py": source.replace(b"src/common/", b"common/"),
+        }
+        for relative, expected in projections.items():
+            path = package / relative
+            assert path.is_file(), f"missing generated renderer: {path}"
+>           assert path.read_bytes() == expected, f"generated renderer drift: {path}"
+E           AssertionError: generated renderer drift: /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/plugins/last-human-commit/tools/lhc_grid.py
+E           assert b'#!/usr/bin/...xit(main())\n' == b'#!/usr/bin/...xit(main())\n'
+E             
+E             At index 16045 diff: b'm' != b'e'
+E             Use -v to get more diff
+
+tests/test_lhc_grid_regressions.py:171: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_lhc_grid_regressions.py::test_lhc_grid_fix_is_present_in_every_installed_package_projection
+1 failed, 162 passed in 2.83s

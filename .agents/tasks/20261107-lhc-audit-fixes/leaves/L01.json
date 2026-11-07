@@ -1,7 +1,7 @@
 {
   "label": "Исправить Done/Now и ошибку активации",
   "kind": "task",
-  "status": "running",
+  "status": "done",
   "estimate_minutes": 15,
   "depends_on": [],
   "description": "Исправить Done/Now и ошибку активации",
@@ -11,7 +11,7 @@
   "id": "L01",
   "model": "gpt-6-astra",
   "created_at": "2026-11-07T15:39:02+03:00",
-  "updated_at": "2026-11-07T16:01:32+03:00",
+  "updated_at": "2026-11-07T16:01:33+03:00",
   "progress_events": [
     {
       "at": "2026-11-07T15:39:02+03:00",
@@ -74,6 +74,24 @@
       },
       "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
       "harness": "codex"
+    },
+    {
+      "at": "2026-11-07T16:01:33+03:00",
+      "note": "Worker /root/audit_plan: lhc/audit-plan-worker-20261107 merged, worktree, branch and run directory removed",
+      "changes": {
+        "status": "done",
+        "result": "Editor fixes integrated: 25 new regressions and 144 focused tests pass; evidence/plan-green-targeted.txt. Runtime acceptance remains in L07.",
+        "worker": {
+          "id": "/root/audit_plan",
+          "branch": "lhc/audit-plan-worker-20261107",
+          "worktree": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-plan-worker-20261107",
+          "registered_at": "2026-11-07T15:41:10+03:00",
+          "run_dir": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-plan-worker-20261107/.tmp/audit-plan",
+          "removed_at": "2026-11-07T16:01:33+03:00"
+        }
+      },
+      "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "harness": "codex"
     }
   ],
   "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
@@ -83,6 +101,8 @@
     "branch": "lhc/audit-plan-worker-20261107",
     "worktree": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-plan-worker-20261107",
     "registered_at": "2026-11-07T15:41:10+03:00",
-    "run_dir": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-plan-worker-20261107/.tmp/audit-plan"
-  }
+    "run_dir": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-plan-worker-20261107/.tmp/audit-plan",
+    "removed_at": "2026-11-07T16:01:33+03:00"
+  },
+  "result": "Editor fixes integrated: 25 new regressions and 144 focused tests pass; evidence/plan-green-targeted.txt. Runtime acceptance remains in L07."
 }

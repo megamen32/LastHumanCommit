@@ -54,6 +54,7 @@ def test_export_and_refresh_retain_assignment_and_policy():
 
 
 @pytest.mark.parametrize("policy", [
+    None,
     {"leaf_cap_minutes": True, "reason": "owner"},
     {"leaf_cap_minutes": 60, "reason": ""},
 ])

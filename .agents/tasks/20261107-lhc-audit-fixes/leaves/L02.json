@@ -1,7 +1,7 @@
 {
   "label": "Единая политика оценок конкретного плана",
   "kind": "task",
-  "status": "queued",
+  "status": "done",
   "estimate_minutes": 15,
   "depends_on": [],
   "description": "Единая политика оценок конкретного плана",
@@ -11,7 +11,7 @@
   "id": "L02",
   "model": "gpt-6-astra",
   "created_at": "2026-11-07T15:39:02+03:00",
-  "updated_at": "2026-11-07T15:39:02+03:00",
+  "updated_at": "2026-11-07T16:06:21+03:00",
   "progress_events": [
     {
       "at": "2026-11-07T15:39:02+03:00",
@@ -30,6 +30,17 @@
       },
       "session": "unknown",
       "harness": "unknown"
+    },
+    {
+      "at": "2026-11-07T16:06:21+03:00",
+      "note": "",
+      "changes": {
+        "status": "done",
+        "result": "Per-plan cap is persisted and consumed by canonical editor and grid. 32 focused regressions pass in evidence/grid-green-focused.txt. Package parity is checked in L06."
+      },
+      "session": "unknown",
+      "harness": "unknown"
     }
-  ]
+  ],
+  "result": "Per-plan cap is persisted and consumed by canonical editor and grid. 32 focused regressions pass in evidence/grid-green-focused.txt. Package parity is checked in L06."
 }

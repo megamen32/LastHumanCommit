@@ -709,8 +709,9 @@ def _estimate_policy(value: Any, path: Path) -> dict[str, Any]:
 
 def leaf_estimate_cap(metadata: Optional[dict[str, Any]] = None) -> int:
     """One plan's recorded policy; never change the process-wide default."""
-    policy = (metadata or {}).get("estimate_policy")
-    return _estimate_policy(policy, Path(PLAN_FILE))["leaf_cap_minutes"] if policy is not None else LEAF_ESTIMATE_CAP_MINUTES
+    if metadata is None or "estimate_policy" not in metadata:
+        return LEAF_ESTIMATE_CAP_MINUTES
+    return _estimate_policy(metadata["estimate_policy"], Path(PLAN_FILE))["leaf_cap_minutes"]
 
 
 def _plan_fields(raw: dict[str, Any], path: Path) -> dict[str, Any]:

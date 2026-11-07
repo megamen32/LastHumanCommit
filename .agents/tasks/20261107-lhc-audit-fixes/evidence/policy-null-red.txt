@@ -1,0 +1,21 @@
+F..                                                                      [100%]
+=================================== FAILURES ===================================
+______________ test_invalid_policy_is_not_silently_ignored[None] _______________
+
+policy = None
+
+    @pytest.mark.parametrize("policy", [
+        None,
+        {"leaf_cap_minutes": True, "reason": "owner"},
+        {"leaf_cap_minutes": 60, "reason": ""},
+    ])
+    def test_invalid_policy_is_not_silently_ignored(policy):
+        doc = document()
+        doc["estimate_policy"] = policy
+>       with pytest.raises(ValueError, match="estimate_policy"):
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+tests/test_grid_plan_policy.py:64: Failed
+=========================== short test summary info ============================
+FAILED tests/test_grid_plan_policy.py::test_invalid_policy_is_not_silently_ignored[None]
+1 failed, 2 passed, 4 deselected in 0.11s
