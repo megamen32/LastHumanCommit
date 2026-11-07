@@ -1,0 +1,93 @@
+{
+  "label": "N",
+  "id": "N",
+  "status": "queued",
+  "depends_on": [
+    "M"
+  ],
+  "assignment": {
+    "schema_version": 1,
+    "attempt_id": "milestone-completed",
+    "executor_kind": "session",
+    "lead": {
+      "host_id": "test-host",
+      "harness": "codex",
+      "session_id": "lead"
+    },
+    "executor": {
+      "host_id": "test-host",
+      "harness": "codex",
+      "session_id": "worker"
+    },
+    "state": "assigned",
+    "parent": null,
+    "dispatch": null,
+    "wake": null,
+    "observed_runtime": {
+      "state": "idle",
+      "source": "native_verified",
+      "observed_at": "2026-11-07T16:32:18+00:00"
+    },
+    "events": [
+      {
+        "at": "2026-11-07T16:32:18+00:00",
+        "actor": {
+          "host_id": null,
+          "harness": null,
+          "session_id": null,
+          "source": "unknown"
+        },
+        "from": null,
+        "to": "assigned"
+      },
+      {
+        "at": "2026-11-07T16:32:18+00:00",
+        "actor": {
+          "host_id": null,
+          "harness": null,
+          "session_id": null,
+          "source": "unknown"
+        },
+        "from": "assigned",
+        "to": "assigned",
+        "receipt": {
+          "observed_runtime": {
+            "state": "idle",
+            "source": "native_verified",
+            "observed_at": "2026-11-07T16:32:18+00:00"
+          }
+        }
+      }
+    ]
+  },
+  "assignment_history": [],
+  "updated_at": "2026-11-07T19:32:18+03:00",
+  "progress_events": [
+    {
+      "at": "2026-11-07T19:32:18+03:00",
+      "note": "",
+      "changes": {},
+      "actor": {
+        "host_id": null,
+        "harness": null,
+        "session_id": null,
+        "source": "unknown"
+      },
+      "session": "unknown",
+      "harness": "unknown"
+    },
+    {
+      "at": "2026-11-07T19:32:18+03:00",
+      "note": "",
+      "changes": {},
+      "actor": {
+        "host_id": null,
+        "harness": null,
+        "session_id": null,
+        "source": "unknown"
+      },
+      "session": "unknown",
+      "harness": "unknown"
+    }
+  ]
+}
