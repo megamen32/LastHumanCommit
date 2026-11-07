@@ -1,7 +1,7 @@
 {
   "label": "Независимое ревью собранного изменения",
   "kind": "task",
-  "status": "waiting",
+  "status": "done",
   "estimate_minutes": 15,
   "depends_on": [
     "L05"
@@ -12,7 +12,7 @@
   "model": "gpt-6.1-sol",
   "id": "L05R",
   "created_at": "2026-11-07T19:26:10+03:00",
-  "updated_at": "2026-11-07T19:37:51+03:00",
+  "updated_at": "2026-11-07T20:02:17+03:00",
   "progress_events": [
     {
       "at": "2026-11-07T19:26:10+03:00",
@@ -92,6 +92,31 @@
       },
       "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
       "harness": "codex"
+    },
+    {
+      "at": "2026-11-07T20:02:17+03:00",
+      "note": "Worker review_v117: lhc/execution-review-20261107 merged, worktree, branch and run directory removed",
+      "changes": {
+        "status": "done",
+        "result": "Independent delta review APPROVE on d0c60f89; both original milestone admission repros GREEN through native package. evidence/L05R/delta-review.md",
+        "worker": {
+          "id": "review_v117",
+          "branch": "lhc/execution-review-20261107",
+          "worktree": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-review-20261107",
+          "registered_at": "2026-11-07T19:26:13+03:00",
+          "run_dir": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-review-20261107/.tmp/consumer-run",
+          "run_host": "roomhacker-server-100",
+          "removed_at": "2026-11-07T20:02:17+03:00"
+        }
+      },
+      "actor": {
+        "host_id": null,
+        "harness": "codex",
+        "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+        "source": "native_environment"
+      },
+      "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "harness": "codex"
     }
   ],
   "worker": {
@@ -100,8 +125,10 @@
     "worktree": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-review-20261107",
     "registered_at": "2026-11-07T19:26:13+03:00",
     "run_dir": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-review-20261107/.tmp/consumer-run",
-    "run_host": "roomhacker-server-100"
+    "run_host": "roomhacker-server-100",
+    "removed_at": "2026-11-07T20:02:17+03:00"
   },
   "owner": "review_v117",
-  "note": "Reviewer returned CHANGES_REQUIRED for B11; final delta read pending."
+  "note": "Reviewer returned CHANGES_REQUIRED for B11; final delta read pending.",
+  "result": "Independent delta review APPROVE on d0c60f89; both original milestone admission repros GREEN through native package. evidence/L05R/delta-review.md"
 }
