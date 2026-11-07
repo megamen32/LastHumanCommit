@@ -1,0 +1,72 @@
+(Linux uses --headless by default. To override, use --headed / --gui. For Xvfb mode instead, use --xvfb. Or you can hide this info by using --headless / --headless2 / --uc.)
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+_ test_real_http_wake_tool_error_preserves_reason_without_replay[False-delivery_unknown] _
+
+endpoint = ('http://127.0.0.1:18715/mcp', [({'id': '76fbad5b-531b-480d-90c8-6dcdaf42d641', 'jsonrpc': '2.0', 'method': 'initializ...t_replay.<locals>.resume at 0x72657b0cb640>, 'session_info': <function configure.<locals>.<lambda> at 0x72657b0cb520>})
+not_submitted = False, expected_state = 'delivery_unknown'
+
+    @pytest.mark.parametrize("not_submitted,expected_state", [
+        (False, "delivery_unknown"),
+        (True, "blocked"),
+    ])
+    def test_real_http_wake_tool_error_preserves_reason_without_replay(
+            endpoint, not_submitted, expected_state):
+        execution = importlib.import_module("lhc_execution")
+        configure(endpoint)
+        def resume(args):
+            if args["action"] == "status":
+                return {"wait": None}
+            payload = {"error": "permission denied: synthetic continuation blocked",
+                       "code": "permission_denied"}
+            if not_submitted:
+                payload["notSubmitted"] = True
+            return {"isError": True, "structuredContent": payload,
+                    "content": [{"type": "text", "text": json.dumps(payload)}]}
+        endpoint[2]["resume_after"] = resume
+        h = Harness(); transport = client(endpoint)
+        a = execution.dispatch_assignment(h.assignment, "task", transport=transport, persist=h.persist)
+>       assert a["wake"]["state"] == expected_state
+E       AssertionError: assert 'blocked' == 'delivery_unknown'
+E         
+E         - delivery_unknown
+E         + blocked
+
+tests/test_lhc_execution.py:360: AssertionError
+_ test_real_http_wake_tool_error_preserves_reason_without_replay[True-blocked] _
+
+endpoint = ('http://127.0.0.1:25417/mcp', [({'id': 'd179f328-14bd-40e7-9b5b-f9d739e4b344', 'jsonrpc': '2.0', 'method': 'initializ...t_replay.<locals>.resume at 0x72657a68c1f0>, 'session_info': <function configure.<locals>.<lambda> at 0x72657a68c0d0>})
+not_submitted = True, expected_state = 'blocked'
+
+    @pytest.mark.parametrize("not_submitted,expected_state", [
+        (False, "delivery_unknown"),
+        (True, "blocked"),
+    ])
+    def test_real_http_wake_tool_error_preserves_reason_without_replay(
+            endpoint, not_submitted, expected_state):
+        execution = importlib.import_module("lhc_execution")
+        configure(endpoint)
+        def resume(args):
+            if args["action"] == "status":
+                return {"wait": None}
+            payload = {"error": "permission denied: synthetic continuation blocked",
+                       "code": "permission_denied"}
+            if not_submitted:
+                payload["notSubmitted"] = True
+            return {"isError": True, "structuredContent": payload,
+                    "content": [{"type": "text", "text": json.dumps(payload)}]}
+        endpoint[2]["resume_after"] = resume
+        h = Harness(); transport = client(endpoint)
+        a = execution.dispatch_assignment(h.assignment, "task", transport=transport, persist=h.persist)
+        assert a["wake"]["state"] == expected_state
+>       assert a["wake"]["reason"] == "permission_denied"
+E       AssertionError: assert 'wake_turn_mismatch' == 'permission_denied'
+E         
+E         - permission_denied
+E         + wake_turn_mismatch
+
+tests/test_lhc_execution.py:361: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_lhc_execution.py::test_real_http_wake_tool_error_preserves_reason_without_replay[False-delivery_unknown]
+FAILED tests/test_lhc_execution.py::test_real_http_wake_tool_error_preserves_reason_without_replay[True-blocked]
+2 failed, 28 deselected in 1.26s

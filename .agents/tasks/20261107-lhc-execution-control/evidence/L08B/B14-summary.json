@@ -1,0 +1,13 @@
+{
+  "scope": "L08B/B14",
+  "red": "B14-red.txt: 2 failed (actual HTTP MCP isError ambiguous/explicit decline)",
+  "green": "B14-green.txt: 30 passed",
+  "behavior": [
+    "opaque tool errors retain delivery_unknown, sanitized permission_denied",
+    "explicit notSubmitted stays blocked",
+    "expected wait/request identity retained for read-only reconciliation",
+    "missing status receipt preserves original error reason",
+    "one wait then two status calls, no registration replay"
+  ],
+  "real_runtime_mutations": false
+}

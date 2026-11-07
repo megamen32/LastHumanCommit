@@ -1,0 +1,43 @@
+{
+  "label": "Исключить неразложенный этап из запуска",
+  "kind": "task",
+  "status": "queued",
+  "estimate_minutes": 10,
+  "depends_on": [
+    "L05B"
+  ],
+  "description": "Исправить B16 в общем evaluator: этап без листьев виден как незавершённый, но не кандидат и не executable.",
+  "acceptance": "Исходный test_empty_stage и evaluator RED/GREEN; public readiness consistent; без расширения scope.",
+  "parent": "M02",
+  "model": "gpt-6.1-sol",
+  "id": "L08C",
+  "created_at": "2026-11-07T19:48:15+03:00",
+  "updated_at": "2026-11-07T19:48:15+03:00",
+  "progress_events": [
+    {
+      "at": "2026-11-07T19:48:15+03:00",
+      "note": "",
+      "changes": {
+        "label": "Исключить неразложенный этап из запуска",
+        "kind": "task",
+        "status": "queued",
+        "estimate_minutes": 10,
+        "depends_on": [
+          "L05B"
+        ],
+        "description": "Исправить B16 в общем evaluator: этап без листьев виден как незавершённый, но не кандидат и не executable.",
+        "acceptance": "Исходный test_empty_stage и evaluator RED/GREEN; public readiness consistent; без расширения scope.",
+        "parent": "M02",
+        "model": "gpt-6.1-sol"
+      },
+      "actor": {
+        "host_id": null,
+        "harness": null,
+        "session_id": null,
+        "source": "unknown"
+      },
+      "session": "unknown",
+      "harness": "unknown"
+    }
+  ]
+}
