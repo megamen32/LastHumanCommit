@@ -318,6 +318,29 @@ def comparison(baseline, selected, current, revisions, at, observed=None, parts=
 STYLE = '''<style>#publication,#plan-comparison{margin:24px auto;padding:24px;max-width:1400px;border:1px solid #64748b55;border-radius:18px;background:#101b30;color:#e2e8f0;font:15px/1.6 system-ui}#publication a{color:#7dd3fc;margin-right:14px}.compare-scroll{overflow:auto}.comparison{width:100%;border-collapse:collapse}.comparison td,.comparison th{padding:16px;text-align:left;vertical-align:top;border-bottom:1px solid #64748b55;min-width:190px}.compare-bar{border-radius:5px;padding:3px 7px;margin:6px 0;min-width:110px;color:#fff;font-size:12px}.baseline{background:#475569}.revised{background:#2563eb}.actual{background:#0f766e}#live-state{font-weight:600}#plan-comparison li{overflow-wrap:anywhere}.comparison td:first-child{overflow-wrap:anywhere}</style>'''
 
 
+LEAF_MARKER = re.compile(r'<!--leaf-(delta|compare):(.*?)-->')
+
+
+def fill_leaf_markers(result, parts):
+    """Put every leaf's delta and card into its markers in one pass over the page.
+
+    A replace per leaf scanned the whole page each time: a 539-leaf plan gave a
+    5 MB page and 1089 scans, 8 of 19 seconds of one render. Leaves whose card
+    marker is not on the page come back as removed.
+    """
+    present = {key for kind, key in LEAF_MARKER.findall(result) if kind == 'compare'}
+    values, removed = {}, []
+    for identity, (delta, card) in parts.items():
+        key = html.escape(str(identity))
+        if key in present:
+            values[('delta', key)] = delta
+            values[('compare', key)] = card
+        else:
+            removed.append(f'<details class="panel"><summary>{key} · {delta}</summary>{card}</details>')
+    result = LEAF_MARKER.sub(lambda match: values.get((match.group(1), match.group(2)), match.group(0)), result)
+    return result, removed
+
+
 def page(baseline, selected, current, revisions, revision_id, updated, live, version="", observed=None):
     import lhc_grid
     import lhc_plan_ui
@@ -346,13 +369,7 @@ def page(baseline, selected, current, revisions, revision_id, updated, live, ver
     result = result.replace('<!-- plan-publication -->', panel, 1)
     parts = {}
     result = result.replace('<!-- plan-comparison -->', comparison(baseline, selected, current if live else selected, fact_revisions, updated, observed, parts=parts, table=False), 1)
-    removed = []
-    for identity, (delta, card) in parts.items():
-        key = html.escape(str(identity))
-        if f'<!--leaf-compare:{key}-->' in result:
-            result = result.replace(f'<!--leaf-delta:{key}-->', delta).replace(f'<!--leaf-compare:{key}-->', card)
-        else:
-            removed.append(f'<details class="panel"><summary>{key} · {delta}</summary>{card}</details>')
+    result, removed = fill_leaf_markers(result, parts)
     if removed:
         result = result.replace('</section>\n<section id="tasks"', '<h3>Убраны из текущего плана, но были в нём</h3>' + ''.join(removed) + '</section>\n<section id="tasks"', 1)
     if live:
@@ -365,12 +382,17 @@ POLLER = '''<script id="lhc-publication-live">
 const badge=document.getElementById('live-state'); const version='__VERSION__';
 const stamp=Date.parse(document.getElementById('publication-time').textContent);
 let lastOK=0,pending=false;
-function reload(){try{sessionStorage.setItem('lhc-scroll:'+location.pathname,JSON.stringify({scroll:scrollY,hash:location.hash}));}catch(e){}location.reload();}
+function reload(){try{sessionStorage.setItem('lhc-scroll:'+location.pathname,JSON.stringify({scroll:scrollY,hash:location.hash}));}catch(e){}
+// A plain reload may revalidate to 304 and show the old page again (same Last-Modified),
+// which reloaded forever: refresh the cached page first.
+fetch(location.href.split('#')[0],{cache:'reload'}).catch(()=>null).finally(()=>location.reload());}
 window.addEventListener('lhc-herder-closed',()=>{if(pending)reload()});
 function status(){badge.textContent=pending?'Есть обновления · применятся после закрытия Agent Herder':!lastOK?'Проверка связи…':Date.now()-lastOK>30000?'Нет связи · сохранённый снимок':Date.now()-stamp>300000?'Давно не обновлялся · связь есть':'Связь есть';}
 async function poll(){try{const r=await fetch('version.json',{cache:'no-store'});if(!r.ok)throw Error();const m=await r.json();lastOK=Date.now();
 if(version!==m.version){const panel=document.getElementById('herder-panel');if(panel&&!panel.hidden){pending=true;const update=document.getElementById('herder-plan-update');if(update)update.hidden=false;badge.textContent='Есть обновления · применятся после закрытия Agent Herder';return;}reload();return;}status();}catch(e){badge.textContent='Нет связи · сохранённый снимок';}}
-poll();setInterval(poll,12000);setInterval(status,15000);})();
+poll();setInterval(poll,12000);setInterval(status,15000);
+// Back to the tab: check at once instead of waiting for the next 12 s tick.
+window.addEventListener('focus',poll);document.addEventListener('visibilitychange',()=>{if(!document.hidden)poll()});})();
 </script>'''
 
 

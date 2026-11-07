@@ -518,9 +518,10 @@ def _post_snapshot(cfg, snapshot):
                              % (len(data), MAX_BYTES))
     req = urllib.request.Request(cfg['endpoint'].rstrip('/') + '/v1/snapshots', data=data,
                                  headers=headers, method='POST')
-    # The server renders every revision of the plan before it answers, so the upload waits
-    # for a render, not for a probe: timeout_seconds stays the limit of status probes only.
-    with urllib.request.urlopen(req, timeout=max(30, cfg.get('timeout_seconds', 3))) as response:
+    # The server renders every revision of the plan before it answers (a 539-leaf plan: about
+    # a minute), so the upload waits for a render, not for a probe: timeout_seconds stays
+    # the limit of status probes only.
+    with urllib.request.urlopen(req, timeout=max(300, cfg.get('timeout_seconds', 3))) as response:
         return json.loads(response.read(MAX_BYTES))
 
 

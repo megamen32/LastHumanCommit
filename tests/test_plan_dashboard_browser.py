@@ -192,9 +192,13 @@ def test_publication_reload_restores_position_but_deliberate_hash_wins(browser, 
     js('scrollTo({top:scrollY-350,behavior:"instant"})')
     position = js('scrollY')
     assert js('Math.abs(document.getElementById("tasks").getBoundingClientRect().top-24)>100')
+    stamp = (tmp_path / 'plan.html').stat().st_mtime
     write('two')
-    # The page polls version.json every 12 s; a limit by count of tries (300 x 50 ms plus
-    # the cost of each call) left a reload under load no time at all.
+    # The same Last-Modified as before: a plain reload gets 304 and the old page back, and
+    # the page reloaded forever (the test failed when both writes fell into one second).
+    os.utime(tmp_path / 'plan.html', (stamp, stamp))
+    # Returning to the tab checks for an update at once; the 12 s timer is not what is tested.
+    js('window.dispatchEvent(new Event("focus"))')
     deadline = time.monotonic() + 30
     while time.monotonic() < deadline:
         if js('document.getElementById("lhc-publication-live")?.textContent.includes("version=\'two\'") && !!document.querySelector(".plan-sidebar [aria-current]")'):
