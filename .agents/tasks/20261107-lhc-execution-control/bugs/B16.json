@@ -12,13 +12,47 @@
         "status": "open",
         "title": "Undecomposed stage appears runnable"
       }
+    },
+    {
+      "action": "resolve",
+      "actor": "root",
+      "at": "2026-11-07T17:05:12+00:00",
+      "changes": {
+        "resolution": {
+          "evidence": {
+            "proof_path": "evidence/L08C/B16-green.txt",
+            "red_proof_path": "evidence/L08C/B16-red.txt",
+            "red_result": "FAILED tests/test_readiness.py::test_undecomposed_stage_is_visible_but_never_a_candidate",
+            "red_sha256": "0436072f647596b7953097cbe67ded8baf91d565f5f27579a08482be8d71a981",
+            "result": "21 passed",
+            "sha256": "f2f56927899b67c70b295df9c4b39e92c36daae0c9872482f6263f4619e13111",
+            "test_command": "python3 -m pytest -q tests/test_readiness.py tests/test_plan_audit_followup.py::test_empty_stage_remains_visible_when_all_created_leaves_are_done"
+          },
+          "kind": "fixed",
+          "reason": "Undecomposed milestone remains visible unfinished but never candidate, dispatchable or capacity reservation. Final reviewer delta APPROVE."
+        },
+        "status": "fixed"
+      }
     }
   ],
   "id": "B16",
   "owner": "root",
   "reporter": "root",
+  "resolution": {
+    "evidence": {
+      "proof_path": "evidence/L08C/B16-green.txt",
+      "red_proof_path": "evidence/L08C/B16-red.txt",
+      "red_result": "FAILED tests/test_readiness.py::test_undecomposed_stage_is_visible_but_never_a_candidate",
+      "red_sha256": "0436072f647596b7953097cbe67ded8baf91d565f5f27579a08482be8d71a981",
+      "result": "21 passed",
+      "sha256": "f2f56927899b67c70b295df9c4b39e92c36daae0c9872482f6263f4619e13111",
+      "test_command": "python3 -m pytest -q tests/test_readiness.py tests/test_plan_audit_followup.py::test_empty_stage_remains_visible_when_all_created_leaves_are_done"
+    },
+    "kind": "fixed",
+    "reason": "Undecomposed milestone remains visible unfinished but never candidate, dispatchable or capacity reservation. Final reviewer delta APPROVE."
+  },
   "source": "evidence/L08/acceptance-delta-intermediate.log",
-  "status": "open",
+  "status": "fixed",
   "title": "Undecomposed stage appears runnable",
-  "updated_at": "2026-11-07T16:48:15+00:00"
+  "updated_at": "2026-11-07T17:05:12+00:00"
 }

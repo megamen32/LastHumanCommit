@@ -12,13 +12,47 @@
         "status": "open",
         "title": "Регрессии проверок публичного текста и перечня MCP tools"
       }
+    },
+    {
+      "action": "resolve",
+      "actor": "root",
+      "at": "2026-11-07T17:05:11+00:00",
+      "changes": {
+        "resolution": {
+          "evidence": {
+            "proof_path": "evidence/L08/full-validation-final.log",
+            "red_proof_path": "evidence/L08/full-validation.log",
+            "red_result": "FAILED tests/test_single_plan_mcp.py::test_standalone_entrypoint_calls_plan_tools_and_exposes_bug_crud",
+            "red_sha256": "0639966ffeeb885327420c24737716793644078a6295df9cbba37f4be7a19409",
+            "result": "1027 passed",
+            "sha256": "b6a85e977fa3724e39284799af6682134a3fedfe29b67243608e49d16da1509b",
+            "test_command": "python3 tests/validate.py"
+          },
+          "kind": "fixed",
+          "reason": "Updated exact public wording and four new MCP operations while retaining semantic assertions and exact tool-set equality. No test removed or disabled."
+        },
+        "status": "fixed"
+      }
     }
   ],
   "id": "B13",
   "owner": "root",
   "reporter": "root",
+  "resolution": {
+    "evidence": {
+      "proof_path": "evidence/L08/full-validation-final.log",
+      "red_proof_path": "evidence/L08/full-validation.log",
+      "red_result": "FAILED tests/test_single_plan_mcp.py::test_standalone_entrypoint_calls_plan_tools_and_exposes_bug_crud",
+      "red_sha256": "0639966ffeeb885327420c24737716793644078a6295df9cbba37f4be7a19409",
+      "result": "1027 passed",
+      "sha256": "b6a85e977fa3724e39284799af6682134a3fedfe29b67243608e49d16da1509b",
+      "test_command": "python3 tests/validate.py"
+    },
+    "kind": "fixed",
+    "reason": "Updated exact public wording and four new MCP operations while retaining semantic assertions and exact tool-set equality. No test removed or disabled."
+  },
   "source": "independent consumers/review and full validation on5bf8733",
-  "status": "open",
+  "status": "fixed",
   "title": "Регрессии проверок публичного текста и перечня MCP tools",
-  "updated_at": "2026-11-07T16:37:51+00:00"
+  "updated_at": "2026-11-07T17:05:11+00:00"
 }

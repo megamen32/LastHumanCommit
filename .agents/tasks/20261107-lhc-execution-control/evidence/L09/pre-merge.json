@@ -1,0 +1,20 @@
+{
+  "accepted_product_candidate": "d0c60f89fb3fea69ebcc2bfaaf07ecdb2be53487",
+  "target_before_merge": "fd039303dbd548dd25c7030d6aa15622bb47d8b7",
+  "version_check": {
+    "ok": true,
+    "version": "1.17.0",
+    "level": "y",
+    "target_version": "1.16.1",
+    "tag_free": true
+  },
+  "source_files": 199,
+  "source_tree_sha256": "cfa088dd4ccc06dec5abc818dafd318fe88819ac4944dc483377a59e60b7ec02",
+  "bug_check": {
+    "all_registered_bugs_resolved": true,
+    "tests_green_required_separately": true,
+    "total": 16,
+    "unresolved": 0
+  },
+  "product_unchanged_since_acceptance": true
+}

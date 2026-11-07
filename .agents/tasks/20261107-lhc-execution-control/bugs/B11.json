@@ -12,13 +12,47 @@
         "status": "open",
         "title": "Atomic admission пропускает зависимости этапов"
       }
+    },
+    {
+      "action": "resolve",
+      "actor": "root",
+      "at": "2026-11-07T17:05:11+00:00",
+      "changes": {
+        "resolution": {
+          "evidence": {
+            "proof_path": "evidence/L08/full-validation-final.log",
+            "red_proof_path": "evidence/L08/acceptance-delta-red.log",
+            "red_result": "FAILED tests/test_execution_acceptance_regressions.py::test_atomic_admission_inherits_milestone_prerequisite",
+            "red_sha256": "0aae1edf11de547eaa29621735a37cb41351f3763ea092b249f5a91d0ba0adb6",
+            "result": "1027 passed",
+            "sha256": "b6a85e977fa3724e39284799af6682134a3fedfe29b67243608e49d16da1509b",
+            "test_command": "python3 tests/validate.py"
+          },
+          "kind": "fixed",
+          "reason": "Atomic admission now expands milestones under the existing lock. Original reviewer repro passed through native package; delta APPROVE."
+        },
+        "status": "fixed"
+      }
     }
   ],
   "id": "B11",
   "owner": "root",
   "reporter": "root",
+  "resolution": {
+    "evidence": {
+      "proof_path": "evidence/L08/full-validation-final.log",
+      "red_proof_path": "evidence/L08/acceptance-delta-red.log",
+      "red_result": "FAILED tests/test_execution_acceptance_regressions.py::test_atomic_admission_inherits_milestone_prerequisite",
+      "red_sha256": "0aae1edf11de547eaa29621735a37cb41351f3763ea092b249f5a91d0ba0adb6",
+      "result": "1027 passed",
+      "sha256": "b6a85e977fa3724e39284799af6682134a3fedfe29b67243608e49d16da1509b",
+      "test_command": "python3 tests/validate.py"
+    },
+    "kind": "fixed",
+    "reason": "Atomic admission now expands milestones under the existing lock. Original reviewer repro passed through native package; delta APPROVE."
+  },
   "source": "independent consumers/review and full validation on5bf8733",
-  "status": "open",
+  "status": "fixed",
   "title": "Atomic admission пропускает зависимости этапов",
-  "updated_at": "2026-11-07T16:37:51+00:00"
+  "updated_at": "2026-11-07T17:05:11+00:00"
 }

@@ -1,0 +1,22 @@
+{
+  "candidate": "d0c60f89fb3fea69ebcc2bfaaf07ecdb2be53487",
+  "source": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/plugins/last-human-commit/native/codex/tools",
+  "isolated_base": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/release-v117/mirror-stage",
+  "fixture": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.agents/tasks/20261107-lhc-execution-control/evidence/L07/final-d0c60f89/synthetic-renderer-plan",
+  "build": {
+    "release": "c3fc6160ab8dfa42",
+    "path": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/release-v117/mirror-stage/releases/c3fc6160ab8dfa42",
+    "built": true
+  },
+  "canary": {
+    "release": "c3fc6160ab8dfa42",
+    "port": 18769,
+    "steps": {
+      "register": "ok",
+      "once": "ok"
+    },
+    "receipt_seq": 1,
+    "html": true
+  },
+  "shared_services_changed": false
+}

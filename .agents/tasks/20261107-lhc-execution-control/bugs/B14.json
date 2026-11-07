@@ -12,13 +12,47 @@
         "status": "open",
         "title": "Continuation refusal теряет причину permission"
       }
+    },
+    {
+      "action": "resolve",
+      "actor": "root",
+      "at": "2026-11-07T17:05:11+00:00",
+      "changes": {
+        "resolution": {
+          "evidence": {
+            "proof_path": "evidence/L08B/B14-green.txt",
+            "red_proof_path": "evidence/L08B/B14-red.txt",
+            "red_result": "FAILED tests/test_lhc_execution.py::test_real_http_wake_tool_error_preserves_reason_without_replay",
+            "red_sha256": "411f78b78ad80067b2fea1c2cb9d42b490ed6b1593f0ebd8b9f4c8995f1a3a99",
+            "result": "30 passed",
+            "sha256": "cea87ce0584d5e2e57637e8ad42236e21b5efcde7ea48c7f1e4c361486417f08",
+            "test_command": "python3 -m pytest -q tests/test_lhc_execution.py"
+          },
+          "kind": "fixed",
+          "reason": "Native isError cause and expected wait identity preserved before identity checks; no replay. Independent L07 same original public fixture PASS."
+        },
+        "status": "fixed"
+      }
     }
   ],
   "id": "B14",
   "owner": "root",
   "reporter": "root",
+  "resolution": {
+    "evidence": {
+      "proof_path": "evidence/L08B/B14-green.txt",
+      "red_proof_path": "evidence/L08B/B14-red.txt",
+      "red_result": "FAILED tests/test_lhc_execution.py::test_real_http_wake_tool_error_preserves_reason_without_replay",
+      "red_sha256": "411f78b78ad80067b2fea1c2cb9d42b490ed6b1593f0ebd8b9f4c8995f1a3a99",
+      "result": "30 passed",
+      "sha256": "cea87ce0584d5e2e57637e8ad42236e21b5efcde7ea48c7f1e4c361486417f08",
+      "test_command": "python3 -m pytest -q tests/test_lhc_execution.py"
+    },
+    "kind": "fixed",
+    "reason": "Native isError cause and expected wait identity preserved before identity checks; no replay. Independent L07 same original public fixture PASS."
+  },
   "source": "independent consumers/review and full validation on5bf8733",
-  "status": "open",
+  "status": "fixed",
   "title": "Continuation refusal теряет причину permission",
-  "updated_at": "2026-11-07T16:37:51+00:00"
+  "updated_at": "2026-11-07T17:05:11+00:00"
 }

@@ -1,7 +1,7 @@
 {
   "label": "Общее ревью и полная проверка пакета",
   "kind": "task",
-  "status": "queued",
+  "status": "done",
   "estimate_minutes": 15,
   "depends_on": [
     "L06",
@@ -15,7 +15,7 @@
   "id": "L08",
   "model": "gpt-6.1-sol",
   "created_at": "2026-11-07T18:18:35+03:00",
-  "updated_at": "2026-11-07T19:37:52+03:00",
+  "updated_at": "2026-11-07T20:05:12+03:00",
   "progress_events": [
     {
       "at": "2026-11-07T18:18:35+03:00",
@@ -75,8 +75,42 @@
       },
       "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
       "harness": "codex"
+    },
+    {
+      "at": "2026-11-07T20:05:12+03:00",
+      "note": "Начал работу в текущей сессии",
+      "changes": {
+        "status": "running",
+        "owner": "root"
+      },
+      "actor": {
+        "host_id": null,
+        "harness": "codex",
+        "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+        "source": "native_environment"
+      },
+      "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "harness": "codex"
+    },
+    {
+      "at": "2026-11-07T20:05:12+03:00",
+      "note": "",
+      "changes": {
+        "status": "done",
+        "result": "Final candidate d0c60f89: full validate PASS1027tests7skips; independent consumers12/12 and18/18; review APPROVE; all16 bug records resolved with RED/GREEN; staged mirror canary c3fc6160ab8dfa42 PASS. Product frozen."
+      },
+      "actor": {
+        "host_id": null,
+        "harness": "codex",
+        "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+        "source": "native_environment"
+      },
+      "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "harness": "codex"
     }
   ],
   "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
-  "harness": "codex"
+  "harness": "codex",
+  "owner": "root",
+  "result": "Final candidate d0c60f89: full validate PASS1027tests7skips; independent consumers12/12 and18/18; review APPROVE; all16 bug records resolved with RED/GREEN; staged mirror canary c3fc6160ab8dfa42 PASS. Product frozen."
 }
