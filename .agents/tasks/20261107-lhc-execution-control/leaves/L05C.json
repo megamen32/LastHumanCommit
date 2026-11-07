@@ -1,7 +1,7 @@
 {
   "label": "Инструкции продолжения и сценарий потребителя",
   "kind": "task",
-  "status": "queued",
+  "status": "running",
   "estimate_minutes": 10,
   "depends_on": [
     "L02",
@@ -14,7 +14,7 @@
   "model": "gpt-6.1-sol",
   "id": "L05C",
   "created_at": "2026-11-07T18:46:00+03:00",
-  "updated_at": "2026-11-07T18:46:00+03:00",
+  "updated_at": "2026-11-07T18:48:23+03:00",
   "progress_events": [
     {
       "at": "2026-11-07T18:46:00+03:00",
@@ -36,6 +36,55 @@
       },
       "session": "unknown",
       "harness": "unknown"
+    },
+    {
+      "at": "2026-11-07T18:48:23+03:00",
+      "note": "Worker audit_rust_plan registered on lhc/execution-guidance-20261107",
+      "changes": {
+        "worker": {
+          "id": "audit_rust_plan",
+          "branch": "lhc/execution-guidance-20261107",
+          "worktree": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-guidance-20261107",
+          "registered_at": "2026-11-07T18:48:23+03:00",
+          "run_dir": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-guidance-20261107/.tmp/worker-run",
+          "run_host": "roomhacker-server-100"
+        },
+        "owner": "audit_rust_plan"
+      },
+      "actor": {
+        "host_id": null,
+        "harness": "codex",
+        "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+        "source": "native_environment"
+      },
+      "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "harness": "codex"
+    },
+    {
+      "at": "2026-11-07T18:48:23+03:00",
+      "note": "",
+      "changes": {
+        "status": "running"
+      },
+      "actor": {
+        "host_id": null,
+        "harness": "codex",
+        "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+        "source": "native_environment"
+      },
+      "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "harness": "codex"
     }
-  ]
+  ],
+  "worker": {
+    "id": "audit_rust_plan",
+    "branch": "lhc/execution-guidance-20261107",
+    "worktree": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-guidance-20261107",
+    "registered_at": "2026-11-07T18:48:23+03:00",
+    "run_dir": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/execution-guidance-20261107/.tmp/worker-run",
+    "run_host": "roomhacker-server-100"
+  },
+  "owner": "audit_rust_plan",
+  "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+  "harness": "codex"
 }
