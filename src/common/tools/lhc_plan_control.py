@@ -6,6 +6,7 @@ state; no plan-level goal ledger or implicit acceptance is created.
 """
 from __future__ import annotations
 import copy
+from datetime import datetime
 import hashlib
 import json
 from pathlib import Path
@@ -19,8 +20,14 @@ def digest(value):
 
 def plan_scope(metadata):
     # Ordinary progress, ordering, timestamps and generated projections are not scope.
-    return digest({key: metadata.get(key) for key in
-                   ("goal", "deliverable", "acceptance_scenario", "acceptance", "scope", "constraints")})
+    scenarios = list(metadata.get("acceptance_scenarios") or [])
+    one = metadata.get("acceptance_scenario")
+    if one:
+        scenarios = [one] + [item for item in scenarios if item != one]
+    return digest({**{key: metadata.get(key) for key in
+                     ("goal", "deliverable", "business_result", "business_results",
+                      "acceptance", "scope", "constraints")},
+                   "acceptance_scenarios": scenarios})
 
 
 def outcome_scope(outcome):
@@ -73,7 +80,8 @@ def evaluate(metadata, rows, outcome=None, state=None, readiness=None, *, plan_d
         readiness = lhc_readiness.evaluate(rows, slots=metadata.get("slots"))
     binding_matches = _binding_matches(metadata, outcome, plan_dir)
     stages = outcome.get("stages") or {}
-    accepted = bool(binding_matches and outcome.get("task_class") not in {None, "status"}
+    accepted = bool(binding_matches and not (outcome.get("plan_binding") or {}).get("contract_required")
+                    and outcome.get("task_class") not in {None, "status"}
                     and outcome.get("contract_confirmed")
                     and all(key in stages for key in ("technical", "deploy", "consumer", "publication", "integration"))
                     and all(isinstance(stage, dict) and stage.get("status") in
@@ -180,13 +188,62 @@ def bind_session_plan(plan_dir, session_id, cwd, runtime=None):
         fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
         state = guard.load_state(path)
         outcome = state["business"]["outcome"]
-        current = lhc_outcome.verdict(outcome, state)
-        outcome["finish_verdict"] = current
-        outcome["plan_binding"] = binding(metadata, outcome, plan, accepted=current == "complete"
-                                          and outcome.get("task_class") != "status")
+        outcome["finish_verdict"] = lhc_outcome.verdict(outcome, state)
+        if _binding_matches(metadata, outcome, plan):
+            # A repeated activation is not a new assessment. Keep its exact proof,
+            # and cancel any other tentative destination selected in this session.
+            outcome.pop("plan_binding_request", None)
+        else:
+            selected = outcome.get("plan_binding_request") or outcome.get("plan_binding") or {}
+            same_request = (selected.get("plan_dir") == str(plan)
+                            and selected.get("plan_scope") == plan_scope(metadata)
+                            and selected.get("outcome_id") == outcome.get("id"))
+            if not same_request:
+                # Retain the old evidence before contract can alter canary/stages.
+                snapshot = copy.deepcopy(outcome)
+                for key in ("plan_binding", "plan_binding_request", "plan_binding_history"):
+                    snapshot.pop(key, None)
+                outcome.setdefault("plan_binding_history", []).append({
+                    "binding": copy.deepcopy(outcome.get("plan_binding")), "outcome": snapshot})
+            pending = {**binding(metadata, outcome, plan), "contract_required": True}
+            if outcome.get("plan_binding"):
+                outcome["plan_binding_request"] = pending
+            else:
+                outcome["plan_binding"] = pending
         guard.write_state(path, state)
     return {"binding": "bound", "plan_dir": str(plan), "goal_status":
             evaluate(metadata, rows, outcome, state, plan_dir=plan)["goal_status"]}
+
+
+def confirm_plan_contract(outcome, session_id):
+    """Join the normal explicit contract to the selected plan, never to old PASS.
+
+    Called inside the outcome CLI's native-state lock after contract validation.
+    No additional operator bind/review command is needed.
+    """
+    import lhc_plan_json as plans
+    import lhc_outcome
+    selected = outcome.get("plan_binding_request") or outcome.get("plan_binding")
+    if not selected:
+        return
+    plan = Path(selected["plan_dir"]).resolve()
+    if str(plan) not in [str(Path(p).resolve()) for p in plans.session_plans(session_id)]:
+        raise ValueError("explicit session-plan binding is missing for contract")
+    metadata, rows = read_plan(plan)
+    if (outcome.get("owner") or {}).get("session_id") != session_id or not any(
+            ((row.get("assignment") or {}).get("lead") or {}).get("session_id") == session_id
+            if row.get("assignment") else row.get("session") == session_id for row in rows):
+        raise ValueError("current plan Lead ownership is missing for contract")
+    old = outcome.get("plan_binding") or {}
+    if (not outcome.get("plan_binding_request") and not old.get("contract_required")
+            and _binding_matches(metadata, outcome, plan)):
+        return  # Identical contract/progress retains the existing acceptance.
+    if (selected.get("contract_required") or old.get("plan_scope") != plan_scope(metadata)):
+        lhc_outcome.invalidate_changed_stage_evidence(outcome, None)
+        outcome["evidence_after"] = datetime.now().astimezone().isoformat()
+        outcome["canary"]["status"] = "pending"
+    outcome["plan_binding"] = binding(metadata, outcome, plan)
+    outcome.pop("plan_binding_request", None)
 
 
 def record_decision(metadata, rows, outcome, state, plan_dir, decision):

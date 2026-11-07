@@ -2012,6 +2012,9 @@ def main():
                 outcome['evidence_after'] = datetime.now().astimezone().isoformat()
             if 'consumer' in invalidated:
                 outcome['canary']['status'] = 'pending'
+            if outcome.get('plan_binding') or outcome.get('plan_binding_request'):
+                import lhc_plan_control as control
+                control.confirm_plan_contract(outcome, args.session_id)
         elif args.command == 'review':
             from lhc_outcome_review import accept_review, native_self_manifest, native_reviewer_manifest
             if not _permission_binding_valid(outcome, state):
@@ -2042,7 +2045,8 @@ def main():
             binding = outcome['plan_binding']
             try:
                 metadata, _rows = control.read_plan(binding['plan_dir'])
-                if control._binding_matches(metadata, outcome, binding['plan_dir']):
+                if (not binding.get('contract_required')
+                        and control._binding_matches(metadata, outcome, binding['plan_dir'])):
                     if outcome['finish_verdict'] == 'complete' and outcome.get('task_class') != 'status':
                         binding['acceptance_fingerprint'] = control.evidence_fingerprint(outcome)
                     else:
