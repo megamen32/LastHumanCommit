@@ -72,6 +72,8 @@ LEAF_ESTIMATE_CAP_MINUTES = 15
 LEAF_KINDS = ("task", "milestone", "research")
 ESTIMATE_KEYS = ("estimate_minutes", "estimate", "estimate_min", "estimate_max")
 PLAN_MODES = ("quickfix", "fullcycle")
+DELIVERABLES = ("plan", "implementation")
+DECOMPOSITIONS = ("progressive", "complete")
 
 STATUS_QUEUED = "queued"
 STATUS_RUNNING = "running"
@@ -213,6 +215,9 @@ PLAN_FIELDS = (
     "started_at",
     "finished_at",
     "decomposition_check",
+    "deliverable",
+    "decomposition",
+    "estimate_policy",
 )
 
 CLOCK_RE = re.compile(r"^(?:[01]?\d|2[0-3]):[0-5]\d$")
@@ -691,6 +696,23 @@ def _inherit_default_model(task: dict[str, Any], default_model: Optional[str]) -
         task["model"] = default_model
 
 
+def _estimate_policy(value: Any, path: Path) -> dict[str, Any]:
+    if not isinstance(value, dict) or set(value) != {"leaf_cap_minutes", "reason"}:
+        raise LeafError(f"{path}: estimate_policy: нужны leaf_cap_minutes и reason")
+    cap, reason = value["leaf_cap_minutes"], value["reason"]
+    if isinstance(cap, bool) or not isinstance(cap, int) or cap < 1:
+        raise LeafError(f"{path}: estimate_policy.leaf_cap_minutes должно быть целым числом от 1")
+    if not isinstance(reason, str) or not reason.strip():
+        raise LeafError(f"{path}: estimate_policy.reason: запишите решение пользователя")
+    return {"leaf_cap_minutes": cap, "reason": reason.strip()}
+
+
+def leaf_estimate_cap(metadata: Optional[dict[str, Any]] = None) -> int:
+    """One plan's recorded policy; never change the process-wide default."""
+    policy = (metadata or {}).get("estimate_policy")
+    return _estimate_policy(policy, Path(PLAN_FILE))["leaf_cap_minutes"] if policy is not None else LEAF_ESTIMATE_CAP_MINUTES
+
+
 def _plan_fields(raw: dict[str, Any], path: Path) -> dict[str, Any]:
     """The plan-level facts of one file, validated."""
 
@@ -705,6 +727,19 @@ def _plan_fields(raw: dict[str, Any], path: Path) -> dict[str, Any]:
             )
         raw = {key: value for key, value in raw.items() if key in PLAN_FIELDS}
     fields: dict[str, Any] = {}
+    for field, allowed in (("deliverable", DELIVERABLES), ("decomposition", DECOMPOSITIONS)):
+        if field not in raw:
+            continue
+        value = raw[field]
+        if value not in allowed:
+            raise LeafError(f"{path}: поле {field} должно быть одним из: " + ", ".join(allowed))
+        fields[field] = value
+    if "estimate_policy" in raw:
+        fields["estimate_policy"] = _estimate_policy(raw["estimate_policy"], path)
+    if "decomposition_check" in raw:
+        if not isinstance(raw["decomposition_check"], dict):
+            raise LeafError(f"{path}: поле decomposition_check должно быть объектом")
+        fields["decomposition_check"] = raw["decomposition_check"]
     if "default_model" in raw:
         value = raw["default_model"]
         if not isinstance(value, str) or not value.strip():
@@ -829,6 +864,9 @@ def plan_metadata(plan_dir: Path) -> dict[str, Any]:
                 isinstance(item, dict) for item in journal
             ):
                 fields["journal"] = journal
+            fields.update(_plan_fields({key: raw[key] for key in
+                          ("deliverable", "decomposition", "estimate_policy", "decomposition_check")
+                          if key in raw}, graph_file))
             return fields
     return {}
 
@@ -1138,6 +1176,8 @@ def build_document(plan_dir: Path) -> dict[str, Any]:
         "acceptance_scenarios": list(metadata.get("acceptance_scenarios") or []),
         "recon": list(metadata.get("recon") or []),
         "current_progress": str(metadata.get("current_progress") or ""),
+        "deliverable": metadata.get("deliverable", "implementation"),
+        "decomposition": metadata.get("decomposition", "progressive"),
         "revisions": list(metadata.get("revisions") or []),
         "external_waits": str(metadata.get("external_waits") or ""),
         "slots": int(metadata.get("slots") or 1),
@@ -1147,6 +1187,9 @@ def build_document(plan_dir: Path) -> dict[str, Any]:
     }
     if milestones:
         document["milestones"] = milestones
+    for field in ("estimate_policy", "decomposition_check"):
+        if field in metadata:
+            document[field] = metadata[field]
     budget = metadata.get("budget_usd")
     if budget is not None:
         document["budget_usd"] = budget
@@ -1465,6 +1508,7 @@ def report_block_of(document: dict[str, Any]) -> str:
             slots=slots,
         )
     )
+    lines.append(plan_intent(document))
     lines.append(f"Ревизия плана: {grid.graph_revision(graph)}")
     lines.append("")
     for status in GROUP_ORDER:
@@ -1558,8 +1602,8 @@ def fmt_cap_minutes(value: float) -> str:
     return f"{value:.1f} мин"
 
 
-def estimate_cap_findings(tasks: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Leaves whose estimate passes the 15-minute cap without saying why.
+def estimate_cap_findings(tasks: list[dict[str, Any]], cap: Optional[int] = None) -> list[dict[str, Any]]:
+    """Leaves whose estimate passes the effective cap without saying why.
 
     The cap belongs to the format, not to a single tool, so the finding is a
     plain list the command line and any other caller can read: a leaf longer
@@ -1567,13 +1611,14 @@ def estimate_cap_findings(tasks: list[dict[str, Any]]) -> list[dict[str, Any]]:
     deliberately larger. Silence is what this function exists to end.
     """
 
+    cap = LEAF_ESTIMATE_CAP_MINUTES if cap is None else cap
     findings: list[dict[str, Any]] = []
     for task in tasks:
         if task.get("kind") == "milestone":
             continue
         bounds = task.get("estimate_minutes") or {}
         high = bounds.get("maximum")
-        if high is None or high <= LEAF_ESTIMATE_CAP_MINUTES:
+        if high is None or high <= cap:
             continue
         reason = str(task.get("estimate_over_limit_reason") or "").strip()
         if reason:
@@ -1581,7 +1626,7 @@ def estimate_cap_findings(tasks: list[dict[str, Any]]) -> list[dict[str, Any]]:
         findings.append({
             "id": task.get("id", ""),
             "minutes": float(high),
-            "cap": LEAF_ESTIMATE_CAP_MINUTES,
+            "cap": cap,
         })
     return findings
 
@@ -1615,7 +1660,7 @@ NO_RECON_MESSAGE = ("сначала исследуй: что есть сейча
                     "«факт не короче 30 знаков :: evidence», где evidence - команда, путь, URL или хост; "
                     "факты не повторяются. Нужен и непустой acceptance_scenario (что запускаем и что "
                     "должно быть видно). Первым листом без них допускается только лист исследования "
-                    "(kind=research, до 15 минут)")
+                    "(kind=research, в пределах лимита плана)")
 RECON_MIN_TEXT = 30
 RECON_FULLCYCLE_FACTS = 3
 RECON_OTHER_FACTS = 2
@@ -1733,20 +1778,21 @@ def _plan_gate_state(plan_dir: Path) -> dict[str, Any]:
 
 def check_leaf_gates(plan_dir: Path, candidate: dict[str, Any], *, create: bool,
                      touches_estimate: bool, others: list[dict[str, Any]]) -> None:
-    """Refuse a leaf above the 15-minute cap and a plan without recon.
+    """Refuse a leaf above its plan's cap and a plan without recon.
 
     No flag bypasses the cap on a write. A leaf that is already over it in an
     old plan stays readable and renderable; it only draws a warning."""
 
+    cap = leaf_estimate_cap(plan_metadata(plan_dir))
     if candidate.get("kind") != "milestone":
         high = leaf_max_minutes(candidate)
-        if high is not None and high > LEAF_ESTIMATE_CAP_MINUTES:
+        if high is not None and high > cap:
             if create or touches_estimate:
                 raise LeafError(
-                    f"лист {candidate.get('id')} >{LEAF_ESTIMATE_CAP_MINUTES} мин: разбей на листья "
-                    f"по ≤{LEAF_ESTIMATE_CAP_MINUTES} мин (исследование, шаг, проверка)")
+                    f"лист {candidate.get('id')} >{cap} мин: разбей на листья "
+                    f"по ≤{cap} мин (исследование, шаг, проверка)")
             print(f"LHC: предупреждение: лист {candidate.get('id')} длиннее "
-                  f"{LEAF_ESTIMATE_CAP_MINUTES} мин; разбей его на листья по ≤{LEAF_ESTIMATE_CAP_MINUTES} мин",
+                  f"{cap} мин; разбей его на листья по ≤{cap} мин",
                   file=sys.stderr)
     if not create:
         return
@@ -1779,9 +1825,10 @@ def check_activation(plan_dir: Path, leaf: dict[str, Any]) -> None:
     if estimate:
         task["estimate_minutes"] = estimate
     high = leaf_max_minutes(task)
-    if high is not None and high > LEAF_ESTIMATE_CAP_MINUTES:
-        print(f"LHC: предупреждение: лист {leaf.get('id')} длиннее {LEAF_ESTIMATE_CAP_MINUTES} мин; "
-              f"разбей на листья по ≤{LEAF_ESTIMATE_CAP_MINUTES} мин", file=sys.stderr)
+    cap = leaf_estimate_cap(plan_metadata(plan_dir))
+    if high is not None and high > cap:
+        print(f"LHC: предупреждение: лист {leaf.get('id')} длиннее {cap} мин; "
+              f"разбей на листья по ≤{cap} мин", file=sys.stderr)
     state = _plan_gate_state(plan_dir)
     if state["fullcycle"] and not state["recon_ok"] and leaf.get("kind") != "research":
         if state["recon_legacy"]:
@@ -1883,7 +1930,9 @@ def update_leaf(plan_dir: Path, leaf_id: str, fields: dict, *, create=False,
         candidate = task_from_leaf(merged, path)
         tasks = [t for t in collect_leaves(plan_dir) if t["id"] != leaf_id] if (Path(plan_dir) / LEAVES_DIRNAME).is_dir() and any((Path(plan_dir) / LEAVES_DIRNAME).glob("*.json")) else []
         check_leaf_gates(plan_dir, candidate, create=create,
-                         touches_estimate=any(k in fields for k in ESTIMATE_KEYS), others=list(tasks))
+                         touches_estimate=any(k in fields for k in ESTIMATE_KEYS) or
+                         (raw.get("kind") == "milestone" and candidate.get("kind") != "milestone"),
+                         others=list(tasks))
         tasks.append(candidate)
         _order(tasks, {t["id"]: path.parent / (t["id"] + ".json") for t in tasks})
         # Recover legacy birth BEFORE atomic replacement destroys that evidence.
@@ -1925,7 +1974,7 @@ def _short(text: Any, limit: int) -> str:
 
 def _leaf_rows(plan_dir: Path) -> list[dict[str, Any]]:
     rows = []
-    for path in sorted((Path(plan_dir) / LEAVES_DIRNAME).glob("*.json"))[:400]:
+    for path in sorted((Path(plan_dir) / LEAVES_DIRNAME).glob("*.json")):
         try:
             leaf = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, ValueError):
@@ -1945,20 +1994,49 @@ def _open_worker(leaf: dict[str, Any]) -> bool:
     return isinstance(worker, dict) and not worker.get("removed_at")
 
 
+def plan_intent(metadata: dict[str, Any]) -> str:
+    return (f"deliverable: {metadata.get('deliverable', 'implementation')}; "
+            f"decomposition: {metadata.get('decomposition', 'progressive')}; "
+            f"leaf cap: {leaf_estimate_cap(metadata)} min")
+
+
+def undecomposed_stages(milestones: list[dict[str, Any]]) -> list[str]:
+    return [str(stage["id"]) for stage in milestones
+            if not stage.get("children") and stage.get("status") != "deferred"]
+
+
+def handoff_findings(document: dict[str, Any]) -> list[str]:
+    """Readiness is an explicit check, separate from structural validity."""
+    findings = []
+    if document.get("decomposition") == "complete":
+        findings += [f"{ident}: этап не разложен на исполнимые листья"
+                     for ident in undecomposed_stages(document.get("milestones", []))]
+    for task in document.get("tasks", []):
+        if task.get("kind") == "milestone" or task.get("status") == "deferred":
+            continue
+        missing = [key for key in ("description", "acceptance") if not str(task.get(key) or "").strip()]
+        if missing:
+            findings.append(f"{task['id']}: заполните {', '.join(missing)}")
+    return findings
+
+
 def plan_summary(plan_dir: Path, current: Any = ()) -> list[str]:
     """Done leaves with results, the current leaves with their last note, what
     runs elsewhere, what is next, overruns and Workers not yet merged."""
 
-    rows = _leaf_rows(plan_dir)
+    rows, milestones = split_milestones(_leaf_rows(plan_dir), strict=False)
     current = [str(item) for item in current]
-    lines: list[str] = []
+    lines: list[str] = [plan_intent(plan_metadata(plan_dir))]
+    pending_stages = undecomposed_stages(milestones)
+    if pending_stages:
+        lines.append("Undecomposed stages: " + ", ".join(pending_stages))
     done = [leaf for leaf in rows if leaf.get("status") == "done" and leaf.get("kind") != "milestone"]
     if done:
         lines.append("Done:")
         lines += [f"- {_leaf_name(leaf)} — {_short(leaf.get('result'), 220) or 'no result written'}"
                   for leaf in done[-12:]]
     for leaf in rows:
-        if str(leaf.get("id")) in current:
+        if str(leaf.get("id")) in current and leaf.get("status") == "running":
             notes = [event.get("note") for event in leaf.get("progress_events") or []
                      if isinstance(event, dict) and event.get("note")]
             lines.append(f"Now: {_leaf_name(leaf)} — last note: {_short(notes[-1] if notes else '', 400) or 'none'}")
@@ -1984,13 +2062,18 @@ def plan_summary(plan_dir: Path, current: Any = ()) -> list[str]:
 def plan_state(plan_dir: Path) -> str:
     """One line for the end of every tool answer: where the plan is now."""
 
-    rows = [leaf for leaf in _leaf_rows(plan_dir) if leaf.get("kind") != "milestone"]
+    rows, milestones = split_milestones(_leaf_rows(plan_dir), strict=False)
     status = {str(leaf.get("id")): leaf.get("status") for leaf in rows}
     done = sum(1 for value in status.values() if value == "done")
     running = [str(leaf.get("id")) for leaf in rows if leaf.get("status") == "running"]
     ready = [str(leaf.get("id")) for leaf in rows if leaf.get("status") == "queued"
+             and leaf.get("kind") != "milestone"
              and all(status.get(str(dep)) == "done" for dep in leaf.get("depends_on") or [])]
     parts = [f"Plan {Path(plan_dir).name}: {done}/{len(rows)} done"]
+    parts.append(plan_intent(plan_metadata(plan_dir)))
+    pending_stages = undecomposed_stages(milestones)
+    if pending_stages:
+        parts.append("undecomposed stages: " + ", ".join(pending_stages))
     if running:
         parts.append("running " + ", ".join(running[:8]))
     if ready:
@@ -2152,6 +2235,35 @@ def worker_finish(plan_dir: Path, leaf_id: str, task_worktree: str, result: str)
                        note=f"Worker {worker.get('id')}: {branch} merged, worktree, branch and run directory removed")
 
 
+def check_plan(plan_dir: Path, *, handoff: bool = False) -> int:
+    document = build_document(plan_dir)
+    print(f"{plan_dir}: листы согласованы")
+    cap = leaf_estimate_cap(document)
+    findings = estimate_cap_findings(document.get("tasks", []), cap)
+    if findings:
+        print(f"ПРЕВЫШЕН ПРЕДЕЛ ОЦЕНКИ ЛИСТА ({cap} мин): "
+              "разбейте длинную работу или поясните существующее исключение в estimate_over_limit_reason:",
+              file=sys.stderr)
+        for item in findings:
+            print(f"  - лист {item['id']}: оценка {fmt_cap_minutes(item['minutes'])} "
+                  f"при пределе {item['cap']} мин", file=sys.stderr)
+        return 1
+    if handoff:
+        print(plan_intent(document))
+        pending = undecomposed_stages(document.get("milestones", []))
+        if pending:
+            print("Undecomposed stages: " + ", ".join(pending))
+        problems = handoff_findings(document)
+        if problems:
+            print("LHC: план пока не готов к передаче:\n  - " + "\n  - ".join(problems), file=sys.stderr)
+            return 1
+        if document.get("decomposition") == "complete":
+            print("Handoff ready: complete decomposition of the declared active scope.")
+        else:
+            print("Handoff ready: progressive, only the decomposed work; later stages remain open.")
+    return 0
+
+
 def main(argv: Optional[list[str]] = None) -> int:
     parser = argparse.ArgumentParser(
         prog="lhc_plan_json.py",
@@ -2162,10 +2274,12 @@ def main(argv: Optional[list[str]] = None) -> int:
     whole.add_argument("plan_dir", type=Path)
     whole.add_argument("--report", type=Path)
     whole.add_argument("--graph", type=Path)
+    whole.add_argument("--handoff", action="store_true", help="also check readiness for the declared decomposition")
     build = sub.add_parser("build", help="collect the leaves into plan.graph.json")
     build.add_argument("plan_dir", type=Path)
     check = sub.add_parser("check", help="validate the leaves, write nothing")
     check.add_argument("plan_dir", type=Path)
+    check.add_argument("--handoff", action="store_true", help="also check readiness for the declared decomposition")
     activate = sub.add_parser(
         "activate",
         help="bind one explicitly selected plan leaf to this local session and observer",
@@ -2226,9 +2340,15 @@ def main(argv: Optional[list[str]] = None) -> int:
         if args.command == "build-plan":
             import lhc_grid
             graph = build_graph(args.plan_dir)
-            lhc_grid.main(["render", str(graph), "--out-dir", str(args.plan_dir)])
+            rendered = lhc_grid.main(["render", str(graph), "--out-dir", str(args.plan_dir)])
+            if rendered:
+                return rendered
             if args.report:
-                return lhc_grid.main(["check-plan", str(args.report), str(args.graph or graph)])
+                checked = lhc_grid.main(["check-plan", str(args.report), str(args.graph or graph)])
+                if checked:
+                    return checked
+            if args.handoff:
+                return check_plan(args.plan_dir, handoff=True)
         elif args.command == "build":
             print(str(build_graph(args.plan_dir)))
         elif args.command == "activate":
@@ -2236,11 +2356,14 @@ def main(argv: Optional[list[str]] = None) -> int:
             if tool_dir not in sys.path:
                 sys.path.insert(0, tool_dir)
             import lhc_plan_mirror
-            result = lhc_plan_mirror.activate(
-                args.plan_dir, args.leaf_id, config_path=args.config,
-                session=args.session, harness=args.harness, owner=args.owner,
-                note=args.note,
-            )
+            try:
+                result = lhc_plan_mirror.activate(
+                    args.plan_dir, args.leaf_id, config_path=args.config,
+                    session=args.session, harness=args.harness, owner=args.owner,
+                    note=args.note,
+                )
+            except lhc_plan_mirror.ActivationError as error:
+                raise LeafError(str(error)) from None
             print(json.dumps(result, ensure_ascii=False))
         elif args.command in ("create-leaf", "update-leaf", "progress"):
             result = update_leaf(args.plan_dir, args.leaf_id, json.loads(args.fields),
@@ -2283,24 +2406,7 @@ def main(argv: Optional[list[str]] = None) -> int:
             else:
                 sys.stdout.write(block)
         else:
-            document = build_document(args.plan_dir)
-            print(f"{args.plan_dir}: листы согласованы")
-            findings = estimate_cap_findings(document.get("tasks", []))
-            if findings:
-                print(
-                    f"ПРЕВЫШЕН ПРЕДЕЛ ОЦЕНКИ ЛИСТА ({LEAF_ESTIMATE_CAP_MINUTES} мин) — "
-                    "длинную работу надо разбить на два листа, либо записать в листе "
-                    "estimate_over_limit_reason, почему он сознательно больше:",
-                    file=sys.stderr,
-                )
-                for item in findings:
-                    print(
-                        f"  - лист {item['id']}: оценка {fmt_cap_minutes(item['minutes'])} "
-                        f"при пределе {item['cap']} мин — чего не хватает: разбиения или "
-                        "причины превышения",
-                        file=sys.stderr,
-                    )
-                return 1
+            return check_plan(args.plan_dir, handoff=args.handoff)
     except (LeafError, OSError, json.JSONDecodeError) as error:
         print(f"LHC: {error}", file=sys.stderr)
         plan_dir = getattr(args, "plan_dir", None)
