@@ -10,6 +10,9 @@ Publication uses the existing CLI, including offline mirror bindings.
 from __future__ import annotations
 
 import argparse
+import contextvars
+import os
+import re
 import importlib.util
 import json
 import subprocess
@@ -19,7 +22,7 @@ from pathlib import Path
 from typing import Any, Callable, Optional
 
 SERVER_NAME = "LhcPlan"
-SERVER_VERSION = "1.16.1"
+SERVER_VERSION = "1.17.0"
 DEFAULT_PROTOCOL_VERSION = "2024-11-05"
 SUPPORTED_PROTOCOL_VERSIONS = ("2024-11-05", "2025-03-26", "2025-06-18")
 
@@ -281,6 +284,37 @@ def estimator_tiers() -> tuple[str, ...]:
 # --------------------------------------------------------------------------
 
 
+_request_actor = contextvars.ContextVar("lhc_mcp_actor", default=None)
+
+
+def native_actor(params):
+    """Parse one native provider only; malformed/conflicting metadata is unknown."""
+    canonical = collector()
+    a = getattr(canonical, "assignments", None)
+    if a is None:
+        return {"host_id": None, "harness": None, "session_id": None, "source": "unknown"}
+    unknown = a.resolve_actor(environ={})
+    meta = params.get("_meta")
+    if "_meta" not in params:
+        declared = params.get("arguments", {}).get("actor")
+        return a.resolve_actor(declared, environ={}) if declared is not None else unknown
+    if not isinstance(meta, dict):
+        return unknown
+    providers = [key for key in ("threadId", "ai.opencode/sessionID", "com.zcode/request-context") if key in meta]
+    if len(providers) != 1:
+        return unknown
+    key = providers[0]
+    value = meta[key]
+    harness = {"threadId": "codex", "ai.opencode/sessionID": "opencode",
+               "com.zcode/request-context": "zcode"}[key]
+    if key == "com.zcode/request-context":
+        value = value.get("session_id") if isinstance(value, dict) else None
+    if (not isinstance(value, str) or not re.fullmatch(r"[A-Za-z0-9._:-]{1,512}", value)
+            or (harness == "opencode" and not value.startswith("ses_"))):
+        return unknown
+    return a.resolve_actor(trusted_caller={"host_id": None, "harness": harness, "session_id": value})
+
+
 def run_cli(argv: list[str]) -> dict[str, Any]:
     """Run one existing CLI and hand back its raw stdout, stderr and exit code.
 
@@ -289,7 +323,15 @@ def run_cli(argv: list[str]) -> dict[str, Any]:
     so its answer is the answer of that human's command.
     """
 
-    completed = subprocess.run(argv, capture_output=True, text=True, check=False)
+    # Each child receives exactly this request; inherited caller claims are erased.
+    env = dict(os.environ)
+    env.pop("LHC_MCP_ACTOR_CONTEXT", None)
+    actor = _request_actor.get()
+    if actor is not None:
+        # A long-lived MCP server's thread is not the requesting native session.
+        env.pop("CODEX_THREAD_ID", None)
+        env["LHC_MCP_ACTOR_CONTEXT"] = json.dumps(actor, ensure_ascii=False)
+    completed = subprocess.run(argv, capture_output=True, text=True, check=False, env=env)
     return {
         "argv": list(argv),
         "stdout": completed.stdout,
@@ -403,6 +445,32 @@ def _plan_cli(arguments, operation, *extra):
     return _render([run_cli(argv)])
 
 
+def _execution_cli(arguments, operation):
+    extra = [str(arguments["leaf_id"])]
+    for key in ("assignment", "attempt_id", "message", "result", "expected_hash", "actor"):
+        if key in arguments:
+            value = arguments[key]
+            extra += ["--" + key.replace("_", "-"),
+                      json.dumps(value, ensure_ascii=False) if isinstance(value, dict) else str(value)]
+    return _plan_cli(arguments, operation, *extra)
+
+
+def assign_leaf(arguments):
+    return _execution_cli(arguments, "assign-leaf")
+
+
+def dispatch_leaf(arguments):
+    return _execution_cli(arguments, "dispatch-leaf")
+
+
+def reconcile_leaf(arguments):
+    return _execution_cli(arguments, "reconcile-leaf")
+
+
+def accept_leaf(arguments):
+    return _execution_cli(arguments, "accept-leaf")
+
+
 def show_plan(arguments):
     extra = []
     for leaf in arguments.get("current") or []:
@@ -419,9 +487,13 @@ def update_plan(arguments):
 
 def activate_leaf(arguments):
     extra = [str(arguments["leaf_id"])]
+    values = dict(arguments)
+    caller = _request_actor.get() or {}
+    if not values.get("session") and caller.get("source") == "mcp_metadata":
+        values["session"], values["harness"] = caller["session_id"], caller["harness"]
     for key in ("session", "harness", "note"):
-        if arguments.get(key):
-            extra += ["--" + key, str(arguments[key])]
+        if values.get(key):
+            extra += ["--" + key, str(values[key])]
     return _plan_cli(arguments, "activate", *extra)
 
 
@@ -550,6 +622,10 @@ def bug_check(arguments):
 
 
 OPERATIONS: dict[str, Callable[[dict[str, Any]], dict[str, Any]]] = {
+    "assign_leaf": assign_leaf,
+    "dispatch_leaf": dispatch_leaf,
+    "reconcile_leaf": reconcile_leaf,
+    "accept_leaf": accept_leaf,
     "create_leaf": create_leaf,
     "update_leaf": update_leaf,
     "build_plan": build_plan,
@@ -751,6 +827,31 @@ for tool in TOOLS:
         tool["description"] = ("Add a progress note to a running leaf. Refused when the leaf is past twice its "
                                "estimate and 45 minutes: then close the proven part and split the rest by object.")
 
+_EXECUTION_PROPERTIES = {
+    "plan_dir": _PLAN, "leaf_id": _LEAF,
+    "attempt_id": {"type": "string", "description": "Exact current assignment attempt id."},
+    "expected_hash": {"type": "string", "description": "Optional leaf SHA256 CAS."},
+    "actor": {"type": "object", "description": "Declared caller ref; never native metadata."},
+}
+for name, extra, required, description in (
+    ("assign_leaf", {"assignment": {"type": "object"}}, ["assignment"],
+     "Declare an explicit Assignment v1. This does not submit or start native work."),
+    ("dispatch_leaf", {"message": {"type": "string"}}, ["attempt_id", "message"],
+     "Refresh exact runtime then atomically admit and submit once through Herder. UNKNOWN is never replayed."),
+    ("reconcile_leaf", {}, ["attempt_id"],
+     "Refresh the exact attempt's native observation and wake without replaying delivery."),
+    ("accept_leaf", {"result": {"type": "string"}}, ["attempt_id", "result"],
+     "Accept a result_ready attempt with a concrete result; submission/completion alone never means done."),
+):
+    properties = {**_EXECUTION_PROPERTIES, **extra}
+    if name == "assign_leaf":
+        properties.pop("attempt_id")
+    TOOLS.append(_tool(name, description, properties, ["plan_dir", "leaf_id", *required]))
+for tool in TOOLS:
+    if tool["name"] in {"create_leaf", "update_leaf", "update_progress", "activate_leaf",
+                        "worker_register", "worker_finish", "update_plan"}:
+        tool["inputSchema"]["properties"]["actor"] = _EXECUTION_PROPERTIES["actor"]
+
 BUG_SCHEMA_PROPERTIES = {
     "plan_dir": {"type": "string", "description": "Existing LHC task/plan directory; records live in bugs/*.json."},
     "bug_id": {"type": "string", "description": "Optional for register (auto-ID); required otherwise."},
@@ -874,7 +975,11 @@ def handle(message: dict[str, Any]) -> Optional[dict[str, Any]]:
                     (kind == "boolean" and not isinstance(value, bool)) or
                     (kind == "array" and not isinstance(value, list))):
                     raise ValueError(f"invalid type for {key}")
-            result = operation(arguments)
+            token = _request_actor.set(native_actor(params))
+            try:
+                result = operation(arguments)
+            finally:
+                _request_actor.reset(token)
         except (ValueError, OSError, json.JSONDecodeError) as error:
             return {"jsonrpc": "2.0", "id": identifier, "error": {
                 "code": INVALID_PARAMS, "message": f"{type(error).__name__}: {error}"}}

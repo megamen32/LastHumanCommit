@@ -1,0 +1,5 @@
+COMMAND: python3 isolated-package/tools/lhc_plan_json.py create-leaf isolated-plan T1 --fields <synthetic>
+RETURN_CODE: 0
+{"id": "T1", "sha256": "e7bc86739631cfe560526d7151625af6734e41d07cdb8bc70e21ac289e5fb97f"}
+Plan plan: 0/1 done; deliverable: implementation; decomposition: progressive; leaf cap: 15 min; candidates by dependencies/capacity T1; dispatchable none; admission T1=assignment_unknown.
+PASS: isolated native package CLI create-leaf

@@ -445,15 +445,17 @@ def activate(plan, leaf_id, *, config_path=None, session=None, harness=None,
             pub.atomic(sidecar, saved)
     try:
         leaves.update_leaf(plan, leaf_id,
-                           {'status': 'running', 'session': session, 'harness': harness,
+                           {'status': leaf.get('status', 'queued') if leaf.get('assignment') else 'running', 'session': session, 'harness': harness,
                             'owner': owner.strip()},
-                           note=note or 'Начал работу в текущей сессии')
+                           note=note or 'Начал работу в текущей сессии',
+                           actor=None if os.environ.get('CODEX_THREAD_ID') == session else
+                           {'host_id': None, 'harness': harness, 'session_id': session})
     except leaves.LeafError as error:
         raise ActivationError(str(error)) from None
     leaves.record_session_plan(session, plan, leaf_id)
     if link:
         capture(plan)
-    result = {'plan': str(plan), 'leaf_id': leaf_id, 'status': 'running',
+    result = {'plan': str(plan), 'leaf_id': leaf_id, 'status': 'assigned' if leaf.get('assignment') else 'running',
               'session': session, 'harness': harness, 'owner': owner.strip(),
               'worktree': str(root), 'url': None,
               'sync': 'pending' if link else 'local-only'}

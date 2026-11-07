@@ -1,0 +1,58 @@
+{
+  "created_at": "2026-11-07T16:24:49+00:00",
+  "details": "Publisher TOOL_COPIES имеет явный список. Actual isolated native CLI create-leaf падает ModuleNotFoundError без новых sibling modules. Добавлены четыре canonical modules в обе package projections.",
+  "events": [
+    {
+      "action": "register",
+      "actor": "root",
+      "at": "2026-11-07T16:24:49+00:00",
+      "changes": {
+        "details": "Publisher TOOL_COPIES имеет явный список. Actual isolated native CLI create-leaf падает ModuleNotFoundError без новых sibling modules. Добавлены четыре canonical modules в обе package projections.",
+        "source": "isolated package CLI RED on 1.17.0 candidate",
+        "status": "open",
+        "title": "Новые execution modules отсутствуют в native package"
+      }
+    },
+    {
+      "action": "resolve",
+      "actor": "root",
+      "at": "2026-11-07T16:24:50+00:00",
+      "changes": {
+        "resolution": {
+          "evidence": {
+            "proof_path": "evidence/L05/package-projection-green.log",
+            "red_proof_path": "evidence/L05/package-projection-red.log",
+            "red_result": "FAIL: isolated native package CLI create-leaf",
+            "red_sha256": "d73395621e8579d04b978c9daea905e4ebe78c51f2f50859325c664bba0f528c",
+            "result": "PASS: isolated native package CLI create-leaf",
+            "sha256": "cc7ae3e3ac8f7d02bc37dc464bbce91dfde089f4e686810152b99a6b44afe256",
+            "test_command": "python3 .agents/tasks/20261107-lhc-execution-control/evidence/L05/package_projection_probe.py ."
+          },
+          "kind": "fixed",
+          "reason": "Native package includes all new canonical sibling modules; same public CLI succeeds in an isolated copy."
+        },
+        "status": "fixed"
+      }
+    }
+  ],
+  "id": "B10",
+  "owner": "root",
+  "reporter": "root",
+  "resolution": {
+    "evidence": {
+      "proof_path": "evidence/L05/package-projection-green.log",
+      "red_proof_path": "evidence/L05/package-projection-red.log",
+      "red_result": "FAIL: isolated native package CLI create-leaf",
+      "red_sha256": "d73395621e8579d04b978c9daea905e4ebe78c51f2f50859325c664bba0f528c",
+      "result": "PASS: isolated native package CLI create-leaf",
+      "sha256": "cc7ae3e3ac8f7d02bc37dc464bbce91dfde089f4e686810152b99a6b44afe256",
+      "test_command": "python3 .agents/tasks/20261107-lhc-execution-control/evidence/L05/package_projection_probe.py ."
+    },
+    "kind": "fixed",
+    "reason": "Native package includes all new canonical sibling modules; same public CLI succeeds in an isolated copy."
+  },
+  "source": "isolated package CLI RED on 1.17.0 candidate",
+  "status": "fixed",
+  "title": "Новые execution modules отсутствуют в native package",
+  "updated_at": "2026-11-07T16:24:50+00:00"
+}

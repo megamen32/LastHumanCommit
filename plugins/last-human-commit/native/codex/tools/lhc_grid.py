@@ -224,6 +224,9 @@ class Leaf:
     status: str = STATUS_QUEUED
     owner: str = ""
     session: str = ""
+    assignment: dict[str, Any] = field(default_factory=dict)
+    assignment_history: list[dict[str, Any]] = field(default_factory=list)
+    progress_events: list[dict[str, Any]] = field(default_factory=list)
     harness: str = ""
     model: str = ""
     model_class: str = ""
@@ -1255,7 +1258,7 @@ def parse_graph_json(document: Any) -> Graph:
     graph.started_at = str(document.get("started_at") or "")
     graph.plan_origin = document.get('plan_origin') or {}
     graph.finished_at = str(document.get("finished_at") or "")
-    graph.slots = int(document.get("slots") or 1)
+    graph.slots = int(document["slots"]) if document.get("slots") is not None else 1
     graph.declared_parallel = document.get("parallel")
     graph.declared_leaves = document.get("leaf_count")
     graph.declared_waves = document.get("wave_count")
@@ -1294,6 +1297,9 @@ def parse_graph_json(document: Any) -> Graph:
             status=normalize_status(task.get("status") or STATUS_QUEUED),
             owner=str(task.get("owner") or task.get("role") or ""),
             session=str(task.get("session") or ""),
+            assignment=dict(task["assignment"]) if isinstance(task.get("assignment"), dict) else {},
+            assignment_history=list(task.get("assignment_history") or []),
+            progress_events=list(task.get("progress_events") or []),
             harness=str(task.get("harness") or ""),
             model=str(task.get("model") or ""),
             model_class=str(task.get("model_class") or ""),
@@ -1604,47 +1610,24 @@ def owner_key(leaf: Leaf) -> str:
     graph that names no owners does not collapse its leaves into one worker.
     """
 
+    if leaf.assignment:
+        module = _load_sibling("lhc_readiness")
+        if module is not None:
+            return module.executor_key(leaf)
     return normalize(leaf.owner or leaf.session or leaf.id).lower()
 
 
+def readiness_decision(graph: Graph) -> dict[str, Any]:
+    """The same read-only evaluator powers metrics and both Now paths."""
+    module = _load_sibling("lhc_readiness")
+    if module is None:
+        raise ImportError("lhc_readiness.py is required next to the grid")
+    return module.evaluate(graph.leaves, graph.slots)
+
+
 def wait_reasons(graph: Graph) -> dict[str, list[str]]:
-    """Why each open leaf is not running, split the way the owner asks.
-
-    «ждёт листа» and «ждёт исполнителя» are different problems: the first is
-    answered by reordering the graph, the second by adding or freeing a worker.
-    A blocked leaf is a third thing — it waits outside the plan — and stays in
-    its own count.
-    """
-
-    by_id = graph.by_id()
-    busy = {
-        owner_key(leaf)
-        for leaf in graph.leaves
-        if leaf.status == STATUS_RUNNING
-    }
-    waiting_for_leaf: list[str] = []
-    waiting_for_owner: list[str] = []
-    ready: list[str] = []
-    for leaf in graph.leaves:
-        if leaf.status not in (STATUS_QUEUED, STATUS_WAITING):
-            continue
-        unfinished = [
-            dep for dep in leaf.depends_on
-            if dep in by_id and by_id[dep].status not in (STATUS_DONE, STATUS_DEFERRED)
-        ]
-        if unfinished:
-            waiting_for_leaf.append(leaf.id)
-        elif owner_key(leaf) in busy and (leaf.owner or leaf.session):
-            # The leaf could start: nothing in the graph holds it, and the one
-            # executor named for it is already busy with another leaf.
-            waiting_for_owner.append(leaf.id)
-        else:
-            ready.append(leaf.id)
-    return {
-        "waiting_for_leaf": waiting_for_leaf,
-        "waiting_for_owner": waiting_for_owner,
-        "ready": ready,
-    }
+    decision = readiness_decision(graph)
+    return {key: decision[key] for key in ("waiting_for_leaf", "waiting_for_owner", "ready")}
 
 
 def build_metrics(graph: Graph) -> dict[str, Any]:
@@ -1708,16 +1691,20 @@ def build_metrics(graph: Graph) -> dict[str, Any]:
     if not use_live:
         active = [leaf for leaf in graph.leaves if leaf.status == STATUS_RUNNING]
         current_peak = len({
-            (leaf.harness, leaf.session) if leaf.session else ("unknown", leaf.id)
+            owner_key(leaf) if leaf.assignment else
+            ((leaf.harness, leaf.session) if leaf.session else ("unknown", leaf.id))
             for leaf in active
         })
-    slot_limit = graph.slots or 1
+    slot_limit = graph.slots
     # The same moment read by hands instead of rows: how many distinct
     # executors actually hold work, and whether the plan is over-subscribed at
     # that level. `current_parallel` stays the leaf count it always was — the
     # report projects it and `check-plan` reads it — while the owner view is
     # named separately.
-    busy_owners = sorted({owner_key(leaf) for leaf in graph.leaves if leaf.status == STATUS_RUNNING})
+    capacity = readiness_decision(graph)
+    busy_owners = capacity["occupied_executor_keys"]
+    if not use_live and any(leaf.assignment for leaf in graph.leaves):
+        current_peak = capacity["occupied_slots"]
     waits = wait_reasons(graph)
     blocked_leaves = [leaf for leaf in graph.leaves if leaf.status == STATUS_BLOCKED]
     blocked_minutes = sum((leaf.estimate or 0.0) for leaf in blocked_leaves)
@@ -2648,6 +2635,8 @@ def _parallel_graph(module: Any, graph: Graph) -> Any:
             note=leaf.note,
             owner=leaf.owner,
             session=leaf.session,
+            harness=leaf.harness,
+            assignment=dict(leaf.assignment),
             started_at=leaf.started_at,
             finished_at=leaf.finished_at,
             wave=leaf.wave,
@@ -2659,7 +2648,7 @@ def _parallel_graph(module: Any, graph: Graph) -> Any:
         title=graph.title,
         goal=graph.goal,
         business_result=graph.business_result,
-        slots=graph.slots or None,
+        slots=graph.slots,
         updated_at=graph.updated_at,
         tasks=tasks,
     )
@@ -2672,6 +2661,7 @@ def _plan_from_summary(summary: Any, source: str) -> dict[str, Any]:
 
     def line(task: Any, **extra: Any) -> dict[str, Any]:
         data: dict[str, Any] = {
+            **summary.readiness.get(task.id, {}),
             "id": task.id,
             "label": task.label or task.id,
             "estimate": task.estimate_label,
@@ -2684,6 +2674,10 @@ def _plan_from_summary(summary: Any, source: str) -> dict[str, Any]:
         "source": source,
         "slots": summary.slots,
         "free_slots": summary.free_slots,
+        "occupied_slots": summary.occupied_slots,
+        "readiness": summary.readiness,
+        "dependency_ready": [line(task) for task in summary.dependency_ready],
+        "dispatchable": [line(task) for task in summary.dispatchable],
         "running": [line(task, since=task.started_at) for task in summary.running],
         "ready": [line(task) for task in summary.ready],
         "deferred": [line(task) for task in summary.deferred],
@@ -2747,90 +2741,31 @@ def _port_layers(tasks: dict[str, Leaf], order: list[str]) -> dict[str, int]:
 
 
 def _plan_now_port(graph: Graph) -> dict[str, Any]:
-    """The planner's answer, ported for a checkout without ``lhc_parallel``.
-
-    The rules are the planner's own: a queued line whose dependencies are all
-    done and that still fits into a free slot is ready to launch. This is a
-    port of ``lhc_parallel.analyze()``, not a second opinion about it.
-    """
-
-    tasks = {leaf.id: leaf for leaf in graph.leaves}
-    order = [leaf.id for leaf in graph.leaves]
-    layers = _port_layers(tasks, order)
-
-    running: list[Leaf] = []
-    blocked: list[tuple[Leaf, str]] = []
-    waiting: list[tuple[Leaf, list[str]]] = []
-    ready: list[Leaf] = []
-
-    for leaf in graph.leaves:
-        if leaf.status == STATUS_RUNNING:
-            running.append(leaf)
-        elif leaf.status == STATUS_BLOCKED:
-            blocked.append((leaf, _port_reason(leaf)))
-        elif leaf.status == STATUS_WAITING:
-            waiting.append((leaf, []))
-        elif leaf.status == STATUS_DEFERRED:
-            # The owner deferred this leaf: no answer is expected, so it waits
-            # for nothing and it takes no slot.
-            continue
-        elif leaf.status not in STATUSES:
-            continue
-
-    for leaf in graph.leaves:
-        if leaf.status != STATUS_QUEUED:
-            continue
-        unmet = [
-            dep for dep in leaf.depends_on
-            if dep not in tasks or tasks[dep].status != STATUS_DONE
-        ]
-        if unmet:
-            waiting.append((leaf, unmet))
-        else:
-            ready.append(leaf)
-
-    def sort_key(leaf: Leaf) -> tuple[int, int]:
-        wave = leaf.wave if leaf.wave is not None else layers.get(leaf.id, 0)
-        return (wave, leaf.order)
-
-    ready.sort(key=sort_key)
-    waiting.sort(key=lambda item: sort_key(item[0]))
-    blocked.sort(key=lambda item: sort_key(item[0]))
-
-    slots = graph.slots or None
-    free = None if slots is None else max(0, slots - len(running))
-    deferred: list[Leaf] = []
-    if free is not None:
-        deferred = ready[free:]
-        ready = ready[:free]
-
+    """Fallback rendering adapter; readiness still comes from the canonical evaluator."""
+    decision = readiness_decision(graph)
+    tasks = graph.by_id()
     labels = {leaf.id: (leaf.label or leaf.id) for leaf in graph.leaves}
 
     def line(leaf: Leaf, **extra: Any) -> dict[str, Any]:
-        data: dict[str, Any] = {
-            "id": leaf.id,
-            "label": leaf.label or leaf.id,
-            "estimate": _port_estimate(leaf),
-            "unblocks": [
-                labels.get(other.id, other.id)
-                for other in graph.leaves if leaf.id in other.depends_on
-            ],
-        }
-        data.update(extra)
-        return data
+        return {**decision["by_id"][leaf.id], "id": leaf.id, "label": leaf.label or leaf.id,
+                "estimate": _port_estimate(leaf),
+                "unblocks": [labels[other.id] for other in graph.leaves if leaf.id in other.depends_on], **extra}
 
+    waiting = [leaf.id for leaf in graph.leaves if leaf.status == STATUS_WAITING]
+    waiting += [key for key in decision["waiting_for_leaf"] + decision["waiting_for_owner"] + decision["external_waiting"]
+                if tasks[key].status == STATUS_QUEUED]
     return {
-        "source": "порядок lhc_parallel (перенос)",
-        "slots": slots,
-        "free_slots": free,
-        "running": [line(leaf, since=leaf.started_at) for leaf in running],
-        "ready": [line(leaf) for leaf in ready],
-        "deferred": [line(leaf) for leaf in deferred],
-        "blocked": [line(leaf, reason=reason) for leaf, reason in blocked],
-        "waiting": [
-            line(leaf, unmet=[labels.get(item, item) for item in unmet], unmet_ids=list(unmet))
-            for leaf, unmet in waiting
-        ],
+        "source": "canonical readiness (fallback)", "slots": graph.slots,
+        "free_slots": decision["free_slots"], "occupied_slots": decision["occupied_slots"],
+        "readiness": decision["by_id"],
+        "dependency_ready": [line(tasks[key]) for key in decision["dependency_ready"]],
+        "dispatchable": [line(tasks[key]) for key in decision["dispatchable"]],
+        "running": [line(leaf, since=leaf.started_at) for leaf in graph.leaves if leaf.status == STATUS_RUNNING],
+        "ready": [line(tasks[key]) for key in decision["ready"]],
+        "deferred": [line(tasks[key]) for key in decision["deferred"]],
+        "blocked": [line(leaf, reason=_port_reason(leaf)) for leaf in graph.leaves if leaf.status == STATUS_BLOCKED],
+        "waiting": [line(tasks[key], unmet=[labels.get(dep, dep) for dep in decision["by_id"][key]["unmet_ids"]],
+                         unmet_ids=decision["by_id"][key]["unmet_ids"]) for key in waiting],
     }
 
 
@@ -2869,6 +2804,107 @@ def escape(text: str) -> str:
     )
 
 
+def _execution_field(leaf: Any, key: str, default: Any = None) -> Any:
+    return leaf.get(key, default) if isinstance(leaf, dict) else getattr(leaf, key, default)
+
+
+def execution_ref(value: Any) -> dict[str, Any]:
+    value = value if isinstance(value, dict) else {}
+    return {key: value.get(key) or None for key in ("host_id", "harness", "session_id")}
+
+
+def execution_ref_text(value: Any) -> str:
+    ref = execution_ref(value)
+    return " · ".join(f"{key}={ref[key] or 'неизвестно'}" for key in ("host_id", "harness", "session_id"))
+
+
+def execution_view(leaf: Any, readiness: Optional[dict] = None) -> dict[str, Any]:
+    """A read-only projection: declarations, saved status and observations stay distinct."""
+    assignment = _execution_field(leaf, "assignment") or {}
+    assignment = assignment if isinstance(assignment, dict) else {}
+    runtime = assignment.get("observed_runtime") or {}
+    dispatch = assignment.get("dispatch") or {}
+    wake = assignment.get("wake") or {}
+    runtime, dispatch, wake = [value if isinstance(value, dict) else {} for value in (runtime, dispatch, wake)]
+    progress = _execution_field(leaf, "progress_events") or []
+    events = [event for event in list(progress) + list(assignment.get("events") or []) if isinstance(event, dict)]
+    def stamp(event):
+        parsed = absolute_time(str(event.get("at") or ""))
+        return parsed.timestamp() if parsed is not None else float("-inf")
+    latest = max(enumerate(events), key=lambda pair: (stamp(pair[1]), pair[0]))[1] if events else {}
+    raw_actor = latest.get("actor") if isinstance(latest.get("actor"), dict) else {}
+    actor = {**execution_ref(raw_actor), "source": raw_actor.get("source") or "unknown"}
+    blockers = []
+    for source, value in (("wake", wake), ("dispatch", dispatch), ("runtime", runtime)):
+        reason = value.get("reason_code") or value.get("reason")
+        if reason:
+            text = reason if isinstance(reason, str) else json.dumps(reason, ensure_ascii=False, sort_keys=True)
+            blockers.append(source + ": " + text[:500])
+    if _execution_field(leaf, "blocker"):
+        blockers.append("leaf: " + str(_execution_field(leaf, "blocker")))
+    return {"saved_status": _execution_field(leaf, "status", "unknown"),
+            "assignment_state": assignment.get("state"), "executor_kind": assignment.get("executor_kind"),
+            "attempt_id": assignment.get("attempt_id"), "lead": execution_ref(assignment.get("lead")),
+            "parent": execution_ref(assignment.get("parent")), "executor": execution_ref(assignment.get("executor")),
+            "actor": actor, "actor_at": latest.get("at"),
+            "legacy_binding": {"host_id": None, "harness": _execution_field(leaf, "harness") or None,
+                               "session_id": _execution_field(leaf, "session") or None},
+            "planned_model": _execution_field(leaf, "model") or _execution_field(leaf, "model_class") or None,
+            "observed_model": runtime.get("model"), "runtime": dict(runtime), "dispatch": dict(dispatch), "wake": dict(wake),
+            "blockers": blockers, "readiness": dict(readiness or {})}
+
+
+_READINESS_LABELS = {
+    "assignment_unknown": "назначение не подтверждено", "executor_unknown": "точный исполнитель неизвестен",
+    "runtime_unknown": "runtime неизвестен", "runtime_stale": "наблюдение runtime устарело",
+    "dependencies_unmet": "ждёт зависимостей", "owner_busy": "исполнитель занят",
+    "capacity_full": "нет свободного слота", "external_waiting": "внешнее ожидание",
+    "external_blocked": "записан блокер", "delivery_unknown": "исход доставки неизвестен, повтор запрещён",
+    "codex_quota_guard": "квота Codex блокирует доставку", "human_stop": "сессия остановлена человеком",
+    "owner_stop": "действует остановка владельца",
+    "dispatchable": "есть подтверждённый допуск", "not_queued": "сохранённый статус не в очереди",
+}
+
+
+def execution_reason(value: Any) -> str:
+    code = str(value or "unknown")
+    return _READINESS_LABELS.get(code, code) + (f" ({code})" if code in _READINESS_LABELS else "")
+
+
+def execution_lines(leaf: Any, readiness: Optional[dict] = None) -> list[str]:
+    view = execution_view(leaf, readiness)
+    unknown = "неизвестно"
+    runtime, dispatch, wake, admission = (view[key] for key in ("runtime", "dispatch", "wake", "readiness"))
+    allowed = {True: "да", False: "нет", None: "неизвестно"}.get(admission.get("dispatchable"), unknown)
+    rows = [
+        ("Сохранённый статус", view["saved_status"]),
+        ("Назначение", f"{view['assignment_state'] or unknown}; тип={view['executor_kind'] or unknown}; attempt={view['attempt_id'] or unknown}"),
+        ("Автор последнего события", execution_ref_text(view["actor"]) + f"; source={view['actor']['source']}; at={view['actor_at'] or unknown}"),
+        ("Lead (заявлен)", execution_ref_text(view["lead"])),
+        ("Native parent (заявлен)", execution_ref_text(view["parent"])),
+        ("Исполнитель (заявлен)", execution_ref_text(view["executor"])),
+        ("Прежняя привязка leaf.session", execution_ref_text(view["legacy_binding"])),
+        ("Плановая модель", view["planned_model"] or unknown),
+        ("Наблюдаемая модель", view["observed_model"] or unknown),
+        ("Наблюдаемый runtime", f"{runtime.get('state') or unknown}; source={runtime.get('source') or unknown}; at={runtime.get('observed_at') or unknown}"),
+        ("Turn назначения", f"{dispatch.get('turn_id') or unknown}; request={dispatch.get('request_id') or unknown}; delivery={dispatch.get('status') or unknown}"),
+        ("Наблюдаемый turn", f"{runtime.get('turn_id') or unknown}; worktree={runtime.get('worktree') or unknown}"),
+        ("Пробуждение Lead", f"{wake.get('state') or unknown}; wait={wake.get('wait_id') or unknown}; captured_turn={wake.get('captured_turn_id') or wake.get('turn_id') or unknown}; next={wake.get('next_at') or unknown}"),
+        ("Допуск к запуску", f"{allowed}; {execution_reason(admission.get('reason_code'))}"),
+        ("Незавершённые зависимости", ", ".join(admission.get("unmet_ids") or []) or "нет"),
+        ("Причина ожидания / доставки", "; ".join(view["blockers"]) or "не записана"),
+    ]
+    return [f"{label}: {value}" for label, value in rows]
+
+
+def execution_details_html(leaf: Leaf, readiness: Optional[dict] = None) -> str:
+    rows = []
+    for line in execution_lines(leaf, readiness):
+        label, value = line.split(": ", 1)
+        rows.append(f"<dt>{escape(label)}</dt><dd>{escape(value)}</dd>")
+    return '<dl class="task-details execution-evidence" data-execution-leaf="' + escape(leaf.id) + '">' + "".join(rows) + '</dl>'
+
+
 def _search_text(leaf: Leaf) -> str:
     """Everything a row can be found by.
 
@@ -2887,6 +2923,7 @@ def _search_text(leaf: Leaf) -> str:
         leaf.blocker,
         leaf.acceptance,
         leaf.description,
+        json.dumps(leaf.assignment, ensure_ascii=False, sort_keys=True),
         " ".join(leaf.affected_files),
     ]
     return " ".join(part for part in parts if part).lower()
@@ -2915,6 +2952,9 @@ def graph_revision(graph: Graph) -> str:
             leaf.actual_minutes,
             leaf.started_at,
             leaf.finished_at,
+            leaf.assignment,
+            leaf.progress_events,
+            leaf.model,
         ]
         for leaf in sorted(graph.leaves, key=lambda item: item.id)
     ]
@@ -3033,6 +3073,8 @@ def render_html(
     # The money of the plan, computed once for the whole page.
     cost = _cost_of(graph, metrics)
 
+    execution_readiness = readiness_decision(graph)["by_id"]
+
     # ----- KPI tiles ------------------------------------------------------
     # The number is the headline; the label and the hint are secondary.
     headline_total = metrics["headline_total"]
@@ -3121,9 +3163,9 @@ def render_html(
     cards = [
         ("Готово", f"{metrics['done']} / {headline_total}",
          f"{metrics['progress_pct']}% {progress_note}", STATUS_DONE, True, "done"),
-        ("В работе", str(metrics["running"]), "сейчас выполняется", STATUS_RUNNING, True, "running"),
-        ("Заблокировано", str(metrics["blocked"]), "нужен внешний ход", STATUS_BLOCKED, True, "blocked"),
-        ("В очереди", str(metrics["queued"]), "ждут своего слота", STATUS_QUEUED, True, "queued"),
+        ("В работе", str(metrics["running"]), "сохранённый статус; runtime отдельно", STATUS_RUNNING, True, "running"),
+        ("Заблокировано", str(metrics["blocked"]), "сохранённый статус blocked", STATUS_BLOCKED, True, "blocked"),
+        ("В очереди", str(metrics["queued"]), "сохранённый статус queued", STATUS_QUEUED, True, "queued"),
         ("Отложено владельцем", str(metrics["deferred"]),
          "ответа не ждём, вне остатка", STATUS_DEFERRED, True, "deferred"),
         ("Осталось", str(metrics["unfinished"]),
@@ -3308,8 +3350,23 @@ def render_html(
             + "".join(owner_rows)
             + "</div>"
         )
+    execution_holds = []
+    for leaf in leaves:
+        if leaf.status in {STATUS_DONE, STATUS_DEFERRED} or not leaf.assignment:
+            continue
+        view = execution_view(leaf, execution_readiness.get(leaf.id))
+        if view["assignment_state"] not in {"blocked", "delivery_unknown"} and view["wake"].get("state") not in {"blocked", "delivery_blocked", "delivery_unknown"}:
+            continue
+        execution_holds.append(
+            f'<div class="blocker"><b>{escape(leaf.id)} · {escape(leaf.label)}</b>'
+            f'<div class="blocker-reason">Доставка / wake: {escape("; ".join(view["blockers"]) or execution_reason(view["readiness"].get("reason_code")))}</div>'
+            f'<div class="blocker-meta">Исполнитель (заявлен): {escape(execution_ref_text(view["executor"]))}</div>'
+            '<div class="blocker-meta">Следующий шаг: сверить точные attempt/turn и записанный wake. '
+            'Не повторять UNKNOWN и не обходить STOP или квоту.</div></div>')
+    if execution_holds:
+        blocking_parts.append('<div class="blocking-group"><h3>Доставка и пробуждение Lead</h3>' + "".join(execution_holds) + '</div>')
     if not blocking_parts:
-        blocking_parts.append('<div class="empty">Ничего не блокировано и от меня ничего не нужно.</div>')
+        blocking_parts.append('<div class="empty">В плане не записаны блокеры. Наблюдаемый runtime показан отдельно.</div>')
     blocking_html = "".join(blocking_parts)
 
     # ----- the progress, always in sight ----------------------------------
@@ -3343,7 +3400,7 @@ def render_html(
     )
 
     # ----- what to do now -------------------------------------------------
-    # The launch decision is the parallel planner's: this only draws it.
+    # Candidates and confirmed admission are distinct facts from the shared evaluator.
     plan = plan_now(graph)
     slots = plan.get("slots")
     free_slots = plan.get("free_slots")
@@ -3388,10 +3445,11 @@ def render_html(
                 detail = f"{item['estimate']} · разблокирует: {shown}"
             else:
                 detail = f"{item['estimate']} · никого не разблокирует"
+            detail += " · допуск: " + execution_reason(item.get("reason_code"))
             items.append(now_item(item, detail))
         ready_html = "<ul class=\"now-list\">" + "".join(items) + "</ul>"
     else:
-        ready_html = '<div class="now-empty">Ни одна линия не готова к запуску.</div>'
+        ready_html = '<div class="now-empty">Кандидатов по зависимостям и вместимости сейчас нет.</div>'
 
     deferred_html = ""
     if plan["deferred"]:
@@ -3405,11 +3463,20 @@ def render_html(
             "<ul class=\"now-list\">" + "".join(items) + "</ul>"
         )
 
+    execution_blocked = list(plan["blocked"])
+    blocked_ids = {item["id"] for item in execution_blocked}
+    for leaf in leaves:
+        if leaf.id in blocked_ids or leaf.status in {STATUS_DONE, STATUS_DEFERRED}:
+            continue
+        view = execution_view(leaf, execution_readiness.get(leaf.id))
+        if view["assignment_state"] in {"blocked", "delivery_unknown"} or view["wake"].get("state") in {"blocked", "delivery_blocked", "delivery_unknown"}:
+            execution_blocked.append({"id": leaf.id, "label": leaf.label or leaf.id,
+                                      "reason": "; ".join(view["blockers"]) or execution_reason(view["readiness"].get("reason_code"))})
     blocked_html = ""
-    if plan["blocked"]:
+    if execution_blocked:
         blocked_html = "<ul class=\"now-list\">" + "".join(
             now_item(item, item.get("reason") or "причина не указана", "blocked")
-            for item in plan["blocked"]
+            for item in execution_blocked
         ) + "</ul>"
     else:
         blocked_html = '<div class="now-empty">Активных блокеров нет.</div>'
@@ -3423,14 +3490,14 @@ def render_html(
         chips = []
         for item in shown:
             unmet = item.get("unmet_ids") or []
-            arrow = f' ← {escape(", ".join(unmet[:2]))}' if unmet else ""
+            arrow = f' ← {escape(", ".join(unmet[:2]))}' if unmet else ": " + escape(execution_reason(item.get("reason_code")))
             chips.append(
                 f'<span class="wait-chip" title="{escape(item["label"])}">'
                 f'{escape(item["id"])}{arrow}</span>'
             )
         rest = len(plan["waiting"]) - len(shown)
         waiting_html = (
-            f'<div class="now-subtitle">Ждут зависимостей ({len(plan["waiting"])})</div>'
+            f'<div class="now-subtitle">Ждут зависимостей или условия ({len(plan["waiting"])})</div>'
             f'<div class="wait-list">{"".join(chips)}'
             + (f'<span class="wait-more">и ещё {rest} — полный список в таблице листьев</span>' if rest > 0 else "")
             + "</div>"
@@ -3446,13 +3513,16 @@ def render_html(
         f'<h3><span class="now-glyph">🔄</span> В работе <span class="now-count">'
         f'{len(plan["running"])}</span></h3>{running_html}</section>'
         '<section class="now-col">'
-        f'<h3><span class="now-glyph">🚀</span> Готовы к запуску <span class="now-count">'
+        f'<h3><span class="now-glyph">🚀</span> Кандидаты по зависимостям <span class="now-count">'
         f'{len(plan["ready"])}</span></h3>{ready_html}{deferred_html}</section>'
         '<section class="now-col">'
         f'<h3><span class="now-glyph">⛔</span> Заблокированы <span class="now-count">'
-        f'{len(plan["blocked"])}</span></h3>{blocked_html}</section>'
+        f'{len(execution_blocked)}</span></h3>{blocked_html}</section>'
         "</div>"
         f"{waiting_html}"
+        f'<p class="hint"><b>Подтверждённый допуск к запуску: {len(plan["dispatchable"])}</b>'
+        + ((" · " + escape(", ".join(item["id"] for item in plan["dispatchable"]))) if plan["dispatchable"] else "")
+        + '. Кандидат не подтверждает запуск. Неизвестный исход доставки резервирует слот до сверки квитанции.</p>'
         f'<div class="hint">Источник расчёта: {escape(plan["source"])}.</div>'
     )
 
@@ -3738,30 +3808,34 @@ def render_html(
     else:
         blocker_html = '<div class="empty">Активных блокеров нет.</div>'
 
-    # ----- sessions ------------------------------------------------------
+    # ----- sessions: saved declarations and observed runtime ----------------
     session_rows = []
     for leaf in leaves:
-        if not (leaf.owner or leaf.session or leaf.harness or leaf.model or leaf.model_class):
+        if not (leaf.owner or leaf.session or leaf.harness or leaf.model or leaf.model_class or leaf.assignment) and leaf.status in {STATUS_DONE, STATUS_DEFERRED}:
             continue
+        view = execution_view(leaf, execution_readiness.get(leaf.id))
+        runtime, wake = view["runtime"], view["wake"]
         session_rows.append(
             "<tr>"
-            f'<td><span class="dot" style="background:{STATUS_CSS_VARS[leaf.status]}"></span>'
-            f"{escape(leaf.id)}</td>"
-            f"<td>{escape(leaf.label[:70])}</td>"
-            f"<td>{escape(leaf.owner or '—')}</td>"
-            f"<td>{escape(leaf.session or '—')}</td>"
-            f"<td>{escape(leaf.harness or '—')}</td>"
-            f"<td>{escape(leaf.model or leaf.model_class or '—')}</td>"
-            f"<td>{escape(STATUS_LABELS[leaf.status])}</td>"
+            f"<td>{escape(leaf.id)} · {escape(leaf.label[:70])}"
+            "<details><summary>Маршруты, автор и квитанции</summary>"
+            + execution_details_html(leaf, execution_readiness.get(leaf.id)) + "</details></td>"
+            f"<td>Сохранённый статус: {escape(leaf.status)}<br>"
+            f"Назначение: {escape(view['assignment_state'] or 'неизвестно')}<br>"
+            f"Наблюдаемый runtime: {escape(runtime.get('state') or 'неизвестно')}</td>"
+            f"<td>Исполнитель (заявлен): {escape(execution_ref_text(view['executor']))}</td>"
+            f"<td>Плановая модель: {escape(view['planned_model'] or 'неизвестно')}<br>"
+            f"Наблюдаемая модель: {escape(view['observed_model'] or 'неизвестно')}</td>"
+            f"<td>Пробуждение Lead: {escape(wake.get('state') or 'неизвестно')}<br>"
+            f"Следующее: {escape(wake.get('next_at') or 'неизвестно')}<br>"
+            f"{escape('; '.join(view['blockers']) or execution_reason(view['readiness'].get('reason_code')))}</td>"
             "</tr>"
         )
     sessions_html = (
-        "<div class='table-scroll'><table class='table'><thead><tr><th>ID</th><th>Лист</th><th>Владелец</th>"
-        "<th>Сессия</th><th>Harness</th><th>Модель</th><th>Статус</th></tr></thead><tbody>"
-        + "".join(session_rows)
-        + "</tbody></table></div>"
-        if session_rows
-        else '<div class="empty">Владельцы и сессии в графе не указаны.</div>'
+        "<div class='table-scroll'><table class='table'><thead><tr><th>Лист и точные маршруты</th>"
+        "<th>План / назначение / runtime</th><th>Исполнитель</th><th>Модель: план / наблюдение</th><th>Wake / причина</th>"
+        "</tr></thead><tbody>" + "".join(session_rows) + "</tbody></table></div>"
+        if session_rows else '<div class="empty">Назначения и native runtime не записаны.</div>'
     )
 
     # ----- leaves table --------------------------------------------------
@@ -3892,10 +3966,10 @@ def render_html(
                 + "</dd>"
                 if human_action else ""
             )
-            + f"<dt>Сессия</dt><dd>{escape(leaf.session or '—')}</dd>"
-            + (f"<dt>Модель</dt><dd>{escape(model)}</dd>" if model else "")
+            + f"<dt>Записанная leaf.session</dt><dd>{escape(leaf.session or 'неизвестно')}</dd>"
+            + (f"<dt>Плановая модель</dt><dd>{escape(model)}</dd>" if model else "")
             + money_dd
-            + (f"<dt>Рантайм</dt><dd>{escape(leaf.harness)}</dd>" if leaf.harness else "")
+            + (f"<dt>Записанный harness</dt><dd>{escape(leaf.harness)}</dd>" if leaf.harness else "")
             + f"<dt>Усилие (суммарно)</dt><dd>{escape(actual)}</dd>"
             f"<dt>Длительность по часам</dt><dd>{escape(span)}</dd>"
             + (
@@ -3947,7 +4021,7 @@ def render_html(
             f"<template id='task-details-template-{details_index}'><div class='task-details-card'>"
             f"<div class='task-details-head'><h3>{escape(leaf.label)}</h3>"
             "<button type='button' class='task-details-close'>Закрыть</button></div>"
-            f"{details}<div class='leaf-compare'><!--leaf-compare:{escape(leaf.id)}--></div></div></template>"
+            f"{details}{execution_details_html(leaf, execution_readiness.get(leaf.id))}<div class='leaf-compare'><!--leaf-compare:{escape(leaf.id)}--></div></div></template>"
         )
         # The row itself opens the task: the owner taps the task, not a
         # button that sits at the far end of the row. The meta line names who
@@ -3956,9 +4030,15 @@ def render_html(
         if leaf.owner:
             meta_parts.append(f"владелец: {leaf.owner}")
         if leaf.session:
-            meta_parts.append(f"сессия: {leaf.session}")
+            meta_parts.append(f"записанная привязка: {leaf.session}" if leaf.assignment else f"сессия: {leaf.session}")
         if leaf.model or leaf.model_class:
-            meta_parts.append(f"модель: {leaf.model or leaf.model_class}")
+            meta_parts.append(f"плановая модель: {leaf.model or leaf.model_class}")
+        view = execution_view(leaf, execution_readiness.get(leaf.id))
+        if leaf.assignment:
+            meta_parts.append("назначение: " + str(view["assignment_state"] or "неизвестно"))
+            meta_parts.append("исполнитель (заявлен): " + execution_ref_text(view["executor"]))
+            meta_parts.append("runtime: " + str(view["runtime"].get("state") or "неизвестно"))
+            meta_parts.append("допуск: " + execution_reason(view["readiness"].get("reason_code")))
         # The cost of one leaf belongs on the row: the owner decides to
         # dispatch from this line, not from a page they have to open first.
         entry = cost["leaves"].get(leaf.id, {})
@@ -5397,6 +5477,7 @@ def render_leaf_lines(graph: Graph, metrics: dict[str, Any]) -> list[str]:
     schedule = metrics.get("schedule")
     waves = getattr(schedule, "waves", None) or {}
     cost = _cost_of(graph, metrics)
+    admission = readiness_decision(graph)["by_id"]
     lines = [f"Листья плана ({len(graph.leaves)}):"]
     for leaf in graph.leaves:
         wave = leaf.wave if leaf.wave is not None else waves.get(leaf.id, 0) + 1
@@ -5451,6 +5532,8 @@ def render_leaf_lines(graph: Graph, metrics: dict[str, Any]) -> list[str]:
         # leaf was readable only inside the leaf file.
         if leaf.result:
             lines.append(f"      Результат: {leaf.result}")
+        if leaf.assignment or leaf.status not in {STATUS_DONE, STATUS_DEFERRED}:
+            lines.extend("      " + line for line in execution_lines(leaf, admission.get(leaf.id)))
     return lines
 
 
@@ -5504,6 +5587,9 @@ def render_text(graph: Graph, metrics: dict[str, Any]) -> str:
             left=metrics["unfinished"],
         )
     )
+    decision = readiness_decision(graph)
+    lines.append("Кандидаты по зависимостям и вместимости: " + (", ".join(decision["ready"]) or "нет"))
+    lines.append("Подтверждённый допуск к запуску: " + (", ".join(decision["dispatchable"]) or "нет"))
     # The money of the plan, next to its shape: what one leaf costs, what the
     # whole plan costs, and how much of the dollars go to the frontier class.
     lines.extend(cost_lines(_cost_of(graph, metrics)))
@@ -5650,6 +5736,12 @@ def export_graph(graph: Graph) -> dict[str, Any]:
             task["finished_at"] = leaf.finished_at
         if leaf.owner:
             task["owner"] = leaf.owner
+        if leaf.assignment:
+            task["assignment"] = leaf.assignment
+        if leaf.assignment_history:
+            task["assignment_history"] = leaf.assignment_history
+        if leaf.progress_events:
+            task["progress_events"] = leaf.progress_events
         if leaf.session:
             task["session"] = leaf.session
         if leaf.harness:

@@ -9,7 +9,8 @@ The plan is what you will do and, as you go, what you have done. After a compact
 you reads it to know where you are, so every finished leaf says what works and where.
 Work with the plan only through the LhcPlan MCP: `create_leaf`, `update_leaf`, `update_progress`,
 `activate_leaf`, `update_plan` (plan fields, revisions), `show_plan` (refresh the bound context),
-`worker_register`, `worker_finish`. Every answer ends with the state of the plan; every refusal
+`worker_register`, `worker_finish`, and the explicit execution operations `assign_leaf`,
+`dispatch_leaf`, `reconcile_leaf`, `accept_leaf`. Every answer ends with the state of the plan; every refusal
 says what to do. Without the MCP use the same commands of `lhc_plan_json.py`. Never edit plan
 files by hand. After restart or compaction, use the bound plan snapshot supplied by the
 hook; if that snapshot is absent or needs refreshing, call `show_plan`. Never choose a
@@ -74,12 +75,50 @@ Every «needs checking» in `recon` becomes a research leaf with its question.
   run directory on shared stands; register it with `worker_register` before it starts. Close
   its leaf with `worker_finish`: it merges the branch into the task branch and removes the
   worktree, the branch and the run directory. A Worker that is not merged and removed is not
-  finished. L keeps the critical path and the joins.
+  finished. Registration proves a worktree exists, not that a remote native turn started.
+  For an explicit session assignment, use the execution flow below. L keeps the critical
+  path and the joins.
+
+### Explicit execution and automatic continuation
+
+- Record an explicit assignment attempt with `assign_leaf`: executor kind, exact
+  lead/executor refs (host, harness, native session), and a distinct parent ref for a
+  subagent. A leaf owner label, legacy session field or relayed message is not accepted
+  dispatch. Unknown historical provenance stays unknown.
+- Use `dispatch_leaf` with the attempt ID and the scoped task message. Its canonical
+  path refreshes native availability, checks the unified dependencies/capacity/runtime
+  evaluator, and saves dispatch intent atomically before calling the existing Herder.
+  Missing evidence, STOP, quota, an occupied executor or an unmet dependency is a reason
+  to work on another available leaf, never permission to bypass admission.
+- A confirmed submission is `submitted`. Only fresh observation of the exact correlated
+  native turn proves `running`. The command also arms the existing Herder `resume_after`
+  for that turn and the Lead. Read the returned wake state; a tool success alone does
+  not prove the Lead will resume. No polling loop or second scheduler is needed.
+- On the wake, reread the latest user goal and the canonical plan/leaf/attempt named in
+  the wake. Read the result, integrate it, and perform the required acceptance. Then
+  use `accept_leaf` with the proven result, or `worker_finish` for a registered worker.
+  Reread unified readiness and dispatch the next available work immediately; a wave is
+  a group of available assignments, not a barrier across unrelated leaves.
+- `reconcile_leaf` reads native execution and wait receipts without sending a task.
+  Completion becomes `result_ready`, including failed/cancelled outcomes for inspection;
+  it does not itself mean accepted or done. UNKNOWN delivery is never automatically
+  resubmitted. An uncertain wake registration is checked by its exact existing Herder
+  wait ID; no replacement timer is created. A rejected or unverified wake remains visible
+  with its reason.
+- A self assignment sends nothing to itself. The current local singleton cannot create a
+  cross-host dependency join through this bridge; it returns the explicit unsupported
+  reason. Native quota, holds, approvals and scope intake remain Herder/harness decisions.
+
+Concrete CLI/MCP examples and isolated consumer setup:
+`protocols/ORCHESTRATION_RECORDS.md` and `protocols/EXECUTION_CONSUMER.md`.
 
 ## 6. Done means written down
 
-Close a finished leaf at once: `status: done` and a `result` that says what works; where:
-files, commit, receipt; not proven: … This line is what the next you reads after a compaction.
+Close an accepted leaf at once, with a `result` that says what works, where the files,
+commit and receipts are, and what remains unproven. For explicit assignments, native
+completion first becomes `result_ready`; use `accept_leaf` after checking the result,
+or `worker_finish` for the registered integration/cleanup flow. Legacy self-work keeps
+its existing saved-status workflow. This record is what the next you reads after a compaction.
 A change of route goes into `update_plan` as a revision `{reason, summary}`.
 
 ## /plan

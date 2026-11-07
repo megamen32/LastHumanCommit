@@ -117,6 +117,10 @@ COPIES: tuple[tuple[str, str, tuple[tuple[bytes, bytes], ...]], ...] = (
 # The protocol, the template and the tool copies are projected the same way:
 # the source text with the path of the package.
 TOOL_COPIES = (
+    "lhc_assignment.py",
+    "lhc_readiness.py",
+    "lhc_execution.py",
+    "lhc_execution_transport.py",
     "lhc_bug_register.py",
     "lhc_grid.py",
     "lhc_product.py",
