@@ -133,7 +133,10 @@ If the current goal remains unaccepted with no executable work, record an explic
 external dependency with its resume condition, or an already observed human stop.
 Include evidence, action, owner and uncertainty. The existing native store and
 binding lock remain authoritative; no second plan ID, scheduler or automatic
-redispatch is introduced. STOP, quota and UNKNOWN/no-replay controls still apply.
+redispatch is introduced. STOP, quota and UNKNOWN verify-before-retry controls
+still apply: check the actual outcome (receipt, readback or target-state read)
+before any retry; a confirmed missing effect allows a corrected retry with a
+fresh attempt identity, and a confirmed delivered effect is never duplicated.
 
 ## 6. Done means written down
 

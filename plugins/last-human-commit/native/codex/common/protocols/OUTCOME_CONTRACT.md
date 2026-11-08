@@ -351,8 +351,11 @@ The optional outcome record remains useful for scope, owner, canary, clocks,
 stages and honest complete/pending/running/blocked/human-stopped status. It does
 not create authority or permission. A status question cannot erase confirmed
 repair obligations. Keep HumanStop, revocation, unauthorized actions, and accepted
-or UNKNOWN external operations protected. Never replay an accepted or uncertain
-send, purchase, deployment, or other external action to refresh evidence.
+or UNKNOWN external operations protected. Before any retry verify the actual
+outcome: receipt, message readback or target-state read. A verified absence of
+effect allows one corrected retry with a fresh attempt identity; a confirmed
+delivered effect is never replayed, and no retry happens merely to refresh
+evidence.
 
 ## Stop and questions
 

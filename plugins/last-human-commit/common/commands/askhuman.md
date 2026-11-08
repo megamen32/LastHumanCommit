@@ -52,7 +52,9 @@ blocks the accepted canary (use live declared methods, not guessed capabilities)
    use the native MCP path when HTTP provenance cannot be established.
 4. Check actual `sent` provider receipt. Created, queued, not_configured and
    uncertain are not delivery. On an accepted/UNKNOWN attempt query the existing
-   request/result; never repeat the side effect or create a replacement session.
+   request/result; if it confirms the question was never delivered, one corrected
+   retry with the same request_id and Idempotency-Key is allowed; never duplicate
+   a confirmed delivered question or create a replacement session.
 5. Delivery receipt != answer. Existing canonical `noticeplace_question_result`
    by the same request_id (GET `/v1/human-requests/{id}/result`) supplies the answer;
    existing stop-aware Herder continuation resumes the exact native session once.

@@ -111,7 +111,9 @@ Use decision `continue` with `--action-kind leaf --leaf-id <existing-ready-id>`,
 or `wait_external` with `--resume-condition '<observable resumption condition>'`.
 A work decision selects execution; writing the record does not perform the work.
 A human-stop record requires an existing structured native stop or refusal, and
-cannot create authority to stop. Unknown delivery is reconciled, never replayed.
+cannot create authority to stop. Unknown delivery is reconciled first; after a
+verified absence of effect a corrected retry is allowed, and a confirmed
+delivered effect is never replayed.
 
 A missing binding can be repaired by `bind-plan --plan-dir <canonical-plan>`;
 `replace-plan --plan-dir <old> --replacement-plan-dir <new> --source-ref <evidence>`

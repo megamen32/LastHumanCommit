@@ -864,7 +864,7 @@ for name, extra, required, description in (
     ("assign_leaf", {"assignment": {"type": "object"}}, ["assignment"],
      "Declare an explicit Assignment v1. This does not submit or start native work."),
     ("dispatch_leaf", {"message": {"type": "string"}}, ["attempt_id", "message"],
-     "Refresh exact runtime then atomically admit and submit once through Herder. UNKNOWN is never replayed."),
+     "Refresh exact runtime then atomically admit and submit once through Herder. UNKNOWN is never replayed automatically; after a verified absence of effect a corrected retry with a fresh attempt identity is allowed."),
     ("reconcile_leaf", {}, ["attempt_id"],
      "Refresh the exact attempt's native observation and wake without replaying delivery."),
     ("accept_leaf", {"result": {"type": "string"}}, ["attempt_id", "result"],

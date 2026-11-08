@@ -282,7 +282,10 @@ is queried by the deterministic wait ID of the existing Herder request; it is
 never resubmitted to create another timer. A status receipt must match the wait,
 Lead, executor and captured turn before it can update this assignment. A quota
 or permission refusal stays blocked. An UNKNOWN delivery is never automatically
-replayed, even after restart or compaction.
+replayed, even after restart or compaction. A manual retry is allowed only after
+the actual outcome is verified (receipt, native readback or target-state read)
+and shows no delivered effect; the retry uses a fresh attempt identity and
+records that verification.
 
 ### Adopting a legacy plan
 
