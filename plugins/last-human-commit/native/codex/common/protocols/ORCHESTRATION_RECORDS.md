@@ -245,10 +245,15 @@ unrelated wave.
 A missing, rejected or ambiguous continuation is visible in `wake.state` and
 `wake.reason`. Use `reconcile_leaf` for a read-only check. An uncertain registration
 is queried by the deterministic wait ID of the existing Herder request; it is
-never resubmitted to create another timer. A status receipt must match the wait,
+reconciled before a new registration is considered; duplicate active timers are
+not created. A status receipt must match the wait,
 Lead, executor and captured turn before it can update this assignment. A quota
-or permission refusal stays blocked. An UNKNOWN delivery is never automatically
-replayed, even after restart or compaction.
+or permission refusal stays blocked. For UNKNOWN delivery, inspect the original
+receipt, message or target state.
+Use confirmed delivery; after confirmed absence of effect, a corrected authorized
+attempt is allowed with linked history. If still uncertain, investigate that
+operation and continue independent work. Restart or compaction does not replace
+this outcome check.
 
 ### Adopting a legacy plan
 

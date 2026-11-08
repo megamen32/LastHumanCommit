@@ -101,9 +101,13 @@ Every «needs checking» in `recon` becomes a research leaf with its question.
   a group of available assignments, not a barrier across unrelated leaves.
 - `reconcile_leaf` reads native execution and wait receipts without sending a task.
   Completion becomes `result_ready`, including failed/cancelled outcomes for inspection;
-  it does not itself mean accepted or done. UNKNOWN delivery is never automatically
-  resubmitted. An uncertain wake registration is checked by its exact existing Herder
-  wait ID; no replacement timer is created. A rejected or unverified wake remains visible
+  it does not itself mean accepted or done. For UNKNOWN delivery, verify the actual
+  receipt, message or target state. Confirmed delivery is used without duplication;
+  confirmed absence permits a corrected authorized attempt with linked history.
+  An unresolved outcome holds only that operation, not independent tests or recovery.
+  Check uncertain wake registration by its existing Herder wait ID before deciding
+  whether any new registration is needed; never create duplicate active timers.
+  A rejected or unverified wake remains visible
   with its reason.
 - A self assignment sends nothing to itself. The current local singleton cannot create a
   cross-host dependency join through this bridge; it returns the explicit unsupported

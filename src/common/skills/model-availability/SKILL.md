@@ -50,8 +50,10 @@ the allowed tiers.
 
 Do not silently substitute OmniRoute, PAYG, a cheaper model, a credit pack or an
 unapproved fallback. Set explicit route/fallback policy in the existing dispatch.
-Preserve native session/job IDs; inspect an accepted or UNKNOWN outcome instead of
-launching another job. HumanStop, permission and auth boundaries still apply.
+Preserve native session/job IDs and verify an accepted or UNKNOWN outcome using
+the original job and target state. Use a confirmed result; confirmed absence of
+effect permits a corrected authorized attempt. An unresolved outcome holds only
+that job, not independent work. HumanStop, permission and auth boundaries still apply.
 
 ## Read the right pool and units
 

@@ -303,9 +303,12 @@ requirements, and unknown evidence honestly.
 The optional outcome record remains useful for scope, owner, canary, clocks,
 stages and honest complete/pending/running/blocked/human-stopped status. It does
 not create authority or permission. A status question cannot erase confirmed
-repair obligations. Keep HumanStop, revocation, unauthorized actions, and accepted
-or UNKNOWN external operations protected. Never replay an accepted or uncertain
-send, purchase, deployment, or other external action to refresh evidence.
+repair obligations. Keep HumanStop, revocation and authorization boundaries.
+For accepted or UNKNOWN external work, verify the original receipt and actual
+target state. Use confirmed effects; confirmed absence permits a corrected
+authorized attempt with linked history. An unresolved outcome holds only that
+operation, not independent tests or recovery. Do not cause external effects
+merely to refresh evidence timestamps.
 
 ## Stop and questions
 

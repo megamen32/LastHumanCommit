@@ -145,8 +145,11 @@ satisfy that dependency. Alternatively, let the fixture return a
 
 The test fixture's own focused tests cover ambiguous dispatch, unknown wake
 registration, a foreign wait receipt and exact-turn mismatch. A consumer may
-repeat one of these using its own fresh plan. Never reset or resend an UNKNOWN
-attempt to make the demonstration pass.
+repeat one of these using its own fresh plan. For an UNKNOWN attempt, inspect
+its receipt and actual target state. Confirmed absence of effect permits a
+corrected authorized attempt with linked history; a confirmed effect is used
+without duplication. Preserve the original evidence. Unresolved outcomes do not
+block independent isolated test cases or recovery.
 
 ## Evidence and release impact
 
