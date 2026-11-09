@@ -1,0 +1,135 @@
+(Linux uses --headless by default. To override, use --headed / --gui. For Xvfb mode instead, use --xvfb. Or you can hide this info by using --headless / --headless2 / --uc.)
+FFFFFFFF                                                                 [100%]
+=================================== FAILURES ===================================
+_________________ test_incomplete_brief_cannot_dispatch[brief] _________________
+
+plan = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/pytest-996865-177e41543377d862/test_incomplete_brief_cannot_d0')
+missing = 'brief'
+
+    @pytest.mark.parametrize("missing", ["brief", "description", "acceptance", "read_paths", "write_paths", "excluded_scope", "next_action"])
+    def test_incomplete_brief_cannot_dispatch(plan, missing):
+        if missing != "brief":
+            brief = chr(10).join(line for line in BRIEF.splitlines() if not line.startswith(missing + ":"))
+            (plan / "briefs/L1.md").write_text(brief)
+        transport = Transport()
+>       with pytest.raises(ValueError, match="brief"):
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+tests/test_execution_handoff.py:72: Failed
+______________ test_incomplete_brief_cannot_dispatch[description] ______________
+
+plan = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/pytest-996865-177e41543377d862/test_incomplete_brief_cannot_d1')
+missing = 'description'
+
+    @pytest.mark.parametrize("missing", ["brief", "description", "acceptance", "read_paths", "write_paths", "excluded_scope", "next_action"])
+    def test_incomplete_brief_cannot_dispatch(plan, missing):
+        if missing != "brief":
+            brief = chr(10).join(line for line in BRIEF.splitlines() if not line.startswith(missing + ":"))
+            (plan / "briefs/L1.md").write_text(brief)
+        transport = Transport()
+>       with pytest.raises(ValueError, match="brief"):
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+tests/test_execution_handoff.py:72: Failed
+______________ test_incomplete_brief_cannot_dispatch[acceptance] _______________
+
+plan = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/pytest-996865-177e41543377d862/test_incomplete_brief_cannot_d2')
+missing = 'acceptance'
+
+    @pytest.mark.parametrize("missing", ["brief", "description", "acceptance", "read_paths", "write_paths", "excluded_scope", "next_action"])
+    def test_incomplete_brief_cannot_dispatch(plan, missing):
+        if missing != "brief":
+            brief = chr(10).join(line for line in BRIEF.splitlines() if not line.startswith(missing + ":"))
+            (plan / "briefs/L1.md").write_text(brief)
+        transport = Transport()
+>       with pytest.raises(ValueError, match="brief"):
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+tests/test_execution_handoff.py:72: Failed
+______________ test_incomplete_brief_cannot_dispatch[read_paths] _______________
+
+plan = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/pytest-996865-177e41543377d862/test_incomplete_brief_cannot_d3')
+missing = 'read_paths'
+
+    @pytest.mark.parametrize("missing", ["brief", "description", "acceptance", "read_paths", "write_paths", "excluded_scope", "next_action"])
+    def test_incomplete_brief_cannot_dispatch(plan, missing):
+        if missing != "brief":
+            brief = chr(10).join(line for line in BRIEF.splitlines() if not line.startswith(missing + ":"))
+            (plan / "briefs/L1.md").write_text(brief)
+        transport = Transport()
+>       with pytest.raises(ValueError, match="brief"):
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+tests/test_execution_handoff.py:72: Failed
+______________ test_incomplete_brief_cannot_dispatch[write_paths] ______________
+
+plan = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/pytest-996865-177e41543377d862/test_incomplete_brief_cannot_d4')
+missing = 'write_paths'
+
+    @pytest.mark.parametrize("missing", ["brief", "description", "acceptance", "read_paths", "write_paths", "excluded_scope", "next_action"])
+    def test_incomplete_brief_cannot_dispatch(plan, missing):
+        if missing != "brief":
+            brief = chr(10).join(line for line in BRIEF.splitlines() if not line.startswith(missing + ":"))
+            (plan / "briefs/L1.md").write_text(brief)
+        transport = Transport()
+>       with pytest.raises(ValueError, match="brief"):
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+tests/test_execution_handoff.py:72: Failed
+____________ test_incomplete_brief_cannot_dispatch[excluded_scope] _____________
+
+plan = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/pytest-996865-177e41543377d862/test_incomplete_brief_cannot_d5')
+missing = 'excluded_scope'
+
+    @pytest.mark.parametrize("missing", ["brief", "description", "acceptance", "read_paths", "write_paths", "excluded_scope", "next_action"])
+    def test_incomplete_brief_cannot_dispatch(plan, missing):
+        if missing != "brief":
+            brief = chr(10).join(line for line in BRIEF.splitlines() if not line.startswith(missing + ":"))
+            (plan / "briefs/L1.md").write_text(brief)
+        transport = Transport()
+>       with pytest.raises(ValueError, match="brief"):
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+tests/test_execution_handoff.py:72: Failed
+______________ test_incomplete_brief_cannot_dispatch[next_action] ______________
+
+plan = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/pytest-996865-177e41543377d862/test_incomplete_brief_cannot_d6')
+missing = 'next_action'
+
+    @pytest.mark.parametrize("missing", ["brief", "description", "acceptance", "read_paths", "write_paths", "excluded_scope", "next_action"])
+    def test_incomplete_brief_cannot_dispatch(plan, missing):
+        if missing != "brief":
+            brief = chr(10).join(line for line in BRIEF.splitlines() if not line.startswith(missing + ":"))
+            (plan / "briefs/L1.md").write_text(brief)
+        transport = Transport()
+>       with pytest.raises(ValueError, match="brief"):
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+tests/test_execution_handoff.py:72: Failed
+_______ test_exact_packet_is_saved_and_delivered_without_public_payload ________
+
+plan = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/pytest-996865-177e41543377d862/test_exact_packet_is_saved_and0')
+
+    def test_exact_packet_is_saved_and_delivered_without_public_payload(plan):
+        (plan / "briefs/L1.md").write_text(BRIEF)
+        transport = Transport()
+        result = ex.dispatch_leaf(plan, "L1", "attempt", "private caller input: 934-xyz", transport=transport)
+        assert len(transport.sent) == 1
+        message = transport.sent[0]["message"]
+>       assert str(plan.resolve()) in message and "leaf: L1" in message and "attempt: attempt" in message
+E       AssertionError: assert ('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/pytest-996865-177e41543377d862/test_exact_packet_is_saved_and0' in 'private caller input: 934-xyz')
+E        +  where '/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/pytest-996865-177e41543377d862/test_exact_packet_is_saved_and0' = str(PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/pytest-996865-177e41543377d862/test_exact_packet_is_saved_and0'))
+E        +    where PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/pytest-996865-177e41543377d862/test_exact_packet_is_saved_and0') = resolve()
+E        +      where resolve = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/pytest-996865-177e41543377d862/test_exact_packet_is_saved_and0').resolve
+
+tests/test_execution_handoff.py:83: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_execution_handoff.py::test_incomplete_brief_cannot_dispatch[brief]
+FAILED tests/test_execution_handoff.py::test_incomplete_brief_cannot_dispatch[description]
+FAILED tests/test_execution_handoff.py::test_incomplete_brief_cannot_dispatch[acceptance]
+FAILED tests/test_execution_handoff.py::test_incomplete_brief_cannot_dispatch[read_paths]
+FAILED tests/test_execution_handoff.py::test_incomplete_brief_cannot_dispatch[write_paths]
+FAILED tests/test_execution_handoff.py::test_incomplete_brief_cannot_dispatch[excluded_scope]
+FAILED tests/test_execution_handoff.py::test_incomplete_brief_cannot_dispatch[next_action]
+FAILED tests/test_execution_handoff.py::test_exact_packet_is_saved_and_delivered_without_public_payload
+8 failed in 0.51s

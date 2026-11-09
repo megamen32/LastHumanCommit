@@ -1,0 +1,339 @@
+warning: AGENTS.md has 295 lines; the soft limit is 250 - trim before adding more
+parity: PASS (23 skills)
+plugin validation: PASS skills=23 canonical=PASS (23) parity=PASS (23 skills)
+........................................................................ [  6%]
+...............................................s........................ [ 12%]
+........................................................................ [ 19%]
+........................................................................ [ 25%]
+........................................................................ [ 32%]
+........................................................................ [ 38%]
+........................................................................ [ 45%]
+.........................................F.............................. [ 51%]
+...................................................................FFFF. [ 58%]
+.........................................ss............................. [ 64%]
+...........Fs........................................................... [ 71%]
+....................................s.........F......................... [ 77%]
+........s.................s............................................. [ 84%]
+.....................................................FF................. [ 90%]
+........................................................................ [ 97%]
+...............................                                          [100%]
+=================================== FAILURES ===================================
+___ test_active_summaries_refresh_each_minute_inactive_only_on_source_event ____
+
+tmp_path = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/pytest-2511226-fabbec2bb4c1c42c/test_active_summaries_refresh_0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x72c03419e8c0>
+
+    def test_active_summaries_refresh_each_minute_inactive_only_on_source_event(tmp_path, monkeypatch):
+        service = indexed(tmp_path, 2)
+        path = service.data / 'id0.json'
+        value = mirror.read(path)
+        value['snapshot']['document']['tasks'][0]['status'] = 'done'
+        path.write_text(json.dumps(value))
+        tick, calls = [0.0], []
+        original = mirror.catalog.summarize
+        monkeypatch.setattr(mirror.time, 'monotonic', lambda: tick[0])
+        def summarize(entry, now):
+            calls.append(entry['snapshot']['identity'])
+            return original(entry, now)
+        monkeypatch.setattr(mirror.catalog, 'summarize', summarize)
+        first = service.dashboard()
+        assert calls.count('id0') == calls.count('id1') == 1
+        tick[0] = 59.9
+        assert service.dashboard() == first
+        assert len(calls) == 2
+        tick[0] = 60.0
+        service.dashboard()
+>       assert calls.count('id0') == 1
+E       AssertionError: assert 2 == 1
+E        +  where 2 = <built-in method count of list object at 0x72c0342e9500>('id0')
+E        +    where <built-in method count of list object at 0x72c0342e9500> = ['id1', 'id0', 'id1', 'id0'].count
+
+tests/test_mirror_server_events.py:141: AssertionError
+_ test_stop_hook_prints_the_block_decision_like_the_git_guard[plugins/last-human-commit/tools/lhc_entry.py] _
+
+entry_path = 'plugins/last-human-commit/tools/lhc_entry.py'
+tmp_path = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/pytest-2511226-fabbec2bb4c1c42c/test_stop_hook_prints_the_bloc0')
+
+    @pytest.mark.parametrize("entry_path", ENTRIES)
+    def test_stop_hook_prints_the_block_decision_like_the_git_guard(entry_path, tmp_path):
+        repo, plan = make_plan(tmp_path)
+        env = {"XDG_STATE_HOME": str(tmp_path / "state")}
+        ack.write_state(plan, {"since": time.time() - 2 * HALF_HOUR})
+        event = {"cwd": str(repo), "session_id": "s1"}
+        done = run_entry(entry_path, ("Stop", "--stop-gate"), event, env, tmp_path)
+>       out = json.loads(done.stdout)
+
+tests/test_overseer_hook.py:129: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/lib/python3.10/json/__init__.py:346: in loads
+    return _default_decoder.decode(s)
+/usr/lib/python3.10/json/decoder.py:337: in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <json.decoder.JSONDecoder object at 0x72c03662c130>, s = '', idx = 0
+
+    def raw_decode(self, s, idx=0):
+        """Decode a JSON document from ``s`` (a ``str`` beginning with
+        a JSON document) and return a 2-tuple of the Python
+        representation and the index in ``s`` where the document ended.
+    
+        This can be used to decode a JSON document from a string that may
+        have extraneous data at the end.
+    
+        """
+        try:
+            obj, end = self.scan_once(s, idx)
+        except StopIteration as err:
+>           raise JSONDecodeError("Expecting value", s, err.value) from None
+E           json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+
+/usr/lib/python3.10/json/decoder.py:355: JSONDecodeError
+_ test_stop_hook_prints_the_block_decision_like_the_git_guard[plugins/last-human-commit/native/codex/tools/lhc_entry.py] _
+
+entry_path = 'plugins/last-human-commit/native/codex/tools/lhc_entry.py'
+tmp_path = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/pytest-2511226-fabbec2bb4c1c42c/test_stop_hook_prints_the_bloc1')
+
+    @pytest.mark.parametrize("entry_path", ENTRIES)
+    def test_stop_hook_prints_the_block_decision_like_the_git_guard(entry_path, tmp_path):
+        repo, plan = make_plan(tmp_path)
+        env = {"XDG_STATE_HOME": str(tmp_path / "state")}
+        ack.write_state(plan, {"since": time.time() - 2 * HALF_HOUR})
+        event = {"cwd": str(repo), "session_id": "s1"}
+        done = run_entry(entry_path, ("Stop", "--stop-gate"), event, env, tmp_path)
+>       out = json.loads(done.stdout)
+
+tests/test_overseer_hook.py:129: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/lib/python3.10/json/__init__.py:346: in loads
+    return _default_decoder.decode(s)
+/usr/lib/python3.10/json/decoder.py:337: in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <json.decoder.JSONDecoder object at 0x72c03662c130>, s = '', idx = 0
+
+    def raw_decode(self, s, idx=0):
+        """Decode a JSON document from ``s`` (a ``str`` beginning with
+        a JSON document) and return a 2-tuple of the Python
+        representation and the index in ``s`` where the document ended.
+    
+        This can be used to decode a JSON document from a string that may
+        have extraneous data at the end.
+    
+        """
+        try:
+            obj, end = self.scan_once(s, idx)
+        except StopIteration as err:
+>           raise JSONDecodeError("Expecting value", s, err.value) from None
+E           json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+
+/usr/lib/python3.10/json/decoder.py:355: JSONDecodeError
+_ test_post_tool_use_hook_adds_the_reminder_to_the_context[plugins/last-human-commit/tools/lhc_entry.py] _
+
+entry_path = 'plugins/last-human-commit/tools/lhc_entry.py'
+tmp_path = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/pytest-2511226-fabbec2bb4c1c42c/test_post_tool_use_hook_adds_t0')
+
+    @pytest.mark.parametrize("entry_path", ENTRIES)
+    def test_post_tool_use_hook_adds_the_reminder_to_the_context(entry_path, tmp_path):
+        repo, plan = make_plan(tmp_path)
+        env = {"XDG_STATE_HOME": str(tmp_path / "state")}
+        ack.write_state(plan, {"since": time.time() - 2 * HALF_HOUR})
+        done = run_entry(entry_path, ("PostToolUse", "--heartbeat-only"),
+                         {"cwd": str(repo), "session_id": "s1", "tool_name": "Bash"}, env, tmp_path)
+        contexts = [json.loads(line)["hookSpecificOutput"]["additionalContext"] for line in done.stdout.splitlines()
+                    if line.startswith("{") and "hookSpecificOutput" in line]
+>       assert any("Overseer review" in c for c in contexts), (done.stdout, done.stderr)
+E       AssertionError: ('', '')
+E       assert False
+E        +  where False = any(<generator object test_post_tool_use_hook_adds_the_reminder_to_the_context.<locals>.<genexpr> at 0x72c0340b1770>)
+
+tests/test_overseer_hook.py:146: AssertionError
+_ test_post_tool_use_hook_adds_the_reminder_to_the_context[plugins/last-human-commit/native/codex/tools/lhc_entry.py] _
+
+entry_path = 'plugins/last-human-commit/native/codex/tools/lhc_entry.py'
+tmp_path = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/pytest-2511226-fabbec2bb4c1c42c/test_post_tool_use_hook_adds_t1')
+
+    @pytest.mark.parametrize("entry_path", ENTRIES)
+    def test_post_tool_use_hook_adds_the_reminder_to_the_context(entry_path, tmp_path):
+        repo, plan = make_plan(tmp_path)
+        env = {"XDG_STATE_HOME": str(tmp_path / "state")}
+        ack.write_state(plan, {"since": time.time() - 2 * HALF_HOUR})
+        done = run_entry(entry_path, ("PostToolUse", "--heartbeat-only"),
+                         {"cwd": str(repo), "session_id": "s1", "tool_name": "Bash"}, env, tmp_path)
+        contexts = [json.loads(line)["hookSpecificOutput"]["additionalContext"] for line in done.stdout.splitlines()
+                    if line.startswith("{") and "hookSpecificOutput" in line]
+>       assert any("Overseer review" in c for c in contexts), (done.stdout, done.stderr)
+E       AssertionError: ('', '')
+E       assert False
+E        +  where False = any(<generator object test_post_tool_use_hook_adds_the_reminder_to_the_context.<locals>.<genexpr> at 0x72c0349f3840>)
+
+tests/test_overseer_hook.py:146: AssertionError
+_________ test_all_projects_plans_listed_sorted_safe_and_no_task_dump __________
+
+fixture = (PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/pytest-2511226-fa...up-20261107/.tmp/pytest-2511226-fabbec2bb4c1c42c/test_all_projects_plans_listed0/replica', 'listen': '127.0.0.1', ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x72c033f2e740>
+
+    def test_all_projects_plans_listed_sorted_safe_and_no_task_dump(fixture, monkeypatch):
+        replica = mirror.Replica(fixture[2])
+        entries = catalog_entries(fixture)
+        monkeypatch.setattr(replica, 'entries', lambda **kwargs: entries)
+        monkeypatch.setattr(replica, 'legacy', lambda entries=None: [])
+        page = replica.dashboard()
+        assert page.count('<article class="plan') == 36
+        assert page.count('<option value="project-') == 12
+        # Old source events: unfinished running plans are stalled, not "in progress".
+        assert page.count('data-state="stalled"') == 12
+        assert page.count('data-state="blocked"') == 12
+>       assert page.count('data-state="completed"') == 12
+E       assert 0 == 12
+E        +  where 0 = <built-in method count of str object at 0x5bef669cdb70>('data-state="completed"')
+E        +    where <built-in method count of str object at 0x5bef669cdb70> = '<!doctype html><html lang="ru"><head><meta charset="utf-8">\n<meta name="viewport" content="width=device-width,initia...\nif(/^https?:$/.test(location.protocol))setInterval(refresh,15000);setInterval(times,60000);\n</script></body></html>'.count
+
+tests/test_plan_home.py:112: AssertionError
+_________________ test_packaged_stdio_outside_source_checkout __________________
+
+plan = (PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/pytest-2511226-fa....worktrees/audit-followup-20261107/.tmp/pytest-2511226-fabbec2bb4c1c42c/test_packaged_stdio_outside_so0/publish.json'))
+tmp_path = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/pytest-2511226-fabbec2bb4c1c42c/test_packaged_stdio_outside_so0')
+
+    def test_packaged_stdio_outside_source_checkout(plan, tmp_path):
+        import shutil
+        path, config = plan
+        package = tmp_path / "portable"
+        shutil.copytree(TOOLS.parents[2] / "plugins/last-human-commit", package)
+        messages = [{"jsonrpc": "2.0", "id": 1, "method": "initialize"},
+                    {"jsonrpc": "2.0", "id": 2, "method": "tools/list"},
+                    {"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {"name": "publish_html", "arguments": {"plan_dir": str(path), "config": str(config)}}}]
+        env = {**os.environ, "PYTHONPATH": ""}
+        result = subprocess.run([sys.executable, str(package / "scripts/plan_publish_mcp.py")], cwd=tmp_path, env=env,
+                                input="\n".join(map(json.dumps, messages)) + "\n", text=True, capture_output=True)
+        replies = [json.loads(line) for line in result.stdout.splitlines()]
+        assert len(replies) == 3, result.stderr
+>       assert not replies[-1]["result"]["isError"], replies[-1]
+E       AssertionError: {'id': 3, 'jsonrpc': '2.0', 'result': {'content': [{'text': 'Traceback (most recent call last):
+E           File "/home/roomhac...
+E             import lhc_plan_control as control
+E         ModuleNotFoundError: No module named \'lhc_plan_control\'
+E         ', 'stdout': ''}}}
+E       assert not True
+
+tests/test_plan_publish.py:456: AssertionError
+______ test_standalone_entrypoint_calls_plan_tools_and_exposes_bug_crud[] ______
+
+tmp_path = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/pytest-2511226-fabbec2bb4c1c42c/test_standalone_entrypoint_cal0')
+flavour = ''
+
+    @pytest.mark.parametrize("flavour", ["", "native/codex"])
+    def test_standalone_entrypoint_calls_plan_tools_and_exposes_bug_crud(tmp_path, flavour):
+        package = tmp_path / "package"
+        shutil.copytree(PLUGIN / flavour, package)
+        home = tmp_path / "home"
+        home.mkdir()
+        plan = tmp_path / "plan"
+        config = tmp_path / "publish.json"
+        config.write_text(json.dumps({"webroot": str(tmp_path / "web"), "base_url": "https://example.invalid"}))
+        catalog = write_catalog(tmp_path / "catalog.json")
+        operations = [
+            ("create_leaf", {"plan_dir": str(plan), "leaf": {"id": "A", "label": "Проверка"}}),
+            ("update_leaf", {"plan_dir": str(plan), "leaf_id": "A", "fields": {"note": "Изменено"}}),
+            ("update_progress", {"plan_dir": str(plan), "leaf_id": "A", "note": "Проверено"}),
+            ("build_plan", {"plan_dir": str(plan)}),
+            ("estimate_cost", {"model": "acme-flash", "minutes": "15", "offline": True, "catalog": str(catalog)}),
+            ("publish_html", {"plan_dir": str(plan), "config": str(config)}),
+            ("revise_plan", {"plan_dir": str(plan), "reason": "Уточнение"}),
+            ("bug_register", {"plan_dir": str(plan), "bug_id": "B01",
+                              "title": "Pre-existing failed test", "details": "Observed failure",
+                              "reporter": "offline-tester", "source": "pytest"}),
+            ("bug_get", {"plan_dir": str(plan), "bug_id": "B01"}),
+            ("bug_list", {"plan_dir": str(plan)}),
+        ]
+        messages = [request(0, "initialize"), request(1, "tools/list")]
+        messages += [request(i + 2, "tools/call", {"name": name, "arguments": args})
+                     for i, (name, args) in enumerate(operations)]
+        env = {**os.environ, "HOME": str(home), "PYTHONPATH": ""}
+        proc = subprocess.run([sys.executable, str(package / "scripts/plan_mcp.py")],
+                              input="\n".join(map(json.dumps, messages)) + "\n",
+                              cwd=home, env=env, text=True, capture_output=True, timeout=30)
+        assert proc.returncode == 0, proc.stderr
+        replies = [json.loads(line) for line in proc.stdout.splitlines()]
+        assert len(replies) == len(messages)
+>       assert {t["name"] for t in replies[1]["result"]["tools"]} == {
+            "create_leaf", "update_leaf", "build_plan", "estimate_cost", "update_progress",
+            "publish_html", "revise_plan", "bug_register", "bug_get", "bug_list",
+            "bug_update", "bug_resolve", "bug_check",
+            "show_plan", "update_plan", "activate_leaf", "worker_register", "worker_finish",
+            "assign_leaf", "dispatch_leaf", "reconcile_leaf", "accept_leaf",
+        }
+E       AssertionError: assert {'accept_leaf...ug_list', ...} == {'accept_leaf...ug_list', ...}
+E         
+E         Extra items in the left set:
+E         'read_goal_control'
+E         'record_frontier_decision'
+E         Use -v to get more diff
+
+tests/test_single_plan_mcp.py:53: AssertionError
+_ test_standalone_entrypoint_calls_plan_tools_and_exposes_bug_crud[native/codex] _
+
+tmp_path = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/pytest-2511226-fabbec2bb4c1c42c/test_standalone_entrypoint_cal1')
+flavour = 'native/codex'
+
+    @pytest.mark.parametrize("flavour", ["", "native/codex"])
+    def test_standalone_entrypoint_calls_plan_tools_and_exposes_bug_crud(tmp_path, flavour):
+        package = tmp_path / "package"
+        shutil.copytree(PLUGIN / flavour, package)
+        home = tmp_path / "home"
+        home.mkdir()
+        plan = tmp_path / "plan"
+        config = tmp_path / "publish.json"
+        config.write_text(json.dumps({"webroot": str(tmp_path / "web"), "base_url": "https://example.invalid"}))
+        catalog = write_catalog(tmp_path / "catalog.json")
+        operations = [
+            ("create_leaf", {"plan_dir": str(plan), "leaf": {"id": "A", "label": "Проверка"}}),
+            ("update_leaf", {"plan_dir": str(plan), "leaf_id": "A", "fields": {"note": "Изменено"}}),
+            ("update_progress", {"plan_dir": str(plan), "leaf_id": "A", "note": "Проверено"}),
+            ("build_plan", {"plan_dir": str(plan)}),
+            ("estimate_cost", {"model": "acme-flash", "minutes": "15", "offline": True, "catalog": str(catalog)}),
+            ("publish_html", {"plan_dir": str(plan), "config": str(config)}),
+            ("revise_plan", {"plan_dir": str(plan), "reason": "Уточнение"}),
+            ("bug_register", {"plan_dir": str(plan), "bug_id": "B01",
+                              "title": "Pre-existing failed test", "details": "Observed failure",
+                              "reporter": "offline-tester", "source": "pytest"}),
+            ("bug_get", {"plan_dir": str(plan), "bug_id": "B01"}),
+            ("bug_list", {"plan_dir": str(plan)}),
+        ]
+        messages = [request(0, "initialize"), request(1, "tools/list")]
+        messages += [request(i + 2, "tools/call", {"name": name, "arguments": args})
+                     for i, (name, args) in enumerate(operations)]
+        env = {**os.environ, "HOME": str(home), "PYTHONPATH": ""}
+        proc = subprocess.run([sys.executable, str(package / "scripts/plan_mcp.py")],
+                              input="\n".join(map(json.dumps, messages)) + "\n",
+                              cwd=home, env=env, text=True, capture_output=True, timeout=30)
+        assert proc.returncode == 0, proc.stderr
+        replies = [json.loads(line) for line in proc.stdout.splitlines()]
+        assert len(replies) == len(messages)
+>       assert {t["name"] for t in replies[1]["result"]["tools"]} == {
+            "create_leaf", "update_leaf", "build_plan", "estimate_cost", "update_progress",
+            "publish_html", "revise_plan", "bug_register", "bug_get", "bug_list",
+            "bug_update", "bug_resolve", "bug_check",
+            "show_plan", "update_plan", "activate_leaf", "worker_register", "worker_finish",
+            "assign_leaf", "dispatch_leaf", "reconcile_leaf", "accept_leaf",
+        }
+E       AssertionError: assert {'accept_leaf...ug_list', ...} == {'accept_leaf...ug_list', ...}
+E         
+E         Extra items in the left set:
+E         'read_goal_control'
+E         'record_frontier_decision'
+E         Use -v to get more diff
+
+tests/test_single_plan_mcp.py:53: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_mirror_server_events.py::test_active_summaries_refresh_each_minute_inactive_only_on_source_event
+FAILED tests/test_overseer_hook.py::test_stop_hook_prints_the_block_decision_like_the_git_guard[plugins/last-human-commit/tools/lhc_entry.py]
+FAILED tests/test_overseer_hook.py::test_stop_hook_prints_the_block_decision_like_the_git_guard[plugins/last-human-commit/native/codex/tools/lhc_entry.py]
+FAILED tests/test_overseer_hook.py::test_post_tool_use_hook_adds_the_reminder_to_the_context[plugins/last-human-commit/tools/lhc_entry.py]
+FAILED tests/test_overseer_hook.py::test_post_tool_use_hook_adds_the_reminder_to_the_context[plugins/last-human-commit/native/codex/tools/lhc_entry.py]
+FAILED tests/test_plan_home.py::test_all_projects_plans_listed_sorted_safe_and_no_task_dump
+FAILED tests/test_plan_publish.py::test_packaged_stdio_outside_source_checkout
+FAILED tests/test_single_plan_mcp.py::test_standalone_entrypoint_calls_plan_tools_and_exposes_bug_crud[]
+FAILED tests/test_single_plan_mcp.py::test_standalone_entrypoint_calls_plan_tools_and_exposes_bug_crud[native/codex]
+9 failed, 1095 passed, 7 skipped in 106.71s (0:01:46)

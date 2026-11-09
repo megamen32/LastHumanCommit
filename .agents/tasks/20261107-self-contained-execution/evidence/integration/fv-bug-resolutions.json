@@ -1,0 +1,307 @@
+[
+  {
+    "bug": {
+      "created_at": "2026-11-07T19:46:34+00:00",
+      "details": "Текст ready использует legacy candidates при dispatchable none.",
+      "events": [
+        {
+          "action": "register",
+          "actor": "Lead audit",
+          "at": "2026-11-07T19:46:34+00:00",
+          "changes": {
+            "details": "Текст ready использует legacy candidates при dispatchable none.",
+            "source": "src/common/tools/lhc_grid.py:5634",
+            "status": "open",
+            "title": "Проекция кандидатов названа допуском к запуску"
+          }
+        },
+        {
+          "action": "resolve",
+          "actor": "roomhacker-server-100/codex/01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+          "at": "2026-11-07T20:29:41+00:00",
+          "changes": {
+            "resolution": {
+              "evidence": {
+                "proof_path": "evidence/integration/fv-source-green.log",
+                "red_proof_path": "records/V1/evidence/red-label.log",
+                "red_result": "FAILED tests/test_truthful_plan_views.py::test_candidate_wording_never_claims_launch_admission",
+                "red_sha256": "02ea4fba1829dc4fa1a04a946ef13150961a415ba5baea9be1d5ecf359b2d139",
+                "result": "34 passed in 1.16s",
+                "sha256": "0a62547fc96be39a03e1ad1ba8ccfeff33e6516c808858f72689a97d2751defb",
+                "test_command": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest -q tests/test_plan_frontier_control.py tests/test_truthful_plan_views.py tests/test_plan_catalog.py"
+              },
+              "kind": "fixed",
+              "reason": ""
+            },
+            "status": "fixed"
+          }
+        }
+      ],
+      "id": "Ba945d680618b4fa786ac",
+      "owner": "Lead audit",
+      "reporter": "Lead audit",
+      "resolution": {
+        "evidence": {
+          "proof_path": "evidence/integration/fv-source-green.log",
+          "red_proof_path": "records/V1/evidence/red-label.log",
+          "red_result": "FAILED tests/test_truthful_plan_views.py::test_candidate_wording_never_claims_launch_admission",
+          "red_sha256": "02ea4fba1829dc4fa1a04a946ef13150961a415ba5baea9be1d5ecf359b2d139",
+          "result": "34 passed in 1.16s",
+          "sha256": "0a62547fc96be39a03e1ad1ba8ccfeff33e6516c808858f72689a97d2751defb",
+          "test_command": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest -q tests/test_plan_frontier_control.py tests/test_truthful_plan_views.py tests/test_plan_catalog.py"
+        },
+        "kind": "fixed",
+        "reason": ""
+      },
+      "source": "src/common/tools/lhc_grid.py:5634",
+      "status": "fixed",
+      "title": "Проекция кандидатов названа допуском к запуску",
+      "updated_at": "2026-11-07T20:29:41+00:00"
+    },
+    "sha256": "4ff1d227e52974b604ad7bdce1b05ab5ac8b78fd0631970d13f2a488cb9c8b7b"
+  },
+  {
+    "bug": {
+      "created_at": "2026-11-07T19:46:34+00:00",
+      "details": "Catalog исключает deferred и без goal receipt показывает completed.",
+      "events": [
+        {
+          "action": "register",
+          "actor": "Lead audit",
+          "at": "2026-11-07T19:46:34+00:00",
+          "changes": {
+            "details": "Catalog исключает deferred и без goal receipt показывает completed.",
+            "source": "src/common/tools/lhc_plan_catalog.py:89",
+            "status": "open",
+            "title": "Завершение активных шагов подменяет принятие цели"
+          }
+        },
+        {
+          "action": "resolve",
+          "actor": "roomhacker-server-100/codex/01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+          "at": "2026-11-07T20:29:41+00:00",
+          "changes": {
+            "resolution": {
+              "evidence": {
+                "proof_path": "evidence/integration/fv-source-green.log",
+                "red_proof_path": "records/V1/evidence/red-goal.log",
+                "red_result": "FAILED tests/test_truthful_plan_views.py::test_completed_cards_never_accept_legacy_goal_or_hide_deferred_work",
+                "red_sha256": "9e02d78179f2c00f4010515d92eed9443f6f6d25cdec33401427d69a6a095e75",
+                "result": "34 passed in 1.16s",
+                "sha256": "0a62547fc96be39a03e1ad1ba8ccfeff33e6516c808858f72689a97d2751defb",
+                "test_command": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest -q tests/test_plan_frontier_control.py tests/test_truthful_plan_views.py tests/test_plan_catalog.py"
+              },
+              "kind": "fixed",
+              "reason": ""
+            },
+            "status": "fixed"
+          }
+        }
+      ],
+      "id": "B7700e3a790214987b2e1",
+      "owner": "Lead audit",
+      "reporter": "Lead audit",
+      "resolution": {
+        "evidence": {
+          "proof_path": "evidence/integration/fv-source-green.log",
+          "red_proof_path": "records/V1/evidence/red-goal.log",
+          "red_result": "FAILED tests/test_truthful_plan_views.py::test_completed_cards_never_accept_legacy_goal_or_hide_deferred_work",
+          "red_sha256": "9e02d78179f2c00f4010515d92eed9443f6f6d25cdec33401427d69a6a095e75",
+          "result": "34 passed in 1.16s",
+          "sha256": "0a62547fc96be39a03e1ad1ba8ccfeff33e6516c808858f72689a97d2751defb",
+          "test_command": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest -q tests/test_plan_frontier_control.py tests/test_truthful_plan_views.py tests/test_plan_catalog.py"
+        },
+        "kind": "fixed",
+        "reason": ""
+      },
+      "source": "src/common/tools/lhc_plan_catalog.py:89",
+      "status": "fixed",
+      "title": "Завершение активных шагов подменяет принятие цели",
+      "updated_at": "2026-11-07T20:29:41+00:00"
+    },
+    "sha256": "db648e6291a6a8c54fca86b5680315f2d5b30b078dc67a9ecf7dbef126b9275b"
+  },
+  {
+    "bug": {
+      "created_at": "2026-11-07T19:52:06+00:00",
+      "details": "RED: missing duration yields ETA 12:15; true unknown reason with no bounds must preserve unknown deadline and show known work separately. Finite numeric estimate with diagnostic remains valid.",
+      "events": [
+        {
+          "action": "register",
+          "actor": "V1",
+          "at": "2026-11-07T19:52:06+00:00",
+          "changes": {
+            "details": "RED: missing duration yields ETA 12:15; true unknown reason with no bounds must preserve unknown deadline and show known work separately. Finite numeric estimate with diagnostic remains valid.",
+            "source": "V1 focused regression",
+            "status": "open",
+            "title": "Каталог подставляет 15 минут и точный финиш для листа без оценки"
+          }
+        },
+        {
+          "action": "resolve",
+          "actor": "roomhacker-server-100/codex/01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+          "at": "2026-11-07T20:29:41+00:00",
+          "changes": {
+            "resolution": {
+              "evidence": {
+                "proof_path": "evidence/integration/fv-source-green.log",
+                "red_proof_path": "records/V1/evidence/red.log",
+                "red_result": "FAILED tests/test_truthful_plan_views.py::test_unknown_leaf_does_not_get_default_whole_plan_eta",
+                "red_sha256": "42ef3edbc43e984a536920df5efcf1b07421456c7966437125fe37b9b6069ed9",
+                "result": "34 passed in 1.16s",
+                "sha256": "0a62547fc96be39a03e1ad1ba8ccfeff33e6516c808858f72689a97d2751defb",
+                "test_command": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest -q tests/test_plan_frontier_control.py tests/test_truthful_plan_views.py tests/test_plan_catalog.py"
+              },
+              "kind": "fixed",
+              "reason": ""
+            },
+            "status": "fixed"
+          }
+        }
+      ],
+      "id": "Be1c37fa7e6c8425ca641",
+      "owner": "V1",
+      "reporter": "V1",
+      "resolution": {
+        "evidence": {
+          "proof_path": "evidence/integration/fv-source-green.log",
+          "red_proof_path": "records/V1/evidence/red.log",
+          "red_result": "FAILED tests/test_truthful_plan_views.py::test_unknown_leaf_does_not_get_default_whole_plan_eta",
+          "red_sha256": "42ef3edbc43e984a536920df5efcf1b07421456c7966437125fe37b9b6069ed9",
+          "result": "34 passed in 1.16s",
+          "sha256": "0a62547fc96be39a03e1ad1ba8ccfeff33e6516c808858f72689a97d2751defb",
+          "test_command": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest -q tests/test_plan_frontier_control.py tests/test_truthful_plan_views.py tests/test_plan_catalog.py"
+        },
+        "kind": "fixed",
+        "reason": ""
+      },
+      "source": "V1 focused regression",
+      "status": "fixed",
+      "title": "Каталог подставляет 15 минут и точный финиш для листа без оценки",
+      "updated_at": "2026-11-07T20:29:41+00:00"
+    },
+    "sha256": "778232707a4bf64d6f32b735a7c95c3841f56b037b102e5e5f99adf986111821"
+  },
+  {
+    "bug": {
+      "created_at": "2026-11-07T20:03:30+00:00",
+      "details": "plan-artifacts/SKILL.md139-142: explicit estimate_unknown_reason means estimated work is partial. Finite numeric work remains visible, whole-plan ETA must be unknown. RED partial scope grid eta_exact=True and catalog finite ETA; GREEN logs stored V1.",
+      "events": [
+        {
+          "action": "register",
+          "actor": "V1",
+          "at": "2026-11-07T20:03:30+00:00",
+          "changes": {
+            "details": "plan-artifacts/SKILL.md139-142: explicit estimate_unknown_reason means estimated work is partial. Finite numeric work remains visible, whole-plan ETA must be unknown. RED partial scope grid eta_exact=True and catalog finite ETA; GREEN logs stored V1.",
+            "source": "src/common/skills/plan-artifacts/SKILL.md139-142; .tmp/self-contained-views/red-partial.log",
+            "status": "open",
+            "title": "Частичная оценка превращается в полный срок при estimate_unknown_reason"
+          }
+        },
+        {
+          "action": "resolve",
+          "actor": "roomhacker-server-100/codex/01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+          "at": "2026-11-07T20:29:41+00:00",
+          "changes": {
+            "resolution": {
+              "evidence": {
+                "proof_path": "evidence/integration/fv-source-green.log",
+                "red_proof_path": "records/V1/evidence/red-partial.log",
+                "red_result": "FAILED tests/test_truthful_plan_views.py::test_partial_scope_keeps_numeric_work_but_hides_catalog_finish",
+                "red_sha256": "2e55a58968c6e89523d7e9173618e4e635c2491eba8c0c3f9033e628a27e8844",
+                "result": "34 passed in 1.16s",
+                "sha256": "0a62547fc96be39a03e1ad1ba8ccfeff33e6516c808858f72689a97d2751defb",
+                "test_command": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest -q tests/test_plan_frontier_control.py tests/test_truthful_plan_views.py tests/test_plan_catalog.py"
+              },
+              "kind": "fixed",
+              "reason": ""
+            },
+            "status": "fixed"
+          }
+        }
+      ],
+      "id": "Bee448d0ba16c401e9173",
+      "owner": "V1",
+      "reporter": "V1",
+      "resolution": {
+        "evidence": {
+          "proof_path": "evidence/integration/fv-source-green.log",
+          "red_proof_path": "records/V1/evidence/red-partial.log",
+          "red_result": "FAILED tests/test_truthful_plan_views.py::test_partial_scope_keeps_numeric_work_but_hides_catalog_finish",
+          "red_sha256": "2e55a58968c6e89523d7e9173618e4e635c2491eba8c0c3f9033e628a27e8844",
+          "result": "34 passed in 1.16s",
+          "sha256": "0a62547fc96be39a03e1ad1ba8ccfeff33e6516c808858f72689a97d2751defb",
+          "test_command": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest -q tests/test_plan_frontier_control.py tests/test_truthful_plan_views.py tests/test_plan_catalog.py"
+        },
+        "kind": "fixed",
+        "reason": ""
+      },
+      "source": "src/common/skills/plan-artifacts/SKILL.md139-142; .tmp/self-contained-views/red-partial.log",
+      "status": "fixed",
+      "title": "Частичная оценка превращается в полный срок при estimate_unknown_reason",
+      "updated_at": "2026-11-07T20:29:41+00:00"
+    },
+    "sha256": "24eaa3ac9c5ce30436a97dcd774619b5454bea648dc73e859ab031670bea7bfe"
+  },
+  {
+    "bug": {
+      "created_at": "2026-11-07T19:46:33+00:00",
+      "details": "Stop/Overseer молчат при отсутствии queued/running; accepted goal не проверяется.",
+      "events": [
+        {
+          "action": "register",
+          "actor": "Lead audit",
+          "at": "2026-11-07T19:46:33+00:00",
+          "changes": {
+            "details": "Stop/Overseer молчат при отсутствии queued/running; accepted goal не проверяется.",
+            "source": "src/common/tools/lhc_entry.py:378",
+            "status": "open",
+            "title": "Пустой frontier не требует решения по незавершённой цели"
+          }
+        },
+        {
+          "action": "resolve",
+          "actor": "roomhacker-server-100/codex/01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+          "at": "2026-11-07T20:29:42+00:00",
+          "changes": {
+            "resolution": {
+              "evidence": {
+                "proof_path": "evidence/integration/fv-source-green.log",
+                "red_proof_path": "evidence/integration/F1-red.log",
+                "red_result": "FAILED tests/test_plan_frontier_control.py::test_exhausted_bound_implementation_requires_useful_decision",
+                "red_sha256": "c0afee2e0db61d559f48f5c54af3c76d32fa0d3ddc5a3517e849d6bc0c68e4c0",
+                "result": "34 passed in 1.16s",
+                "sha256": "0a62547fc96be39a03e1ad1ba8ccfeff33e6516c808858f72689a97d2751defb",
+                "test_command": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest -q tests/test_plan_frontier_control.py tests/test_truthful_plan_views.py tests/test_plan_catalog.py"
+              },
+              "kind": "fixed",
+              "reason": ""
+            },
+            "status": "fixed"
+          }
+        }
+      ],
+      "id": "B27cbecd46bd749b99250",
+      "owner": "Lead audit",
+      "reporter": "Lead audit",
+      "resolution": {
+        "evidence": {
+          "proof_path": "evidence/integration/fv-source-green.log",
+          "red_proof_path": "evidence/integration/F1-red.log",
+          "red_result": "FAILED tests/test_plan_frontier_control.py::test_exhausted_bound_implementation_requires_useful_decision",
+          "red_sha256": "c0afee2e0db61d559f48f5c54af3c76d32fa0d3ddc5a3517e849d6bc0c68e4c0",
+          "result": "34 passed in 1.16s",
+          "sha256": "0a62547fc96be39a03e1ad1ba8ccfeff33e6516c808858f72689a97d2751defb",
+          "test_command": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest -q tests/test_plan_frontier_control.py tests/test_truthful_plan_views.py tests/test_plan_catalog.py"
+        },
+        "kind": "fixed",
+        "reason": ""
+      },
+      "source": "src/common/tools/lhc_entry.py:378",
+      "status": "fixed",
+      "title": "Пустой frontier не требует решения по незавершённой цели",
+      "updated_at": "2026-11-07T20:29:42+00:00"
+    },
+    "sha256": "bfcf58b18ec64323ec2ba93fd14448903d2761ff9bf498ced0eb7c9531e727f3"
+  }
+]

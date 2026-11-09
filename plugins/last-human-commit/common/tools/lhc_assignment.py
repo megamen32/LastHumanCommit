@@ -151,6 +151,8 @@ def transition(current, state, *, attempt_id=None, receipt=None, actor=None, at=
         merged.setdefault("observed_at", stamp)
         item[key] = merged
     dispatch = item.get("dispatch") or {}
+    if prior_dispatch.get("handoff") is not None and dispatch.get("handoff") != prior_dispatch["handoff"]:
+        raise ValueError("dispatch handoff identity cannot change within an attempt")
     runtime = item.get("observed_runtime") or {}
     if prior_dispatch.get("request_id") and dispatch.get("request_id") != prior_dispatch["request_id"]:
         raise ValueError("dispatch request_id cannot change within an attempt")

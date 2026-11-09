@@ -1,0 +1,17 @@
+{
+  "source_commit": "1ae641272980f9aacc8acd4c7244762fe2af0692",
+  "overlay": {
+    "src/common/tools/lhc_plan_mirror.py": "8f168262500c6b6872eae42aff692cdfbdaa6af3f8c8f024058c1f904c55b8c9",
+    "tests/test_plan_mirror.py": "f9d447e11d9c7c283a8f1af1d99cc4b283e1ef2a66ddef0ad3d77e777db767c4"
+  },
+  "sanitizer": "unchanged publisher from 1ae64127; current cache fix overlaid to isolate public projection loss",
+  "command": [
+    "python3",
+    "-m",
+    "pytest",
+    "-q",
+    "tests/test_plan_mirror.py::test_capture_changes_when_bound_goal_evidence_changes"
+  ],
+  "exit_code": 1,
+  "canonical_bug": "B081d703e49df496a835c"
+}

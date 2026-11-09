@@ -1,0 +1,57 @@
+{
+  "schema": "lhc.source-recovery-candidate.v1",
+  "prepared_at": "2026-11-07T22:33:51.099359+00:00",
+  "branch": "lhc/source-recovery-20261107",
+  "base": "3ac8599f331a965d40bc55d83af0653e9ab23815",
+  "integrated_source_commits": [
+    "3360f0cfb1eb95f9319881a9d98cf1f42f9e984e",
+    "1489f938474a6b7467f10cc7fc5d9a1112d519e6"
+  ],
+  "validated_merge_parent": "92459fee7cefa0037d1dc17802af291f155c3ac0",
+  "target": "origin/main",
+  "target_commit": "2988f0f8483a2a33a6fb762c86e597513b445d1a",
+  "target_version": "1.17.1",
+  "candidate_version": "1.18.0",
+  "version_guard": {
+    "ok": true,
+    "version": "1.18.0",
+    "level": "y",
+    "target_version": "1.17.1",
+    "tag_free": true
+  },
+  "pr_stage": "off",
+  "validator": {
+    "command": "python3 tests/validate.py",
+    "returncode": 0,
+    "elapsed_seconds": 128.702,
+    "summary": "1162 passed, 7 skipped",
+    "skills": 23,
+    "native_task_id": "2ba7b08ad620a0f901c0b1896c8838b9"
+  },
+  "package_tracked_file_count": 432,
+  "package_tree_sha256": "e5eb7b1dca16dad47f4c50a6a30c49d2eb89da4012665becbed05124eac2a48d",
+  "selected_file_sha256": {
+    "VERSION": "04d659518a1793d5396007fcabdc9211a8c1db8406bf4e0fa8069171fdb06518",
+    "src/common/tools/lhc_native_identity.py": "da5f98eff601368c834df2ec62960bfe95f9e24a6cbba6aa2d916dc5a22f774f",
+    "src/common/tools/lhc_outcome.py": "eb62fd159f9bd3d98ff8e6664b28798040c9cf2a0acc11a445951ce7ed1c5eb4",
+    "src/common/tools/lhc_plan_control.py": "384d156fef3f494551fd71863996c1a76bb4fe94ec665e42ef0c9583e8e7029d",
+    "src/common/tools/lhc_plan_json.py": "9c48cc763d29af97457dc510efbb5440109b8dd50875de739424d3b9ed01e155",
+    "plugins/last-human-commit/tools/lhc_native_identity.py": "da5f98eff601368c834df2ec62960bfe95f9e24a6cbba6aa2d916dc5a22f774f",
+    "plugins/last-human-commit/tools/lhc_outcome.py": "eb62fd159f9bd3d98ff8e6664b28798040c9cf2a0acc11a445951ce7ed1c5eb4",
+    "plugins/last-human-commit/tools/lhc_plan_control.py": "384d156fef3f494551fd71863996c1a76bb4fe94ec665e42ef0c9583e8e7029d",
+    "plugins/last-human-commit/tools/lhc_plan_json.py": "9c48cc763d29af97457dc510efbb5440109b8dd50875de739424d3b9ed01e155"
+  },
+  "native_runtime_or_lease_changed": false,
+  "native_state_seeded": false,
+  "canonical_root_plan_handoff_changed": false,
+  "consumer_acceptance": "not claimed; independent final review and installed/native consumer remain required",
+  "canonical_fixed_bugs": [
+    "B25b78e5fc6fc44a88a89",
+    "Bcf2cfd77ed9346d3a9f2",
+    "Be6366c83dcde43bd944d"
+  ],
+  "canonical_duplicate_aliases": [
+    "B0d126f1d4b5b483c9756",
+    "Ba75bc26203a84b76bd9b"
+  ]
+}

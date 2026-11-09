@@ -1,0 +1,33 @@
+{
+  "kind": "source read-only current native outcome with in-memory explicit role pointer; no public handoff mutation or native acceptance claimed",
+  "canonical_plan": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.agents/tasks/20261107-self-contained-execution",
+  "before": {
+    "goal_status": "unknown",
+    "frontier": "active",
+    "next_decision": "none",
+    "fingerprint": "659bc06ee82902241ed0fef19bb717e6bc90ec4e9a346f0d1754e145fce56777",
+    "decision_fresh": false,
+    "candidates": [],
+    "decision": null,
+    "reason": "native_lead_ref_ambiguous"
+  },
+  "after": {
+    "goal_status": "unaccepted",
+    "frontier": "active",
+    "next_decision": "none",
+    "fingerprint": "44801db01139fb30d4a96bf7f8c7378ea26444fe34fdb329c5a8602f8f52d72f",
+    "decision_fresh": false,
+    "candidates": [],
+    "decision": null,
+    "reason": "bound_native_outcome",
+    "source": {
+      "kind": "native_outcome",
+      "host_id": "roomhacker-server-100",
+      "harness": "codex",
+      "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+      "role_source_ref": "records/I1/current-native-owner.md",
+      "outcome_id": "9c3975545b60da798962b446",
+      "source_fingerprint": "972b1dc331e416b21231d8d4ccb90e2c65d722e570eb31edf1698a29768ed796"
+    }
+  }
+}

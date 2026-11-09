@@ -1,0 +1,1 @@
+V1: readiness label RED/GREEN; missing-estimate catalog ETA RED/GREEN, bug Be1c37fa7e6c8425ca641. Numeric estimate plus diagnostic stays finite. Shared goal-control source pending; no fabricated superseded schema. Logs .tmp/self-contained-views/.

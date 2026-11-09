@@ -1,0 +1,80 @@
+[
+  {
+    "leaf": "B4",
+    "exit_code": 0,
+    "stdout": "{\"id\": \"B4\", \"sha256\": \"808a547a1a6e387cbecd341acba3b91718e78000907e6bfb145dbb6eebab7cff\"}\nPlan 20261107-self-contained-execution: 6/15 done; deliverable: implementation; decomposition: complete; leaf cap: 15 min; goal=unknown, frontier=active, next_decision=none; saved running I1; candidates by dependencies/capacity none; dispatchable none; admission NC=external_blocked, Q1=external_blocked, Q2=external_blocked, R1=external_blocked, MIRROR=external_blocked, N100=external_blocked, N199=external_blocked, FINAL=external_blocked; Workers to merge and remove: F1, H1, V1.\n",
+    "stderr": ""
+  },
+  {
+    "leaf": "I1",
+    "exit_code": 0,
+    "stdout": "{\"id\": \"I1\", \"sha256\": \"13d802fb96b049bb27bd160f384665dee24934d26f8394249a50d5175bf643be\"}\nPlan 20261107-self-contained-execution: 6/15 done; deliverable: implementation; decomposition: complete; leaf cap: 15 min; goal=unknown, frontier=active, next_decision=none; saved running I1; candidates by dependencies/capacity none; dispatchable none; admission NC=external_blocked, Q1=external_blocked, Q2=external_blocked, R1=external_blocked, MIRROR=external_blocked, N100=external_blocked, N199=external_blocked, FINAL=external_blocked; Workers to merge and remove: F1, H1, V1.\n",
+    "stderr": ""
+  },
+  {
+    "leaf": "NC",
+    "exit_code": 0,
+    "stdout": "{\"id\": \"NC\", \"sha256\": \"369c2fe59b33f0f55af222670b378146527c0418d3a19d0a419439d3ee49fc61\"}\nPlan 20261107-self-contained-execution: 6/15 done; deliverable: implementation; decomposition: complete; leaf cap: 15 min; goal=unknown, frontier=active, next_decision=none; saved running I1; candidates by dependencies/capacity none; dispatchable none; admission NC=external_blocked, Q1=external_blocked, Q2=external_blocked, R1=external_blocked, MIRROR=external_blocked, N100=external_blocked, N199=external_blocked, FINAL=external_blocked; Workers to merge and remove: F1, H1, V1.\n",
+    "stderr": ""
+  },
+  {
+    "leaf": "R1",
+    "exit_code": 0,
+    "stdout": "{\"id\": \"R1\", \"sha256\": \"29dbfa2fd810a21d1655e278e9728fac64cc5c925aff235f7b3ca11d397b17c1\"}\nPlan 20261107-self-contained-execution: 6/15 done; deliverable: implementation; decomposition: complete; leaf cap: 15 min; goal=unknown, frontier=active, next_decision=none; saved running I1; candidates by dependencies/capacity none; dispatchable none; admission NC=external_blocked, Q1=external_blocked, Q2=external_blocked, R1=external_blocked, MIRROR=external_blocked, N100=external_blocked, N199=external_blocked, FINAL=external_blocked; Workers to merge and remove: F1, H1, V1.\n",
+    "stderr": ""
+  },
+  {
+    "leaf": "N100",
+    "exit_code": 0,
+    "stdout": "{\"id\": \"N100\", \"sha256\": \"8e0b1df8043e13095c3bf0804b9acd17629f1f9f8dd2201558ecaff792f66a78\"}\nPlan 20261107-self-contained-execution: 6/15 done; deliverable: implementation; decomposition: complete; leaf cap: 15 min; goal=unknown, frontier=active, next_decision=none; saved running I1; candidates by dependencies/capacity none; dispatchable none; admission NC=external_blocked, Q1=external_blocked, Q2=external_blocked, R1=external_blocked, MIRROR=external_blocked, N100=external_blocked, N199=external_blocked, FINAL=external_blocked; Workers to merge and remove: F1, H1, V1.\n",
+    "stderr": ""
+  },
+  {
+    "leaf": "MIRROR",
+    "exit_code": 0,
+    "stdout": "{\"id\": \"MIRROR\", \"sha256\": \"88a858094a84332bda24873654904b87756e974ecbbbd2520ac1f2aec7d014ca\"}\nPlan 20261107-self-contained-execution: 6/15 done; deliverable: implementation; decomposition: complete; leaf cap: 15 min; goal=unknown, frontier=active, next_decision=none; saved running I1; candidates by dependencies/capacity none; dispatchable none; admission NC=external_blocked, Q1=external_blocked, Q2=external_blocked, R1=external_blocked, MIRROR=external_blocked, N100=external_blocked, N199=external_blocked, FINAL=external_blocked; Workers to merge and remove: F1, H1, V1.\n",
+    "stderr": ""
+  },
+  {
+    "leaf": "FINAL",
+    "exit_code": 0,
+    "stdout": "{\"id\": \"FINAL\", \"sha256\": \"9ad375d156e99e1edfcdee329b97f369268f1eb9cf4948056d0732771f4ca1fc\"}\nPlan 20261107-self-contained-execution: 6/15 done; deliverable: implementation; decomposition: complete; leaf cap: 15 min; goal=unknown, frontier=active, next_decision=none; saved running I1; candidates by dependencies/capacity none; dispatchable none; admission NC=external_blocked, Q1=external_blocked, Q2=external_blocked, R1=external_blocked, MIRROR=external_blocked, N100=external_blocked, N199=external_blocked, FINAL=external_blocked; Workers to merge and remove: F1, H1, V1.\n",
+    "stderr": ""
+  },
+  {
+    "leaf": "S1",
+    "exit_code": 0,
+    "stdout": "{\"id\": \"S1\", \"sha256\": \"460ecb8f1002b4882b7f5ba86f251faaa7b8fe1f5d7fe7f0ae82d540cc5d41c0\"}\nPlan 20261107-self-contained-execution: 6/15 done; deliverable: implementation; decomposition: complete; leaf cap: 15 min; goal=unknown, frontier=active, next_decision=none; saved running I1; candidates by dependencies/capacity none; dispatchable none; admission NC=external_blocked, Q1=external_blocked, Q2=external_blocked, R1=external_blocked, MIRROR=external_blocked, N100=external_blocked, N199=external_blocked, FINAL=external_blocked; Workers to merge and remove: F1, H1, V1.\n",
+    "stderr": ""
+  },
+  {
+    "leaf": "S2",
+    "exit_code": 0,
+    "stdout": "{\"id\": \"S2\", \"sha256\": \"02a59160938962ad186d2794be3347546a5ebc3c6e65107865253f40b9c6533a\"}\nPlan 20261107-self-contained-execution: 6/15 done; deliverable: implementation; decomposition: complete; leaf cap: 15 min; goal=unknown, frontier=active, next_decision=none; saved running I1; candidates by dependencies/capacity none; dispatchable none; admission NC=external_blocked, Q1=external_blocked, Q2=external_blocked, R1=external_blocked, MIRROR=external_blocked, N100=external_blocked, N199=external_blocked, FINAL=external_blocked; Workers to merge and remove: F1, H1, V1.\n",
+    "stderr": ""
+  },
+  {
+    "leaf": "NC",
+    "exit_code": 0,
+    "stdout": "{\"id\": \"NC\", \"sha256\": \"ea2a8fadecc6cd12659d0e734cb8ce900c21f9ab961122e13d65279c4b232fa6\"}\nPlan 20261107-self-contained-execution: 6/15 done; deliverable: implementation; decomposition: complete; leaf cap: 15 min; goal=unknown, frontier=active, next_decision=none; saved running I1; candidates by dependencies/capacity none; dispatchable none; admission NC=external_blocked, Q1=external_blocked, Q2=external_blocked, R1=external_blocked, MIRROR=external_blocked, N100=external_blocked, N199=external_blocked, FINAL=external_blocked; Workers to merge and remove: F1, H1, V1.\n",
+    "stderr": ""
+  },
+  {
+    "leaf": "Q2",
+    "exit_code": 0,
+    "stdout": "{\"id\": \"Q2\", \"sha256\": \"65542292043a8b2e760b4aa1a57a4ccde1a4ca9c7292f9a1d2623f4ccd1ecbc3\"}\nPlan 20261107-self-contained-execution: 6/15 done; deliverable: implementation; decomposition: complete; leaf cap: 15 min; goal=unknown, frontier=active, next_decision=none; saved running I1; candidates by dependencies/capacity none; dispatchable none; admission NC=external_blocked, Q1=external_blocked, Q2=external_blocked, R1=external_blocked, MIRROR=external_blocked, N100=external_blocked, N199=external_blocked, FINAL=external_blocked; Workers to merge and remove: F1, H1, V1.\n",
+    "stderr": ""
+  },
+  {
+    "leaf": "N199",
+    "exit_code": 0,
+    "stdout": "{\"id\": \"N199\", \"sha256\": \"99f851758b3209d1170f3f4d3f22d58ad8a713e2c15ab54f7381181611608bb8\"}\nPlan 20261107-self-contained-execution: 6/15 done; deliverable: implementation; decomposition: complete; leaf cap: 15 min; goal=unknown, frontier=active, next_decision=none; saved running I1; candidates by dependencies/capacity none; dispatchable none; admission NC=external_blocked, Q1=external_blocked, Q2=external_blocked, R1=external_blocked, MIRROR=external_blocked, N100=external_blocked, N199=external_blocked, FINAL=external_blocked; Workers to merge and remove: F1, H1, V1.\n",
+    "stderr": ""
+  },
+  {
+    "leaf": "HT",
+    "exit_code": 0,
+    "stdout": "{\"id\": \"HT\", \"sha256\": \"8e895c9354ee56927133ea1c0a33f3cd6cb963a841fb9df8586b60a001c7200c\"}\nPlan 20261107-self-contained-execution: 6/16 done; deliverable: implementation; decomposition: complete; leaf cap: 15 min; goal=unknown, frontier=active, next_decision=none; saved running I1; candidates by dependencies/capacity none; dispatchable none; admission HT=external_blocked, NC=external_blocked, Q1=external_blocked, Q2=external_blocked, R1=external_blocked, MIRROR=external_blocked, N100=external_blocked, N199=external_blocked; Workers to merge and remove: F1, H1, V1.\n",
+    "stderr": ""
+  }
+]

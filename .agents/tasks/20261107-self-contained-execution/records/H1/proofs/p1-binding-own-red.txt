@@ -1,0 +1,114 @@
+(Linux uses --headless by default. To override, use --headed / --gui. For Xvfb mode instead, use --xvfb. Or you can hide this info by using --headless / --headless2 / --uc.)
+FFFF..F                                                                  [100%]
+=================================== FAILURES ===================================
+______________ test_activation_never_adopts_complete_A_acceptance ______________
+
+case = (PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/pytest-33....worktrees/self-contained-handoff-20261107/.tmp/pytest-3330378-0e0ddfdcc1a8f14a/test_activation_never_adopts_c0', ...})
+
+    def test_activation_never_adopts_complete_A_acceptance(case):
+        root, plan, path, old = case
+        result = activate(plan)
+>       assert result['goal_binding']['goal_status'] != 'accepted'
+E       AssertionError: assert 'accepted' != 'accepted'
+
+tests/test_plan_binding_acceptance.py:66: AssertionError
+_ test_canonical_requirement_change_invalidates_acceptance[business_result-All tenants succeed without data loss] _
+
+case = (PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/pytest-33....worktrees/self-contained-handoff-20261107/.tmp/pytest-3330378-0e0ddfdcc1a8f14a/test_canonical_requirement_cha0', ...})
+field = 'business_result', value = 'All tenants succeed without data loss'
+
+    @pytest.mark.parametrize('field,value', [
+        ('business_result', 'All tenants succeed without data loss'),
+        ('business_results', ['All tenants succeed', 'No data loss']),
+        ('acceptance_scenarios', ['All tenants survive failover']),
+        ('acceptance_scenario', 'All tenants survive failover'),
+    ])
+    def test_canonical_requirement_change_invalidates_acceptance(case, field, value):
+        root, plan, path, old = case
+        first = plans.plan_metadata(plan)
+        old['finish_verdict'] = 'complete'
+        old['plan_binding'] = control.binding(first, old, plan, accepted=True)
+        assert control.evaluate(first, [], old, plan_dir=plan)['goal_status'] == 'accepted'
+        changed = {**first, field: value}
+>       assert control.plan_scope(first) != control.plan_scope(changed)
+E       AssertionError: assert 'c4705e3082a8b96e05358dd79903aa38c104026f6c90e8c9e6a9ca67b064162b' != 'c4705e3082a8b96e05358dd79903aa38c104026f6c90e8c9e6a9ca67b064162b'
+E        +  where 'c4705e3082a8b96e05358dd79903aa38c104026f6c90e8c9e6a9ca67b064162b' = <function plan_scope at 0x7d95eba1ab00>({'acceptance_scenarios': ['Run the new total CLI'], 'business_result': 'Empty basket returns zero', 'deliverable': 'implementation', 'goal': 'Fix the new total CLI'})
+E        +    where <function plan_scope at 0x7d95eba1ab00> = control.plan_scope
+E        +  and   'c4705e3082a8b96e05358dd79903aa38c104026f6c90e8c9e6a9ca67b064162b' = <function plan_scope at 0x7d95eba1ab00>({'acceptance_scenarios': ['Run the new total CLI'], 'business_result': 'All tenants succeed without data loss', 'deliverable': 'implementation', 'goal': 'Fix the new total CLI'})
+E        +    where <function plan_scope at 0x7d95eba1ab00> = control.plan_scope
+
+tests/test_plan_binding_acceptance.py:89: AssertionError
+_ test_canonical_requirement_change_invalidates_acceptance[business_results-value1] _
+
+case = (PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/pytest-33....worktrees/self-contained-handoff-20261107/.tmp/pytest-3330378-0e0ddfdcc1a8f14a/test_canonical_requirement_cha1', ...})
+field = 'business_results', value = ['All tenants succeed', 'No data loss']
+
+    @pytest.mark.parametrize('field,value', [
+        ('business_result', 'All tenants succeed without data loss'),
+        ('business_results', ['All tenants succeed', 'No data loss']),
+        ('acceptance_scenarios', ['All tenants survive failover']),
+        ('acceptance_scenario', 'All tenants survive failover'),
+    ])
+    def test_canonical_requirement_change_invalidates_acceptance(case, field, value):
+        root, plan, path, old = case
+        first = plans.plan_metadata(plan)
+        old['finish_verdict'] = 'complete'
+        old['plan_binding'] = control.binding(first, old, plan, accepted=True)
+        assert control.evaluate(first, [], old, plan_dir=plan)['goal_status'] == 'accepted'
+        changed = {**first, field: value}
+>       assert control.plan_scope(first) != control.plan_scope(changed)
+E       AssertionError: assert 'c4705e3082a8b96e05358dd79903aa38c104026f6c90e8c9e6a9ca67b064162b' != 'c4705e3082a8b96e05358dd79903aa38c104026f6c90e8c9e6a9ca67b064162b'
+E        +  where 'c4705e3082a8b96e05358dd79903aa38c104026f6c90e8c9e6a9ca67b064162b' = <function plan_scope at 0x7d95eba1ab00>({'acceptance_scenarios': ['Run the new total CLI'], 'business_result': 'Empty basket returns zero', 'deliverable': 'implementation', 'goal': 'Fix the new total CLI'})
+E        +    where <function plan_scope at 0x7d95eba1ab00> = control.plan_scope
+E        +  and   'c4705e3082a8b96e05358dd79903aa38c104026f6c90e8c9e6a9ca67b064162b' = <function plan_scope at 0x7d95eba1ab00>({'acceptance_scenarios': ['Run the new total CLI'], 'business_result': 'Empty basket returns zero', 'business_results': ['All tenants succeed', 'No data loss'], 'deliverable': 'implementation', ...})
+E        +    where <function plan_scope at 0x7d95eba1ab00> = control.plan_scope
+
+tests/test_plan_binding_acceptance.py:89: AssertionError
+_ test_canonical_requirement_change_invalidates_acceptance[acceptance_scenarios-value2] _
+
+case = (PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/pytest-33....worktrees/self-contained-handoff-20261107/.tmp/pytest-3330378-0e0ddfdcc1a8f14a/test_canonical_requirement_cha2', ...})
+field = 'acceptance_scenarios', value = ['All tenants survive failover']
+
+    @pytest.mark.parametrize('field,value', [
+        ('business_result', 'All tenants succeed without data loss'),
+        ('business_results', ['All tenants succeed', 'No data loss']),
+        ('acceptance_scenarios', ['All tenants survive failover']),
+        ('acceptance_scenario', 'All tenants survive failover'),
+    ])
+    def test_canonical_requirement_change_invalidates_acceptance(case, field, value):
+        root, plan, path, old = case
+        first = plans.plan_metadata(plan)
+        old['finish_verdict'] = 'complete'
+        old['plan_binding'] = control.binding(first, old, plan, accepted=True)
+        assert control.evaluate(first, [], old, plan_dir=plan)['goal_status'] == 'accepted'
+        changed = {**first, field: value}
+>       assert control.plan_scope(first) != control.plan_scope(changed)
+E       AssertionError: assert 'c4705e3082a8b96e05358dd79903aa38c104026f6c90e8c9e6a9ca67b064162b' != 'c4705e3082a8b96e05358dd79903aa38c104026f6c90e8c9e6a9ca67b064162b'
+E        +  where 'c4705e3082a8b96e05358dd79903aa38c104026f6c90e8c9e6a9ca67b064162b' = <function plan_scope at 0x7d95eba1ab00>({'acceptance_scenarios': ['Run the new total CLI'], 'business_result': 'Empty basket returns zero', 'deliverable': 'implementation', 'goal': 'Fix the new total CLI'})
+E        +    where <function plan_scope at 0x7d95eba1ab00> = control.plan_scope
+E        +  and   'c4705e3082a8b96e05358dd79903aa38c104026f6c90e8c9e6a9ca67b064162b' = <function plan_scope at 0x7d95eba1ab00>({'acceptance_scenarios': ['All tenants survive failover'], 'business_result': 'Empty basket returns zero', 'deliverable': 'implementation', 'goal': 'Fix the new total CLI'})
+E        +    where <function plan_scope at 0x7d95eba1ab00> = control.plan_scope
+
+tests/test_plan_binding_acceptance.py:89: AssertionError
+__________ test_contract_work_review_accepts_B_without_manual_rebind ___________
+
+case = (PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/pytest-33....worktrees/self-contained-handoff-20261107/.tmp/pytest-3330378-0e0ddfdcc1a8f14a/test_contract_work_review_acce0', ...})
+
+    def test_contract_work_review_accepts_B_without_manual_rebind(case):
+        from _inprocess_lane import review_export_manifest
+        root, plan, path, old = case
+        (root / 'total.py').write_text('print(0)\n')
+        (root / 'test_total.py').write_text(
+            'import unittest, subprocess, sys\nclass Totals(unittest.TestCase):\n'
+            ' def test_total(self): self.assertEqual(subprocess.check_output([sys.executable, "total.py"]).strip(), b"0")\n')
+>       assert activate(plan)['goal_binding']['goal_status'] != 'accepted'
+E       AssertionError: assert 'accepted' != 'accepted'
+
+tests/test_plan_binding_acceptance.py:118: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_plan_binding_acceptance.py::test_activation_never_adopts_complete_A_acceptance
+FAILED tests/test_plan_binding_acceptance.py::test_canonical_requirement_change_invalidates_acceptance[business_result-All tenants succeed without data loss]
+FAILED tests/test_plan_binding_acceptance.py::test_canonical_requirement_change_invalidates_acceptance[business_results-value1]
+FAILED tests/test_plan_binding_acceptance.py::test_canonical_requirement_change_invalidates_acceptance[acceptance_scenarios-value2]
+FAILED tests/test_plan_binding_acceptance.py::test_contract_work_review_accepts_B_without_manual_rebind
+5 failed, 2 passed in 1.45s

@@ -1,0 +1,26 @@
+[
+  {
+    "name": "publish-fixed",
+    "command": [
+      "python3",
+      "scripts/publish_package.py"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "sync-fixed",
+    "command": [
+      "python3",
+      "plugins/last-human-commit/scripts/sync_skills.py"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "validator-fixed",
+    "command": [
+      "python3",
+      "tests/validate.py"
+    ],
+    "exit_code": 0
+  }
+]

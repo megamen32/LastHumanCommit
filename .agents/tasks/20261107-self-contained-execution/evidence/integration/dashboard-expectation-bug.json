@@ -1,0 +1,27 @@
+{
+  "bug": {
+    "created_at": "2026-11-07T21:06:50+00:00",
+    "details": "Distinct cause: test_plan_home.py:112 expects legacy done plan completed; intentional new behavior is awaiting with unknown goal. Preserve all sorting/security coverage and assert no accepted completion. RED evidence/integration/validator-initial.log.",
+    "events": [
+      {
+        "action": "register",
+        "actor": "I1 native 01a1b7ae",
+        "at": "2026-11-07T21:06:50+00:00",
+        "changes": {
+          "details": "Distinct cause: test_plan_home.py:112 expects legacy done plan completed; intentional new behavior is awaiting with unknown goal. Preserve all sorting/security coverage and assert no accepted completion. RED evidence/integration/validator-initial.log.",
+          "source": "tests/test_plan_home.py:112",
+          "status": "open",
+          "title": "Dashboard regression fixture подменяет done cards принятием цели"
+        }
+      }
+    ],
+    "id": "Bc3ad2338a0b14757a239",
+    "owner": "I1 native 01a1b7ae",
+    "reporter": "I1 native 01a1b7ae",
+    "source": "tests/test_plan_home.py:112",
+    "status": "open",
+    "title": "Dashboard regression fixture подменяет done cards принятием цели",
+    "updated_at": "2026-11-07T21:06:50+00:00"
+  },
+  "sha256": "389677a70d3c507b0f20704c51fc85e32a1c52a379e63bff36d98a4169a64823"
+}

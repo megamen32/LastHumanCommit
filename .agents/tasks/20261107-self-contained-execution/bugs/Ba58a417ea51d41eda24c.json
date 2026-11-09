@@ -1,0 +1,58 @@
+{
+  "created_at": "2026-11-07T21:23:00+00:00",
+  "details": "Independent REVIEW public-path-tests.py::test_activate_does_not_accept_old_goal_for_new_work; actual subprocess activate with complete non-status A accepts B before work. RED records/H1/proofs/p1-binding-reviewer-red.txt.",
+  "events": [
+    {
+      "action": "register",
+      "actor": "H R1/R2 01a1b7ac-35d9-7992-9580-8c9d6b5fb9e6",
+      "at": "2026-11-07T21:23:00+00:00",
+      "changes": {
+        "details": "Independent REVIEW public-path-tests.py::test_activate_does_not_accept_old_goal_for_new_work; actual subprocess activate with complete non-status A accepts B before work. RED records/H1/proofs/p1-binding-reviewer-red.txt.",
+        "source": "evidence/REVIEW/early-findings.md; public-path-tests.py",
+        "status": "open",
+        "title": "P1: activation переносит acceptance старой цели на другой план"
+      }
+    },
+    {
+      "action": "resolve",
+      "actor": "H R1/R2 01a1b7ac-35d9-7992-9580-8c9d6b5fb9e6",
+      "at": "2026-11-07T21:27:25+00:00",
+      "changes": {
+        "resolution": {
+          "evidence": {
+            "proof_path": "records/H1/proofs/p1-binding-reviewer-green.txt",
+            "red_proof_path": "records/H1/proofs/p1-binding-reviewer-red.txt",
+            "red_result": "2 failed",
+            "red_sha256": "bab431f473b94f59478cd657f8ecacf0025e7be262f205231d127e6c1f4726d3",
+            "result": "2 passed",
+            "sha256": "e1af7755483639dee7b3302abf1b5834fef48e16b00bf2bb6de2360ca9f286d4",
+            "test_command": "REVIEW_TOOLS=<H>/src/common/tools python3 -m pytest -q --confcutdir=<REVIEW> <REVIEW>/public-path-tests.py -k \"activate or changed_business\""
+          },
+          "kind": "fixed",
+          "reason": ""
+        },
+        "status": "fixed"
+      }
+    }
+  ],
+  "id": "Ba58a417ea51d41eda24c",
+  "owner": "H R1/R2 01a1b7ac-35d9-7992-9580-8c9d6b5fb9e6",
+  "reporter": "H R1/R2 01a1b7ac-35d9-7992-9580-8c9d6b5fb9e6",
+  "resolution": {
+    "evidence": {
+      "proof_path": "records/H1/proofs/p1-binding-reviewer-green.txt",
+      "red_proof_path": "records/H1/proofs/p1-binding-reviewer-red.txt",
+      "red_result": "2 failed",
+      "red_sha256": "bab431f473b94f59478cd657f8ecacf0025e7be262f205231d127e6c1f4726d3",
+      "result": "2 passed",
+      "sha256": "e1af7755483639dee7b3302abf1b5834fef48e16b00bf2bb6de2360ca9f286d4",
+      "test_command": "REVIEW_TOOLS=<H>/src/common/tools python3 -m pytest -q --confcutdir=<REVIEW> <REVIEW>/public-path-tests.py -k \"activate or changed_business\""
+    },
+    "kind": "fixed",
+    "reason": ""
+  },
+  "source": "evidence/REVIEW/early-findings.md; public-path-tests.py",
+  "status": "fixed",
+  "title": "P1: activation переносит acceptance старой цели на другой план",
+  "updated_at": "2026-11-07T21:27:25+00:00"
+}

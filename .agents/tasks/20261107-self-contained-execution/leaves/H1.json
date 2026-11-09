@@ -1,0 +1,105 @@
+{
+  "label": "Зафиксировать проверяемый пакет поручения",
+  "kind": "task",
+  "status": "done",
+  "owner": "handoff",
+  "description": "Зафиксировать проверяемый пакет поручения. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+  "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+  "estimate_minutes": 15,
+  "depends_on": [],
+  "parent": "S1",
+  "id": "H1",
+  "model": "gpt-6.1-sol",
+  "created_at": "2026-11-07T22:40:41+03:00",
+  "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+  "harness": "codex",
+  "updated_at": "2026-11-08T00:41:21+03:00",
+  "progress_events": [
+    {
+      "at": "2026-11-07T22:40:41+03:00",
+      "note": "",
+      "changes": {
+        "label": "Зафиксировать проверяемый пакет поручения",
+        "kind": "task",
+        "status": "queued",
+        "owner": "handoff",
+        "description": "Зафиксировать проверяемый пакет поручения. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+        "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+        "estimate_minutes": 15,
+        "depends_on": [],
+        "parent": "S1",
+        "model": "gpt-6.1-sol"
+      },
+      "actor": {
+        "host_id": null,
+        "harness": "codex",
+        "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+        "source": "native_environment"
+      },
+      "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "harness": "codex"
+    },
+    {
+      "at": "2026-11-07T22:43:39+03:00",
+      "note": "Worker handoff registered on lhc/self-contained-handoff-20261107",
+      "changes": {
+        "worker": {
+          "id": "handoff",
+          "branch": "lhc/self-contained-handoff-20261107",
+          "worktree": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107",
+          "registered_at": "2026-11-07T22:43:39+03:00",
+          "run_dir": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/self-contained-run",
+          "run_host": "roomhacker-server-100"
+        }
+      },
+      "actor": {
+        "host_id": null,
+        "harness": "codex",
+        "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+        "source": "native_environment"
+      },
+      "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "harness": "codex"
+    },
+    {
+      "at": "2026-11-07T23:09:32+03:00",
+      "note": "",
+      "changes": {
+        "status": "running"
+      },
+      "actor": {
+        "host_id": null,
+        "harness": null,
+        "session_id": null,
+        "source": "unknown"
+      },
+      "session": "unknown",
+      "harness": "unknown"
+    },
+    {
+      "at": "2026-11-08T00:41:21+03:00",
+      "note": "Parent reconciliation authorized by owner: closes only completed source/fixture phase; real independent/native consumer remains in Q1/Q2/N100/N199.",
+      "changes": {
+        "status": "done",
+        "result": "SOURCE_DONE: immutable private brief/attempt identity and gates implemented; H c31f702b + P1 b7510c30 integrated at089ac703. RED/GREEN and exact publication: records/H1/result.md; records/H1/proofs/source-publication.json; p1-binding-publication.json. Source proof only; B4 bootstrap separate, consumer not accepted."
+      },
+      "actor": {
+        "host_id": "roomhacker-server-100",
+        "harness": "codex",
+        "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+        "source": "declared"
+      },
+      "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+      "harness": "codex"
+    }
+  ],
+  "worker": {
+    "id": "handoff",
+    "branch": "lhc/self-contained-handoff-20261107",
+    "worktree": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107",
+    "registered_at": "2026-11-07T22:43:39+03:00",
+    "run_dir": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/self-contained-run",
+    "run_host": "roomhacker-server-100"
+  },
+  "result": "SOURCE_DONE: immutable private brief/attempt identity and gates implemented; H c31f702b + P1 b7510c30 integrated at089ac703. RED/GREEN and exact publication: records/H1/result.md; records/H1/proofs/source-publication.json; p1-binding-publication.json. Source proof only; B4 bootstrap separate, consumer not accepted."
+}

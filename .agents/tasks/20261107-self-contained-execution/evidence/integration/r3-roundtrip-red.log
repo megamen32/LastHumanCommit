@@ -1,0 +1,31 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+____________ test_capture_changes_when_bound_goal_evidence_changes _____________
+
+fixture = (PosixPath('/tmp/pytest-of-roomhacker/pytest-101340/test_capture_changes_when_boun0/roots/plan'), PosixPath('/tmp/pyte...a_dir': '/tmp/pytest-of-roomhacker/pytest-101340/test_capture_changes_when_boun0/replica', 'listen': '127.0.0.1', ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x79324f54c5e0>
+
+    def test_capture_changes_when_bound_goal_evidence_changes(fixture, monkeypatch):
+        plan, client, cfg = fixture
+        leaves.update_leaf(plan, 'A', {'status': 'done'})
+        mirror.register(plan, client)
+        projection = {'goal_status': 'unaccepted', 'fingerprint': 'a' * 64,
+                      'source': {'kind': 'native_outcome', 'harness': 'codex', 'session_id': 'lead',
+                                 'outcome_id': 'goal', 'source_fingerprint': 'b' * 64,
+                                 'private_payload': 'PRIVATE-SOURCE'},
+                      'decision': {'evidence': 'PRIVATE-DECISION'}}
+        monkeypatch.setattr(leaves, 'goal_control', lambda _plan: copy.deepcopy(projection))
+        first = mirror.capture(plan)
+        replica = mirror.Replica(cfg)
+        replica.ingest(copy.deepcopy(first['pending']))
+        assert 'data-state="awaiting"' in replica.dashboard()
+        projection.update(goal_status='accepted', fingerprint='c' * 64)
+        projection['source']['source_fingerprint'] = 'd' * 64
+        second = mirror.capture(plan)
+>       assert second['seq'] == first['seq'] + 1
+E       assert 1 == (1 + 1)
+
+tests/test_plan_mirror.py:84: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_plan_mirror.py::test_capture_changes_when_bound_goal_evidence_changes
+1 failed in 0.77s

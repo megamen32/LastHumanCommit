@@ -1,0 +1,67 @@
+(Linux uses --headless by default. To override, use --headed / --gui. For Xvfb mode instead, use --xvfb. Or you can hide this info by using --headless / --headless2 / --uc.)
+bind goal A to B: {"binding": "bound", "plan_dir": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/pytest-2709619-6a45e28bfb17301e/test_completed_goal_a_does_not0/.agents/tasks/goal-B", "goal_status": "accepted"}
+FFchanged projection: completed accepted Все шаги выполнены. Цель принята по исходному снимку
+F
+=================================== FAILURES ===================================
+____________ test_completed_goal_a_does_not_accept_different_plan_b ____________
+
+tmp_path = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/pytest-2709619-6a45e28bfb17301e/test_completed_goal_a_does_not0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x70fe8a97fa30>
+
+    def test_completed_goal_a_does_not_accept_different_plan_b(tmp_path, monkeypatch):
+        plan = setup(tmp_path, monkeypatch)
+        outcome = completed_goal_a(tmp_path)
+        state = {'business': {'outcome': outcome}}
+        assert outcome_module.verdict(outcome, state) == 'complete'
+        path = guard.learning_path(tmp_path, 'codex', 'review-fixture-lead')
+        assert path.is_relative_to(tmp_path)
+        guard.write_state(path, state)
+        result = control.bind_session_plan(plan, 'review-fixture-lead', tmp_path, 'codex')
+        print('bind goal A to B:', json.dumps(result))
+>       assert result['goal_status'] != 'accepted', 'completed research A accepted implementation goal B'
+E       AssertionError: completed research A accepted implementation goal B
+E       assert 'accepted' != 'accepted'
+
+.tmp/independent-review/test_independent_control.py:50: AssertionError
+____ test_current_acceptance_scenarios_and_business_result_invalidate_scope ____
+
+    def test_current_acceptance_scenarios_and_business_result_invalidate_scope():
+        first = {'goal': 'Deliver product', 'deliverable': 'implementation',
+            'business_result': 'Handle one request', 'acceptance_scenarios': ['one request succeeds']}
+        changed = {**first, 'business_result': 'Handle all tenants without losing data',
+            'acceptance_scenarios': ['tenant isolation and failover succeed']}
+>       assert control.plan_scope(first) != control.plan_scope(changed), 'canonical acceptance fields omitted from fingerprint'
+E       AssertionError: canonical acceptance fields omitted from fingerprint
+E       assert '50116d1dcaf4e594cc8b3d8c6b62299ad4cacee6c6c0f8e28f2ef7733132ad5f' != '50116d1dcaf4e594cc8b3d8c6b62299ad4cacee6c6c0f8e28f2ef7733132ad5f'
+E        +  where '50116d1dcaf4e594cc8b3d8c6b62299ad4cacee6c6c0f8e28f2ef7733132ad5f' = <function plan_scope at 0x70fe8b3e7250>({'acceptance_scenarios': ['one request succeeds'], 'business_result': 'Handle one request', 'deliverable': 'implementation', 'goal': 'Deliver product'})
+E        +    where <function plan_scope at 0x70fe8b3e7250> = control.plan_scope
+E        +  and   '50116d1dcaf4e594cc8b3d8c6b62299ad4cacee6c6c0f8e28f2ef7733132ad5f' = <function plan_scope at 0x70fe8b3e7250>({'acceptance_scenarios': ['tenant isolation and failover succeed'], 'business_result': 'Handle all tenants without losing data', 'deliverable': 'implementation', 'goal': 'Deliver product'})
+E        +    where <function plan_scope at 0x70fe8b3e7250> = control.plan_scope
+
+.tmp/independent-review/test_independent_control.py:57: AssertionError
+_________ test_changed_snapshot_scope_cannot_reuse_accepted_projection _________
+
+    def test_changed_snapshot_scope_cannot_reuse_accepted_projection():
+        spec = importlib.util.spec_from_file_location('review_v_catalog', ROOT / 'V/src/common/tools/lhc_plan_catalog.py')
+        catalog = importlib.util.module_from_spec(spec); spec.loader.exec_module(catalog)
+        from datetime import datetime, timezone
+        now = datetime(2026, 11, 7, tzinfo=timezone.utc)
+        doc = {'goal': 'Original goal A', 'tasks': [{'id': 'L1', 'status': 'done'}],
+            'goal_control': {'goal_status': 'accepted', 'fingerprint': 'a'*64,
+                'source': {'kind': 'native_outcome', 'session_id': 'old-lead', 'outcome_id': 'A',
+                    'source_fingerprint': 'b'*64}}}
+        doc['goal'] = 'A new, unverified goal B'
+        entry = {'snapshot': {'project': 'test', 'name': 'plan', 'document': doc,
+            'last_file_event': now.isoformat()}}
+        result = catalog.summarize(entry, now)
+        print('changed projection:', result['state'], result['goal_status'], result['stage'])
+>       assert result['goal_status'] != 'accepted', 'opaque cached fields accept changed snapshot goal'
+E       AssertionError: opaque cached fields accept changed snapshot goal
+E       assert 'accepted' != 'accepted'
+
+.tmp/independent-review/test_independent_control.py:73: AssertionError
+=========================== short test summary info ============================
+FAILED .tmp/independent-review/test_independent_control.py::test_completed_goal_a_does_not_accept_different_plan_b
+FAILED .tmp/independent-review/test_independent_control.py::test_current_acceptance_scenarios_and_business_result_invalidate_scope
+FAILED .tmp/independent-review/test_independent_control.py::test_changed_snapshot_scope_cannot_reuse_accepted_projection
+3 failed in 0.44s

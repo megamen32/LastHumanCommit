@@ -1,0 +1,168 @@
+(Linux uses --headless by default. To override, use --headed / --gui. For Xvfb mode instead, use --xvfb. Or you can hide this info by using --headless / --headless2 / --uc.)
+F.FFFF                                                                   [100%]
+=================================== FAILURES ===================================
+________ test_brief_symlinks_are_rejected_without_native_io[directory] _________
+
+plan = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/pytest-1970442-7c2e181a6a47abd5/test_brief_symlinks_are_reject0/fixture-task')
+linked = 'directory'
+
+    @pytest.mark.parametrize("linked", ["directory", "file"])
+    def test_brief_symlinks_are_rejected_without_native_io(plan, linked):
+        outside = plan.parent / "outside"
+        outside.mkdir()
+        (outside / "L1.md").write_text(BRIEF)
+        if linked == "directory":
+            (plan / "briefs").rmdir()
+            (plan / "briefs").symlink_to(outside, target_is_directory=True)
+        else:
+            (plan / "briefs/L1.md").symlink_to(outside / "L1.md")
+        transport = Transport()
+>       with pytest.raises(ValueError, match="brief"):
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+tests/test_execution_handoff.py:274: Failed
+____________ test_fifo_brief_is_rejected_without_waiting_for_writer ____________
+
+plan = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/pytest-1970442-7c2e181a6a47abd5/test_fifo_brief_is_rejected_wi0/fixture-task')
+
+    def test_fifo_brief_is_rejected_without_waiting_for_writer(plan):
+        import os
+        import subprocess
+        os.mkfifo(plan / "briefs/L1.md")
+        code = """import json, sys
+    from pathlib import Path
+    sys.path.insert(0, sys.argv[1])
+    import lhc_handoff
+    plan = Path(sys.argv[2])
+    assignment = json.loads((plan / 'leaves/L1.json').read_text())['assignment']
+    try:
+        lhc_handoff.read_brief(plan, 'L1', assignment, {})
+    except ValueError as error:
+        print(error)
+    else:
+        raise SystemExit('non-regular brief accepted')
+    """
+        try:
+>           run = subprocess.run([sys.executable, "-c", code, str(TOOLS), str(plan)],
+                                 capture_output=True, text=True, timeout=3)
+
+tests/test_execution_handoff.py:298: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/lib/python3.10/subprocess.py:505: in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+/usr/lib/python3.10/subprocess.py:1154: in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+/usr/lib/python3.10/subprocess.py:2022: in _communicate
+    self._check_timeout(endtime, orig_timeout, stdout, stderr)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <Popen: returncode: -9 args: ['/usr/bin/python3', '-c', "import json, sys\nf...>
+endtime = 703973.183265304, orig_timeout = 3, stdout_seq = [], stderr_seq = []
+skip_check_and_raise = False
+
+    def _check_timeout(self, endtime, orig_timeout, stdout_seq, stderr_seq,
+                       skip_check_and_raise=False):
+        """Convenience for checking if a timeout has expired."""
+        if endtime is None:
+            return
+        if skip_check_and_raise or _time() > endtime:
+>           raise TimeoutExpired(
+                    self.args, orig_timeout,
+                    output=b''.join(stdout_seq) if stdout_seq else None,
+                    stderr=b''.join(stderr_seq) if stderr_seq else None)
+E           subprocess.TimeoutExpired: Command '['/usr/bin/python3', '-c', "import json, sys\nfrom pathlib import Path\nsys.path.insert(0, sys.argv[1])\nimport lhc_handoff\nplan = Path(sys.argv[2])\nassignment = json.loads((plan / 'leaves/L1.json').read_text())['assignment']\ntry:\n    lhc_handoff.read_brief(plan, 'L1', assignment, {})\nexcept ValueError as error:\n    print(error)\nelse:\n    raise SystemExit('non-regular brief accepted')\n", '/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/src/common/tools', '/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/pytest-1970442-7c2e181a6a47abd5/test_fifo_brief_is_rejected_wi0/fixture-task']' timed out after 3 seconds
+
+/usr/lib/python3.10/subprocess.py:1198: TimeoutExpired
+
+During handling of the above exception, another exception occurred:
+
+plan = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/pytest-1970442-7c2e181a6a47abd5/test_fifo_brief_is_rejected_wi0/fixture-task')
+
+    def test_fifo_brief_is_rejected_without_waiting_for_writer(plan):
+        import os
+        import subprocess
+        os.mkfifo(plan / "briefs/L1.md")
+        code = """import json, sys
+    from pathlib import Path
+    sys.path.insert(0, sys.argv[1])
+    import lhc_handoff
+    plan = Path(sys.argv[2])
+    assignment = json.loads((plan / 'leaves/L1.json').read_text())['assignment']
+    try:
+        lhc_handoff.read_brief(plan, 'L1', assignment, {})
+    except ValueError as error:
+        print(error)
+    else:
+        raise SystemExit('non-regular brief accepted')
+    """
+        try:
+            run = subprocess.run([sys.executable, "-c", code, str(TOOLS), str(plan)],
+                                 capture_output=True, text=True, timeout=3)
+        except subprocess.TimeoutExpired:
+>           pytest.fail("FIFO brief blocks admission before any native I/O")
+E           Failed: FIFO brief blocks admission before any native I/O
+
+tests/test_execution_handoff.py:301: Failed
+_____________ test_duplicate_json_contract_keys_fail_closed[False] _____________
+
+plan = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/pytest-1970442-7c2e181a6a47abd5/test_duplicate_json_contract_k0/fixture-task')
+nested = False
+
+    @pytest.mark.parametrize("nested", [False, True])
+    def test_duplicate_json_contract_keys_fail_closed(plan, nested):
+        import lhc_handoff
+        fields = lhc_handoff._fields(BRIEF)
+        fields["acceptance"] = {"output": "result", "destination": "records/L1/result.md", "checks": "run fixture"}
+        if nested:
+            fields["owner/session"] = read(plan)["assignment"]["executor"]
+            brief = json.dumps(fields).replace('"session_id": "worker"',
+                                              '"session_id": "different", "session_id": "worker"')
+        else:
+            brief = json.dumps(fields).replace('"leaf_id": "L1"', '"leaf_id": "OTHER", "leaf_id": "L1"')
+        (plan / "briefs/L1.md").write_text(brief)
+        transport = Transport()
+>       with pytest.raises(ValueError, match="brief_duplicate"):
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+tests/test_execution_handoff.py:319: Failed
+_____________ test_duplicate_json_contract_keys_fail_closed[True] ______________
+
+plan = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/pytest-1970442-7c2e181a6a47abd5/test_duplicate_json_contract_k1/fixture-task')
+nested = True
+
+    @pytest.mark.parametrize("nested", [False, True])
+    def test_duplicate_json_contract_keys_fail_closed(plan, nested):
+        import lhc_handoff
+        fields = lhc_handoff._fields(BRIEF)
+        fields["acceptance"] = {"output": "result", "destination": "records/L1/result.md", "checks": "run fixture"}
+        if nested:
+            fields["owner/session"] = read(plan)["assignment"]["executor"]
+            brief = json.dumps(fields).replace('"session_id": "worker"',
+                                              '"session_id": "different", "session_id": "worker"')
+        else:
+            brief = json.dumps(fields).replace('"leaf_id": "L1"', '"leaf_id": "OTHER", "leaf_id": "L1"')
+        (plan / "briefs/L1.md").write_text(brief)
+        transport = Transport()
+>       with pytest.raises(ValueError, match="brief_duplicate"):
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+tests/test_execution_handoff.py:319: Failed
+_______ test_task_identity_is_canonical_directory_not_optional_metadata ________
+
+plan = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/pytest-1970442-7c2e181a6a47abd5/test_task_identity_is_canonica0/fixture-task')
+
+    def test_task_identity_is_canonical_directory_not_optional_metadata(plan):
+        (plan / "briefs/L1.md").write_text(BRIEF.replace("fixture-task", "foreign-task"))
+        assert "task_id" not in pj.plan_metadata(plan)
+        transport = Transport()
+>       with pytest.raises(ValueError, match="brief_task_mismatch"):
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+tests/test_execution_handoff.py:328: Failed
+=========================== short test summary info ============================
+FAILED tests/test_execution_handoff.py::test_brief_symlinks_are_rejected_without_native_io[directory]
+FAILED tests/test_execution_handoff.py::test_fifo_brief_is_rejected_without_waiting_for_writer
+FAILED tests/test_execution_handoff.py::test_duplicate_json_contract_keys_fail_closed[False]
+FAILED tests/test_execution_handoff.py::test_duplicate_json_contract_keys_fail_closed[True]
+FAILED tests/test_execution_handoff.py::test_task_identity_is_canonical_directory_not_optional_metadata
+5 failed, 1 passed, 25 deselected in 3.86s

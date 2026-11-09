@@ -1,0 +1,27 @@
+{
+  "phase": "PREPARATION_ONLY_NOT_FINAL_CANDIDATE",
+  "owner": {
+    "host_id": "roomhacker-server-100",
+    "harness": "codex",
+    "native_session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425"
+  },
+  "worktree": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-release-118-20261108",
+  "branch": "lhc/release-self-contained-118-20261108",
+  "initial_sha": "089ac703a7c68cacc0bbbdadead9bab8bc808bf2",
+  "git_clean": true,
+  "gate_command": [
+    "python3",
+    "src/common/tools/lhc_worktree.py",
+    "delivery",
+    "--repo",
+    "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-release-118-20261108",
+    "--target",
+    "main",
+    "--pr-stage",
+    "off"
+  ],
+  "exit_code": 0,
+  "stdout": "{\"branch\": \"lhc/release-self-contained-118-20261108\", \"deployment_verified\": false, \"head\": \"089ac703a7c68cacc0bbbdadead9bab8bc808bf2\", \"integration_required\": true, \"merge_authorized\": false, \"pr_required\": false, \"pr_stage\": \"off\", \"remote\": \"origin\", \"repository\": \"github.com/megamen32/LastHumanCommit\", \"status\": \"published_without_pr\", \"target\": \"main\"}\n",
+  "stderr": "",
+  "finalization": "fast-forward this clean branch to final integrated and fully checked candidate; do not install stale package from this preparation point"
+}

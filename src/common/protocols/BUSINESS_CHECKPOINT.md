@@ -85,3 +85,70 @@ actual milestone evidence when the claim requires it. The command checks record
 completeness, not free-text truth; Lead owns references and assigns the selected action to a Worker.
 Use English for new internal records. Tell the user only a material result, problem
 or needed decision; mandatory internal checks do not require empty hourly reports.
+## Empty frontier still needs a goal decision
+
+Closing every card is a task fact. Acceptance of the original goal remains in
+the existing native outcome, bound to the exact canonical plan, semantic goal
+scope and current acceptance evidence. A status-only outcome cannot accept an
+implementation goal. Explicit plan activation binds an existing native outcome
+when Lead ownership is known; a legacy or unreadable outcome stays unknown.
+
+When no useful next leaf is available and the goal is unaccepted, Lead chooses
+one concrete next leaf, scoped research/decomposition, a genuine external wait
+with owner, evidence and resume condition, or preserves an actual human stop or
+revocation. Record decision, evidence, action, owner and uncertainty through
+LhcPlan frontier or the existing outcome CLI:
+
+```sh
+python3 <LHC>/tools/lhc_outcome.py --cwd <project> --runtime <runtime> \
+  --session-id <native-id> frontier --plan-dir <canonical-plan> \
+  --decision need_fact --action-kind research --evidence '<observed gap>' \
+  --action '<one bounded permitted investigation>' --owner '<executor>' \
+  --uncertainty '<fact the investigation will resolve>'
+```
+
+Use decision `continue` with `--action-kind leaf --leaf-id <existing-ready-id>`,
+or `wait_external` with `--resume-condition '<observable resumption condition>'`.
+A work decision selects execution; writing the record does not perform the work.
+A human-stop record requires an existing structured native stop or refusal, and
+cannot create authority to stop. Unknown delivery is reconciled, never replayed.
+
+A missing binding can be repaired by `bind-plan --plan-dir <canonical-plan>`;
+`replace-plan --plan-dir <old> --replacement-plan-dir <new> --source-ref <evidence>`
+records an explicit replacement, separately from ordinary binding changes.
+The hook reads these facts, gives bounded advice once per changed frontier, and
+does not classify prose, accept a goal, call an LLM, dispatch, or create a wake.
+Admission unknown/blocked remains distinct from an exhausted frontier. Graph and
+catalog goal-control snapshots are derived views with source fingerprints, never
+acceptance authority. Changed goal scope or evidence invalidates stale decisions.
+## Current goal Lead during handoff
+
+Historical leaf sessions and attempt authors remain history. A goal-level handoff
+uses the existing public `update-plan` operation and its revision, with the typed
+`current_goal_lead` NativeRef plus the source reference of the explicit delegation:
+
+```sh
+python3 <LHC>/tools/lhc_plan_json.py update-plan <canonical-plan> \
+  --fields '{"current_goal_lead":{"host_id":"<actual-host>","harness":"codex","session_id":"<actual-native-id>","source_ref":"records/<handoff>.md"}}' \
+  --revision '{"reason":"Explicit operational Lead handoff","summary":"Current goal role transferred; historical authors retained"}'
+```
+
+Use the actual verified host and native identity from the handoff. Do not infer
+them from a working directory or from the prose of an assignment. This pointer
+names the current role; it neither grants human authority nor carries acceptance.
+Changing it requires an explicit revision and source reference. It does not alter
+the semantic business-goal fingerprint or erase prior authors, attempts or evidence.
+
+Normal activation, contract, work and review continue to use the existing native
+outcome binding. They cannot replace the goal-role pointer. Ordinary Worker
+activation remains a leaf action and cannot acquire another Lead's goal binding.
+The generic view resolves the selected current role, then verifies its exact
+native outcome and canonical plan binding. Pending remains unaccepted, and a new
+role never receives an older owner's accepted outcome automatically.
+
+Conflicting unresolved typed Lead assignments keep the result unknown, including
+when one contender has accepted evidence. Completed historical assignments and
+legacy executor sessions do not override an explicit current role. Without the
+pointer, a unique current typed Lead is supported; mixed legacy references remain
+honestly ambiguous. Missing or unreadable native state remains unknown. A handoff
+does not require a separate manual rebind command or an acceptance shortcut.

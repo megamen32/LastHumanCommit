@@ -1,0 +1,29 @@
+actual loopback capture/sync/replica/dashboard: unaccepted -> accepted -> superseded; private payload absent; cache refreshed
+.F
+=================================== FAILURES ===================================
+___ test_package_copies_include_control_and_handoff_with_exact_source_bytes ____
+
+    def test_package_copies_include_control_and_handoff_with_exact_source_bytes():
+        source=(SNAPSHOT/'scripts/publish_package.py').read_text()
+        tree=ast.parse(source)
+        copies=None
+        for node in tree.body:
+            if isinstance(node,ast.Assign) and any(isinstance(t,ast.Name) and t.id=='TOOL_COPIES' for t in node.targets):
+                copies=ast.literal_eval(node.value)
+        assert {'lhc_handoff.py','lhc_plan_control.py'}<=set(copies)
+        checked=[]
+        for tool in ('lhc_handoff.py','lhc_plan_control.py','lhc_plan_publish.py','lhc_plan_mirror.py','lhc_plan_mcp.py'):
+            expected=(TOOLS/tool).read_bytes()
+            for folder in ('common/tools','tools','native/codex/common/tools','native/codex/tools'):
+                path=SNAPSHOT/'plugins/last-human-commit'/folder/tool
+>               assert path.read_bytes()==expected,str(path)
+E               AssertionError: /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.agents/tasks/20261107-self-contained-execution/evidence/REVIEW/fix-recheck/I-2bd0f54/plugins/last-human-commit/common/tools/lhc_plan_mcp.py
+E               assert b'#!/usr/bin/...xit(main())\n' == b'#!/usr/bin/...xit(main())\n'
+E                 
+E                 At index 1517 diff: b'c' != b's'
+E                 Use -v to get more diff
+
+.agents/tasks/20261107-self-contained-execution/evidence/REVIEW/fix-recheck/test_i_followup.py:110: AssertionError
+=========================== short test summary info ============================
+FAILED .agents/tasks/20261107-self-contained-execution/evidence/REVIEW/fix-recheck/test_i_followup.py::test_package_copies_include_control_and_handoff_with_exact_source_bytes
+1 failed, 1 passed in 2.04s

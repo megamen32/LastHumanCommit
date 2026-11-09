@@ -1,0 +1,68 @@
+{
+  "created_at": "2026-11-07T21:58:47+00:00",
+  "details": "Reviewer bootstrap-review R4: source.subagent.thread_spawn.parent_thread_id lost; public contract creates falsely verified standalone identity. Separate current identity conflict is R5.",
+  "events": [
+    {
+      "action": "register",
+      "actor": "H R4/R5 01a1b7ac-35d9-7992-9580-8c9d6b5fb9e6",
+      "at": "2026-11-07T21:58:47+00:00",
+      "changes": {
+        "details": "Reviewer bootstrap-review R4: source.subagent.thread_spawn.parent_thread_id lost; CLI creates verified standalone identity. Related exact reviewer identity-admission cases: heartbeat runtime/session and prior native_id mismatch must fail closed. Reviewer file names its latter cases R5; they are distinct from current owner-resolution R5 assignment.",
+        "source": "evidence/REVIEW/bootstrap-review.md; records/I1/current-native-owner.md",
+        "status": "open",
+        "title": "P1: nested native child допускается как standalone bootstrap"
+      }
+    },
+    {
+      "action": "update",
+      "actor": "H source labels clarified",
+      "at": "2026-11-07T22:00:48+00:00",
+      "changes": {
+        "details": "Reviewer bootstrap-review R4: source.subagent.thread_spawn.parent_thread_id lost; public contract creates falsely verified standalone identity. Separate current identity conflict is R5.",
+        "title": "P1 R4: nested native child допускается как standalone bootstrap"
+      },
+      "reason": ""
+    },
+    {
+      "action": "resolve",
+      "actor": "H native identity R4",
+      "at": "2026-11-07T22:04:18+00:00",
+      "changes": {
+        "resolution": {
+          "evidence": {
+            "proof_path": "records/H1/proofs/r4-r5-r4-green.txt",
+            "red_proof_path": "records/H1/proofs/r4-r5-r4-red.txt",
+            "red_result": "2 failed",
+            "red_sha256": "51199e6b9e30db3278705c2ef38673fb02709287f760c9037187e3b76d9173a7",
+            "result": "4 passed",
+            "sha256": "9a8acb51e31a2d510d930eca91ab43882df54b456ca50aff3e1ea8c4abe6cd0e",
+            "test_command": "python3 -m pytest -q tests/test_native_identity_admission.py"
+          },
+          "kind": "fixed",
+          "reason": ""
+        },
+        "status": "fixed"
+      }
+    }
+  ],
+  "id": "B25b78e5fc6fc44a88a89",
+  "owner": "H R4/R5 01a1b7ac-35d9-7992-9580-8c9d6b5fb9e6",
+  "reporter": "H R4/R5 01a1b7ac-35d9-7992-9580-8c9d6b5fb9e6",
+  "resolution": {
+    "evidence": {
+      "proof_path": "records/H1/proofs/r4-r5-r4-green.txt",
+      "red_proof_path": "records/H1/proofs/r4-r5-r4-red.txt",
+      "red_result": "2 failed",
+      "red_sha256": "51199e6b9e30db3278705c2ef38673fb02709287f760c9037187e3b76d9173a7",
+      "result": "4 passed",
+      "sha256": "9a8acb51e31a2d510d930eca91ab43882df54b456ca50aff3e1ea8c4abe6cd0e",
+      "test_command": "python3 -m pytest -q tests/test_native_identity_admission.py"
+    },
+    "kind": "fixed",
+    "reason": ""
+  },
+  "source": "evidence/REVIEW/bootstrap-review.md; records/I1/current-native-owner.md",
+  "status": "fixed",
+  "title": "P1 R4: nested native child допускается как standalone bootstrap",
+  "updated_at": "2026-11-07T22:04:18+00:00"
+}

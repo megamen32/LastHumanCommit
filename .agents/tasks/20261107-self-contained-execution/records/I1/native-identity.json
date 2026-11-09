@@ -1,0 +1,10 @@
+{
+  "schema": "lhc.native-identity.v1",
+  "native_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+  "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+  "parent_thread_id": null,
+  "agent_path": null,
+  "native_cwd": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107",
+  "journal_path": "/home/roomhacker/.codex/sessions/2026/11/07/rollout-2026-11-07T23-23-35-01a1b7ae-4a6c-70c2-84cc-3288329a2425.jsonl",
+  "originator": "Codex Desktop"
+}

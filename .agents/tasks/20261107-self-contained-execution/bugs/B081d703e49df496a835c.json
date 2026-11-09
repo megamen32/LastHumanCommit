@@ -1,0 +1,58 @@
+{
+  "created_at": "2026-11-07T21:09:13+00:00",
+  "details": "Integration RED: capture increments on new bound outcome evidence after fingerprint fix, but public_document drops goal_control; catalog can never see accepted goal. RED evidence/integration/dashboard-mcp-green.log test_capture_changes_when_bound_goal_evidence_changes KeyError goal_control. Publish only allowlisted display metadata, no decision/payload.",
+  "events": [
+    {
+      "action": "register",
+      "actor": "I1 native 01a1b7ae",
+      "at": "2026-11-07T21:09:13+00:00",
+      "changes": {
+        "details": "Integration RED: capture increments on new bound outcome evidence after fingerprint fix, but public_document drops goal_control; catalog can never see accepted goal. RED evidence/integration/dashboard-mcp-green.log test_capture_changes_when_bound_goal_evidence_changes KeyError goal_control. Publish only allowlisted display metadata, no decision/payload.",
+        "source": "src/common/tools/lhc_plan_publish.py public_document",
+        "status": "open",
+        "title": "Публичный снимок теряет bound goal-control проекцию"
+      }
+    },
+    {
+      "action": "resolve",
+      "actor": "I1 native 01a1b7ae",
+      "at": "2026-11-07T21:10:45+00:00",
+      "changes": {
+        "resolution": {
+          "evidence": {
+            "proof_path": "evidence/integration/dashboard-mcp-final-green.log",
+            "red_proof_path": "evidence/integration/dashboard-mcp-green.log",
+            "red_result": "FAILED tests/test_plan_mirror.py::test_capture_changes_when_bound_goal_evidence_changes",
+            "red_sha256": "5a1f024f30a94f19a49221f371e336bbd20c031563539b744621347ecdf398ae",
+            "result": "89 passed, 2 skipped in 27.37s",
+            "sha256": "5445cf0a91661446be799a85a6221db16c9c205c2ed0ab9cac51e7bc1e3b0d05",
+            "test_command": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest -q tests/test_mirror_server_events.py tests/test_mirror_observer_events.py tests/test_mirror_observer_perf.py tests/test_plan_home.py tests/test_plan_mirror.py tests/test_single_plan_mcp.py tests/test_plan_publish.py"
+          },
+          "kind": "fixed",
+          "reason": ""
+        },
+        "status": "fixed"
+      }
+    }
+  ],
+  "id": "B081d703e49df496a835c",
+  "owner": "I1 native 01a1b7ae",
+  "reporter": "I1 native 01a1b7ae",
+  "resolution": {
+    "evidence": {
+      "proof_path": "evidence/integration/dashboard-mcp-final-green.log",
+      "red_proof_path": "evidence/integration/dashboard-mcp-green.log",
+      "red_result": "FAILED tests/test_plan_mirror.py::test_capture_changes_when_bound_goal_evidence_changes",
+      "red_sha256": "5a1f024f30a94f19a49221f371e336bbd20c031563539b744621347ecdf398ae",
+      "result": "89 passed, 2 skipped in 27.37s",
+      "sha256": "5445cf0a91661446be799a85a6221db16c9c205c2ed0ab9cac51e7bc1e3b0d05",
+      "test_command": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest -q tests/test_mirror_server_events.py tests/test_mirror_observer_events.py tests/test_mirror_observer_perf.py tests/test_plan_home.py tests/test_plan_mirror.py tests/test_single_plan_mcp.py tests/test_plan_publish.py"
+    },
+    "kind": "fixed",
+    "reason": ""
+  },
+  "source": "src/common/tools/lhc_plan_publish.py public_document",
+  "status": "fixed",
+  "title": "Публичный снимок теряет bound goal-control проекцию",
+  "updated_at": "2026-11-07T21:10:45+00:00"
+}

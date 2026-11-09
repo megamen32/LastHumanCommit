@@ -1,0 +1,81 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+___________ test_event_observer_processes_only_affected_plans[goal] ____________
+
+tmp_path = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/pytest-2888029-ea196be96ff9360f/test_event_observer_processes_0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7754217ce530>
+change = 'goal'
+
+    @pytest.mark.parametrize('change', ['quiet', 'edit', 'new', 'overflow', 'goal'])
+    def test_event_observer_processes_only_affected_plans(tmp_path, monkeypatch, change):
+        root = tmp_path / 'plans'
+        plans = []
+        def create(name):
+            plan = root / name
+            (plan / 'leaves').mkdir(parents=True)
+            (plan / 'plan.json').write_text('{}')
+            (plan / 'leaves/A.json').write_text('{"id":"A","label":"Done","status":"done"}')
+            dest = mirror.directory(plan)
+            dest.mkdir()
+            (dest / 'mirror-state.json').write_text(json.dumps({'seq': 1, 'pending': {'identity': name, 'document': {'tasks': [{'status': 'done'}]}}, 'server_receipt': {'seq': 1, 'identity': name}}))
+            return str(plan)
+        for index in range(105):
+            plans.append(create(str(index)))
+        goal_state = tmp_path / 'native/goal.json'
+        goal_state.parent.mkdir()
+        goal_state.write_text('{}')
+        if change == 'goal':
+            monkeypatch.setattr(mirror, 'goal_state_path',
+                                lambda plan: goal_state if str(plan) == plans[0] else None,
+                                raising=False)
+        cfg = tmp_path / 'client.json'
+        cfg.write_text(json.dumps({'data_dir': str(tmp_path / 'client'), 'roots': [str(root)], 'poll_seconds': .1, 'debounce_seconds': .05}))
+        tick = [0]
+        captures, registrations, stamps, walks = [], [], [], []
+        walk = mirror.os.walk
+        def counted_walk(path, **kwargs):
+            walks.append((tick[0], Path(path)))
+            return walk(path, **kwargs)
+        monkeypatch.setattr(mirror.os, 'walk', counted_walk)
+        stamp = mirror.file_stamp
+        def counted_stamp(path):
+            stamps.append((tick[0], Path(path)))
+            return stamp(path)
+        monkeypatch.setattr(mirror, 'file_stamp', counted_stamp)
+        monkeypatch.setattr(mirror, 'register', lambda plan, cfg: registrations.append(plan))
+        monkeypatch.setattr(mirror, 'capture', lambda plan: captures.append(plan))
+        monkeypatch.setattr(mirror, 'sync', lambda *args: pytest.fail('durable acknowledged snapshot must not be resent'))
+        class FakeEvents:
+            available = True
+            def __enter__(self): return self
+            def __exit__(self, *args): pass
+            def add(self, path): return True
+            def poll(self, timeout=0):
+                paths, overflow = set(), False
+                if tick[0] == 3:
+                    if change == 'edit': paths = {Path(plans[0]) / 'leaves/A.json'}
+                    elif change == 'goal': paths = {goal_state}
+                    elif change == 'new': paths = {Path(create('new-plan'))}
+                    elif change == 'overflow': overflow = True
+                return SimpleNamespace(paths=paths, overflow=overflow)
+        monkeypatch.setattr(events, 'FileEvents', FakeEvents)
+        class Finished(Exception): pass
+        def sleep(_):
+            tick[0] += 1
+            if tick[0] >= 8: raise Finished()
+        monkeypatch.setattr(mirror.time, 'monotonic', lambda: tick[0])
+        monkeypatch.setattr(mirror.time, 'sleep', sleep)
+        with pytest.raises(Finished): mirror.run_observer(cfg)
+        if change == 'quiet':
+            assert len(captures) == len(plans)
+            assert not [path for at, path in stamps if at >= 2]
+        elif change in ('edit', 'goal'):
+>           assert captures.count(plans[0]) == 2
+E           AssertionError: assert 1 == 2
+E            +  where 1 = <built-in method count of list object at 0x7754218ce300>('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/pytest-2888029-ea196be96ff9360f/test_event_observer_processes_0/plans/0')
+E            +    where <built-in method count of list object at 0x7754218ce300> = ['/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/pytest-2888029-ea196be96ff9....worktrees/audit-followup-20261107/.tmp/pytest-2888029-ea196be96ff9360f/test_event_observer_processes_0/plans/98', ...].count
+
+tests/test_mirror_observer_events.py:87: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_mirror_observer_events.py::test_event_observer_processes_only_affected_plans[goal]
+1 failed in 0.36s

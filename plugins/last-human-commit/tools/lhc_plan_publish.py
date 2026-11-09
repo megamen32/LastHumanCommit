@@ -137,6 +137,16 @@ def public_document(document):
             return {k: clean(v) for k, v in value.items() if k not in {"affected_files", "blocker_details"} and not re.search(r"(?i)password|secret|credential|authorization|token|api.?key", k)}
         return value
     result = {k: clean(v) for k, v in document.items() if k in plan_keys}
+    if isinstance(document.get('goal_control'), dict):
+        control = document['goal_control']
+        # Display metadata only. Private frontier decisions remain in native state.
+        result['goal_control'] = {k: clean(v) for k, v in control.items()
+                                  if k in {'goal_status', 'frontier', 'next_decision',
+                                           'fingerprint', 'reason', 'decision_fresh'}}
+        if isinstance(control.get('source'), dict):
+            result['goal_control']['source'] = {k: clean(v) for k, v in control['source'].items()
+                                                if k in {'kind', 'harness', 'session_id',
+                                                         'outcome_id', 'source_fingerprint'}}
     if isinstance(document.get('plan_origin'), dict):
         result['plan_origin'] = {k: clean(v) for k, v in document['plan_origin'].items()
                                  if k in {'at', 'source', 'leaf_id', 'recorded_at'}}

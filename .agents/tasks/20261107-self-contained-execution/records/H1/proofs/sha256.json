@@ -1,0 +1,20 @@
+{
+  "fixture-bug-id.txt": "41470b37cd2557c0c779380b246930c1b0d71513b8cb12b9f6a7c6098b7764f1",
+  "handoff-control-consumer.txt": "429b9c50c29e59d4472cc7ce4283d9b97965a4ff09eeb171a0b13c63145e6c9a",
+  "handoff-control-green.txt": "30770496154028ebde9194d52fb0062fd3535ffd94e797b323750268681364da",
+  "handoff-control-reconciled-red.txt": "ab4e210da809aa9f04ea68d348e9b1ee57fe82b6e8a41556893cd72771dd122d",
+  "handoff-control-red.txt": "27b28ef85e08d5433fa21f6277479e32aa2cc9e68163b57b13c36666b0b4377d",
+  "handoff-delivery-gate.txt": "e01b56d4abaa499be403f0d6edaaa44be3c9c4f675a31d4635e3ae10e080c3d9",
+  "handoff-fixture-green.txt": "a2fe6eb20f192c8f513bec130d79f87d8d770ef2b1e62f927256df8c5ecbd7aa",
+  "handoff-gitprivacy-green.txt": "5d5501feffdd2acfd50058fea7a15156ae96cfd5ebeb88ad86a28cb9cc8f3754",
+  "handoff-gitprivacy-red.txt": "23ebb73207c004ea81e207a1cde536fd714073c28b14160cc75d0059fbb5439d",
+  "handoff-green-first.txt": "0489ab29a03dc4e52aa174a7372c11c5368e0dba9716bf157d23ee4693793a93",
+  "handoff-green.txt": "fce4a182f7f1b5ae0de64a3ae621feafa7eae9dfe16e76d87289b15187cfcde5",
+  "handoff-red.txt": "878eee3b68b9065116596ba7af67f2037ebada6557b89b0120c758c8531c0404",
+  "handoff-regression-first.txt": "e52285cd77e192e061688954b8f44db71ecaa8673106965bb92be2e311de2be1",
+  "handoff-regression-green.txt": "3a56d129dc5f1a1dc34f983440ed6529d812f3d1e1a380d75445e0c5c01f9e8d",
+  "handoff-safety-green.txt": "c726d2aad0138324a09e913ce3b9880f10d1679a94880b3709eee81fea38c10f",
+  "handoff-safety-red.txt": "a0735d08ef092926e73effcf3f864e4d965354b1780ac9415a08058c2f6d60e7",
+  "handoff-worktree-inventory.txt": "081211bf93d5807d7a72ae338c920f4cc05c71b43e4f29448420b0ceda1d00f4",
+  "source-publication.json": "44a3bada0df2ed926373b1b9300c219fad5ab246321db415dcf742ef66636043"
+}

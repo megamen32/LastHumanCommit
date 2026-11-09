@@ -116,6 +116,30 @@ assignment = {
 }
 ```
 
+Before dispatch, create a complete `plan/briefs/L01.md`; a raw message alone
+cannot authorize execution. For the isolated fixture above, a JSON brief is:
+
+```python
+brief = {
+    "task_id": "plan",  # exact canonical plan directory name
+    "leaf_id": "L01",
+    "owner/session": assignment["executor"],
+    "parent_lead_identity": assignment["lead"],
+    "parent_task_id/session/route": {
+        "task_id": "plan", "session_id": "lead", "route": "records/L01/result.md"},
+    "role": "execution_worker", "mode": "testing",
+    "description": "Exercise the isolated fixture and preserve its result.",
+    "acceptance": {"output": "Fixture result", "destination": "records/L01/result.md",
+                   "checks": "Dispatch, reconcile and accept the correlated fixture turn"},
+    "read_paths": ["execution_fixture.py"], "write_paths": ["records/L01/result.md"],
+    "excluded_scope": ["real sessions", "external accounts"],
+    "next_action": "Read the fixture and run this isolated consumer journey.",
+}
+plan = run_dir / "plan"
+(plan / "briefs").mkdir(exist_ok=True)
+(plan / "briefs/L01.md").write_text(json.dumps(brief), encoding="utf-8")
+```
+
 ## Two consumer journeys
 
 The CLI consumer calls `assign-leaf`, then `dispatch-leaf` with the same attempt
@@ -128,7 +152,11 @@ Then set the fixture's `phase["complete"] = True` and call `reconcile-leaf`.
 The result becomes `result_ready` and its wait reads `resumed`. It is still not
 accepted or done. Call `accept-leaf --result` with the consumer's verified result
 and confirm the leaf becomes done. Save stdout, exit codes and the public leaf
-projection.
+projection. Inspect `dispatch.handoff`: its plan, leaf, attempt, brief hash,
+leaf hash and payload hash must identify the fixture input. The referenced private
+receipt must reproduce the exact delivered message, have restrictive permissions,
+and be excluded by Git without changing root ignore rules. The public leaf/graph
+and MCP error output must not contain the private message.
 
 The stdio consumer performs the same journey with `assign_leaf`,
 `dispatch_leaf`, `reconcile_leaf` and `accept_leaf`. Their argument names are
@@ -171,3 +199,17 @@ check the staged CLI and stdio surface, the lifecycle/actor tests, readiness
 consumers, installation readback and existing hook trust. No consumer should need
 a new token store, external server, polling agent, scheduler, quota change or
 approval workaround.
+
+
+## Native goal-control fixture
+
+A separate source/staged consumer may seed an isolated native outcome using the
+existing `lhc_time_guard.learning_path`/`write_state` helpers and fixture identities.
+Call `activate` with that exact Lead session and harness; verify `goal_binding`
+reports bound. Close the fixture card, then read `goal-control`: the unfinished
+consumer goal remains unaccepted and requests a frontier decision. Record a
+bounded research decision through stdio `record_frontier_decision` with native
+request metadata. Reread both native state and CLI control: the decision and
+fingerprint must agree. A request without metadata or an explicit session cannot
+borrow an inherited server thread. This is isolated source/staged-path evidence,
+not installed or real-worker acceptance.

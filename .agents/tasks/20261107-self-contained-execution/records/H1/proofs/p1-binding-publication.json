@@ -1,0 +1,28 @@
+{
+  "status": "SOURCE_DONE_R1_R2",
+  "branch": "lhc/self-contained-handoff-20261107",
+  "cumulative_source_sha": "b7510c301172c570688428050945c3facff75fa5",
+  "previous_H_tip": "c31f702b1fca54f5e10d132ea698612ec35813a9",
+  "exact_F_merge": "5f8e53b7555751c08937c43b977c79a8e130339b",
+  "merge_commit": "2b16b05ef0092334674e5b098c515e22dcf9e129",
+  "fix_paths": [
+    "src/common/tools/lhc_plan_control.py",
+    "src/common/tools/lhc_outcome.py",
+    "src/common/protocols/ORCHESTRATION_RECORDS.md",
+    "tests/test_plan_binding_acceptance.py"
+  ],
+  "publication": "push succeeded; git ls-remote exact branch returned same b7510c301172c570688428050945c3facff75fa5",
+  "bugs": {
+    "R1": "Ba58a417ea51d41eda24c",
+    "R2": "B7556c06a05f843ebb1f6"
+  },
+  "reviewer_originals_modified": false,
+  "independent_reproductions": "2 failed -> 2 passed, 1 deselected (R3 outside scope)",
+  "own_regressions": "5 failed, 2 passed -> focused 58 passed; combined regression 200 passed in 43.59s",
+  "foreign_wip": " D downloaded_files/dashboard.lock preserved unstaged; no owned WIP remains",
+  "delivery_gate": "refused on preserved foreign deletion; not PASS",
+  "runtime_changes": false,
+  "installed_proof": false,
+  "original_collaboration_native_provenance": "UNKNOWN",
+  "active_time": "not measured"
+}

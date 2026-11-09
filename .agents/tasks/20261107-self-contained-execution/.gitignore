@@ -1,0 +1,4 @@
+.lhc-publication/
+.lhc-leaves.lock
+.lhc-bugs.lock
+records/*/attempts/

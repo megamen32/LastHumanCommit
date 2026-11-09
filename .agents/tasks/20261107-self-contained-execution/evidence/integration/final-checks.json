@@ -1,0 +1,53 @@
+[
+  {
+    "step": "final-version-guard",
+    "argv": [
+      "python3",
+      "src/common/tools/lhc_version.py",
+      "check",
+      "--no-fetch"
+    ],
+    "exit_code": 0
+  },
+  {
+    "step": "final-version-sync",
+    "argv": [
+      "python3",
+      "scripts/sync_version.py"
+    ],
+    "exit_code": 0
+  },
+  {
+    "step": "final-publish",
+    "argv": [
+      "python3",
+      "scripts/publish_package.py"
+    ],
+    "exit_code": 0
+  },
+  {
+    "step": "final-sync",
+    "argv": [
+      "python3",
+      "plugins/last-human-commit/scripts/sync_skills.py"
+    ],
+    "exit_code": 0
+  },
+  {
+    "step": "final-projection-check",
+    "argv": [
+      "python3",
+      "scripts/publish_package.py",
+      "--check"
+    ],
+    "exit_code": 0
+  },
+  {
+    "step": "final-validator",
+    "argv": [
+      "python3",
+      "tests/validate.py"
+    ],
+    "exit_code": 0
+  }
+]

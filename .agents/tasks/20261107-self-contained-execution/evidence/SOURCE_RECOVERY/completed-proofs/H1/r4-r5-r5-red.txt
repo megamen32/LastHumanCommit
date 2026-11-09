@@ -1,0 +1,86 @@
+(Linux uses --headless by default. To override, use --headed / --gui. For Xvfb mode instead, use --xvfb. Or you can hide this info by using --headless / --headless2 / --uc.)
+FFF                                                                      [100%]
+=================================== FAILURES ===================================
+_ test_conflicting_existing_native_facts_are_not_repaired_by_bootstrap[timer-runtime] _
+
+fresh = (PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/pytest-10...existing_nati0/.agents/shared-session/learning/09868839b3c8ccec12755d27c0ac8867143094f137fe3a8818ec38af8dc5edfa.json'))
+fact = 'timer-runtime'
+
+    @pytest.mark.parametrize('fact', ['timer-runtime', 'timer-session', 'prior-native-id'])
+    def test_conflicting_existing_native_facts_are_not_repaired_by_bootstrap(fresh, fact):
+        root, journal, state_path = fresh
+        guard.native_heartbeat(root, 'codex', 'bootstrap-owner')
+        state = guard.load_state(state_path)
+        if fact == 'timer-runtime':
+            state['native_heartbeat']['runtime'] = 'opencode'
+        elif fact == 'timer-session':
+            state['native_heartbeat']['session_id'] = 'another-owner'
+        else:
+            state['business'] = {'native_identity': {'verified': True, 'native_id': 'another-owner',
+                'logical_session_id': 'bootstrap-owner', 'native_cwd': str(root)}}
+        guard.write_state(state_path, state)
+        before = state_path.read_bytes()
+        result = contract(root, kind='testing')
+>       assert result.returncode != 0, 'conflicting native state was silently adopted'
+E       AssertionError: conflicting native state was silently adopted
+E       assert 0 != 0
+E        +  where 0 = CompletedProcess(args=['/usr/bin/python3', '/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained...n": "e29810320122a3de866c91fd", "integration": "3ea881008a8137e854da3102"}, "finish_verdict": "pending"}\n', stderr='').returncode
+
+tests/test_outcome_bootstrap.py:231: AssertionError
+_ test_conflicting_existing_native_facts_are_not_repaired_by_bootstrap[timer-session] _
+
+fresh = (PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/pytest-10...existing_nati1/.agents/shared-session/learning/09868839b3c8ccec12755d27c0ac8867143094f137fe3a8818ec38af8dc5edfa.json'))
+fact = 'timer-session'
+
+    @pytest.mark.parametrize('fact', ['timer-runtime', 'timer-session', 'prior-native-id'])
+    def test_conflicting_existing_native_facts_are_not_repaired_by_bootstrap(fresh, fact):
+        root, journal, state_path = fresh
+        guard.native_heartbeat(root, 'codex', 'bootstrap-owner')
+        state = guard.load_state(state_path)
+        if fact == 'timer-runtime':
+            state['native_heartbeat']['runtime'] = 'opencode'
+        elif fact == 'timer-session':
+            state['native_heartbeat']['session_id'] = 'another-owner'
+        else:
+            state['business'] = {'native_identity': {'verified': True, 'native_id': 'another-owner',
+                'logical_session_id': 'bootstrap-owner', 'native_cwd': str(root)}}
+        guard.write_state(state_path, state)
+        before = state_path.read_bytes()
+        result = contract(root, kind='testing')
+>       assert result.returncode != 0, 'conflicting native state was silently adopted'
+E       AssertionError: conflicting native state was silently adopted
+E       assert 0 != 0
+E        +  where 0 = CompletedProcess(args=['/usr/bin/python3', '/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained...n": "b9e690806188e8646a351cb9", "integration": "39b31a223a2fca7ecfdf4894"}, "finish_verdict": "pending"}\n', stderr='').returncode
+
+tests/test_outcome_bootstrap.py:231: AssertionError
+_ test_conflicting_existing_native_facts_are_not_repaired_by_bootstrap[prior-native-id] _
+
+fresh = (PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/pytest-10...existing_nati2/.agents/shared-session/learning/09868839b3c8ccec12755d27c0ac8867143094f137fe3a8818ec38af8dc5edfa.json'))
+fact = 'prior-native-id'
+
+    @pytest.mark.parametrize('fact', ['timer-runtime', 'timer-session', 'prior-native-id'])
+    def test_conflicting_existing_native_facts_are_not_repaired_by_bootstrap(fresh, fact):
+        root, journal, state_path = fresh
+        guard.native_heartbeat(root, 'codex', 'bootstrap-owner')
+        state = guard.load_state(state_path)
+        if fact == 'timer-runtime':
+            state['native_heartbeat']['runtime'] = 'opencode'
+        elif fact == 'timer-session':
+            state['native_heartbeat']['session_id'] = 'another-owner'
+        else:
+            state['business'] = {'native_identity': {'verified': True, 'native_id': 'another-owner',
+                'logical_session_id': 'bootstrap-owner', 'native_cwd': str(root)}}
+        guard.write_state(state_path, state)
+        before = state_path.read_bytes()
+        result = contract(root, kind='testing')
+>       assert result.returncode != 0, 'conflicting native state was silently adopted'
+E       AssertionError: conflicting native state was silently adopted
+E       assert 0 != 0
+E        +  where 0 = CompletedProcess(args=['/usr/bin/python3', '/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained...n": "c9f27f3ceb81ddf5e49a6ca9", "integration": "b026ab116edafddb786dbe38"}, "finish_verdict": "pending"}\n', stderr='').returncode
+
+tests/test_outcome_bootstrap.py:231: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_outcome_bootstrap.py::test_conflicting_existing_native_facts_are_not_repaired_by_bootstrap[timer-runtime]
+FAILED tests/test_outcome_bootstrap.py::test_conflicting_existing_native_facts_are_not_repaired_by_bootstrap[timer-session]
+FAILED tests/test_outcome_bootstrap.py::test_conflicting_existing_native_facts_are_not_repaired_by_bootstrap[prior-native-id]
+3 failed, 23 deselected in 0.85s

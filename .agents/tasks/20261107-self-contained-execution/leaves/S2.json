@@ -1,0 +1,76 @@
+{
+  "label": "Проверить потребителей и выпустить версию",
+  "kind": "milestone",
+  "status": "blocked",
+  "owner": "native operational Lead / IntegratorRelease",
+  "description": "Проверить потребителей и выпустить версию. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+  "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+  "estimate_minutes": 45,
+  "depends_on": [],
+  "id": "S2",
+  "model": "gpt-6.1-sol",
+  "created_at": "2026-11-07T22:40:42+03:00",
+  "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+  "harness": "codex",
+  "updated_at": "2026-11-08T00:47:47+03:00",
+  "progress_events": [
+    {
+      "at": "2026-11-07T22:40:42+03:00",
+      "note": "",
+      "changes": {
+        "label": "Проверить потребителей и выпустить версию",
+        "kind": "milestone",
+        "status": "queued",
+        "owner": "Lead",
+        "description": "Проверить потребителей и выпустить версию. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+        "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+        "estimate_minutes": 45,
+        "depends_on": [],
+        "model": "gpt-6.1-sol"
+      },
+      "actor": {
+        "host_id": null,
+        "harness": "codex",
+        "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+        "source": "native_environment"
+      },
+      "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "harness": "codex"
+    },
+    {
+      "at": "2026-11-08T00:41:25+03:00",
+      "note": "Milestone blocked on exact final artifact, not on unrelated projects.",
+      "changes": {
+        "status": "blocked",
+        "blocker": "Final native context/consumer/review/release chain waits I1/B4 finalbytes. Preliminary QA/review evidence preserved; no final acceptance.",
+        "result": "Preparation and preliminary reads done; Q1/Q2/native acceptance and release remain pending."
+      },
+      "actor": {
+        "host_id": "roomhacker-server-100",
+        "harness": "codex",
+        "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+        "source": "declared"
+      },
+      "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+      "harness": "codex"
+    },
+    {
+      "at": "2026-11-08T00:47:47+03:00",
+      "note": "Explicit human delegation: current native operational Lead and acceptance/release continuation owner. Historical authors/progress/receipts retained; old root envID is not verified native authority.",
+      "changes": {
+        "owner": "native operational Lead / IntegratorRelease",
+        "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425"
+      },
+      "actor": {
+        "host_id": "roomhacker-server-100",
+        "harness": "codex",
+        "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+        "source": "declared"
+      },
+      "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+      "harness": "codex"
+    }
+  ],
+  "blocker": "Final native context/consumer/review/release chain waits I1/B4 finalbytes. Preliminary QA/review evidence preserved; no final acceptance.",
+  "result": "Preparation and preliminary reads done; Q1/Q2/native acceptance and release remain pending."
+}

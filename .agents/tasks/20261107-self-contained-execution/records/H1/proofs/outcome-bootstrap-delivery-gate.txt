@@ -1,0 +1,1 @@
+error: commit scoped changes and preserve foreign work before delivery

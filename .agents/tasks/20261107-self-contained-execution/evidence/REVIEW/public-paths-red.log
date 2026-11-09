@@ -1,0 +1,81 @@
+actual CLI activate: {"plan": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/independent-review/public-fixtures/test_activate_does_not_accept_0/.agents/tasks/new-goal-B", "leaf_id": "L1", "status": "running", "session": "fixture-lead", "harness": "codex", "owner": "roomhacker", "worktree": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/independent-review/public-fixtures/test_activate_does_not_accept_0", "url": null, "sync": "local-only", "goal_binding": {"binding": "bound", "plan_dir": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/independent-review/public-fixtures/test_activate_does_not_accept_0/.agents/tasks/new-goal-B", "goal_status": "accepted"}}
+Fchanged acceptance contract: accepted
+Fpublic roundtrip: completed accepted -> awaiting unknown
+F
+=================================== FAILURES ===================================
+_____________ test_activate_does_not_accept_old_goal_for_new_work ______________
+
+tmp_path = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/independent-review/public-fixtures/test_activate_does_not_accept_0')
+
+    def test_activate_does_not_accept_old_goal_for_new_work(tmp_path):
+        subprocess.run(['git','init','--quiet',str(tmp_path)],check=True)
+        (tmp_path/'.agents').mkdir()
+        plan=tmp_path/'.agents/tasks/new-goal-B'
+        (plan/'leaves').mkdir(parents=True)
+        (plan/'plan.json').write_text(json.dumps({'title':'Goal B','goal':'Build application B','slots':1}))
+        (plan/'leaves/L1.json').write_text(json.dumps({'id':'L1','status':'queued','label':'Implement B'}))
+        outcome=old_outcome(tmp_path)
+        state={'business':{'outcome':outcome}}
+        assert outcome_module.verdict(outcome,state)=='complete'
+        path=guard.learning_path(tmp_path,'codex','fixture-lead')
+        assert path.is_relative_to(tmp_path)
+        guard.write_state(path,state)
+        result=subprocess.run([sys.executable,str(TOOLS/'lhc_plan_json.py'),'activate',str(plan),'L1',
+            '--session','fixture-lead','--harness','codex'],capture_output=True,text=True,timeout=15)
+        assert result.returncode==0,result.stderr
+        payload=json.loads(result.stdout)
+        print('actual CLI activate:',json.dumps(payload,ensure_ascii=False))
+>       assert payload['goal_binding']['goal_status']!='accepted','activate accepted goal B before its first implementation step'
+E       AssertionError: activate accepted goal B before its first implementation step
+E       assert 'accepted' != 'accepted'
+
+.tmp/independent-review/test_public_paths.py:45: AssertionError
+___________ test_changed_business_contract_rejects_prior_acceptance ____________
+
+tmp_path = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/independent-review/public-fixtures/test_changed_business_contract0')
+
+    def test_changed_business_contract_rejects_prior_acceptance(tmp_path):
+        first={'goal':'Deliver product','business_result':'Handle one request',
+            'acceptance_scenarios':['one request succeeds']}
+        outcome=old_outcome(tmp_path)
+        outcome['finish_verdict']='complete'
+        outcome['plan_binding']=control.binding(first,outcome,tmp_path,accepted=True)
+        assert control.evaluate(first,[],outcome,plan_dir=tmp_path)['goal_status']=='accepted'
+        revised={**first,'business_result':'Handle every tenant without data loss',
+            'acceptance_scenarios':['tenant isolation and failover succeed']}
+        view=control.evaluate(revised,[],outcome,plan_dir=tmp_path)
+        print('changed acceptance contract:',view['goal_status'])
+>       assert view['goal_status']!='accepted','new business acceptance uses old evidence without rebinding'
+E       AssertionError: new business acceptance uses old evidence without rebinding
+E       assert 'accepted' != 'accepted'
+
+.tmp/independent-review/test_public_paths.py:59: AssertionError
+_______________ test_public_roundtrip_preserves_safe_goal_status _______________
+
+    def test_public_roundtrip_preserves_safe_goal_status():
+        from datetime import datetime,timezone
+        now=datetime(2026,11,7,tzinfo=timezone.utc)
+        projection={'goal_status':'accepted','fingerprint':'source-scope-fingerprint',
+            'source':{'kind':'native_outcome','session_id':'fixture-lead','outcome_id':'goal-A',
+                'source_fingerprint':'source-evidence-fingerprint'}}
+        doc={'schema_version':2,'title':'Accepted fixture','goal':'Original goal A',
+            'goal_control':projection,'tasks':[{'id':'L1','status':'done'}]}
+        before=catalog.summarize({'snapshot':{'project':'test','name':'fixture','document':doc,
+            'last_file_event':now.isoformat()}},now)
+        public=publication.public_document(doc)
+        after=catalog.summarize({'snapshot':{'project':'test','name':'fixture','document':public,
+            'last_file_event':now.isoformat()}},now)
+        print('public roundtrip:',before['state'],before['goal_status'],'->',after['state'],after['goal_status'])
+>       assert after['goal_status']==before['goal_status'],'public_document strips newly added goal control'
+E       AssertionError: public_document strips newly added goal control
+E       assert 'unknown' == 'accepted'
+E         
+E         - accepted
+E         + unknown
+
+.tmp/independent-review/test_public_paths.py:76: AssertionError
+=========================== short test summary info ============================
+FAILED .tmp/independent-review/test_public_paths.py::test_activate_does_not_accept_old_goal_for_new_work
+FAILED .tmp/independent-review/test_public_paths.py::test_changed_business_contract_rejects_prior_acceptance
+FAILED .tmp/independent-review/test_public_paths.py::test_public_roundtrip_preserves_safe_goal_status
+3 failed in 0.58s

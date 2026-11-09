@@ -20,7 +20,7 @@ def test_discover_accepts_more_than_one_thousand_registered_plans(tmp_path):
     assert set(found) == set(registered)
 
 
-@pytest.mark.parametrize('change', ['quiet', 'edit', 'new', 'overflow'])
+@pytest.mark.parametrize('change', ['quiet', 'edit', 'new', 'overflow', 'goal'])
 def test_event_observer_processes_only_affected_plans(tmp_path, monkeypatch, change):
     root = tmp_path / 'plans'
     plans = []
@@ -35,6 +35,13 @@ def test_event_observer_processes_only_affected_plans(tmp_path, monkeypatch, cha
         return str(plan)
     for index in range(105):
         plans.append(create(str(index)))
+    goal_state = tmp_path / 'native/goal.json'
+    goal_state.parent.mkdir()
+    goal_state.write_text('{}')
+    if change == 'goal':
+        monkeypatch.setattr(mirror, 'goal_state_path',
+                            lambda plan: goal_state if str(plan) == plans[0] else None,
+                            raising=False)
     cfg = tmp_path / 'client.json'
     cfg.write_text(json.dumps({'data_dir': str(tmp_path / 'client'), 'roots': [str(root)], 'poll_seconds': .1, 'debounce_seconds': .05}))
     tick = [0]
@@ -61,6 +68,7 @@ def test_event_observer_processes_only_affected_plans(tmp_path, monkeypatch, cha
             paths, overflow = set(), False
             if tick[0] == 3:
                 if change == 'edit': paths = {Path(plans[0]) / 'leaves/A.json'}
+                elif change == 'goal': paths = {goal_state}
                 elif change == 'new': paths = {Path(create('new-plan'))}
                 elif change == 'overflow': overflow = True
             return SimpleNamespace(paths=paths, overflow=overflow)
@@ -75,7 +83,7 @@ def test_event_observer_processes_only_affected_plans(tmp_path, monkeypatch, cha
     if change == 'quiet':
         assert len(captures) == len(plans)
         assert not [path for at, path in stamps if at >= 2]
-    elif change == 'edit':
+    elif change in ('edit', 'goal'):
         assert captures.count(plans[0]) == 2
         assert all(captures.count(plan) == 1 for plan in plans[1:])
     elif change == 'new':

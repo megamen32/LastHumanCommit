@@ -1,0 +1,58 @@
+{
+  "created_at": "2026-11-07T20:56:58+00:00",
+  "details": "5 failed: packaged Stop/PostToolUse hooks and plan publish fail after regeneration; lhc_plan_control and lhc_handoff absent in curated tools. RED evidence/integration/validator-initial.log.",
+  "events": [
+    {
+      "action": "register",
+      "actor": "I1 native 01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+      "at": "2026-11-07T20:56:58+00:00",
+      "changes": {
+        "details": "5 failed: packaged Stop/PostToolUse hooks and plan publish fail after regeneration; lhc_plan_control and lhc_handoff absent in curated tools. RED evidence/integration/validator-initial.log.",
+        "source": "scripts/publish_package.py TOOL_COPIES",
+        "status": "open",
+        "title": "Собранные tools не содержат новые зависимости handoff и goal control"
+      }
+    },
+    {
+      "action": "resolve",
+      "actor": "I1 native 01a1b7ae",
+      "at": "2026-11-07T21:08:23+00:00",
+      "changes": {
+        "resolution": {
+          "evidence": {
+            "proof_path": "evidence/integration/package-fix-green.log",
+            "red_proof_path": "evidence/integration/validator-initial.log",
+            "red_result": "FAILED tests/test_plan_publish.py::test_packaged_stdio_outside_source_checkout",
+            "red_sha256": "2a42c387ee5101f1914a3878a64833e3cebcaa5719e3d02623cd3d06e87a5f40",
+            "result": "19 passed in 2.70s",
+            "sha256": "1170731024cb35fb8585a6cf57d99124031dbf171c95199902e17dfdb6cf37ff",
+            "test_command": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest -q tests/test_overseer_hook.py tests/test_plan_publish.py::test_packaged_stdio_outside_source_checkout"
+          },
+          "kind": "fixed",
+          "reason": ""
+        },
+        "status": "fixed"
+      }
+    }
+  ],
+  "id": "B0dc7460e6941463984b6",
+  "owner": "I1 native 01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+  "reporter": "I1 native 01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+  "resolution": {
+    "evidence": {
+      "proof_path": "evidence/integration/package-fix-green.log",
+      "red_proof_path": "evidence/integration/validator-initial.log",
+      "red_result": "FAILED tests/test_plan_publish.py::test_packaged_stdio_outside_source_checkout",
+      "red_sha256": "2a42c387ee5101f1914a3878a64833e3cebcaa5719e3d02623cd3d06e87a5f40",
+      "result": "19 passed in 2.70s",
+      "sha256": "1170731024cb35fb8585a6cf57d99124031dbf171c95199902e17dfdb6cf37ff",
+      "test_command": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest -q tests/test_overseer_hook.py tests/test_plan_publish.py::test_packaged_stdio_outside_source_checkout"
+    },
+    "kind": "fixed",
+    "reason": ""
+  },
+  "source": "scripts/publish_package.py TOOL_COPIES",
+  "status": "fixed",
+  "title": "Собранные tools не содержат новые зависимости handoff и goal control",
+  "updated_at": "2026-11-07T21:08:23+00:00"
+}

@@ -1,0 +1,58 @@
+{
+  "created_at": "2026-11-07T19:46:34+00:00",
+  "details": "Текст ready использует legacy candidates при dispatchable none.",
+  "events": [
+    {
+      "action": "register",
+      "actor": "Lead audit",
+      "at": "2026-11-07T19:46:34+00:00",
+      "changes": {
+        "details": "Текст ready использует legacy candidates при dispatchable none.",
+        "source": "src/common/tools/lhc_grid.py:5634",
+        "status": "open",
+        "title": "Проекция кандидатов названа допуском к запуску"
+      }
+    },
+    {
+      "action": "resolve",
+      "actor": "roomhacker-server-100/codex/01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+      "at": "2026-11-07T20:29:41+00:00",
+      "changes": {
+        "resolution": {
+          "evidence": {
+            "proof_path": "evidence/integration/fv-source-green.log",
+            "red_proof_path": "records/V1/evidence/red-label.log",
+            "red_result": "FAILED tests/test_truthful_plan_views.py::test_candidate_wording_never_claims_launch_admission",
+            "red_sha256": "02ea4fba1829dc4fa1a04a946ef13150961a415ba5baea9be1d5ecf359b2d139",
+            "result": "34 passed in 1.16s",
+            "sha256": "0a62547fc96be39a03e1ad1ba8ccfeff33e6516c808858f72689a97d2751defb",
+            "test_command": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest -q tests/test_plan_frontier_control.py tests/test_truthful_plan_views.py tests/test_plan_catalog.py"
+          },
+          "kind": "fixed",
+          "reason": ""
+        },
+        "status": "fixed"
+      }
+    }
+  ],
+  "id": "Ba945d680618b4fa786ac",
+  "owner": "Lead audit",
+  "reporter": "Lead audit",
+  "resolution": {
+    "evidence": {
+      "proof_path": "evidence/integration/fv-source-green.log",
+      "red_proof_path": "records/V1/evidence/red-label.log",
+      "red_result": "FAILED tests/test_truthful_plan_views.py::test_candidate_wording_never_claims_launch_admission",
+      "red_sha256": "02ea4fba1829dc4fa1a04a946ef13150961a415ba5baea9be1d5ecf359b2d139",
+      "result": "34 passed in 1.16s",
+      "sha256": "0a62547fc96be39a03e1ad1ba8ccfeff33e6516c808858f72689a97d2751defb",
+      "test_command": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest -q tests/test_plan_frontier_control.py tests/test_truthful_plan_views.py tests/test_plan_catalog.py"
+    },
+    "kind": "fixed",
+    "reason": ""
+  },
+  "source": "src/common/tools/lhc_grid.py:5634",
+  "status": "fixed",
+  "title": "Проекция кандидатов названа допуском к запуску",
+  "updated_at": "2026-11-07T20:29:41+00:00"
+}

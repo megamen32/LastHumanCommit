@@ -1,0 +1,14 @@
+{
+  "source_commit": "1ae641272980f9aacc8acd4c7244762fe2af0692",
+  "test_file": "current tests/test_plan_mirror.py copied without source edits",
+  "command": [
+    "python3",
+    "-m",
+    "pytest",
+    "-q",
+    "tests/test_plan_mirror.py::test_capture_changes_when_bound_goal_evidence_changes"
+  ],
+  "cwd": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/integration-01a1b7ae/r3-red-tree",
+  "exit_code": 1,
+  "canonical_bug": "B081d703e49df496a835c"
+}
