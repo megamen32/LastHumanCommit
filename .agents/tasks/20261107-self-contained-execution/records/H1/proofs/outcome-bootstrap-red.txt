@@ -1,0 +1,85 @@
+(Linux uses --headless by default. To override, use --headed / --gui. For Xvfb mode instead, use --xvfb. Or you can hide this info by using --headless / --headless2 / --uc.)
+FF.............FF                                                        [100%]
+=================================== FAILURES ===================================
+___ test_public_contract_bootstraps_without_hidden_hook_or_state_seed[False] ___
+
+fresh = (PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/pytest-35...act_bootstrap0/.agents/shared-session/learning/09868839b3c8ccec12755d27c0ac8867143094f137fe3a8818ec38af8dc5edfa.json'))
+timer_exists = False
+
+    @pytest.mark.parametrize('timer_exists', [False, True])
+    def test_public_contract_bootstraps_without_hidden_hook_or_state_seed(fresh, timer_exists):
+        root, journal, state_path = fresh
+        (root / 'total.py').write_text('print(0)\n')
+        assert not state_path.exists()
+        if timer_exists:
+            # Simulate an existing ordinary time-only observation, not a business outcome.
+            guard.native_heartbeat(root, 'codex', 'bootstrap-owner')
+        before = copy.deepcopy(guard.load_state(state_path))
+        result = contract(root)
+>       assert result.returncode == 0, result.stderr
+E       AssertionError: LHC outcome: no LHC session state for codex/bootstrap-owner from session root /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/pytest-3598990-a72cd5ac192299df/test_public_contract_bootstrap0; no state was created
+E         
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['/usr/bin/python3', '/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained...ntained-handoff-20261107/.tmp/pytest-3598990-a72cd5ac192299df/test_public_contract_bootstrap0; no state was created\n').returncode
+
+tests/test_outcome_bootstrap.py:57: AssertionError
+___ test_public_contract_bootstraps_without_hidden_hook_or_state_seed[True] ____
+
+fresh = (PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/pytest-35...act_bootstrap1/.agents/shared-session/learning/09868839b3c8ccec12755d27c0ac8867143094f137fe3a8818ec38af8dc5edfa.json'))
+timer_exists = True
+
+    @pytest.mark.parametrize('timer_exists', [False, True])
+    def test_public_contract_bootstraps_without_hidden_hook_or_state_seed(fresh, timer_exists):
+        root, journal, state_path = fresh
+        (root / 'total.py').write_text('print(0)\n')
+        assert not state_path.exists()
+        if timer_exists:
+            # Simulate an existing ordinary time-only observation, not a business outcome.
+            guard.native_heartbeat(root, 'codex', 'bootstrap-owner')
+        before = copy.deepcopy(guard.load_state(state_path))
+        result = contract(root)
+>       assert result.returncode == 0, result.stderr
+E       AssertionError: LHC outcome: no LHC outcome for native session bootstrap-owner at /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/pytest-3598990-a72cd5ac192299df/test_public_contract_bootstrap1/.agents/shared-session/learning/09868839b3c8ccec12755d27c0ac8867143094f137fe3a8818ec38af8dc5edfa.json; session root is /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/pytest-3598990-a72cd5ac192299df/test_public_contract_bootstrap1
+E         
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['/usr/bin/python3', '/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained...mit/.worktrees/self-contained-handoff-20261107/.tmp/pytest-3598990-a72cd5ac192299df/test_public_contract_bootstrap1\n').returncode
+
+tests/test_outcome_bootstrap.py:57: AssertionError
+_____________ test_existing_outcome_identity_mismatch_is_not_reset _____________
+
+fresh = (PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/pytest-35...come_identity0/.agents/shared-session/learning/09868839b3c8ccec12755d27c0ac8867143094f137fe3a8818ec38af8dc5edfa.json'))
+
+    def test_existing_outcome_identity_mismatch_is_not_reset(fresh):
+        root, journal, state_path = fresh
+        (root / 'total.py').write_text('print(0)\n')
+>       assert contract(root).returncode == 0
+E       AssertionError: assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['/usr/bin/python3', '/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained...ntained-handoff-20261107/.tmp/pytest-3598990-a72cd5ac192299df/test_existing_outcome_identity0; no state was created\n').returncode
+E        +    where CompletedProcess(args=['/usr/bin/python3', '/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained...ntained-handoff-20261107/.tmp/pytest-3598990-a72cd5ac192299df/test_existing_outcome_identity0; no state was created\n') = contract(PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/pytest-3598990-a72cd5ac192299df/test_existing_outcome_identity0'))
+
+tests/test_outcome_bootstrap.py:131: AssertionError
+_________ test_public_contract_work_review_with_no_manual_outcome_seed _________
+
+fresh = (PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/pytest-35...act_work_revi0/.agents/shared-session/learning/09868839b3c8ccec12755d27c0ac8867143094f137fe3a8818ec38af8dc5edfa.json'))
+
+    def test_public_contract_work_review_with_no_manual_outcome_seed(fresh):
+        from _inprocess_lane import review_export_manifest
+        root, journal, state_path = fresh
+        (root / 'total.py').write_text('print(0)\n')
+        (root / 'test_total.py').write_text(
+            'import unittest, subprocess, sys\nclass Totals(unittest.TestCase):\n'
+            ' def test_total(self): self.assertEqual(subprocess.check_output([sys.executable, "total.py"]).strip(), b"0")\n')
+        confirmed = contract(root)
+>       assert confirmed.returncode == 0, confirmed.stderr
+E       AssertionError: LHC outcome: no LHC session state for codex/bootstrap-owner from session root /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/pytest-3598990-a72cd5ac192299df/test_public_contract_work_revi0; no state was created
+E         
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['/usr/bin/python3', '/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained...ntained-handoff-20261107/.tmp/pytest-3598990-a72cd5ac192299df/test_public_contract_work_revi0; no state was created\n').returncode
+
+tests/test_outcome_bootstrap.py:148: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_outcome_bootstrap.py::test_public_contract_bootstraps_without_hidden_hook_or_state_seed[False]
+FAILED tests/test_outcome_bootstrap.py::test_public_contract_bootstraps_without_hidden_hook_or_state_seed[True]
+FAILED tests/test_outcome_bootstrap.py::test_existing_outcome_identity_mismatch_is_not_reset
+FAILED tests/test_outcome_bootstrap.py::test_public_contract_work_review_with_no_manual_outcome_seed
+4 failed, 13 passed in 3.38s

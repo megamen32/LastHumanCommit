@@ -121,6 +121,8 @@ TOOL_COPIES = (
     "lhc_readiness.py",
     "lhc_execution.py",
     "lhc_execution_transport.py",
+    "lhc_handoff.py",
+    "lhc_plan_control.py",
     "lhc_bug_register.py",
     "lhc_grid.py",
     "lhc_product.py",

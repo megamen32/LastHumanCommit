@@ -1,0 +1,18 @@
+(Linux uses --headless by default. To override, use --headed / --gui. For Xvfb mode instead, use --xvfb. Or you can hide this info by using --headless / --headless2 / --uc.)
+F.                                                                       [100%]
+=================================== FAILURES ===================================
+_________ test_exhausted_bound_implementation_requires_useful_decision _________
+
+tmp_path = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-frontier-20261107/.tmp/pytest-1033289-5518815f4d5257c2/test_exhausted_bound_implement0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x78005c1d46d0>
+
+    def test_exhausted_bound_implementation_requires_useful_decision(tmp_path, monkeypatch):
+        plan, event = fixture_plan(tmp_path, monkeypatch)
+        reason = entry.stop_gate(event, ROOT)
+>       assert reason and "goal" in reason.lower() and "decision" in reason.lower()
+E       assert (None)
+
+tests/test_plan_frontier_control.py:26: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_plan_frontier_control.py::test_exhausted_bound_implementation_requires_useful_decision
+1 failed, 1 passed in 0.28s

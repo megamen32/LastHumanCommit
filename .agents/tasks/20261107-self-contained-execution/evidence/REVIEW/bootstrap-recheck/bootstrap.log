@@ -1,0 +1,22 @@
+nested child result: 0 {"id": "78baea9faa8216b60d3e7191", "owner": {"harness": "codex", "session_id": "independent-bootstrap-owner"}, "original_goal": "🤖 Agent relay fixture. Inspect only fixture.py; return the finding to Lead. No publish permission.\nKeep exact Unicode: ё.", "latest_correction": "🤖 Agent relay fixture. Inspect only fixture.py; return the finding to Lead 
+F..................
+=================================== FAILURES ===================================
+___________ test_nested_child_header_cannot_bootstrap_as_standalone ____________
+
+case = (PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.agents/tasks/20261107...ssion.\nKeep exact Unicode: ё.', 'type': 'input_text'}], 'role': 'user', 'type': 'message'}, 'type': 'response_item'}])
+
+    def test_nested_child_header_cannot_bootstrap_as_standalone(case):
+        root,journal,path,rows=case
+        rows[0]['payload']['source']={'subagent':{'thread_spawn':{'parent_thread_id':'unverified-fixture-parent','depth':1}}}
+        rewrite(journal,rows)
+        result=invoke(root)
+        print('nested child result:',result.returncode,result.stdout[:350],result.stderr)
+>       assert result.returncode!=0,'child header was promoted to verified standalone identity'
+E       AssertionError: child header was promoted to verified standalone identity
+E       assert 0 != 0
+E        +  where 0 = CompletedProcess(args=['/usr/bin/python3', '/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup...n": "437be8eacb26a88471c6f83d", "integration": "bac1e12e18de62620755badf"}, "finish_verdict": "pending"}\n', stderr='').returncode
+
+.agents/tasks/20261107-self-contained-execution/evidence/REVIEW/bootstrap-recheck/test_independent_bootstrap.py:52: AssertionError
+=========================== short test summary info ============================
+FAILED .agents/tasks/20261107-self-contained-execution/evidence/REVIEW/bootstrap-recheck/test_independent_bootstrap.py::test_nested_child_header_cannot_bootstrap_as_standalone
+1 failed, 18 passed in 6.74s

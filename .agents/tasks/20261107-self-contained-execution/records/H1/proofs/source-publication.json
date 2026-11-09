@@ -1,0 +1,48 @@
+{
+  "status": "SOURCE_DONE",
+  "worker": {
+    "session_id": "01a1b7ac-35d9-7992-9580-8c9d6b5fb9e6",
+    "harness": "codex",
+    "host_id": "roomhacker-server-100"
+  },
+  "original_collaboration_native_provenance": "UNKNOWN",
+  "original_sourceSessionId": null,
+  "original_sourceHarness": null,
+  "original_parent_provenance": null,
+  "workspace": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107",
+  "branch": "lhc/self-contained-handoff-20261107",
+  "base": "2988f0f8483a2a33a6fb762c86e597513b445d1a",
+  "head": "c31f702b1fca54f5e10d132ea698612ec35813a9",
+  "published_remote_head": "c31f702b1fca54f5e10d132ea698612ec35813a9",
+  "remote_verification": "git ls-remote origin refs/heads/lhc/self-contained-handoff-20261107 matched c31f702b1fca54f5e10d132ea698612ec35813a9 after push",
+  "pr_stage": "off",
+  "target": "main",
+  "committed_paths": [
+    "src/common/protocols/EXECUTION_CONSUMER.md",
+    "src/common/protocols/ORCHESTRATION_RECORDS.md",
+    "src/common/skills/plan/SKILL.md",
+    "src/common/tools/lhc_assignment.py",
+    "src/common/tools/lhc_execution.py",
+    "src/common/tools/lhc_handoff.py",
+    "src/common/tools/lhc_plan_json.py",
+    "src/common/tools/lhc_plan_mcp.py",
+    "tests/test_execution_handoff.py",
+    "tests/test_execution_interface.py",
+    "tests/test_lhc_plan_mcp.py"
+  ],
+  "foreign_wip_preserved": [
+    "D downloaded_files/dashboard.lock"
+  ],
+  "delivery_gate": "refused because foreign downloaded_files/dashboard.lock deletion remains; no clean-worktree claim",
+  "combined_source_dependency": {
+    "worktree": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-frontier-20261107",
+    "head": "5f8e53b7555751c08937c43b977c79a8e130339b",
+    "use": "read/test only via PYTHONPATH; not incorporated in H branch"
+  },
+  "focused_and_regression": "174 passed in 41.27s",
+  "installed_proof": false,
+  "runtime_or_deploy_changes": false,
+  "external_native_sends": false,
+  "unknown_mutation_replayed": false,
+  "actual_active_time": "not measured"
+}

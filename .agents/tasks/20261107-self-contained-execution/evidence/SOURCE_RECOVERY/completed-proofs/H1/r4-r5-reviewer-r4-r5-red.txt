@@ -1,0 +1,126 @@
+(Linux uses --headless by default. To override, use --headed / --gui. For Xvfb mode instead, use --xvfb. Or you can hide this info by using --headless / --headless2 / --uc.)
+F...FFF                                                                  [100%]
+=================================== FAILURES ===================================
+___________ test_nested_child_header_cannot_bootstrap_as_standalone ____________
+
+case = (PosixPath('/tmp/pytest-of-roomhacker/pytest-101366/test_nested_child_header_canno0'), PosixPath('/tmp/pytest-of-roomh...ssion.\nKeep exact Unicode: ё.', 'type': 'input_text'}], 'role': 'user', 'type': 'message'}, 'type': 'response_item'}])
+
+    def test_nested_child_header_cannot_bootstrap_as_standalone(case):
+        root,journal,path,rows=case
+        rows[0]['payload']['source']={'subagent':{'thread_spawn':{'parent_thread_id':'unverified-fixture-parent','depth':1}}}
+        rewrite(journal,rows)
+        result=invoke(root)
+        print('nested child result:',result.returncode,result.stdout[:350],result.stderr)
+>       assert result.returncode!=0,'child header was promoted to verified standalone identity'
+E       AssertionError: child header was promoted to verified standalone identity
+E       assert 0 != 0
+E        +  where 0 = CompletedProcess(args=['/usr/bin/python3', '/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained...n": "a5d52ae81ab02332ab560f65", "integration": "d0141dc792c0fd5e26c4d852"}, "finish_verdict": "pending"}\n', stderr='').returncode
+
+../audit-followup-20261107/.agents/tasks/20261107-self-contained-execution/evidence/REVIEW/bootstrap-recheck/test_independent_bootstrap.py:52: AssertionError
+----------------------------- Captured stdout call -----------------------------
+nested child result: 0 {"id": "bf14005b00df1965c72e4715", "owner": {"harness": "codex", "session_id": "independent-bootstrap-owner"}, "original_goal": "🤖 Agent relay fixture. Inspect only fixture.py; return the finding to Lead. No publish permission.\nKeep exact Unicode: ё.", "latest_correction": "🤖 Agent relay fixture. Inspect only fixture.py; return the finding to Lead 
+____ test_existing_identity_mismatch_does_not_get_rewritten[timer-runtime] _____
+
+case = (PosixPath('/tmp/pytest-of-roomhacker/pytest-101366/test_existing_identity_mismatc3'), PosixPath('/tmp/pytest-of-roomh...ssion.\nKeep exact Unicode: ё.', 'type': 'input_text'}], 'role': 'user', 'type': 'message'}, 'type': 'response_item'}])
+variant = 'timer-runtime'
+
+    @pytest.mark.parametrize('variant',['outcome-owner','outcome-cwd','outcome-malformed','timer-runtime','timer-session','prior-native-id'])
+    def test_existing_identity_mismatch_does_not_get_rewritten(case,variant):
+        root,journal,path,rows=case
+        if variant.startswith('outcome'):
+            result=invoke(root);assert result.returncode==0,result.stderr
+            state=guard.load_state(path)
+            if variant=='outcome-owner':state['business']['outcome']['owner']['session_id']='foreign-fixture'
+            elif variant=='outcome-cwd':state['business']['outcome']['cwd']=str(root/'foreign-cwd')
+            else:state['business']['outcome']='malformed fixture outcome'
+        else:
+            guard.native_heartbeat(root,'codex','independent-bootstrap-owner')
+            state=guard.load_state(path)
+            if variant=='timer-runtime':state['native_heartbeat']['runtime']='opencode'
+            elif variant=='timer-session':state['native_heartbeat']['session_id']='foreign-fixture'
+            else:
+                state['business']={'native_identity':{'verified':True,'native_id':'foreign-fixture',
+                    'logical_session_id':'independent-bootstrap-owner','native_cwd':str(root)}}
+        guard.write_state(path,state);before=path.read_bytes()
+        result=invoke(root)
+        print('existing mismatch:',variant,'exit',result.returncode)
+>       assert result.returncode!=0,'bootstrap accepted an inconsistent existing identity: '+variant
+E       AssertionError: bootstrap accepted an inconsistent existing identity: timer-runtime
+E       assert 0 != 0
+E        +  where 0 = CompletedProcess(args=['/usr/bin/python3', '/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained...n": "ec6085c0d8060a980218c625", "integration": "914e622c230f8b095c4676bf"}, "finish_verdict": "pending"}\n', stderr='').returncode
+
+../audit-followup-20261107/.agents/tasks/20261107-self-contained-execution/evidence/REVIEW/bootstrap-recheck/test_independent_bootstrap.py:174: AssertionError
+----------------------------- Captured stdout call -----------------------------
+existing mismatch: timer-runtime exit 0
+____ test_existing_identity_mismatch_does_not_get_rewritten[timer-session] _____
+
+case = (PosixPath('/tmp/pytest-of-roomhacker/pytest-101366/test_existing_identity_mismatc4'), PosixPath('/tmp/pytest-of-roomh...ssion.\nKeep exact Unicode: ё.', 'type': 'input_text'}], 'role': 'user', 'type': 'message'}, 'type': 'response_item'}])
+variant = 'timer-session'
+
+    @pytest.mark.parametrize('variant',['outcome-owner','outcome-cwd','outcome-malformed','timer-runtime','timer-session','prior-native-id'])
+    def test_existing_identity_mismatch_does_not_get_rewritten(case,variant):
+        root,journal,path,rows=case
+        if variant.startswith('outcome'):
+            result=invoke(root);assert result.returncode==0,result.stderr
+            state=guard.load_state(path)
+            if variant=='outcome-owner':state['business']['outcome']['owner']['session_id']='foreign-fixture'
+            elif variant=='outcome-cwd':state['business']['outcome']['cwd']=str(root/'foreign-cwd')
+            else:state['business']['outcome']='malformed fixture outcome'
+        else:
+            guard.native_heartbeat(root,'codex','independent-bootstrap-owner')
+            state=guard.load_state(path)
+            if variant=='timer-runtime':state['native_heartbeat']['runtime']='opencode'
+            elif variant=='timer-session':state['native_heartbeat']['session_id']='foreign-fixture'
+            else:
+                state['business']={'native_identity':{'verified':True,'native_id':'foreign-fixture',
+                    'logical_session_id':'independent-bootstrap-owner','native_cwd':str(root)}}
+        guard.write_state(path,state);before=path.read_bytes()
+        result=invoke(root)
+        print('existing mismatch:',variant,'exit',result.returncode)
+>       assert result.returncode!=0,'bootstrap accepted an inconsistent existing identity: '+variant
+E       AssertionError: bootstrap accepted an inconsistent existing identity: timer-session
+E       assert 0 != 0
+E        +  where 0 = CompletedProcess(args=['/usr/bin/python3', '/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained...n": "6649c63770dca30388210de8", "integration": "70ee0f850668b1a07ae6a051"}, "finish_verdict": "pending"}\n', stderr='').returncode
+
+../audit-followup-20261107/.agents/tasks/20261107-self-contained-execution/evidence/REVIEW/bootstrap-recheck/test_independent_bootstrap.py:174: AssertionError
+----------------------------- Captured stdout call -----------------------------
+existing mismatch: timer-session exit 0
+___ test_existing_identity_mismatch_does_not_get_rewritten[prior-native-id] ____
+
+case = (PosixPath('/tmp/pytest-of-roomhacker/pytest-101366/test_existing_identity_mismatc5'), PosixPath('/tmp/pytest-of-roomh...ssion.\nKeep exact Unicode: ё.', 'type': 'input_text'}], 'role': 'user', 'type': 'message'}, 'type': 'response_item'}])
+variant = 'prior-native-id'
+
+    @pytest.mark.parametrize('variant',['outcome-owner','outcome-cwd','outcome-malformed','timer-runtime','timer-session','prior-native-id'])
+    def test_existing_identity_mismatch_does_not_get_rewritten(case,variant):
+        root,journal,path,rows=case
+        if variant.startswith('outcome'):
+            result=invoke(root);assert result.returncode==0,result.stderr
+            state=guard.load_state(path)
+            if variant=='outcome-owner':state['business']['outcome']['owner']['session_id']='foreign-fixture'
+            elif variant=='outcome-cwd':state['business']['outcome']['cwd']=str(root/'foreign-cwd')
+            else:state['business']['outcome']='malformed fixture outcome'
+        else:
+            guard.native_heartbeat(root,'codex','independent-bootstrap-owner')
+            state=guard.load_state(path)
+            if variant=='timer-runtime':state['native_heartbeat']['runtime']='opencode'
+            elif variant=='timer-session':state['native_heartbeat']['session_id']='foreign-fixture'
+            else:
+                state['business']={'native_identity':{'verified':True,'native_id':'foreign-fixture',
+                    'logical_session_id':'independent-bootstrap-owner','native_cwd':str(root)}}
+        guard.write_state(path,state);before=path.read_bytes()
+        result=invoke(root)
+        print('existing mismatch:',variant,'exit',result.returncode)
+>       assert result.returncode!=0,'bootstrap accepted an inconsistent existing identity: '+variant
+E       AssertionError: bootstrap accepted an inconsistent existing identity: prior-native-id
+E       assert 0 != 0
+E        +  where 0 = CompletedProcess(args=['/usr/bin/python3', '/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained...n": "8e6869a01cfa5c9fd92efb7b", "integration": "84bd13e345aa65600019cc4b"}, "finish_verdict": "pending"}\n', stderr='').returncode
+
+../audit-followup-20261107/.agents/tasks/20261107-self-contained-execution/evidence/REVIEW/bootstrap-recheck/test_independent_bootstrap.py:174: AssertionError
+----------------------------- Captured stdout call -----------------------------
+existing mismatch: prior-native-id exit 0
+=========================== short test summary info ============================
+FAILED ../audit-followup-20261107/.agents/tasks/20261107-self-contained-execution/evidence/REVIEW/bootstrap-recheck/test_independent_bootstrap.py::test_nested_child_header_cannot_bootstrap_as_standalone
+FAILED ../audit-followup-20261107/.agents/tasks/20261107-self-contained-execution/evidence/REVIEW/bootstrap-recheck/test_independent_bootstrap.py::test_existing_identity_mismatch_does_not_get_rewritten[timer-runtime]
+FAILED ../audit-followup-20261107/.agents/tasks/20261107-self-contained-execution/evidence/REVIEW/bootstrap-recheck/test_independent_bootstrap.py::test_existing_identity_mismatch_does_not_get_rewritten[timer-session]
+FAILED ../audit-followup-20261107/.agents/tasks/20261107-self-contained-execution/evidence/REVIEW/bootstrap-recheck/test_independent_bootstrap.py::test_existing_identity_mismatch_does_not_get_rewritten[prior-native-id]
+4 failed, 3 passed, 22 deselected in 2.47s

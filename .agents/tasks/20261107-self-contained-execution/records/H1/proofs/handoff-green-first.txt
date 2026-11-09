@@ -1,0 +1,35 @@
+(Linux uses --headless by default. To override, use --headed / --gui. For Xvfb mode instead, use --xvfb. Or you can hide this info by using --headless / --headless2 / --uc.)
+........F............                                                    [100%]
+=================================== FAILURES ===================================
+______________ test_public_cli_and_mcp_raw_message_require_brief _______________
+
+plan = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/pytest-1296952-0b397967a649adf2/test_public_cli_and_mcp_raw_me0')
+
+    def test_public_cli_and_mcp_raw_message_require_brief(plan):
+        import os
+        import subprocess
+        env = {**os.environ, "XDG_STATE_HOME": str(plan / "state"),
+               "LHC_PLAN_MIRROR_CONFIG": str(plan / "absent")}
+        command = [sys.executable, str(TOOLS / "lhc_plan_json.py"), "dispatch-leaf",
+                   str(plan), "L1", "--attempt-id", "attempt", "--message", "private-caller-918"]
+        cli = subprocess.run(command, capture_output=True, text=True, env=env, timeout=20)
+        assert cli.returncode != 0 and "brief" in cli.stderr
+        assert "private-caller-918" not in cli.stderr + cli.stdout
+        request = {"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": {
+            "name": "dispatch_leaf", "arguments": {"plan_dir": str(plan), "leaf_id": "L1",
+            "attempt_id": "attempt", "message": "private-caller-918"}}}
+        mcp = subprocess.run([sys.executable, str(TOOLS / "lhc_plan_mcp.py")],
+            input=json.dumps(request) + "\n", capture_output=True, text=True, env=env, timeout=20)
+        reply = json.loads(mcp.stdout)
+        assert reply["result"]["isError"] and "brief" in mcp.stdout
+>       assert "private-caller-918" not in mcp.stdout + mcp.stderr
+E       assert 'private-caller-918' not in '{"jsonrpc":...wn.\\n"}}}\n'
+E         
+E         'private-caller-918' is contained here:
+E           essage", "private-caller-918"]], "returncode": 1, "stdout": "", "stderr": "LHC: brief_unavailable\nPlan test_public_cli_and_mcp_raw_me0: 0/1 done; deliverable: implementation; decomposition: progressive; leaf cap: 15 min; candidates by dependencies/capacity L1; dispatchable none; admission L1=runtime_unknown; execution L1: assignment=assigned, runtime=unknown, wake=unknown.\n"}}}
+E         ?           ++++++++++++++++++
+
+tests/test_execution_handoff.py:112: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_execution_handoff.py::test_public_cli_and_mcp_raw_message_require_brief
+1 failed, 20 passed in 1.65s

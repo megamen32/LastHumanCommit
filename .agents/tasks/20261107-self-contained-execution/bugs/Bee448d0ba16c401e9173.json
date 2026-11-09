@@ -1,0 +1,58 @@
+{
+  "created_at": "2026-11-07T20:03:30+00:00",
+  "details": "plan-artifacts/SKILL.md139-142: explicit estimate_unknown_reason means estimated work is partial. Finite numeric work remains visible, whole-plan ETA must be unknown. RED partial scope grid eta_exact=True and catalog finite ETA; GREEN logs stored V1.",
+  "events": [
+    {
+      "action": "register",
+      "actor": "V1",
+      "at": "2026-11-07T20:03:30+00:00",
+      "changes": {
+        "details": "plan-artifacts/SKILL.md139-142: explicit estimate_unknown_reason means estimated work is partial. Finite numeric work remains visible, whole-plan ETA must be unknown. RED partial scope grid eta_exact=True and catalog finite ETA; GREEN logs stored V1.",
+        "source": "src/common/skills/plan-artifacts/SKILL.md139-142; .tmp/self-contained-views/red-partial.log",
+        "status": "open",
+        "title": "Частичная оценка превращается в полный срок при estimate_unknown_reason"
+      }
+    },
+    {
+      "action": "resolve",
+      "actor": "roomhacker-server-100/codex/01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+      "at": "2026-11-07T20:29:41+00:00",
+      "changes": {
+        "resolution": {
+          "evidence": {
+            "proof_path": "evidence/integration/fv-source-green.log",
+            "red_proof_path": "records/V1/evidence/red-partial.log",
+            "red_result": "FAILED tests/test_truthful_plan_views.py::test_partial_scope_keeps_numeric_work_but_hides_catalog_finish",
+            "red_sha256": "2e55a58968c6e89523d7e9173618e4e635c2491eba8c0c3f9033e628a27e8844",
+            "result": "34 passed in 1.16s",
+            "sha256": "0a62547fc96be39a03e1ad1ba8ccfeff33e6516c808858f72689a97d2751defb",
+            "test_command": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest -q tests/test_plan_frontier_control.py tests/test_truthful_plan_views.py tests/test_plan_catalog.py"
+          },
+          "kind": "fixed",
+          "reason": ""
+        },
+        "status": "fixed"
+      }
+    }
+  ],
+  "id": "Bee448d0ba16c401e9173",
+  "owner": "V1",
+  "reporter": "V1",
+  "resolution": {
+    "evidence": {
+      "proof_path": "evidence/integration/fv-source-green.log",
+      "red_proof_path": "records/V1/evidence/red-partial.log",
+      "red_result": "FAILED tests/test_truthful_plan_views.py::test_partial_scope_keeps_numeric_work_but_hides_catalog_finish",
+      "red_sha256": "2e55a58968c6e89523d7e9173618e4e635c2491eba8c0c3f9033e628a27e8844",
+      "result": "34 passed in 1.16s",
+      "sha256": "0a62547fc96be39a03e1ad1ba8ccfeff33e6516c808858f72689a97d2751defb",
+      "test_command": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest -q tests/test_plan_frontier_control.py tests/test_truthful_plan_views.py tests/test_plan_catalog.py"
+    },
+    "kind": "fixed",
+    "reason": ""
+  },
+  "source": "src/common/skills/plan-artifacts/SKILL.md139-142; .tmp/self-contained-views/red-partial.log",
+  "status": "fixed",
+  "title": "Частичная оценка превращается в полный срок при estimate_unknown_reason",
+  "updated_at": "2026-11-07T20:29:41+00:00"
+}

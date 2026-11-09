@@ -1,0 +1,30 @@
+{
+  "version": "1.18.0",
+  "tools": [
+    "accept_leaf",
+    "activate_leaf",
+    "assign_leaf",
+    "bug_check",
+    "bug_get",
+    "bug_list",
+    "bug_register",
+    "bug_resolve",
+    "bug_update",
+    "build_plan",
+    "create_leaf",
+    "dispatch_leaf",
+    "estimate_cost",
+    "publish_html",
+    "read_goal_control",
+    "reconcile_leaf",
+    "record_frontier_decision",
+    "revise_plan",
+    "show_plan",
+    "update_leaf",
+    "update_plan",
+    "update_progress",
+    "worker_finish",
+    "worker_register"
+  ],
+  "model_sessions_created": 0
+}

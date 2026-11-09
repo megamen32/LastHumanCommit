@@ -146,6 +146,25 @@ def test_active_summaries_refresh_each_minute_inactive_only_on_source_event(tmp_
     assert calls.count('id0') == 2
 
 
+def test_bound_goal_evidence_invalidates_an_inactive_summary(tmp_path, monkeypatch):
+    service = indexed(tmp_path, 1)
+    path = service.data / 'id0.json'
+    value = mirror.read(path)
+    doc = value['snapshot']['document']
+    doc['tasks'][0]['status'] = 'done'
+    doc['goal_control'] = {'goal_status': 'unaccepted', 'fingerprint': 'a' * 64,
+                           'source': {'kind': 'native_outcome', 'session_id': 'lead',
+                                      'outcome_id': 'goal', 'source_fingerprint': 'b' * 64}}
+    path.write_text(json.dumps(value))
+    assert 'data-state="awaiting"' in service.dashboard()
+    doc['goal_control'].update(goal_status='accepted', fingerprint='c' * 64)
+    doc['goal_control']['source']['source_fingerprint'] = 'd' * 64
+    path.write_text(json.dumps(value))
+    page = service.dashboard()
+    assert 'data-state="completed"' in page
+    assert 'Цель принята по исходному снимку' in page
+
+
 def test_overflow_reconciles_once_then_unchanged_reads_stay_in_memory(tmp_path, monkeypatch):
     from lhc_file_events import FileChanges
     service = indexed(tmp_path)

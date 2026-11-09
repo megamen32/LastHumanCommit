@@ -1,0 +1,23 @@
+{
+  "installed": [
+    {
+      "pluginId": "last-human-commit@lhc-candidate-6544797b0435",
+      "name": "last-human-commit",
+      "marketplaceName": "lhc-candidate-6544797b0435",
+      "version": "1.18.0",
+      "installed": true,
+      "enabled": true,
+      "source": {
+        "source": "local",
+        "path": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/integration-01a1b7ae/isolated-6544797b0435/marketplace/plugins/last-human-commit/native/codex"
+      },
+      "marketplaceSource": {
+        "sourceType": "local",
+        "source": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/integration-01a1b7ae/isolated-6544797b0435/marketplace"
+      },
+      "installPolicy": "AVAILABLE",
+      "authPolicy": "ON_INSTALL"
+    }
+  ],
+  "available": []
+}

@@ -11,17 +11,19 @@ from datetime import datetime, timedelta, timezone
 import html
 import re
 import lhc_plan_ui as ui
+import lhc_plan_control as control
 
 STALLED_AFTER = timedelta(hours=3)
-UNKNOWN_LEAF_MINUTES = 15
 STATE_LABELS = {
     'active': 'В работе',
     'blocked': 'Заблокирован',
     'stalled': 'Застрял',
     'completed': 'Завершён',
+    'awaiting': 'Цель не подтверждена',
+    'superseded': 'План заменён',
     'legacy': 'Без данных',
 }
-STATE_ORDER = ['active', 'blocked', 'stalled', 'completed', 'legacy']
+STATE_ORDER = ['active', 'blocked', 'stalled', 'awaiting', 'superseded', 'completed', 'legacy']
 LEAF_LABELS = {'done': 'готово', 'running': 'в работе', 'blocked': 'заблокировано',
                'waiting': 'ждёт', 'queued': 'в очереди', 'deferred': 'отложено'}
 
@@ -43,7 +45,7 @@ def leaf_minutes(task):
                   if isinstance(v, (int, float)) and v > 0]
         if values:
             return sum(values) / len(values)
-    return float(UNKNOWN_LEAF_MINUTES)
+    return None
 
 
 def remaining_minutes(tasks, slots, now):
@@ -52,6 +54,9 @@ def remaining_minutes(tasks, slots, now):
     left = {}
     for key, task in open_tasks.items():
         minutes = leaf_minutes(task)
+        if minutes is None:
+            left[key] = 0.0
+            continue
         started = parse_time(task.get('started_at')) if task.get('status') == 'running' else None
         if started:
             minutes -= max(0.0, (now - started).total_seconds() / 60)
@@ -64,21 +69,38 @@ def remaining_minutes(tasks, slots, now):
         if key in visiting:  # A cycle is a plan defect; do not loop on it.
             return left[key]
         visiting.add(key)
-        before = [path(d) for d in open_tasks[key].get('depends_on') or [] if d in open_tasks]
+        before = [path(d) for d in open_tasks[key].get('depends_on') or [] if d in left]
         visiting.discard(key)
         finish[key] = left[key] + max(before, default=0.0)
         return finish[key]
 
-    critical = max((path(k) for k in open_tasks), default=0.0)
+    critical = max((path(k) for k in left), default=0.0)
     capacity = sum(left.values()) / max(1, int(slots or 1))
     return max(critical, capacity)
+
+
+def goal_projection(doc, tasks):
+    """Read a source snapshot verdict for display; never authorize execution."""
+    projected = doc.get('goal_control')
+    if isinstance(projected, dict):
+        source = projected.get('source') or {}
+        if (isinstance(source, dict) and source.get('kind') == 'native_outcome'
+                and source.get('source_fingerprint') and projected.get('fingerprint')
+                and source.get('outcome_id') and source.get('session_id')
+                and projected.get('goal_status') in ('accepted', 'unaccepted', 'unknown', 'superseded')):
+            return projected
+    return control.evaluate(doc, tasks)
 
 
 def summarize(entry, now):
     snap, receipt = entry['snapshot'], entry.get('receipt') or {}
     doc = snap['document']
     tasks = [t for t in doc.get('tasks') or [] if isinstance(t, dict) and t.get('id')]
-    counted = [t for t in tasks if t.get('status') != 'deferred']
+    counted = tasks
+    goal_control = goal_projection(doc, tasks)
+    goal_status = goal_control['goal_status']
+    pending = [t for t in tasks if t.get('status') not in ('done', 'deferred')]
+    deferred = sum(t.get('status') == 'deferred' for t in tasks)
     done = sum(t.get('status') == 'done' for t in counted)
     running = [t for t in counted if t.get('status') == 'running']
     stopped = [t for t in counted if t.get('status') in ('blocked', 'waiting')]
@@ -86,8 +108,12 @@ def summarize(entry, now):
     revisions = snap.get('revisions') or [{}]
     created = parse_time(revisions[0].get('created_at')) or updated
     idle = now - updated if updated else timedelta(0)
-    if counted and done == len(counted):
+    if goal_status == 'superseded':
+        state = 'superseded'
+    elif counted and not pending and goal_status == 'accepted':
         state = 'completed'
+    elif counted and not pending:
+        state = 'awaiting'
     elif stopped and not running:
         state = 'blocked'
     elif idle > STALLED_AFTER:
@@ -96,7 +122,9 @@ def summarize(entry, now):
         state = 'active'
     finished = max((parse_time(t.get('finished_at')) for t in counted
                     if parse_time(t.get('finished_at'))), default=updated)
-    if running:
+    if state == 'superseded':
+        stage = 'План заменён по исходному снимку; принятие прежней цели не заявлено'
+    elif running:
         stage = ('Остановился на: ' if state == 'stalled' else 'Сейчас: ') + '; '.join(
             t.get('label') or t['id'] for t in running[:2])
         if len(running) > 2:
@@ -106,7 +134,14 @@ def summarize(entry, now):
         reason = task.get('blocker') or task.get('wait_reason') or task.get('label') or task['id']
         stage = 'Ждёт: ' + str(reason)
     elif state == 'completed':
-        stage = 'Все шаги выполнены'
+        stage = ('Все шаги выполнены. ' if done == len(counted)
+                 else f'Выполнено шагов: {done}; отложено: {deferred}. ')
+        stage += 'Цель принята по исходному снимку'
+    elif state == 'awaiting':
+        stage = ('Все шаги выполнены. ' if done == len(counted) else 'Завершены доступные шаги; ')
+        stage += 'Цель не подтверждена'
+        if deferred:
+            stage += f'; отложено: {deferred}'
     else:
         ids = {t['id'] for t in counted if t.get('status') == 'done'}
         ready = [t for t in counted if t.get('status') == 'queued'
@@ -114,10 +149,15 @@ def summarize(entry, now):
         nxt = ready[0] if ready else next((t for t in counted if t.get('status') != 'done'), None)
         stage = 'Следующий шаг: ' + (nxt.get('label') or nxt['id']) if nxt else 'Шагов пока нет'
     eta = None
-    if state == 'active' and counted:
-        eta = now + timedelta(minutes=remaining_minutes(counted, doc.get('slots'), now))
+    pending = [t for t in tasks if t.get('status') not in ('done', 'deferred')]
+    unknown_estimate_ids = [t['id'] for t in pending if leaf_minutes(t) is None or t.get('estimate_unknown_reason')]
+    known_remaining = remaining_minutes(counted, doc.get('slots'), now)
+    if state == 'active' and pending and not unknown_estimate_ids:
+        eta = now + timedelta(minutes=known_remaining)
     return {
         'state': state,
+        'goal_status': goal_status,
+        'deferred': deferred,
         'project': snap['project'],
         'title': doc.get('title') or snap['name'],
         'goal': doc.get('business_result') or doc.get('goal') or '',
@@ -130,6 +170,8 @@ def summarize(entry, now):
         'total': len(counted),
         'stage': stage,
         'eta': eta,
+        'known_remaining_minutes': known_remaining,
+        'unknown_estimate_ids': unknown_estimate_ids,
         'leaves': [(t.get('status') or 'queued', t.get('label') or t['id']) for t in tasks[:80]],
         'revision': (revisions[-1] or {}).get('id'),
     }
@@ -171,8 +213,13 @@ def card(item):
     strip = ''.join(f'<i class="leaf {esc(s)}" title="{esc(label)} · {esc(LEAF_LABELS.get(s, s))}"></i>'
                     for s, label in item['leaves'])
     if state == 'active' and item['eta']:
-        when = (f'Завершится ≈ <time class="rel-eta" datetime="{iso(item["eta"])}">{short(item["eta"])}</time>'
+        when = (f'Шаги завершатся ≈ <time class="rel-eta" datetime="{iso(item["eta"])}">{short(item["eta"])}</time>'
                 '<span class="hint"> · оценка по шагам плана</span>')
+    elif state == 'active' and item.get('unknown_estimate_ids'):
+        when = ('Срок неизвестен · Известная работа: '
+                + (duration_text(timedelta(minutes=item['known_remaining_minutes']))
+                   if item['known_remaining_minutes'] else 'не оценена')
+                + ' · без оценки: ' + esc(', '.join(item['unknown_estimate_ids'])))
     elif state == 'completed':
         when = f'Завершён <time class="abs" datetime="{iso(item["finished"])}">{short(item["finished"])}</time>'
     elif state == 'stalled':
@@ -219,7 +266,7 @@ def render_items(items, now=None):
         f'<button type="button" class="chip" data-filter="{s}" aria-pressed="false">{label}'
         f' <span class="n">{n}</span></button>'
         for s, label, n in [('all', 'Все', len(items)), ('open', 'Не завершены',
-                             counts['active'] + counts['blocked'] + counts['stalled'])]
+                             counts['active'] + counts['blocked'] + counts['stalled'] + counts['awaiting'])]
         + [(s, STATE_LABELS[s], counts[s]) for s in STATE_ORDER if s != 'legacy' or counts[s]])
     options = ''.join(f'<option value="{esc(p)}">{esc(p)}</option>' for p in projects)
     body = ''.join(card(i) for i in items)
@@ -261,11 +308,11 @@ input{flex:1 1 260px;min-width:0}select{flex:0 1 220px}
 .plan-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr));gap:12px}
 .catalog-tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:10px}.catalog-tabs button{font:inherit;border:0;border-bottom:3px solid transparent;background:transparent;color:var(--muted);padding:10px 18px;cursor:pointer;min-height:44px}.catalog-tabs button[aria-selected="true"]{border-color:var(--accent);color:var(--text);font-weight:650}.project-group{margin:0 0 26px}.project-group h2{font-size:19px;margin:12px 0;overflow-wrap:anywhere}.project-count{font-size:12px;font-weight:400;color:var(--muted)}.lhc-brand{display:inline-flex;align-items:center;gap:8px;min-height:44px}.lhc-brand-mark{font-weight:800;font-size:18px;letter-spacing:.06em}.lhc-brand-name{font-size:12px;letter-spacing:0}
 .plan{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:8px;border-left:4px solid var(--q)}
-.plan.s-active{border-left-color:var(--a-fg)}.plan.s-blocked{border-left-color:var(--b-fg)}.plan.s-stalled{border-left-color:var(--s-fg)}.plan.s-completed{border-left-color:var(--c-fg)}
+.plan.s-awaiting{border-left-color:var(--s-fg)}.plan.s-superseded{border-left-color:var(--q)}.plan.s-active{border-left-color:var(--a-fg)}.plan.s-blocked{border-left-color:var(--b-fg)}.plan.s-stalled{border-left-color:var(--s-fg)}.plan.s-completed{border-left-color:var(--c-fg)}
 .top{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px}
 .pill{border-radius:6px;padding:2px 8px;font-weight:600}.pill.active{background:var(--a-bg);color:var(--a-fg)}
 .pill.blocked{background:var(--b-bg);color:var(--b-fg)}.pill.stalled{background:var(--s-bg);color:var(--s-fg)}
-.pill.completed{background:var(--c-bg);color:var(--c-fg)}.pill.legacy{background:var(--l-bg);color:var(--l-fg)}
+.pill.awaiting{background:var(--s-bg);color:var(--s-fg)}.pill.superseded{background:var(--l-bg);color:var(--l-fg)}.pill.completed{background:var(--c-bg);color:var(--c-fg)}.pill.legacy{background:var(--l-bg);color:var(--l-fg)}
 .project{color:var(--muted)}h3{font-size:17px;line-height:1.3;margin:0;overflow-wrap:anywhere}h3 a:hover{color:var(--accent)}
 .goal{margin:0;color:var(--muted);font-size:13px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .progress{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted)}
@@ -300,7 +347,7 @@ function eta(d){const m=Math.round((d-Date.now())/60000),t=new Date();const same
 const left=m<60?Math.max(m,1)+' мин':Math.floor(m/60)+' ч '+(m%60)+' мин';return(same?'сегодня в '+hm.format(d):fmt.format(d))+' (через '+left+')'}
 function times(){document.querySelectorAll('time').forEach(t=>{const d=new Date(t.getAttribute('datetime'));if(isNaN(d))return;
 t.title=d.toLocaleString('ru');t.textContent=t.classList.contains('ago')?ago(d):t.classList.contains('rel-eta')?eta(d):fmt.format(d)})}
-const match=(f,s)=>f==='all'||(f==='open'?['active','blocked','stalled'].includes(s):s===f);
+const match=(f,s)=>f==='all'||(f==='open'?['active','blocked','stalled','awaiting'].includes(s):s===f);
 function apply(){if(!['plans','projects'].includes(state.view))state.view='plans';if(![...$('#project').options].some(o=>o.value===state.project))state.project='';const q=state.q.trim().toLowerCase();let shown=0;const cards=[...document.querySelectorAll('.plan')];const n={};
 cards.forEach(c=>{const s=c.dataset.state,scope=(!state.project||c.dataset.project===state.project)&&(!q||c.dataset.search.includes(q));
 if(scope)document.querySelectorAll('.chip').forEach(b=>{if(match(b.dataset.filter,s))n[b.dataset.filter]=(n[b.dataset.filter]||0)+1});

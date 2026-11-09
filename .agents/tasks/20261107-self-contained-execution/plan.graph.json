@@ -1,0 +1,1496 @@
+{
+  "schema_version": 2,
+  "title": "LHC: самодостаточное поручение и продолжение цели",
+  "goal": "Новая сессия или субагент получает достаточный проверяемый контекст, возвращает результат нужному Lead, а незавершённая цель получает конкретное следующее действие.",
+  "goal_control": {
+    "goal_status": "unknown",
+    "frontier": "active",
+    "next_decision": "none",
+    "fingerprint": "bd50786fa9789e12a386eb8065494f50335579e97bc1c61e8bf06bdce12af636",
+    "decision_fresh": false,
+    "candidates": [],
+    "decision": null,
+    "reason": "native_lead_ref_ambiguous"
+  },
+  "business_result": "Перед отправкой LHC проверяет поручение, сохраняет его связь с попыткой и помогает продолжить цель после результата; проекции различают кандидата, допуск и принятую цель.",
+  "business_results": [
+    "Перед отправкой LHC проверяет поручение, сохраняет его связь с попыткой и помогает продолжить цель после результата; проекции различают кандидата, допуск и принятую цель."
+  ],
+  "acceptance_scenarios": [
+    "Через настоящий CLI/MCP: неполное поручение не отправляется; достаточное получает canonical plan/leaf/attempt и неизменяемую привязку контекста; UNKNOWN не повторяется. Новая сессия читает пакет и продолжает допустимый шаг. После принятия результата пустой frontier при незакрытой цели требует управленческого решения. Два независимых потребителя, regression и полный validator, native install/readback, публикация и разрешённый merge."
+  ],
+  "recon": [
+    "Dispatch проверяет непустое сообщение и runtime, но не brief :: main2988 src/common/tools/lhc_execution.py:226 и lhc_plan_json.py:2013",
+    "Текстовая проекция ready названа готовностью к запуску при dispatchable none :: lhc_grid.py:5634 и CI plan live22:28",
+    "Stop/Overseer не требуют решения при пустом frontier незавершённой цели :: lhc_entry.py:378 и lhc_progress_review.py",
+    "Реальный direct Herder self-wake RED передан текущему владельцу; LHC consumer proof не подменяется :: handoff lhc-audit-handoff-20261107T1935-herder-v1-core"
+  ],
+  "current_progress": "Текущий native operational Lead: roomhacker-server-100/codex/01a1b7ae-4a6c-70c2-84cc-3288329a2425 по прямой делегации пользователя; Root сохраняет пользовательскую координацию. Исторический root envID/native journal на100 UNKNOWN, outcome для него не создаётся. Hfinal8a344996 integrated, source B4done; I1 final regeneration/validator выполняется. Затем clean frozenSHA+verified isolated installed tools → Q1 publicbootstrap → Q2 first packet только publicLHCdispatch → finalReviewer; globalmain/sharedruntime gate сохранён. HT hook effect отдельно от Q1.",
+  "deliverable": "implementation",
+  "decomposition": "complete",
+  "revisions": [
+    {
+      "at": "2026-11-07T22:40:41+03:00",
+      "reason": "Прямое поручение владельца исправить LHC по подробному аудиту; ранее разрешены merge и выпуск.",
+      "summary": "Три независимых implementation scope, затем общая интеграция, consumer proof и выпуск. Без нового scheduler и без правок продукта Herder."
+    },
+    {
+      "at": "2026-11-08T00:41:25+03:00",
+      "reason": "Прямое назначение владельца: сверить parent plan с фактическими source/test proofs до freeze; не подменять consumer acceptance.",
+      "summary": "Source/fixture leaves закрыты отдельно; B4 и NC выделены явно; текущий frontier H bootstrap + I1 integration, реальные Q1/Q2/review/native blockers сохранены, исторические estimates не переписаны."
+    },
+    {
+      "at": "2026-11-08T00:47:49+03:00",
+      "reason": "Прямой handoff владельца: назначить current verified native operational Lead acceptance/release continuation; сохранить historical authors/receipts и неизвестность прежнего native root.",
+      "summary": "Current owner roomhacker-server-100/codex/01a1b7ae-4a6c-70c2-84cc-3288329a2425; original Root01a1b2ea... native lineage unverified. Завершённые source H/F/V не переписаны. Q2 exact empty ID01a1b7f7...; первый task только послеfreeze publicdispatch. Q1 publicbootstrap не зависит отHT trust/effect."
+    }
+  ],
+  "external_waits": "",
+  "slots": 3,
+  "updated_at": "2026-11-08T00:48:52+03:00",
+  "tasks": [
+    {
+      "id": "F1",
+      "label": "Связать незавершённую цель с решением о продолжении",
+      "status": "done",
+      "parent": "S1",
+      "description": "Связать незавершённую цель с решением о продолжении. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+      "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+      "result": "SOURCE_DONE: goal frontier control F5f8e53b7 integrated; 58 relevant +13 final source PASS, RED/GREEN evidence/integration/F1-{red,green,final-green}.log. B27 resolved by canonical CLI; no installed/native acceptance claim.",
+      "owner": "frontier",
+      "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "harness": "codex",
+      "model": "gpt-6.1-sol",
+      "origin": "",
+      "supersedes": [],
+      "progress_events": [
+        {
+          "at": "2026-11-07T22:40:41+03:00",
+          "note": "",
+          "changes": {
+            "label": "Связать незавершённую цель с решением о продолжении",
+            "kind": "task",
+            "status": "queued",
+            "owner": "frontier",
+            "description": "Связать незавершённую цель с решением о продолжении. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+            "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+            "estimate_minutes": 15,
+            "depends_on": [],
+            "parent": "S1",
+            "model": "gpt-6.1-sol"
+          },
+          "actor": {
+            "host_id": null,
+            "harness": "codex",
+            "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+            "source": "native_environment"
+          },
+          "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-11-07T22:43:40+03:00",
+          "note": "Worker frontier registered on lhc/self-contained-frontier-20261107",
+          "changes": {
+            "worker": {
+              "id": "frontier",
+              "branch": "lhc/self-contained-frontier-20261107",
+              "worktree": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-frontier-20261107",
+              "registered_at": "2026-11-07T22:43:40+03:00",
+              "run_dir": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-frontier-20261107/.tmp/self-contained-run",
+              "run_host": "roomhacker-server-100"
+            }
+          },
+          "actor": {
+            "host_id": null,
+            "harness": "codex",
+            "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+            "source": "native_environment"
+          },
+          "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-11-07T23:09:32+03:00",
+          "note": "",
+          "changes": {
+            "status": "running"
+          },
+          "actor": {
+            "host_id": null,
+            "harness": null,
+            "session_id": null,
+            "source": "unknown"
+          },
+          "session": "unknown",
+          "harness": "unknown"
+        },
+        {
+          "at": "2026-11-08T00:41:21+03:00",
+          "note": "Parent reconciliation authorized by owner: closes only completed source/fixture phase; real independent/native consumer remains in Q1/Q2/N100/N199.",
+          "changes": {
+            "status": "done",
+            "result": "SOURCE_DONE: goal frontier control F5f8e53b7 integrated; 58 relevant +13 final source PASS, RED/GREEN evidence/integration/F1-{red,green,final-green}.log. B27 resolved by canonical CLI; no installed/native acceptance claim."
+          },
+          "actor": {
+            "host_id": "roomhacker-server-100",
+            "harness": "codex",
+            "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+            "source": "declared"
+          },
+          "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+          "harness": "codex"
+        }
+      ],
+      "depends_on": [],
+      "estimate_minutes": {
+        "minimum": 15.0,
+        "maximum": 15.0
+      },
+      "created_at": "2026-11-07T22:40:41+03:00",
+      "started_at": "2026-11-07T23:09:32+03:00",
+      "finished_at": "2026-11-08T00:41:21+03:00"
+    },
+    {
+      "id": "H1",
+      "label": "Зафиксировать проверяемый пакет поручения",
+      "status": "done",
+      "parent": "S1",
+      "description": "Зафиксировать проверяемый пакет поручения. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+      "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+      "result": "SOURCE_DONE: immutable private brief/attempt identity and gates implemented; H c31f702b + P1 b7510c30 integrated at089ac703. RED/GREEN and exact publication: records/H1/result.md; records/H1/proofs/source-publication.json; p1-binding-publication.json. Source proof only; B4 bootstrap separate, consumer not accepted.",
+      "owner": "handoff",
+      "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "harness": "codex",
+      "model": "gpt-6.1-sol",
+      "origin": "",
+      "supersedes": [],
+      "progress_events": [
+        {
+          "at": "2026-11-07T22:40:41+03:00",
+          "note": "",
+          "changes": {
+            "label": "Зафиксировать проверяемый пакет поручения",
+            "kind": "task",
+            "status": "queued",
+            "owner": "handoff",
+            "description": "Зафиксировать проверяемый пакет поручения. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+            "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+            "estimate_minutes": 15,
+            "depends_on": [],
+            "parent": "S1",
+            "model": "gpt-6.1-sol"
+          },
+          "actor": {
+            "host_id": null,
+            "harness": "codex",
+            "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+            "source": "native_environment"
+          },
+          "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-11-07T22:43:39+03:00",
+          "note": "Worker handoff registered on lhc/self-contained-handoff-20261107",
+          "changes": {
+            "worker": {
+              "id": "handoff",
+              "branch": "lhc/self-contained-handoff-20261107",
+              "worktree": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107",
+              "registered_at": "2026-11-07T22:43:39+03:00",
+              "run_dir": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/self-contained-run",
+              "run_host": "roomhacker-server-100"
+            }
+          },
+          "actor": {
+            "host_id": null,
+            "harness": "codex",
+            "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+            "source": "native_environment"
+          },
+          "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-11-07T23:09:32+03:00",
+          "note": "",
+          "changes": {
+            "status": "running"
+          },
+          "actor": {
+            "host_id": null,
+            "harness": null,
+            "session_id": null,
+            "source": "unknown"
+          },
+          "session": "unknown",
+          "harness": "unknown"
+        },
+        {
+          "at": "2026-11-08T00:41:21+03:00",
+          "note": "Parent reconciliation authorized by owner: closes only completed source/fixture phase; real independent/native consumer remains in Q1/Q2/N100/N199.",
+          "changes": {
+            "status": "done",
+            "result": "SOURCE_DONE: immutable private brief/attempt identity and gates implemented; H c31f702b + P1 b7510c30 integrated at089ac703. RED/GREEN and exact publication: records/H1/result.md; records/H1/proofs/source-publication.json; p1-binding-publication.json. Source proof only; B4 bootstrap separate, consumer not accepted."
+          },
+          "actor": {
+            "host_id": "roomhacker-server-100",
+            "harness": "codex",
+            "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+            "source": "declared"
+          },
+          "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+          "harness": "codex"
+        }
+      ],
+      "depends_on": [],
+      "estimate_minutes": {
+        "minimum": 15.0,
+        "maximum": 15.0
+      },
+      "created_at": "2026-11-07T22:40:41+03:00",
+      "started_at": "2026-11-07T23:09:32+03:00",
+      "finished_at": "2026-11-08T00:41:21+03:00"
+    },
+    {
+      "id": "V1",
+      "label": "Показать честные готовность и завершение",
+      "status": "done",
+      "parent": "S1",
+      "description": "Показать честные готовность и завершение. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+      "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+      "result": "SOURCE_DONE: Vdcba0b3f plus I1b102b250 sanitizer/cache integration; candidates/admission and done/accepted remain distinct. Full1107PASS/7skip on prepared1.18 snapshot; R3 capture→replica→catalog + privacy RED/GREEN in records/I1/R3-roundtrip-result.md. Final bytes after H bootstrap require fresh full validation; source evidence is not final consumer acceptance.",
+      "owner": "views",
+      "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "harness": "codex",
+      "model": "gpt-6.1-sol",
+      "origin": "",
+      "supersedes": [],
+      "progress_events": [
+        {
+          "at": "2026-11-07T22:40:42+03:00",
+          "note": "",
+          "changes": {
+            "label": "Показать честные готовность и завершение",
+            "kind": "task",
+            "status": "queued",
+            "owner": "views",
+            "description": "Показать честные готовность и завершение. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+            "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+            "estimate_minutes": 15,
+            "depends_on": [],
+            "parent": "S1",
+            "model": "gpt-6.1-sol"
+          },
+          "actor": {
+            "host_id": null,
+            "harness": "codex",
+            "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+            "source": "native_environment"
+          },
+          "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-11-07T22:43:40+03:00",
+          "note": "Worker views registered on lhc/self-contained-views-20261107",
+          "changes": {
+            "worker": {
+              "id": "views",
+              "branch": "lhc/self-contained-views-20261107",
+              "worktree": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-views-20261107",
+              "registered_at": "2026-11-07T22:43:40+03:00",
+              "run_dir": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-views-20261107/.tmp/self-contained-run",
+              "run_host": "roomhacker-server-100"
+            }
+          },
+          "actor": {
+            "host_id": null,
+            "harness": "codex",
+            "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+            "source": "native_environment"
+          },
+          "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-11-07T23:09:33+03:00",
+          "note": "",
+          "changes": {
+            "status": "running"
+          },
+          "actor": {
+            "host_id": null,
+            "harness": null,
+            "session_id": null,
+            "source": "unknown"
+          },
+          "session": "unknown",
+          "harness": "unknown"
+        },
+        {
+          "at": "2026-11-08T00:41:22+03:00",
+          "note": "Parent reconciliation authorized by owner: closes only completed source/fixture phase; real independent/native consumer remains in Q1/Q2/N100/N199.",
+          "changes": {
+            "status": "done",
+            "result": "SOURCE_DONE: Vdcba0b3f plus I1b102b250 sanitizer/cache integration; candidates/admission and done/accepted remain distinct. Full1107PASS/7skip on prepared1.18 snapshot; R3 capture→replica→catalog + privacy RED/GREEN in records/I1/R3-roundtrip-result.md. Final bytes after H bootstrap require fresh full validation; source evidence is not final consumer acceptance."
+          },
+          "actor": {
+            "host_id": "roomhacker-server-100",
+            "harness": "codex",
+            "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+            "source": "declared"
+          },
+          "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+          "harness": "codex"
+        }
+      ],
+      "depends_on": [],
+      "estimate_minutes": {
+        "minimum": 15.0,
+        "maximum": 15.0
+      },
+      "created_at": "2026-11-07T22:40:42+03:00",
+      "started_at": "2026-11-07T23:09:33+03:00",
+      "finished_at": "2026-11-08T00:41:22+03:00"
+    },
+    {
+      "id": "B4",
+      "label": "Дать native consumer публичный pending-only bootstrap",
+      "status": "done",
+      "parent": "S1",
+      "description": "Отдельное прямое назначение владельца H: bugB4f5c63c21f044bb589a3; minimal public pending-only bootstrap в outcome/entry/state/protocol/tests. No VERSION/generated/runtime; не создавать synthetic accepted state. Это текущая source работа, не native acceptance.",
+      "acceptance": "Public bootstrap для genuine native identity/cwd создаёт только pending outcome; повтор сохраняет STOP/goal/evidence. RED/GREEN и опубликованный exact H tip; Q1 затем независимо проверяет final installed bytes.",
+      "result": "SOURCE_DONE_BOOTSTRAP: exact H8a344996712891ffe41b6c28c7e00632fb28259c integrated; B4 canonical resolved,4RED/13PASS + native-input1RED then126PASS. records/H1/proofs/outcome-bootstrap-q1-usage.md and H result/proofs. Genuine native Q1 consumer still pending final installed package; no hook receipt/acceptance from bootstrap.",
+      "owner": "H source operator",
+      "session": "01a1b7ac-35d9-7992-9580-8c9d6b5fb9e6",
+      "harness": "codex",
+      "model": "gpt-6.1-sol",
+      "estimate_unknown_reason": "Новый bootstrap scope и его реальный consumer ещё не завершены; достоверная оценка оставшегося времени не получена.",
+      "origin": "",
+      "supersedes": [],
+      "progress_events": [
+        {
+          "at": "2026-11-08T00:41:22+03:00",
+          "note": "Owner assigned bootstrap to existing H operator; native identity known, parent lineage not inferred.",
+          "changes": {
+            "label": "Дать native consumer публичный pending-only bootstrap",
+            "kind": "task",
+            "status": "running",
+            "owner": "H source operator",
+            "session": "01a1b7ac-35d9-7992-9580-8c9d6b5fb9e6",
+            "harness": "codex",
+            "parent": "S1",
+            "depends_on": [
+              "H1",
+              "F1"
+            ],
+            "description": "Отдельное прямое назначение владельца H: bugB4f5c63c21f044bb589a3; minimal public pending-only bootstrap в outcome/entry/state/protocol/tests. No VERSION/generated/runtime; не создавать synthetic accepted state. Это текущая source работа, не native acceptance.",
+            "acceptance": "Public bootstrap для genuine native identity/cwd создаёт только pending outcome; повтор сохраняет STOP/goal/evidence. RED/GREEN и опубликованный exact H tip; Q1 затем независимо проверяет final installed bytes.",
+            "estimate_unknown_reason": "Новый bootstrap scope и его реальный consumer ещё не завершены; достоверная оценка оставшегося времени не получена.",
+            "model": "gpt-6.1-sol"
+          },
+          "actor": {
+            "host_id": "roomhacker-server-100",
+            "harness": "codex",
+            "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+            "source": "declared"
+          },
+          "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-11-08T00:47:45+03:00",
+          "note": "Owner confirmed final H source complete; close only source bootstrap, not Q1 acceptance.",
+          "changes": {
+            "status": "done",
+            "result": "SOURCE_DONE_BOOTSTRAP: exact H8a344996712891ffe41b6c28c7e00632fb28259c integrated; B4 canonical resolved,4RED/13PASS + native-input1RED then126PASS. records/H1/proofs/outcome-bootstrap-q1-usage.md and H result/proofs. Genuine native Q1 consumer still pending final installed package; no hook receipt/acceptance from bootstrap."
+          },
+          "actor": {
+            "host_id": "roomhacker-server-100",
+            "harness": "codex",
+            "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+            "source": "declared"
+          },
+          "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+          "harness": "codex"
+        }
+      ],
+      "depends_on": [
+        "H1",
+        "F1"
+      ],
+      "created_at": "2026-11-08T00:41:22+03:00",
+      "started_at": "2026-11-08T00:41:22+03:00",
+      "finished_at": "2026-11-08T00:47:45+03:00"
+    },
+    {
+      "id": "F2",
+      "label": "Подключить решение к восстановлению и границе завершения",
+      "status": "done",
+      "parent": "S1",
+      "description": "Подключить решение к восстановлению и границе завершения. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+      "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+      "result": "SOURCE/FIXTURE_DONE: recovery/Stop frontier adapters implemented in5f8e53b7; source CLI/outcome regression13PASS and combined F/V34PASS; evidence/integration/F1-final-green.log and fv-source-green.log. Observed real lifecycle/handoff acceptance remains Q1/Q2/native gates.",
+      "owner": "frontier",
+      "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "harness": "codex",
+      "model": "gpt-6.1-sol",
+      "origin": "",
+      "supersedes": [],
+      "progress_events": [
+        {
+          "at": "2026-11-07T22:40:42+03:00",
+          "note": "",
+          "changes": {
+            "label": "Подключить решение к восстановлению и границе завершения",
+            "kind": "task",
+            "status": "queued",
+            "owner": "frontier",
+            "description": "Подключить решение к восстановлению и границе завершения. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+            "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+            "estimate_minutes": 15,
+            "depends_on": [
+              "F1"
+            ],
+            "parent": "S1",
+            "model": "gpt-6.1-sol"
+          },
+          "actor": {
+            "host_id": null,
+            "harness": "codex",
+            "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+            "source": "native_environment"
+          },
+          "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-11-08T00:41:22+03:00",
+          "note": "Parent reconciliation authorized by owner: closes only completed source/fixture phase; real independent/native consumer remains in Q1/Q2/N100/N199.",
+          "changes": {
+            "status": "done",
+            "result": "SOURCE/FIXTURE_DONE: recovery/Stop frontier adapters implemented in5f8e53b7; source CLI/outcome regression13PASS and combined F/V34PASS; evidence/integration/F1-final-green.log and fv-source-green.log. Observed real lifecycle/handoff acceptance remains Q1/Q2/native gates."
+          },
+          "actor": {
+            "host_id": "roomhacker-server-100",
+            "harness": "codex",
+            "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+            "source": "declared"
+          },
+          "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+          "harness": "codex"
+        }
+      ],
+      "depends_on": [
+        "F1"
+      ],
+      "estimate_minutes": {
+        "minimum": 15.0,
+        "maximum": 15.0
+      },
+      "created_at": "2026-11-07T22:40:42+03:00",
+      "finished_at": "2026-11-08T00:41:22+03:00"
+    },
+    {
+      "id": "H2",
+      "label": "Передавать пакет и сохранять связь с попыткой",
+      "status": "done",
+      "parent": "S1",
+      "description": "Передавать пакет и сохранять связь с попыткой. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+      "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+      "result": "SOURCE/FIXTURE_DONE: dispatch stores exact packet before I/O, UNKNOWN is not replayed; CLI/stdio/HTTP fixture paths verified174 relevant then200 P1 regression PASS. records/H1/proofs/handoff-regression-green.txt and p1-binding-regression-green.txt. Real native/separate-session handoff remains Q1/Q2, not claimed here.",
+      "owner": "handoff",
+      "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "harness": "codex",
+      "model": "gpt-6.1-sol",
+      "origin": "",
+      "supersedes": [],
+      "progress_events": [
+        {
+          "at": "2026-11-07T22:40:41+03:00",
+          "note": "",
+          "changes": {
+            "label": "Передавать пакет и сохранять связь с попыткой",
+            "kind": "task",
+            "status": "queued",
+            "owner": "handoff",
+            "description": "Передавать пакет и сохранять связь с попыткой. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+            "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+            "estimate_minutes": 15,
+            "depends_on": [
+              "H1"
+            ],
+            "parent": "S1",
+            "model": "gpt-6.1-sol"
+          },
+          "actor": {
+            "host_id": null,
+            "harness": "codex",
+            "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+            "source": "native_environment"
+          },
+          "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-11-08T00:41:21+03:00",
+          "note": "Parent reconciliation authorized by owner: closes only completed source/fixture phase; real independent/native consumer remains in Q1/Q2/N100/N199.",
+          "changes": {
+            "status": "done",
+            "result": "SOURCE/FIXTURE_DONE: dispatch stores exact packet before I/O, UNKNOWN is not replayed; CLI/stdio/HTTP fixture paths verified174 relevant then200 P1 regression PASS. records/H1/proofs/handoff-regression-green.txt and p1-binding-regression-green.txt. Real native/separate-session handoff remains Q1/Q2, not claimed here."
+          },
+          "actor": {
+            "host_id": "roomhacker-server-100",
+            "harness": "codex",
+            "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+            "source": "declared"
+          },
+          "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+          "harness": "codex"
+        }
+      ],
+      "depends_on": [
+        "H1"
+      ],
+      "estimate_minutes": {
+        "minimum": 15.0,
+        "maximum": 15.0
+      },
+      "created_at": "2026-11-07T22:40:41+03:00",
+      "finished_at": "2026-11-08T00:41:21+03:00"
+    },
+    {
+      "id": "I1",
+      "label": "Интегрировать и собрать согласованный пакет",
+      "status": "running",
+      "parent": "S1",
+      "description": "Интегрировать и собрать согласованный пакет. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+      "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+      "result": "IN_PROGRESS: exact H/F/V and P1 tipb751 merged089ac703; 9failures/R3 fixed; prior1.18 snapshot6544797b full1107PASS/7skip and isolated metadata/bytes readback203files. NOT_FROZEN after P1/bootstrap. Clean release WT/branch prepared with honest delivery gate PASS at089ac703 only as preparation. records/I1/result.md; evidence/integration/clean-release-worktree.json.",
+      "owner": "native operational Lead / IntegratorRelease",
+      "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+      "harness": "codex",
+      "model": "gpt-6.1-sol",
+      "estimate_unknown_reason": "Исторические15мин сохранены; окончание зависит от последнего H bootstrap tip и проверок finalbytes, остаток пока неизвестен.",
+      "origin": "",
+      "supersedes": [],
+      "progress_events": [
+        {
+          "at": "2026-11-07T22:40:42+03:00",
+          "note": "",
+          "changes": {
+            "label": "Интегрировать и собрать согласованный пакет",
+            "kind": "task",
+            "status": "queued",
+            "owner": "Lead",
+            "description": "Интегрировать и собрать согласованный пакет. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+            "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+            "estimate_minutes": 15,
+            "depends_on": [
+              "H2",
+              "F2",
+              "V1"
+            ],
+            "parent": "S1",
+            "model": "gpt-6.1-sol"
+          },
+          "actor": {
+            "host_id": null,
+            "harness": "codex",
+            "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+            "source": "native_environment"
+          },
+          "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-11-07T23:29:38+03:00",
+          "note": "I1 native integrator 01a1b7ae-4a6c-70c2-84cc-3288329a2425: direct delegated stage 1. F 5f8e53b7 and V dcba0b3f integrated; joint source 34 passed. H final required for candidate freeze; baseline excluded. No main merge/tag/install/runtime.",
+          "changes": {},
+          "actor": {
+            "host_id": "roomhacker-server-100",
+            "harness": "codex",
+            "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+            "source": "declared"
+          },
+          "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-11-08T00:41:23+03:00",
+          "note": "Integration began before added bootstrap dependency; independent native-context preparation continues, final freeze is blocked until B4 final tip.",
+          "changes": {
+            "status": "running",
+            "owner": "native Integrator/Release",
+            "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+            "depends_on": [
+              "H2",
+              "F2",
+              "V1",
+              "B4"
+            ],
+            "estimate_unknown_reason": "Исторические15мин сохранены; окончание зависит от последнего H bootstrap tip и проверок finalbytes, остаток пока неизвестен.",
+            "result": "IN_PROGRESS: exact H/F/V and P1 tipb751 merged089ac703; 9failures/R3 fixed; prior1.18 snapshot6544797b full1107PASS/7skip and isolated metadata/bytes readback203files. NOT_FROZEN after P1/bootstrap. Clean release WT/branch prepared with honest delivery gate PASS at089ac703 only as preparation. records/I1/result.md; evidence/integration/clean-release-worktree.json."
+          },
+          "actor": {
+            "host_id": "roomhacker-server-100",
+            "harness": "codex",
+            "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+            "source": "declared"
+          },
+          "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-11-08T00:47:46+03:00",
+          "note": "Explicit human delegation: current native operational Lead and acceptance/release continuation owner. Historical authors/progress/receipts retained; old root envID is not verified native authority.",
+          "changes": {
+            "owner": "native operational Lead / IntegratorRelease"
+          },
+          "actor": {
+            "host_id": "roomhacker-server-100",
+            "harness": "codex",
+            "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+            "source": "declared"
+          },
+          "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-11-08T00:48:52+03:00",
+          "note": "Explicit owner delegation; genuine native ID verified; preserve historical phase authors. Whole release goal is pending, not accepted.",
+          "changes": {},
+          "actor": {
+            "host_id": null,
+            "harness": "codex",
+            "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+            "source": "native_environment"
+          },
+          "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+          "harness": "codex"
+        }
+      ],
+      "depends_on": [
+        "H2",
+        "F2",
+        "V1",
+        "B4"
+      ],
+      "estimate_minutes": {
+        "minimum": 15.0,
+        "maximum": 15.0
+      },
+      "created_at": "2026-11-07T22:40:42+03:00",
+      "started_at": "2026-11-08T00:41:23+03:00"
+    },
+    {
+      "id": "HT",
+      "label": "Отдельно проверить штатное доверие и observed hook effect",
+      "status": "blocked",
+      "parent": "S2",
+      "description": "Отдельная от Q1 public CLI проверка доверия только verified installed final candidate hooks и реально наблюдаемого native lifecycle effect. /hooks/Settings Hooks или supported scoped config route после review; не bypass, не synthetic stdin, не запуск чужих sessions.",
+      "acceptance": "При доступном штатном маршруте сохранены native hook event/effect/status/path/revision/runtime/nativeID/cwd/state path; hooks/list/trusted metadata отдельно и недостаточно. При недоступности — exact limitation, не fabricated PASS.",
+      "owner": "native operational Lead / IntegratorRelease",
+      "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+      "harness": "codex",
+      "model": "gpt-6.1-sol",
+      "blocker": "Final installed bytes отсутствуют; ранее isolated654 имел11untrusted hooks. Штатный review/trust изучен, actual effect не запускался. Q1 public bootstrap от этого не зависит.",
+      "estimate_unknown_reason": "Штатный lifecycle route и фактическое исполнение в dedicated harness ещё не подтверждены.",
+      "origin": "",
+      "supersedes": [],
+      "progress_events": [
+        {
+          "at": "2026-11-08T00:47:48+03:00",
+          "note": "Separate native hook evidence from useful public CLI consumer; no new authority or acceptance inferred.",
+          "changes": {
+            "label": "Отдельно проверить штатное доверие и observed hook effect",
+            "kind": "task",
+            "status": "blocked",
+            "parent": "S2",
+            "owner": "native operational Lead / IntegratorRelease",
+            "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+            "harness": "codex",
+            "depends_on": [
+              "I1"
+            ],
+            "description": "Отдельная от Q1 public CLI проверка доверия только verified installed final candidate hooks и реально наблюдаемого native lifecycle effect. /hooks/Settings Hooks или supported scoped config route после review; не bypass, не synthetic stdin, не запуск чужих sessions.",
+            "acceptance": "При доступном штатном маршруте сохранены native hook event/effect/status/path/revision/runtime/nativeID/cwd/state path; hooks/list/trusted metadata отдельно и недостаточно. При недоступности — exact limitation, не fabricated PASS.",
+            "blocker": "Final installed bytes отсутствуют; ранее isolated654 имел11untrusted hooks. Штатный review/trust изучен, actual effect не запускался. Q1 public bootstrap от этого не зависит.",
+            "estimate_unknown_reason": "Штатный lifecycle route и фактическое исполнение в dedicated harness ещё не подтверждены.",
+            "model": "gpt-6.1-sol"
+          },
+          "actor": {
+            "host_id": "roomhacker-server-100",
+            "harness": "codex",
+            "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+            "source": "declared"
+          },
+          "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+          "harness": "codex"
+        }
+      ],
+      "depends_on": [
+        "I1"
+      ],
+      "created_at": "2026-11-08T00:47:48+03:00"
+    },
+    {
+      "id": "NC",
+      "label": "Подготовить isolated native контекст на final bytes",
+      "status": "blocked",
+      "parent": "S2",
+      "description": "Подготовить verified installed final candidate tools path и isolated public-CLI consumer context. Bootstrap Q1 запускает сама genuine Q1 session с естественным nativeID/cwd. Trust/automatic hook effect проверяется отдельно вHT и не блокирует полезный public CLI canary.",
+      "acceptance": "Exact final SHA/version/package bytes/MCP readback и installed tool paths переданы Q1. Без credentials/history copies, synthetic state и подмены native identity.",
+      "owner": "native operational Lead / IntegratorRelease",
+      "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+      "harness": "codex",
+      "model": "gpt-6.1-sol",
+      "blocker": "Ожидаются final validator, exact freeze и установка finalbytes; старый654 package не подходит послеP1/bootstrap.",
+      "estimate_unknown_reason": "Длительность final candidate trust/native context и возможностей текущего harness не измерена.",
+      "origin": "",
+      "supersedes": [],
+      "progress_events": [
+        {
+          "at": "2026-11-08T00:41:23+03:00",
+          "note": "Existing isolated snapshot metadata is preparation only; no native consumer PASS.",
+          "changes": {
+            "label": "Подготовить isolated native контекст на final bytes",
+            "kind": "task",
+            "status": "blocked",
+            "owner": "native Integrator/Release",
+            "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+            "harness": "codex",
+            "parent": "S2",
+            "depends_on": [
+              "I1"
+            ],
+            "description": "Установка точного final candidate в собственный CODEX_HOME; exact package bytes/version, MCP и штатное доверие только reviewed installed hooks. Защищённые credentials/history не копировать; shared runtime не менять.",
+            "acceptance": "Q1 получает supported isolated package/context и безопасный public bootstrap; штатный trust/readback отражён честно. Hook definitions/trusted metadata не подменяют observed lifecycle effect.",
+            "blocker": "Final candidate ещё отсутствует. Старый654 snapshot не покрываетP1/bootstrap; все11hooks в его isolated profile untrusted. Исследуется штатный scoped trust; bypass и ручной seed запрещены.",
+            "estimate_unknown_reason": "Длительность final candidate trust/native context и возможностей текущего harness не измерена.",
+            "model": "gpt-6.1-sol"
+          },
+          "actor": {
+            "host_id": "roomhacker-server-100",
+            "harness": "codex",
+            "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+            "source": "declared"
+          },
+          "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-11-08T00:47:46+03:00",
+          "note": "Explicit human delegation: current native operational Lead and acceptance/release continuation owner. Historical authors/progress/receipts retained; old root envID is not verified native authority.",
+          "changes": {
+            "owner": "native operational Lead / IntegratorRelease"
+          },
+          "actor": {
+            "host_id": "roomhacker-server-100",
+            "harness": "codex",
+            "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+            "source": "declared"
+          },
+          "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-11-08T00:47:48+03:00",
+          "note": "Owner: public native bootstrap canary is independent of automatic hook effects; remove UI-trust prerequisite from Q1 context.",
+          "changes": {
+            "description": "Подготовить verified installed final candidate tools path и isolated public-CLI consumer context. Bootstrap Q1 запускает сама genuine Q1 session с естественным nativeID/cwd. Trust/automatic hook effect проверяется отдельно вHT и не блокирует полезный public CLI canary.",
+            "acceptance": "Exact final SHA/version/package bytes/MCP readback и installed tool paths переданы Q1. Без credentials/history copies, synthetic state и подмены native identity.",
+            "blocker": "Ожидаются final validator, exact freeze и установка finalbytes; старый654 package не подходит послеP1/bootstrap."
+          },
+          "actor": {
+            "host_id": "roomhacker-server-100",
+            "harness": "codex",
+            "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+            "source": "declared"
+          },
+          "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+          "harness": "codex"
+        }
+      ],
+      "depends_on": [
+        "I1"
+      ],
+      "created_at": "2026-11-08T00:41:23+03:00"
+    },
+    {
+      "id": "Q1",
+      "label": "Независимый CLI/MCP потребитель после потери контекста",
+      "status": "blocked",
+      "parent": "S2",
+      "description": "Независимый CLI/MCP потребитель после потери контекста. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+      "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+      "result": "PRELIMINARY_ONLY: evidence/Q1/native-preflight.json и independent-goal-consumer-native-context.json. Неверныйcwd/state key не подтверждён; причина отсутствия timer-state Q1 неизвестна. Старые metadata readbacks не являются installed acceptance.",
+      "owner": "Reader Q1",
+      "session": "01a1b7a4-2eb2-7471-83fd-2edb027f38c5",
+      "harness": "codex",
+      "model": "gpt-6.1-sol",
+      "blocker": "Нужны final frozen SHA послеB4, соответствующий installed isolated package/context и supported public pending bootstrap. Preliminary real status exit1/no state; cases NOT_RUN, не PASS. Root запускает после exact candidate.",
+      "estimate_unknown_reason": "Исторические15мин сохранены; сквозная native проверка ещё не запускалась на finalbytes.",
+      "origin": "",
+      "supersedes": [],
+      "progress_events": [
+        {
+          "at": "2026-11-07T22:40:43+03:00",
+          "note": "",
+          "changes": {
+            "label": "Независимый CLI/MCP потребитель после потери контекста",
+            "kind": "task",
+            "status": "queued",
+            "owner": "Lead",
+            "description": "Независимый CLI/MCP потребитель после потери контекста. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+            "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+            "estimate_minutes": 15,
+            "depends_on": [
+              "I1"
+            ],
+            "parent": "S2",
+            "model": "gpt-6.1-sol"
+          },
+          "actor": {
+            "host_id": null,
+            "harness": "codex",
+            "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+            "source": "native_environment"
+          },
+          "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-11-08T00:41:23+03:00",
+          "note": "Do not mark Q1 done before genuine consumer on final candidate; Reader files remain owned and active.",
+          "changes": {
+            "status": "blocked",
+            "owner": "Reader Q1",
+            "session": "01a1b7a4-2eb2-7471-83fd-2edb027f38c5",
+            "depends_on": [
+              "I1",
+              "NC"
+            ],
+            "blocker": "Нужны final frozen SHA послеB4, соответствующий installed isolated package/context и supported public pending bootstrap. Preliminary real status exit1/no state; cases NOT_RUN, не PASS. Root запускает после exact candidate.",
+            "estimate_unknown_reason": "Исторические15мин сохранены; сквозная native проверка ещё не запускалась на finalbytes.",
+            "result": "PRELIMINARY_ONLY: evidence/Q1/native-preflight.json и independent-goal-consumer-native-context.json. Неверныйcwd/state key не подтверждён; причина отсутствия timer-state Q1 неизвестна. Старые metadata readbacks не являются installed acceptance."
+          },
+          "actor": {
+            "host_id": "roomhacker-server-100",
+            "harness": "codex",
+            "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+            "source": "declared"
+          },
+          "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+          "harness": "codex"
+        }
+      ],
+      "depends_on": [
+        "I1",
+        "NC"
+      ],
+      "estimate_minutes": {
+        "minimum": 15.0,
+        "maximum": 15.0
+      },
+      "created_at": "2026-11-07T22:40:43+03:00"
+    },
+    {
+      "id": "Q2",
+      "label": "Независимый consumer с назначением и возвратом результата",
+      "status": "blocked",
+      "parent": "S2",
+      "description": "Named empty Q2 created by user on roomhacker-server-100, codex gpt-6.1-sol, original ROOTWT cwd. First task ONLY via LHC public dispatch from native operational Lead after final freeze. Independent black-box from installed package/protocol/help/canonical packet; own evidence/Q2 and disposable fixtures, no implementation diffs/author results/source/runtime/credential edits.",
+      "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+      "owner": "Q2 independent black-box consumer",
+      "session": "01a1b7f7-13f7-7a41-9b56-d9e322cff539",
+      "harness": "codex",
+      "model": "gpt-6.1-sol",
+      "blocker": "Final candidate and Q1 first; native Lead public outcome/assignment/brief/admission must be bound to exact Q2 native ID. Do not activate/send via another transport. Child route only one genuine supported native child if real lineage can be verified.",
+      "estimate_unknown_reason": "Исторические15мин сохранены; реальная отдельная native consumer identity и время её canary ещё не известны.",
+      "origin": "",
+      "supersedes": [],
+      "progress_events": [
+        {
+          "at": "2026-11-07T22:40:43+03:00",
+          "note": "",
+          "changes": {
+            "label": "Независимый consumer с назначением и возвратом результата",
+            "kind": "task",
+            "status": "queued",
+            "owner": "Lead",
+            "description": "Независимый consumer с назначением и возвратом результата. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+            "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+            "estimate_minutes": 15,
+            "depends_on": [
+              "I1"
+            ],
+            "parent": "S2",
+            "model": "gpt-6.1-sol"
+          },
+          "actor": {
+            "host_id": null,
+            "harness": "codex",
+            "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+            "source": "native_environment"
+          },
+          "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-11-08T00:41:23+03:00",
+          "note": "Owner order: Q1 then Q2; I1 creates no agents or fabricated parent/session lineage.",
+          "changes": {
+            "status": "blocked",
+            "depends_on": [
+              "Q1",
+              "I1",
+              "NC"
+            ],
+            "blocker": "ПослеQ1 Root назначает genuine separate-session/child-handoff consumer на том же finalSHA. Нужны реальный handoff и возврат результата; loopback/fixture не доказательство.",
+            "estimate_unknown_reason": "Исторические15мин сохранены; реальная отдельная native consumer identity и время её canary ещё не известны."
+          },
+          "actor": {
+            "host_id": "roomhacker-server-100",
+            "harness": "codex",
+            "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+            "source": "declared"
+          },
+          "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-11-08T00:47:48+03:00",
+          "note": "User supplied exact verified empty native target; metadata updated only, no task/turn/send/activation executed.",
+          "changes": {
+            "owner": "Q2 independent black-box consumer",
+            "session": "01a1b7f7-13f7-7a41-9b56-d9e322cff539",
+            "description": "Named empty Q2 created by user on roomhacker-server-100, codex gpt-6.1-sol, original ROOTWT cwd. First task ONLY via LHC public dispatch from native operational Lead after final freeze. Independent black-box from installed package/protocol/help/canonical packet; own evidence/Q2 and disposable fixtures, no implementation diffs/author results/source/runtime/credential edits.",
+            "blocker": "Final candidate and Q1 first; native Lead public outcome/assignment/brief/admission must be bound to exact Q2 native ID. Do not activate/send via another transport. Child route only one genuine supported native child if real lineage can be verified."
+          },
+          "actor": {
+            "host_id": "roomhacker-server-100",
+            "harness": "codex",
+            "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+            "source": "declared"
+          },
+          "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+          "harness": "codex"
+        }
+      ],
+      "depends_on": [
+        "Q1",
+        "I1",
+        "NC"
+      ],
+      "estimate_minutes": {
+        "minimum": 15.0,
+        "maximum": 15.0
+      },
+      "created_at": "2026-11-07T22:40:43+03:00"
+    },
+    {
+      "id": "R1",
+      "label": "Review, версия и разрешённая интеграция",
+      "status": "blocked",
+      "parent": "S2",
+      "description": "Review, версия и разрешённая интеграция. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+      "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+      "owner": "native operational Lead / IntegratorRelease",
+      "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+      "harness": "codex",
+      "model": "gpt-6.1-sol",
+      "blocker": "Reviewer01a1b7c8-701d-7541-9190-033267d32c4b выполнил preliminary exact-object review; final APPROVE требует frozen SHA послеP1/bootstrap, Q1/Q2 и полного validator. После этого разрешённый merge; pr_stage=off.",
+      "estimate_unknown_reason": "Исторические15мин сохранены; ожидание финального consumer/review результата не оценено.",
+      "origin": "",
+      "supersedes": [],
+      "progress_events": [
+        {
+          "at": "2026-11-07T22:40:43+03:00",
+          "note": "",
+          "changes": {
+            "label": "Review, версия и разрешённая интеграция",
+            "kind": "task",
+            "status": "queued",
+            "owner": "Lead",
+            "description": "Review, версия и разрешённая интеграция. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+            "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+            "estimate_minutes": 15,
+            "depends_on": [
+              "Q1",
+              "Q2"
+            ],
+            "parent": "S2",
+            "model": "gpt-6.1-sol"
+          },
+          "actor": {
+            "host_id": null,
+            "harness": "codex",
+            "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+            "source": "native_environment"
+          },
+          "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-11-08T00:41:23+03:00",
+          "note": "Early findings and source rechecks are not final acceptance; no main merge yet.",
+          "changes": {
+            "status": "blocked",
+            "blocker": "Reviewer01a1b7c8-701d-7541-9190-033267d32c4b выполнил preliminary exact-object review; final APPROVE требует frozen SHA послеP1/bootstrap, Q1/Q2 и полного validator. После этого разрешённый merge; pr_stage=off.",
+            "estimate_unknown_reason": "Исторические15мин сохранены; ожидание финального consumer/review результата не оценено."
+          },
+          "actor": {
+            "host_id": "roomhacker-server-100",
+            "harness": "codex",
+            "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+            "source": "declared"
+          },
+          "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-11-08T00:47:46+03:00",
+          "note": "Explicit human delegation: current native operational Lead and acceptance/release continuation owner. Historical authors/progress/receipts retained; old root envID is not verified native authority.",
+          "changes": {
+            "owner": "native operational Lead / IntegratorRelease",
+            "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425"
+          },
+          "actor": {
+            "host_id": "roomhacker-server-100",
+            "harness": "codex",
+            "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+            "source": "declared"
+          },
+          "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+          "harness": "codex"
+        }
+      ],
+      "depends_on": [
+        "Q1",
+        "Q2"
+      ],
+      "estimate_minutes": {
+        "minimum": 15.0,
+        "maximum": 15.0
+      },
+      "created_at": "2026-11-07T22:40:43+03:00"
+    },
+    {
+      "id": "MIRROR",
+      "label": "Обновить проекции и проверить реальный план",
+      "status": "blocked",
+      "parent": "S2",
+      "description": "Обновить проекции и проверить реальный план. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+      "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+      "owner": "native operational Lead / IntegratorRelease",
+      "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+      "harness": "codex",
+      "model": "gpt-6.1-sol",
+      "blocker": "Shared mirror/runtime update только после finalReviewer+consumers/main и scoped release lease/CAS; source projection tests не равны deployed UI/business readback.",
+      "origin": "",
+      "supersedes": [],
+      "progress_events": [
+        {
+          "at": "2026-11-07T22:40:44+03:00",
+          "note": "",
+          "changes": {
+            "label": "Обновить проекции и проверить реальный план",
+            "kind": "task",
+            "status": "queued",
+            "owner": "Lead",
+            "description": "Обновить проекции и проверить реальный план. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+            "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+            "estimate_minutes": 15,
+            "depends_on": [
+              "R1"
+            ],
+            "parent": "S2",
+            "model": "gpt-6.1-sol"
+          },
+          "actor": {
+            "host_id": null,
+            "harness": "codex",
+            "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+            "source": "native_environment"
+          },
+          "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-11-08T00:41:24+03:00",
+          "note": "Source R3/cache proof complete, shared mirror deployment not performed.",
+          "changes": {
+            "status": "blocked",
+            "blocker": "Shared mirror/runtime update только после finalReviewer+consumers/main и scoped release lease/CAS; source projection tests не равны deployed UI/business readback."
+          },
+          "actor": {
+            "host_id": "roomhacker-server-100",
+            "harness": "codex",
+            "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+            "source": "declared"
+          },
+          "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-11-08T00:47:47+03:00",
+          "note": "Explicit human delegation: current native operational Lead and acceptance/release continuation owner. Historical authors/progress/receipts retained; old root envID is not verified native authority.",
+          "changes": {
+            "owner": "native operational Lead / IntegratorRelease",
+            "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425"
+          },
+          "actor": {
+            "host_id": "roomhacker-server-100",
+            "harness": "codex",
+            "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+            "source": "declared"
+          },
+          "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+          "harness": "codex"
+        }
+      ],
+      "depends_on": [
+        "R1"
+      ],
+      "estimate_minutes": {
+        "minimum": 15.0,
+        "maximum": 15.0
+      },
+      "created_at": "2026-11-07T22:40:44+03:00"
+    },
+    {
+      "id": "N100",
+      "label": "Установить и проверить native LHC на server100",
+      "status": "blocked",
+      "parent": "S2",
+      "description": "Установить и проверить native LHC на server100. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+      "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+      "result": "NOT_RUN for finalbytes. Isolated654metadata/package PASS сохранён в records/I1/native-candidate-readback.md; shared marketplace/config не менялись.",
+      "owner": "native operational Lead / IntegratorRelease",
+      "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+      "harness": "codex",
+      "model": "gpt-6.1-sol",
+      "blocker": "Shared native install на server100 только после final Reviewer+consumers и разрешённого main integration; обязательны native operator identity, Herder lease/fence/CAS и exact final artifact.",
+      "origin": "",
+      "supersedes": [],
+      "progress_events": [
+        {
+          "at": "2026-11-07T22:40:43+03:00",
+          "note": "",
+          "changes": {
+            "label": "Установить и проверить native LHC на server100",
+            "kind": "task",
+            "status": "queued",
+            "owner": "Lead",
+            "description": "Установить и проверить native LHC на server100. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+            "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+            "estimate_minutes": 15,
+            "depends_on": [
+              "R1"
+            ],
+            "parent": "S2",
+            "model": "gpt-6.1-sol"
+          },
+          "actor": {
+            "host_id": null,
+            "harness": "codex",
+            "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+            "source": "native_environment"
+          },
+          "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-11-08T00:41:24+03:00",
+          "note": "Do not convert isolated package metadata into shared installed acceptance.",
+          "changes": {
+            "status": "blocked",
+            "blocker": "Shared native install на server100 только после final Reviewer+consumers и разрешённого main integration; обязательны native operator identity, Herder lease/fence/CAS и exact final artifact.",
+            "result": "NOT_RUN for finalbytes. Isolated654metadata/package PASS сохранён в records/I1/native-candidate-readback.md; shared marketplace/config не менялись."
+          },
+          "actor": {
+            "host_id": "roomhacker-server-100",
+            "harness": "codex",
+            "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+            "source": "declared"
+          },
+          "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-11-08T00:47:46+03:00",
+          "note": "Explicit human delegation: current native operational Lead and acceptance/release continuation owner. Historical authors/progress/receipts retained; old root envID is not verified native authority.",
+          "changes": {
+            "owner": "native operational Lead / IntegratorRelease",
+            "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425"
+          },
+          "actor": {
+            "host_id": "roomhacker-server-100",
+            "harness": "codex",
+            "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+            "source": "declared"
+          },
+          "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+          "harness": "codex"
+        }
+      ],
+      "depends_on": [
+        "R1"
+      ],
+      "estimate_minutes": {
+        "minimum": 15.0,
+        "maximum": 15.0
+      },
+      "created_at": "2026-11-07T22:40:43+03:00"
+    },
+    {
+      "id": "N199",
+      "label": "Независимое чтение установленного LHC на server100",
+      "status": "blocked",
+      "parent": "S2",
+      "description": "По первичным квитанциям подтвержден один native host: roomhacker-server-100. Число199 в предыдущем release-summary означает число файлов, а не второй host. Проверить установленный пакет отдельным потребителем на подтвержденном host.",
+      "acceptance": "Отдельный readback подтверждает точную версию, SHA256 исходного пакета, активные hooks и доступные MCP команды на roomhacker-server-100; другие host не затрагиваются.",
+      "result": "Final installed independent readback NOT_RUN. Новый isolated snapshot654 имел203файла; этот count также не означает host.",
+      "owner": "независимый native reader послеN100",
+      "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+      "harness": "codex",
+      "model": "gpt-6.1-sol",
+      "blocker": "Нужен установленный final пакет послеN100 для независимого readback на том же roomhacker-server-100. 199 — историческое число файлов, не host.",
+      "origin": "",
+      "supersedes": [],
+      "progress_events": [
+        {
+          "at": "2026-11-07T22:40:44+03:00",
+          "note": "",
+          "changes": {
+            "label": "Проверить и обновить второй ранее настроенный native host",
+            "kind": "task",
+            "status": "queued",
+            "owner": "Lead",
+            "description": "Проверить и обновить второй ранее настроенный native host. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+            "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+            "estimate_minutes": 15,
+            "depends_on": [
+              "R1"
+            ],
+            "parent": "S2",
+            "model": "gpt-6.1-sol"
+          },
+          "actor": {
+            "host_id": null,
+            "harness": "codex",
+            "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+            "source": "native_environment"
+          },
+          "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-11-07T23:06:40+03:00",
+          "note": "",
+          "changes": {
+            "label": "Независимое чтение установленного LHC на server100",
+            "description": "По первичным квитанциям подтвержден один native host: roomhacker-server-100. Число199 в предыдущем release-summary означает число файлов, а не второй host. Проверить установленный пакет отдельным потребителем на подтвержденном host.",
+            "acceptance": "Отдельный readback подтверждает точную версию, SHA256 исходного пакета, активные hooks и доступные MCP команды на roomhacker-server-100; другие host не затрагиваются."
+          },
+          "actor": {
+            "host_id": null,
+            "harness": null,
+            "session_id": null,
+            "source": "unknown"
+          },
+          "session": "unknown",
+          "harness": "unknown"
+        },
+        {
+          "at": "2026-11-08T00:41:24+03:00",
+          "note": "Owner correction preserved: one native host server100, independent reader after actual final install.",
+          "changes": {
+            "status": "blocked",
+            "depends_on": [
+              "N100"
+            ],
+            "blocker": "Нужен установленный final пакет послеN100 для независимого readback на том же roomhacker-server-100. 199 — историческое число файлов, не host.",
+            "result": "Final installed independent readback NOT_RUN. Новый isolated snapshot654 имел203файла; этот count также не означает host."
+          },
+          "actor": {
+            "host_id": "roomhacker-server-100",
+            "harness": "codex",
+            "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+            "source": "declared"
+          },
+          "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-11-08T00:47:48+03:00",
+          "note": "Legacy root envID removed from current unassigned reader fields through API; it remains in immutable progress history. Current executor is unknown until assigned. Host remains server100.",
+          "changes": {
+            "owner": "независимый native reader послеN100",
+            "session": "",
+            "harness": ""
+          },
+          "actor": {
+            "host_id": "roomhacker-server-100",
+            "harness": "codex",
+            "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+            "source": "declared"
+          },
+          "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+          "harness": "codex"
+        }
+      ],
+      "depends_on": [
+        "N100"
+      ],
+      "estimate_minutes": {
+        "minimum": 15.0,
+        "maximum": 15.0
+      },
+      "created_at": "2026-11-07T22:40:44+03:00"
+    },
+    {
+      "id": "FINAL",
+      "label": "Зафиксировать принятую поставку и остатки внешнего gate",
+      "status": "blocked",
+      "parent": "S2",
+      "description": "Зафиксировать принятую поставку и остатки внешнего gate. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+      "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+      "owner": "native operational Lead / IntegratorRelease",
+      "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+      "harness": "codex",
+      "model": "gpt-6.1-sol",
+      "blocker": "ОткрытыB4/I1, finalQ1/Q2/Review, main/sharednative/mirror/readback; goal acceptance не выставлялась.",
+      "estimate_unknown_reason": "Исторические15мин сохранены; сквозное завершение зависит от ещё непроверенных final gates.",
+      "origin": "",
+      "supersedes": [],
+      "progress_events": [
+        {
+          "at": "2026-11-07T22:40:44+03:00",
+          "note": "",
+          "changes": {
+            "label": "Зафиксировать принятую поставку и остатки внешнего gate",
+            "kind": "task",
+            "status": "queued",
+            "owner": "Lead",
+            "description": "Зафиксировать принятую поставку и остатки внешнего gate. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+            "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+            "estimate_minutes": 15,
+            "depends_on": [
+              "N100",
+              "N199",
+              "MIRROR"
+            ],
+            "parent": "S2",
+            "model": "gpt-6.1-sol"
+          },
+          "actor": {
+            "host_id": null,
+            "harness": "codex",
+            "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+            "source": "native_environment"
+          },
+          "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-11-08T00:41:24+03:00",
+          "note": "Overall Done forbidden until accepted release; no estimates rewritten retroactively.",
+          "changes": {
+            "status": "blocked",
+            "blocker": "ОткрытыB4/I1, finalQ1/Q2/Review, main/sharednative/mirror/readback; goal acceptance не выставлялась.",
+            "estimate_unknown_reason": "Исторические15мин сохранены; сквозное завершение зависит от ещё непроверенных final gates."
+          },
+          "actor": {
+            "host_id": "roomhacker-server-100",
+            "harness": "codex",
+            "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+            "source": "declared"
+          },
+          "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-11-08T00:47:47+03:00",
+          "note": "Explicit human delegation: current native operational Lead and acceptance/release continuation owner. Historical authors/progress/receipts retained; old root envID is not verified native authority.",
+          "changes": {
+            "owner": "native operational Lead / IntegratorRelease",
+            "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425"
+          },
+          "actor": {
+            "host_id": "roomhacker-server-100",
+            "harness": "codex",
+            "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+            "source": "declared"
+          },
+          "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+          "harness": "codex"
+        }
+      ],
+      "depends_on": [
+        "N100",
+        "N199",
+        "MIRROR"
+      ],
+      "estimate_minutes": {
+        "minimum": 15.0,
+        "maximum": 15.0
+      },
+      "created_at": "2026-11-07T22:40:44+03:00"
+    }
+  ],
+  "leaf_count": 16,
+  "milestones": [
+    {
+      "id": "S1",
+      "label": "Исправить управление поручением и целью",
+      "status": "running",
+      "children": [
+        "B4",
+        "F1",
+        "F2",
+        "H1",
+        "H2",
+        "I1",
+        "V1"
+      ],
+      "estimate_minutes": {
+        "minimum": 45.0,
+        "maximum": 45.0
+      },
+      "done": 6,
+      "total": 7
+    },
+    {
+      "id": "S2",
+      "label": "Проверить потребителей и выпустить версию",
+      "status": "blocked",
+      "children": [
+        "FINAL",
+        "HT",
+        "MIRROR",
+        "N100",
+        "N199",
+        "NC",
+        "Q1",
+        "Q2",
+        "R1"
+      ],
+      "estimate_minutes": {
+        "minimum": 45.0,
+        "maximum": 45.0
+      },
+      "done": 0,
+      "total": 9
+    }
+  ],
+  "plan_origin": {
+    "at": "2026-11-07T22:40:41+03:00",
+    "source": "leaf_created_at",
+    "leaf_id": "S1",
+    "recorded_at": "2026-11-07T19:40:41.301551+00:00"
+  }
+}

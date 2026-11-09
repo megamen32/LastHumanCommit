@@ -1,0 +1,24 @@
+(Linux uses --headless by default. To override, use --headed / --gui. For Xvfb mode instead, use --xvfb. Or you can hide this info by using --headless / --headless2 / --uc.)
+F                                                                        [100%]
+=================================== FAILURES ===================================
+______ test_private_snapshot_self_excludes_from_git_in_any_plan_location _______
+
+plan = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/pytest-1371436-52272f4d31238f3b/test_private_snapshot_self_exc0')
+
+    def test_private_snapshot_self_excludes_from_git_in_any_plan_location(plan):
+        import subprocess
+        subprocess.run(["git", "init", "-q", str(plan)], check=True, capture_output=True)
+        (plan / "briefs/L1.md").write_text(BRIEF)
+        result = ex.dispatch_leaf(plan, "L1", "attempt", "private caller input", transport=Transport())
+        snapshot = result["dispatch"]["handoff"]["record_path"]
+        ignored = subprocess.run(["git", "check-ignore", "--no-index", snapshot],
+                                 cwd=plan, capture_output=True, text=True)
+>       assert ignored.returncode == 0, "private handoff must exclude itself without root ignore changes"
+E       AssertionError: private handoff must exclude itself without root ignore changes
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['git', 'check-ignore', '--no-index', 'records/L1/attempts/c7ce66d0fb14e3c2d4d920918cc6cc7e488668b08dddeb7b85e44de3b9f3eb01/handoff.json'], returncode=1, stdout='', stderr='').returncode
+
+tests/test_execution_handoff.py:211: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_execution_handoff.py::test_private_snapshot_self_excludes_from_git_in_any_plan_location
+1 failed in 0.36s

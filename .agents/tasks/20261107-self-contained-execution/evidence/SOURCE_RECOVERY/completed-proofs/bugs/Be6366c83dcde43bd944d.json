@@ -1,0 +1,87 @@
+{
+  "created_at": "2026-11-07T21:58:47+00:00",
+  "details": "R6 source owner verified canonical I1 handoff receipts and reproduced old behavior in tests/test_current_goal_lead.py (6 failed,4 passed). Explicit current pointer is ignored, mixed historical refs block resolution, ordinary legacy worker activation can create plan goal binding. RED: /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/current-lead-resolution-20261107/.tmp/current-lead-resolution/R6-red.log. Separate owned branch lhc/current-lead-resolution-20261107 from exact3ac8599f331a965d40bc55d83af0653e9ab23815. Current-role pointer via existing update-plan approved by Root; no acceptance authority or second truth ledger.",
+  "events": [
+    {
+      "action": "register",
+      "actor": "H R4/R5 01a1b7ac-35d9-7992-9580-8c9d6b5fb9e6",
+      "at": "2026-11-07T21:58:47+00:00",
+      "changes": {
+        "details": "Actual canonical plan + records/I1/current-native-owner.md: current explicit native outcome 9c3975545b60da798962b446 has matching pending binding but resolve_control returns native_lead_ref_ambiguous from legacy source/QA executor history. No acceptance bypass established; workflow current-owner projection blocked.",
+        "source": "evidence/REVIEW/bootstrap-review.md; records/I1/current-native-owner.md",
+        "status": "open",
+        "title": "P2: current exact native Lead binding теряется среди historical row refs"
+      }
+    },
+    {
+      "action": "update",
+      "actor": "H source labels clarified",
+      "at": "2026-11-07T22:00:49+00:00",
+      "changes": {
+        "title": "P2 R6: current exact native Lead binding теряется среди historical row refs"
+      },
+      "reason": ""
+    },
+    {
+      "action": "update",
+      "actor": "H: direct owner transfer to F",
+      "at": "2026-11-07T22:04:18+00:00",
+      "changes": {
+        "details": "Actual canonical plan + records/I1/current-native-owner.md: current explicit native outcome 9c3975545b60da798962b446 has matching pending binding but resolve_control returns native_lead_ref_ambiguous from legacy source/QA executor history. No acceptance bypass established; workflow current-owner projection blocked. R6 transferred to F by direct owner instruction. H read canonical metadata/records only; no plan_control or activation glue changes and no patch.",
+        "owner": "F: Root assigned current Lead/history resolution in a separate worktree"
+      },
+      "reason": ""
+    },
+    {
+      "action": "update",
+      "actor": "F R6 source worker, native lineage UNKNOWN",
+      "at": "2026-11-07T22:09:13+00:00",
+      "changes": {
+        "details": "R6 source owner verified canonical I1 handoff receipts and reproduced old behavior in tests/test_current_goal_lead.py (6 failed,4 passed). Explicit current pointer is ignored, mixed historical refs block resolution, ordinary legacy worker activation can create plan goal binding. RED: /home/roomhacker/agents-projects/LastHumanCommit/.worktrees/current-lead-resolution-20261107/.tmp/current-lead-resolution/R6-red.log. Separate owned branch lhc/current-lead-resolution-20261107 from exact3ac8599f331a965d40bc55d83af0653e9ab23815. Current-role pointer via existing update-plan approved by Root; no acceptance authority or second truth ledger.",
+        "owner": "F R6 source worker via GPTAdmin host100; native lineage UNKNOWN"
+      },
+      "reason": "R6 ownership transfer and discriminating source RED, canonical record retained"
+    },
+    {
+      "action": "resolve",
+      "actor": "F R6 source worker, native lineage UNKNOWN",
+      "at": "2026-11-07T22:16:26+00:00",
+      "changes": {
+        "resolution": {
+          "evidence": {
+            "proof_path": "evidence/F1/R6-source-green.log",
+            "red_proof_path": "evidence/F1/R6-source-red.log",
+            "red_result": "6 failed, 4 passed",
+            "red_sha256": "3c8b2eb4fa5fef0ad650198aadbedb04edd2fd5d3b335ad52a63f5cb53e2f0f9",
+            "result": "84 passed",
+            "sha256": "56939ca0f60eb735c2e8b968a30e42edf43f93cfd7731271920d15f012a1c962",
+            "test_command": "python3 -m pytest -q tests/test_current_goal_lead.py tests/test_plan_binding_acceptance.py tests/test_plan_frontier_control.py tests/test_execution_handoff.py tests/test_session_plan_binding.py tests/test_plan_gates.py"
+          },
+          "kind": "fixed",
+          "reason": "Focused R6 source fix; full installed/native consumer acceptance remains with Integrator."
+        },
+        "status": "fixed"
+      }
+    }
+  ],
+  "id": "Be6366c83dcde43bd944d",
+  "owner": "F R6 source worker via GPTAdmin host100; native lineage UNKNOWN",
+  "reporter": "H R4/R5 01a1b7ac-35d9-7992-9580-8c9d6b5fb9e6",
+  "resolution": {
+    "evidence": {
+      "proof_path": "evidence/F1/R6-source-green.log",
+      "red_proof_path": "evidence/F1/R6-source-red.log",
+      "red_result": "6 failed, 4 passed",
+      "red_sha256": "3c8b2eb4fa5fef0ad650198aadbedb04edd2fd5d3b335ad52a63f5cb53e2f0f9",
+      "result": "84 passed",
+      "sha256": "56939ca0f60eb735c2e8b968a30e42edf43f93cfd7731271920d15f012a1c962",
+      "test_command": "python3 -m pytest -q tests/test_current_goal_lead.py tests/test_plan_binding_acceptance.py tests/test_plan_frontier_control.py tests/test_execution_handoff.py tests/test_session_plan_binding.py tests/test_plan_gates.py"
+    },
+    "kind": "fixed",
+    "reason": "Focused R6 source fix; full installed/native consumer acceptance remains with Integrator."
+  },
+  "source": "evidence/REVIEW/bootstrap-review.md; records/I1/current-native-owner.md",
+  "status": "fixed",
+  "title": "P2 R6: current exact native Lead binding теряется среди historical row refs",
+  "updated_at": "2026-11-07T22:16:26+00:00"
+}

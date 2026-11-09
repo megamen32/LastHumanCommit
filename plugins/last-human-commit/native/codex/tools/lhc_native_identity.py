@@ -90,6 +90,8 @@ def read_native_header(journal_path: str | os.PathLike[str]) -> dict[str, Any]:
         "session_id": payload.get("session_id"),
         "parent_thread_id": payload.get("parent_thread_id"),
         "agent_path": payload.get("agent_path") or _nested_agent_path(payload),
+        "has_subagent_source": (isinstance(payload.get("source"), dict)
+                                and "subagent" in payload["source"]),
         "native_cwd": str(Path(cwd).resolve()),
         "journal_path": str(path),
         "originator": payload.get("originator"),
@@ -138,7 +140,7 @@ def resolve_standalone_identity(logical_session_id: str,
         raise ValueError("standalone LHC id must equal its native session id")
     if str(Path(observed_native_cwd).resolve()) != header["native_cwd"]:
         raise ValueError("standalone native cwd differs from the owning session cwd")
-    if header.get("parent_thread_id") or header.get("agent_path"):
+    if header.get("parent_thread_id") or header.get("agent_path") or header.get("has_subagent_source"):
         raise ValueError("subagent native session needs its verified parent dispatch")
     return {
         **header,

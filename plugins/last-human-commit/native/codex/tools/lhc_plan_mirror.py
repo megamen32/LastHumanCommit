@@ -268,6 +268,17 @@ def file_stamp(path):
     return (info.st_dev, info.st_ino, info.st_mode, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
 
 
+def goal_state_path(plan):
+    """Observe only the existing native state of an explicitly bound goal."""
+    if Path(plan).name == 'plan.graph.json':
+        return None
+    source = (leaves.goal_control(Path(plan)).get('source') or {})
+    if source.get('kind') != 'native_outcome':
+        return None
+    import lhc_time_guard
+    return lhc_time_guard.learning_path(Path(plan), source['harness'], source['session_id'])
+
+
 def source_stamp(plan):
     plan = Path(plan)
     paths = ([plan] if plan.name == 'plan.graph.json' else
@@ -275,6 +286,9 @@ def source_stamp(plan):
               plan / '.lhc-publication/plan-origin.json'])
     if plan.name != 'plan.graph.json' and not (plan / 'plan.json').is_file():
         paths.append(plan / 'plan.graph.json')
+    goal_state = goal_state_path(plan)
+    if goal_state is not None:
+        paths.append(goal_state)
     return tuple((str(path), file_stamp(path)) for path in paths)
 
 
@@ -307,6 +321,11 @@ def fingerprint(plan):
         if path.is_symlink() or path.stat().st_size > MAX_BYTES:
             raise ValueError('unsafe or oversized source')
         result.append((str(path.name if graph_source else path.relative_to(plan)), hashlib.sha256(path.read_bytes()).hexdigest()))
+    if not graph_source:
+        control = leaves.goal_control(plan)
+        if (control.get('source') or {}).get('kind') == 'native_outcome':
+            result.append(('goal_control', {key: control.get(key) for key in
+                           ('source', 'fingerprint', 'goal_status', 'next_decision')}))
     return pub.digest(result)
 
 
@@ -734,6 +753,7 @@ def run_observer(config_path, once=False, *, price_refresh=None):
     local = Path(cfg['data_dir']).expanduser()
     local.mkdir(parents=True, exist_ok=True)
     pending, retry, plans, owners, graph_files = {}, {}, set(), {}, {}
+    goal_files, plan_goals = {}, {}
     discovery_dirs, state_stamps, metadata_stamps, fallback = set(), {}, {}, {}
     registry_stamp, fallback_scan, warned = None, 0, False
 
@@ -762,6 +782,14 @@ def run_observer(config_path, once=False, *, price_refresh=None):
                 if directory_path.is_dir():
                     watch(directory_path)
                     owners[directory_path] = plan
+            previous = plan_goals.pop(plan, None)
+            if previous is not None:
+                goal_files[previous].discard(plan)
+            goal_state = goal_state_path(plan)
+            if goal_state is not None:
+                watch(goal_state.parent)
+                goal_files.setdefault(goal_state, set()).add(plan)
+                plan_goals[plan] = goal_state
 
         def watch_roots(roots, *, origin=None):
             found = set()
@@ -833,6 +861,10 @@ def run_observer(config_path, once=False, *, price_refresh=None):
                     continue
                 if path in graph_files:
                     queue(graph_files[path])
+                    continue
+                if path in goal_files:
+                    for plan in tuple(goal_files[path]):
+                        queue(plan)
                     continue
                 plan = owners.get(path.parent)
                 if plan is not None:
@@ -1282,7 +1314,7 @@ class Replica:
                 cached = self.summaries.get(path)
                 if cached is None or (cached[0] is not None and tick >= cached[0]):
                     item = catalog.summarize(entry, now)
-                    deadline = None if item['state'] == 'completed' else tick + 60
+                    deadline = None if item['state'] in {'completed', 'awaiting', 'superseded'} else tick + 60
                     cached = deadline, item
                     self.summaries[path] = cached
                 active = active or cached[0] is not None

@@ -33,7 +33,8 @@ def test_states_follow_leaves_and_idle_time():
     assert catalog.summarize(entry([leaf(1, "done"), leaf(2, "queued")], updated_hours_ago=5), NOW)["state"] == "stalled"
     assert catalog.summarize(entry([leaf(1, "blocked", blocker="нет доступа")]), NOW)["state"] == "blocked"
     done = catalog.summarize(entry([leaf(1, "done"), leaf(2, "deferred")]), NOW)
-    assert done["state"] == "completed" and (done["done"], done["total"]) == (1, 1)
+    assert done["state"] == "awaiting" and (done["done"], done["total"]) == (1, 2)
+    assert done["goal_status"] == "unknown" and done["deferred"] == 1
 
 
 def test_stage_and_eta_use_the_critical_path():

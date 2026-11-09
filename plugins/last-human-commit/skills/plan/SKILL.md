@@ -10,7 +10,8 @@ you reads it to know where you are, so every finished leaf says what works and w
 Work with the plan only through the LhcPlan MCP: `create_leaf`, `update_leaf`, `update_progress`,
 `activate_leaf`, `update_plan` (plan fields, revisions), `show_plan` (refresh the bound context),
 `worker_register`, `worker_finish`, and the explicit execution operations `assign_leaf`,
-`dispatch_leaf`, `reconcile_leaf`, `accept_leaf`. Every answer ends with the state of the plan; every refusal
+`dispatch_leaf`, `reconcile_leaf`, `accept_leaf`, `read_goal_control`,
+`record_frontier_decision`. Every answer ends with the state of the plan; every refusal
 says what to do. Without the MCP use the same commands of `lhc_plan_json.py`. Never edit plan
 files by hand. After restart or compaction, use the bound plan snapshot supplied by the
 hook; if that snapshot is absent or needs refreshing, call `show_plan`. Never choose a
@@ -85,6 +86,13 @@ Every «needs checking» in `recon` becomes a research leaf with its question.
   lead/executor refs (host, harness, native session), and a distinct parent ref for a
   subagent. A leaf owner label, legacy session field or relayed message is not accepted
   dispatch. Unknown historical provenance stays unknown.
+- Before `dispatch_leaf`, write the complete `briefs/<leaf-id>.md` contract from
+  `ORCHESTRATION_RECORDS.md`: canonical task directory name, exact identities and
+  return route, role/mode, description, explicit source/write/excluded scope,
+  acceptance output/destination/checks and next action. Raw `message` is not a brief.
+  Internal routing does not require unrelated chat context. The gate saves a private
+  immutable snapshot and public hashes with the exact admitted attempt; do not add
+  private attempt receipts to Git or copy their payload into public projections.
 - Use `dispatch_leaf` with the attempt ID and the scoped task message. Its canonical
   path refreshes native availability, checks the unified dependencies/capacity/runtime
   evaluator, and saves dispatch intent atomically before calling the existing Herder.
@@ -115,6 +123,21 @@ Every «needs checking» in `recon` becomes a research leaf with its question.
 
 Concrete CLI/MCP examples and isolated consumer setup:
 `protocols/ORCHESTRATION_RECORDS.md` and `protocols/EXECUTION_CONSUMER.md`.
+
+### Goal acceptance and an exhausted frontier
+
+Explicit `activate_leaf` binds the actual selected Lead session/harness to its
+existing native outcome when available. A historical missing outcome stays unknown.
+Read `read_goal_control` (CLI `goal-control PLAN`) before choosing the next action;
+`goal_control` in the graph is a display snapshot, not acceptance or dispatch
+permission. All cards done and native completion still do not accept the goal.
+If the current goal remains unaccepted with no executable work, record an explicit
+`record_frontier_decision` (CLI `goal-control PLAN --session ID --harness NAME
+--decision JSON`): existing permitted work, bounded research/decomposition, an
+external dependency with its resume condition, or an already observed human stop.
+Include evidence, action, owner and uncertainty. The existing native store and
+binding lock remain authoritative; no second plan ID, scheduler or automatic
+redispatch is introduced. STOP, quota and UNKNOWN/no-replay controls still apply.
 
 ## 6. Done means written down
 

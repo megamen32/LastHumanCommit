@@ -1,0 +1,120 @@
+{
+  "label": "Интегрировать и собрать согласованный пакет",
+  "kind": "task",
+  "status": "running",
+  "owner": "native operational Lead / IntegratorRelease",
+  "description": "Интегрировать и собрать согласованный пакет. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+  "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+  "estimate_minutes": 15,
+  "depends_on": [
+    "H2",
+    "F2",
+    "V1",
+    "B4"
+  ],
+  "parent": "S1",
+  "id": "I1",
+  "model": "gpt-6.1-sol",
+  "created_at": "2026-11-07T22:40:42+03:00",
+  "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+  "harness": "codex",
+  "updated_at": "2026-11-08T00:48:52+03:00",
+  "progress_events": [
+    {
+      "at": "2026-11-07T22:40:42+03:00",
+      "note": "",
+      "changes": {
+        "label": "Интегрировать и собрать согласованный пакет",
+        "kind": "task",
+        "status": "queued",
+        "owner": "Lead",
+        "description": "Интегрировать и собрать согласованный пакет. Работать только в назначенном scope; использовать существующий механизм LHC и сохранённые результаты аудита.",
+        "acceptance": "Наблюдаемое поведение и evidence записаны; фиксы имеют RED/GREEN; source, native execution и acceptance различены.",
+        "estimate_minutes": 15,
+        "depends_on": [
+          "H2",
+          "F2",
+          "V1"
+        ],
+        "parent": "S1",
+        "model": "gpt-6.1-sol"
+      },
+      "actor": {
+        "host_id": null,
+        "harness": "codex",
+        "session_id": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+        "source": "native_environment"
+      },
+      "session": "01a1b2ea-a6fd-7603-aaee-83d2dcd5600c",
+      "harness": "codex"
+    },
+    {
+      "at": "2026-11-07T23:29:38+03:00",
+      "note": "I1 native integrator 01a1b7ae-4a6c-70c2-84cc-3288329a2425: direct delegated stage 1. F 5f8e53b7 and V dcba0b3f integrated; joint source 34 passed. H final required for candidate freeze; baseline excluded. No main merge/tag/install/runtime.",
+      "changes": {},
+      "actor": {
+        "host_id": "roomhacker-server-100",
+        "harness": "codex",
+        "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+        "source": "declared"
+      },
+      "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+      "harness": "codex"
+    },
+    {
+      "at": "2026-11-08T00:41:23+03:00",
+      "note": "Integration began before added bootstrap dependency; independent native-context preparation continues, final freeze is blocked until B4 final tip.",
+      "changes": {
+        "status": "running",
+        "owner": "native Integrator/Release",
+        "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+        "depends_on": [
+          "H2",
+          "F2",
+          "V1",
+          "B4"
+        ],
+        "estimate_unknown_reason": "Исторические15мин сохранены; окончание зависит от последнего H bootstrap tip и проверок finalbytes, остаток пока неизвестен.",
+        "result": "IN_PROGRESS: exact H/F/V and P1 tipb751 merged089ac703; 9failures/R3 fixed; prior1.18 snapshot6544797b full1107PASS/7skip and isolated metadata/bytes readback203files. NOT_FROZEN after P1/bootstrap. Clean release WT/branch prepared with honest delivery gate PASS at089ac703 only as preparation. records/I1/result.md; evidence/integration/clean-release-worktree.json."
+      },
+      "actor": {
+        "host_id": "roomhacker-server-100",
+        "harness": "codex",
+        "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+        "source": "declared"
+      },
+      "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+      "harness": "codex"
+    },
+    {
+      "at": "2026-11-08T00:47:46+03:00",
+      "note": "Explicit human delegation: current native operational Lead and acceptance/release continuation owner. Historical authors/progress/receipts retained; old root envID is not verified native authority.",
+      "changes": {
+        "owner": "native operational Lead / IntegratorRelease"
+      },
+      "actor": {
+        "host_id": "roomhacker-server-100",
+        "harness": "codex",
+        "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+        "source": "declared"
+      },
+      "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+      "harness": "codex"
+    },
+    {
+      "at": "2026-11-08T00:48:52+03:00",
+      "note": "Explicit owner delegation; genuine native ID verified; preserve historical phase authors. Whole release goal is pending, not accepted.",
+      "changes": {},
+      "actor": {
+        "host_id": null,
+        "harness": "codex",
+        "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+        "source": "native_environment"
+      },
+      "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+      "harness": "codex"
+    }
+  ],
+  "estimate_unknown_reason": "Исторические15мин сохранены; окончание зависит от последнего H bootstrap tip и проверок finalbytes, остаток пока неизвестен.",
+  "result": "IN_PROGRESS: exact H/F/V and P1 tipb751 merged089ac703; 9failures/R3 fixed; prior1.18 snapshot6544797b full1107PASS/7skip and isolated metadata/bytes readback203files. NOT_FROZEN after P1/bootstrap. Clean release WT/branch prepared with honest delivery gate PASS at089ac703 only as preparation. records/I1/result.md; evidence/integration/clean-release-worktree.json."
+}

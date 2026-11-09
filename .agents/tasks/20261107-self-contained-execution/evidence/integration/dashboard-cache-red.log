@@ -1,0 +1,57 @@
+FF.                                                                      [100%]
+=================================== FAILURES ===================================
+____________ test_capture_changes_when_bound_goal_evidence_changes _____________
+
+fixture = (PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/pytest-2878189-3a...up-20261107/.tmp/pytest-2878189-3a6f0972215428fb/test_capture_changes_when_boun0/replica', 'listen': '127.0.0.1', ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x76fe10442aa0>
+
+    def test_capture_changes_when_bound_goal_evidence_changes(fixture, monkeypatch):
+        plan, client, _cfg = fixture
+        mirror.register(plan, client)
+        projection = {'goal_status': 'unaccepted', 'fingerprint': 'a' * 64,
+                      'source': {'kind': 'native_outcome', 'session_id': 'lead',
+                                 'outcome_id': 'goal', 'source_fingerprint': 'b' * 64}}
+        monkeypatch.setattr(leaves, 'goal_control', lambda _plan: copy.deepcopy(projection))
+        first = mirror.capture(plan)
+        projection.update(goal_status='accepted', fingerprint='c' * 64)
+        projection['source']['source_fingerprint'] = 'd' * 64
+        second = mirror.capture(plan)
+>       assert second['seq'] == first['seq'] + 1
+E       assert 1 == (1 + 1)
+
+tests/test_plan_mirror.py:78: AssertionError
+___ test_active_summaries_refresh_each_minute_inactive_only_on_source_event ____
+
+tmp_path = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/pytest-2878189-3a6f0972215428fb/test_active_summaries_refresh_0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x76fe0fc5aaa0>
+
+    def test_active_summaries_refresh_each_minute_inactive_only_on_source_event(tmp_path, monkeypatch):
+        service = indexed(tmp_path, 2)
+        path = service.data / 'id0.json'
+        value = mirror.read(path)
+        value['snapshot']['document']['tasks'][0]['status'] = 'done'
+        path.write_text(json.dumps(value))
+        tick, calls = [0.0], []
+        original = mirror.catalog.summarize
+        monkeypatch.setattr(mirror.time, 'monotonic', lambda: tick[0])
+        def summarize(entry, now):
+            calls.append(entry['snapshot']['identity'])
+            return original(entry, now)
+        monkeypatch.setattr(mirror.catalog, 'summarize', summarize)
+        first = service.dashboard()
+        assert calls.count('id0') == calls.count('id1') == 1
+        tick[0] = 59.9
+        assert service.dashboard() == first
+        assert len(calls) == 2
+        tick[0] = 60.0
+        service.dashboard()
+>       assert calls.count('id0') == 1
+E       AssertionError: assert 2 == 1
+E        +  where 2 = <built-in method count of list object at 0x76fe0f776740>('id0')
+E        +    where <built-in method count of list object at 0x76fe0f776740> = ['id1', 'id0', 'id1', 'id0'].count
+
+tests/test_mirror_server_events.py:141: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_plan_mirror.py::test_capture_changes_when_bound_goal_evidence_changes
+FAILED tests/test_mirror_server_events.py::test_active_summaries_refresh_each_minute_inactive_only_on_source_event
+2 failed, 1 passed in 0.53s

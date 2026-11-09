@@ -1,0 +1,8 @@
+{
+  "pluginId": "last-human-commit@lhc-candidate-6544797b0435",
+  "name": "last-human-commit",
+  "marketplaceName": "lhc-candidate-6544797b0435",
+  "version": "1.18.0",
+  "installedPath": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.tmp/integration-01a1b7ae/isolated-6544797b0435/codex-home/plugins/cache/lhc-candidate-6544797b0435/last-human-commit/1.18.0",
+  "authPolicy": "ON_INSTALL"
+}

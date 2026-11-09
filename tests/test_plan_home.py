@@ -109,11 +109,12 @@ def test_all_projects_plans_listed_sorted_safe_and_no_task_dump(fixture, monkeyp
     # Old source events: unfinished running plans are stalled, not "in progress".
     assert page.count('data-state="stalled"') == 12
     assert page.count('data-state="blocked"') == 12
-    assert page.count('data-state="completed"') == 12
+    assert page.count('data-state="awaiting"') == 12
+    assert page.count('data-state="completed"') == 0
     for i in range(36):
         assert f'/project-{i // 3:02}/plan-{i:02}/' in page
-    # Attention first: blocked before stalled before completed; newest first inside.
-    assert page.index('data-state="blocked"') < page.index('data-state="stalled"') < page.index('data-state="completed"')
+    # Attention first: blocked before stalled before unknown goal; newest first inside.
+    assert page.index('data-state="blocked"') < page.index('data-state="stalled"') < page.index('data-state="awaiting"')
     assert page.index('/project-07/plan-22/') < page.index('/project-00/plan-01/')
     assert '&lt;img' in page and '<img' not in page
     assert 'PRIVATE-TASK-NOTE' not in page and 'javascript:' not in page

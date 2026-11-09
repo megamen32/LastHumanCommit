@@ -1,0 +1,68 @@
+{
+  "label": "Дать native consumer публичный pending-only bootstrap",
+  "kind": "task",
+  "status": "done",
+  "owner": "H source operator",
+  "session": "01a1b7ac-35d9-7992-9580-8c9d6b5fb9e6",
+  "harness": "codex",
+  "parent": "S1",
+  "depends_on": [
+    "H1",
+    "F1"
+  ],
+  "description": "Отдельное прямое назначение владельца H: bugB4f5c63c21f044bb589a3; minimal public pending-only bootstrap в outcome/entry/state/protocol/tests. No VERSION/generated/runtime; не создавать synthetic accepted state. Это текущая source работа, не native acceptance.",
+  "acceptance": "Public bootstrap для genuine native identity/cwd создаёт только pending outcome; повтор сохраняет STOP/goal/evidence. RED/GREEN и опубликованный exact H tip; Q1 затем независимо проверяет final installed bytes.",
+  "estimate_unknown_reason": "Новый bootstrap scope и его реальный consumer ещё не завершены; достоверная оценка оставшегося времени не получена.",
+  "id": "B4",
+  "model": "gpt-6.1-sol",
+  "created_at": "2026-11-08T00:41:22+03:00",
+  "updated_at": "2026-11-08T00:47:45+03:00",
+  "progress_events": [
+    {
+      "at": "2026-11-08T00:41:22+03:00",
+      "note": "Owner assigned bootstrap to existing H operator; native identity known, parent lineage not inferred.",
+      "changes": {
+        "label": "Дать native consumer публичный pending-only bootstrap",
+        "kind": "task",
+        "status": "running",
+        "owner": "H source operator",
+        "session": "01a1b7ac-35d9-7992-9580-8c9d6b5fb9e6",
+        "harness": "codex",
+        "parent": "S1",
+        "depends_on": [
+          "H1",
+          "F1"
+        ],
+        "description": "Отдельное прямое назначение владельца H: bugB4f5c63c21f044bb589a3; minimal public pending-only bootstrap в outcome/entry/state/protocol/tests. No VERSION/generated/runtime; не создавать synthetic accepted state. Это текущая source работа, не native acceptance.",
+        "acceptance": "Public bootstrap для genuine native identity/cwd создаёт только pending outcome; повтор сохраняет STOP/goal/evidence. RED/GREEN и опубликованный exact H tip; Q1 затем независимо проверяет final installed bytes.",
+        "estimate_unknown_reason": "Новый bootstrap scope и его реальный consumer ещё не завершены; достоверная оценка оставшегося времени не получена.",
+        "model": "gpt-6.1-sol"
+      },
+      "actor": {
+        "host_id": "roomhacker-server-100",
+        "harness": "codex",
+        "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+        "source": "declared"
+      },
+      "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+      "harness": "codex"
+    },
+    {
+      "at": "2026-11-08T00:47:45+03:00",
+      "note": "Owner confirmed final H source complete; close only source bootstrap, not Q1 acceptance.",
+      "changes": {
+        "status": "done",
+        "result": "SOURCE_DONE_BOOTSTRAP: exact H8a344996712891ffe41b6c28c7e00632fb28259c integrated; B4 canonical resolved,4RED/13PASS + native-input1RED then126PASS. records/H1/proofs/outcome-bootstrap-q1-usage.md and H result/proofs. Genuine native Q1 consumer still pending final installed package; no hook receipt/acceptance from bootstrap."
+      },
+      "actor": {
+        "host_id": "roomhacker-server-100",
+        "harness": "codex",
+        "session_id": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+        "source": "declared"
+      },
+      "session": "01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+      "harness": "codex"
+    }
+  ],
+  "result": "SOURCE_DONE_BOOTSTRAP: exact H8a344996712891ffe41b6c28c7e00632fb28259c integrated; B4 canonical resolved,4RED/13PASS + native-input1RED then126PASS. records/H1/proofs/outcome-bootstrap-q1-usage.md and H result/proofs. Genuine native Q1 consumer still pending final installed package; no hook receipt/acceptance from bootstrap."
+}

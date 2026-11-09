@@ -1,0 +1,58 @@
+{
+  "created_at": "2026-11-07T19:52:06+00:00",
+  "details": "RED: missing duration yields ETA 12:15; true unknown reason with no bounds must preserve unknown deadline and show known work separately. Finite numeric estimate with diagnostic remains valid.",
+  "events": [
+    {
+      "action": "register",
+      "actor": "V1",
+      "at": "2026-11-07T19:52:06+00:00",
+      "changes": {
+        "details": "RED: missing duration yields ETA 12:15; true unknown reason with no bounds must preserve unknown deadline and show known work separately. Finite numeric estimate with diagnostic remains valid.",
+        "source": "V1 focused regression",
+        "status": "open",
+        "title": "Каталог подставляет 15 минут и точный финиш для листа без оценки"
+      }
+    },
+    {
+      "action": "resolve",
+      "actor": "roomhacker-server-100/codex/01a1b7ae-4a6c-70c2-84cc-3288329a2425",
+      "at": "2026-11-07T20:29:41+00:00",
+      "changes": {
+        "resolution": {
+          "evidence": {
+            "proof_path": "evidence/integration/fv-source-green.log",
+            "red_proof_path": "records/V1/evidence/red.log",
+            "red_result": "FAILED tests/test_truthful_plan_views.py::test_unknown_leaf_does_not_get_default_whole_plan_eta",
+            "red_sha256": "42ef3edbc43e984a536920df5efcf1b07421456c7966437125fe37b9b6069ed9",
+            "result": "34 passed in 1.16s",
+            "sha256": "0a62547fc96be39a03e1ad1ba8ccfeff33e6516c808858f72689a97d2751defb",
+            "test_command": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest -q tests/test_plan_frontier_control.py tests/test_truthful_plan_views.py tests/test_plan_catalog.py"
+          },
+          "kind": "fixed",
+          "reason": ""
+        },
+        "status": "fixed"
+      }
+    }
+  ],
+  "id": "Be1c37fa7e6c8425ca641",
+  "owner": "V1",
+  "reporter": "V1",
+  "resolution": {
+    "evidence": {
+      "proof_path": "evidence/integration/fv-source-green.log",
+      "red_proof_path": "records/V1/evidence/red.log",
+      "red_result": "FAILED tests/test_truthful_plan_views.py::test_unknown_leaf_does_not_get_default_whole_plan_eta",
+      "red_sha256": "42ef3edbc43e984a536920df5efcf1b07421456c7966437125fe37b9b6069ed9",
+      "result": "34 passed in 1.16s",
+      "sha256": "0a62547fc96be39a03e1ad1ba8ccfeff33e6516c808858f72689a97d2751defb",
+      "test_command": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest -q tests/test_plan_frontier_control.py tests/test_truthful_plan_views.py tests/test_plan_catalog.py"
+    },
+    "kind": "fixed",
+    "reason": ""
+  },
+  "source": "V1 focused regression",
+  "status": "fixed",
+  "title": "Каталог подставляет 15 минут и точный финиш для листа без оценки",
+  "updated_at": "2026-11-07T20:29:41+00:00"
+}

@@ -1,0 +1,159 @@
+(Linux uses --headless by default. To override, use --headed / --gui. For Xvfb mode instead, use --xvfb. Or you can hide this info by using --headless / --headless2 / --uc.)
+........................................................................ [ 41%]
+..........................F......F.................................F.... [ 83%]
+.............................                                            [100%]
+=================================== FAILURES ===================================
+__ test_public_cli_dispatch_then_stdio_reconcile_and_accept_on_isolated_http ___
+
+plan = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/pytest-2014386-4a2f0b8e003a870b/test_public_cli_dispatch_then_0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7573af1639a0>
+
+    def test_public_cli_dispatch_then_stdio_reconcile_and_accept_on_isolated_http(plan, monkeypatch):
+        from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+        import socket
+        from threading import Thread
+        calls = []
+        control = {"delivered": False, "completed": False}
+        class Fixture(BaseHTTPRequestHandler):
+            def log_message(self, *args):
+                pass
+            def do_POST(self):
+                assert self.headers.get("Authorization") == "Bearer isolated-fixture-token"
+                request = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+                method, params = request["method"], request.get("params", {})
+                if method == "initialize":
+                    result = {"protocolVersion": "2025-11-25", "capabilities": {}, "serverInfo": {"name": "fixture", "version": "1"}}
+                elif method.startswith("notifications/"):
+                    result = {}
+                else:
+                    name, args = params["name"], params["arguments"]
+                    calls.append((name, args))
+                    if name == "session_info":
+                        running = control["delivered"] and not control["completed"]
+                        result = {"session": {"id": args["sessionId"], "harness": args["harness"],
+                            "hostId": args["hostId"], "status": "running" if running else "idle",
+                            "cwd": "/fixture", "meta": {"nativeLastTurn": {
+                                "turnId": "test-turn" if control["delivered"] else "previous-turn",
+                                "status": "inProgress" if running else "completed"}}}}
+                    elif name == "deliver":
+                        control["delivered"] = True
+                        result = {"delivery": "accepted", "inputId": args["inputId"],
+                                  "sessionId": args["sessionId"], "harness": args["harness"], "turnId": "test-turn"}
+                    elif name == "resume_after" and args["action"] == "wait":
+                        dependency = args["dependencies"][0]
+                        key = json.dumps([dependency["harness"], dependency["sessionId"]], separators=(",", ":"))
+                        result = {"wait": {"id": "fixture-wait", "state": "waiting", "owner": args["owner"],
+                                           "dependencyTurns": {key: "test-turn"}}}
+                    elif name == "resume_after" and args["action"] == "status":
+                        result = {"wait": {"id": "fixture-wait", "state": "completed" if control["completed"] else "waiting"}}
+                    else:
+                        raise AssertionError((name, args))
+                data = json.dumps({"jsonrpc": "2.0", "id": request.get("id"), "result": result}).encode()
+                self.send_response(200); self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(data))); self.end_headers(); self.wfile.write(data)
+        server = ThreadingHTTPServer(("127.0.0.1", 0), Fixture)
+        thread = Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        monkeypatch.setenv("AGENT_HERDER_HTTP_TOKEN", "isolated-fixture-token")
+        monkeypatch.setenv("AGENT_HERDER_HTTP_URL", f"http://127.0.0.1:{server.server_port}/mcp")
+        a = assignment()
+        a["lead"]["host_id"] = a["executor"]["host_id"] = socket.gethostname()
+        try:
+            assigned = run_cli("assign-leaf", plan, "L01", "--assignment", json.dumps(a))
+            assert assigned.returncode == 0, assigned.stderr
+            dispatched = run_cli("dispatch-leaf", plan, "L01", "--attempt-id", "attempt",
+                                 "--message", "isolated test work")
+>           assert dispatched.returncode == 0, dispatched.stderr
+E           AssertionError: LHC: brief_unavailable
+E             Plan test_public_cli_dispatch_then_0: 0/1 done; deliverable: implementation; decomposition: progressive; leaf cap: 15 min; goal=unknown, frontier=admission_unknown, next_decision=none; candidates by dependencies/capacity L01; dispatchable none; admission L01=runtime_unknown; execution L01: assignment=assigned, runtime=unknown, wake=unknown.
+E             
+E           assert 1 == 0
+E            +  where 1 = CompletedProcess(args=['/usr/bin/python3', '/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained...ispatchable none; admission L01=runtime_unknown; execution L01: assignment=assigned, runtime=unknown, wake=unknown.\n').returncode
+
+tests/test_execution_interface.py:251: AssertionError
+_____________ test_tools_list_exposes_exactly_the_seven_operations _____________
+
+    def test_tools_list_exposes_exactly_the_seven_operations():
+        response = plan_mcp.handle({"jsonrpc": "2.0", "id": 1, "method": "tools/list"})
+        names = {tool["name"] for tool in response["result"]["tools"]}
+>       assert names == {"create_leaf", "update_leaf", "build_plan", "estimate_cost", "update_progress", "publish_html", "revise_plan", "bug_register", "bug_get", "bug_list", "bug_update", "bug_resolve", "bug_check",
+                         "show_plan", "update_plan", "activate_leaf", "worker_register", "worker_finish",
+                         "assign_leaf", "dispatch_leaf", "reconcile_leaf", "accept_leaf"}
+E       AssertionError: assert {'accept_leaf...ug_list', ...} == {'accept_leaf...ug_list', ...}
+E         
+E         Extra items in the left set:
+E         'record_frontier_decision'
+E         'read_goal_control'
+E         Use -v to get more diff
+
+tests/test_lhc_plan_mcp.py:143: AssertionError
+_______ test_real_stdio_handshake_spawns_the_server_and_calls_every_tool _______
+
+tmp_path = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/pytest-2014386-4a2f0b8e003a870b/test_real_stdio_handshake_spaw0')
+
+    @pytest.mark.nightly
+    def test_real_stdio_handshake_spawns_the_server_and_calls_every_tool(tmp_path):
+        plan_dir = make_plan_dir(tmp_path, {})
+        catalog = write_catalog(tmp_path / "catalog.json")
+        proc = subprocess.Popen(
+            [sys.executable, str(FACADE)],
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            text=True, cwd=str(ROOT), env={**os.environ, "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1"},
+        )
+        transcript = []
+    
+        def ask(message):
+            proc.stdin.write(json.dumps(message) + "\n")
+            proc.stdin.flush()
+            if "id" not in message:
+                return None
+            reply = json.loads(proc.stdout.readline())
+            transcript.append({"sent": message, "received": reply})
+            return reply
+    
+        init = ask({"jsonrpc": "2.0", "id": 1, "method": "initialize",
+                    "params": {"protocolVersion": "2024-11-05", "capabilities": {},
+                               "clientInfo": {"name": "lhc-test", "version": "0"}}})
+        ask({"jsonrpc": "2.0", "method": "notifications/initialized"})
+        tools = ask({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
+        created = ask({"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {
+            "name": "create_leaf",
+            "arguments": {"plan_dir": str(plan_dir),
+                          "leaf": {"id": "L01", "label": "Один", "status": "queued",
+                                   "estimate_minutes": 15}},
+        }})
+        updated = ask({"jsonrpc": "2.0", "id": 4, "method": "tools/call", "params": {
+            "name": "update_leaf",
+            "arguments": {"plan_dir": str(plan_dir), "leaf_id": "L01",
+                          "fields": {"status": "done", "finished_at": "07:20"}},
+        }})
+        built = ask({"jsonrpc": "2.0", "id": 5, "method": "tools/call", "params": {
+            "name": "build_plan", "arguments": {"plan_dir": str(plan_dir)},
+        }})
+        priced = ask({"jsonrpc": "2.0", "id": 6, "method": "tools/call", "params": {
+            "name": "estimate_cost",
+            "arguments": {"model": "acme-flash", "minutes": 15,
+                          "offline": True, "catalog": str(catalog)},
+        }})
+        proc.stdin.close()
+        proc.wait(timeout=30)
+    
+        assert init["result"]["protocolVersion"] == "2024-11-05"
+>       assert {tool["name"] for tool in tools["result"]["tools"]} == {
+            "create_leaf", "update_leaf", "build_plan", "estimate_cost", "update_progress", "publish_html", "revise_plan",
+            "bug_register", "bug_get", "bug_list", "bug_update", "bug_resolve", "bug_check",
+            "show_plan", "update_plan", "activate_leaf", "worker_register", "worker_finish",
+                         "assign_leaf", "dispatch_leaf", "reconcile_leaf", "accept_leaf"}
+E       AssertionError: assert {'accept_leaf...ug_list', ...} == {'accept_leaf...ug_list', ...}
+E         
+E         Extra items in the left set:
+E         'record_frontier_decision'
+E         'read_goal_control'
+E         Use -v to get more diff
+
+tests/test_lhc_plan_mcp.py:726: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_execution_interface.py::test_public_cli_dispatch_then_stdio_reconcile_and_accept_on_isolated_http
+FAILED tests/test_lhc_plan_mcp.py::test_tools_list_exposes_exactly_the_seven_operations
+FAILED tests/test_lhc_plan_mcp.py::test_real_stdio_handshake_spawns_the_server_and_calls_every_tool
+3 failed, 170 passed in 38.57s

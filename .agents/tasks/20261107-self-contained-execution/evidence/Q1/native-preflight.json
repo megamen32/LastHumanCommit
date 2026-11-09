@@ -1,0 +1,335 @@
+{
+  "schema": "lhc.native-read-only-preflight.v1",
+  "scope": "Independent native consumer/release reader; metadata and CLI help only. Consumer QA deferred until separately assigned fixed candidate SHA.",
+  "observed_at_utc": "2026-11-07T20:16:41.618952+00:00",
+  "artifact_metadata": [
+    {
+      "path": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107/.tmp/self-contained-run/handoff-control-green.txt",
+      "exists": false,
+      "mtime_utc": null,
+      "mtime_ns": null,
+      "size_bytes": null
+    },
+    {
+      "path": "/home/roomhacker/agents-projects/LastHumanCommit/.agents/tasks/20261107-self-contained-execution/records/F1/frontier-source-result.md",
+      "exists": false,
+      "mtime_utc": null,
+      "mtime_ns": null,
+      "size_bytes": null
+    },
+    {
+      "path": "/home/roomhacker/agents-projects/LastHumanCommit/.agents/tasks/20261107-self-contained-execution/records/V1/result.md",
+      "exists": false,
+      "mtime_utc": null,
+      "mtime_ns": null,
+      "size_bytes": null
+    }
+  ],
+  "git_current": [
+    {
+      "path": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107",
+      "head": {
+        "exit_code": 0,
+        "stdout": "b084c156c9fc8da8a5368b9c7963f253fa202011\n",
+        "stderr": ""
+      },
+      "upstream": {
+        "exit_code": 0,
+        "stdout": "origin/lhc/self-contained-handoff-20261107\n",
+        "stderr": ""
+      },
+      "upstream_local_sha": {
+        "exit_code": 0,
+        "stdout": "b084c156c9fc8da8a5368b9c7963f253fa202011\n",
+        "stderr": ""
+      },
+      "ahead_behind_local": {
+        "exit_code": 0,
+        "stdout": "0\t0\n",
+        "stderr": ""
+      }
+    },
+    {
+      "path": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-frontier-20261107",
+      "head": {
+        "exit_code": 0,
+        "stdout": "5f8e53b7555751c08937c43b977c79a8e130339b\n",
+        "stderr": ""
+      },
+      "upstream": {
+        "exit_code": 0,
+        "stdout": "origin/lhc/self-contained-frontier-20261107\n",
+        "stderr": ""
+      },
+      "upstream_local_sha": {
+        "exit_code": 0,
+        "stdout": "5f8e53b7555751c08937c43b977c79a8e130339b\n",
+        "stderr": ""
+      },
+      "ahead_behind_local": {
+        "exit_code": 0,
+        "stdout": "0\t0\n",
+        "stderr": ""
+      }
+    },
+    {
+      "path": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-views-20261107",
+      "head": {
+        "exit_code": 0,
+        "stdout": "2988f0f8483a2a33a6fb762c86e597513b445d1a\n",
+        "stderr": ""
+      },
+      "upstream": {
+        "exit_code": 128,
+        "stdout": "",
+        "stderr": "fatal: вышестоящая ветка не настроена для ветки «lhc/self-contained-views-20261107»\n"
+      },
+      "upstream_local_sha": {
+        "exit_code": 128,
+        "stdout": "",
+        "stderr": "fatal: вышестоящая ветка не настроена для ветки «lhc/self-contained-views-20261107»\n"
+      },
+      "ahead_behind_local": {
+        "exit_code": 128,
+        "stdout": "",
+        "stderr": "fatal: вышестоящая ветка не настроена для ветки «lhc/self-contained-views-20261107»\n"
+      }
+    }
+  ],
+  "identity": {
+    "hostname": "roomhacker-server-100",
+    "harness": "Codex native CLI",
+    "session_id": "01a1b7a4-2eb2-7471-83fd-2edb027f38c5",
+    "thread_id": "01a1b7a4-2eb2-7471-83fd-2edb027f38c5",
+    "cwd": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107",
+    "launcher": "/home/roomhacker/.local/bin/codex",
+    "launcher_resolved": "/home/roomhacker/.npm-global/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/bin/codex",
+    "process_chain": [
+      {
+        "pid": 1645244,
+        "ppid": 1645222,
+        "exe": "/usr/bin/python3.10",
+        "comm": "python3"
+      },
+      {
+        "pid": 1645222,
+        "ppid": 2466138,
+        "exe": "/usr/bin/bash",
+        "comm": "bash"
+      },
+      {
+        "pid": 2466138,
+        "ppid": 2466096,
+        "exe": "/home/roomhacker/.npm-global/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/bin/codex",
+        "comm": "codex"
+      },
+      {
+        "pid": 2466096,
+        "ppid": 4835,
+        "exe": "/usr/bin/python3.10",
+        "comm": "python3"
+      }
+    ]
+  },
+  "instruction_files": [
+    {
+      "path": "/home/roomhacker/agents-projects/LastHumanCommit/AGENTS.md",
+      "exists": true,
+      "read": true,
+      "sha256": "62ffec7585493c9f30e3f8d6c8823327bd2dfe639d9f6a7af924b9c269b51b0d"
+    },
+    {
+      "path": "/home/roomhacker/agents-projects/LastHumanCommit/.agents/PROJECT.md",
+      "exists": false,
+      "read": false
+    },
+    {
+      "path": "/home/roomhacker/agents-projects/LastHumanCommit/.agents/TEST_ACCESS.md",
+      "exists": true,
+      "read": true,
+      "sha256": "3e47d069e2b2c4b3e5f79996e61d6bef341dca7694d70fc00065b89c5f379288"
+    },
+    {
+      "path": "/home/roomhacker/agents-projects/LastHumanCommit/src/common/agents/Tester.md",
+      "exists": true,
+      "read": true,
+      "sha256": "923058f253c72deb35e67b209e905eb01d1f2a9e05818b205e9daa5ba730c549"
+    }
+  ],
+  "task_metadata_additional": {
+    "observed_at_utc": "2026-11-07T20:17:04.004571+00:00",
+    "task_root_in_current_cwd": [
+      {
+        "path": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.agents/tasks/20261107-self-contained-execution/records/F1/frontier-source-result.md",
+        "exists": false,
+        "mtime_utc": null,
+        "mtime_ns": null,
+        "size_bytes": null
+      },
+      {
+        "path": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.agents/tasks/20261107-self-contained-execution/records/V1/result.md",
+        "exists": false,
+        "mtime_utc": null,
+        "mtime_ns": null,
+        "size_bytes": null
+      }
+    ]
+  },
+  "initial_git_metadata": [
+    {
+      "path": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107",
+      "exists": true,
+      "branch": {
+        "exit_code": 0,
+        "stdout": "lhc/self-contained-execution-20261107\n",
+        "stderr": ""
+      },
+      "head": {
+        "exit_code": 0,
+        "stdout": "d9dd28607384fd35fcf6d39c8d4777e7f58e565d\n",
+        "stderr": ""
+      },
+      "status_short": {
+        "exit_code": 0,
+        "stdout": " M .agents/tasks/20261107-self-contained-execution/.lhc-bugs.jsonl\n M .agents/tasks/20261107-self-contained-execution/leaves/F1.json\n M .agents/tasks/20261107-self-contained-execution/leaves/H1.json\n M .agents/tasks/20261107-self-contained-execution/leaves/N199.json\n M .agents/tasks/20261107-self-contained-execution/leaves/V1.json\n M .agents/tasks/20261107-self-contained-execution/plan.graph.json\n M .agents/tasks/20261107-self-contained-execution/plan.html\n M .agents/tasks/20261107-self-contained-execution/plan.md\n M .agents/tasks/20261107-self-contained-execution/records/H1/progress.md\n M .agents/tasks/20261107-self-contained-execution/records/V1/progress.md\n?? .agents/tasks/20261107-self-contained-execution/.gitignore\n?? .agents/tasks/20261107-self-contained-execution/bugs/Ba038846bb5514011b14e.json\n?? .agents/tasks/20261107-self-contained-execution/bugs/Bbe70132e8003406395a3.json\n?? .agents/tasks/20261107-self-contained-execution/bugs/Be1c37fa7e6c8425ca641.json\n?? .agents/tasks/20261107-self-contained-execution/bugs/Bee448d0ba16c401e9173.json\n",
+        "stderr": ""
+      }
+    },
+    {
+      "path": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-handoff-20261107",
+      "exists": true,
+      "branch": {
+        "exit_code": 0,
+        "stdout": "lhc/self-contained-handoff-20261107\n",
+        "stderr": ""
+      },
+      "head": {
+        "exit_code": 0,
+        "stdout": "b084c156c9fc8da8a5368b9c7963f253fa202011\n",
+        "stderr": ""
+      },
+      "status_short": {
+        "exit_code": 0,
+        "stdout": " D downloaded_files/dashboard.lock\n M src/common/tools/lhc_handoff.py\n M tests/test_execution_handoff.py\n",
+        "stderr": ""
+      }
+    },
+    {
+      "path": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-frontier-20261107",
+      "exists": true,
+      "branch": {
+        "exit_code": 0,
+        "stdout": "lhc/self-contained-frontier-20261107\n",
+        "stderr": ""
+      },
+      "head": {
+        "exit_code": 0,
+        "stdout": "5f8e53b7555751c08937c43b977c79a8e130339b\n",
+        "stderr": ""
+      },
+      "status_short": {
+        "exit_code": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "path": "/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/self-contained-views-20261107",
+      "exists": true,
+      "branch": {
+        "exit_code": 0,
+        "stdout": "lhc/self-contained-views-20261107\n",
+        "stderr": ""
+      },
+      "head": {
+        "exit_code": 0,
+        "stdout": "2988f0f8483a2a33a6fb762c86e597513b445d1a\n",
+        "stderr": ""
+      },
+      "status_short": {
+        "exit_code": 0,
+        "stdout": " D downloaded_files/dashboard.lock\n M src/common/protocols/PLAN_REPORT.md\n M src/common/tools/lhc_grid.py\n M src/common/tools/lhc_plan_catalog.py\n M tests/test_plan_catalog.py\n?? tests/test_truthful_plan_views.py\n",
+        "stderr": ""
+      }
+    }
+  ],
+  "identity_launcher_metadata": {
+    "codex_launcher": "/home/roomhacker/.local/bin/codex",
+    "resolved": "/home/roomhacker/.npm-global/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/bin/codex"
+  },
+  "cli": {
+    "version": {
+      "chunk_id": "eb6b1a",
+      "wall_time_seconds": 0.000029326,
+      "exit_code": 0,
+      "original_token_count": 5,
+      "output": "codex-cli 0.167.0\n"
+    },
+    "plugin_install_help": {
+      "chunk_id": "87c2f9",
+      "wall_time_seconds": 0.000025564,
+      "exit_code": 2,
+      "original_token_count": 41,
+      "output": "error: unrecognized subcommand 'install'\n\n  tip: a similar subcommand exists: 'list'\n\nUsage: codex plugin [OPTIONS] <COMMAND>\n\nFor more information, try '--help'.\n"
+    },
+    "marketplace_add_help": {
+      "chunk_id": "c3a822",
+      "wall_time_seconds": 0.000028269,
+      "exit_code": 0,
+      "original_token_count": 356,
+      "output": "Add a local or Git marketplace to the configured marketplace sources\n\nUsage: codex plugin marketplace add [OPTIONS] <SOURCE>\n\nArguments:\n  <SOURCE>\n          Marketplace source: a local path, owner/repo[@ref], HTTPS Git URL, or SSH Git URL\n\nOptions:\n  -c, --config <key=value>\n          Override a configuration value that would otherwise be loaded from `~/.codex/config.toml`.\n          Use a dotted path (`foo.bar.baz`) to override nested values. The `value` portion is parsed\n          as TOML. If it fails to parse as TOML, the raw string is used as a literal.\n          \n          Examples: - `-c model=\"o3\"` - `-c 'sandbox_permissions=[\"disk-full-read-access\"]'` - `-c\n          shell_environment_policy.inherit=all`\n\n      --ref <REF>\n          Git ref to fetch for Git marketplace sources\n\n      --enable <FEATURE>\n          Enable a feature (repeatable). Equivalent to `-c features.<name>=true`\n\n      --sparse <PATH>\n          Sparse checkout path for Git marketplace sources. Can be repeated\n\n      --disable <FEATURE>\n          Disable a feature (repeatable). Equivalent to `-c features.<name>=false`\n\n      --json\n          Output add result as JSON\n\n  -h, --help\n          Print help (see a summary with '-h')\n\nExamples:\n  codex plugin marketplace add ./path/to/marketplace\n  codex plugin marketplace add owner/repo --ref main\n  codex plugin marketplace add https://github.com/owner/repo --sparse plugins/foo\n"
+    },
+    "plugin_help": {
+      "chunk_id": "43bf6f",
+      "wall_time_seconds": 0.000037497,
+      "exit_code": 0,
+      "original_token_count": 299,
+      "output": "Manage Codex plugins\n\nUsage: codex plugin [OPTIONS] <COMMAND>\n\nCommands:\n  add          Install a plugin from a configured or remote marketplace\n  list         List plugins available from configured and remote marketplaces\n  marketplace  Add, list, upgrade, or remove configured plugin marketplaces\n  remove       Uninstall a plugin and remove its local cache\n  help         Print this message or the help of the given subcommand(s)\n\nOptions:\n  -c, --config <key=value>\n          Override a configuration value that would otherwise be loaded from `~/.codex/config.toml`.\n          Use a dotted path (`foo.bar.baz`) to override nested values. The `value` portion is parsed\n          as TOML. If it fails to parse as TOML, the raw string is used as a literal.\n          \n          Examples: - `-c model=\"o3\"` - `-c 'sandbox_permissions=[\"disk-full-read-access\"]'` - `-c\n          shell_environment_policy.inherit=all`\n\n      --enable <FEATURE>\n          Enable a feature (repeatable). Equivalent to `-c features.<name>=true`\n\n      --disable <FEATURE>\n          Disable a feature (repeatable). Equivalent to `-c features.<name>=false`\n\n  -h, --help\n          Print help (see a summary with '-h')\n"
+    },
+    "plugin_add_help": {
+      "chunk_id": "0a8af1",
+      "wall_time_seconds": 0.000031505,
+      "exit_code": 0,
+      "original_token_count": 337,
+      "output": "Install a plugin from a configured or remote marketplace.\n\nPass either `PLUGIN@MARKETPLACE` or pass `PLUGIN` with `--marketplace MARKETPLACE`.\n\nUsage: codex plugin add [OPTIONS] <PLUGIN[@MARKETPLACE]>\n\nArguments:\n  <PLUGIN[@MARKETPLACE]>\n          Plugin selector to install: either PLUGIN@MARKETPLACE or PLUGIN with --marketplace\n\nOptions:\n  -c, --config <key=value>\n          Override a configuration value that would otherwise be loaded from `~/.codex/config.toml`.\n          Use a dotted path (`foo.bar.baz`) to override nested values. The `value` portion is parsed\n          as TOML. If it fails to parse as TOML, the raw string is used as a literal.\n          \n          Examples: - `-c model=\"o3\"` - `-c 'sandbox_permissions=[\"disk-full-read-access\"]'` - `-c\n          shell_environment_policy.inherit=all`\n\n  -m, --marketplace <MARKETPLACE>\n          Marketplace name to use when PLUGIN does not include @MARKETPLACE\n\n      --enable <FEATURE>\n          Enable a feature (repeatable). Equivalent to `-c features.<name>=true`\n\n      --json\n          Output install result as JSON\n\n      --disable <FEATURE>\n          Disable a feature (repeatable). Equivalent to `-c features.<name>=false`\n\n  -h, --help\n          Print help (see a summary with '-h')\n\nExamples:\n  codex plugin add sample@debug\n  codex plugin add sample --marketplace debug\n"
+    }
+  },
+  "findings": {
+    "plugin_install_supported": false,
+    "supported_install_command": "codex plugin add PLUGIN@MARKETPLACE OR codex plugin add PLUGIN --marketplace MARKETPLACE",
+    "marketplace_source_options": [
+      "local path",
+      "owner/repo[@ref]",
+      "HTTPS Git URL",
+      "SSH Git URL",
+      "--ref REF",
+      "repeatable --sparse PATH"
+    ],
+    "isolation": "Help does not advertise --install-dir/--scope/--isolated. Isolated CODEX_HOME is a possible future test design, not verified by these help outputs and not executed. A local candidate marketplace is supported, but marketplace add is a mutation and was not executed. No guarantee of preserving current marketplace can be claimed from help alone.",
+    "upstream_caveat": "Upstream SHAs are existing local tracking refs only; no fetch, ls-remote, or push verification performed. Matching HEAD/tracking refs is not proof of current remote state.",
+    "unknown_outcomes": "No prior UNKNOWN operation retried. Missing receipt files do not prove whether integration/test/commit/push ran.",
+    "metadata_resolution": "Checked records paths under both primary checkout task root and current CWD task root; all missing.",
+    "status_caveat": "Snapshots are time-bounded in concurrently active worktrees."
+  },
+  "guardrails": {
+    "shell_route": "native local exec_command; no GPTAdmin",
+    "implementation_diff_read": false,
+    "new_tests_read": false,
+    "author_reports_read": false,
+    "artifact_contents_read": false,
+    "agents_created": false,
+    "peer_messages_sent": false,
+    "airlock_accessed": false,
+    "merge_commit_push_install_performed": false,
+    "runtime_settings_credentials_changed": false,
+    "only_intended_write": ".agents/tasks/20261107-self-contained-execution/evidence/Q1/native-preflight.json"
+  },
+  "memory": {
+    "agentmemory_project": "/home/roomhacker/agents-projects/LastHumanCommit",
+    "agentmemory_matched_count": 0,
+    "local_memory_used_only_as": "Historical scope reminder: source metadata is distinct from installed/public proof; all reported state independently observed."
+  },
+  "redaction": {
+    "strategy": "Allowlisted identity fields and process executable names only; no full environment, process arguments, remote URLs, auth/config files, tokens, cookies or credentials recorded."
+  }
+}

@@ -1,0 +1,39 @@
+F...........
+=================================== FAILURES ===================================
+______ test_positive_B_contract_actual_work_review_and_repeat_activation _______
+
+case = (PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.agents/tasks/20261107...261107-self-contained-execution/evidence/REVIEW/fix-recheck/h-followup-fixtures/test_positive_B_contract_actua0', ...})
+
+    def test_positive_B_contract_actual_work_review_and_repeat_activation(case):
+        root,plan,path,old=case
+        assert activate(plan)['goal_binding']['goal_status']!='accepted'
+        args=['--cwd',root,'--runtime','codex','--session-id','fixture-lead']
+        confirmed=cli('lhc_outcome',*args,'contract','--scenario','New B computes six plus seven',
+            '--target','python3 total.py','--expected','13','--owned-path','total.py')
+        assert confirmed['stages']['technical']['status']=='pending'
+        assert confirmed['stages']['consumer']['status']=='pending'
+        assert control.resolve_control(plan)['goal_status']=='unaccepted'
+        (root/'total.py').write_text('print(6 + 7)\n')
+        (root/'test_total.py').write_text('import unittest, subprocess, sys\nclass B(unittest.TestCase):\n def test_B(self): self.assertEqual(subprocess.check_output([sys.executable,"total.py"]).strip(),b"13")\n')
+>       reviewed=cli('lhc_outcome',*args,'review','--manifest',write_real_local_review(root,confirmed))
+
+.agents/tasks/20261107-self-contained-execution/evidence/REVIEW/fix-recheck/test_h_followup.py:98: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+tool = 'lhc_outcome', ok = True
+args = ('--cwd', PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup-20261107/.agents/tasks...check/h-followup-fixtures/test_positive_B_contract_actua0'), '--runtime', 'codex', '--session-id', 'fixture-lead', ...)
+result = CompletedProcess(args=['/usr/bin/python3', '/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup...e=1, stdout='', stderr='LHC outcome: owned revision changed; refresh the contract and actual evidence before review\n')
+@py_assert1 = 1
+
+    def cli(tool,*args,ok=True):
+        result=subprocess.run([sys.executable,str(TOOLS/(tool+'.py')),*map(str,args)],capture_output=True,text=True,timeout=20)
+>       assert (result.returncode==0)==ok,result.stderr
+E       AssertionError: LHC outcome: owned revision changed; refresh the contract and actual evidence before review
+E         
+E       assert (1 == 0) == True
+E        +  where 1 = CompletedProcess(args=['/usr/bin/python3', '/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/audit-followup...e=1, stdout='', stderr='LHC outcome: owned revision changed; refresh the contract and actual evidence before review\n').returncode
+
+.agents/tasks/20261107-self-contained-execution/evidence/REVIEW/fix-recheck/test_h_followup.py:24: AssertionError
+=========================== short test summary info ============================
+FAILED .agents/tasks/20261107-self-contained-execution/evidence/REVIEW/fix-recheck/test_h_followup.py::test_positive_B_contract_actual_work_review_and_repeat_activation
+1 failed, 11 passed in 2.73s

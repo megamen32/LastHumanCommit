@@ -1,0 +1,144 @@
+(Linux uses --headless by default. To override, use --headed / --gui. For Xvfb mode instead, use --xvfb. Or you can hide this info by using --headless / --headless2 / --uc.)
+FFFFFF....                                                               [100%]
+=================================== FAILURES ===================================
+________ test_mixed_history_resolves_explicit_current_bound_native_lead ________
+
+case = (PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/current-lead-resolution-20261107/.tmp/pytest-3...ution-20261107/.tmp/pytest-323667-80336502b3a71db5/test_mixed_history_resolves_ex0', 'finish_verdict': 'pending', ...})
+
+    def test_mixed_history_resolves_explicit_current_bound_native_lead(case):
+        plan, metadata, rows, path, outcome = case
+        before = {p.name: p.read_bytes() for p in (plan / "leaves").glob("*.json")}
+        view = control.resolve_control(plan)
+>       assert view["reason"] == "bound_native_outcome", view
+E       AssertionError: {'candidates': [], 'decision': None, 'decision_fresh': False, 'fingerprint': 'f0ef9b350b64ac98d8679c7a1fa040f29614c19e2057fc0e8a8eed27a3af6c5c', ...}
+E       assert 'native_lead_ref_ambiguous' == 'bound_native_outcome'
+E         
+E         - bound_native_outcome
+E         + native_lead_ref_ambiguous
+
+tests/test_current_goal_lead.py:57: AssertionError
+_____________ test_handoff_uses_existing_public_update_plan_schema _____________
+
+case = (PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/current-lead-resolution-20261107/.tmp/pytest-3...ution-20261107/.tmp/pytest-323667-80336502b3a71db5/test_handoff_uses_existing_pub0', 'finish_verdict': 'pending', ...})
+
+    def test_handoff_uses_existing_public_update_plan_schema(case):
+        plan, metadata, rows, path, outcome = case
+        metadata.pop("current_goal_lead")
+        (plan / "plan.json").write_text(json.dumps(metadata))
+>       result = plans.update_plan(plan, {"current_goal_lead": {**LEAD, "source_ref": SOURCE}},
+                                   {"reason": "Explicit delegated operational Lead handoff", "summary": "Preserve authors"})
+
+tests/test_current_goal_lead.py:69: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+plan_dir = PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/current-lead-resolution-20261107/.tmp/pytest-323667-80336502b3a71db5/test_handoff_uses_existing_pub0/.agents/tasks/role')
+fields = {'current_goal_lead': {'harness': 'codex', 'host_id': 'host100', 'session_id': 'current', 'source_ref': 'records/I1/current-native-owner.md'}}
+revision = {'reason': 'Explicit delegated operational Lead handoff', 'summary': 'Preserve authors'}
+
+    def update_plan(plan_dir: Path, fields: Optional[dict] = None, revision: Optional[dict] = None) -> dict:
+        """Set plan-level fields and/or append one revision, validated before writing."""
+    
+        fields = {} if fields is None else fields
+        if not isinstance(fields, dict):
+            raise LeafError("fields: an object of plan fields")
+        unknown = sorted(set(fields) - set(PLAN_FIELDS))
+        if unknown:
+>           raise LeafError(f"unknown plan fields: {', '.join(unknown)}; allowed: {', '.join(sorted(PLAN_FIELDS))}")
+E           lhc_plan_json.LeafError: unknown plan fields: current_goal_lead; allowed: acceptance_scenario, acceptance_scenarios, budget_usd, business_result, business_results, current_progress, decomposition, decomposition_check, default_model, deliverable, estimate_policy, external_waits, finished_at, goal, journal, mode, planned_start_at, recon, revisions, slots, started_at, title, updated_at
+
+src/common/tools/lhc_plan_json.py:2333: LeafError
+______________ test_two_current_typed_role_claims_remain_unknown _______________
+
+case = (PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/current-lead-resolution-20261107/.tmp/pytest-3...ution-20261107/.tmp/pytest-323667-80336502b3a71db5/test_two_current_typed_role_cl0', 'finish_verdict': 'pending', ...})
+
+    def test_two_current_typed_role_claims_remain_unknown(case):
+        plan, metadata, rows, path, outcome = case
+        conflict = {"id": "OTHER", "status": "running", "assignment":
+                    {"lead": OTHER, "executor": OTHER, "state": "running", "attempt_id": "attempt-other"}}
+        (plan / "leaves/OTHER.json").write_text(json.dumps(conflict))
+        view = control.resolve_control(plan)
+        assert view["goal_status"] == "unknown"
+>       assert view["reason"] == "current_goal_lead_conflict"
+E       AssertionError: assert 'native_lead_ref_ambiguous' == 'current_goal_lead_conflict'
+E         
+E         - current_goal_lead_conflict
+E         + native_lead_ref_ambiguous
+
+tests/test_current_goal_lead.py:82: AssertionError
+_____ test_missing_current_native_outcome_is_not_replaced_by_old_accepted ______
+
+case = (PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/current-lead-resolution-20261107/.tmp/pytest-3...ution-20261107/.tmp/pytest-323667-80336502b3a71db5/test_missing_current_native_ou0', 'finish_verdict': 'pending', ...})
+
+    def test_missing_current_native_outcome_is_not_replaced_by_old_accepted(case):
+        plan, metadata, rows, path, outcome = case
+        path.unlink()
+        old = copy.deepcopy(outcome)
+        old["id"] = "old"
+        old["owner"]["session_id"] = "unverified-old-root"
+        old["stages"] = {key: {"status": "not-applicable"} for key in old["stages"]}
+        old["finish_verdict"] = "complete"
+        old["plan_binding"] = control.binding(metadata, old, plan, accepted=True)
+        guard.write_state(guard.learning_path(plan, "codex", "unverified-old-root"),
+                          {"business": {"outcome": old}})
+        view = control.resolve_control(plan)
+        assert view["goal_status"] == "unknown"
+>       assert view["reason"] == "native_outcome_missing"
+E       AssertionError: assert 'native_lead_ref_ambiguous' == 'native_outcome_missing'
+E         
+E         - native_outcome_missing
+E         + native_lead_ref_ambiguous
+
+tests/test_current_goal_lead.py:98: AssertionError
+___ test_ordinary_worker_activation_cannot_change_or_take_current_goal_role ____
+
+case = (PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/current-lead-resolution-20261107/.tmp/pytest-3...ution-20261107/.tmp/pytest-323667-80336502b3a71db5/test_ordinary_worker_activatio0', 'finish_verdict': 'pending', ...})
+
+    def test_ordinary_worker_activation_cannot_change_or_take_current_goal_role(case):
+        plan, metadata, rows, path, outcome = case
+        plans.record_session_plan("qa", plan, "Q")
+        worker = copy.deepcopy(outcome)
+        worker["id"], worker["owner"]["session_id"] = "qa-outcome", "qa"
+        worker.pop("plan_binding")
+        worker_path = guard.learning_path(plan, "codex", "qa")
+        guard.write_state(worker_path, {"business": {"outcome": worker}})
+        before = worker_path.read_bytes()
+        result = control.bind_session_plan(plan, "qa", plan, runtime="codex")
+>       assert result == {"binding": "unknown", "reason": "current_goal_lead_mismatch"}
+E       AssertionError: assert {'binding': '...s/tasks/role'} == {'binding': '...ead_mismatch'}
+E         
+E         Differing items:
+E         {'binding': 'bound'} != {'binding': 'unknown'}
+E         Left contains 2 more items:
+E         {'goal_status': 'unaccepted',
+E          'plan_dir': '/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/current-lead-resolution-20261107/.tmp/pytest-323667-80336502b3a71db5/test_ordinary_worker_activatio0/.agents/tasks/role'}
+E         Right contains 1 more item:
+E         {'reason': 'current_goal_lead_mismatch'}
+E         Use -v to get more diff
+
+tests/test_current_goal_lead.py:111: AssertionError
+____________ test_progress_does_not_change_goal_or_owner_resolution ____________
+
+case = (PosixPath('/home/roomhacker/agents-projects/LastHumanCommit/.worktrees/current-lead-resolution-20261107/.tmp/pytest-3...ution-20261107/.tmp/pytest-323667-80336502b3a71db5/test_progress_does_not_change_0', 'finish_verdict': 'pending', ...})
+
+    def test_progress_does_not_change_goal_or_owner_resolution(case):
+        plan, metadata, rows, path, outcome = case
+        scope = control.plan_scope(metadata)
+        metadata["current_progress"] = "Integration advances"
+        metadata["updated_at"] = "2026-11-08T00:00:00Z"
+        (plan / "plan.json").write_text(json.dumps(metadata))
+        assert control.plan_scope(metadata) == scope
+>       assert control.resolve_control(plan)["goal_status"] == "unaccepted"
+E       AssertionError: assert 'unknown' == 'unaccepted'
+E         
+E         - unaccepted
+E         + unknown
+
+tests/test_current_goal_lead.py:123: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_current_goal_lead.py::test_mixed_history_resolves_explicit_current_bound_native_lead
+FAILED tests/test_current_goal_lead.py::test_handoff_uses_existing_public_update_plan_schema
+FAILED tests/test_current_goal_lead.py::test_two_current_typed_role_claims_remain_unknown
+FAILED tests/test_current_goal_lead.py::test_missing_current_native_outcome_is_not_replaced_by_old_accepted
+FAILED tests/test_current_goal_lead.py::test_ordinary_worker_activation_cannot_change_or_take_current_goal_role
+FAILED tests/test_current_goal_lead.py::test_progress_does_not_change_goal_or_owner_resolution
+6 failed, 4 passed in 0.85s

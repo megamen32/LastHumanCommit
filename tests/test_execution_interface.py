@@ -246,6 +246,16 @@ def test_public_cli_dispatch_then_stdio_reconcile_and_accept_on_isolated_http(pl
     try:
         assigned = run_cli("assign-leaf", plan, "L01", "--assignment", json.dumps(a))
         assert assigned.returncode == 0, assigned.stderr
+        (plan / "briefs").mkdir()
+        (plan / "briefs/L01.md").write_text(json.dumps({
+            "task_id": plan.resolve().name, "leaf_id": "L01", "owner/session": a["executor"],
+            "parent_lead_identity": a["lead"], "parent_task_id/session/route": {
+                "task_id": plan.resolve().name, "session_id": a["lead"]["session_id"],
+                "route": "records/L01/result.md"},
+            "role": "execution_worker", "mode": "quickfix", "description": "Verify the isolated consumer flow.",
+            "acceptance": {"output": "fixture result", "destination": "records/L01/result.md", "checks": "complete fixture flow"},
+            "read_paths": ["fixture"], "write_paths": ["records/L01/result.md"],
+            "excluded_scope": ["native sessions", "external accounts"], "next_action": "Run the isolated fixture."}))
         dispatched = run_cli("dispatch-leaf", plan, "L01", "--attempt-id", "attempt",
                              "--message", "isolated test work")
         assert dispatched.returncode == 0, dispatched.stderr

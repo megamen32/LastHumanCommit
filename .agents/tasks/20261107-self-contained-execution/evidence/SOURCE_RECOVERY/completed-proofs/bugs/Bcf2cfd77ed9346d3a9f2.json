@@ -1,0 +1,58 @@
+{
+  "created_at": "2026-11-07T22:00:49+00:00",
+  "details": "Independent bootstrap-review R5: existing heartbeat runtime/session_id or previous verified native_identity.native_id conflicts with freshly verified own native context; public CLI creates outcome instead of refusing unchanged state.",
+  "events": [
+    {
+      "action": "register",
+      "actor": "H R5 source 01a1b7ac-35d9-7992-9580-8c9d6b5fb9e6",
+      "at": "2026-11-07T22:00:49+00:00",
+      "changes": {
+        "details": "Independent bootstrap-review R5: existing heartbeat runtime/session_id or previous verified native_identity.native_id conflicts with freshly verified own native context; public CLI creates outcome instead of refusing unchanged state.",
+        "source": "evidence/REVIEW/bootstrap-review.md; bootstrap-recheck/test_independent_bootstrap.py",
+        "status": "open",
+        "title": "P2 R5: bootstrap игнорирует конфликт existing native identity"
+      }
+    },
+    {
+      "action": "resolve",
+      "actor": "H native identity R5",
+      "at": "2026-11-07T22:04:18+00:00",
+      "changes": {
+        "resolution": {
+          "evidence": {
+            "proof_path": "records/H1/proofs/r4-r5-r5-green.txt",
+            "red_proof_path": "records/H1/proofs/r4-r5-r5-red.txt",
+            "red_result": "3 failed",
+            "red_sha256": "913ec876b9204b468c2b2fa7e2d2fc3afa522026db6c172403c243a8f526e678",
+            "result": "31 passed",
+            "sha256": "01f81030e9292ec70282b3b507ee719140b58ac7bc0b2f1b95f1dd0df908bf49",
+            "test_command": "python3 -m pytest -q tests/test_outcome_bootstrap.py tests/test_native_identity_admission.py"
+          },
+          "kind": "fixed",
+          "reason": ""
+        },
+        "status": "fixed"
+      }
+    }
+  ],
+  "id": "Bcf2cfd77ed9346d3a9f2",
+  "owner": "H R5 source 01a1b7ac-35d9-7992-9580-8c9d6b5fb9e6",
+  "reporter": "H R5 source 01a1b7ac-35d9-7992-9580-8c9d6b5fb9e6",
+  "resolution": {
+    "evidence": {
+      "proof_path": "records/H1/proofs/r4-r5-r5-green.txt",
+      "red_proof_path": "records/H1/proofs/r4-r5-r5-red.txt",
+      "red_result": "3 failed",
+      "red_sha256": "913ec876b9204b468c2b2fa7e2d2fc3afa522026db6c172403c243a8f526e678",
+      "result": "31 passed",
+      "sha256": "01f81030e9292ec70282b3b507ee719140b58ac7bc0b2f1b95f1dd0df908bf49",
+      "test_command": "python3 -m pytest -q tests/test_outcome_bootstrap.py tests/test_native_identity_admission.py"
+    },
+    "kind": "fixed",
+    "reason": ""
+  },
+  "source": "evidence/REVIEW/bootstrap-review.md; bootstrap-recheck/test_independent_bootstrap.py",
+  "status": "fixed",
+  "title": "P2 R5: bootstrap игнорирует конфликт existing native identity",
+  "updated_at": "2026-11-07T22:04:18+00:00"
+}
