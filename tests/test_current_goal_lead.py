@@ -196,3 +196,47 @@ def test_pointer_does_not_override_conflicting_recorded_native_host(case):
     view = control.resolve_control(plan)
     assert view["goal_status"] == "unknown"
     assert view["reason"] == "native_outcome_binding_stale"
+
+
+def test_completed_last_assignment_preserves_unique_lead_without_pointer(case):
+    plan, metadata, rows, path, outcome = case
+    metadata.pop("current_goal_lead")
+    (plan / "plan.json").write_text(json.dumps(metadata))
+    last = rows[-1]
+    last["status"] = "done"
+    last["assignment"] = {
+        "lead": LEAD, "executor": OTHER, "state": "accepted", "attempt_id": "finished-attempt",
+    }
+    (plan / "leaves/I.json").write_text(json.dumps(last))
+    view = control.resolve_control(plan)
+    assert view["reason"] == "bound_native_outcome", view
+    assert view["source"]["session_id"] == "current"
+    assert view["goal_status"] == "unaccepted"
+
+
+def test_two_conflicting_finished_leads_stay_ambiguous_without_pointer(case):
+    plan, metadata, rows, path, outcome = case
+    metadata.pop("current_goal_lead")
+    (plan / "plan.json").write_text(json.dumps(metadata))
+    for leaf_id, lead in (("I", LEAD), ("OLD", OTHER)):
+        row = {"id": leaf_id, "status": "done", "assignment": {
+            "lead": lead, "executor": lead, "state": "accepted", "attempt_id": f"done-{leaf_id}",
+        }}
+        (plan / "leaves" / f"{leaf_id}.json").write_text(json.dumps(row))
+    view = control.resolve_control(plan)
+    assert view["goal_status"] == "unknown"
+    assert view["reason"] == "native_lead_ref_ambiguous"
+
+
+def test_invalid_finished_lead_is_not_treated_as_verified(case):
+    plan, metadata, rows, path, outcome = case
+    metadata.pop("current_goal_lead")
+    (plan / "plan.json").write_text(json.dumps(metadata))
+    row = {"id": "I", "status": "done", "assignment": {
+        "lead": {"harness": "codex", "session_id": "current"},
+        "executor": OTHER, "state": "accepted", "attempt_id": "done-invalid",
+    }}
+    (plan / "leaves/I.json").write_text(json.dumps(row))
+    view = control.resolve_control(plan)
+    assert view["goal_status"] == "unknown"
+    assert view["reason"] == "native_lead_ref_unverified"

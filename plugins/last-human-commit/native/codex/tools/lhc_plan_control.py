@@ -68,13 +68,15 @@ def _pointer_role_matches(metadata, session, runtime=None, host=None):
             and (host is None or current["host_id"] == host))
 
 
-def _active_typed_leads(rows):
-    """Only unresolved typed assignments can contradict a current role."""
+def _active_typed_leads(rows, *, include_terminal=False):
+    """Return typed Leads; terminal assignments remain role evidence, not active work."""
     import lhc_assignment
     refs = set()
     for row in rows:
         assignment = row.get("assignment") or {}
-        if not assignment or row.get("status") in {"done", "deferred"} or assignment.get("state") in {"accepted", "cancelled"}:
+        if not assignment or (not include_terminal and (
+                row.get("status") in {"done", "deferred"}
+                or assignment.get("state") in {"accepted", "cancelled"})):
             continue
         try:
             ref = lhc_assignment.validate_ref(assignment.get("lead"), allow_unknown=False)
@@ -111,6 +113,14 @@ def _current_lead_ref(metadata, rows):
         return None, "native_lead_ref_unverified"
     if typed:
         return (next(iter(typed)), None) if len(typed) == 1 else (None, "native_lead_ref_ambiguous")
+    # Finishing the last leaf frees its execution slot, not the project's Lead.
+    # Without an explicit handoff, a *unique* historical typed Lead remains the
+    # operational Lead. Multiple claims or invalid references must fail closed.
+    historical = _active_typed_leads(rows, include_terminal=True)
+    if historical is None:
+        return None, "native_lead_ref_unverified"
+    if historical:
+        return (next(iter(historical)), None) if len(historical) == 1 else (None, "native_lead_ref_ambiguous")
     # Legacy single-owner plans remain readable. Mixed legacy refs cannot prove
     # a current operational role, even when one happens to have a complete outcome.
     refs = {(row.get("harness") or row.get("runtime"), row.get("session"))
