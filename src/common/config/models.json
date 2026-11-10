@@ -1,14 +1,21 @@
 {
   "classes": {
-    "fast": "routine: research, search, reading, polling, waiting, mechanical edits",
-    "middle": "code written by a ready plan",
-    "frontier": "architecture, hard problems, work that dragged on past its estimate"
+      "fast": "routine: research, search, reading, polling, waiting, mechanical edits",
+      "middle": "code written by a ready plan",
+      "frontier": "architecture, hard problems, work that dragged on past its estimate"
   },
   "models": [
+    {"id": "gpt-6-astra", "class": "frontier", "description": "frontier class, architecture and hard problems"},
+    {"id": "gpt-6.1-sol", "class": "frontier", "description": "frontier class, architecture and hard problems"},
+    {"id": "claude-fable-5.1", "class": "frontier", "description": "frontier class, architecture and hard problems"},
+    {"id": "claude-opus-5.5", "class": "frontier", "description": "frontier class, architecture and hard problems"},
+    {"id": "glm-5.3", "class": "middle", "description": "middle class, code by a ready plan"},
+    {"id": "gpt-6.1-terra", "class": "middle", "description": "middle class, code by a ready plan"},
+    {"id": "claude-sonnet-5.5", "class": "middle", "description": "middle class, code by a ready plan"},
+    {"id": "grok-4.7", "class": "middle", "description": "middle class, code by a ready plan"},
     {"id": "glm-5.3-flash", "class": "fast", "description": "fast class, routine work"},
     {"id": "minimax-3.1-flash", "class": "fast", "description": "fast class, routine work"},
-    {"id": "gpt-6-luna", "class": "frontier", "description": "frontier class, architecture and hard problems"},
-    {"id": "glm-5.3", "class": "frontier", "description": "frontier class, architecture and hard problems"},
-    {"id": "gpt-6.1-sol", "class": "frontier", "description": "frontier class, architecture and hard problems"}
+    {"id": "claude-haiku-5.5", "class": "fast", "description": "fast class, routine work"},
+    {"id": "grok-4.7-fast", "class": "fast", "description": "fast class, routine work"}
   ]
 }

@@ -59,11 +59,15 @@ def test_unknown_class_is_refused_with_allowed_values():
     assert "fast" in out["error"] and "middle" in out["error"] and "frontier" in out["error"]
 
 
-def test_shipped_config_lists_the_five_models():
+def test_shipped_config_lists_the_owners_three_classes():
     out = ml.list_models(ml.load_config(), None)
-    ids = {m["id"]: c["class"] for c in out["classes"] for m in c["models"]}
-    assert ids == {"glm-5.3-flash": "fast", "minimax-3.1-flash": "fast", "gpt-6-luna": "frontier",
-                   "glm-5.3": "frontier", "gpt-6.1-sol": "frontier"}
+    by_class = {c["class"]: [m["id"] for m in c["models"]] for c in out["classes"]}
+    assert by_class == {
+        "fast": ["glm-5.3-flash", "minimax-3.1-flash", "claude-haiku-5.5", "grok-4.7-fast"],
+        "middle": ["glm-5.3", "gpt-6.1-terra", "claude-sonnet-5.5", "grok-4.7"],
+        "frontier": ["gpt-6-astra", "gpt-6.1-sol", "claude-fable-5.1", "claude-opus-5.5"],
+    }
+    assert all("note" not in c for c in out["classes"])
 
 
 def test_user_config_overrides_package(tmp_path):
