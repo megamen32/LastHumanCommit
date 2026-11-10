@@ -602,6 +602,16 @@ def estimate_cost(arguments: dict[str, Any]) -> dict[str, Any]:
     return _render([run_cli(argv)])
 
 
+def list_models(arguments: dict[str, Any]) -> dict[str, Any]:
+    """Ask the model-list CLI: the classes and the models available now."""
+
+    argv = [sys.executable, str(find_cli("lhc_model_list.py"))]
+    cls = str(arguments.get("class") or "").strip()
+    if cls:
+        argv += ["--class", cls]
+    return _render([run_cli(argv)])
+
+
 def _bug_op(arguments: dict[str, Any], operation: str) -> dict[str, Any]:
     """Use one canonical serialized local-file bug CLI, not MCP-side storage."""
     argv = [sys.executable, str(find_cli("lhc_bug_register.py")),
@@ -650,6 +660,7 @@ OPERATIONS: dict[str, Callable[[dict[str, Any]], dict[str, Any]]] = {
     "update_leaf": update_leaf,
     "build_plan": build_plan,
     "estimate_cost": estimate_cost,
+    "list_models": list_models,
     "update_progress": update_progress,
     "show_plan": show_plan,
     "read_goal_control": read_goal_control,
@@ -746,6 +757,23 @@ TOOLS: list[dict[str, Any]] = [
                 "plan_dir": {"type": "string", "description": "Directory holding the leaves/ folder."},
             },
             "required": ["plan_dir"],
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "list_models",
+        "description": (
+            "Models available now, each with its class (fast = routine, middle = code by a ready plan, "
+            "frontier = architecture and hard problems) and a one-line description. Call it before "
+            "choosing a model for a leaf or a Worker."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "class": {"type": "string", "enum": ["fast", "middle", "frontier"],
+                          "description": "Optional: list one class only."},
+            },
+            "required": [],
             "additionalProperties": False,
         },
     },

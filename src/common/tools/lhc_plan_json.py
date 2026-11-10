@@ -60,7 +60,7 @@ GRAPH_FILE = "plan.graph.json"
 # These are the only accepted spellings, and they are enums on purpose: a free
 # string here would let one executor invent a fourth class of model and a plan
 # would price it as if it were a fact.
-TIERS = ("fast", "frontier")
+TIERS = ("fast", "middle", "frontier")
 COMPLEXITIES = ("S", "M", "L")
 COST_SOURCES = ("measured", "provisional")
 
