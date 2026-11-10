@@ -8,13 +8,14 @@ Three classes. Name the class in every assignment; take the cheapest class that 
 | middle | code written by a ready plan |
 | frontier | architecture, hard problems, work that dragged on past its estimate |
 
-The authoritative assignment set is exactly the curated twelve IDs in
-`config/models.json`: four fast, four middle and four frontier. Fable and Opus
+The authoritative assignment set is exactly the curated thirteen IDs in
+`config/models.json`: five fast, four middle and four frontier. Luna is an
+explicit fast assignment in that set and is never frontier. Fable and Opus
 remain frontier families, and Astra and Sol are explicit frontier families for
-new versions. Luna is not in the curated set and is never frontier. The coding
-benchmark manifest supplies measurements only; it does not promote an unknown
-live catalog entry into a tier. `list_models` returns the curated assignment,
-the measured score when available, and the resolved benchmark cuts separately.
+new versions. The coding benchmark manifest supplies measurements only; it does
+not change a curated assignment or promote an unknown live catalog entry into a
+tier. `list_models` returns the curated assignment, the measured score when
+available, and the resolved benchmark cuts separately.
 
 Read the list with the LhcPlan MCP tool `list_models` (CLI `lhc_model_list.py`). When Agent Herder answers it adds Herder's live catalog and provider quota states; without Herder it works from the configured examples.
 

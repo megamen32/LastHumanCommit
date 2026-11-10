@@ -55,7 +55,8 @@
       "glm-5.3-flash",
       "minimax-3.1-flash",
       "claude-haiku-5.5",
-      "grok-4.7-fast"
+      "grok-4.7-fast",
+      "gpt-6-luna"
     ],
     "middle": [
       "glm-5.3",
@@ -109,7 +110,8 @@
       "glm-5.3-flash",
       "minimax-3.1-flash",
       "claude-haiku-5.5",
-      "grok-4.7-fast"
+      "grok-4.7-fast",
+      "gpt-6-luna"
     ],
     "middle": [
       "glm-5.3",

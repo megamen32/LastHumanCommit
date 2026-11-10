@@ -74,7 +74,7 @@ def test_tokens_split_on_non_alphanumerics():
     ("anthropic/claude-fable-9", "frontier"), ("claude-opus-4.1", "frontier"),
     ("glm-5.3-flash", "fast"), ("glm-5.3", "middle"), ("z-ai/glm-5.3", "middle"),
     ("grok-4.7-fast", "fast"), ("grok-4.7", "middle"), ("openai/gpt-6.1-sol", "frontier"),
-    ("upstage/solar-pro4", None), ("gpt-6-luna", None), ("mystery-model", None),
+    ("upstage/solar-pro4", None), ("gpt-6-luna", "fast"), ("mystery-model", None),
 ])
 def test_class_of_goes_by_family(model_id, cls):
     assert ml.class_of(ml.load_config(), model_id) == cls
@@ -96,7 +96,7 @@ def test_coding_thresholds_are_measurements_only():
         "assignment_policy": "curated_only",
     }
     assert ml.classify_model(config, "gpt-6.1-sol", BENCHMARK) == ("frontier", "curated", 0.85)
-    assert ml.classify_model(config, "gpt-6-luna", BENCHMARK) == (None, "benchmark_only", 0.50)
+    assert ml.classify_model(config, "gpt-6-luna", BENCHMARK) == ("fast", "curated", 0.50)
     assert ml.classify_model(config, "glm-5.3-flash", BENCHMARK) == ("fast", "curated", 0.20)
     assert ml.classify_model(config, "claude-fable-unknown", BENCHMARK) == ("frontier", "frontier_family", None)
     assert ml.classify_model(config, "mystery-model", BENCHMARK) == (None, "unclassified", None)
@@ -136,7 +136,7 @@ def test_missing_manifest_keeps_only_named_frontier_anchors():
     assert ml.classify_model(config, "gpt-6-astra", None)[:2] == ("frontier", "curated")
     assert ml.classify_model(config, "gpt-6.1-sol", None)[:2] == ("frontier", "curated")
     assert ml.classify_model(config, "claude-opus-5.5", None)[:2] == ("frontier", "curated")
-    assert ml.classify_model(config, "gpt-6-luna", None)[:2] == (None, "unclassified")
+    assert ml.classify_model(config, "gpt-6-luna", None)[:2] == ("fast", "curated")
 
 
 def test_examples_agree_with_family_rules():
@@ -148,17 +148,17 @@ def test_examples_agree_with_family_rules():
 
 def test_shipped_examples_are_the_owners_classes():
     assert ml.load_config()["examples"] == {
-        "fast": ["glm-5.3-flash", "minimax-3.1-flash", "claude-haiku-5.5", "grok-4.7-fast"],
+        "fast": ["glm-5.3-flash", "minimax-3.1-flash", "claude-haiku-5.5", "grok-4.7-fast", "gpt-6-luna"],
         "middle": ["glm-5.3", "gpt-6.1-terra", "claude-sonnet-5.5", "grok-4.7"],
         "frontier": ["gpt-6-astra", "gpt-6.1-sol", "claude-fable-5.2", "claude-opus-5.5"],
     }
 
 
-def test_curated_authoritative_set_has_exactly_twelve_ids():
+def test_curated_authoritative_set_has_exactly_thirteen_ids():
     curated = ml.load_config()["curated"]
-    assert {cls: len(ids) for cls, ids in curated.items()} == {"fast": 4, "middle": 4, "frontier": 4}
-    assert len({model_id for ids in curated.values() for model_id in ids}) == 12
-    assert "gpt-6-luna" not in {model_id for ids in curated.values() for model_id in ids}
+    assert {cls: len(ids) for cls, ids in curated.items()} == {"fast": 5, "middle": 4, "frontier": 4}
+    assert len({model_id for ids in curated.values() for model_id in ids}) == 13
+    assert "gpt-6-luna" in curated["fast"]
 
 
 def test_list_models_with_snapshot_classifies_and_reports_quotas():
@@ -166,16 +166,15 @@ def test_list_models_with_snapshot_classifies_and_reports_quotas():
     out = ml.list_models(config, None, available=SNAPSHOT["harnesses"], quotas=SNAPSHOT["quotas"], benchmark=BENCHMARK)
     by = {c["class"]: c["models"] for c in out["classes"]}
     assert out["herder"] == "ok"
-    luna = next(m for m in out["unclassified"] if m["id"] == "gpt-6-luna")
-    assert luna["classification_source"] == "benchmark_only"
+    luna = next(m for m in by["fast"] if m["id"] == "gpt-6-luna")
+    assert luna["classification_source"] == "curated"
     assert luna["coding_score"] == 0.50
     assert out["classification"]["frontier_min"] == 0.75
     assert out["classification"]["fast_max"] == 0.35
     assert {m["id"] for m in by["frontier"]} == {"gpt-6.1-sol"}
-    assert {m["id"] for m in by["fast"]} == {"glm-5.3-flash"}
+    assert {m["id"] for m in by["fast"]} == {"glm-5.3-flash", "gpt-6-luna"}
     assert {m["id"] for m in by["middle"]} == {"z-ai/glm-5.3"}
     assert out["unclassified"] == [
-        {"id": "gpt-6-luna", "harnesses": ["codex", "opencode"], "classification_source": "benchmark_only", "coding_score": 0.50},
         {"id": "upstage/solar-pro4", "harnesses": ["opencode"], "classification_source": "unclassified"},
     ]
     assert out["quotas"] == SNAPSHOT["quotas"]
