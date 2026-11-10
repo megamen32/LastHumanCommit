@@ -1843,9 +1843,30 @@ def _plan_gate_state(plan_dir: Path) -> dict[str, Any]:
     scenario = (isinstance(one, str) and one.strip()) or (
         isinstance(many, list) and any(isinstance(i, str) and i.strip() for i in many))
     return {"fullcycle": fullcycle,
+            "summary": str(raw.get("summary") or "").strip(),
+            "critique": str(raw.get("critique") or "").strip(),
             "recon_ok": review["strict"] and bool(scenario),
             "recon_legacy": review["legacy"] and bool(scenario),
             "recon_problem": review["problem"] if raw.get("recon") is not None else ""}
+
+
+def check_planning_order(state: dict[str, Any], candidate: dict[str, Any],
+                         others: list[dict[str, Any]]) -> None:
+    """The first executable leaf of a fullcycle plan needs `critique` and `summary`.
+
+    Presence only. A plan that already has an executable leaf is never blocked."""
+
+    if not state["fullcycle"] or candidate.get("kind") in ("milestone", "research"):
+        return
+    if any(t.get("kind") not in ("milestone", "research") for t in others):
+        return
+    for field, what in (("critique", "что нашла критика плана и что убрал отбор по Парето"),
+                        ("summary", "этапы плана простыми словами для человека, не больше одной страницы")):
+        if not state[field]:
+            raise LeafError(
+                f"первый исполнимый лист fullcycle-плана требует заполненного поля {field} ({what}). "
+                f"Вызови update_plan с fields {{\"{field}\": \"...\"}}. Порядок планирования: "
+                "исследование → черновик → критика → отбор по Парето → этапы простыми словами → листья")
 
 
 def check_leaf_gates(plan_dir: Path, candidate: dict[str, Any], *, create: bool,
@@ -1874,6 +1895,7 @@ def check_leaf_gates(plan_dir: Path, candidate: dict[str, Any], *, create: bool,
     if not (state["fullcycle"] or became_plan) or candidate.get("kind") == "milestone":
         return
     if state["recon_ok"]:
+        check_planning_order(state, candidate, others)
         return
     if candidate.get("kind") == "research" and not real:
         return
