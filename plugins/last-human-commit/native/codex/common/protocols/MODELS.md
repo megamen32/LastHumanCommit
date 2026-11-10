@@ -5,7 +5,7 @@ Three classes. Name the class in every assignment; take the cheapest class that 
 | Class | Use it for |
 |---|---|
 | fast | routine: research, search, reading, polling, waiting, mechanical edits |
-| middle | code written by a ready plan; while no model is listed, use fast, and frontier only after a measured fast failure |
+| middle | code written by a ready plan |
 | frontier | architecture, hard problems, work that dragged on past its estimate |
 
 The model list lives in `config/models.json`; read it with the LhcPlan MCP tool `list_models` (CLI `lhc_model_list.py`).

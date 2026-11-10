@@ -165,4 +165,3 @@ Overdue lines are taken into the current full cycle without a reminder.
 - [x] 2026-11-10 Plan tools refuse stages before `recon` and a critique revision exist, so the planning order is enforced by the tool, not by memory (owner, 2026-11-10)
 - [ ] 2026-11-24 Split LHC's own files over 1000 lines (lhc_grid.py, lhc_plan_json.py, lhc_models.py, lhc_plan_mcp.py) by job, per protocols/CODE.md (owner, 2026-11-10)
 - [ ] 2026-11-24 Decide the Overseer's fate: the 30-minute hook already took its role; either the hook calls it or the role is removed (owner, 2026-11-10)
-- [ ] 2026-11-24 List the middle-class models in `config/models.json`; the class is empty and falls back to fast (owner, 2026-11-10)

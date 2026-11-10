@@ -69,14 +69,12 @@ The models available now, with class and description: LhcPlan MCP `list_models` 
 Start from the active harness's available model catalog, recent verified results,
 quota/rate limits and required capabilities (tools, vision, context, structured
 output, latency). `../../config/model-routing.example.json` supplies the allowed
-tiers: `fast` (glm-5.3-flash, minimax-3.1-flash) and `frontier` (gpt-6-luna,
-glm-5.3, gpt-6.1-sol). Its examples are aliases, not verified API names or
+tiers `fast`, `middle` and `frontier`; the models of each are the ones `list_models` returns. Its examples are aliases, not verified API names or
 fixed benchmark rankings.
 
 The human-selected Lead session coordinates only; it does not execute source, shell,
 checks or delivery actions. Workers, Advisers, Reviewers and Testers may use only
-the allowed tiers: `fast` (glm-5.3-flash, minimax-3.1-flash) and `frontier`
-(gpt-6-luna, glm-5.3, gpt-6.1-sol). Resolve the chosen model to the exact
+the allowed tiers `fast`, `middle` and `frontier`, with the models `list_models` returns. Resolve the chosen model to the exact
 currently available catalog ID and verify attested model/capability before
 dispatch. No silent fallback to a model outside the allowed tiers, to another
 provider/model, or to an Auto route. If no allowed route is available, report the
@@ -93,7 +91,7 @@ Lead's complexity judgment to the fitting class:
 | Leaf complexity | What the leaf is | Fitting `tier` |
 |---|---|---|
 | S | wording, document and formulation fixes, mechanical edits, read-and-report work, changes pinned by existing tests | `fast` |
-| M | one bounded implementation slice with a clear acceptance check and contained risk | `middle`; while `list_models` shows middle empty, `fast`; `frontier` only when a required capability is missing there or a measured fast-tier failure says so |
+| M | one bounded implementation slice with a clear acceptance check and contained risk | `middle`; `frontier` only when a required capability is missing there or a measured middle-tier failure says so |
 | L | architecture choices, coordinated cross-slice changes, risky or irreversible repairs, decisions the plan hinges on | `frontier` |
 
 No model names or dollar figures belong in this table. The price of a class is
