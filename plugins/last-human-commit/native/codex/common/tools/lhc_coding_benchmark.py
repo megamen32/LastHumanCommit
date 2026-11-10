@@ -206,9 +206,13 @@ def classify_model(config: dict[str, Any], model_id: str,
             return "middle", "frontier_excluded_family", score
         return None, "unclassified", score
 
+    frontier_families = _configured(config, "frontier_families", ["fable", "opus"])
+    # Fable and Opus are family guarantees; keep their provenance distinct
+    # from the four named version anchors in the response.
+    if _family_match(model_id, [family for family in frontier_families if family in {"fable", "opus"}]):
+        return "frontier", "frontier_family", score
     if _anchor_match(model_id, frontier_anchors):
         return "frontier", "frontier_anchor", score
-    frontier_families = _configured(config, "frontier_families", ["fable", "opus"])
     if _family_match(model_id, frontier_families):
         return "frontier", "frontier_family", score
 
