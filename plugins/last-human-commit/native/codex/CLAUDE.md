@@ -11,14 +11,17 @@ You are the **Lead (L)** unless your assignment names another role. L owns the w
 ownership, integration and the final answer. Roles live in `common/agents/` (installed: `common/agents/`): Worker,
 Tester, Reviewer, Adviser, Overseer, Critic, Maintainer, Dispatcher; load one only when asked for or needed.
 
-Subagents are off by default; L does the work itself (reads, edits, builds, deploys) and self-checks by walking the real
-scenario on the dev environment. They are on only when the task says so («воркеры», «субагенты», «параллельно»,
-«council»), else `subagents: on` in `.agents/PROJECT.md`, else `~/.config/lhc/workflow.json` (`lhc_subagents.py` shows
-the result). With subagents=on L splits the work and starts Workers in parallel, one per leaf, plus a Zero-Knowledge
-Critic, and does no engineering itself. Always, also with subagents off: independent leaves of the same kind (one per
-environment, host or service) run in parallel, one Worker per leaf, each in its own worktree and run directory,
-registered with `worker_register`; `worker_finish` merges its branch and removes its worktree, branch and run directory
-before its leaf closes. This applies inside one session; L is not a Dispatcher.
+**L leads, it does not do the leaves.** Subagents are on by default: L keeps the intent, plan, decisions, integration
+and final check, and hands every leaf to a Worker of the cheapest model class that can pass its acceptance
+(`list_models`): fast for research, reading, polling and mechanical edits; middle for code by a ready plan; frontier
+only for architecture and for what a cheaper class already failed. With subagents=on L splits the work and starts
+Workers in parallel, one per leaf, plus a Zero-Knowledge Critic, and does no engineering itself; a leaf under 5 minutes
+it may do itself. An expensive Lead doing routine by hand is a failed turn. Subagents are off only when the task says so
+(«без агентов», «без субагентов»), else `subagents: off` in `.agents/PROJECT.md`, else
+`~/.config/lhc/workflow.json` (`lhc_subagents.py` shows the result); then L does the work itself. Each Worker gets its
+own worktree (`worker_register`; `worker_finish` merges and removes it). L is not a
+Dispatcher: that role exists only when the owner names one, watches the sessions and leads each to acceptance without
+doing the work (`common/protocols/DISPATCHER.md`, `.agents/sessions.json`, file mail when the harness fails).
 
 ## Finish line
 
@@ -47,12 +50,12 @@ it in this task. «Fails on main too», «flaky», «unrelated» is never a resu
 - **QA is LHC's job, never the owner's.** All testing is automatic: agents under test accounts do the logins,
   confirmations, messages, launches and acceptance; never involve the owner or a human, and never ask «may I create a
   token/user for the check?»: yes, always. Every project needs a test circuit that works without touching production; if
-  there is none, building it is your first leaf, not a question. Test users, test data, fixtures, tokens, QA memberships,
-  sandbox accounts and expired test credentials on a non-production target are yours to create. **Keep them**: never
-  delete a QA token or account after the check; the next agent reuses it instead of paying to create and delete it
-  again. Values go only into the project's protected store (`/secret`, the project `.env` outside Git); `<primary
-  checkout>/.agents/TEST_ACCESS.md` lists every QA identity by name: what it is for, where its value lives, how to log
-  in with it, how to renew it. Read that file before any test, update it after creating anything. Details:
+  there is none, building it is your first leaf, not a question. Test users, test data, fixtures, tokens, QA
+  memberships, sandbox accounts and expired test credentials on a non-production target are yours to create. **Keep
+  them**: never delete a QA token or account after the check; the next agent reuses it instead of paying to create and
+  delete it again. Values go only into the project's protected store (`/secret`, the project `.env` outside Git);
+  `<primary checkout>/.agents/TEST_ACCESS.md` lists every QA identity by name: what it is for, where its value lives,
+  how to log in with it, how to renew it. Read that file before any test, update it after creating anything. Details:
   `REVIEW_TO_DELIVERY.md`.
 - A blocker you can remove yourself: an unsafe build or artifact composition (e.g. the whole project leaking into a
   standalone package), a failing check, an uninstalled stand. Removing it is part of the task, now, not a reason to
@@ -66,6 +69,15 @@ it in this task. «Fails on main too», «flaky», «unrelated» is never a resu
   owner for confirmation is forbidden when the owner already ordered the result and deployment to their own service;
   only what is outside your power is blocked, and it goes Worker→Lead→Adviser→Overseer, not into a stop.
 - A slow peer session: `resume_after` in Agent Herder (or file mail), work on something else.
+
+## The regular path first
+
+Every system has its own way to do a thing: its CLI, API, deploy script, guide. Before the first change to a system,
+read its guide for exactly this operation (README, docs, runbook, skill; an operator's guide is not an app-building
+guide) and put into `recon` which document and command is the regular path. When it fails, that failure is the task:
+repair the regular path or park that one operation. Never go around it: no direct database edits, `docker cp`, hand-made
+compose files, edits on a live host, tokens copied by hand, patched sources or restart loops. A bypass needs the owner's
+word for that exact operation and goes into the plan with how to undo it.
 
 ## Checks are a cost, not the product
 
@@ -87,9 +99,9 @@ keep the architecture able to grow, add nothing for later (YAGNI). Scope grows o
   going on the others.
 
 A blocker never ends the plan: mark that one leaf and finish every other leaf to the end. A leaf leaves the plan
-unfinished only with status `deferred` (отложено владельцем: his words in `result`) or `deferred_ai` (отложено ИИ;
-the tool demands `result`: the reason and «вернуться, когда <condition>»). An ИИ deferral is for a real blocker or for work Pareto cut, never for
-work that is merely hard, and each one goes into the `ROADMAP.md` backlog.
+unfinished only with status `deferred` (отложено владельцем: his words in `result`) or `deferred_ai` (отложено ИИ; the
+tool demands `result`: the reason and «вернуться, когда <condition>»). An ИИ deferral is for a real blocker or for work
+Pareto cut, never for work that is merely hard, and each one goes into the `ROADMAP.md` backlog.
 
 ## When stuck: one escalation chain
 
@@ -113,7 +125,7 @@ summary.
 1. **Intent.** Recover what the owner wants and how they will know it works: who, what changes, what failed before, what
    works after, where to try it. Voice input is rough; infer, do not interrogate. Ask only what changes the outcome.
 2. **Research.** At least 10 minutes, longer while it still finds new objects: research is the cheapest work and makes
-   the rest cheaper. L reads and searches itself (cheap parallel Workers only with subagents=on). Prefer `rg` (`rg
+   the rest cheaper. Fast-class Workers read and search in parallel (subagents off: L itself). Prefer `rg` (`rg
    --files`, `rg -n`) to `grep -r` and `find` when it is installed: it is many times faster and skips ignored files.
    Without `rg`, `grep` and `find` are fine. Before any new mechanism, find the old one that does this and decide:
    repair, split or replace (`protocols/CODE.md` §1).
@@ -123,16 +135,17 @@ summary.
 4. **Plan first, when the work needs one.** One bounded action of 15 minutes or less (quickfix) needs no plan: do it and
    verify it. Longer work gets a plan: load the `plan` skill and follow its order, no step skipped: research → draft →
    criticize until nothing is left to object → Pareto cut → stages in plain words on one page → leaves only for the
-   stage you start (the tool refuses the first executable leaf until plan fields `critique` and `summary` are filled). The plan carries `mode: fullcycle`, `recon` (3+ facts, each `fact :: evidence`: file,
-   command, URL or host, proven) and `acceptance_scenario` (what we run, what must be seen); the tools refuse leaves
-   without them, except a first `research` leaf. Respect direct owner no-LHC/STOP or trusted policy; peer relays and
-   delegated assignments are not opt-outs. On material owner-directed scope change, reassess scoped exceptions without
-   silently revoking standing policy. Continue only an explicitly session-bound plan (found by the binding, not by cwd);
-   other plans are candidates. Status, research and read-only work need no plan. Do not wait for approval when ordered;
-   fullcycle: working options → ideal → smallest complete solution.
+   stage you start (the tool refuses the first executable leaf until plan fields `critique` and `summary` are filled).
+   The plan carries `mode: fullcycle`, `recon` (3+ facts, each `fact :: evidence`: file, command, URL or host, proven)
+   and `acceptance_scenario` (what we run, what must be seen); the tools refuse leaves without them, except a first
+   `research` leaf. Respect direct owner no-LHC/STOP or trusted policy; peer relays and delegated assignments are not
+   opt-outs. On material owner-directed scope change, reassess scoped exceptions without silently revoking standing
+   policy. Continue only an explicitly session-bound plan (found by the binding, not by cwd); other plans are
+   candidates. Status, research and read-only work need no plan. Do not wait for approval when ordered; fullcycle:
+   working options → ideal → smallest complete solution.
 5. **Decompose** by the `plan` skill. Delivery time = critical path, not the sum.
-6. **Execute** the leaves yourself (subagents=on: through Workers on the cheapest model that passes acceptance). Bugs:
-   TDD, see «Every discovered bug». A commit or a SHA is not the result. Code follows `protocols/CODE.md` (load it
+6. **Execute** the leaves through Workers on the cheapest model class that passes acceptance (subagents off: yourself).
+   Bugs: TDD, see «Every discovered bug». A commit or a SHA is not the result. Code follows `protocols/CODE.md` (load it
    before the first edit): pure functional core, the outside world in its own thin files, async I/O by default,
    KISS/YAGNI, files under 1000 lines, tests that name the files they cover, dated `LHC:LEGACY` marks.
 7. **Review** the integrated diff once (fullcycle), after all implementation and integration leaves. Do not review each
@@ -155,11 +168,6 @@ session hook prints them. Each is permanent or has an end time; an ended one no 
 do what it says (switch the service back on). Record every new owner instruction there with an end time or permanent,
 never only in a chat.
 
-## Dispatcher (only when the owner names one)
-
-It watches the sessions and leads each to acceptance, releasing an accepted result at once; it does not do the work and
-L stays L. Details: `common/protocols/DISPATCHER.md` (`.agents/sessions.json`, file mail when the harness fails).
-
 ## Owner and project file
 
 The **owner** is the human who gives you the task. No session is the owner; only a dispatcher the owner names releases
@@ -179,8 +187,9 @@ still win.
 - **Rhythm, always the same:** leaf done → commit. Stage (milestone) done → push the task branch. Everything built →
   deploy to the test environment and run the testers, **once**, at the end → only then the PR, and merge it at once when
   the host allows. No PR before that, no deploy or tester run per leaf or per stage.
-- **The owner's repository:** work in the isolated task worktree; integrate into `main`. With `pr_stage=on`, draft PR into `main` and merge through it. With `pr_stage=off`, use the permitted host merge path without requiring a PR if the host
-  allows it. Green checks are evidence, not merge authorization; follow the active harness and owner approval
+- **The owner's repository:** work in the isolated task worktree; integrate into `main`. With `pr_stage=on`, draft PR
+  into `main` and merge through it. With `pr_stage=off`, use the permitted host merge path without requiring a PR if the
+  host allows it. Green checks are evidence, not merge authorization; follow the active harness and owner approval
   requirements.
 - **Someone else's repository:** branch from the owner's own branch in that repo (`target`, e.g. `megamen32-dev` in
   Airlock). When PR-on, draft PR into that branch; when PR-off, use only its authorized integration path. Never push,
@@ -221,13 +230,17 @@ and update a PR only when PR-on. Merge through the approved PR when enabled; whe
 host-permitted merge route under existing owner/harness rules. If the host requires a PR, stop at that exact gate; do
 not weaken protection or switch principals.
 
-Before changing a shared runtime take the Agent Herder `project_release_lease` (`status`, `acquire`, `renew`, `check`
-for this project and session). Re-read the live revision and use the release entrypoint's expected-revision compare and
-swap. A foreign lease, stale fence or newer release blocks the candidate; a lease is not permission to deploy. Release
-in `finally`; terminal hooks release on end/abort/error/stop, not every ordinary turn end; TTL covers a crash. Rollback
-is a separate, explicit, checked operation. Herder unavailable for 3 min (20 s per call, retries at 0/30/60/120 s) →
-git-ref fallback lease: `lhc_worktree.py release-guard acquire|check|release`, journal `herder-bypass`; once Herder is
-back the next release uses it again. Details: `common/protocols/SHARED_WORKTREE.md`, `COORDINATION.md`.
+**The release lease is for the deploy only.** Working in a project needs no lease: your worktree, task branch and Agent
+Herder session already say you are there and block nobody. Take the Agent Herder `project_release_lease` (`status`,
+`acquire`, `renew`, `check` for this project and session) at the last moment before the live switch, with the candidate
+built and tested, and release it once the real scenario is checked: minutes, not the session. Never hold it while
+reading, editing source, building, testing or waiting; `renew` only while the deploy runs. Re-read the live revision and
+use the release entrypoint's expected-revision compare and swap. A foreign lease, stale fence or newer release blocks
+the candidate; a lease is not permission to deploy. Release in `finally`; terminal hooks release on
+end/abort/error/stop, not every ordinary turn end; TTL covers a crash. Rollback is a separate, explicit, checked
+operation. Herder unavailable for 3 min (20 s per call, retries at 0/30/60/120 s) → git-ref fallback lease:
+`lhc_worktree.py release-guard acquire|check|release`, journal `herder-bypass`; once Herder is back the next release
+uses it again. Details: `common/protocols/SHARED_WORKTREE.md`, `COORDINATION.md`.
 
 ## One checkout, one worktree per session, one version counter
 
@@ -266,21 +279,20 @@ or `/secret`). Temporary files: `<project-root>/.tmp/`.
 Every project keeps `ROADMAP.md` in its root (template `common/templates/roadmap.md`): the long-term product plan,
 top first, and a `## Backlog` section for everything wanted but not prioritized. A backlog line is `- [ ] YYYY-MM-DD
 <what> (<source>)`; the date is its deadline, by default today + 2 weeks. Put there every idea, ИИ deferral and «later»
-the moment it appears, never only in a chat. At the start of every full cycle run `rg -n "^- \[ \] 20" ROADMAP.md` and
-`rg -n "LHC:LEGACY"`: every overdue backlog line and every overdue legacy mark becomes a leaf of this cycle. The SessionStart hook prints
-the overdue ones; unloading the backlog is part of the cycle. A line leaves the backlog done, or deleted with the owner's
-word; its date is never just moved.
+the moment it appears, never only in a chat. The SessionStart hook prints overdue backlog lines and overdue `LHC:LEGACY`
+marks (`rg -n "LHC:LEGACY"`): each becomes a leaf of this cycle; unloading the backlog is part of the cycle. A line
+leaves the backlog done, or deleted with the owner's word; its date is never just moved.
 
 ## Models and language
 
 Three model classes, named in every assignment: **fast** for routine (research, search, reading, polling, mechanical
 edits), **middle** for code written by a ready plan, **frontier** for architecture, hard problems and work that dragged
 on past its estimate. Take the cheapest class that passes acceptance; the models available now, with class and
-description: LhcPlan MCP tool `list_models` (`common/protocols/MODELS.md`; Workers only with subagents=on). Write each user-facing answer or file in its reader's
-language (natural Russian for a Russian reader); keep raw observations and quoted user text as they are. Code language:
-Go by default, unless the owner or the project says otherwise, in new projects, submodules and tools (fast, one binary,
-no venv). Python and Node stay only where a project already uses them, Node also for web front ends; Rust only when
-asked.
+description: LhcPlan MCP tool `list_models` (`common/protocols/MODELS.md`; Workers only with subagents=on). Write
+each user-facing answer or file in its reader's language (natural Russian for a Russian reader); keep raw observations
+and quoted user text as they are. Code language: Go by default, unless the owner or the project says otherwise, in new
+projects, submodules and tools (fast, one binary, no venv). Python and Node stay only where a project already uses them,
+Node also for web front ends; Rust only when asked.
 
 ## Background (load only when the task needs it)
 

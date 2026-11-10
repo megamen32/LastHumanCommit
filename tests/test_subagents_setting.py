@@ -1,4 +1,4 @@
-"""Subagents are off unless asked: the priority of the owner's word, PROJECT.md, the user config and the default."""
+"""Subagents are on unless refused: the priority of the owner's word, PROJECT.md, the user config and the default."""
 import json
 from pathlib import Path
 import subprocess
@@ -30,9 +30,10 @@ def mode(tmp_path, task="", **layers):
     return subagents.resolve(repo, task, config_home=config, package=pkg)
 
 
-def test_default_is_off_and_the_source_config_says_so(tmp_path):
-    assert mode(tmp_path) == {"subagents": "off", "source": "package config"}
-    assert json.loads((ROOT / "src/common/config/workflow.json").read_text())["subagents"] == "off"
+def test_default_is_on_and_the_source_config_says_so(tmp_path):
+    assert mode(tmp_path, package="on") == {"subagents": "on", "source": "package config"}
+    assert json.loads((ROOT / "src/common/config/workflow.json").read_text())["subagents"] == "on"
+    assert subagents.resolve(tmp_path, "", config_home=tmp_path / "none", package=tmp_path / "none")["subagents"] == "on"
 
 
 def test_user_config_beats_the_package_and_project_beats_the_user(tmp_path):
@@ -49,7 +50,7 @@ def test_the_owners_word_in_the_task_beats_everything(tmp_path):
 
 
 def test_an_invalid_value_is_ignored(tmp_path):
-    assert mode(tmp_path, user="maybe")["subagents"] == "off"
+    assert mode(tmp_path, user="maybe", package="on")["subagents"] == "on"
 
 
 def test_the_cli_prints_the_effective_mode(tmp_path):
@@ -58,3 +59,9 @@ def test_the_cli_prints_the_effective_mode(tmp_path):
                           capture_output=True, text=True)
     assert json.loads(done.stdout)["subagents"] == "on", done.stderr
 
+
+
+def test_the_owner_can_refuse_agents_in_the_task(tmp_path):
+    for n, task in enumerate(("сделай без агентов", "do it without agents", "не используй агентов")):
+        assert mode(tmp_path / str(n), task, package="on") == {"subagents": "off", "source": "task"}, task
+    assert mode(tmp_path / "plain", "почини агента рассылки", package="on")["subagents"] == "on"

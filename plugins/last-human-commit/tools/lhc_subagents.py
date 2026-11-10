@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Whether this task may use subagents (Workers, Testers, Advisers, councils): off unless asked.
+"""Whether this task may use subagents (Workers, Testers, Advisers, councils): on unless refused.
 
 Priority, highest first:
   1. an explicit word of the owner in the task text (воркеры, субагенты, параллельно, council, ...);
   2. the field  subagents: on|off  in <primary checkout>/.agents/PROJECT.md;
   3. ~/.config/lhc/workflow.json  {"subagents": "on|off"};
-  4. the package config/workflow.json, then the built-in default: off.
+  4. the package config/workflow.json, then the built-in default: on.
 
     python3 lhc_subagents.py [--repo DIR] [--task TEXT]     prints {"subagents": "on|off", "source": ...}
 """
@@ -21,7 +21,7 @@ import subprocess
 VALUES = ("on", "off")
 ASK = re.compile(r"воркер|субагент|параллельн|council|совет\s+моделей|subagent|in parallel", re.I)
 REFUSE = re.compile(r"(?:\bбез|\bне\s+нужн\w*|\bне\s+используй\w*|\bне\s+запускай\w*|\bno|\bwithout|\bdon'?t\s+use|\bnot)\s+"
-                    r"(?:использовани\w+\s+)?(?:воркер|субагент|subagent|worker|council|параллельн)", re.I)
+                    r"(?:использовани\w+\s+)?(?:воркер|субагент|агент|subagent|agent|worker|council|параллельн)", re.I)
 
 
 def from_task(task):
@@ -76,7 +76,7 @@ def resolve(repo=None, task="", config_home=None, package=None):
         value = from_json(base / "config" / "workflow.json")
         if value:
             return {"subagents": value, "source": "package config"}
-    return {"subagents": "off", "source": "default"}
+    return {"subagents": "on", "source": "default"}
 
 
 def enabled(repo=None, task=""):
