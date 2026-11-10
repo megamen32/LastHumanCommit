@@ -439,6 +439,8 @@ class Graph:
     acceptance_scenarios: list[str] = field(default_factory=list)
     # What was found before the plan (facts with their proof); empty in old plans.
     recon: list[str] = field(default_factory=list)
+    # The stages of the plan in plain words for a person, at most one page.
+    summary: str = ""
     current_progress: str = ""
     revisions: list = field(default_factory=list)
     estimate_policy: Optional[dict[str, Any]] = None
@@ -1249,6 +1251,7 @@ def parse_graph_json(document: Any) -> Graph:
     if not isinstance(scenarios, list) or not all(isinstance(item, str) for item in scenarios):
         raise ValueError("acceptance_scenarios должно быть списком строк")
     graph.acceptance_scenarios = list(scenarios)
+    graph.summary = str(document.get("summary") or "")
     recon = document.get("recon") or []
     graph.recon = [str(i).strip() for i in recon if str(i).strip()] if isinstance(recon, list) else []
     graph.current_progress = str(document.get("current_progress") or "")
@@ -4307,6 +4310,11 @@ def render_html(
     scenarios = ''.join(f'<li>{escape(item)}</li>' for item in graph.acceptance_scenarios)
     if graph.recon:
         why_html += '<article class="panel plan-recon"><h2>Что уже есть (разведка)</h2><ul>' + ''.join(f'<li>{escape(item)}</li>' for item in graph.recon) + '</ul></article>'
+    if graph.summary:
+        why_html = (
+            '<article class="panel plan-summary"><h2>Коротко о плане</h2>'
+            f'<p style="white-space:pre-wrap">{escape(graph.summary)}</p></article>' + why_html
+        )
     why_html += '<article class="panel acceptance-scenarios"><h2>Как проверим</h2>' + (f'<ul>{scenarios}</ul>' if scenarios else '<p>Сценарии проверки ещё не описаны</p>') + '</article>'
     why_html += '<p class="hint">Это декларация плана. Статус задач сам по себе не подтверждает приёмку результата.</p>'
     brief_html = f'<div class="brief">{"".join(detail_cards)}</div>' if detail_cards else ""

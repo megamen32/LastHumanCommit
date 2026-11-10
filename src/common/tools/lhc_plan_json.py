@@ -214,6 +214,8 @@ PLAN_FIELDS = (
     "acceptance_scenarios",
     "acceptance_scenario",
     "recon",
+    "summary",
+    "critique",
     "mode",
     "current_progress",
     "revisions",
@@ -735,6 +737,9 @@ def leaf_estimate_cap(metadata: Optional[dict[str, Any]] = None) -> int:
     return _estimate_policy(metadata["estimate_policy"], Path(PLAN_FILE))["leaf_cap_minutes"]
 
 
+SUMMARY_MAX_CHARS = 3000  # one A4 page of plain words for a person
+
+
 def _plan_fields(raw: dict[str, Any], path: Path) -> dict[str, Any]:
     """The plan-level facts of one file, validated."""
 
@@ -773,6 +778,18 @@ def _plan_fields(raw: dict[str, Any], path: Path) -> dict[str, Any]:
         if not isinstance(value, str) or not value.strip():
             raise LeafError(f"{path}: поле default_model должно быть непустой строкой")
         fields["default_model"] = value.strip()
+    for field in ("summary", "critique"):
+        value = raw.get(field)
+        if value is None:
+            continue
+        if not isinstance(value, str):
+            raise LeafError(f"{path}: поле {field} должно быть строкой")
+        if field == "summary" and len(value.strip()) > SUMMARY_MAX_CHARS:
+            raise LeafError(
+                f"{path}: summary is one page for a person: shorten it to {SUMMARY_MAX_CHARS} characters "
+                f"(now {len(value.strip())})")
+        if value.strip():
+            fields[field] = value.strip()
     for field in ("title", "goal", "business_result", "current_progress",
                   "external_waits", "updated_at", "planned_start_at", "started_at", "finished_at"):
         value = raw.get(field)
@@ -1223,6 +1240,8 @@ def build_document(plan_dir: Path) -> dict[str, Any]:
         "business_results": results,
         "acceptance_scenarios": list(metadata.get("acceptance_scenarios") or []),
         "recon": list(metadata.get("recon") or []),
+        "summary": str(metadata.get("summary") or ""),
+        "critique": str(metadata.get("critique") or ""),
         "current_progress": str(metadata.get("current_progress") or ""),
         "deliverable": metadata.get("deliverable", "implementation"),
         "decomposition": metadata.get("decomposition", "progressive"),
@@ -1548,6 +1567,9 @@ def report_block_of(document: dict[str, Any]) -> str:
         results = [str(document["business_result"]).strip()]
     for result in results:
         lines.append(f"Бизнес-результат: {result}")
+    if document.get("summary"):
+        lines.append("Коротко о плане:")
+        lines.extend("  " + row for row in str(document["summary"]).splitlines())
     for scenario in document.get('acceptance_scenarios', []):
         lines.append(f"Как проверим: {scenario}")
     lines.append(
