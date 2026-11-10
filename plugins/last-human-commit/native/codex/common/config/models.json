@@ -18,10 +18,6 @@
       "class": "fast"
     },
     {
-      "match": "luna",
-      "class": "fast"
-    },
-    {
       "match": "fable",
       "class": "frontier"
     },
@@ -35,6 +31,10 @@
     },
     {
       "match": "sol",
+      "class": "frontier"
+    },
+    {
+      "match": "luna",
       "class": "frontier"
     },
     {
@@ -59,8 +59,7 @@
       "glm-5.3-flash",
       "minimax-3.1-flash",
       "claude-haiku-5.5",
-      "grok-4.7-fast",
-      "gpt-6-luna"
+      "grok-4.7-fast"
     ],
     "middle": [
       "glm-5.3",
@@ -72,7 +71,8 @@
       "gpt-6-astra",
       "gpt-6.1-sol",
       "claude-fable-5.2",
-      "claude-opus-5.5"
+      "claude-opus-5.5",
+      "gpt-6-luna"
     ]
   }
 }

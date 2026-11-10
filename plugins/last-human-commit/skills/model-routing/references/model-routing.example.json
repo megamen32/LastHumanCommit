@@ -1,26 +1,47 @@
 {
   "schema_version": 1,
   "purpose": "Routing examples, not a provider catalog or verified capability ranking.",
-  "note": "model_classes is the flat list the offline task-graph checker accepts as model_class; tiers group those models by cost and capability.",
+  "note": "model_classes is the flat list the offline task-graph checker accepts as model_class; classes are resolved from LhcPlan list_models at runtime.",
   "tier_order": [
     "frontier",
+    "middle",
     "fast"
   ],
   "model_classes": [
+    "gpt-6-astra",
+    "gpt-6.1-sol",
+    "claude-fable-5.2",
+    "claude-opus-5.5",
     "glm-5.3-flash",
     "minimax-3.1-flash",
     "gpt-6-luna",
     "glm-5.3",
-    "gpt-6.1-sol"
+    "gpt-6.1-terra",
+    "claude-sonnet-5.5",
+    "grok-4.7",
+    "claude-haiku-5.5",
+    "grok-4.7-fast"
   ],
   "tiers": {
     "frontier": {
       "label": "Frontier",
       "use": "Strongest suitable available model for Lead, hard decisions, decomposition, difficult oversight and council.",
       "user_examples": [
-        "gpt-6-luna",
+        "gpt-6-astra",
+        "gpt-6.1-sol",
+        "claude-fable-5.2",
+        "claude-opus-5.5",
+        "gpt-6-luna"
+      ]
+    },
+    "middle": {
+      "label": "Middle",
+      "use": "Code written from a ready plan with a bounded acceptance check.",
+      "user_examples": [
         "glm-5.3",
-        "gpt-6.1-sol"
+        "gpt-6.1-terra",
+        "claude-sonnet-5.5",
+        "grok-4.7"
       ]
     },
     "fast": {
