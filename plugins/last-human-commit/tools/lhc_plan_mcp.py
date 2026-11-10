@@ -22,7 +22,7 @@ from pathlib import Path
 from typing import Any, Callable, Optional
 
 SERVER_NAME = "LhcPlan"
-SERVER_VERSION = "1.22.1"
+SERVER_VERSION = "1.22.2"
 DEFAULT_PROTOCOL_VERSION = "2024-11-05"
 SUPPORTED_PROTOCOL_VERSIONS = ("2024-11-05", "2025-03-26", "2025-06-18")
 
@@ -511,7 +511,7 @@ def activate_leaf(arguments):
     caller = _request_actor.get() or {}
     if not values.get("session") and caller.get("source") == "mcp_metadata":
         values["session"], values["harness"] = caller["session_id"], caller["harness"]
-    for key in ("session", "harness", "note"):
+    for key in ("session", "harness", "owner", "note"):
         if values.get(key):
             extra += ["--" + key, str(values[key])]
     return _plan_cli(arguments, "activate", *extra)
@@ -850,6 +850,7 @@ TOOLS += [
           "Start a leaf in this session (status running, bound to the session so the hooks show it after a "
           "compaction).",
           {"plan_dir": _PLAN, "leaf_id": _LEAF, "session": {"type": "string"}, "harness": {"type": "string"},
+           "owner": {"type": "string", "description": "Actual leaf owner; defaults to the OS user when available."},
            "note": {"type": "string"}},
           ["plan_dir", "leaf_id"]),
     _tool("worker_register",

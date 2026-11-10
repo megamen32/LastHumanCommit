@@ -2282,10 +2282,18 @@ def plan_summary(plan_dir: Path, current: Any = ()) -> list[str]:
     current = [str(item) for item in current]
     explicit = [leaf for leaf in rows if isinstance(leaf.get("assignment"), dict)]
     control = goal_control(plan_dir)
-    lines: list[str] = [plan_intent(plan_metadata(plan_dir)),
-                        f"goal={control.get('goal_status', 'unknown')}, "
-                        f"frontier={control.get('frontier', 'unknown')}, "
-                        f"next_decision={control.get('next_decision', 'none')}"]
+    metadata = plan_metadata(plan_dir)
+    lines: list[str] = []
+    for field, label in (("title", "Title"), ("goal", "Goal"), ("summary", "Summary")):
+        if metadata.get(field):
+            lines.append(f"{label}: {metadata[field]}")
+    if milestones:
+        lines.append("Stages:")
+        lines.extend(f"- {stage['id']} «{stage['label']}» — {stage['status']}" for stage in milestones)
+    lines.extend([plan_intent(metadata),
+                  f"goal={control.get('goal_status', 'unknown')}, "
+                  f"frontier={control.get('frontier', 'unknown')}, "
+                  f"next_decision={control.get('next_decision', 'none')}"])
     pending_stages = undecomposed_stages(milestones)
     if pending_stages:
         lines.append("Undecomposed stages: " + ", ".join(pending_stages))
@@ -2294,6 +2302,11 @@ def plan_summary(plan_dir: Path, current: Any = ()) -> list[str]:
         lines.append("Done:")
         lines += [f"- {_leaf_name(leaf)} — {_short(leaf.get('result'), 220) or 'no result written'}"
                   for leaf in done[-12:]]
+    blocked = [leaf for leaf in rows if leaf.get("status") == "blocked" and leaf.get("kind") != "milestone"]
+    if blocked:
+        lines.append("Blocked:")
+        lines += [f"- {_leaf_name(leaf)} — {_short(leaf.get('blocker'), 220) or 'no blocker written'}"
+                  for leaf in blocked]
     for leaf in rows:
         if str(leaf.get("id")) in current and leaf.get("status") == "running":
             notes = [event.get("note") for event in leaf.get("progress_events") or []

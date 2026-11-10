@@ -57,7 +57,7 @@ def cli(tool, *args):
 
 
 def activate(plan):
-    return cli('lhc_plan_json', 'activate', plan, 'L1', '--session', 'leader', '--harness', 'codex')
+    return cli('lhc_plan_json', 'activate', plan, 'L1', '--session', 'leader', '--harness', 'codex', '--owner', 'leader')
 
 
 def test_activation_never_adopts_complete_A_acceptance(case):

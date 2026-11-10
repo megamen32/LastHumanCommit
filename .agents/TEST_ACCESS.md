@@ -11,3 +11,9 @@
 - Cleanup/rollback, active dependents and exact unresolved external dependency: retain fixture inputs, outputs and receipts under `.agents/tasks/20261023-human-plans-and-orchestration/` as evidence. No database, service or user data is mutated. Native package release rollback is not pre-authorized as a blind retry; reconcile the exact package operation and installed state before any recovery action. No other active dependents are known.
 
 After compaction re-open this file and the direct user task. This contract grants no access beyond its named local test and authorized LHC publication scope.
+
+## Codex plan-activation diagnostic fixture
+
+- Existing isolated fixture: `server100 diagnostic/native-llm-canary`, native thread `01a1c7aa-b80d-70c0-ba91-b9c75150966c`. Its role is the explicitly authorized LHC plan-display diagnostic and eventual ordinary native canary; it is separate from customer workflows.
+- Authentication: reuse the host's existing native authentication through its supported client. Credentials and raw configuration must not be read, copied, recorded, changed or replaced. This entry itself grants read-only diagnostic access and does not authorize a live host change.
+- Evidence: task-local tests and receipts are under `.agents/tasks/20261111-codex-plan-activation/`. Source-test success does not establish that a native package is installed, trusted or consumer-verified.

@@ -1,0 +1,58 @@
+{
+  "created_at": "2026-11-10T22:52:24+00:00",
+  "details": "MCP не передавал владельца при активации; исправление и независимая проверка сохраняются отдельно от живой установки.",
+  "events": [
+    {
+      "action": "register",
+      "actor": "lead",
+      "at": "2026-11-10T22:52:24+00:00",
+      "changes": {
+        "details": "MCP не передавал владельца при активации; исправление и независимая проверка сохраняются отдельно от живой установки.",
+        "source": "codex-plan-repair",
+        "status": "open",
+        "title": "MCP не передавал владельца при активации"
+      }
+    },
+    {
+      "action": "resolve",
+      "actor": "lead",
+      "at": "2026-11-10T22:52:24+00:00",
+      "changes": {
+        "resolution": {
+          "evidence": {
+            "proof_path": "receipts/B04-green.txt",
+            "red_proof_path": "receipts/B04-red.txt",
+            "red_result": "FAILED tests/test_execution_interface.py::test_mcp_never_auto_binds_the_servers_thread_and_native_activate_uses_caller",
+            "red_sha256": "85b729e74fe00e351f740ffb788e1c4a02fcb1bce4442038aea5de722dd0737d",
+            "result": "49 passed, 1 warning in 6.68s",
+            "sha256": "f09289c97b6e007ff849c28a13ac7d75cfadd1a19d1c0da4a8764ae4ed202b3e",
+            "test_command": "python3 -m pytest -q tests/test_execution_handoff.py tests/test_execution_interface.py tests/test_plan_binding_acceptance.py"
+          },
+          "kind": "fixed",
+          "reason": ""
+        },
+        "status": "fixed"
+      }
+    }
+  ],
+  "id": "B04",
+  "owner": "lead",
+  "reporter": "lead",
+  "resolution": {
+    "evidence": {
+      "proof_path": "receipts/B04-green.txt",
+      "red_proof_path": "receipts/B04-red.txt",
+      "red_result": "FAILED tests/test_execution_interface.py::test_mcp_never_auto_binds_the_servers_thread_and_native_activate_uses_caller",
+      "red_sha256": "85b729e74fe00e351f740ffb788e1c4a02fcb1bce4442038aea5de722dd0737d",
+      "result": "49 passed, 1 warning in 6.68s",
+      "sha256": "f09289c97b6e007ff849c28a13ac7d75cfadd1a19d1c0da4a8764ae4ed202b3e",
+      "test_command": "python3 -m pytest -q tests/test_execution_handoff.py tests/test_execution_interface.py tests/test_plan_binding_acceptance.py"
+    },
+    "kind": "fixed",
+    "reason": ""
+  },
+  "source": "codex-plan-repair",
+  "status": "fixed",
+  "title": "MCP не передавал владельца при активации",
+  "updated_at": "2026-11-10T22:52:24+00:00"
+}

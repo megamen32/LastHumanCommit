@@ -52,13 +52,20 @@ failing commands separately from plugin installation and hook trust. The
 
 ## Codex post-install hook readiness
 
-Installing or enabling the plugin does not establish hook trust. After a Codex
-LHC install or update, use the native app-server `hooks/list` readback for the
-active Codex session and verify each effective hook for
-`last-human-commit@megamen32-plugins` reports `enabled=true` and
-`trustStatus=trusted`. Review the exact current commands and `currentHash` from
-that readback against the installed package before writing trust state with
-`config/batchWrite` (`hooks.state`, `upsert`). Trust only those reviewed current
+Installing or enabling the plugin does not establish hook trust. The wrapper
+checks native app-server `hooks/list` for the home directory after a successful
+install and emits JSON evidence. It returns nonzero for `NEEDS_REVIEW` or
+`ERROR`; the daily updater logs the evidence and does not retry an attempted
+install. To check a different working directory, run:
+
+```sh
+python3 deploy/plugin-autoupdate/codex-hook-readiness.py --cwd "$PWD"
+```
+
+Each effective hook for `last-human-commit@megamen32-plugins` must report
+`enabled=true` and `trustStatus=trusted`. Review the exact current commands and
+`currentHash` from that readback against the installed package before an
+authorized reviewer writes trust state with `config/batchWrite` (`hooks.state`, `upsert`). Trust only those reviewed current
 hashes; never reuse hashes from an older manifest or use a broad trust bypass.
 The Codex hook key includes its manifest namespace: trust for legacy
 `hooks/hooks.json` does not authorize

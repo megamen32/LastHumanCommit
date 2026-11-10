@@ -1,0 +1,50 @@
+{
+  "label": "Восстановить проверенный пакет и запуск хуков",
+  "parent": "S02",
+  "estimate_minutes": 15,
+  "model": "gpt-6-astra",
+  "acceptance": "Кандидат 1.22.2 установлен штатным native способом; package identity/version и enabled/trusted hooks подтверждены readback. Это не выполнено в source-проверке.",
+  "id": "L02",
+  "created_at": "2026-11-10T14:35:28-08:00",
+  "session": "01a1c578-97fe-7133-9350-8bf8c152702c",
+  "harness": "codex",
+  "updated_at": "2026-11-10T14:57:27-08:00",
+  "progress_events": [
+    {
+      "at": "2026-11-10T14:35:28-08:00",
+      "note": "",
+      "changes": {
+        "label": "Восстановить проверенный пакет и запуск хуков",
+        "parent": "S02",
+        "estimate_minutes": 15,
+        "model": "gpt-6-astra",
+        "acceptance": "Сравнение пакета с375a767 и native readback после scoped settings write, сохранены открытые сессии и авторизация"
+      },
+      "actor": {
+        "host_id": null,
+        "harness": "codex",
+        "session_id": "01a1c578-97fe-7133-9350-8bf8c152702c",
+        "source": "native_environment"
+      },
+      "session": "01a1c578-97fe-7133-9350-8bf8c152702c",
+      "harness": "codex"
+    },
+    {
+      "at": "2026-11-10T14:57:27-08:00",
+      "note": "",
+      "changes": {
+        "status": "queued",
+        "acceptance": "Кандидат 1.22.2 установлен штатным native способом; package identity/version и enabled/trusted hooks подтверждены readback. Это не выполнено в source-проверке."
+      },
+      "actor": {
+        "host_id": null,
+        "harness": "codex",
+        "session_id": "6af39c16-1cb4-8191-8426-7d5c0ea10034",
+        "source": "native_environment"
+      },
+      "session": "6af39c16-1cb4-8191-8426-7d5c0ea10034",
+      "harness": "codex"
+    }
+  ],
+  "status": "queued"
+}

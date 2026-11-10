@@ -13,6 +13,9 @@ import sys
 spec = importlib.util.spec_from_file_location('lhc_hook_root_repair', Path(__file__).with_name('repair-codex-hook-roots.py'))
 compat = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(compat)
+readiness_spec = importlib.util.spec_from_file_location('lhc_hook_readiness', Path(__file__).with_name('codex-hook-readiness.py'))
+readiness = importlib.util.module_from_spec(readiness_spec)
+readiness_spec.loader.exec_module(readiness)
 
 
 def version_order(value: str) -> tuple:
@@ -90,6 +93,11 @@ def install(codex_bin: str, cache_root: Path, tools_root: Path, *,
         if record is not None and cache.exists():
             save_record(record, [*versions, *(path.name for path in cache.iterdir()
                                               if compat.VERSION.fullmatch(path.name) and path.is_dir())])
+    if status == 0:
+        result = readiness.check(codex_bin, Path(home))
+        print(json.dumps(result, ensure_ascii=False), file=sys.stderr)
+        if result['status'] != 'READY':
+            status = 1
     return status
 
 

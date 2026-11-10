@@ -352,7 +352,7 @@ def test_public_cli_and_stdio_share_existing_native_control(plan):
                              capture_output=True, text=True, timeout=20)
         assert run.returncode == 0, run.stderr
         return json.loads(run.stdout)
-    activated = cli("activate", target, "G1", "--session", "lead", "--harness", "codex")
+    activated = cli("activate", target, "G1", "--session", "lead", "--harness", "codex", "--owner", "lead")
     assert activated["goal_binding"]["binding"] == "bound"
     pj.update_leaf(target, "G1", {"status": "done", "result": "Fixture implementation complete"})
     view = cli("goal-control", target)

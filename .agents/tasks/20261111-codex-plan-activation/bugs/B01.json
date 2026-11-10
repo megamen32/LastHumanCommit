@@ -1,0 +1,58 @@
+{
+  "created_at": "2026-11-10T22:52:23+00:00",
+  "details": "Установка скрывала неработающие хуки; исправление и независимая проверка сохраняются отдельно от живой установки.",
+  "events": [
+    {
+      "action": "register",
+      "actor": "lead",
+      "at": "2026-11-10T22:52:23+00:00",
+      "changes": {
+        "details": "Установка скрывала неработающие хуки; исправление и независимая проверка сохраняются отдельно от живой установки.",
+        "source": "codex-plan-repair",
+        "status": "open",
+        "title": "Установка скрывала неработающие хуки"
+      }
+    },
+    {
+      "action": "resolve",
+      "actor": "lead",
+      "at": "2026-11-10T22:52:23+00:00",
+      "changes": {
+        "resolution": {
+          "evidence": {
+            "proof_path": "receipts/B01-green.txt",
+            "red_proof_path": "receipts/B01-red.txt",
+            "red_result": "tests/test_codex_hook_readiness.py:43: AssertionError",
+            "red_sha256": "75e20cf9d065b4e9e3561d7704cc29acbb2e0728f41643e5b3751ecf11e0013c",
+            "result": "14 passed, 1 warning in 0.68s",
+            "sha256": "358a0a154b4a553e177c1383261207824e01ffcbc7a680b4b3ce35a8bf6a7f5c",
+            "test_command": "python3 -m pytest -q tests/test_codex_hook_readiness.py tests/test_codex_plugin_install.py"
+          },
+          "kind": "fixed",
+          "reason": ""
+        },
+        "status": "fixed"
+      }
+    }
+  ],
+  "id": "B01",
+  "owner": "lead",
+  "reporter": "lead",
+  "resolution": {
+    "evidence": {
+      "proof_path": "receipts/B01-green.txt",
+      "red_proof_path": "receipts/B01-red.txt",
+      "red_result": "tests/test_codex_hook_readiness.py:43: AssertionError",
+      "red_sha256": "75e20cf9d065b4e9e3561d7704cc29acbb2e0728f41643e5b3751ecf11e0013c",
+      "result": "14 passed, 1 warning in 0.68s",
+      "sha256": "358a0a154b4a553e177c1383261207824e01ffcbc7a680b4b3ce35a8bf6a7f5c",
+      "test_command": "python3 -m pytest -q tests/test_codex_hook_readiness.py tests/test_codex_plugin_install.py"
+    },
+    "kind": "fixed",
+    "reason": ""
+  },
+  "source": "codex-plan-repair",
+  "status": "fixed",
+  "title": "Установка скрывала неработающие хуки",
+  "updated_at": "2026-11-10T22:52:23+00:00"
+}

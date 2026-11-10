@@ -1,3 +1,4 @@
+# LHC:COVERS src/common/tools/lhc_plan_mcp.py
 """Real CLI/stdio exercise attribution and explicit execution surfaces."""
 import json
 import os
@@ -186,10 +187,16 @@ def test_mcp_never_auto_binds_the_servers_thread_and_native_activate_uses_caller
     leaf = json.loads((fresh / "leaves/L01.json").read_text())
     assert not leaf.get("session")
     assert leaf["progress_events"][-1]["actor"]["source"] == "unknown"
-    activated = serve([rpc("activate_leaf", {"plan_dir": str(plan), "leaf_id": "L01"},
+    env.pop("USER", None)
+    env.pop("USERNAME", None)
+    listed = serve([{"jsonrpc": "2.0", "id": 1, "method": "tools/list"}], env)
+    schema = next(tool for tool in listed[0]["result"]["tools"] if tool["name"] == "activate_leaf")["inputSchema"]
+    assert schema["properties"]["owner"]["type"] == "string"
+    activated = serve([rpc("activate_leaf", {"plan_dir": str(plan), "leaf_id": "L01", "owner": "fixture-owner"},
                           {"threadId": "actual-caller"})], env)
     assert not activated[0]["result"]["isError"], activated
     assert read(plan)["session"] == "actual-caller"
+    assert read(plan)["owner"] == "fixture-owner"
     assert read(plan)["progress_events"][-1]["actor"]["session_id"] == "actual-caller"
 
 

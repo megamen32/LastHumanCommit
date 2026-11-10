@@ -1,0 +1,35 @@
+F..                                                                      [100%]
+=================================== FAILURES ===================================
+_____________ test_cli_and_mcp_show_full_saved_overview_read_only ______________
+
+tmp_path = PosixPath('/workspace/scratch/lasthumancommit/.worktrees/codex-hook-readiness-20261111/.tmp/pytest-6-8b686a5b4a9f264f/test_cli_and_mcp_show_full_sav0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f6c85e1ce00>
+
+    def test_cli_and_mcp_show_full_saved_overview_read_only(tmp_path, monkeypatch):
+        monkeypatch.setenv('XDG_STATE_HOME', str(tmp_path / 'state'))
+        plan = fixture_plan(tmp_path)
+        before = contents(plan)
+        cli = subprocess.run([sys.executable, str(TOOLS / 'lhc_plan_json.py'), 'show', str(plan), '--current', 'L02'], capture_output=True, text=True, env=os.environ.copy())
+        assert cli.returncode == 0, cli.stderr
+        result = mcp.show_plan({'plan_dir': str(plan), 'current': ['L02']})
+        assert not result['isError']
+        for text in (cli.stdout, result['content'][0]['text']):
+            for expected in ('Release plan', 'Deliver working hooks', 'First restore; then verify; finally release.',
+                             'M01 «Restore hooks» — done', 'M02 «Verify hooks» — running', 'M03 «Release package» — queued',
+                             'Now:', 'Current evidence', 'Done:', 'Repaired'):
+>               assert expected in text
+E               AssertionError: assert 'Release plan' in 'deliverable: implementation; decomposition: progressive; leaf cap: 15 min\ngoal=unknown, frontier=active, next_decisi....worktrees/codex-hook-readiness-20261111/.tmp/pytest-6-8b686a5b4a9f264f/test_cli_and_mcp_show_full_sav0/plan/plan.md\n'
+
+tests/test_plan_overview.py:50: AssertionError
+=============================== warnings summary ===============================
+../../../../../opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/site-packages/anyio/pytest_plugin.py:14
+  /opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/site-packages/anyio/pytest_plugin.py:14: PytestRemovedIn10Warning: _pytest.python.CallSpec2 has been renamed to CallSpec.
+  The CallSpec2 alias will be removed in pytest 10.
+  Update imports to use CallSpec instead.
+  See https://docs.pytest.org/en/stable/deprecations.html#callspec2-renamed
+    from _pytest.python import CallSpec2
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_plan_overview.py::test_cli_and_mcp_show_full_saved_overview_read_only
+1 failed, 2 passed, 1 warning in 0.30s
