@@ -47,7 +47,9 @@
       "use": "Well-specified routine execution and checks where verified capability suffices.",
       "user_examples": [
         "glm-5.3-flash",
-        "minimax-3.1-flash"
+        "minimax-3.1-flash",
+        "claude-haiku-5.5",
+        "grok-4.7-fast"
       ]
     }
   },
@@ -73,9 +75,9 @@
   "fallback": "Use a suitable available model with a recorded limitation. Never claim an unattested model choice or council diversity.",
   "frontier_thresholds": {
     "metric": "swebench_pro",
-    "frontier": "coding score >= minimum score of named frontier anchors",
-    "fast": "coding score <= maximum score among fast-named families",
-    "middle": "coding score between fast and frontier cuts",
+    "frontier": "measurement only: score at or above the named-anchor cut is reported, not auto-assigned",
+    "fast": "measurement only: score at or below the fast-family cut is reported, not auto-assigned",
+    "middle": "measurement only: score between the cuts is reported, not auto-assigned",
     "anchors": [
       "openai/gpt-6-astra",
       "openai/gpt-6.1-sol",
@@ -95,6 +97,33 @@
       "minimax-3.1-flash",
       "grok-4.7-fast",
       "claude-haiku-5.5"
+    ],
+    "assignment_policy": "curated_only",
+    "frontier_families": [
+      "fable",
+      "opus",
+      "astra",
+      "sol"
+    ]
+  },
+  "curated": {
+    "fast": [
+      "glm-5.3-flash",
+      "minimax-3.1-flash",
+      "claude-haiku-5.5",
+      "grok-4.7-fast"
+    ],
+    "middle": [
+      "glm-5.3",
+      "gpt-6.1-terra",
+      "claude-sonnet-5.5",
+      "grok-4.7"
+    ],
+    "frontier": [
+      "gpt-6-astra",
+      "gpt-6.1-sol",
+      "claude-fable-5.2",
+      "claude-opus-5.5"
     ]
   }
 }

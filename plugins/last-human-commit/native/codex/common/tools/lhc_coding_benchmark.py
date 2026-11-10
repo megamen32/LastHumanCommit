@@ -137,6 +137,13 @@ def _family_match(model_id: str, families: list[str]) -> bool:
     return any(_family_tokens(family) <= tokens for family in families if _family_tokens(family))
 
 
+def _explicit_match(model_id: str, configured_id: str) -> bool:
+    """Match a curated provider-local ID to canonical or provider-qualified IDs."""
+    candidate = _norm(model_id)
+    target = _norm(configured_id)
+    return candidate == target or candidate.endswith("-" + target)
+
+
 def _anchor_match(model_id: str, anchors: list[str]) -> bool:
     candidate = _family_tokens(model_id)
     for anchor in anchors:
@@ -180,31 +187,34 @@ def benchmark_thresholds(config: dict[str, Any], manifest: dict[str, Any] | None
         "fast_max": fast_max,
         "frontier_anchor_scores": anchor_scores,
         "missing_frontier_anchors": missing,
+        "metric": (manifest or {}).get("metric", "swebench_pro"),
+        "source": (manifest or {}).get("source", "unavailable"),
+        "assignment_policy": "curated_only",
     }
 
 
 def classify_model(config: dict[str, Any], model_id: str,
                    manifest: dict[str, Any] | None) -> tuple[str | None, str, float | None]:
-    """Classify one model and return ``(class, source, coding_score)``."""
+    """Classify one model and return ``(class, source, coding_score)``.
+
+    Benchmark values are measurements.  They are reported with a model but do
+    not turn an arbitrary live catalog entry into an allowed assignment.  The
+    authoritative set is the curated list, with the explicit Fable/Opus and
+    Astra/Sol family rules retained for newly versioned IDs.
+    """
     scores = _score_index(manifest)
     score = _score_for(model_id, scores)
+    curated = config.get("curated", {})
+    if isinstance(curated, dict):
+        for cls, ids in curated.items():
+            if isinstance(ids, list) and any(_explicit_match(model_id, str(item)) for item in ids):
+                return str(cls), "curated", score
     frontier_anchors = _configured(config, "frontier_anchors", [])
-    thresholds = benchmark_thresholds(config, manifest)
-    frontier_min = thresholds["frontier_min"]
-    fast_max = thresholds["fast_max"]
-
-    # The owner explicitly excludes Luna from frontier.  Keep that as a
-    # stable policy exception even when a future benchmark row happens to sit
-    # above the generic frontier cut; its score still decides fast vs middle.
+    # The owner explicitly excludes Luna from frontier and from the curated
+    # assignment set. Its score is telemetry only.
     never_frontier = _configured(config, "never_frontier_families", ["luna"])
     if _family_match(model_id, never_frontier):
-        if score is not None and fast_max is not None and score <= fast_max:
-            return "fast", "coding_score_fast_excluded_frontier", score
-        if score is not None and (frontier_min is None or score < frontier_min):
-            return "middle", "coding_score_middle", score
-        if score is not None:
-            return "middle", "frontier_excluded_family", score
-        return None, "unclassified", score
+        return None, "benchmark_only" if score is not None else "unclassified", score
 
     frontier_families = _configured(config, "frontier_families", ["fable", "opus"])
     # Fable and Opus are family guarantees; keep their provenance distinct
@@ -212,24 +222,7 @@ def classify_model(config: dict[str, Any], model_id: str,
     if _family_match(model_id, [family for family in frontier_families if family in {"fable", "opus"}]):
         return "frontier", "frontier_family", score
     if _anchor_match(model_id, frontier_anchors):
-        return "frontier", "frontier_anchor", score
+        return "frontier", "frontier_family", score
     if _family_match(model_id, frontier_families):
         return "frontier", "frontier_family", score
-
-    if score is not None and frontier_min is not None and score >= frontier_min:
-        return "frontier", "coding_score_frontier", score
-    if score is not None and fast_max is not None and score <= fast_max:
-        return "fast", "coding_score_fast", score
-    if score is not None and frontier_min is not None and score < frontier_min:
-        return "middle", "coding_score_middle", score
-
-    # No coding score: retain only the non-frontier family fallback for legacy
-    # catalogs.  A model named Luna therefore cannot silently become frontier.
-    fallback = config.get("families", [])
-    for rule in fallback if isinstance(fallback, list) else []:
-        if not isinstance(rule, dict) or rule.get("class") == "frontier":
-            continue
-        match = str(rule.get("match", ""))
-        if match and _family_tokens(match) <= _family_tokens(model_id):
-            return rule.get("class"), "family_fallback", score
-    return None, "unclassified", score
+    return None, "benchmark_only" if score is not None else "unclassified", score

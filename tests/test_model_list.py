@@ -80,7 +80,7 @@ def test_class_of_goes_by_family(model_id, cls):
     assert ml.class_of(ml.load_config(), model_id) == cls
 
 
-def test_coding_thresholds_and_dynamic_classification():
+def test_coding_thresholds_are_measurements_only():
     config = ml.load_config()
     assert ml.benchmark_thresholds(config, BENCHMARK) == {
         "frontier_min": 0.75, "fast_max": 0.35,
@@ -91,10 +91,13 @@ def test_coding_thresholds_and_dynamic_classification():
             "anthropic/claude-opus-5.5": 0.75,
         },
         "missing_frontier_anchors": [],
+        "metric": "swebench_pro",
+        "source": "fixture",
+        "assignment_policy": "curated_only",
     }
-    assert ml.classify_model(config, "gpt-6.1-sol", BENCHMARK) == ("frontier", "frontier_anchor", 0.85)
-    assert ml.classify_model(config, "gpt-6-luna", BENCHMARK) == ("middle", "coding_score_middle", 0.50)
-    assert ml.classify_model(config, "glm-5.3-flash", BENCHMARK) == ("fast", "coding_score_fast", 0.20)
+    assert ml.classify_model(config, "gpt-6.1-sol", BENCHMARK) == ("frontier", "curated", 0.85)
+    assert ml.classify_model(config, "gpt-6-luna", BENCHMARK) == (None, "benchmark_only", 0.50)
+    assert ml.classify_model(config, "glm-5.3-flash", BENCHMARK) == ("fast", "curated", 0.20)
     assert ml.classify_model(config, "claude-fable-unknown", BENCHMARK) == ("frontier", "frontier_family", None)
     assert ml.classify_model(config, "mystery-model", BENCHMARK) == (None, "unclassified", None)
 
@@ -130,9 +133,9 @@ def test_coding_manifest_accepts_normalized_score_field():
 
 def test_missing_manifest_keeps_only_named_frontier_anchors():
     config = ml.load_config()
-    assert ml.classify_model(config, "gpt-6-astra", None)[:2] == ("frontier", "frontier_anchor")
-    assert ml.classify_model(config, "gpt-6.1-sol", None)[:2] == ("frontier", "frontier_anchor")
-    assert ml.classify_model(config, "claude-opus-5.5", None)[:2] == ("frontier", "frontier_family")
+    assert ml.classify_model(config, "gpt-6-astra", None)[:2] == ("frontier", "curated")
+    assert ml.classify_model(config, "gpt-6.1-sol", None)[:2] == ("frontier", "curated")
+    assert ml.classify_model(config, "claude-opus-5.5", None)[:2] == ("frontier", "curated")
     assert ml.classify_model(config, "gpt-6-luna", None)[:2] == (None, "unclassified")
 
 
@@ -151,24 +154,30 @@ def test_shipped_examples_are_the_owners_classes():
     }
 
 
+def test_curated_authoritative_set_has_exactly_twelve_ids():
+    curated = ml.load_config()["curated"]
+    assert {cls: len(ids) for cls, ids in curated.items()} == {"fast": 4, "middle": 4, "frontier": 4}
+    assert len({model_id for ids in curated.values() for model_id in ids}) == 12
+    assert "gpt-6-luna" not in {model_id for ids in curated.values() for model_id in ids}
+
+
 def test_list_models_with_snapshot_classifies_and_reports_quotas():
     config = ml.load_config()
     out = ml.list_models(config, None, available=SNAPSHOT["harnesses"], quotas=SNAPSHOT["quotas"], benchmark=BENCHMARK)
     by = {c["class"]: c["models"] for c in out["classes"]}
     assert out["herder"] == "ok"
-    luna = next(m for c in out["classes"] for m in c["models"] if m["id"] == "gpt-6-luna")
-    assert luna["classification_source"] == "coding_score_middle"
+    luna = next(m for m in out["unclassified"] if m["id"] == "gpt-6-luna")
+    assert luna["classification_source"] == "benchmark_only"
     assert luna["coding_score"] == 0.50
     assert out["classification"]["frontier_min"] == 0.75
     assert out["classification"]["fast_max"] == 0.35
     assert {m["id"] for m in by["frontier"]} == {"gpt-6.1-sol"}
     assert {m["id"] for m in by["fast"]} == {"glm-5.3-flash"}
-    assert {m["id"] for m in by["middle"]} == {"gpt-6-luna", "z-ai/glm-5.3"}
-    assert out["unclassified"] == [{
-        "id": "upstage/solar-pro4",
-        "harnesses": ["opencode"],
-        "classification_source": "unclassified",
-    }]
+    assert {m["id"] for m in by["middle"]} == {"z-ai/glm-5.3"}
+    assert out["unclassified"] == [
+        {"id": "gpt-6-luna", "harnesses": ["codex", "opencode"], "classification_source": "benchmark_only", "coding_score": 0.50},
+        {"id": "upstage/solar-pro4", "harnesses": ["opencode"], "classification_source": "unclassified"},
+    ]
     assert out["quotas"] == SNAPSHOT["quotas"]
 
 
