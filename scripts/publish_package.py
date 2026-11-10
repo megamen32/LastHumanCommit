@@ -209,6 +209,10 @@ def main() -> int:
     if models_source.is_file():
         for target in (PACKAGE / "config/models.json", NATIVE / "config/models.json"):
             write(target, models_source.read_bytes())
+    benchmark_source = ROOT / "src/common/config/coding-benchmarks.json"
+    if benchmark_source.is_file():
+        for target in (PACKAGE / "config/coding-benchmarks.json", NATIVE / "config/coding-benchmarks.json"):
+            write(target, benchmark_source.read_bytes())
 
     # The tool copies: byte for byte under tools/, and with the path of the
     # package under common/tools/.
