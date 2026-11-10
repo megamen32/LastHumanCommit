@@ -1,21 +1,78 @@
 {
   "classes": {
-      "fast": "routine: research, search, reading, polling, waiting, mechanical edits",
-      "middle": "code written by a ready plan",
-      "frontier": "architecture, hard problems, work that dragged on past its estimate"
+    "fast": "routine: research, search, reading, polling, waiting, mechanical edits",
+    "middle": "code written by a ready plan",
+    "frontier": "architecture, hard problems, work that dragged on past its estimate"
   },
-  "models": [
-    {"id": "gpt-6-astra", "class": "frontier", "description": "frontier class, architecture and hard problems"},
-    {"id": "gpt-6.1-sol", "class": "frontier", "description": "frontier class, architecture and hard problems"},
-    {"id": "claude-fable-5.1", "class": "frontier", "description": "frontier class, architecture and hard problems"},
-    {"id": "claude-opus-5.5", "class": "frontier", "description": "frontier class, architecture and hard problems"},
-    {"id": "glm-5.3", "class": "middle", "description": "middle class, code by a ready plan"},
-    {"id": "gpt-6.1-terra", "class": "middle", "description": "middle class, code by a ready plan"},
-    {"id": "claude-sonnet-5.5", "class": "middle", "description": "middle class, code by a ready plan"},
-    {"id": "grok-4.7", "class": "middle", "description": "middle class, code by a ready plan"},
-    {"id": "glm-5.3-flash", "class": "fast", "description": "fast class, routine work"},
-    {"id": "minimax-3.1-flash", "class": "fast", "description": "fast class, routine work"},
-    {"id": "claude-haiku-5.5", "class": "fast", "description": "fast class, routine work"},
-    {"id": "grok-4.7-fast", "class": "fast", "description": "fast class, routine work"}
-  ]
+  "families": [
+    {
+      "match": "flash",
+      "class": "fast"
+    },
+    {
+      "match": "fast",
+      "class": "fast"
+    },
+    {
+      "match": "haiku",
+      "class": "fast"
+    },
+    {
+      "match": "luna",
+      "class": "fast"
+    },
+    {
+      "match": "fable",
+      "class": "frontier"
+    },
+    {
+      "match": "opus",
+      "class": "frontier"
+    },
+    {
+      "match": "astra",
+      "class": "frontier"
+    },
+    {
+      "match": "sol",
+      "class": "frontier"
+    },
+    {
+      "match": "terra",
+      "class": "middle"
+    },
+    {
+      "match": "sonnet",
+      "class": "middle"
+    },
+    {
+      "match": "glm 5 3",
+      "class": "middle"
+    },
+    {
+      "match": "grok 4 7",
+      "class": "middle"
+    }
+  ],
+  "examples": {
+    "fast": [
+      "glm-5.3-flash",
+      "minimax-3.1-flash",
+      "claude-haiku-5.5",
+      "grok-4.7-fast",
+      "gpt-6-luna"
+    ],
+    "middle": [
+      "glm-5.3",
+      "gpt-6.1-terra",
+      "claude-sonnet-5.5",
+      "grok-4.7"
+    ],
+    "frontier": [
+      "gpt-6-astra",
+      "gpt-6.1-sol",
+      "claude-fable-5.2",
+      "claude-opus-5.5"
+    ]
+  }
 }

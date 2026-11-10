@@ -5,7 +5,7 @@ description: Check existing model catalogs, read-only subscription quotas and as
 
 # Available routes, not guessed capacity
 
-Use existing Agent Herder `list_models` and `model_quotas` first. Read their live
+First call LhcPlan `list_models`: it already reads Herder `list_models` and `model_quotas` and classifies the models. For raw fields use Herder's `list_models` and `model_quotas` directly. Read their live
 schemas; retain source, checked_at, relevant raw numeric fields, period/unit/reset
 and the selected route in existing task evidence. This is observation, not a
 reservation: other clients can spend quota after the read. No new MCP or scheduler.
@@ -15,10 +15,7 @@ required tools/vision/context, requested model and actual native execution model
 `reported` means telemetry arrived, not eligible. Unknown is not available. A
 catalog entry or a model name in a prompt does not attest successful execution.
 
-The allowed tiers govern every assignment: tier `fast` is `glm-5.3-flash` and
-`minimax-3.1-flash`, tier `frontier` is `gpt-6-luna`, `glm-5.3` and
-`gpt-6.1-sol`. This list applies wherever a model is chosen for council,
-delegation or focus acceptance.
+The allowed tiers govern every assignment; the classes come from `list_models`. This applies wherever a model is chosen for council, delegation or focus acceptance.
 
 ## The 20% allowance gate
 
@@ -40,7 +37,7 @@ User-approved routes for this installation (recheck live catalog):
 | Tier | Harness | Exact subscription route |
 | --- | --- | --- |
 | frontier | codex | `gpt-6.1-sol` |
-| frontier | opencode | `zai-coding-plan/glm-5.3` |
+| middle | opencode | `zai-coding-plan/glm-5.3` |
 | fast | opencode | `minimax-coding-plan/MiniMax-M3.1-Flash` |
 
 The table is this installation's historical route evidence for reaching those
