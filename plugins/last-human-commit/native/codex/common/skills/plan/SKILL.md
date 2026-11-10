@@ -88,8 +88,7 @@ A plan written without these steps, or with them out of order, is redone.
 
 - `depends_on` only when a leaf reads another leaf's output. Leaves for different
   environments or hosts do not depend on each other.
-- Independent ready leaves of the same kind start together: one Worker per leaf, also when
-  subagents are off. Each Worker gets its own worktree (`lhc_worktree.py create`) and its own
+- Independent ready leaves of the same kind start together: one Worker per leaf. Each Worker gets its own worktree (`lhc_worktree.py create`) and its own
   run directory on shared stands; register it with `worker_register` before it starts. Close
   its leaf with `worker_finish`: it merges the branch into the task branch and removes the
   worktree, the branch and the run directory. A Worker that is not merged and removed is not

@@ -55,11 +55,10 @@ only when a PR is opened, after checking
 its audience. Green checks do not authorize merge. A required approval or
 branch-protection gate is a precise blocker, not a reason to delete work.
 
-Subagents are off by default (`workflow.json` key `subagents`, `lhc_subagents.py`): inside one session the Lead does
-the work itself and self-checks the real scenario on the dev environment. Only on the owner's word in the task
-(«воркеры», «субагенты», «параллельно», «council»), `subagents: on` in `.agents/PROJECT.md` or in
-`~/.config/lhc/workflow.json` (that priority) does the Lead split the work and start Workers in parallel, one per
-leaf, plus a Zero-Knowledge Critic. The Lead is not the cross-session Dispatcher role.
+Subagents are on by default (`workflow.json` key `subagents`, `lhc_subagents.py`): inside one session the Lead splits
+the work and starts Workers in parallel, one per leaf, on the cheapest model class that passes acceptance, plus a
+Zero-Knowledge Critic. Only on the owner's word in the task («без агентов», «без субагентов»), `subagents: off`
+in `.agents/PROJECT.md` or in `~/.config/lhc/workflow.json` (that priority) does the Lead do the work itself. The Lead is not the cross-session Dispatcher role.
 
 ## Bug register, inherited failures and last-worker gate
 
@@ -84,7 +83,11 @@ Use Agent Herder `project_release_lease` with the canonical project `cwd` and
 the actual owner `{hostId, harness, nativeSessionId}`. `status` reports the owner,
 expiry, remaining seconds and the existing `SendMessage` target, never its token.
 
-Acquire just before release, renew only while valid, and `check` the current
+The lease covers the deploy and nothing else. Presence in a project is the session's worktree, branch and Herder
+session; it needs no lease. Never hold the lease while reading, editing source, building, testing or waiting: acquire
+it with the candidate already built and tested, release it as soon as the real scenario is checked.
+
+Acquire just before release, renew only while the deploy itself runs, and `check` the current
 token/fence immediately before mutation. Re-read the live revision and use the
 release entrypoint's expected-revision compare-and-swap. A changed revision or
 expired/stale fence stops that candidate. Do not replace a newer deployment or

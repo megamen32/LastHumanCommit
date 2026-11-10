@@ -196,18 +196,36 @@ def test_commit_always_blockers_removed_and_two_stop_states():
         assert "independent recheck" in text
 
 
-def test_subagents_are_off_by_default_and_the_lead_does_the_work_itself():
+def test_subagents_are_on_by_default_and_the_lead_leads_instead_of_doing_the_leaves():
     router = flat(ROUTER).lower()
     protocol = flat("src/common/protocols/SHARED_WORKTREE.md").lower()
     for text in (router, protocol):
-        assert "subagents are off by default" in text
-        assert "subagents: on" in text and "council" in text
-    assert "l does the work itself" in router
-    assert "the lead does the work itself" in protocol
+        assert "subagents are on by default" in text
+        assert "subagents: off" in text and "без агентов" in text
+        assert "cheapest model class" in text
+    assert "l leads, it does not do the leaves" in router
+    assert "an expensive lead doing routine by hand is a failed turn" in router
     assert "with subagents=on l splits the work and starts workers in parallel" in router
     assert "does no engineering" in router and "one per leaf" in router and "zero-knowledge" in router
-    assert "off by default" in flat("src/common/agents/Lead.md").lower()
-    assert (ROOT / "src/common/config/workflow.json").read_text().count('"subagents": "off"') == 1
+    assert "on by default" in flat("src/common/agents/Lead.md").lower()
+    assert (ROOT / "src/common/config/workflow.json").read_text().count('"subagents": "on"') == 1
+
+
+def test_the_regular_path_comes_first_and_is_never_bypassed():
+    router = flat(ROUTER).lower()
+    assert "## the regular path first" in router
+    assert "read its guide for exactly this operation" in router
+    assert "repair the regular path or park that one operation" in router
+    assert "a bypass needs the owner's word" in router
+
+
+def test_the_release_lease_covers_the_deploy_only():
+    router = flat(ROUTER).lower()
+    protocol = flat("src/common/protocols/SHARED_WORKTREE.md").lower()
+    assert "the release lease is for the deploy only" in router
+    assert "working in a project needs no lease" in router
+    for text in (router, protocol):
+        assert "never hold" in text and "editing source" in text
     for adapter in (ROOT / "adapters").glob("*/templates/subagent.md"):
         assert "off by default" in adapter.read_text(), adapter
 

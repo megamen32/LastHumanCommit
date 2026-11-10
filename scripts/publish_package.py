@@ -29,7 +29,7 @@ NATIVE = PACKAGE / "native" / "codex"
 WORKFLOW_SOURCE = ROOT / "src/common/config/workflow.json"
 
 
-def workflow_config_bytes(stage: str, subagents: str = "off") -> bytes:
+def workflow_config_bytes(stage: str, subagents: str = "on") -> bytes:
     """Build one tiny workflow setting into the native package; no policy service."""
     if stage not in ("on", "off"):
         raise ValueError("pr_stage must be on or off")
@@ -185,7 +185,7 @@ def main() -> int:
 
     source_config = json.loads(WORKFLOW_SOURCE.read_text(encoding="utf-8"))
     pr_stage = args.pr_stage or source_config["pr_stage"]
-    workflow_bytes = workflow_config_bytes(pr_stage, source_config.get("subagents", "off"))
+    workflow_bytes = workflow_config_bytes(pr_stage, source_config.get("subagents", "on"))
 
     stale: list[str] = []
     published = 0
