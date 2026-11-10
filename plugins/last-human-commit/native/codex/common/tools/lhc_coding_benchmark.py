@@ -138,9 +138,8 @@ def _family_match(model_id: str, families: list[str]) -> bool:
 
 
 def _anchor_match(model_id: str, anchors: list[str]) -> bool:
-    candidate = _norm(model_id)
-    return any(candidate == _norm(anchor) or candidate.startswith(_norm(anchor) + "-")
-               for anchor in anchors)
+    candidate = _family_tokens(model_id)
+    return any(_family_tokens(anchor) <= candidate for anchor in anchors if _family_tokens(anchor))
 
 
 def benchmark_thresholds(config: dict[str, Any], manifest: dict[str, Any] | None) -> dict[str, Any]:
@@ -174,8 +173,6 @@ def benchmark_thresholds(config: dict[str, Any], manifest: dict[str, Any] | None
         "fast_max": fast_max,
         "frontier_anchor_scores": anchor_scores,
         "missing_frontier_anchors": missing,
-        "metric": (manifest or {}).get("metric", "swebench_pro"),
-        "source": (manifest or {}).get("source", "unavailable"),
     }
 
 

@@ -164,7 +164,11 @@ def test_list_models_with_snapshot_classifies_and_reports_quotas():
     assert {m["id"] for m in by["frontier"]} == {"gpt-6.1-sol"}
     assert {m["id"] for m in by["fast"]} == {"glm-5.3-flash"}
     assert {m["id"] for m in by["middle"]} == {"gpt-6-luna", "z-ai/glm-5.3"}
-    assert out["unclassified"] == [{"id": "upstage/solar-pro4", "harnesses": ["opencode"]}]
+    assert out["unclassified"] == [{
+        "id": "upstage/solar-pro4",
+        "harnesses": ["opencode"],
+        "classification_source": "unclassified",
+    }]
     assert out["quotas"] == SNAPSHOT["quotas"]
 
 
