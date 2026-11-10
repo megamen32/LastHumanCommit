@@ -23,9 +23,10 @@ STATE_LABELS = {
     'superseded': 'План заменён',
     'legacy': 'Без данных',
 }
+DEFERRED = ('deferred', 'deferred_ai')
 STATE_ORDER = ['active', 'blocked', 'stalled', 'awaiting', 'superseded', 'completed', 'legacy']
 LEAF_LABELS = {'done': 'готово', 'running': 'в работе', 'blocked': 'заблокировано',
-               'waiting': 'ждёт', 'queued': 'в очереди', 'deferred': 'отложено'}
+               'waiting': 'ждёт', 'queued': 'в очереди', 'deferred': 'отложено', 'deferred_ai': 'отложено ИИ'}
 
 
 def parse_time(value):
@@ -50,7 +51,7 @@ def leaf_minutes(task):
 
 def remaining_minutes(tasks, slots, now):
     """Critical path over unfinished leaves, bounded below by work / slots."""
-    open_tasks = {t['id']: t for t in tasks if t.get('status') not in ('done', 'deferred')}
+    open_tasks = {t['id']: t for t in tasks if t.get('status') not in ('done', *DEFERRED)}
     left = {}
     for key, task in open_tasks.items():
         minutes = leaf_minutes(task)
@@ -99,8 +100,8 @@ def summarize(entry, now):
     counted = tasks
     goal_control = goal_projection(doc, tasks)
     goal_status = goal_control['goal_status']
-    pending = [t for t in tasks if t.get('status') not in ('done', 'deferred')]
-    deferred = sum(t.get('status') == 'deferred' for t in tasks)
+    pending = [t for t in tasks if t.get('status') not in ('done', *DEFERRED)]
+    deferred = sum(t.get('status') in DEFERRED for t in tasks)
     done = sum(t.get('status') == 'done' for t in counted)
     running = [t for t in counted if t.get('status') == 'running']
     stopped = [t for t in counted if t.get('status') in ('blocked', 'waiting')]
@@ -149,7 +150,7 @@ def summarize(entry, now):
         nxt = ready[0] if ready else next((t for t in counted if t.get('status') != 'done'), None)
         stage = 'Следующий шаг: ' + (nxt.get('label') or nxt['id']) if nxt else 'Шагов пока нет'
     eta = None
-    pending = [t for t in tasks if t.get('status') not in ('done', 'deferred')]
+    pending = [t for t in tasks if t.get('status') not in ('done', *DEFERRED)]
     unknown_estimate_ids = [t['id'] for t in pending if leaf_minutes(t) is None or t.get('estimate_unknown_reason')]
     known_remaining = remaining_minutes(counted, doc.get('slots'), now)
     if state == 'active' and pending and not unknown_estimate_ids:

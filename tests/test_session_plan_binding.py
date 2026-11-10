@@ -144,7 +144,8 @@ def test_trivial_recon_without_evidence_is_refused_and_with_evidence_passes(tmp_
     _plan(tmp_path, mode="fullcycle", recon=[GOOD[0], GOOD[0], GOOD[1]], acceptance_scenario="замер")
     with pytest.raises(pj.LeafError, match="повторяется"):
         pj.update_leaf(tmp_path, "L01", {"label": "m", "estimate_minutes": 15}, create=True)
-    _plan(tmp_path, mode="fullcycle", recon=GOOD, acceptance_scenario="замер")
+    _plan(tmp_path, mode="fullcycle", recon=GOOD, acceptance_scenario="замер",
+          summary="Один этап.", critique="Критика пройдена.")
     pj.update_leaf(tmp_path, "L01", {"label": "m", "estimate_minutes": 15}, create=True)
 
 

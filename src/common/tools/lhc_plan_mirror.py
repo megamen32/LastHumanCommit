@@ -437,7 +437,7 @@ def activate(plan, leaf_id, *, config_path=None, session=None, harness=None,
     leaf = read(leaf_path)
     if not isinstance(leaf, dict) or leaf.get('id') != leaf_id:
         raise ActivationError('selected leaf does not exist in this plan')
-    if leaf.get('status') in {'done', 'deferred', 'blocked', 'waiting'}:
+    if leaf.get('status') in {'done', 'deferred', 'deferred_ai', 'blocked', 'waiting'}:
         raise ActivationError('selected leaf is not ready to start; resolve its recorded state first')
     try:
         leaves.check_activation(plan, leaf)
@@ -948,7 +948,7 @@ def run_observer(config_path, once=False, *, price_refresh=None):
                         source = False  # Network retry never rereads source files.
                         sync(plan, cfg)
                     tasks = (snapshot.get('document') or {}).get('tasks') or []
-                    inactive = bool(tasks) and all(task.get('status') in ('done', 'deferred') for task in tasks)
+                    inactive = bool(tasks) and all(task.get('status') in ('done', 'deferred', 'deferred_ai') for task in tasks)
                     fallback[plan] = (now + (300 if inactive else 60), before, inactive)
                 except (OSError, ValueError, KeyError, TypeError, urllib.error.URLError) as error:
                     record_error(plan, error)

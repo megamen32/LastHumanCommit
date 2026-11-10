@@ -249,7 +249,7 @@ def comparison(baseline, selected, current, revisions, at, observed=None, parts=
         elapsed = duration(actual, at)
         effort = actual.get("actual_minutes")
         diff = effort - initial if effort is not None and initial is not None else None
-        status = {"running": "в работе", "done": "готово", "queued": "в очереди", "blocked": "заблокировано", "waiting": "ожидание", "deferred": "отложено"}.get(actual.get("status"), "неизвестно")
+        status = {"running": "в работе", "done": "готово", "queued": "в очереди", "blocked": "заблокировано", "waiting": "ожидание", "deferred": "отложено", "deferred_ai": "отложено ИИ"}.get(actual.get("status"), "неизвестно")
         if identity not in by_actual:
             status += " · удалён из текущего плана"
             status += " · последний наблюдённый факт " + observed.get(identity, {}).get("last_seen", "в снимке ревизии")

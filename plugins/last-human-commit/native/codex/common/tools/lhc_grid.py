@@ -81,9 +81,12 @@ STATUS_RUNNING = "running"
 STATUS_BLOCKED = "blocked"
 STATUS_WAITING = "waiting"
 STATUS_DEFERRED = "deferred"
+STATUS_DEFERRED_AI = "deferred_ai"
+# Out of the remaining work: deferred by the owner or by the AI.
+DEFERRED_STATUSES = (STATUS_DEFERRED, STATUS_DEFERRED_AI)
 STATUS_QUEUED = "queued"
 
-STATUSES = (STATUS_DONE, STATUS_RUNNING, STATUS_BLOCKED, STATUS_WAITING, STATUS_DEFERRED, STATUS_QUEUED)
+STATUSES = (STATUS_DONE, STATUS_RUNNING, STATUS_BLOCKED, STATUS_WAITING, STATUS_DEFERRED, STATUS_DEFERRED_AI, STATUS_QUEUED)
 
 STATUS_LABELS = {
     STATUS_DONE: "Готово",
@@ -91,6 +94,7 @@ STATUS_LABELS = {
     STATUS_BLOCKED: "Заблокировано",
     STATUS_WAITING: "Ожидание",
     STATUS_DEFERRED: "Отложено владельцем",
+    STATUS_DEFERRED_AI: "Отложено ИИ",
     STATUS_QUEUED: "В очереди",
 }
 
@@ -100,6 +104,7 @@ STATUS_GLYPHS = {
     STATUS_BLOCKED: "⛔",
     STATUS_WAITING: "⌛",
     STATUS_DEFERRED: "⏸",
+    STATUS_DEFERRED_AI: "⏸",
     STATUS_QUEUED: "⋯",
 }
 
@@ -109,6 +114,7 @@ STATUS_COLORS = {
     STATUS_BLOCKED: "#f25f74",
     STATUS_WAITING: "#f0a742",
     STATUS_DEFERRED: "#b08ce8",
+    STATUS_DEFERRED_AI: "#b08ce8",
     STATUS_QUEUED: "#7c8aa3",
 }
 
@@ -137,6 +143,7 @@ STATUS_CSS_VARS = {
     STATUS_BLOCKED: "var(--st-blocked)",
     STATUS_WAITING: "var(--st-waiting)",
     STATUS_DEFERRED: "var(--st-deferred)",
+    STATUS_DEFERRED_AI: "var(--st-deferred)",
     STATUS_QUEUED: "var(--st-queued)",
 }
 
@@ -432,6 +439,8 @@ class Graph:
     acceptance_scenarios: list[str] = field(default_factory=list)
     # What was found before the plan (facts with their proof); empty in old plans.
     recon: list[str] = field(default_factory=list)
+    # The stages of the plan in plain words for a person, at most one page.
+    summary: str = ""
     current_progress: str = ""
     revisions: list = field(default_factory=list)
     estimate_policy: Optional[dict[str, Any]] = None
@@ -1242,6 +1251,7 @@ def parse_graph_json(document: Any) -> Graph:
     if not isinstance(scenarios, list) or not all(isinstance(item, str) for item in scenarios):
         raise ValueError("acceptance_scenarios должно быть списком строк")
     graph.acceptance_scenarios = list(scenarios)
+    graph.summary = str(document.get("summary") or "")
     recon = document.get("recon") or []
     graph.recon = [str(i).strip() for i in recon if str(i).strip()] if isinstance(recon, list) else []
     graph.current_progress = str(document.get("current_progress") or "")
@@ -1382,6 +1392,8 @@ def normalize_status(value: Any) -> str:
         "waiting": STATUS_WAITING, "wait": STATUS_WAITING, "ожидание": STATUS_WAITING,
         "deferred": STATUS_DEFERRED, "defer": STATUS_DEFERRED, "отложено": STATUS_DEFERRED,
         "отложен": STATUS_DEFERRED, "отложено_владельцем": STATUS_DEFERRED,
+        "deferred_ai": STATUS_DEFERRED_AI, "отложено_ии": STATUS_DEFERRED_AI,
+        "deferred_by_ai": STATUS_DEFERRED_AI,
         "queued": STATUS_QUEUED, "todo": STATUS_QUEUED, "pending": STATUS_QUEUED,
         "в_очереди": STATUS_QUEUED,
     }
@@ -1464,7 +1476,7 @@ def schedule_graph(graph: Graph, use_max: bool = True, only_pending: bool = Fals
     # no slot, no time and no place on the critical path.
     leaves = {
         leaf.id: leaf for leaf in graph.leaves
-        if leaf.status != STATUS_DEFERRED
+        if leaf.status not in DEFERRED_STATUSES
     }
     durations: dict[str, float] = {}
     for leaf in leaves.values():
@@ -1653,6 +1665,7 @@ def build_metrics(graph: Graph) -> dict[str, Any]:
     # A leaf the owner deferred is not owed any more: it is not part of the
     # remainder of the delivery.
     deferred = headline.get(STATUS_DEFERRED, 0)
+    deferred_ai = headline.get(STATUS_DEFERRED_AI, 0)
 
     schedule_max = schedule_graph(graph, use_max=True)
     schedule_min = schedule_graph(graph, use_max=False)
@@ -1664,7 +1677,7 @@ def build_metrics(graph: Graph) -> dict[str, Any]:
     # say "unknown" instead of quietly turning the missing time into zero.
     unknown_estimate_all = [
         leaf for leaf in graph.leaves
-        if leaf.status != STATUS_DEFERRED
+        if leaf.status not in DEFERRED_STATUSES
         and ((leaf.estimate_min is None and leaf.estimate_max is None)
              or leaf.estimate_unknown_reason)
     ]
@@ -1673,7 +1686,7 @@ def build_metrics(graph: Graph) -> dict[str, Any]:
     ]
     known_duration_count = sum(
         1 for leaf in graph.leaves
-        if leaf.status != STATUS_DEFERRED
+        if leaf.status not in DEFERRED_STATUSES
         and (leaf.estimate_min is not None or leaf.estimate_max is not None)
     )
     # The effort, the critical path and the planned peak are whole-plan
@@ -1744,7 +1757,7 @@ def build_metrics(graph: Graph) -> dict[str, Any]:
     # part - and marked as imprecise instead of being hidden behind "unknown".
     pending_with_duration = [
         leaf for leaf in graph.leaves
-        if leaf.status not in (STATUS_DONE, STATUS_DEFERRED)
+        if leaf.status not in (STATUS_DONE, *DEFERRED_STATUSES)
         and (leaf.estimate_min is not None or leaf.estimate_max is not None)
     ]
     eta_bounds_available = bool(pending_with_duration) or bool(waiting_now)
@@ -1767,7 +1780,7 @@ def build_metrics(graph: Graph) -> dict[str, Any]:
         )
     if external_wait_unknown:
         eta_imprecise_reasons.append("срок внешнего ожидания не подтверждён")
-    unfinished = max(0, headline_total - done - deferred)
+    unfinished = max(0, headline_total - done - deferred - deferred_ai)
 
     metrics = {
         "total": total,
@@ -1783,6 +1796,7 @@ def build_metrics(graph: Graph) -> dict[str, Any]:
         "queued": queued,
         "waiting": waiting,
         "deferred": deferred,
+        "deferred_ai": deferred_ai,
         "progress_pct": round(100.0 * done / headline_total, 1) if headline_total else 0.0,
         "graph_progress_pct": round(100.0 * counts[STATUS_DONE] / total, 1) if total else 0.0,
         "effort_minutes": effort,
@@ -1886,7 +1900,7 @@ def _legacy_finish(leaves, ceiling):
 def plan_time_frame(graph: Graph, metrics: dict[str, Any]) -> dict[str, Any]:
     reference = absolute_time(graph.snapshot_at) or datetime.now(timezone.utc)
     snapshot = absolute_time(graph.snapshot_at) or absolute_time(graph.updated_at) or reference
-    active = [leaf for leaf in graph.leaves if leaf.status != STATUS_DEFERRED]
+    active = [leaf for leaf in graph.leaves if leaf.status not in DEFERRED_STATUSES]
     completed = bool(active) and all(leaf.status == STATUS_DONE for leaf in active)
     starts = [absolute_time(leaf.started_at) for leaf in graph.leaves]
     starts = [stamp for stamp in starts if stamp and stamp <= reference]
@@ -2183,9 +2197,9 @@ def _leaf_cost(leaf: Leaf, source: dict) -> dict[str, Any]:
         "divergence_pct": None,
         "text": "",
     }
-    if leaf.status == STATUS_DEFERRED:
+    if leaf.status in DEFERRED_STATUSES:
         entry["state"] = "deferred"
-        entry["text"] = "вне сметы · отложено владельцем"
+        entry["text"] = "вне сметы · " + STATUS_LABELS[leaf.status].lower().replace("ии", "ИИ")
         return entry
     if not source.get("ok"):
         entry["state"] = "catalog_unavailable"
@@ -2310,7 +2324,7 @@ def compute_cost(graph: Graph, *, source: Optional[dict] = None) -> dict[str, An
             entries[leaf.id]["usd"]
             for leaf in graph.leaves
             if entries[leaf.id].get("usd") is not None
-            and leaf.status not in (STATUS_DONE, STATUS_DEFERRED)
+            and leaf.status not in (STATUS_DONE, *DEFERRED_STATUSES)
         ),
     )
     declared_values = [
@@ -3169,8 +3183,10 @@ def render_html(
         ("В очереди", str(metrics["queued"]), "сохранённый статус queued", STATUS_QUEUED, True, "queued"),
         ("Отложено владельцем", str(metrics["deferred"]),
          "ответа не ждём, вне остатка", STATUS_DEFERRED, True, "deferred"),
+        ("Отложено ИИ", str(metrics["deferred_ai"]),
+         "причина и условие возврата в результате листа, вне остатка", STATUS_DEFERRED_AI, True, "deferred_ai"),
         ("Осталось", str(metrics["unfinished"]),
-         f"не завершено · отложено владельцем: {metrics['deferred']} (в остаток не входит)",
+         f"не завершено · отложено владельцем: {metrics['deferred']} · отложено ИИ: {metrics['deferred_ai']} (в остаток не входит)",
          STATUS_QUEUED, True, "unfinished"),
         ("Параллельность", f"{metrics['current_parallel']} / {metrics['slots']}",
          f"{peak_hint} · занятых исполнителей {metrics['busy_owners']}"
@@ -3181,7 +3197,7 @@ def render_html(
          eta_hint, STATUS_DONE, False, "forecast"),
         ("Усилие", effort_value, effort_hint, STATUS_QUEUED, False, "effort"),
     ]
-    priority = {key: n for n, key in enumerate(("remaining", "forecast", "parallel", "unfinished", "done", "running", "blocked", "queued", "deferred", "effort"))}
+    priority = {key: n for n, key in enumerate(("remaining", "forecast", "parallel", "unfinished", "done", "running", "blocked", "queued", "deferred", "deferred_ai", "effort"))}
     cards.sort(key=lambda card: priority[card[-1]])
     # Every tile knows the tasks behind it: the owner clicks a number and
     # wants to see them, without leaving the page.
@@ -3189,12 +3205,12 @@ def render_html(
     for leaf in leaves:
         by_status.setdefault(leaf.status, []).append(leaf.id)
     unfinished_ids = [
-        leaf.id for leaf in leaves if leaf.status not in (STATUS_DONE, STATUS_DEFERRED)
+        leaf.id for leaf in leaves if leaf.status not in (STATUS_DONE, *DEFERRED_STATUSES)
     ]
     unknown_ids = [
         leaf.id
         for leaf in leaves
-        if leaf.estimate_min is None and leaf.status not in (STATUS_DONE, STATUS_DEFERRED)
+        if leaf.estimate_min is None and leaf.status not in (STATUS_DONE, *DEFERRED_STATUSES)
     ]
     critical_ids = [leaf.id for leaf in leaves if leaf.id in metrics["critical_path"]]
     # Without a duration on every leaf the critical path is not a fact yet,
@@ -3224,6 +3240,7 @@ def render_html(
         "blocked": by_status.get(STATUS_BLOCKED, []),
         "queued": by_status.get(STATUS_QUEUED, []),
         "deferred": by_status.get(STATUS_DEFERRED, []),
+        "deferred_ai": by_status.get(STATUS_DEFERRED_AI, []),
         "unfinished": unfinished_ids,
         "parallel": wave_ids or [leaf.id for leaf in leaves],
         "remaining": [i for i in unfinished_ids if i not in unknown_ids] or unfinished_ids,
@@ -3353,7 +3370,7 @@ def render_html(
         )
     execution_holds = []
     for leaf in leaves:
-        if leaf.status in {STATUS_DONE, STATUS_DEFERRED} or not leaf.assignment:
+        if leaf.status in {STATUS_DONE, *DEFERRED_STATUSES} or not leaf.assignment:
             continue
         view = execution_view(leaf, execution_readiness.get(leaf.id))
         if view["assignment_state"] not in {"blocked", "delivery_unknown"} and view["wake"].get("state") not in {"blocked", "delivery_blocked", "delivery_unknown"}:
@@ -3467,7 +3484,7 @@ def render_html(
     execution_blocked = list(plan["blocked"])
     blocked_ids = {item["id"] for item in execution_blocked}
     for leaf in leaves:
-        if leaf.id in blocked_ids or leaf.status in {STATUS_DONE, STATUS_DEFERRED}:
+        if leaf.id in blocked_ids or leaf.status in {STATUS_DONE, *DEFERRED_STATUSES}:
             continue
         view = execution_view(leaf, execution_readiness.get(leaf.id))
         if view["assignment_state"] in {"blocked", "delivery_unknown"} or view["wake"].get("state") in {"blocked", "delivery_blocked", "delivery_unknown"}:
@@ -3535,7 +3552,7 @@ def render_html(
     # Leaves are grouped by their stage (milestone); a stage row is closed by
     # default and opens to its leaves.
     reference = absolute_time(graph.snapshot_at) or datetime.now(timezone.utc)
-    final_states = {STATUS_DONE, STATUS_DEFERRED}
+    final_states = {STATUS_DONE, *DEFERRED_STATUSES}
     iso_mode = any(absolute_time(leaf.started_at) for leaf in leaves)
     clock_starts = [] if iso_mode else [parse_clock(leaf.started_at) for leaf in leaves]
     clock_starts = [value for value in clock_starts if value is not None]
@@ -3812,7 +3829,7 @@ def render_html(
     # ----- sessions: saved declarations and observed runtime ----------------
     session_rows = []
     for leaf in leaves:
-        if not (leaf.owner or leaf.session or leaf.harness or leaf.model or leaf.model_class or leaf.assignment) and leaf.status in {STATUS_DONE, STATUS_DEFERRED}:
+        if not (leaf.owner or leaf.session or leaf.harness or leaf.model or leaf.model_class or leaf.assignment) and leaf.status in {STATUS_DONE, *DEFERRED_STATUSES}:
             continue
         view = execution_view(leaf, execution_readiness.get(leaf.id))
         runtime, wake = view["runtime"], view["wake"]
@@ -3932,8 +3949,9 @@ def render_html(
                     f"<dt>Объявлено листом</dt><dd>{escape(fmt_usd(entry['declared_usd']))}"
                     f" <span class='cell-sub'>расхождение {entry['divergence_pct']}%</span></dd>"
                 )
-        elif leaf.status == STATUS_DEFERRED:
-            money_dd = "<dt>Стоимость</dt><dd>вне сметы · лист отложен владельцем</dd>"
+        elif leaf.status in DEFERRED_STATUSES:
+            who = "ИИ" if leaf.status == STATUS_DEFERRED_AI else "владельцем"
+            money_dd = f"<dt>Стоимость</dt><dd>вне сметы · лист отложен {who}</dd>"
         else:
             money_dd = (
                 f"<dt>Стоимость</dt><dd class='plan-none'>"
@@ -4047,7 +4065,7 @@ def render_html(
             meta_parts.append(
                 f"стоимость: {fmt_usd(entry['usd'])} · {entry['tier']} · {entry['label']}"
             )
-        elif leaf.status != STATUS_DEFERRED:
+        elif leaf.status not in DEFERRED_STATUSES:
             meta_parts.append(f"стоимость: {entry.get('text') or PRICE_UNAVAILABLE}")
         # What a leaf in the queue waits for belongs on the row: the owner reads
         # the plan in the open, not in a dialog. A queued leaf without a reason
@@ -4292,6 +4310,11 @@ def render_html(
     scenarios = ''.join(f'<li>{escape(item)}</li>' for item in graph.acceptance_scenarios)
     if graph.recon:
         why_html += '<article class="panel plan-recon"><h2>Что уже есть (разведка)</h2><ul>' + ''.join(f'<li>{escape(item)}</li>' for item in graph.recon) + '</ul></article>'
+    if graph.summary:
+        why_html = (
+            '<article class="panel plan-summary"><h2>Коротко о плане</h2>'
+            f'<p style="white-space:pre-wrap">{escape(graph.summary)}</p></article>' + why_html
+        )
     why_html += '<article class="panel acceptance-scenarios"><h2>Как проверим</h2>' + (f'<ul>{scenarios}</ul>' if scenarios else '<p>Сценарии проверки ещё не описаны</p>') + '</article>'
     why_html += '<p class="hint">Это декларация плана. Статус задач сам по себе не подтверждает приёмку результата.</p>'
     brief_html = f'<div class="brief">{"".join(detail_cards)}</div>' if detail_cards else ""
@@ -5252,6 +5275,7 @@ def render_print_html(graph: Graph, metrics: dict[str, Any]) -> str:
         ("В очереди", str(metrics["queued"])),
         ("Заблокировано", str(metrics["blocked"])),
         ("Отложено владельцем", str(metrics["deferred"])),
+        ("Отложено ИИ", str(metrics["deferred_ai"])),
         ("Осталось", str(metrics["unfinished"])),
         ("Параллельность", f"{metrics['current_parallel']} / {metrics['slots']}"),
         (
@@ -5347,7 +5371,7 @@ def render_print_html(graph: Graph, metrics: dict[str, Any]) -> str:
         sections.append(
             '<section class="wave">\n'
             "<h2>Вне расписания</h2>\n"
-            "<p class='small muted'>отложено владельцем — вне поставки</p>\n"
+            "<p class='small muted'>отложено владельцем или ИИ — вне поставки</p>\n"
             f"{table_html(unscheduled)}</section>\n"
         )
 
@@ -5514,7 +5538,7 @@ def render_leaf_lines(graph: Graph, metrics: dict[str, Any]) -> list[str]:
                     parts.append(f"отстаём: прошло {fmt_minutes(passed)} при оценке {leaf.duration_label}")
         # A deferred leaf is not scheduled: it has no wave, it is outside the
         # remainder of the delivery.
-        parts.append("вне остатка" if leaf.status == STATUS_DEFERRED else f"волна {wave}")
+        parts.append("вне остатка" if leaf.status in DEFERRED_STATUSES else f"волна {wave}")
         parts.append("зависит: " + (", ".join(leaf.depends_on) or "—"))
         if leaf.parallel_with:
             parts.append("параллельно: " + ", ".join(leaf.parallel_with))
@@ -5533,7 +5557,7 @@ def render_leaf_lines(graph: Graph, metrics: dict[str, Any]) -> list[str]:
         # leaf was readable only inside the leaf file.
         if leaf.result:
             lines.append(f"      Результат: {leaf.result}")
-        if leaf.assignment or leaf.status not in {STATUS_DONE, STATUS_DEFERRED}:
+        if leaf.assignment or leaf.status not in {STATUS_DONE, *DEFERRED_STATUSES}:
             lines.extend("      " + line for line in execution_lines(leaf, admission.get(leaf.id)))
     return lines
 
@@ -6623,7 +6647,7 @@ def cost_warnings(graph: Graph, cost: dict[str, Any]) -> list[str]:
         leaf.id
         for leaf in graph.leaves
         if leaf.cost_usd is None
-        and leaf.status != STATUS_DEFERRED
+        and leaf.status not in DEFERRED_STATUSES
         and cost["leaves"].get(leaf.id, {}).get("state") == "priced"
     ]
     if undeclared:

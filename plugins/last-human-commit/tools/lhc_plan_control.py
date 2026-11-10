@@ -75,7 +75,7 @@ def _active_typed_leads(rows, *, include_terminal=False):
     for row in rows:
         assignment = row.get("assignment") or {}
         if not assignment or (not include_terminal and (
-                row.get("status") in {"done", "deferred"}
+                row.get("status") in {"done", "deferred", "deferred_ai"}
                 or assignment.get("state") in {"accepted", "cancelled"})):
             continue
         try:

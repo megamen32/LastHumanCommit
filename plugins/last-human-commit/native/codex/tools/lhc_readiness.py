@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 from typing import Any, Mapping
 
 RUNTIME_MAX_AGE_SECONDS = 300
-_STATUSES = {"queued", "running", "done", "deferred", "blocked", "waiting"}
+_STATUSES = {"queued", "running", "done", "deferred", "deferred_ai", "blocked", "waiting"}
 _IN_FLIGHT = {"dispatching", "submitted", "running"}
 
 

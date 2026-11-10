@@ -25,9 +25,11 @@ STATUS_RUNNING = "running"
 STATUS_BLOCKED = "blocked"
 STATUS_WAITING = "waiting"
 STATUS_DEFERRED = "deferred"
+STATUS_DEFERRED_AI = "deferred_ai"
 STATUS_QUEUED = "queued"
 
-STATUSES = (STATUS_DONE, STATUS_RUNNING, STATUS_BLOCKED, STATUS_WAITING, STATUS_DEFERRED, STATUS_QUEUED)
+STATUSES = (STATUS_DONE, STATUS_RUNNING, STATUS_BLOCKED, STATUS_WAITING, STATUS_DEFERRED, STATUS_DEFERRED_AI,
+            STATUS_QUEUED)
 
 STATUS_LABELS = {
     STATUS_DONE: "Готово",
@@ -35,6 +37,7 @@ STATUS_LABELS = {
     STATUS_BLOCKED: "Заблокировано",
     STATUS_WAITING: "Ожидание",
     STATUS_DEFERRED: "Отложено владельцем",
+    STATUS_DEFERRED_AI: "Отложено ИИ",
     STATUS_QUEUED: "В очереди",
 }
 
@@ -50,6 +53,8 @@ STATUS_ALIASES = {
     "waiting": STATUS_WAITING, "wait": STATUS_WAITING, "ожидание": STATUS_WAITING,
     "deferred": STATUS_DEFERRED, "defer": STATUS_DEFERRED, "отложено": STATUS_DEFERRED,
     "отложен": STATUS_DEFERRED, "отложено_владельцем": STATUS_DEFERRED,
+    "deferred_ai": STATUS_DEFERRED_AI, "отложено_ии": STATUS_DEFERRED_AI,
+    "deferred_by_ai": STATUS_DEFERRED_AI,
     "queued": STATUS_QUEUED, "todo": STATUS_QUEUED, "pending": STATUS_QUEUED,
     "в_очереди": STATUS_QUEUED,
 }
@@ -659,6 +664,12 @@ def render_text(summary: Summary, *, show_slots: bool = False) -> str:
         lines.append(f"Отложено владельцем ({len(deferred_by_owner)}):")
         for task in deferred_by_owner:
             lines.append(f"  - {task.id} «{task.label}» — ответа не ждём")
+    deferred_by_ai = [task for task in graph.tasks if task.status == STATUS_DEFERRED_AI]
+    if deferred_by_ai:
+        lines.append("")
+        lines.append(f"Отложено ИИ ({len(deferred_by_ai)}):")
+        for task in deferred_by_ai:
+            lines.append(f"  - {task.id} «{task.label}» — вернуться по условию из результата листа")
 
     if summary.unknown_status:
         lines.append("")
