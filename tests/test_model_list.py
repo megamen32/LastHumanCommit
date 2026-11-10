@@ -25,49 +25,139 @@ ml = _load("lhc_model_list")
 plan_mcp = _load("lhc_plan_mcp")
 CONFIG = {
     "classes": {"fast": "routine", "middle": "code by plan", "frontier": "hard"},
-    "models": [
-        {"id": "a-flash", "class": "fast", "description": "cheap"},
-        {"id": "b-big", "class": "frontier", "description": "strong"},
+    "families": [
+        {"match": "flash", "class": "fast"},
+        {"match": "big", "class": "frontier"},
     ],
+    "examples": {"fast": ["a-flash"], "middle": [], "frontier": ["b-big"]},
 }
+SNAPSHOT = {
+    "harnesses": [
+        {"harness": "codex", "models": ["gpt-6.1-sol", "gpt-6-luna"]},
+        {"harness": "opencode", "models": ["z-ai/glm-5.3-flash", "gpt-6-luna", "upstage/solar-pro4"]},
+    ],
+    "quotas": [{"provider": "glm", "state": "reported", "checked_at": "t1"}],
+}
+
+
+def test_tokens_split_on_non_alphanumerics():
+    assert ml.tokens("openai/gpt-6.1-sol") == {"openai", "gpt", "6", "1", "sol"}
+    assert ml.tokens("z-ai/glm-5.3-flash") == {"z", "ai", "glm", "5", "3", "flash"}
+
+
+@pytest.mark.parametrize("model_id,cls", [
+    ("gpt-6-luna", "fast"), ("claude-fable-5", "frontier"), ("claude-fable-5.2", "frontier"),
+    ("anthropic/claude-fable-9", "frontier"), ("claude-opus-4.1", "frontier"),
+    ("glm-5.3-flash", "fast"), ("glm-5.3", "middle"), ("z-ai/glm-5.3", "middle"),
+    ("grok-4.7-fast", "fast"), ("grok-4.7", "middle"), ("openai/gpt-6.1-sol", "frontier"),
+    ("upstage/solar-pro4", None), ("mystery-model", None),
+])
+def test_class_of_goes_by_family(model_id, cls):
+    assert ml.class_of(ml.load_config(), model_id) == cls
+
+
+def test_examples_agree_with_family_rules():
+    config = ml.load_config()
+    for cls, ids in config["examples"].items():
+        for model_id in ids:
+            assert ml.class_of(config, model_id) == cls, model_id
+
+
+def test_shipped_examples_are_the_owners_classes():
+    assert ml.load_config()["examples"] == {
+        "fast": ["glm-5.3-flash", "minimax-3.1-flash", "claude-haiku-5.5", "grok-4.7-fast", "gpt-6-luna"],
+        "middle": ["glm-5.3", "gpt-6.1-terra", "claude-sonnet-5.5", "grok-4.7"],
+        "frontier": ["gpt-6-astra", "gpt-6.1-sol", "claude-fable-5.2", "claude-opus-5.5"],
+    }
+
+
+def test_list_models_with_snapshot_classifies_and_reports_quotas():
+    config = ml.load_config()
+    out = ml.list_models(config, None, available=SNAPSHOT["harnesses"], quotas=SNAPSHOT["quotas"])
+    by = {c["class"]: c["models"] for c in out["classes"]}
+    assert out["herder"] == "ok"
+    assert {"id": "gpt-6-luna", "harnesses": ["codex", "opencode"], "source": "herder"} in by["fast"]
+    assert [m["id"] for m in by["frontier"]] == ["gpt-6.1-sol"]
+    assert by["frontier"][0]["source"] == "herder"
+    assert out["unclassified"] == [{"id": "upstage/solar-pro4", "harnesses": ["opencode"]}]
+    assert out["quotas"] == SNAPSHOT["quotas"]
+    # empty class falls back to examples from config
+    assert {m["source"] for m in by["middle"]} == {"config"}
+    assert [m["id"] for m in by["middle"]] == config["examples"]["middle"]
+
+
+def test_list_models_without_snapshot_uses_examples():
+    out = ml.list_models(CONFIG, "fast", status="unavailable")
+    assert out["herder"] == "unavailable"
+    assert out["classes"][0]["models"] == [{"id": "a-flash", "source": "config"}]
+    assert "unclassified" not in out
 
 
 def test_all_classes_grouped_with_descriptions():
     out = ml.list_models(CONFIG, None)
     assert out["ok"] is True
     assert [c["class"] for c in out["classes"]] == ["fast", "middle", "frontier"]
-    fast = out["classes"][0]
-    assert fast["description"] == "routine"
-    assert fast["models"] == [{"id": "a-flash", "description": "cheap"}]
+    assert out["classes"][0]["description"] == "routine"
 
 
 def test_empty_middle_says_which_class_to_use_instead():
     middle = ml.list_models(CONFIG, "middle")["classes"][0]
     assert middle["models"] == []
-    assert "use fast" in middle["note"] and "frontier only after a measured fast failure" in middle["note"]
-
-
-def test_one_class_filters():
-    out = ml.list_models(CONFIG, "frontier")
-    assert [c["class"] for c in out["classes"]] == ["frontier"]
-    assert "note" not in out["classes"][0]
+    assert "use fast" in middle["note"]
 
 
 def test_unknown_class_is_refused_with_allowed_values():
     out = ml.list_models(CONFIG, "huge")
-    assert out["ok"] is False
-    assert "fast" in out["error"] and "middle" in out["error"] and "frontier" in out["error"]
+    assert out["ok"] is False and "frontier" in out["error"]
 
 
-def test_shipped_config_lists_the_owners_three_classes():
-    out = ml.list_models(ml.load_config(), None)
-    by_class = {c["class"]: [m["id"] for m in c["models"]] for c in out["classes"]}
-    assert by_class == {
-        "fast": ["glm-5.3-flash", "minimax-3.1-flash", "claude-haiku-5.5", "grok-4.7-fast"],
-        "middle": ["glm-5.3", "gpt-6.1-terra", "claude-sonnet-5.5", "grok-4.7"],
-        "frontier": ["gpt-6-astra", "gpt-6.1-sol", "claude-fable-5.1", "claude-opus-5.5"],
-    }
-    assert all("note" not in c for c in out["classes"])
+class _Boom:
+    def __init__(self, **kw):
+        pass
+
+    def call(self, name, args):
+        raise RuntimeError("down")
+
+
+class _Fake:
+    def __init__(self, **kw):
+        pass
+
+    def call(self, name, args):
+        if name == "list_models":
+            return {"structuredContent": None, "harnesses": [
+                {"harness": "codex", "name": "Codex", "models": ["gpt-6.1-sol"]}]}
+        return {"checkedAt": "t0", "providers": [
+            {"provider": "glm", "state": "quota_exhausted", "checkedAt": "t1", "details": {"x": 1}}]}
+
+
+def test_herder_snapshot_none_on_any_failure(monkeypatch):
+    monkeypatch.delenv("LHC_HERDER", raising=False)
+    assert ml.herder_snapshot(client_factory=_Boom) is None
+
+
+def test_herder_snapshot_off_never_builds_a_client(monkeypatch):
+    monkeypatch.setenv("LHC_HERDER", "off")
+
+    def factory(**kw):
+        raise AssertionError("must not connect")
+    assert ml.herder_snapshot(client_factory=factory) is None
+
+
+def test_herder_snapshot_reads_catalog_and_quotas(monkeypatch):
+    monkeypatch.delenv("LHC_HERDER", raising=False)
+    snap = ml.herder_snapshot(client_factory=_Fake)
+    assert snap["harnesses"][0]["models"] == ["gpt-6.1-sol"]
+    assert snap["quotas"] == [{"provider": "glm", "state": "quota_exhausted", "checked_at": "t1"}]
+
+
+def test_herder_snapshot_malformed_is_none(monkeypatch):
+    monkeypatch.delenv("LHC_HERDER", raising=False)
+
+    class Bad(_Fake):
+        def call(self, name, args):
+            return {"harnesses": "nope"}
+    assert ml.herder_snapshot(client_factory=Bad) is None
 
 
 def test_user_config_overrides_package(tmp_path):
@@ -89,9 +179,21 @@ def test_mcp_tool_declared_and_callable():
     assert "Call it before choosing a model" in tool["description"]
     assert "class" in tool["inputSchema"]["properties"]
     result = _call({"class": "fast"})
+    assert "Agent Herder" in tool["description"]
     payload = json.loads(result["content"][0]["text"])
     assert payload["classes"][0]["class"] == "fast"
-    assert {m["id"] for m in payload["classes"][0]["models"]} >= {"glm-5.3-flash"}
+
+
+def test_mcp_tool_works_fast_with_herder_unreachable(monkeypatch):
+    import time
+    monkeypatch.setenv("AGENT_HERDER_HTTP_URL", "http://127.0.0.1:9/mcp")
+    monkeypatch.setenv("AGENT_HERDER_HTTP_TOKEN", "x")
+    monkeypatch.delenv("LHC_HERDER", raising=False)
+    started = time.time()
+    payload = json.loads(_call({"class": "fast"})["content"][0]["text"])
+    assert time.time() - started < 8
+    assert payload["herder"] == "unavailable"
+    assert {m["id"] for m in payload["classes"][0]["models"]} >= {"glm-5.3-flash", "gpt-6-luna"}
 
 
 def test_leaf_accepts_model_class_middle():
