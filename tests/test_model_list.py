@@ -46,7 +46,8 @@ def test_tokens_split_on_non_alphanumerics():
 
 
 @pytest.mark.parametrize("model_id,cls", [
-    ("gpt-6-luna", "fast"), ("claude-fable-5", "frontier"), ("claude-fable-5.2", "frontier"),
+    ("gpt-6-luna", "frontier"), ("gpt-6-luna-pro", "frontier"),
+    ("claude-fable-5", "frontier"), ("claude-fable-5.2", "frontier"),
     ("anthropic/claude-fable-9", "frontier"), ("claude-opus-4.1", "frontier"),
     ("glm-5.3-flash", "fast"), ("glm-5.3", "middle"), ("z-ai/glm-5.3", "middle"),
     ("grok-4.7-fast", "fast"), ("grok-4.7", "middle"), ("openai/gpt-6.1-sol", "frontier"),
@@ -65,9 +66,9 @@ def test_examples_agree_with_family_rules():
 
 def test_shipped_examples_are_the_owners_classes():
     assert ml.load_config()["examples"] == {
-        "fast": ["glm-5.3-flash", "minimax-3.1-flash", "claude-haiku-5.5", "grok-4.7-fast", "gpt-6-luna"],
+        "fast": ["glm-5.3-flash", "minimax-3.1-flash", "claude-haiku-5.5", "grok-4.7-fast"],
         "middle": ["glm-5.3", "gpt-6.1-terra", "claude-sonnet-5.5", "grok-4.7"],
-        "frontier": ["gpt-6-astra", "gpt-6.1-sol", "claude-fable-5.2", "claude-opus-5.5"],
+        "frontier": ["gpt-6-astra", "gpt-6.1-sol", "claude-fable-5.2", "claude-opus-5.5", "gpt-6-luna"],
     }
 
 
@@ -76,9 +77,9 @@ def test_list_models_with_snapshot_classifies_and_reports_quotas():
     out = ml.list_models(config, None, available=SNAPSHOT["harnesses"], quotas=SNAPSHOT["quotas"])
     by = {c["class"]: c["models"] for c in out["classes"]}
     assert out["herder"] == "ok"
-    assert {"id": "gpt-6-luna", "harnesses": ["codex", "opencode"], "source": "herder"} in by["fast"]
-    assert [m["id"] for m in by["frontier"]] == ["gpt-6.1-sol"]
-    assert by["frontier"][0]["source"] == "herder"
+    assert {"id": "gpt-6-luna", "harnesses": ["codex", "opencode"], "source": "herder"} in by["frontier"]
+    assert [m["id"] for m in by["frontier"]] == ["gpt-6.1-sol", "gpt-6-luna"]
+    assert all(m["source"] == "herder" for m in by["frontier"])
     assert out["unclassified"] == [{"id": "upstage/solar-pro4", "harnesses": ["opencode"]}]
     assert out["quotas"] == SNAPSHOT["quotas"]
     # empty class falls back to examples from config
@@ -160,6 +161,19 @@ def test_herder_snapshot_malformed_is_none(monkeypatch):
     assert ml.herder_snapshot(client_factory=Bad) is None
 
 
+def test_herder_snapshot_keeps_catalog_when_quota_read_is_malformed(monkeypatch):
+    monkeypatch.delenv("LHC_HERDER", raising=False)
+
+    class CatalogOnly(_Fake):
+        def call(self, name, args):
+            if name == "list_models":
+                return {"harnesses": [{"harness": "codex", "models": ["gpt-6-luna"]}]}
+            return {"providers": "malformed"}
+
+    snap = ml.herder_snapshot(client_factory=CatalogOnly)
+    assert snap == {"harnesses": [{"harness": "codex", "models": ["gpt-6-luna"]}], "quotas": []}
+
+
 def test_user_config_overrides_package(tmp_path):
     (tmp_path / "lhc").mkdir()
     (tmp_path / "lhc" / "models.json").write_text(json.dumps(CONFIG))
@@ -193,7 +207,7 @@ def test_mcp_tool_works_fast_with_herder_unreachable(monkeypatch):
     payload = json.loads(_call({"class": "fast"})["content"][0]["text"])
     assert time.time() - started < 8
     assert payload["herder"] == "unavailable"
-    assert {m["id"] for m in payload["classes"][0]["models"]} >= {"glm-5.3-flash", "gpt-6-luna"}
+    assert {m["id"] for m in payload["classes"][0]["models"]} >= {"glm-5.3-flash"}
 
 
 def test_leaf_accepts_model_class_middle():

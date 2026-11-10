@@ -92,8 +92,17 @@ def herder_snapshot(timeout: float = 3.0, client_factory=None) -> dict | None:
                 isinstance(h, dict) and isinstance(h.get("models", []), list) for h in harnesses):
             return None
         quotas = []
-        for p in client.call("model_quotas", {}).get("providers", []):
-            quotas.append({"provider": p["provider"], "state": p["state"], "checked_at": p.get("checkedAt")})
+        try:
+            raw_quotas = client.call("model_quotas", {}).get("providers", [])
+            if isinstance(raw_quotas, list):
+                for p in raw_quotas:
+                    if not isinstance(p, dict) or not isinstance(p.get("provider"), str):
+                        continue
+                    quotas.append({"provider": p["provider"], "state": p.get("state", "unknown"),
+                                   "checked_at": p.get("checkedAt")})
+        except Exception:
+            # A quota outage must not hide a valid live model catalog.
+            quotas = []
         return {"harnesses": harnesses, "quotas": quotas}
     except Exception:
         return None
