@@ -71,7 +71,7 @@ def _plan_entry(event, root):
         def explicit_open(leaf):
             assignment = leaf.get("assignment")
             return (isinstance(assignment, dict) and assignment.get("state") not in {"accepted", "cancelled"}
-                    and leaf.get("status") not in {"done", "deferred"})
+                    and leaf.get("status") not in {"done", "deferred", "deferred_ai"})
         todo = [leaf for leaf in leaves if leaf.get("status") in {"queued", "running"} or explicit_open(leaf)]
         def bound_here(leaf):
             assignment = leaf.get("assignment") or {}
@@ -920,7 +920,7 @@ def plan_audit(event, root, now=None):
                      "start the independent ones in parallel. Until it is split the tool refuses progress notes on it.")
     cap = _plan_leaf_cap(meta)
     big = [f"{ident} ({int(high)} min)" for ident, leaf in leaves.items()
-           if leaf.get("kind") != "milestone" and leaf.get("status") not in {"done", "deferred"}
+           if leaf.get("kind") != "milestone" and leaf.get("status") not in {"done", "deferred", "deferred_ai"}
            and not leaf.get("estimate_over_limit_reason")
            for high in [_estimate_max(leaf)] if high and high > cap]
     if big and _due(session, "audit-cap-" + plan.name + "-" + re.sub(r"[^A-Za-z0-9]+", "-", "-".join(sorted(big))),
@@ -932,9 +932,9 @@ def plan_audit(event, root, now=None):
                      "id). One leaf per object (environment, host, service).")
     pending = []
     for index, stage in enumerate(stages):
-        if stage["children"] or stage["status"] in {"done", "deferred"}:
+        if stage["children"] or stage["status"] in {"done", "deferred", "deferred_ai"}:
             continue
-        if all(other["status"] in {"done", "deferred"} for other in stages[:index]):
+        if all(other["status"] in {"done", "deferred", "deferred_ai"} for other in stages[:index]):
             pending.append(stage["id"])
         break
     if pending and _due(session, "audit-stage-" + plan.name + "-" + pending[0], now, 3600):

@@ -234,6 +234,9 @@ def test_the_markers_of_the_block_are_the_markers_of_the_parser() -> None:
     """A marker means one state in the report and in the parser that reads it."""
 
     for status, glyph in plan_json.STATUS_GLYPHS.items():
+        if status == "deferred_ai":  # shares the ⏸ marker; the parser reads it as deferred
+            assert lhc.GLYPH_STATUS[glyph] == "deferred"
+            continue
         assert lhc.GLYPH_STATUS[glyph] == status, glyph
 
 

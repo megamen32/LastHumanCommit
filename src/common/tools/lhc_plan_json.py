@@ -81,6 +81,9 @@ STATUS_RUNNING = "running"
 STATUS_BLOCKED = "blocked"
 STATUS_WAITING = "waiting"
 STATUS_DEFERRED = "deferred"
+STATUS_DEFERRED_AI = "deferred_ai"
+# Out of the remaining work: deferred by the owner or by the AI.
+DEFERRED_STATUSES = (STATUS_DEFERRED, STATUS_DEFERRED_AI)
 STATUS_DONE = "done"
 
 STATUSES = (
@@ -89,6 +92,7 @@ STATUSES = (
     STATUS_BLOCKED,
     STATUS_WAITING,
     STATUS_DEFERRED,
+    STATUS_DEFERRED_AI,
     STATUS_QUEUED,
 )
 
@@ -121,6 +125,9 @@ STATUS_ALIASES = {
     "отложен": STATUS_DEFERRED,
     "отложено_владельцем": STATUS_DEFERRED,
     "⏸": STATUS_DEFERRED,
+    "deferred_ai": STATUS_DEFERRED_AI,
+    "отложено_ии": STATUS_DEFERRED_AI,
+    "deferred_by_ai": STATUS_DEFERRED_AI,
     "queued": STATUS_QUEUED,
     "todo": STATUS_QUEUED,
     "pending": STATUS_QUEUED,
@@ -1071,7 +1078,7 @@ def _milestone_status(statuses: list) -> str:
 
     if "blocked" in statuses:
         return "blocked"
-    if all(item in ("done", "deferred") for item in statuses):
+    if all(item in ("done", *DEFERRED_STATUSES) for item in statuses):
         return "done" if "done" in statuses else "deferred"
     if "running" in statuses or "done" in statuses:
         return "running"
@@ -1149,7 +1156,7 @@ def split_milestones(tasks, sources=None, strict=True):
         if ids:
             status = _milestone_status([str(by_id[item].get("status")) for item in ids])
         else:
-            status = "deferred" if task.get("status") == "deferred" else "queued"
+            status = task["status"] if task.get("status") in DEFERRED_STATUSES else "queued"
             task["status"] = status
             task["label"] = "Этап · " + label
         milestones.append({
@@ -1297,6 +1304,7 @@ STATUS_GLYPHS = {
     STATUS_BLOCKED: "⛔",
     STATUS_WAITING: "⌛",
     STATUS_DEFERRED: "⏸",
+    STATUS_DEFERRED_AI: "⏸",
     STATUS_QUEUED: "⏳",
 }
 
@@ -1308,6 +1316,7 @@ GROUP_ORDER = (
     STATUS_BLOCKED,
     STATUS_WAITING,
     STATUS_DEFERRED,
+    STATUS_DEFERRED_AI,
     STATUS_QUEUED,
 )
 
@@ -1481,8 +1490,8 @@ def render_leaf_line(task: dict[str, Any]) -> str:
         if reason:
             fields.append("потому что " + reason)
         fields.append(estimate_text(task))
-    elif status == STATUS_DEFERRED:
-        fields.append("владелец отложил лист")
+    elif status in DEFERRED_STATUSES:
+        fields.append("ИИ отложил лист" if status == STATUS_DEFERRED_AI else "владелец отложил лист")
         fields.append(estimate_text(task))
     elif status == STATUS_BLOCKED:
         fields.append(estimate_text(task))
@@ -2093,6 +2102,11 @@ def update_leaf(plan_dir: Path, leaf_id: str, fields: dict, *, create=False,
                        "session": who.get("session_id") or "unknown",
                        "harness": who.get("harness") or "unknown"})
         merged["progress_events"] = events
+        if (merged.get("status") == STATUS_DEFERRED_AI and raw.get("status") != STATUS_DEFERRED_AI
+                and not str(merged.get("result") or "").strip()):
+            raise LeafError(
+                f"лист {leaf_id}: статус deferred_ai (отложено ИИ) требует непустой result: "
+                "передай result «отложено ИИ: <причина> · вернуться, когда <условие>»")
         candidate = task_from_leaf(merged, path)
         tasks = [t for t in collect_leaves(plan_dir) if t["id"] != leaf_id] if (Path(plan_dir) / LEAVES_DIRNAME).is_dir() and any((Path(plan_dir) / LEAVES_DIRNAME).glob("*.json")) else []
         check_leaf_gates(plan_dir, candidate, create=create,
@@ -2198,7 +2212,7 @@ def plan_intent(metadata: dict[str, Any]) -> str:
 
 def undecomposed_stages(milestones: list[dict[str, Any]]) -> list[str]:
     return [str(stage["id"]) for stage in milestones
-            if not stage.get("children") and stage.get("status") != "deferred"]
+            if not stage.get("children") and stage.get("status") not in DEFERRED_STATUSES]
 
 
 def handoff_findings(document: dict[str, Any]) -> list[str]:
@@ -2208,7 +2222,7 @@ def handoff_findings(document: dict[str, Any]) -> list[str]:
         findings += [f"{ident}: этап не разложен на исполнимые листья"
                      for ident in undecomposed_stages(document.get("milestones", []))]
     for task in document.get("tasks", []):
-        if task.get("kind") == "milestone" or task.get("status") == "deferred":
+        if task.get("kind") == "milestone" or task.get("status") in DEFERRED_STATUSES:
             continue
         missing = [key for key in ("description", "acceptance") if not str(task.get(key) or "").strip()]
         if missing:
