@@ -155,6 +155,7 @@ TOOL_COPIES = (
     "lhc_dispatcher.py",
     "lhc_overseer_ack.py",
     "lhc_subagents.py",
+    "lhc_model_list.py",
     "lhc_plan_catalog.py",
     "lhc_plan_mcp.py",
     "lhc_plan_ui.py",
@@ -203,6 +204,10 @@ def main() -> int:
     # mutating source or weakening another installation.
     for target in (PACKAGE / "config/workflow.json", NATIVE / "config/workflow.json"):
         write(target, workflow_bytes)
+    models_source = ROOT / "src/common/config/models.json"
+    if models_source.is_file():
+        for target in (PACKAGE / "config/models.json", NATIVE / "config/models.json"):
+            write(target, models_source.read_bytes())
 
     # The tool copies: byte for byte under tools/, and with the path of the
     # package under common/tools/.

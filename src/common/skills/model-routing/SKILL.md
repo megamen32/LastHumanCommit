@@ -65,6 +65,7 @@ accept permissions while configuring model routing.
 
 ## Resolve the actual options
 
+The models available now, with class and description: LhcPlan MCP `list_models` (`config/models.json`).
 Start from the active harness's available model catalog, recent verified results,
 quota/rate limits and required capabilities (tools, vision, context, structured
 output, latency). `../../config/model-routing.example.json` supplies the allowed
@@ -85,14 +86,14 @@ allowlist.
 ## Leaf complexity to fitting model class
 
 Every leaf card carries the two plan-kernel enums the collector accepts:
-`tier` (`fast`|`frontier`) and `complexity` (`S`|`M`|`L`). These are the only
+`tier` (`fast`|`middle`|`frontier`) and `complexity` (`S`|`M`|`L`). These are the only
 accepted spellings; a leaf does not invent a fourth class. The table maps the
 Lead's complexity judgment to the fitting class:
 
 | Leaf complexity | What the leaf is | Fitting `tier` |
 |---|---|---|
 | S | wording, document and formulation fixes, mechanical edits, read-and-report work, changes pinned by existing tests | `fast` |
-| M | one bounded implementation slice with a clear acceptance check and contained risk | `fast`; `frontier` only when a required capability is missing there or a measured fast-tier failure says so |
+| M | one bounded implementation slice with a clear acceptance check and contained risk | `middle`; while `list_models` shows middle empty, `fast`; `frontier` only when a required capability is missing there or a measured fast-tier failure says so |
 | L | architecture choices, coordinated cross-slice changes, risky or irreversible repairs, decisions the plan hinges on | `frontier` |
 
 No model names or dollar figures belong in this table. The price of a class is
