@@ -8,7 +8,7 @@
   "created_at": "2026-11-10T14:35:28-08:00",
   "session": "01a1c578-97fe-7133-9350-8bf8c152702c",
   "harness": "codex",
-  "updated_at": "2026-11-10T14:57:27-08:00",
+  "updated_at": "2026-11-10T15:10:00-08:00",
   "progress_events": [
     {
       "at": "2026-11-10T14:35:28-08:00",
@@ -44,7 +44,24 @@
       },
       "session": "6af39c16-1cb4-8191-8426-7d5c0ea10034",
       "harness": "codex"
+    },
+    {
+      "at": "2026-11-10T15:10:00-08:00",
+      "note": "",
+      "changes": {
+        "status": "deferred_ai",
+        "result": "GPTAdmin https://mcp.bezrabotnyi.com/mcp возвращает UNAVAILABLE / Connection failed до dispatch с 22:57 UTC. Вернуться, когда канал восстановится. Завершить штатную native-установку и проверку доверия точных хуков, не меняя auth M1 и не перезапуская пользовательские чаты."
+      },
+      "actor": {
+        "host_id": null,
+        "harness": "codex",
+        "session_id": "6af39c16-1cb4-8191-8426-7d5c0ea10034",
+        "source": "native_environment"
+      },
+      "session": "6af39c16-1cb4-8191-8426-7d5c0ea10034",
+      "harness": "codex"
     }
   ],
-  "status": "queued"
+  "status": "deferred_ai",
+  "result": "GPTAdmin https://mcp.bezrabotnyi.com/mcp возвращает UNAVAILABLE / Connection failed до dispatch с 22:57 UTC. Вернуться, когда канал восстановится. Завершить штатную native-установку и проверку доверия точных хуков, не меняя auth M1 и не перезапуская пользовательские чаты."
 }

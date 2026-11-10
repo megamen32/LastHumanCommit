@@ -8,7 +8,7 @@
   "created_at": "2026-11-10T14:35:29-08:00",
   "session": "01a1c578-97fe-7133-9350-8bf8c152702c",
   "harness": "codex",
-  "updated_at": "2026-11-10T14:57:27-08:00",
+  "updated_at": "2026-11-10T15:10:00-08:00",
   "progress_events": [
     {
       "at": "2026-11-10T14:35:29-08:00",
@@ -43,7 +43,24 @@
       },
       "session": "6af39c16-1cb4-8191-8426-7d5c0ea10034",
       "harness": "codex"
+    },
+    {
+      "at": "2026-11-10T15:10:00-08:00",
+      "note": "",
+      "changes": {
+        "status": "deferred_ai",
+        "result": "GPTAdmin https://mcp.bezrabotnyi.com/mcp возвращает UNAVAILABLE / Connection failed до dispatch с 22:57 UTC. Вернуться, когда канал восстановится. Выполнить обычный русский запрос в уже созданном изолированном canary thread 01a1c7aa-b80d-70c0-ba91-b9c75150966c; сейчас доказана только проверка standalone MCP/entry, а не пользовательский ответ в native-сессии."
+      },
+      "actor": {
+        "host_id": null,
+        "harness": "codex",
+        "session_id": "6af39c16-1cb4-8191-8426-7d5c0ea10034",
+        "source": "native_environment"
+      },
+      "session": "6af39c16-1cb4-8191-8426-7d5c0ea10034",
+      "harness": "codex"
     }
   ],
-  "status": "queued"
+  "status": "deferred_ai",
+  "result": "GPTAdmin https://mcp.bezrabotnyi.com/mcp возвращает UNAVAILABLE / Connection failed до dispatch с 22:57 UTC. Вернуться, когда канал восстановится. Выполнить обычный русский запрос в уже созданном изолированном canary thread 01a1c7aa-b80d-70c0-ba91-b9c75150966c; сейчас доказана только проверка standalone MCP/entry, а не пользовательский ответ в native-сессии."
 }
