@@ -151,3 +151,17 @@ Status: done and installed as `53e883d`
   unknown and a prompt can answer without spawning a child. Require a real
   child event that proves role, actual model, fresh-context boundary, and
   returned result before claiming `gpt-5.4-mini` or any other model is routable.
+
+## Backlog
+
+One line per item: `- [ ] YYYY-MM-DD <what> (<source>)`. The date is the deadline (default: added + 2 weeks).
+Overdue lines are taken into the current full cycle without a reminder.
+
+- [ ] 2026-11-24 Plan status «отложено ИИ» as its own state next to «отложено владельцем» in lhc_plan_json, lhc_grid, lhc_parallel and the plan page; today it is only a prefix of the leaf result (owner, 2026-11-10)
+- [ ] 2026-11-24 MCP tool that returns the models available now with class (fast/middle/frontier) and a one-line description; add the middle class to lhc_models.py, which knows only fast and frontier (owner, 2026-11-10)
+- [ ] 2026-11-24 Plan field `summary` (stages in plain words, one page) shown at the top of the plan page; check that the Gantt shows stages collapsed over their leaves on the live site (owner, 2026-11-10)
+- [ ] 2026-11-24 Hook at full-cycle start that prints overdue backlog lines and overdue `LHC:LEGACY` marks, so the sweep does not depend on the agent remembering (owner, 2026-11-10)
+- [ ] 2026-11-24 test2git: select tests by `LHC:COVERS` instead of the full suite per subproject, and support runners other than pytest (owner, 2026-11-10)
+- [ ] 2026-11-24 Plan tools refuse stages before `recon` and a critique revision exist, so the planning order is enforced by the tool, not by memory (owner, 2026-11-10)
+- [ ] 2026-11-24 Split LHC's own files over 1000 lines (lhc_grid.py, lhc_plan_json.py, lhc_models.py, lhc_plan_mcp.py) by job, per protocols/CODE.md (owner, 2026-11-10)
+- [ ] 2026-11-24 Decide the Overseer's fate: the 30-minute hook already took its role; either the hook calls it or the role is removed (owner, 2026-11-10)

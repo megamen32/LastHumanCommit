@@ -23,29 +23,43 @@ for handoff; otherwise `progressive` keeps the existing stage-by-stage workflow.
 Structural `check` validates the files; `check --handoff` also checks the declared
 handoff requirements. Neither check proves implementation or consumer acceptance.
 
-## 1. Research before you plan: at least 10 minutes
+## 1. The order of planning: no step skipped
 
-Research is the cheapest part of the work and makes the rest cheaper. Spend at least 10
-minutes, more while you still find new objects. Find what exists, what is broken and which
-objects the work touches: environments, hosts, services, endpoints, screens. Put them into
-`recon` (3+ lines `fact :: evidence`) with `mode: fullcycle` and an `acceptance_scenario`.
-Every «needs checking» in `recon` becomes a research leaf with its question.
+A plan written without these steps, or with them out of order, is redone.
 
-## 2. Stages, each ending in a release
+1. **Research, at least 10 minutes**, more while you still find new objects. It is the cheapest part of the
+   work and makes the rest cheaper; use the fast model class for it. Find what exists, what is broken and
+   which objects the work touches: environments, hosts, services, endpoints, screens. Look for an old
+   mechanism that already does the job (`protocols/CODE.md` §1). Put the facts into `recon` (3+ lines
+   `fact :: evidence`) with `mode: fullcycle` and an `acceptance_scenario`. Every «needs checking» in `recon`
+   becomes a research leaf with its question. No stage is written before `recon` is.
+2. **Draft** the route to the owner's result.
+3. **Criticize it** as a stranger would: what is missing, what fails first, what is done twice, what rests on
+   a guess. Fix and repeat until a pass finds nothing. Record the pass as a revision `{reason, summary}`.
+4. **Pareto cut.** Keep the fifth of the work that gives most of the result; everything else leaves the plan
+   and goes into the `ROADMAP.md` backlog with a date. A stage that does not move the acceptance scenario is cut.
+5. **Stages in plain words** (section 2). Only now the plan is shown and work starts.
+6. **Leaves** are cut per stage, when that stage starts, never for the whole plan in advance.
 
-- At the start you cannot know every step, so write the whole route to the owner's result as
-  stages (`kind: milestone`) of at most 45 minutes each, with that estimate. A longer stage is
-  two stages.
-- Leaves of a stage get `parent: <stage id>`. Cut them when you start the stage and add more
-  as the work shows them; the page shows stages and opens each to its leaves.
-- Every stage ends by deploying what already works, so the owner gets value stage by stage:
-  the last leaf of a stage is a release task leaf (a stage holds leaves, never other stages).
-  Example: first the check of Codex and OpenCode on the installed service, then one stage per
-  added environment. Never one big release at the end.
-- With progressive decomposition, cut only the stage you start now. With complete
-  decomposition, prepare executable leaves for every active stage before handoff.
-  A plan with one leaf and no stages is not a plan.
+## 2. Stages first, in words a person reads
+
+- Write the whole route as stages (`kind: milestone`) of at most 45 minutes each, with that estimate. A longer
+  stage is two stages. At the start you cannot know every step, so do not pretend to.
+- A stage label is one sentence in the owner's language saying what will work after it, with no file names,
+  identifiers or jargon: «Бот отвечает на новые посты без задержки», not «refactor scanner dispatch». All
+  stages together fit on one A4 page (about 12 stages at most). This list is the summary of the plan: a person
+  reads it and knows what is being done; if it reads only to an ИИ, rewrite it.
+- Leaves of a stage get `parent: <stage id>`. Cut them when you start the stage and add more as the work
+  shows them; the page shows stages and opens each to its leaves. Decomposition and parallel work are decided
+  inside the stage you are in, so no work is planned before it is needed.
+- Git follows the plan: a leaf closes with a commit, a stage closes with a push of the task branch. Deploy to
+  the test environment and the testers run once, in the last stage, after everything is built; then the PR
+  and the merge. A stage holds leaves, never other stages.
+- With progressive decomposition, cut only the stage you start now. With complete decomposition, prepare
+  executable leaves for every active stage before handoff. A plan with one leaf and no stages is not a plan.
 - A leaf is created before its work starts, never for work already done.
+- A blocked leaf does not stop the plan: mark it, do every other leaf. A leaf left unfinished is `deferred`
+  and its `result` starts with «отложено человеком: …» or «отложено ИИ: <reason> · вернуться, когда <condition>».
 
 ## 3. One leaf per object
 
@@ -159,6 +173,7 @@ rules above, and continue the work. No plan: build one by sections 1–5.
 | Step | Load |
 |---|---|
 | Plan files, commands, the public link | `plan-artifacts` |
+| Writing code | `protocols/CODE.md` |
 | Choosing a model for a Worker | `model-routing` |
 | Fixing a bug | `bugfix-tdd` |
 | Real-use check after deploy | `real-use-testing` |
