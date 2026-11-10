@@ -66,7 +66,7 @@ accept permissions while configuring model routing.
 ## Resolve the actual options
 
 The models available now, with class, coding measurement and description:
-LhcPlan MCP `list_models` (the curated twelve assignments from
+LhcPlan MCP `list_models` (the curated thirteen assignments from
 `config/models.json`, plus Herder's live catalog and quotas when it answers).
 Benchmark cuts are reported for measurement and audit; they do not promote an
 unknown live model into an allowed class.

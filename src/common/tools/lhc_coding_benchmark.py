@@ -210,8 +210,9 @@ def classify_model(config: dict[str, Any], model_id: str,
             if isinstance(ids, list) and any(_explicit_match(model_id, str(item)) for item in ids):
                 return str(cls), "curated", score
     frontier_anchors = _configured(config, "frontier_anchors", [])
-    # The owner explicitly excludes Luna from frontier and from the curated
-    # assignment set. Its score is telemetry only.
+    # Luna is an explicit curated fast assignment when the configured ID is
+    # present (handled above). Other Luna variants remain excluded from
+    # frontier; their scores are telemetry only.
     never_frontier = _configured(config, "never_frontier_families", ["luna"])
     if _family_match(model_id, never_frontier):
         return None, "benchmark_only" if score is not None else "unclassified", score

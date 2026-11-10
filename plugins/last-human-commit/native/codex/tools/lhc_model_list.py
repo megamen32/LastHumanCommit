@@ -35,7 +35,18 @@ def tokens(text: str) -> set[str]:
 
 
 def class_of(config: dict, model_id: str) -> str | None:
-    """Pure: the class of the first family rule whose tokens all occur in the id."""
+    """Pure: resolve an explicit curated ID before legacy family fallbacks."""
+    candidate = str(model_id).strip().lower()
+    curated = config.get("curated", {})
+    if isinstance(curated, dict):
+        for cls, ids in curated.items():
+            if not isinstance(ids, list):
+                continue
+            for configured_id in ids:
+                target = str(configured_id).strip().lower()
+                if target and (candidate == target or candidate.endswith("/" + target)
+                               or candidate.endswith("-" + target)):
+                    return str(cls)
     have = tokens(model_id)
     for rule in config.get("families", []):
         if tokens(rule.get("match", "")) <= have and tokens(rule.get("match", "")):
