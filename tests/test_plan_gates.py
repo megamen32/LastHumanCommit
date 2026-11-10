@@ -26,7 +26,9 @@ def plan(tmp_path, **fields):
 RECON = {"recon": ["файл a.conf задаёт маршрут default через шлюз :: /etc/a.conf",
                    "хост gw: ip rule показывает таблицу 100 для клиента :: ssh gw ip rule show",
                    "сервис xray на узле слушает порт 443 и активен :: systemctl status xray"],
-         "acceptance_scenario": "curl с клиента, в ответе виден IP шлюза"}
+         "acceptance_scenario": "curl с клиента, в ответе виден IP шлюза",
+         "summary": "Этап 1: маршрут. Этап 2: проверка с клиента.",
+         "critique": "Критика: лишних этапов нет; Парето убрало отдельный аудит."}
 
 
 def test_leaf_of_16_minutes_is_refused_and_15_passes(tmp_path):

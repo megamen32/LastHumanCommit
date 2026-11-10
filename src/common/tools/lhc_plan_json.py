@@ -81,6 +81,9 @@ STATUS_RUNNING = "running"
 STATUS_BLOCKED = "blocked"
 STATUS_WAITING = "waiting"
 STATUS_DEFERRED = "deferred"
+STATUS_DEFERRED_AI = "deferred_ai"
+# Out of the remaining work: deferred by the owner or by the AI.
+DEFERRED_STATUSES = (STATUS_DEFERRED, STATUS_DEFERRED_AI)
 STATUS_DONE = "done"
 
 STATUSES = (
@@ -89,6 +92,7 @@ STATUSES = (
     STATUS_BLOCKED,
     STATUS_WAITING,
     STATUS_DEFERRED,
+    STATUS_DEFERRED_AI,
     STATUS_QUEUED,
 )
 
@@ -121,6 +125,9 @@ STATUS_ALIASES = {
     "отложен": STATUS_DEFERRED,
     "отложено_владельцем": STATUS_DEFERRED,
     "⏸": STATUS_DEFERRED,
+    "deferred_ai": STATUS_DEFERRED_AI,
+    "отложено_ии": STATUS_DEFERRED_AI,
+    "deferred_by_ai": STATUS_DEFERRED_AI,
     "queued": STATUS_QUEUED,
     "todo": STATUS_QUEUED,
     "pending": STATUS_QUEUED,
@@ -207,6 +214,8 @@ PLAN_FIELDS = (
     "acceptance_scenarios",
     "acceptance_scenario",
     "recon",
+    "summary",
+    "critique",
     "mode",
     "current_progress",
     "revisions",
@@ -728,6 +737,9 @@ def leaf_estimate_cap(metadata: Optional[dict[str, Any]] = None) -> int:
     return _estimate_policy(metadata["estimate_policy"], Path(PLAN_FILE))["leaf_cap_minutes"]
 
 
+SUMMARY_MAX_CHARS = 3000  # one A4 page of plain words for a person
+
+
 def _plan_fields(raw: dict[str, Any], path: Path) -> dict[str, Any]:
     """The plan-level facts of one file, validated."""
 
@@ -766,6 +778,18 @@ def _plan_fields(raw: dict[str, Any], path: Path) -> dict[str, Any]:
         if not isinstance(value, str) or not value.strip():
             raise LeafError(f"{path}: поле default_model должно быть непустой строкой")
         fields["default_model"] = value.strip()
+    for field in ("summary", "critique"):
+        value = raw.get(field)
+        if value is None:
+            continue
+        if not isinstance(value, str):
+            raise LeafError(f"{path}: поле {field} должно быть строкой")
+        if field == "summary" and len(value.strip()) > SUMMARY_MAX_CHARS:
+            raise LeafError(
+                f"{path}: summary is one page for a person: shorten it to {SUMMARY_MAX_CHARS} characters "
+                f"(now {len(value.strip())})")
+        if value.strip():
+            fields[field] = value.strip()
     for field in ("title", "goal", "business_result", "current_progress",
                   "external_waits", "updated_at", "planned_start_at", "started_at", "finished_at"):
         value = raw.get(field)
@@ -1071,7 +1095,7 @@ def _milestone_status(statuses: list) -> str:
 
     if "blocked" in statuses:
         return "blocked"
-    if all(item in ("done", "deferred") for item in statuses):
+    if all(item in ("done", *DEFERRED_STATUSES) for item in statuses):
         return "done" if "done" in statuses else "deferred"
     if "running" in statuses or "done" in statuses:
         return "running"
@@ -1149,7 +1173,7 @@ def split_milestones(tasks, sources=None, strict=True):
         if ids:
             status = _milestone_status([str(by_id[item].get("status")) for item in ids])
         else:
-            status = "deferred" if task.get("status") == "deferred" else "queued"
+            status = task["status"] if task.get("status") in DEFERRED_STATUSES else "queued"
             task["status"] = status
             task["label"] = "Этап · " + label
         milestones.append({
@@ -1216,6 +1240,8 @@ def build_document(plan_dir: Path) -> dict[str, Any]:
         "business_results": results,
         "acceptance_scenarios": list(metadata.get("acceptance_scenarios") or []),
         "recon": list(metadata.get("recon") or []),
+        "summary": str(metadata.get("summary") or ""),
+        "critique": str(metadata.get("critique") or ""),
         "current_progress": str(metadata.get("current_progress") or ""),
         "deliverable": metadata.get("deliverable", "implementation"),
         "decomposition": metadata.get("decomposition", "progressive"),
@@ -1297,6 +1323,7 @@ STATUS_GLYPHS = {
     STATUS_BLOCKED: "⛔",
     STATUS_WAITING: "⌛",
     STATUS_DEFERRED: "⏸",
+    STATUS_DEFERRED_AI: "⏸",
     STATUS_QUEUED: "⏳",
 }
 
@@ -1308,6 +1335,7 @@ GROUP_ORDER = (
     STATUS_BLOCKED,
     STATUS_WAITING,
     STATUS_DEFERRED,
+    STATUS_DEFERRED_AI,
     STATUS_QUEUED,
 )
 
@@ -1481,8 +1509,8 @@ def render_leaf_line(task: dict[str, Any]) -> str:
         if reason:
             fields.append("потому что " + reason)
         fields.append(estimate_text(task))
-    elif status == STATUS_DEFERRED:
-        fields.append("владелец отложил лист")
+    elif status in DEFERRED_STATUSES:
+        fields.append("ИИ отложил лист" if status == STATUS_DEFERRED_AI else "владелец отложил лист")
         fields.append(estimate_text(task))
     elif status == STATUS_BLOCKED:
         fields.append(estimate_text(task))
@@ -1539,6 +1567,9 @@ def report_block_of(document: dict[str, Any]) -> str:
         results = [str(document["business_result"]).strip()]
     for result in results:
         lines.append(f"Бизнес-результат: {result}")
+    if document.get("summary"):
+        lines.append("Коротко о плане:")
+        lines.extend("  " + row for row in str(document["summary"]).splitlines())
     for scenario in document.get('acceptance_scenarios', []):
         lines.append(f"Как проверим: {scenario}")
     lines.append(
@@ -1812,9 +1843,30 @@ def _plan_gate_state(plan_dir: Path) -> dict[str, Any]:
     scenario = (isinstance(one, str) and one.strip()) or (
         isinstance(many, list) and any(isinstance(i, str) and i.strip() for i in many))
     return {"fullcycle": fullcycle,
+            "summary": str(raw.get("summary") or "").strip(),
+            "critique": str(raw.get("critique") or "").strip(),
             "recon_ok": review["strict"] and bool(scenario),
             "recon_legacy": review["legacy"] and bool(scenario),
             "recon_problem": review["problem"] if raw.get("recon") is not None else ""}
+
+
+def check_planning_order(state: dict[str, Any], candidate: dict[str, Any],
+                         others: list[dict[str, Any]]) -> None:
+    """The first executable leaf of a fullcycle plan needs `critique` and `summary`.
+
+    Presence only. A plan that already has an executable leaf is never blocked."""
+
+    if not state["fullcycle"] or candidate.get("kind") in ("milestone", "research"):
+        return
+    if any(t.get("kind") not in ("milestone", "research") for t in others):
+        return
+    for field, what in (("critique", "что нашла критика плана и что убрал отбор по Парето"),
+                        ("summary", "этапы плана простыми словами для человека, не больше одной страницы")):
+        if not state[field]:
+            raise LeafError(
+                f"первый исполнимый лист fullcycle-плана требует заполненного поля {field} ({what}). "
+                f"Вызови update_plan с fields {{\"{field}\": \"...\"}}. Порядок планирования: "
+                "исследование → черновик → критика → отбор по Парето → этапы простыми словами → листья")
 
 
 def check_leaf_gates(plan_dir: Path, candidate: dict[str, Any], *, create: bool,
@@ -1843,6 +1895,7 @@ def check_leaf_gates(plan_dir: Path, candidate: dict[str, Any], *, create: bool,
     if not (state["fullcycle"] or became_plan) or candidate.get("kind") == "milestone":
         return
     if state["recon_ok"]:
+        check_planning_order(state, candidate, others)
         return
     if candidate.get("kind") == "research" and not real:
         return
@@ -2093,6 +2146,11 @@ def update_leaf(plan_dir: Path, leaf_id: str, fields: dict, *, create=False,
                        "session": who.get("session_id") or "unknown",
                        "harness": who.get("harness") or "unknown"})
         merged["progress_events"] = events
+        if (merged.get("status") == STATUS_DEFERRED_AI and raw.get("status") != STATUS_DEFERRED_AI
+                and not str(merged.get("result") or "").strip()):
+            raise LeafError(
+                f"лист {leaf_id}: статус deferred_ai (отложено ИИ) требует непустой result: "
+                "передай result «отложено ИИ: <причина> · вернуться, когда <условие>»")
         candidate = task_from_leaf(merged, path)
         tasks = [t for t in collect_leaves(plan_dir) if t["id"] != leaf_id] if (Path(plan_dir) / LEAVES_DIRNAME).is_dir() and any((Path(plan_dir) / LEAVES_DIRNAME).glob("*.json")) else []
         check_leaf_gates(plan_dir, candidate, create=create,
@@ -2198,7 +2256,7 @@ def plan_intent(metadata: dict[str, Any]) -> str:
 
 def undecomposed_stages(milestones: list[dict[str, Any]]) -> list[str]:
     return [str(stage["id"]) for stage in milestones
-            if not stage.get("children") and stage.get("status") != "deferred"]
+            if not stage.get("children") and stage.get("status") not in DEFERRED_STATUSES]
 
 
 def handoff_findings(document: dict[str, Any]) -> list[str]:
@@ -2208,7 +2266,7 @@ def handoff_findings(document: dict[str, Any]) -> list[str]:
         findings += [f"{ident}: этап не разложен на исполнимые листья"
                      for ident in undecomposed_stages(document.get("milestones", []))]
     for task in document.get("tasks", []):
-        if task.get("kind") == "milestone" or task.get("status") == "deferred":
+        if task.get("kind") == "milestone" or task.get("status") in DEFERRED_STATUSES:
             continue
         missing = [key for key in ("description", "acceptance") if not str(task.get(key) or "").strip()]
         if missing:
