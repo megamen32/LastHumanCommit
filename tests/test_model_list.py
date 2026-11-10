@@ -133,9 +133,9 @@ def test_coding_manifest_accepts_normalized_score_field():
 
 def test_missing_manifest_keeps_only_named_frontier_anchors():
     config = ml.load_config()
-    assert ml.classify_model(config, "gpt-6-astra", None)[:2] == ("frontier", "frontier_family")
-    assert ml.classify_model(config, "gpt-6.1-sol", None)[:2] == ("frontier", "frontier_family")
-    assert ml.classify_model(config, "claude-opus-5.5", None)[:2] == ("frontier", "frontier_family")
+    assert ml.classify_model(config, "gpt-6-astra", None)[:2] == ("frontier", "curated")
+    assert ml.classify_model(config, "gpt-6.1-sol", None)[:2] == ("frontier", "curated")
+    assert ml.classify_model(config, "claude-opus-5.5", None)[:2] == ("frontier", "curated")
     assert ml.classify_model(config, "gpt-6-luna", None)[:2] == (None, "unclassified")
 
 
