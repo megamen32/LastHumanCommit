@@ -157,6 +157,8 @@ Status: done and installed as `53e883d`
 One line per item: `- [ ] YYYY-MM-DD <what> (<source>)`. The date is the deadline (default: added + 2 weeks).
 Overdue lines are taken into the current full cycle without a reminder.
 
+- [ ] 2026-11-24 После восстановления GPTAdmin завершить native-установку LHC 1.22.2, проверку доверия хуков и обычный русский запрос в существующем canary, не меняя auth M1 и не перезапуская пользовательские чаты (Codex plan activation, PR #80)
+
 - [x] 2026-11-10 Plan status «отложено ИИ» as its own state next to «отложено владельцем» in lhc_plan_json, lhc_grid, lhc_parallel and the plan page; today it is only a prefix of the leaf result (owner, 2026-11-10)
 - [x] 2026-11-10 MCP tool that returns the models available now with class (fast/middle/frontier) and a one-line description; add the middle class to lhc_models.py, which knows only fast and frontier (owner, 2026-11-10)
 - [x] 2026-11-10 Plan field `summary` (stages in plain words, one page) shown at the top of the plan page; check that the Gantt shows stages collapsed over their leaves on the live site (owner, 2026-11-10)

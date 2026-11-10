@@ -1,0 +1,296 @@
+{
+  "schema_version": 2,
+  "title": "Codex снова показывает общий план LHC",
+  "goal": "Исправить отсутствие общего плана в сессиях Codex и установить подтверждённую причину.",
+  "goal_control": {
+    "goal_status": "unknown",
+    "frontier": "exhausted",
+    "next_decision": "required",
+    "fingerprint": "e2cc2e96f07c18bc68e0eb60f128886409b940082d36d76b37bbdae4829a18cb",
+    "decision_fresh": false,
+    "candidates": [],
+    "decision": null,
+    "reason": "native_outcome_missing"
+  },
+  "business_result": "Обычная просьба показать общий план возвращает все этапы текущего плана и его состояние.",
+  "business_results": [
+    "Обычная просьба показать общий план возвращает все этапы текущего плана и его состояние."
+  ],
+  "acceptance_scenarios": [
+    "После проверки точного установленного пакета hooks/list показывает trusted и enabled; в изолированной реальной Codex-сессии с привязанным тестовым планом обычный русский запрос показывает все этапы. Установщик отказывает в READY при modified хуках."
+  ],
+  "recon": [
+    "На server100 LHC1.22.1 включён, все11 эффективных хуков modified :: native app-server hooks/list 2026-11-11, .tmp/codex-plan-diagnostic-20261111/native-readback-before.json",
+    "На M1 LHC1.20.1 указывает com.openai/hooks/hooks.json, сохранено доверие к hooks/hooks.json :: native config/plugin readback GPTAdmin 2026-11-11",
+    "Установщик проверяет результат native add и восстанавливает пути, но не проверяет готовность hooks :: deploy/plugin-autoupdate/install-codex-plugin.py at375a767",
+    "Последние PR78/79 меняли модели и версию, планирование не затрагивали :: git diff audit origin/main"
+  ],
+  "summary": "1. Исходники и автономная копия пакета 1.22.2: PASS; сохранены полные локальные тесты и receipts/package-copy-consumer-receipts.json с проверкой MCP/entry.\n2. Native установка и проверка доверия отложены ИИ до восстановления GPTAdmin.\n3. Обычный русский запрос в существующем native canary отложен ИИ до восстановления GPTAdmin; standalone MCP/entry не доказывает ответ пользователя.",
+  "critique": "Отвергнуто расширение до глобального реестра проектов: жалоба о плане текущей задачи. Проверяем и установку, и реальный ответ, а не только исходники. Без перезапуска пользовательских сессий и смены авторизации.",
+  "current_progress": "Source и standalone package acceptance: PASS; полный suite 1239 passed, 8 skipped, 6 subtests; standalone MCP/entry: receipts/package-copy-consumer-receipts.json. GPTAdmin https://mcp.bezrabotnyi.com/mcp с 22:57 UTC возвращает UNAVAILABLE / Connection failed до dispatch; L02 и L03 отложены до восстановления канала. Native installation, trust review и ответ на обычный русский запрос ещё не подтверждены; auth M1 и пользовательские чаты не менять.",
+  "deliverable": "implementation",
+  "decomposition": "progressive",
+  "revisions": [
+    {
+      "at": "2026-11-10T15:10:01-08:00",
+      "reason": "Публикация проверенного source-кандидата и фиксация внешней недоступности канала для native acceptance.",
+      "summary": "Source publication: branch fix/codex-plan-runtime-20261111, HEAD 64a2a6d956cfffa7e3af94ffddae2a1f19edd9ca, PR https://github.com/megamen32/LastHumanCommit/pull/80. Standalone package PASS; native install/trust review и canary ожидают восстановления GPTAdmin."
+    }
+  ],
+  "external_waits": "",
+  "slots": 1,
+  "updated_at": "2026-11-10T15:10:01-08:00",
+  "tasks": [
+    {
+      "id": "L01",
+      "label": "Проверить готовность хуков после установки",
+      "status": "done",
+      "parent": "S01",
+      "acceptance": "Процесс native app-server: READY только для enabled trusted; тесты RED/GREEN; нет повторной установки при NEEDS_REVIEW",
+      "result": "Готовность native hooks проверяется read-only: READY только для enabled/trusted; NEEDS_REVIEW/ERROR дают ненулевой код и не запускают повторную установку. Доказательства: receipts/B01–B04 RED/GREEN, receipts/full-suite.txt (1239 passed, 8 skipped); source commits bcd552b, 1464ca4, e1e005b, e4f2947.",
+      "session": "01a1c578-97fe-7133-9350-8bf8c152702c",
+      "harness": "codex",
+      "model": "gpt-6.1-terra",
+      "origin": "",
+      "supersedes": [],
+      "progress_events": [
+        {
+          "at": "2026-11-10T14:35:28-08:00",
+          "note": "",
+          "changes": {
+            "label": "Проверить готовность хуков после установки",
+            "parent": "S01",
+            "estimate_minutes": 15,
+            "model": "gpt-6.1-terra",
+            "acceptance": "Процесс native app-server: READY только для enabled trusted; тесты RED/GREEN; нет повторной установки при NEEDS_REVIEW"
+          },
+          "actor": {
+            "host_id": null,
+            "harness": "codex",
+            "session_id": "01a1c578-97fe-7133-9350-8bf8c152702c",
+            "source": "native_environment"
+          },
+          "session": "01a1c578-97fe-7133-9350-8bf8c152702c",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-11-10T14:57:27-08:00",
+          "note": "",
+          "changes": {
+            "status": "done",
+            "result": "Готовность native hooks проверяется read-only: READY только для enabled/trusted; NEEDS_REVIEW/ERROR дают ненулевой код и не запускают повторную установку. Доказательства: receipts/B01–B04 RED/GREEN, receipts/full-suite.txt (1239 passed, 8 skipped); source commits bcd552b, 1464ca4, e1e005b, e4f2947."
+          },
+          "actor": {
+            "host_id": null,
+            "harness": "codex",
+            "session_id": "6af39c16-1cb4-8191-8426-7d5c0ea10034",
+            "source": "native_environment"
+          },
+          "session": "6af39c16-1cb4-8191-8426-7d5c0ea10034",
+          "harness": "codex"
+        }
+      ],
+      "depends_on": [],
+      "estimate_minutes": {
+        "minimum": 15.0,
+        "maximum": 15.0
+      },
+      "created_at": "2026-11-10T14:35:28-08:00",
+      "finished_at": "2026-11-10T14:57:27-08:00"
+    },
+    {
+      "id": "L02",
+      "label": "Восстановить проверенный пакет и запуск хуков",
+      "status": "deferred_ai",
+      "parent": "S02",
+      "acceptance": "Кандидат 1.22.2 установлен штатным native способом; package identity/version и enabled/trusted hooks подтверждены readback. Это не выполнено в source-проверке.",
+      "result": "GPTAdmin https://mcp.bezrabotnyi.com/mcp возвращает UNAVAILABLE / Connection failed до dispatch с 22:57 UTC. Вернуться, когда канал восстановится. Завершить штатную native-установку и проверку доверия точных хуков, не меняя auth M1 и не перезапуская пользовательские чаты.",
+      "session": "01a1c578-97fe-7133-9350-8bf8c152702c",
+      "harness": "codex",
+      "model": "gpt-6-astra",
+      "origin": "",
+      "supersedes": [],
+      "progress_events": [
+        {
+          "at": "2026-11-10T14:35:28-08:00",
+          "note": "",
+          "changes": {
+            "label": "Восстановить проверенный пакет и запуск хуков",
+            "parent": "S02",
+            "estimate_minutes": 15,
+            "model": "gpt-6-astra",
+            "acceptance": "Сравнение пакета с375a767 и native readback после scoped settings write, сохранены открытые сессии и авторизация"
+          },
+          "actor": {
+            "host_id": null,
+            "harness": "codex",
+            "session_id": "01a1c578-97fe-7133-9350-8bf8c152702c",
+            "source": "native_environment"
+          },
+          "session": "01a1c578-97fe-7133-9350-8bf8c152702c",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-11-10T14:57:27-08:00",
+          "note": "",
+          "changes": {
+            "status": "queued",
+            "acceptance": "Кандидат 1.22.2 установлен штатным native способом; package identity/version и enabled/trusted hooks подтверждены readback. Это не выполнено в source-проверке."
+          },
+          "actor": {
+            "host_id": null,
+            "harness": "codex",
+            "session_id": "6af39c16-1cb4-8191-8426-7d5c0ea10034",
+            "source": "native_environment"
+          },
+          "session": "6af39c16-1cb4-8191-8426-7d5c0ea10034",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-11-10T15:10:00-08:00",
+          "note": "",
+          "changes": {
+            "status": "deferred_ai",
+            "result": "GPTAdmin https://mcp.bezrabotnyi.com/mcp возвращает UNAVAILABLE / Connection failed до dispatch с 22:57 UTC. Вернуться, когда канал восстановится. Завершить штатную native-установку и проверку доверия точных хуков, не меняя auth M1 и не перезапуская пользовательские чаты."
+          },
+          "actor": {
+            "host_id": null,
+            "harness": "codex",
+            "session_id": "6af39c16-1cb4-8191-8426-7d5c0ea10034",
+            "source": "native_environment"
+          },
+          "session": "6af39c16-1cb4-8191-8426-7d5c0ea10034",
+          "harness": "codex"
+        }
+      ],
+      "depends_on": [],
+      "estimate_minutes": {
+        "minimum": 15.0,
+        "maximum": 15.0
+      },
+      "created_at": "2026-11-10T14:35:28-08:00"
+    },
+    {
+      "id": "L03",
+      "label": "Проверить обычный запрос общего плана",
+      "status": "deferred_ai",
+      "parent": "S03",
+      "acceptance": "Свежая тестовая Codex-сессия возвращает все этапы привязанного плана через обычный русский запрос",
+      "result": "GPTAdmin https://mcp.bezrabotnyi.com/mcp возвращает UNAVAILABLE / Connection failed до dispatch с 22:57 UTC. Вернуться, когда канал восстановится. Выполнить обычный русский запрос в уже созданном изолированном canary thread 01a1c7aa-b80d-70c0-ba91-b9c75150966c; сейчас доказана только проверка standalone MCP/entry, а не пользовательский ответ в native-сессии.",
+      "session": "01a1c578-97fe-7133-9350-8bf8c152702c",
+      "harness": "codex",
+      "model": "gpt-6-luna",
+      "origin": "",
+      "supersedes": [],
+      "progress_events": [
+        {
+          "at": "2026-11-10T14:35:29-08:00",
+          "note": "",
+          "changes": {
+            "label": "Проверить обычный запрос общего плана",
+            "parent": "S03",
+            "estimate_minutes": 15,
+            "model": "gpt-6-luna",
+            "acceptance": "Свежая тестовая Codex-сессия возвращает все этапы привязанного плана через обычный русский запрос"
+          },
+          "actor": {
+            "host_id": null,
+            "harness": "codex",
+            "session_id": "01a1c578-97fe-7133-9350-8bf8c152702c",
+            "source": "native_environment"
+          },
+          "session": "01a1c578-97fe-7133-9350-8bf8c152702c",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-11-10T14:57:27-08:00",
+          "note": "",
+          "changes": {
+            "status": "queued"
+          },
+          "actor": {
+            "host_id": null,
+            "harness": "codex",
+            "session_id": "6af39c16-1cb4-8191-8426-7d5c0ea10034",
+            "source": "native_environment"
+          },
+          "session": "6af39c16-1cb4-8191-8426-7d5c0ea10034",
+          "harness": "codex"
+        },
+        {
+          "at": "2026-11-10T15:10:00-08:00",
+          "note": "",
+          "changes": {
+            "status": "deferred_ai",
+            "result": "GPTAdmin https://mcp.bezrabotnyi.com/mcp возвращает UNAVAILABLE / Connection failed до dispatch с 22:57 UTC. Вернуться, когда канал восстановится. Выполнить обычный русский запрос в уже созданном изолированном canary thread 01a1c7aa-b80d-70c0-ba91-b9c75150966c; сейчас доказана только проверка standalone MCP/entry, а не пользовательский ответ в native-сессии."
+          },
+          "actor": {
+            "host_id": null,
+            "harness": "codex",
+            "session_id": "6af39c16-1cb4-8191-8426-7d5c0ea10034",
+            "source": "native_environment"
+          },
+          "session": "6af39c16-1cb4-8191-8426-7d5c0ea10034",
+          "harness": "codex"
+        }
+      ],
+      "depends_on": [],
+      "estimate_minutes": {
+        "minimum": 15.0,
+        "maximum": 15.0
+      },
+      "created_at": "2026-11-10T14:35:29-08:00"
+    }
+  ],
+  "leaf_count": 3,
+  "milestones": [
+    {
+      "id": "S01",
+      "label": "Обновление сообщает, готово ли планирование",
+      "status": "done",
+      "children": [
+        "L01"
+      ],
+      "estimate_minutes": {
+        "minimum": 30.0,
+        "maximum": 30.0
+      },
+      "done": 1,
+      "total": 1
+    },
+    {
+      "id": "S02",
+      "label": "Codex загружает контекст плана",
+      "status": "deferred",
+      "children": [
+        "L02"
+      ],
+      "estimate_minutes": {
+        "minimum": 30.0,
+        "maximum": 30.0
+      },
+      "done": 0,
+      "total": 1
+    },
+    {
+      "id": "S03",
+      "label": "Общий план виден в обычном разговоре",
+      "status": "deferred",
+      "children": [
+        "L03"
+      ],
+      "estimate_minutes": {
+        "minimum": 30.0,
+        "maximum": 30.0
+      },
+      "done": 0,
+      "total": 1
+    }
+  ],
+  "plan_origin": {
+    "at": "2026-11-10T14:35:28-08:00",
+    "source": "leaf_created_at",
+    "leaf_id": "S01",
+    "recorded_at": "2026-11-10T22:35:28.230011+00:00"
+  }
+}

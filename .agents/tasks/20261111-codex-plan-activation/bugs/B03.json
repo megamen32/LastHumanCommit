@@ -1,0 +1,58 @@
+{
+  "created_at": "2026-11-10T22:52:24+00:00",
+  "details": "Закрытый или заблокированный план выпадал из привязки; исправление и независимая проверка сохраняются отдельно от живой установки.",
+  "events": [
+    {
+      "action": "register",
+      "actor": "lead",
+      "at": "2026-11-10T22:52:24+00:00",
+      "changes": {
+        "details": "Закрытый или заблокированный план выпадал из привязки; исправление и независимая проверка сохраняются отдельно от живой установки.",
+        "source": "codex-plan-repair",
+        "status": "open",
+        "title": "Закрытый или заблокированный план выпадал из привязки"
+      }
+    },
+    {
+      "action": "resolve",
+      "actor": "lead",
+      "at": "2026-11-10T22:52:24+00:00",
+      "changes": {
+        "resolution": {
+          "evidence": {
+            "proof_path": "receipts/B03-green.txt",
+            "red_proof_path": "receipts/B03-red.txt",
+            "red_result": "FAILED tests/test_plan_overview.py::test_status_hints_find_indexed_blocked_and_completed_plans",
+            "red_sha256": "64d1f8855bf16024aea84e3a37ee0ae9cc9226e26765ffa9c3e3e6b2c4a1534a",
+            "result": "93 passed, 1 warning in 3.07s",
+            "sha256": "e42be57c33f506c0ccbcef5cf6c9489492e83d6dc44ab0dedc3a690719f990e6",
+            "test_command": "python3 -m pytest -q tests/test_plan_overview.py tests/test_plan_resume_context.py"
+          },
+          "kind": "fixed",
+          "reason": ""
+        },
+        "status": "fixed"
+      }
+    }
+  ],
+  "id": "B03",
+  "owner": "lead",
+  "reporter": "lead",
+  "resolution": {
+    "evidence": {
+      "proof_path": "receipts/B03-green.txt",
+      "red_proof_path": "receipts/B03-red.txt",
+      "red_result": "FAILED tests/test_plan_overview.py::test_status_hints_find_indexed_blocked_and_completed_plans",
+      "red_sha256": "64d1f8855bf16024aea84e3a37ee0ae9cc9226e26765ffa9c3e3e6b2c4a1534a",
+      "result": "93 passed, 1 warning in 3.07s",
+      "sha256": "e42be57c33f506c0ccbcef5cf6c9489492e83d6dc44ab0dedc3a690719f990e6",
+      "test_command": "python3 -m pytest -q tests/test_plan_overview.py tests/test_plan_resume_context.py"
+    },
+    "kind": "fixed",
+    "reason": ""
+  },
+  "source": "codex-plan-repair",
+  "status": "fixed",
+  "title": "Закрытый или заблокированный план выпадал из привязки",
+  "updated_at": "2026-11-10T22:52:24+00:00"
+}

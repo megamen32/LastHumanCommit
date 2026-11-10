@@ -1,0 +1,76 @@
+.....FF                                                                  [100%]
+=================================== FAILURES ===================================
+__________ test_status_hints_find_indexed_blocked_and_completed_plans __________
+
+tmp_path = PosixPath('/workspace/scratch/lasthumancommit/.worktrees/codex-hook-readiness-20261111/.tmp/pytest-7-64787482963b89ef/test_status_hints_find_indexed0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f4d0dc38e00>
+
+    def test_status_hints_find_indexed_blocked_and_completed_plans(tmp_path, monkeypatch):
+        pj = load_module(TOOLS / 'lhc_plan_json.py', name='plan_overview_index')
+        monkeypatch.setenv('XDG_STATE_HOME', str(tmp_path / 'state'))
+        repo = tmp_path / 'repo'
+        (repo / '.git').mkdir(parents=True)
+        unrelated = repo / '.agents/tasks/unrelated'
+        (unrelated / 'leaves').mkdir(parents=True)
+        (unrelated / 'plan.json').write_text('{}')
+        (unrelated / 'leaves/U.json').write_text(json.dumps({'id': 'U', 'status': 'running', 'session': 'another'}))
+        for status in ('blocked', 'done'):
+            base = tmp_path / status
+            base.mkdir()
+            plan = fixture_plan(base, flat=True)
+            leaf_file = plan / 'leaves/L01.json'
+            leaf = json.loads(leaf_file.read_text())
+            leaf.update(status=status, session='session-' + status, blocker='Waiting for review')
+            leaf_file.write_text(json.dumps(leaf))
+            pj.record_session_plan('session-' + status, plan, 'L01')
+            before = contents(plan)
+            event = {'cwd': str(repo), 'session_id': 'session-' + status}
+            found = entry._plan_entry(event, ROOT)
+            assert found['continuation'] is None
+>           assert found['status_plans'] == [str(plan)]
+                   ^^^^^^^^^^^^^^^^^^^^^
+E           KeyError: 'status_plans'
+
+tests/test_plan_overview.py:117: KeyError
+________ test_multiple_bound_plans_are_ambiguous_even_with_active_leaf _________
+
+tmp_path = PosixPath('/workspace/scratch/lasthumancommit/.worktrees/codex-hook-readiness-20261111/.tmp/pytest-7-64787482963b89ef/test_multiple_bound_plans_are_0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f4d0da9bd10>
+
+    def test_multiple_bound_plans_are_ambiguous_even_with_active_leaf(tmp_path, monkeypatch):
+        pj = load_module(TOOLS / 'lhc_plan_json.py', name='plan_overview_index_ambiguous')
+        monkeypatch.setenv('XDG_STATE_HOME', str(tmp_path / 'state'))
+        repo = tmp_path / 'repo'
+        (repo / '.git').mkdir(parents=True)
+        plans = []
+        for status in ('done', 'running'):
+            base = tmp_path / status
+            base.mkdir()
+            plan = fixture_plan(base, flat=True)
+            leaf_file = plan / 'leaves/L01.json'
+            leaf = json.loads(leaf_file.read_text())
+            leaf.update(status=status, session='same-session')
+            leaf_file.write_text(json.dumps(leaf))
+            pj.record_session_plan('same-session', plan, 'L01')
+            plans.append(str(plan))
+        event = {'cwd': str(repo), 'session_id': 'same-session'}
+        found = entry._plan_entry(event, ROOT)
+        assert found['continuation']['plan'] == plans[1]  # continuation behavior remains
+>       assert set(found['status_plans']) == set(plans)
+                   ^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'status_plans'
+
+tests/test_plan_overview.py:149: KeyError
+=============================== warnings summary ===============================
+../../../../../opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/site-packages/anyio/pytest_plugin.py:14
+  /opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/site-packages/anyio/pytest_plugin.py:14: PytestRemovedIn10Warning: _pytest.python.CallSpec2 has been renamed to CallSpec.
+  The CallSpec2 alias will be removed in pytest 10.
+  Update imports to use CallSpec instead.
+  See https://docs.pytest.org/en/stable/deprecations.html#callspec2-renamed
+    from _pytest.python import CallSpec2
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_plan_overview.py::test_status_hints_find_indexed_blocked_and_completed_plans
+FAILED tests/test_plan_overview.py::test_multiple_bound_plans_are_ambiguous_even_with_active_leaf
+2 failed, 5 passed, 1 warning in 0.48s

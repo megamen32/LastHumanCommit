@@ -1,6 +1,6 @@
 ---
 name: plan
-description: Build and keep the plan of any engineering task longer than 15 minutes, and /plan. Load it before the first leaf, when the owner types /plan or asks to fix the plan, and when a leaf runs far past its estimate.
+description: Build and keep the plan of any engineering task longer than 15 minutes, and /plan. Load it before the first leaf, when the owner types /plan or asks to fix, show, or check the overall plan or status (including «покажи общий план» and «план целиком»), and when a leaf runs far past its estimate.
 ---
 
 # Plan
@@ -22,6 +22,15 @@ for execution. Use `decomposition: complete` when the owner wants every stage pr
 for handoff; otherwise `progressive` keeps the existing stage-by-stage workflow.
 Structural `check` validates the files; `check --handoff` also checks the declared
 handoff requirements. Neither check proves implementation or consumer acceptance.
+
+## Show a saved plan
+
+For a request to show the overall plan or its status, resolve the explicitly session-bound
+plan and call `show_plan`. Present the whole ordered stage list with saved states, current
+work and blockers in chat, plus the public plan link; do not answer with only the current
+leaf or a local file. This is read-only: do not create, continue or edit a plan for a status
+request. If no saved plan is bound, say so; an inferred outline may be shown only if labeled
+as inferred. Never select an unrelated plan from the working directory.
 
 ## 1. The order of planning: no step skipped
 

@@ -1,0 +1,51 @@
+{
+  "label": "Проверить готовность хуков после установки",
+  "parent": "S01",
+  "estimate_minutes": 15,
+  "model": "gpt-6.1-terra",
+  "acceptance": "Процесс native app-server: READY только для enabled trusted; тесты RED/GREEN; нет повторной установки при NEEDS_REVIEW",
+  "id": "L01",
+  "created_at": "2026-11-10T14:35:28-08:00",
+  "session": "01a1c578-97fe-7133-9350-8bf8c152702c",
+  "harness": "codex",
+  "updated_at": "2026-11-10T14:57:27-08:00",
+  "progress_events": [
+    {
+      "at": "2026-11-10T14:35:28-08:00",
+      "note": "",
+      "changes": {
+        "label": "Проверить готовность хуков после установки",
+        "parent": "S01",
+        "estimate_minutes": 15,
+        "model": "gpt-6.1-terra",
+        "acceptance": "Процесс native app-server: READY только для enabled trusted; тесты RED/GREEN; нет повторной установки при NEEDS_REVIEW"
+      },
+      "actor": {
+        "host_id": null,
+        "harness": "codex",
+        "session_id": "01a1c578-97fe-7133-9350-8bf8c152702c",
+        "source": "native_environment"
+      },
+      "session": "01a1c578-97fe-7133-9350-8bf8c152702c",
+      "harness": "codex"
+    },
+    {
+      "at": "2026-11-10T14:57:27-08:00",
+      "note": "",
+      "changes": {
+        "status": "done",
+        "result": "Готовность native hooks проверяется read-only: READY только для enabled/trusted; NEEDS_REVIEW/ERROR дают ненулевой код и не запускают повторную установку. Доказательства: receipts/B01–B04 RED/GREEN, receipts/full-suite.txt (1239 passed, 8 skipped); source commits bcd552b, 1464ca4, e1e005b, e4f2947."
+      },
+      "actor": {
+        "host_id": null,
+        "harness": "codex",
+        "session_id": "6af39c16-1cb4-8191-8426-7d5c0ea10034",
+        "source": "native_environment"
+      },
+      "session": "6af39c16-1cb4-8191-8426-7d5c0ea10034",
+      "harness": "codex"
+    }
+  ],
+  "status": "done",
+  "result": "Готовность native hooks проверяется read-only: READY только для enabled/trusted; NEEDS_REVIEW/ERROR дают ненулевой код и не запускают повторную установку. Доказательства: receipts/B01–B04 RED/GREEN, receipts/full-suite.txt (1239 passed, 8 skipped); source commits bcd552b, 1464ca4, e1e005b, e4f2947."
+}

@@ -1,3 +1,4 @@
+# LHC:COVERS deploy/plugin-autoupdate/install-codex-plugin.py
 """A native upgrade may prune old roots while running chats retain their hooks."""
 import importlib.util
 import json
@@ -9,6 +10,11 @@ SCRIPT = Path(__file__).resolve().parents[1] / 'deploy/plugin-autoupdate/install
 spec = importlib.util.spec_from_file_location('lhc_native_install', SCRIPT)
 installer = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(installer)
+
+
+@pytest.fixture(autouse=True)
+def ready_hooks(monkeypatch):
+    monkeypatch.setattr(installer.readiness, 'check', lambda *args: {'status': 'READY'})
 
 
 @pytest.fixture

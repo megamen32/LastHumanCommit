@@ -1,0 +1,116 @@
+FFFF                                                                     [100%]
+=================================== FAILURES ===================================
+___________________ test_native_readback_ready_and_modified ____________________
+
+tmp_path = PosixPath('/workspace/scratch/lasthumancommit/.worktrees/codex-hook-readiness-20261111/.tmp/pytest-6-9f352b6d65255035/test_native_readback_ready_and0')
+
+    def test_native_readback_ready_and_modified(tmp_path):
+        native = fake_codex(tmp_path)
+        ready = run_helper(native)
+>       assert ready.returncode == 0
+E       assert 2 == 0
+E        +  where 2 = CompletedProcess(args=['/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python3', '/workspace/scratc...odex-hook-readiness-20261111/deploy/plugin-autoupdate/codex-hook-readiness.py': [Errno 2] No such file or directory\n").returncode
+
+tests/test_codex_hook_readiness.py:43: AssertionError
+_________________ test_missing_runtime_and_timeout_are_errors __________________
+
+tmp_path = PosixPath('/workspace/scratch/lasthumancommit/.worktrees/codex-hook-readiness-20261111/.tmp/pytest-6-9f352b6d65255035/test_missing_runtime_and_timeo0')
+
+    def test_missing_runtime_and_timeout_are_errors(tmp_path):
+        for result in (run_helper(tmp_path / 'absent'), run_helper(fake_codex(tmp_path, 'timeout'), '0.1')):
+            assert result.returncode != 0
+>           assert json.loads(result.stdout)['status'] == 'ERROR'
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_codex_hook_readiness.py:57: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/json/__init__.py:346: in loads
+    return _default_decoder.decode(s)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/json/decoder.py:338: in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <json.decoder.JSONDecoder object at 0x7fc5af61a3c0>, s = '', idx = 0
+
+    def raw_decode(self, s, idx=0):
+        """Decode a JSON document from ``s`` (a ``str`` beginning with
+        a JSON document) and return a 2-tuple of the Python
+        representation and the index in ``s`` where the document ended.
+    
+        This can be used to decode a JSON document from a string that may
+        have extraneous data at the end.
+    
+        """
+        try:
+            obj, end = self.scan_once(s, idx)
+        except StopIteration as err:
+>           raise JSONDecodeError("Expecting value", s, err.value) from None
+E           json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/json/decoder.py:356: JSONDecodeError
+_______________ test_installer_fails_if_native_hook_needs_review _______________
+
+tmp_path = PosixPath('/workspace/scratch/lasthumancommit/.worktrees/codex-hook-readiness-20261111/.tmp/pytest-6-9f352b6d65255035/test_installer_fails_if_native0')
+
+    def test_installer_fails_if_native_hook_needs_review(tmp_path):
+        spec = importlib.util.spec_from_file_location('installer_readiness_test', INSTALLER)
+        installer = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(installer)
+        cache = tmp_path / 'cache/last-human-commit'
+        cache.mkdir(parents=True)
+        tools = tmp_path / 'source/tools'
+        tools.mkdir(parents=True)
+        for name in installer.compat.REQUIRED:
+            (tools / name).write_text('# hook')
+        (tools.parent / 'plugin.json').write_text('{"name":"last-human-commit"}')
+>       assert installer.install(str(fake_codex(tmp_path, 'modified')), cache, tools) != 0
+E       AssertionError: assert 0 != 0
+E        +  where 0 = <function install at 0x7fc5aebd3b00>('/workspace/scratch/lasthumancommit/.worktrees/codex-hook-readiness-20261111/.tmp/pytest-6-9f352b6d65255035/test_installer_fails_if_native0/codex', PosixPath('/workspace/scratch/lasthumancommit/.worktrees/codex-hook-readiness-20261111/.tmp/pytest-6-9f352b6d65255035/test_installer_fails_if_native0/cache/last-human-commit'), PosixPath('/workspace/scratch/lasthumancommit/.worktrees/codex-hook-readiness-20261111/.tmp/pytest-6-9f352b6d65255035/test_installer_fails_if_native0/source/tools'))
+E        +    where <function install at 0x7fc5aebd3b00> = <module 'installer_readiness_test' from '/workspace/scratch/lasthumancommit/.worktrees/codex-hook-readiness-20261111/deploy/plugin-autoupdate/install-codex-plugin.py'>.install
+E        +    and   '/workspace/scratch/lasthumancommit/.worktrees/codex-hook-readiness-20261111/.tmp/pytest-6-9f352b6d65255035/test_installer_fails_if_native0/codex' = str(PosixPath('/workspace/scratch/lasthumancommit/.worktrees/codex-hook-readiness-20261111/.tmp/pytest-6-9f352b6d65255035/test_installer_fails_if_native0/codex'))
+E        +      where PosixPath('/workspace/scratch/lasthumancommit/.worktrees/codex-hook-readiness-20261111/.tmp/pytest-6-9f352b6d65255035/test_installer_fails_if_native0/codex') = fake_codex(PosixPath('/workspace/scratch/lasthumancommit/.worktrees/codex-hook-readiness-20261111/.tmp/pytest-6-9f352b6d65255035/test_installer_fails_if_native0'), 'modified')
+
+tests/test_codex_hook_readiness.py:71: AssertionError
+----------------------------- Captured stderr call -----------------------------
+{"compatibility_only": true, "versions": []}
+______________ test_updater_does_not_retry_after_wrapper_failure _______________
+
+tmp_path = PosixPath('/workspace/scratch/lasthumancommit/.worktrees/codex-hook-readiness-20261111/.tmp/pytest-6-9f352b6d65255035/test_updater_does_not_retry_af0')
+
+    def test_updater_does_not_retry_after_wrapper_failure(tmp_path):
+        home = tmp_path / 'home'
+        market = home / '.codex/.tmp/marketplaces/megamen32-plugins'
+        (market / 'plugins/last-human-commit/.claude-plugin').mkdir(parents=True)
+        (market / 'plugins/last-human-commit/.claude-plugin/plugin.json').write_text('{}')
+        (market / 'deploy/plugin-autoupdate').mkdir(parents=True)
+        (market / 'deploy/plugin-autoupdate/install-codex-plugin.py').write_text('import sys\nprint("NEEDS_REVIEW", file=sys.stderr)\nsys.exit(1)\n')
+        bin_dir = home / '.local/bin'
+        bin_dir.mkdir(parents=True)
+        calls = tmp_path / 'calls'
+        (bin_dir / 'codex').write_text('#!/bin/sh\necho called >> ' + str(calls) + '\n')
+        (bin_dir / 'codex').chmod(0o755)
+        result = subprocess.run(['bash', str(UPDATER)], env={**os.environ, 'HOME': str(home)}, text=True, capture_output=True)
+        assert result.returncode == 0
+>       assert not calls.exists()
+E       AssertionError: assert not True
+E        +  where True = exists()
+E        +    where exists = PosixPath('/workspace/scratch/lasthumancommit/.worktrees/codex-hook-readiness-20261111/.tmp/pytest-6-9f352b6d65255035/test_updater_does_not_retry_af0/calls').exists
+
+tests/test_codex_hook_readiness.py:88: AssertionError
+=============================== warnings summary ===============================
+../../../../../opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/site-packages/anyio/pytest_plugin.py:14
+  /opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/site-packages/anyio/pytest_plugin.py:14: PytestRemovedIn10Warning: _pytest.python.CallSpec2 has been renamed to CallSpec.
+  The CallSpec2 alias will be removed in pytest 10.
+  Update imports to use CallSpec instead.
+  See https://docs.pytest.org/en/stable/deprecations.html#callspec2-renamed
+    from _pytest.python import CallSpec2
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_codex_hook_readiness.py::test_native_readback_ready_and_modified
+FAILED tests/test_codex_hook_readiness.py::test_missing_runtime_and_timeout_are_errors
+FAILED tests/test_codex_hook_readiness.py::test_installer_fails_if_native_hook_needs_review
+FAILED tests/test_codex_hook_readiness.py::test_updater_does_not_retry_after_wrapper_failure
+4 failed, 1 warning in 0.12s

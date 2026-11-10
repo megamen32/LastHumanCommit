@@ -1,0 +1,58 @@
+{
+  "created_at": "2026-11-10T22:52:23+00:00",
+  "details": "Общий обзор пропускал резюме и этапы; исправление и независимая проверка сохраняются отдельно от живой установки.",
+  "events": [
+    {
+      "action": "register",
+      "actor": "lead",
+      "at": "2026-11-10T22:52:23+00:00",
+      "changes": {
+        "details": "Общий обзор пропускал резюме и этапы; исправление и независимая проверка сохраняются отдельно от живой установки.",
+        "source": "codex-plan-repair",
+        "status": "open",
+        "title": "Общий обзор пропускал резюме и этапы"
+      }
+    },
+    {
+      "action": "resolve",
+      "actor": "lead",
+      "at": "2026-11-10T22:52:23+00:00",
+      "changes": {
+        "resolution": {
+          "evidence": {
+            "proof_path": "receipts/B02-green.txt",
+            "red_proof_path": "receipts/B02-red.txt",
+            "red_result": "E               AssertionError: assert 'Release plan' in 'deliverable: implementation; decomposition: progressive; leaf cap: 15 min\\ngoal=unknown, frontier=active, next_decisi....worktrees/codex-hook-readiness-20261111/.tmp/pytest-6-8b686a5b4a9f264f/test_cli_and_mcp_show_full_sav0/plan/plan.md\\n'",
+            "red_sha256": "61a4331bfa899a6d3d4e883db3f87861765375cd2a862a30a5fdd264ef9e07bb",
+            "result": "90 passed, 1 warning in 2.90s",
+            "sha256": "11c35f4c478599c8837b5a4fddd059e04faa6039324a23c2922c109df90e982d",
+            "test_command": "python3 -m pytest -q tests/test_plan_overview.py"
+          },
+          "kind": "fixed",
+          "reason": ""
+        },
+        "status": "fixed"
+      }
+    }
+  ],
+  "id": "B02",
+  "owner": "lead",
+  "reporter": "lead",
+  "resolution": {
+    "evidence": {
+      "proof_path": "receipts/B02-green.txt",
+      "red_proof_path": "receipts/B02-red.txt",
+      "red_result": "E               AssertionError: assert 'Release plan' in 'deliverable: implementation; decomposition: progressive; leaf cap: 15 min\\ngoal=unknown, frontier=active, next_decisi....worktrees/codex-hook-readiness-20261111/.tmp/pytest-6-8b686a5b4a9f264f/test_cli_and_mcp_show_full_sav0/plan/plan.md\\n'",
+      "red_sha256": "61a4331bfa899a6d3d4e883db3f87861765375cd2a862a30a5fdd264ef9e07bb",
+      "result": "90 passed, 1 warning in 2.90s",
+      "sha256": "11c35f4c478599c8837b5a4fddd059e04faa6039324a23c2922c109df90e982d",
+      "test_command": "python3 -m pytest -q tests/test_plan_overview.py"
+    },
+    "kind": "fixed",
+    "reason": ""
+  },
+  "source": "codex-plan-repair",
+  "status": "fixed",
+  "title": "Общий обзор пропускал резюме и этапы",
+  "updated_at": "2026-11-10T22:52:23+00:00"
+}

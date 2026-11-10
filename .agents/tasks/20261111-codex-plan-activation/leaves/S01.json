@@ -1,0 +1,31 @@
+{
+  "label": "Обновление сообщает, готово ли планирование",
+  "kind": "milestone",
+  "estimate_minutes": 30,
+  "id": "S01",
+  "model": "gpt-6-astra",
+  "created_at": "2026-11-10T14:35:28-08:00",
+  "session": "01a1c578-97fe-7133-9350-8bf8c152702c",
+  "harness": "codex",
+  "updated_at": "2026-11-10T14:35:28-08:00",
+  "progress_events": [
+    {
+      "at": "2026-11-10T14:35:28-08:00",
+      "note": "",
+      "changes": {
+        "label": "Обновление сообщает, готово ли планирование",
+        "kind": "milestone",
+        "estimate_minutes": 30,
+        "model": "gpt-6-astra"
+      },
+      "actor": {
+        "host_id": null,
+        "harness": "codex",
+        "session_id": "01a1c578-97fe-7133-9350-8bf8c152702c",
+        "source": "native_environment"
+      },
+      "session": "01a1c578-97fe-7133-9350-8bf8c152702c",
+      "harness": "codex"
+    }
+  ]
+}

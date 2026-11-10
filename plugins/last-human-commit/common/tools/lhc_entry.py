@@ -59,7 +59,9 @@ def _plan_entry(event, root):
         return None
     open_plans = []
     bound_leaves = []
+    status_bindings = []
     seen = set()
+    status_seen = set()
     for plan, from_index in scan:
         try:
             plan = plan.resolve()
@@ -82,6 +84,10 @@ def _plan_entry(event, root):
                 return True
             return leaf.get("session") == session
         mine = [leaf for leaf in todo if bound_here(leaf)]
+        if plan not in status_seen:
+            status_bindings.extend({"plan": str(plan), "leaf": str(leaf.get("id"))}
+                                   for leaf in leaves if bound_here(leaf))
+            status_seen.add(plan)
         if todo and (mine or not from_index):  # a stale index entry is not a candidate
             seen.add(plan)
             open_plans.append(plan)
@@ -89,8 +95,10 @@ def _plan_entry(event, root):
     continuation = bound_leaves[0] if len(bound_leaves) == 1 else None
     candidates = [str(plan) for plan in open_plans
                   if continuation is None or str(plan) != continuation["plan"]]
+    status_plans = list(dict.fromkeys(item["plan"] for item in status_bindings))
     return {"continuation": continuation, "candidates": candidates[:8],
-            "ambiguous_bindings": bound_leaves if len(bound_leaves) > 1 else []}
+            "ambiguous_bindings": bound_leaves if len(bound_leaves) > 1 else [],
+            "status_bindings": status_bindings, "status_plans": status_plans}
 
 
 def _plan_context(result):
@@ -110,6 +118,13 @@ def _plan_context(result):
                      "модель должна сопоставить их с актуальной целью и не выбирать "
                      "автоматически: " + ", ".join(
                          f"{item['leaf']} в {item['plan']}" for item in bindings[:8]) + ".")
+    status_plans = result.get("status_plans") or []
+    if len(status_plans) == 1:
+        parts.append("Для просмотра сохранённого плана этой сессии вызови show_plan с plan_dir "
+                     + status_plans[0] + "; это только чтение, не команда продолжать работу.")
+    elif len(status_plans) > 1:
+        parts.append("К этой сессии привязано несколько сохранённых планов; не выбирай "
+                     "автоматически для просмотра, уточни выбор: " + ", ".join(status_plans) + ".")
     if result.get("candidates"):
         parts.append("Другие открытые планы — только кандидаты, не команда продолжать "
                      "или связывать сессию: " + ", ".join(result["candidates"]) + ". "
@@ -180,7 +195,9 @@ def plan_resume_context(event, root):
     if not found:
         return None
     continuation = found.get("continuation")
-    bindings = [continuation] if continuation else found.get("ambiguous_bindings") or []
+    bindings = found.get("status_bindings")
+    if bindings is None:  # compatibility with callers that provide the older result shape
+        bindings = [continuation] if continuation else found.get("ambiguous_bindings") or []
     if not bindings:
         context = _goal_frontier_context(event)
         return _frontier_text(context) if context else None
@@ -190,7 +207,8 @@ def plan_resume_context(event, root):
         # Several leaves in one plan do not make the plan ambiguous. Several
         # plans do: preserve their identities without borrowing another's IDs.
         return ("LHC: several plans are bound to this session. " + precedence + "\n" +
-                _plan_context({"ambiguous_bindings": list(plans.values())}))[:4000]
+                _plan_context({"ambiguous_bindings": found.get("ambiguous_bindings") or [],
+                               "status_plans": list(plans)}))[:4000]
     plan = Path(bindings[0]["plan"])
     if not any((plan / "leaves").glob("*.json")):
         return None

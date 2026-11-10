@@ -32,8 +32,12 @@ fi
 # still run their hooks from; the installer does the upgrade and gives those routes back.
 CODEX_INSTALLER="${MARKETPLACE_ROOT}/deploy/plugin-autoupdate/install-codex-plugin.py"
 if command -v codex >/dev/null 2>&1; then
-  if [[ -f "$CODEX_INSTALLER" ]] && python3 "$CODEX_INSTALLER" --upgrade-marketplace >/dev/null 2>&1; then
-    log "refreshed shared megamen32-plugins checkout and the Codex plugin; older hook routes kept"
+  if [[ -f "$CODEX_INSTALLER" ]]; then
+    if python3 "$CODEX_INSTALLER" --upgrade-marketplace; then
+      log "refreshed shared megamen32-plugins checkout and the Codex plugin; older hook routes kept"
+    else
+      log "WARN Codex LHC install or hook readiness failed; see native evidence above; no retry this run"
+    fi
   elif codex plugin marketplace upgrade megamen32-plugins >/dev/null 2>&1; then
     log "refreshed shared megamen32-plugins checkout"
   else
