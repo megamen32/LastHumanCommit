@@ -1,4 +1,4 @@
-# LHC:COVERS src/common/tools/lhc_model_list.py src/common/tools/lhc_plan_mcp.py
+# LHC:COVERS src/common/tools/lhc_model_list.py src/common/tools/lhc_coding_benchmark.py src/common/tools/lhc_plan_mcp.py
 """list_models: the three classes and the models available now, offline."""
 from __future__ import annotations
 
@@ -22,6 +22,7 @@ def _load(name):
 
 
 ml = _load("lhc_model_list")
+coding = _load("lhc_coding_benchmark")
 plan_mcp = _load("lhc_plan_mcp")
 CONFIG = {
     "classes": {"fast": "routine", "middle": "code by plan", "frontier": "hard"},
@@ -33,10 +34,33 @@ CONFIG = {
 }
 SNAPSHOT = {
     "harnesses": [
-        {"harness": "codex", "models": ["gpt-6.1-sol", "gpt-6-luna"]},
-        {"harness": "opencode", "models": ["z-ai/glm-5.3-flash", "gpt-6-luna", "upstage/solar-pro4"]},
+        {"harness": "codex", "models": ["gpt-6.1-sol", "gpt-6-luna", "glm-5.3-flash"]},
+        {"harness": "opencode", "models": ["z-ai/glm-5.3", "gpt-6-luna", "upstage/solar-pro4"]},
     ],
     "quotas": [{"provider": "glm", "state": "reported", "checked_at": "t1"}],
+}
+BENCHMARK = {
+    "metric": "swebench_pro",
+    "source": "fixture",
+    "frontier_anchors": [
+        "openai/gpt-6-astra", "openai/gpt-6.1-sol",
+        "anthropic/claude-fable-5.2", "anthropic/claude-opus-5.5",
+    ],
+    "frontier_families": ["fable", "opus"],
+    "fast_families": ["flash", "fast", "haiku"],
+    "scores": {
+        "openai/gpt-6-astra": 0.90,
+        "openai/gpt-6.1-sol": 0.85,
+        "anthropic/claude-fable-5.2": 0.80,
+        "anthropic/claude-opus-5.5": 0.75,
+        "glm-5.3-flash": 0.20,
+        "minimax-3.1-flash": 0.25,
+        "claude-haiku-5.5": 0.30,
+        "grok-4.7-fast": 0.35,
+        "gpt-6-luna": 0.50,
+        "glm-5.3": 0.60,
+        "gpt-6.1-terra": 0.55,
+    },
 }
 
 
@@ -46,15 +70,70 @@ def test_tokens_split_on_non_alphanumerics():
 
 
 @pytest.mark.parametrize("model_id,cls", [
-    ("gpt-6-luna", "frontier"), ("gpt-6-luna-pro", "frontier"),
     ("claude-fable-5", "frontier"), ("claude-fable-5.2", "frontier"),
     ("anthropic/claude-fable-9", "frontier"), ("claude-opus-4.1", "frontier"),
     ("glm-5.3-flash", "fast"), ("glm-5.3", "middle"), ("z-ai/glm-5.3", "middle"),
     ("grok-4.7-fast", "fast"), ("grok-4.7", "middle"), ("openai/gpt-6.1-sol", "frontier"),
-    ("upstage/solar-pro4", None), ("mystery-model", None),
+    ("upstage/solar-pro4", None), ("gpt-6-luna", None), ("mystery-model", None),
 ])
 def test_class_of_goes_by_family(model_id, cls):
     assert ml.class_of(ml.load_config(), model_id) == cls
+
+
+def test_coding_thresholds_and_dynamic_classification():
+    config = ml.load_config()
+    assert ml.benchmark_thresholds(config, BENCHMARK) == {
+        "frontier_min": 0.75, "fast_max": 0.35,
+        "frontier_anchor_scores": {
+            "openai/gpt-6-astra": 0.90,
+            "openai/gpt-6.1-sol": 0.85,
+            "anthropic/claude-fable-5.2": 0.80,
+            "anthropic/claude-opus-5.5": 0.75,
+        },
+        "missing_frontier_anchors": [],
+    }
+    assert ml.classify_model(config, "gpt-6.1-sol", BENCHMARK) == ("frontier", "frontier_anchor", 0.85)
+    assert ml.classify_model(config, "gpt-6-luna", BENCHMARK) == ("middle", "coding_score_middle", 0.50)
+    assert ml.classify_model(config, "glm-5.3-flash", BENCHMARK) == ("fast", "coding_score_fast", 0.20)
+    assert ml.classify_model(config, "claude-fable-unknown", BENCHMARK) == ("frontier", "frontier_family", None)
+    assert ml.classify_model(config, "mystery-model", BENCHMARK) == (None, "unclassified", None)
+
+
+def test_compact_manifest_keeps_only_the_primary_metric():
+    manifest = {
+        "metric": "swebench_pro",
+        "models": {
+            "vendor/pro": {"source": "swebench_pro", "score": 0.4},
+            "vendor/verified": {"source": "swe_bench_verified", "score": 0.99},
+        },
+    }
+    assert coding.extract_scores(manifest) == {"vendor/pro": 0.4}
+
+
+def test_coding_manifest_loader_accepts_local_supplement(tmp_path, monkeypatch):
+    manifest = tmp_path / "supplement.json"
+    manifest.write_text(json.dumps({
+        "models": {"openai/gpt-6.1-sol": {"swebench_pro": {"score": 0.85}}}
+    }))
+    monkeypatch.setenv("LHC_CODING_BENCHMARK_MANIFEST", str(manifest))
+    loaded = ml.load_coding_manifest({"coding_benchmark": {"metric": "swebench_pro"}})
+    assert ml.benchmark_thresholds({"coding_benchmark": {"frontier_anchors": ["openai/gpt-6.1-sol"]}}, loaded)["frontier_min"] == 0.85
+
+
+def test_coding_manifest_accepts_normalized_score_field():
+    from lhc_coding_benchmark import extract_scores
+    assert extract_scores({"metric": "swebench_pro", "scores": {
+        "openai/gpt-6.1-sol": {"score": 85},
+        "openai/gpt-6-astra": {"normalized_score": 0.9},
+    }}) == {"openai/gpt-6.1-sol": 0.85, "openai/gpt-6-astra": 0.9}
+
+
+def test_missing_manifest_keeps_only_named_frontier_anchors():
+    config = ml.load_config()
+    assert ml.classify_model(config, "gpt-6-astra", None)[:2] == ("frontier", "frontier_anchor")
+    assert ml.classify_model(config, "gpt-6.1-sol", None)[:2] == ("frontier", "frontier_anchor")
+    assert ml.classify_model(config, "claude-opus-5.5", None)[:2] == ("frontier", "frontier_family")
+    assert ml.classify_model(config, "gpt-6-luna", None)[:2] == (None, "unclassified")
 
 
 def test_examples_agree_with_family_rules():
@@ -68,23 +147,29 @@ def test_shipped_examples_are_the_owners_classes():
     assert ml.load_config()["examples"] == {
         "fast": ["glm-5.3-flash", "minimax-3.1-flash", "claude-haiku-5.5", "grok-4.7-fast"],
         "middle": ["glm-5.3", "gpt-6.1-terra", "claude-sonnet-5.5", "grok-4.7"],
-        "frontier": ["gpt-6-astra", "gpt-6.1-sol", "claude-fable-5.2", "claude-opus-5.5", "gpt-6-luna"],
+        "frontier": ["gpt-6-astra", "gpt-6.1-sol", "claude-fable-5.2", "claude-opus-5.5"],
     }
 
 
 def test_list_models_with_snapshot_classifies_and_reports_quotas():
     config = ml.load_config()
-    out = ml.list_models(config, None, available=SNAPSHOT["harnesses"], quotas=SNAPSHOT["quotas"])
+    out = ml.list_models(config, None, available=SNAPSHOT["harnesses"], quotas=SNAPSHOT["quotas"], benchmark=BENCHMARK)
     by = {c["class"]: c["models"] for c in out["classes"]}
     assert out["herder"] == "ok"
-    assert {"id": "gpt-6-luna", "harnesses": ["codex", "opencode"], "source": "herder"} in by["frontier"]
-    assert [m["id"] for m in by["frontier"]] == ["gpt-6.1-sol", "gpt-6-luna"]
-    assert all(m["source"] == "herder" for m in by["frontier"])
-    assert out["unclassified"] == [{"id": "upstage/solar-pro4", "harnesses": ["opencode"]}]
+    luna = next(m for c in out["classes"] for m in c["models"] if m["id"] == "gpt-6-luna")
+    assert luna["classification_source"] == "coding_score_middle"
+    assert luna["coding_score"] == 0.50
+    assert out["classification"]["frontier_min"] == 0.75
+    assert out["classification"]["fast_max"] == 0.35
+    assert {m["id"] for m in by["frontier"]} == {"gpt-6.1-sol"}
+    assert {m["id"] for m in by["fast"]} == {"glm-5.3-flash"}
+    assert {m["id"] for m in by["middle"]} == {"gpt-6-luna", "z-ai/glm-5.3"}
+    assert out["unclassified"] == [{
+        "id": "upstage/solar-pro4",
+        "harnesses": ["opencode"],
+        "classification_source": "unclassified",
+    }]
     assert out["quotas"] == SNAPSHOT["quotas"]
-    # empty class falls back to examples from config
-    assert {m["source"] for m in by["middle"]} == {"config"}
-    assert [m["id"] for m in by["middle"]] == config["examples"]["middle"]
 
 
 def test_list_models_without_snapshot_uses_examples():

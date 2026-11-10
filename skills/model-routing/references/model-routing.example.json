@@ -14,7 +14,6 @@
     "claude-opus-5.5",
     "glm-5.3-flash",
     "minimax-3.1-flash",
-    "gpt-6-luna",
     "glm-5.3",
     "gpt-6.1-terra",
     "claude-sonnet-5.5",
@@ -30,8 +29,7 @@
         "gpt-6-astra",
         "gpt-6.1-sol",
         "claude-fable-5.2",
-        "claude-opus-5.5",
-        "gpt-6-luna"
+        "claude-opus-5.5"
       ]
     },
     "middle": {
@@ -72,5 +70,31 @@
     "usage_if_attested",
     "rework_reason"
   ],
-  "fallback": "Use a suitable available model with a recorded limitation. Never claim an unattested model choice or council diversity."
+  "fallback": "Use a suitable available model with a recorded limitation. Never claim an unattested model choice or council diversity.",
+  "frontier_thresholds": {
+    "metric": "swebench_pro",
+    "frontier": "coding score >= minimum score of named frontier anchors",
+    "fast": "coding score <= maximum score among fast-named families",
+    "middle": "coding score between fast and frontier cuts",
+    "anchors": [
+      "openai/gpt-6-astra",
+      "openai/gpt-6.1-sol",
+      "anthropic/claude-fable-5.2",
+      "anthropic/claude-opus-5.5"
+    ],
+    "never_frontier_families": [
+      "luna"
+    ],
+    "fast_families": [
+      "fast",
+      "haiku"
+    ],
+    "source": "config/models.json -> coding_benchmark; list_models reports resolved thresholds",
+    "fast_anchors": [
+      "glm-5.3-flash",
+      "minimax-3.1-flash",
+      "grok-4.7-fast",
+      "claude-haiku-5.5"
+    ]
+  }
 }

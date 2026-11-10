@@ -8,7 +8,17 @@ Three classes. Name the class in every assignment; take the cheapest class that 
 | middle | code written by a ready plan |
 | frontier | architecture, hard problems, work that dragged on past its estimate |
 
-Classes go by model family, not by version: any Fable, Opus or Luna is frontier. frontier = Astra, Sol, Fable, Opus, Luna; middle = GLM 5.3, Terra, Sonnet, Grok 4.7; fast = GLM 5.3 Flash, MiniMax 3.1 Flash, Haiku and Grok 4.7 Fast. The rules live in `config/models.json` (`families`, first match wins).
+The live catalog is classified by the coding benchmark manifest configured in
+`config/models.json`. The four named frontier anchors are Astra, Sol, Fable and
+Opus; the frontier cut is the lowest coding score among those anchors. The fast
+cut is the highest coding score among fast-named families (Fast and Haiku), with
+the explicitly named Flash anchors added when they have a score. Scores at or
+above the frontier cut are frontier, scores at or below the fast cut are fast,
+and scores between the cuts are middle. Fable and Opus remain explicit frontier
+families when a benchmark row is absent. Luna is an explicit policy exception:
+it is never frontier; a measured Luna score can place it in fast or middle, but
+never above that policy boundary. `list_models` returns the
+resolved cuts, score and `classification_source` for every live model.
 
 Read the list with the LhcPlan MCP tool `list_models` (CLI `lhc_model_list.py`). When Agent Herder answers it adds Herder's live catalog and provider quota states; without Herder it works from the configured examples.
 

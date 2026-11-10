@@ -34,10 +34,6 @@
       "class": "frontier"
     },
     {
-      "match": "luna",
-      "class": "frontier"
-    },
-    {
       "match": "terra",
       "class": "middle"
     },
@@ -71,8 +67,37 @@
       "gpt-6-astra",
       "gpt-6.1-sol",
       "claude-fable-5.2",
-      "claude-opus-5.5",
-      "gpt-6-luna"
+      "claude-opus-5.5"
+    ]
+  },
+  "coding_benchmark": {
+    "metric": "swebench_pro",
+    "manifest_path": "coding-benchmarks.json",
+    "manifest_url": "https://megamen32.github.io/models-supplement/coding-benchmarks.json",
+    "frontier_anchors": [
+      "openai/gpt-6-astra",
+      "openai/gpt-6.1-sol",
+      "anthropic/claude-fable-5.2",
+      "anthropic/claude-opus-5.5"
+    ],
+    "frontier_families": [
+      "astra",
+      "sol",
+      "fable",
+      "opus"
+    ],
+    "never_frontier_families": [
+      "luna"
+    ],
+    "fast_families": [
+      "fast",
+      "haiku"
+    ],
+    "fast_anchors": [
+      "glm-5.3-flash",
+      "minimax-3.1-flash",
+      "grok-4.7-fast",
+      "claude-haiku-5.5"
     ]
   }
 }

@@ -65,7 +65,9 @@ accept permissions while configuring model routing.
 
 ## Resolve the actual options
 
-The models available now, with class and description: LhcPlan MCP `list_models` (classes by family from `config/models.json`, plus Herder's live catalog and quotas when it answers).
+The models available now, with class, coding score and description: LhcPlan MCP
+`list_models` (dynamic benchmark cuts from `config/models.json`, plus Herder's
+live catalog and quotas when it answers).
 Start from the active harness's available model catalog, recent verified results,
 quota/rate limits and required capabilities (tools, vision, context, structured
 output, latency). `../../config/model-routing.example.json` supplies the allowed
