@@ -139,7 +139,14 @@ def _family_match(model_id: str, families: list[str]) -> bool:
 
 def _anchor_match(model_id: str, anchors: list[str]) -> bool:
     candidate = _family_tokens(model_id)
-    return any(_family_tokens(anchor) <= candidate for anchor in anchors if _family_tokens(anchor))
+    for anchor in anchors:
+        # Herder may omit the provider namespace while the manifest keeps it.
+        # Compare the model portion of a canonical anchor in that case.
+        model_part = str(anchor).split("/", 1)[-1]
+        anchor_tokens = _family_tokens(model_part)
+        if anchor_tokens and anchor_tokens <= candidate:
+            return True
+    return False
 
 
 def benchmark_thresholds(config: dict[str, Any], manifest: dict[str, Any] | None) -> dict[str, Any]:
