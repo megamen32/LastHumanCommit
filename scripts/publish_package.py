@@ -150,6 +150,7 @@ TOOL_COPIES = (
     "lhc_plan_mirror_release.py",
     "lhc_file_events.py",
     "lhc_directives.py",
+    "lhc_backlog.py",
     "lhc_mail.py",
     "lhc_orchestrator.py",
     "lhc_dispatcher.py",

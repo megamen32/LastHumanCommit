@@ -1169,6 +1169,14 @@ def main():
     extra = owner_directives(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
     if extra:
         context += "\n\n" + extra
+    if args.event == "SessionStart":
+        try:
+            import lhc_backlog
+            due = lhc_backlog.session_block(Path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()))
+        except Exception:  # noqa: BLE001 - fail open: an optional reminder
+            due = ""
+        if due:
+            context += "\n\n" + due
     start = None
     try:
         import select
