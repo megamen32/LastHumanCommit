@@ -55,8 +55,7 @@ hook alone does not prove learning occurred.
 ## When the session is slow
 
 A session that is slow, stuck or visibly drifting may benefit from an independent
-adviser. Use only the allowed model tiers — fast: glm-5.3-flash, minimax-3.1-flash;
-frontier: gpt-6-luna, glm-5.3, gpt-6.1-sol — resolved to an exact
+adviser. Use only the allowed model classes (LhcPlan `list_models`: fast, middle, frontier) — resolved to an exact
 currently available catalog ID with actual model identity verified; never silently
 substitute. Give the adviser the current user request, plan report, applicable rules,
 structured outcome and a capped recent event excerpt. Omit the full transcript by

@@ -22,7 +22,7 @@ from pathlib import Path
 from typing import Any, Callable, Optional
 
 SERVER_NAME = "LhcPlan"
-SERVER_VERSION = "1.20.1"
+SERVER_VERSION = "1.21.0"
 DEFAULT_PROTOCOL_VERSION = "2024-11-05"
 SUPPORTED_PROTOCOL_VERSIONS = ("2024-11-05", "2025-03-26", "2025-06-18")
 
@@ -763,9 +763,10 @@ TOOLS: list[dict[str, Any]] = [
     {
         "name": "list_models",
         "description": (
-            "Models available now, each with its class (fast = routine, middle = code by a ready plan, "
-            "frontier = architecture and hard problems) and a one-line description. Call it before "
-            "choosing a model for a leaf or a Worker."
+            "Models by class (fast = routine, middle = code by a ready plan, frontier = architecture and "
+            "hard problems). It shows what Agent Herder reports as available now and provider quota states "
+            "when Herder answers, and the configured families otherwise. Call it before choosing a model "
+            "for a leaf or a Worker."
         ),
         "inputSchema": {
             "type": "object",

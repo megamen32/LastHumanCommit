@@ -20,8 +20,7 @@ not override new instructions. For architecture, use
 5. Create and present the plan before implementation, without waiting for a
    second approval when execution is authorized.
 6. Cut the leaves with `../skills/plan/SKILL.md`. Worker models come from
-   `../skills/model-routing/SKILL.md`: fast tier glm-5.3-flash or minimax-3.1-flash,
-   frontier tier gpt-6-luna, glm-5.3 or gpt-6.1-sol, resolved to an exact live
+   `../skills/model-routing/SKILL.md`: the classes fast, middle and frontier that LhcPlan `list_models` returns, resolved to an exact live
    catalog ID, no silent fallback. Who executes follows `AGENTS.md` (subagents).
 7. For a blocker or unclear route follow the escalation chain in `AGENTS.md`
    (L, then Adviser, then Overseer). Add technical review and fresh independent testing when
@@ -72,9 +71,7 @@ tokens, handoff/context cost, process maintenance, retries, human interruption,
 and wrong-path risk.
 
 The Lead never executes directly. Assign every inspection, edit, check and delivery
-step to a Worker, even when small. Use only the allowed tiers — fast tier
-glm-5.3-flash or minimax-3.1-flash, frontier tier gpt-6-luna, glm-5.3 or
-gpt-6.1-sol — resolved to exact live catalog IDs before dispatch; do not silently
+step to a Worker, even when small. Use only the classes fast, middle and frontier that LhcPlan `list_models` returns — resolved to exact live catalog IDs before dispatch; do not silently
 substitute.
 Resume the same Worker when its context remains valuable. An assigned leaf does not
 recursively hire.

@@ -49,8 +49,7 @@ Worker holding a 15-minute leaf reports by the 20-minute mark.
 
 ## Model selection
 
-Workers are restricted to the explicitly allowed model tiers: fast = glm-5.3-flash,
-minimax-3.1-flash; frontier = gpt-6-luna, glm-5.3, gpt-6.1-sol. These
+Workers are restricted to the classes fast, middle and frontier that LhcPlan `list_models` returns. These
 labels are not provider IDs: match each to the exact live model-catalog ID and verify
 capability before assignment. If unavailable, stop that lane and report the blocker;
 never substitute another model silently.
