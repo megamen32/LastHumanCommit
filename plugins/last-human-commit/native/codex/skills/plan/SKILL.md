@@ -35,10 +35,13 @@ A plan written without these steps, or with them out of order, is redone.
    becomes a research leaf with its question. No stage is written before `recon` is.
 2. **Draft** the route to the owner's result.
 3. **Criticize it** as a stranger would: what is missing, what fails first, what is done twice, what rests on
-   a guess. Fix and repeat until a pass finds nothing. Record the pass as a revision `{reason, summary}`.
+   a guess. Fix and repeat until a pass finds nothing. Record the pass as a revision `{reason, summary}`, and
+   write what the critique found and what the Pareto cut removed into plan field `critique`.
 4. **Pareto cut.** Keep the fifth of the work that gives most of the result; everything else leaves the plan
    and goes into the `ROADMAP.md` backlog with a date. A stage that does not move the acceptance scenario is cut.
-5. **Stages in plain words** (section 2). Only now the plan is shown and work starts.
+5. **Stages in plain words** (section 2). Put the list into plan field `summary` (one page, at most 3000
+   characters). The tool refuses the first executable leaf of a fullcycle plan while `summary` or `critique`
+   is empty. Only now the plan is shown and work starts.
 6. **Leaves** are cut per stage, when that stage starts, never for the whole plan in advance.
 
 ## 2. Stages first, in words a person reads

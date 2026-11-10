@@ -1568,7 +1568,7 @@ def build_parser() -> argparse.ArgumentParser:
     cost.add_argument("--minutes", type=float, required=True)
     cost.add_argument("--tokens-per-minute", type=int, dest="tpm",
                       help="omit to get a result marked basis=provisional-tpm")
-    cost.add_argument("--tier", choices=("fast", "frontier", "unknown"), default="unknown",
+    cost.add_argument("--tier", choices=("fast", "middle", "frontier", "unknown"), default="unknown",
                       help="which provisional TPM constant to use without --tokens-per-minute")
 
     snap = sub.add_parser("snapshot", parents=[common],

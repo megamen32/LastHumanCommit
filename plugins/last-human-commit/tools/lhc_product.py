@@ -300,6 +300,8 @@ def product_leaves(data: Any) -> list[dict[str, Any]]:
         label = _text(task.get("title")) or _text(task.get("label")) or ident
 
         state = _text(task.get("status")) or _text(task.get("state"))
+        if state == "deferred_ai":  # deferred by the agent: same look as deferred by the owner
+            state = "deferred"
         status = state if state in LEAF_STATUSES else "queued"
 
         hours = task.get("hours") if isinstance(task.get("hours"), dict) else {}

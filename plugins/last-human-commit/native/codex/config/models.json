@@ -1,0 +1,14 @@
+{
+  "classes": {
+    "fast": "routine: research, search, reading, polling, waiting, mechanical edits",
+    "middle": "code written by a ready plan",
+    "frontier": "architecture, hard problems, work that dragged on past its estimate"
+  },
+  "models": [
+    {"id": "glm-5.3-flash", "class": "fast", "description": "fast class, routine work"},
+    {"id": "minimax-3.1-flash", "class": "fast", "description": "fast class, routine work"},
+    {"id": "gpt-6-luna", "class": "frontier", "description": "frontier class, architecture and hard problems"},
+    {"id": "glm-5.3", "class": "frontier", "description": "frontier class, architecture and hard problems"},
+    {"id": "gpt-6.1-sol", "class": "frontier", "description": "frontier class, architecture and hard problems"}
+  ]
+}

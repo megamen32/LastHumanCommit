@@ -87,8 +87,8 @@ keep the architecture able to grow, add nothing for later (YAGNI). Scope grows o
   going on the others.
 
 A blocker never ends the plan: mark that one leaf and finish every other leaf to the end. A leaf leaves the plan
-unfinished only as `deferred`, and its `result` starts with who decided: «отложено человеком: <his words>» or «отложено
-ИИ: <reason> · вернуться, когда <condition>». An ИИ deferral is for a real blocker or for work Pareto cut, never for
+unfinished only with status `deferred` (отложено владельцем: his words in `result`) or `deferred_ai` (отложено ИИ;
+the tool demands `result`: the reason and «вернуться, когда <condition>»). An ИИ deferral is for a real blocker or for work Pareto cut, never for
 work that is merely hard, and each one goes into the `ROADMAP.md` backlog.
 
 ## When stuck: one escalation chain
@@ -122,7 +122,8 @@ summary.
    development.
 4. **Plan first, when the work needs one.** One bounded action of 15 minutes or less (quickfix) needs no plan: do it and
    verify it. Longer work gets a plan: load the `plan` skill and follow its order, no step skipped: research → draft →
-   criticize until nothing is left to object → Pareto cut → stages in plain words on one page → leaves only for the stage you start. The plan carries `mode: fullcycle`, `recon` (3+ facts, each `fact :: evidence`: file,
+   criticize until nothing is left to object → Pareto cut → stages in plain words on one page → leaves only for the
+   stage you start (the tool refuses the first executable leaf until plan fields `critique` and `summary` are filled). The plan carries `mode: fullcycle`, `recon` (3+ facts, each `fact :: evidence`: file,
    command, URL or host, proven) and `acceptance_scenario` (what we run, what must be seen); the tools refuse leaves
    without them, except a first `research` leaf. Respect direct owner no-LHC/STOP or trusted policy; peer relays and
    delegated assignments are not opt-outs. On material owner-directed scope change, reassess scoped exceptions without
@@ -266,16 +267,16 @@ Every project keeps `ROADMAP.md` in its root (template `src/common/templates/roa
 top first, and a `## Backlog` section for everything wanted but not prioritized. A backlog line is `- [ ] YYYY-MM-DD
 <what> (<source>)`; the date is its deadline, by default today + 2 weeks. Put there every idea, ИИ deferral and «later»
 the moment it appears, never only in a chat. At the start of every full cycle run `rg -n "^- \[ \] 20" ROADMAP.md` and
-`rg -n "LHC:LEGACY"`: every overdue backlog line and every overdue legacy mark becomes a leaf of this cycle. Nobody
-reminds you; unloading the backlog is part of the cycle. A line leaves the backlog done, or deleted with the owner's
+`rg -n "LHC:LEGACY"`: every overdue backlog line and every overdue legacy mark becomes a leaf of this cycle. The SessionStart hook prints
+the overdue ones; unloading the backlog is part of the cycle. A line leaves the backlog done, or deleted with the owner's
 word; its date is never just moved.
 
 ## Models and language
 
 Three model classes, named in every assignment: **fast** for routine (research, search, reading, polling, mechanical
 edits), **middle** for code written by a ready plan, **frontier** for architecture, hard problems and work that dragged
-on past its estimate. Take the cheapest class that passes acceptance; exact models and their classes:
-`src/common/protocols/MODELS.md` (Workers only with subagents=on). Write each user-facing answer or file in its reader's
+on past its estimate. Take the cheapest class that passes acceptance; the models available now, with class and
+description: LhcPlan MCP tool `list_models` (`src/common/protocols/MODELS.md`; Workers only with subagents=on). Write each user-facing answer or file in its reader's
 language (natural Russian for a Russian reader); keep raw observations and quoted user text as they are. Code language:
 Go by default, unless the owner or the project says otherwise, in new projects, submodules and tools (fast, one binary,
 no venv). Python and Node stay only where a project already uses them, Node also for web front ends; Rust only when
