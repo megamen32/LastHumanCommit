@@ -18,6 +18,10 @@ this template is neither authority nor a credential store.
   preserve permissions/unrelated fields, verify login, notify owners by ref/status:
 - Cleanup/rollback, active dependents and exact unresolved external dependency:
 
+- QA identities kept for reuse (one line each, no values): name, what it is for, where the value lives
+  (`/secret` name or `.env` key), how to log in, how to renew. Agents create these without asking and never
+  delete them after a check; the next agent reuses them:
+
 After compaction reload this reference and latest authority, never secret values.
 Keep entry rules and this registry consistent with direct user scope. Do not infer
 permission from sudo, environment names, old notes or tools. Preserve HumanStop.

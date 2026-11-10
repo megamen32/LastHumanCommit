@@ -39,6 +39,9 @@ test clients and expired test credentials on those environments is preparation,
 not a blocker: do it with the app's supported admin tools, scoped sudo included.
 Use an ordinary test user for the user journey; admin rights only to prepare it.
 Keep one owner per fixture and update its protected reference in place.
+Never ask the owner for permission to create a QA token, user or client: it is granted. Cleanup removes
+test data, never QA identities: tokens and accounts stay for the next agent and are listed, by name and
+without values, in `TEST_ACCESS.md`.
 
 Fail closed only on the exact operation that lacks authority: unknown or external
 environment without authority, customer or third-party accounts, real payments or
