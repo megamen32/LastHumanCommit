@@ -65,9 +65,11 @@ accept permissions while configuring model routing.
 
 ## Resolve the actual options
 
-The models available now, with class, coding score and description: LhcPlan MCP
-`list_models` (dynamic benchmark cuts from `config/models.json`, plus Herder's
-live catalog and quotas when it answers).
+The models available now, with class, coding measurement and description:
+LhcPlan MCP `list_models` (the curated twelve assignments from
+`config/models.json`, plus Herder's live catalog and quotas when it answers).
+Benchmark cuts are reported for measurement and audit; they do not promote an
+unknown live model into an allowed class.
 Start from the active harness's available model catalog, recent verified results,
 quota/rate limits and required capabilities (tools, vision, context, structured
 output, latency). `../../config/model-routing.example.json` supplies the allowed
@@ -106,7 +108,7 @@ model, and record the reason in the assignment outcome.
 
 Before the plan is first published, record the chosen planned model in
 `plan.json.default_model` or in each leaf's `model`; use explicit leaf models
-for mixed assignments such as Luna execution and Sol integration. A declared
+for mixed assignments such as Terra execution and Sol integration. A declared
 leaf `model`, `tier` or `model_class` takes precedence over the default. Record
 the work estimate so the existing catalog/rate calculation can show a labelled
 preliminary tariff equivalent. This is not actual billed spend or proof that

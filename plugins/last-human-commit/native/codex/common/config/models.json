@@ -98,6 +98,30 @@
       "minimax-3.1-flash",
       "grok-4.7-fast",
       "claude-haiku-5.5"
+    ],
+    "frontier_explicit_families": [
+      "astra",
+      "sol"
+    ]
+  },
+  "curated": {
+    "fast": [
+      "glm-5.3-flash",
+      "minimax-3.1-flash",
+      "claude-haiku-5.5",
+      "grok-4.7-fast"
+    ],
+    "middle": [
+      "glm-5.3",
+      "gpt-6.1-terra",
+      "claude-sonnet-5.5",
+      "grok-4.7"
+    ],
+    "frontier": [
+      "gpt-6-astra",
+      "gpt-6.1-sol",
+      "claude-fable-5.2",
+      "claude-opus-5.5"
     ]
   }
 }
