@@ -1,6 +1,6 @@
 # Planning
 
-Plan enough to choose the route, coordinate work and resume after interruption. A small clear action can be executed directly. For larger work, use `../skills/plan/SKILL.md`.
+Plan enough to choose the route, coordinate work and resume after interruption. A small clear action can be executed directly. For a requested plan or useful coordination, use `../skills/plan/SKILL.md`.
 
 Start with the latest request, what already works, and how the user will recognize success. Research the uncertainty that could change the next decision. Compare alternatives when there is a real choice; pick a straightforward route when there is not.
 

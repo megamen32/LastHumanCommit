@@ -24,9 +24,9 @@ Complete the requested installation and client check as well as the merge. Recor
 
 The plan's `bugs/*.json` records reproductions, impact and resolution. Use `bug_register`, `bug_get`, `bug_list`, `bug_update`, `bug_resolve` and `bug_check` through LhcPlan. Fix task-blocking defects and regressions from this change; keep unrelated findings as separate work. A fixed status needs real verification. Duplicate and false-positive resolutions keep their reason and history.
 
-## Shared deployment
+## Shared deployment tools (when selected)
 
-Use Agent Herder `project_release_lease` for the canonical project and actual owner `{hostId, harness, nativeSessionId}`. Acquire it with a built candidate, just before the live operation. `status` gives the current owner and `SendMessage` target.
+When the project uses Herder release coordination, use `project_release_lease` for the canonical project and actual owner `{hostId, harness, nativeSessionId}`. Acquire it with a built candidate, just before the live operation. `status` gives the current owner and `SendMessage` target.
 
 Check the token/fence and expected live revision immediately before mutation. Preserve a newer release or peer repair. Hold the lease only for the deployment and client check, and release it in `finally`. Terminal stop/abort/error cleanup and TTL cover failures; an ordinary completed turn is not session termination.
 

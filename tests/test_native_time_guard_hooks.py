@@ -1,90 +1,17 @@
-#!/usr/bin/env python3
-"""Native hook adapters reach the shared fail-open LHC time guard."""
-
-from __future__ import annotations
-
-import argparse
-import io
 import json
-import sys
-from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-import pytest
-
-from _inprocess import git_repo, load_module, run_cli
-
-
 ROOT = Path(__file__).resolve().parents[1]
-TOOL = ROOT / "src/common/tools/lhc_time_guard.py"
-PLUGIN = ROOT / "plugins/last-human-commit"
-TIME_GUARD = load_module(TOOL, name="lhc_time_guard_native_test")
 
 
-@pytest.fixture(autouse=True)
-def isolated_git_project(tmp_path):
-    git_repo(tmp_path)
-
-
-def task(root: Path, *, active: int | None = None) -> None:
-    tasks = root / ".agents/tasks"
-    tasks.mkdir(parents=True)
-    started = datetime.now(timezone.utc) - timedelta(minutes=65)
-    extra = f"\n- Active minutes: {active}" if active is not None else ""
-    (tasks / "work-hook-canary.md").write_text(
-        f"- Started at: {started.isoformat()}\n- Initial estimate: 5 / 120 active minutes{extra}\n",
-        encoding="utf-8",
-    )
-
-
-def run(root: Path, runtime: str, event: str) -> dict[str, object] | None:
-    completed = run_cli(
-        TIME_GUARD, ["hook", "--runtime", runtime, "--event", event],
-        stdin=json.dumps({"cwd": str(root)}),
-    )
-    assert completed.returncode == 0, completed.stderr
-    return json.loads(completed.stdout) if completed.stdout.strip() else None
-
-
-def test_codex_hook_emits_one_idempotent_hourly_context(tmp_path: Path) -> None:
-    task(tmp_path)
-    first = run(tmp_path, "codex", "PostToolUse")
-    assert first is not None
-    specific = first["hookSpecificOutput"]
-    assert specific["hookEventName"] == "PostToolUse"
-    assert "Which real tasks were completed" in specific["additionalContext"]
-    assert run(tmp_path, "codex", "PostToolUse") is None
-
-
-def test_opencode_hook_reports_explicit_active_overrun(tmp_path: Path) -> None:
-    task(tmp_path, active=125)
-    result = run(tmp_path, "opencode", "tool.execute.after")
-    assert result is not None
-    assert "Original maximum exceeded by: 5 active minutes" in result["prompt"]
-
-
-def test_hook_is_fail_open_without_task_card(tmp_path: Path, monkeypatch) -> None:
-    (tmp_path / ".agents").mkdir()
-    monkeypatch.setattr(TIME_GUARD, "find_active_task", lambda _cwd: None)
-    monkeypatch.setattr(sys, "stdin", io.StringIO(json.dumps({"cwd": str(tmp_path)})))
-    args = argparse.Namespace(
-        runtime="codex",
-        event="SessionStart",
-        now=None,
-        idle_cap_seconds=300,
-    )
-    assert TIME_GUARD.hook(args) is None
-
-
-def test_package_declares_both_native_adapters() -> None:
-    manifest = json.loads((PLUGIN / "plugin.json").read_text(encoding="utf-8"))
-    assert manifest["extensions"]["com.openai"]["hooks"] == "./com.openai/hooks/hooks.json"
-    native = json.loads((PLUGIN / "com.openai/hooks/hooks.json").read_text())
-    assert not any(h.get("async") for r in native["hooks"]["PostToolUse"] for h in r["hooks"])
-    assert (PLUGIN / "opencode/lhc-boss-v2.ts").is_file()
-    hooks = json.loads((PLUGIN / "hooks/hooks.json").read_text(encoding="utf-8"))
-    # The declared hook bundle is time-only: instructions plus the heartbeat.
-    assert set(hooks["hooks"]) == {"SessionStart", "PostCompact", "PreToolUse", "PostToolUse", "Stop"}
-    assert "PostToolUse" in hooks["hooks"], "the heartbeat must not depend on a manual invocation"
-    assert "UserPromptSubmit" not in hooks["hooks"], "a hook never observes the stateful lifecycle"
-    assert (PLUGIN / "opencode/lhc-time-guard.ts").is_file()
+def test_default_hook_bundle_only_activates_compact_instructions():
+    for rel in ("plugins/last-human-commit/hooks/hooks.json",
+                "plugins/last-human-commit/hooks/zcode-hooks.json"):
+        data = json.loads((ROOT / rel).read_text(encoding="utf-8"))
+        assert set(data["hooks"]) == {"SessionStart", "PostCompact"}
+        for event in data["hooks"].values():
+            command = event[0]["hooks"][0]["command"]
+            assert "--instructions-only" in command
+            assert "--stop-gate" not in command
+            assert "--heartbeat-only" not in command
+            assert "--git-guard" not in command

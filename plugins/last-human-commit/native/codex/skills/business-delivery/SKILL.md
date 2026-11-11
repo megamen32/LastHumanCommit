@@ -1,39 +1,14 @@
 ---
 name: business-delivery
-description: Lead-owned least-cost procedure for proving and handing off the accepted business result.
+description: Carry an implemented change through the integration, installation and real use required by the task.
 ---
 
-# Business Delivery
+# Delivery
 
-Use when work must end in the user's accepted outcome rather than activity or a
-code-only proxy.
+Name the requested result and the real consumer. Establish which parts still need implementation, integration, installation or verification, and complete them.
 
-Before implementation, testing or deployment, load the primary checkout's
-`.agents/TEST_ACCESS.md` via Git worktree mapping and follow the active package's
-`common/protocols/REVIEW_TO_DELIVERY.md` execution-access contract. Reuse/recover
-authorized local test access with supported administration; persist only protected
-references/scope at handoff. Existing authority permits preparation without reasking;
-unknown/revoked operations stay blocked. Sudo alone never grants authority.
+Use the project's existing delivery route and test access from the primary checkout's `.agents/TEST_ACCESS.md`. Prepare missing fixtures within the approved environment. `common/protocols/REVIEW_TO_DELIVERY.md` describes access and deployment details.
 
-## Procedure
+Choose review and tests for the changed behavior. Try the result through the actual client, including the installed plugin or hook when that is what changed. Fix the failed boundary and retry that scenario.
 
-1. Confirm the current business claim, accepted MVP Definition of Done, actual
-   production consumer path, and shortest real canary.
-2. Lead owns the engineering outcome and assigns every engineering step to a native Worker, even when small. A business executor inside the product handles its user task and is not the engineering Worker for this session.
-3. Use the cheapest evidence sufficient for the exact business claim.
-4. Add Reviewer, Tester, Boss, Critic, or hardening only when concrete risk
-   makes their expected value exceed their cost.
-5. Report source/test proof, deployment state, and real-canary proof separately.
-6. Stop when the accepted claim is proven and hand off deferred optional work as
-   non-blocking.
-7. For work crossing an hour or its original maximum, include the time guard's
-   completed-task/file, planned-versus-actual, blocker/gate, and route-change
-   report.
-
-## Do not
-
-- Do not substitute process completion or technical proxies for the requested
-  result.
-- Do not silently strengthen an accepted MVP claim.
-- Do not skip a role that is genuinely required by current risk, but do not run
-  a role merely because a template once made it mandatory.
+Report what is integrated, what is installed, what worked in the client and any remaining blocker. A task already authorized for delivery needs no repeated request for the same permission.

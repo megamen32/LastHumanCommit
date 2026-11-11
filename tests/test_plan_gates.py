@@ -104,6 +104,7 @@ def test_recon_and_scenario_are_rendered_on_the_page(tmp_path):
 
 def test_router_says_a_single_short_action_needs_no_plan():
     text = " ".join((ROOT / "AGENTS.md").read_text(encoding="utf-8").split())
-    assert "needs no plan: do it and verify it" in text
+    assert "A plan is optional" in text
+    assert "smallest working result" in text
     assert "one executable leaf" not in text
     assert (ROOT / "AGENTS.md").read_text().count("\n") <= 300

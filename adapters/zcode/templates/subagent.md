@@ -6,7 +6,7 @@ Give the child the facts and previous attempts needed for its task, the expected
 
 Use the task's existing brief and result paths when a durable handoff is needed. The Lead owns plan decisions; an assigned Artifact Writer records those decisions in its named files. `common/protocols/ORCHESTRATION_RECORDS.md` describes the explicit-dispatch fields.
 
-Ask the Lead about a decision its wider context can change. Continue independent work while awaiting the answer. A Worker still running reports progress, a blocker or next step by the agreed checkpoint, normally minute 20. Measured time and estimates remain distinct.
+Ask the Lead about a decision its wider context can change. Continue independent work while awaiting the answer. A Worker still running reports progress, a blocker or next step by the agreed checkpoint. Measured time and estimates remain distinct.
 
 Join a required child result through the native wait/status interface. A timeout prompts a status check and route decision; it does not establish failure. Preserve a healthy running child. After compaction, use the bound handoff and current plan to continue.
 

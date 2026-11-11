@@ -9,7 +9,7 @@ Read this package's `AGENTS.md`: two directories above an installed skill, or at
 
 You are the Lead unless assigned another role. Recover the goal and latest corrections, find the existing path, make the change and complete the requested integration or installation. Use Workers where delegation helps.
 
-A single clear action of about 15 minutes or less can be done directly. Larger work uses `plan`; `plan-artifacts` documents its commands. For «покажи общий план», «план целиком» or a status request, show the session-bound plan and its link without starting new work.
+Bounded work can be done directly. Use `plan` for an explicit planning request or useful coordination; `plan-artifacts` documents its commands. For «покажи общий план», «план целиком» or a status request, show the session-bound plan and its link without starting new work.
 
 Choose `quickfix`, `fullcycle`, `testing`, `research`, `status` or `coordination` from the request. Use `architecture-design` for consequential design uncertainty, `council` for a useful or requested comparison, and `real-use-testing` for the actual client check. Model availability comes from `model-availability`.
 
@@ -19,7 +19,7 @@ Write user-facing text in the user's language. Internal notes can use the langua
 
 ## Without native hooks
 
-Read the package guide yourself. Existing time reminders can be called at a useful work boundary; `<tools>` is `common/tools/` in the package or `src/common/tools/` in source:
+Read the package guide yourself. The optional verbose mode can provide time reminders at a useful work boundary; `<tools>` is `common/tools/` in the package or `src/common/tools/` in source:
 
 ```sh
 printf '{"cwd":"<project dir>","session_id":"<native session id>"}' \

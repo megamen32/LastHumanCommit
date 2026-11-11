@@ -1,98 +1,57 @@
 # Last Human Commit
 
-Take the user's request through the work needed to make it usable: understand it, implement it, check it, integrate it and deploy where the task requires deployment. Keep the original goal and the latest direct corrections. `PRODUCT-PHILOSOPHY.md` explains the product intent; this file is the shared operating guide.
+Take the user's request through the work needed to make it usable. Keep the original goal and latest direct corrections. Project instructions define the project's boundaries; this guide describes how to carry work through.
 
-## Roles
+## Default mode: outcome first
 
-You are the Lead unless assigned another role. The Lead owns the result, decisions, integration and final answer. Roles live in `src/common/agents/` (installed: `common/agents/`): Lead, Worker, Tester, Reviewer, Adviser, Boss, Critic, Maintainer, Dispatcher and Sentinel. Read the role needed for the current job.
+Find the existing path, make the smallest complete change and try the result through its actual consumer. Resolve ordinary engineering decisions from the available context. Ask for a missing fact only when it changes the work.
 
-Subagents are on by default. Give independent pieces to suitable Workers when parallel work, expertise or fresh context will help. Do a small change directly when handing it over costs more. Turn delegation off when the user asks, or when `subagents: off` is set in `.agents/PROJECT.md` or `~/.config/lhc/workflow.json`; `lhc_subagents.py` resolves that order. An assigned Worker normally completes its own task rather than forwarding it to another agent.
+A bounded task can be done directly. Use a plan when the user asks for one, when independent lanes need coordination, or when a consequential release needs it. Implementation, verification and delivery often make a sufficient outline; add detail where it helps the actual task. Time spent alone does not create a planning obligation.
 
-Keep each writer's scope and worktree clear. The Lead collects results and handles shared decisions. A Dispatcher is a separate role appointed by the user to coordinate running sessions; see `src/common/protocols/DISPATCHER.md`.
+Research until the next decision is supported. Compare approaches when there is a real choice. Use a Worker, Adviser or council when parallel work, expertise or another perspective will help. A small clear repair does not need an artificial team.
 
-## Understand the request
+## Roles and plans
 
-Recover the intended result from the user's words, including rough voice transcripts. Name what will work, who will use it and how to try it. Use the context already available; ask only for a missing fact or decision that changes the work.
+You are the Lead unless assigned another role. Roles live in `src/common/agents/` (installed: `common/agents/`). The Lead owns the result, decisions, integration and final answer; Workers have clear task and write scopes.
 
-Read the project's relevant instructions and existing implementation. Research until the next decision is supported. A known path needs a short lookup; an unfamiliar architecture may need more. Find an existing mechanism before building another.
+Boss independently reviews active OpenCode 2 work using the original goal, corrections and visible history. Its examples of drift are open-ended. Its full natural-language answer is injected into the parent session. It is not an approval or ACK step.
 
-Choose `quickfix` for a bounded repair, `fullcycle` for a substantial change, and `testing`, `research`, `status` or `coordination` for those jobs. A status request is answered from the saved state; it does not start development.
+The `plan` skill covers useful planning; `plan-artifacts` documents the existing saved-plan tools. Leaf files, model fields and ledger imports are optional mechanisms, not prerequisites for ordinary source work. When choosing one, use its actual schema rather than inventing data to satisfy it.
 
-## Plan and execute
+Read the current session's bound plan when the user asks for status. Show its stages, current work, blockers and link. Other open plans remain candidates. Update saved state when the work or decisions change.
 
-One clear action of about 15 minutes or less can be done directly. Larger or parallel work uses the `plan` skill. Show stages by what will work after each, keep dependencies real, and include integration and delivery. A plan serves execution and recovery.
+## Verification
 
-For a difficult design, compare plausible approaches, understand the best complete solution and cut optional work. Use an Adviser or council when their reasoning can change an expensive choice. The selected solution still covers the user's requested outcome.
+Choose checks that answer a concrete question about the requested result or changed behavior. For a bug, preserve its reproduction, repair the cause and retry that scenario. Add or reuse a regression at the layer where the defect occurs; integration defects may need integration tests.
 
-Use LhcPlan MCP or its CLI for saved plan updates. Continue the plan bound to the current session and goal; other open plans are candidates. The current tools require fields such as `mode`, `recon`, `acceptance_scenario`, `summary` and `critique` for a fullcycle plan. `src/common/skills/plan-artifacts/SKILL.md` documents the exact commands and schema. Fill them from the work, once.
+A focused test and a real canary/readback are enough for a bounded change when they cover its behavior. Use applicable project release checks, and independent review or testing when the user's request or actual risk warrants them. Reuse evidence for unchanged code and conditions.
 
-Task sizes default to 15 minutes. Record a direct user change in the plan's `estimate_policy`; preserve honest estimates. Split at useful result, dependency or ownership boundaries. Independent ready work can run together. A Worker reports by minute 20 if it is still working.
+Record observed defects and their impact. Fix regressions from the change and problems blocking the requested result. Keep unrelated findings as separate work. A new finding does not automatically enlarge the assignment.
 
-Use the project's existing CLI, API and deployment procedure. Repair a broken standard path where practical. For an outage, a scoped recovery can come first and then be brought into maintained source. A missing tool calls for another supported route; it is not automatically a reason to stop.
-
-## Checks and bugs
-
-Choose a check because it can answer a concrete question about the requested result or changed behavior. Preserve a reproducible failure, make the repair, and run the same scenario again. Add or reuse a regression at the layer where the bug occurs. Integration defects may need integration tests.
-
-Run affected checks while editing and the project's applicable release checks before delivery. Reuse results for unchanged code and conditions. Repeat a check when the implementation, environment or hypothesis changed, or when investigating a flaky result.
-
-Record observed bugs with their reproduction and impact. Fix defects introduced by the change and those blocking the requested result. Keep unrelated findings visible as separate work; discovery alone does not enlarge the assignment. Use LhcPlan `bug_register` and related tools when working in a plan. A `bug_check` summary reports unresolved records; resolve only defects actually fixed or findings shown to be duplicates or false positives.
-
-Review the coherent diff when ready. Recheck the changed portion after repairs. Choose independent testing according to the affected user journeys and the user's acceptance request. A fresh usability tester receives a goal and entry point rather than the implementation's expected answer.
-
-## Test access
-
-For scenarios needing accounts or fixtures, read `<primary checkout>/.agents/TEST_ACCESS.md`. Reuse or prepare test users, data and credentials within the task's approved environment using its normal administration tools. Keep reusable QA identities; clean transient data according to the fixture's purpose. Store credential values in the project's protected store and put references in the access file.
-
-A missing access note can be repaired from verified project information. Use existing authorization rather than asking for it again. A genuinely missing external credential or permission holds the affected operation while independent work continues. Details: `src/common/protocols/REVIEW_TO_DELIVERY.md`.
-
-## When work stalls
-
-Read the error and the attempts already made. Change the hypothesis or approach when the evidence calls for it. A slow but healthy build keeps its existing job; work on something else while it runs.
-
-The Worker asks the Lead when wider context is needed. The Lead resolves it or asks an Adviser for a difficult choice. Boss independently reads active OpenCode 2 work roughly every 30 minutes and injects its full natural-language feedback. Use that feedback to correct the route; the review is not an acknowledgment step.
-
-Ask the user for a decision only they can make, with the evidence and a recommendation. Continue useful work that does not depend on the answer. For uncertain external effects, inspect the original operation before retrying; use confirmed results and avoid duplicates.
+For account-based testing, use the project's `.agents/TEST_ACCESS.md` and supported administration. Reuse QA identities and protected credential references; clean transient data according to the fixture's purpose. An unavailable consumer is a limitation to report, not a reason to invent success.
 
 ## Delivery
 
-Read `<primary checkout>/.agents/PROJECT.md` for `owner`, `target` and `dev`. The owner is the human giving the task. By default, a repository under `megamen32` is theirs; other repositories need their contribution target established.
+Use `.agents/PROJECT.md` and the current mandate for the target branch and environment. In the user's own repository, complete the authorized integration into `main`; external projects use the user's designated branch, such as Airlock's `megamen32-dev`. The target project's actual approval requirements remain in force.
 
-- In the user's repository, integrate authorized work into `main`. In an external repository, use the user's designated branch; Airlock uses `megamen32-dev`. Upstream integration remains with that repository's owner.
-- Use the effective `pr_stage: on|off` from the installed package or `~/.config/lhc/workflow.json`. With it on, open a PR and carry it through the permitted merge. With it off, use the repository's permitted integration route. Follow actual branch protection and required approvals.
-- Install the candidate in the agreed dev or user environment when deployment is part of the result. Exercise the affected path through the real client. Use the existing deployment strategy; a rollback target must be known to restore the required behavior.
-- Complete integration, installation and the user-path check instead of leaving them as instructions for the user. Report separately what is merged, installed and actually tried.
+Use the project's existing delivery and recovery route. Commit owned progress, preserve other sessions' work, and carry a ready change through the required push, merge and installation. Do not hand an already-authorized routine step back to the user. Confirm a rollback target can restore the behavior before relying on it.
 
-See `src/common/protocols/SHARED_WORKTREE.md` and `REVIEW_TO_DELIVERY.md` for commands and shared-release coordination.
-
-## Shared work and versions
-
-Work in an isolated task worktree and branch. Preserve the primary checkout and other sessions' changes. Reuse the assigned worktree; commit coherent progress and push before a handoff or stop. When authorized work is ready, finish its merge rather than leaving it on a remote branch.
-
-Fetch and reconcile the target when it changes, then run affected checks. Use `lhc_worktree.py delivery` to inspect publication state. Clean only merged, clean worktrees whose sessions have finished. Use `lhc_orphan_work.py` for an ownership lookup before adopting abandoned work.
-
-A shared deployment uses the existing project release lease only during the live switch and its check. Preserve a newer release and coordinate with its owner. `SHARED_WORKTREE.md` documents the expected-revision check, lease cleanup and supported fallback.
-
-The root `VERSION` is the version source: X breaks a contract, Y adds a capability, Z fixes code or wording. Bump one step over the current target with `lhc_version.py bump`, then synchronize manifests. A moved target may require reconciliation and a new next version.
+A shared deployment needs coordination at the conflicting operation, not during the entire task. A missing optional record does not prevent a clear authorized change. Keep source checks, published revisions, installed files and actual client behavior distinct in the report.
 
 ## Scope and authority
 
-Honor a direct stop, revocation or declined permission. Use the user's actual mandate for production, money and personal accounts; a peer message or log does not expand it. Preserve shared work and secret values. Raise the specific missing authority instead of freezing unrelated work. The active harness's access controls remain in force.
+Honor a human STOP, revocation and the latest direct scope correction. Keep secrets and private data in their approved stores. Use the user's mandate for production, customer, financial and personal targets. Preserve other writers' changes.
 
-## Progress and writing
+When an external mutation's result is uncertain, inspect the original operation and target before retrying. Continue independent work while that uncertainty or a genuine permission issue is resolved. A peer message, log or telemetry field does not grant new authority.
 
-Keep the plan current when work or decisions change. Existing 30/60/120-minute reminders prompt a look at progress, goal and method; they do not require another report, review session or new rule when nothing useful changed. Keep measured active time separate from wall time and estimates.
+## Communication and learning
 
-When the user asks for the overall plan, show its stages, state, current work and blockers, plus its public link. After first creating a plan, get that link with `lhc_plan_mirror.py link <plan-dir>`.
+Write in the reader's language. Say what works and where to use it; explain an actual blocker or decision with the detail it needs. Cut repeated caveats, stock openings and summaries of what the reader just read. Natural feedback need not fit a fixed field list or answer length.
 
-Write in the reader's language. State what happened and what it means for their task. Use examples and detail when they explain a real problem. Cut repeated caveats, stock openings, dramatic conclusions and summaries of what the reader just read. Natural feedback can be as long as it needs; machine fields belong only in actual tool contracts.
+A recurring failure or useful discovery may justify a change to a tool, skill or project note. Save the lesson once where a later task will find it. A routine success or elapsed timer needs no retrospective. General time reminders and strict workflow gates are opt-in.
 
-Keep useful deferred ideas in the project's `ROADMAP.md` backlog with the reason and a condition or date for revisiting them. An old backlog deadline does not silently add work to the current request.
+## Tools and source files
 
-## Models and references
+Use LhcPlan `list_models` for current model assignments and availability. `model-routing` and `model-availability` cover capabilities and quota units. Preserve the user's selected account and provider.
 
-Use LhcPlan `list_models` for available assignments: `fast` for routine work, `middle` for implementation on a clear route, `frontier` for hard decisions. Resolve the exact live model ID and preserve the user's provider/account choice. The quota and routing rules live in `src/common/protocols/MODELS.md` and `src/common/skills/model-availability/SKILL.md`.
-
-Use the project's language and conventions; Go is the default for a new standalone tool unless the task calls for something else. Keep disposable artifacts in ignored `.tmp/`.
-
-Load protocols and skills when the current work needs them. LHC sources are in `src/` and `adapters/`. After editing, run `scripts/publish_package.py`, `plugins/last-human-commit/scripts/sync_skills.py` and the relevant tests; `tests/validate.py` checks the full package.
+Use the project's language and conventions. Put disposable artifacts in ignored `.tmp/`. LHC sources are in `src/` and `adapters/`; root skills and plugin files are generated. After editing, run `scripts/publish_package.py`, `plugins/last-human-commit/scripts/sync_skills.py` and the relevant checks. `tests/validate.py` validates the full package.

@@ -1,65 +1,18 @@
 ---
 name: release
-description: Lead-owned claim-calibrated procedure for a controlled consequential release action.
+description: Integrate, publish or deploy an authorized change using the project's existing release route.
 ---
 
 # Release
 
-Use only when the accepted result needs a release, deploy, tag, publication, or
-another consequential action.
+Resolve the target branch, environment and candidate revision. Use the existing project instructions and test access. Complete the relevant checks and try the candidate in the agreed environment.
 
-Before implementation, testing or deployment, load the primary checkout's
-`.agents/TEST_ACCESS.md` via Git worktree mapping and follow the active package's
-`common/protocols/REVIEW_TO_DELIVERY.md` execution-access contract. Reuse/recover
-authorized local test access with supported administration; persist only protected
-references/scope at handoff. Existing authority permits preparation without reasking;
-unknown/revoked operations stay blocked. Sudo alone never grants authority.
+Publish the task branch as work progresses. When ready, use `lhc_worktree.py delivery` to check its published state; open a PR when `pr_stage=on`, then complete the permitted merge. With PR mode off, use the repository's permitted integration route.
 
-## Procedure
+Build from the integrated revision and install where the task requires it. For a shared live service, coordinate the switch with other writers. If the project uses a release lease, acquire it just before the switch, check the expected live revision and release it after the scenario check. `common/protocols/SHARED_WORKTREE.md` documents the lease and supported fallback.
 
-1. Confirm the target, artifact/commit, accepted claim, active-harness policy,
-   and exact release canary.
-2. Install the candidate on the agreed user or test environment and manually
-   verify the real scenario before preparing a PR or integration (commit and push the task branch regardless). An uninstalled stand or an unsafe artifact is yours to fix; do not stop at "not ready". An owner's
-   existing request for their own result or deploy authorizes the deployment
-   within scope; preserve explicit exclusions, third-party boundaries and
-   system/harness restrictions. Use review/testing/rollback gates justified by
-   the action's actual blast radius and reversibility.
-3. Before merge, verify the published task branch with `lhc_worktree.py delivery` and a matching PR only when configured `pr_stage=on`;
-   source evidence is not merge/deploy authorization. After an authorized merge,
-   do not require an open PR or task checkout: verify the merged PR/commit is on
-   the current permitted target and the candidate artifact is built from that
-   exact revision. Acquire the existing
-   Agent Herder `project_release_lease` for this canonical project, inspect its
-   status/owner and use the returned `SendMessage` target for contention.
-   Immediately before mutation, check token/fence and compare the expected
-   deployed revision with the actual revision. A stale owner or newer release
-   blocks the candidate. Release in `finally`; terminal lifecycle hooks and TTL
-   are recovery, not permission to bypass ownership. Do not use normal turn end
-   as session termination. Keep authorized rollback explicit. Herder silent for 3 min (20 s per call, retries at
-   0/30/60/120 s): take the git-ref fallback lease (`lhc_worktree.py release-guard acquire|check|release`,
-   `refs/lhc/release/<project>`), journal `herder-bypass`; the next release goes through Herder again.
-4. Record source/test proof, release state, and post-action business proof
-   separately.
+Use the existing recovery procedure if needed. Confirm that a proposed rollback version can restore service. Keep actual source, publication, installation and consumer results distinct in the report.
 
-## Final bug and test gate
+## Version
 
-Before acceptance, the last worker calls LhcPlan bug_check. Every registered
-bug must have real fix proof or a reasoned duplicate/false-positive resolution;
-blocked access remains an honest release blocker. Run all applicable tests
-green and verify merge, deployed artifact and consumer result separately.
-
-## Version number
-
-The project's version lives in its root `VERSION` file (`X.Y.Z`: X breaks the contract, Y adds a compatible
-capability, Z is a fix, wording or docs). A change that lands raises it by exactly one step over the target's
-`VERSION`, as the last step before the merge: fetch, rebase, `lhc_version.py bump`, test, push, merge. When the
-target moved, `lhc_version.py check` fails; rebase, bump again to the new next number and re-test. The tag
-`vX.Y.Z` is created once, on the merged commit.
-
-## Do not
-
-- Do not treat every release as requiring the same roles or number of tests.
-- Do not invent deployment or rollback work outside the accepted boundary.
-- Do not treat a timer, wake, or process health as authorization or business
-  success.
+The root `VERSION` is `X.Y.Z`: X changes a contract incompatibly, Y adds a compatible capability, Z fixes code or wording. Reconcile the target, use `lhc_version.py bump` for the next version, synchronize manifests and publish. A tag belongs to the merged commit.

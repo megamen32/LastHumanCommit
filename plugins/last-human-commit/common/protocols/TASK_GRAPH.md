@@ -1,11 +1,6 @@
-> Background reference. Load only when the task needs this mechanism. `AGENTS.md` wins on any conflict: its finish line, blocker lists, escalation chain and delivery rules override this file.
+# Task graph reference
 
-# The task graph
-
-Every objective that is decomposed has one machine-readable task graph. It is the
-same content as the live plan report, kept in a form a tool can read: the report
-is written for a person, the graph is written for the schedule, the dashboard and
-the next session. One objective, one graph, updated together with the report.
+A saved decomposed plan uses task files as source and a generated graph for scheduling and views. This reference describes the graph schema; use `plan-artifacts` for write commands.
 
 ## Where it lives
 

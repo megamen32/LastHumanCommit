@@ -90,6 +90,9 @@ const HANDOFF_RELATIVE = join(".agents", "shared-session", "compaction")
 const GUARD_TIMEOUT_MS = 5000
 const MAX_OUTPUT_CHARS = 262144
 
+const verboseWorkflow = () => /^(1|true|yes|on)$/i.test(process.env.LHC_VERBOSE_WORKFLOW ?? "")
+const strictWorkflow = () => /^(1|true|yes|on)$/i.test(process.env.LHC_STRICT_WORKFLOW ?? "")
+
 function moduleDir(): string {
   try {
     return dirname(fileURLToPath(import.meta.url))
@@ -375,7 +378,7 @@ const LastHumanCommitTimeGuard = async (context: LhcPluginInput = {}): Promise<L
   const running = new Set<string>()
 
   const observe = async (sessionID: string, toolInput?: unknown) => {
-    if (!sessionID || !paths.entry || !paths.projectRoot) return
+    if (!verboseWorkflow() || !sessionID || !paths.entry || !paths.projectRoot) return
     if (running.has(sessionID)) return
     running.add(sessionID)
     try {
@@ -461,7 +464,7 @@ const LastHumanCommitV2 = async (input: LhcPluginInput = {}): Promise<LhcHooks> 
 
   const holdStop = async (hookInput: { event?: { type?: string; properties?: Record<string, unknown> } }) => {
     try {
-      if (hookInput?.event?.type !== "session.idle") return
+      if (!strictWorkflow() || hookInput?.event?.type !== "session.idle") return
       const sessionID = hookInput.event.properties?.sessionID
       if (typeof sessionID !== "string" || !paths.entry || !paths.projectRoot) return
       const session = input.client?.session
@@ -481,8 +484,8 @@ const LastHumanCommitV2 = async (input: LhcPluginInput = {}): Promise<LhcHooks> 
       await holdStop(hookInput)
     },
     "tool.execute.before": async (hookInput, output) => {
-      // Only a refusal reaches the agent; any failure of the guard lets the command run.
-      if (String(hookInput?.tool ?? "").toLowerCase() !== "bash") return
+      // Git workflow checks are opt-in. Ordinary source edits and canaries run directly.
+      if (!strictWorkflow() || String(hookInput?.tool ?? "").toLowerCase() !== "bash") return
       const command = output?.args?.command
       if (typeof command !== "string" || !paths.entry) return
       const workdir = typeof output?.args?.workdir === "string" ? (output.args.workdir as string) : paths.projectRoot

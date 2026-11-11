@@ -1,77 +1,14 @@
 ---
 name: improve-workflow
-description: Convert observed failures and successful methods into tested, retrievable skills, tools or routing changes, then verify reuse and retire ineffective guidance.
+description: Improve an instruction, skill or tool after a recurring problem, useful discovery or explicit user correction.
 ---
 
-# Improve the factory, not just the journal
+# Improve the workflow
 
-Mandatory at least every120 wall-clock minutes during unfinished work, and on
-user correction, substantial overrun, repeated route failure and cycle completion.
-Every maximum overrun requires a route decision. Boss demands the accepted
-business result; a learning receipt never replaces it or justifies CONTINUE. The objective clock
-survives phase changes and compaction. Use the persistent lhc_time_guard checkpoint;
-notification is not completion. With no native hook, check manually at work
-boundaries; after idle periods check on resumption without background wakeups.
-Use also after a meaningful reusable signal, or for a selected factory-improvement task.
-A brief consideration is enough when there is no useful observation. Do not append
-four empty answers after every task.
+Start with an observed problem: a repeated failed route, a user correction, wasted work or a useful technique worth reusing. Find the instruction or tool that owns it. A successful routine task needs no retrospective.
 
-Keep inspection within five minutes and choose at most one actionable correction.
-Compare cumulative cost and accepted user results before selecting it. Record
-observation, changed method, verification and next route in the existing task,
-then explicitly acknowledge the checkpoint. Evidence-backed no-change is valid
-when no improvement is indicated; repeated failure makes that excuse invalid.
-Do not reset the clock, start a new feature, fabricate evidence or create a new
-memory system to satisfy this rule. See common/protocols/SELF_IMPROVE.md for the
-bounded loop; Hermes uses its verified native learning owner at the same cadence.
+Make the smallest change that addresses the cause. Often that means deleting a repeated rule, fixing a tool, combining duplicate instructions or changing the assignment. A local mistake may need a local fix rather than a permanent rule for every task.
 
-## Capture and place
+Try the revised method against the original problem and relevant contrasting cases. Keep the result and its limits. Save useful guidance in the existing skill, project note or native learning store so a later relevant task can find it. Reuse evidence is recorded when reuse actually occurs.
 
-For a deliberate shortcut with a real known ceiling, keep the ceiling and the
-observable trigger for revisiting it beside the code (a short `ponytail:` comment)
-or in the owning project's existing task. Reuse that record; do not build a
-second debt database or run a mandatory whole-repo scan. On a relevant debt review,
-summarize marked shortcuts as location, limit, revisit trigger; missing triggers
-are actionable. Ordinary simple code needs no debt marker.
-
-Record the observed episode, conditions and evidence. Include successful shortcuts,
-not only failures. Find an existing matching lesson before duplicating it. Classify
-the improvement at the right owner: project fact, user preference, reusable skill,
-mechanical script, model-routing hint, or genuinely changed role responsibility.
-A local mistake does not automatically justify a global rule.
-
-## Change and compare
-
-Make one small testable hypothesis: what changes, why it should help, and what
-unchanged acceptance will establish success. Within authorized local improvement
-scope, have Worker implement it and an independent reviewer/check test it.
-Use the original failure and a few contrasting/regression tasks where possible.
-For a consequential design, use council; for a tool's actual usability, use Testers.
-
-Compare accepted outcomes, relevant cost, repairs and failure modes. Do not claim
-improvement merely because a prompt is shorter or mandatory verification vanished.
-Do not optimize a metric by weakening the task or granting the factory new authority.
-Candidate tests and model-produced judgments are evidence of their own type, not
-proof of successful real-world execution.
-
-## Retrieve and reuse
-
-Publish the method with a clear description of when it applies, a small procedure,
-evidence links and limitations. Add it to the skill catalog or the existing native
-learning system so a later relevant task can find it. Record subsequent applicable
-reuse separately from the original test. No relevant later task means pending
-reuse, not failed learning and not invented success.
-
-The learning index may use: observed -> experimenting -> verified -> reused,
-with rejected/retired outcomes. These labels express evidence states rather than
-a required bureaucracy. Retain the original observation; link actual changes.
-Use existing task records for detail instead of a second database.
-
-## Simplify and retire
-
-A successful improvement can delete a rule, merge duplicate skills, replace prose
-with a script, remove a pointless agent call or change a model allocation. Retire a
-method whose assumptions no longer hold. Preserve earlier evidence and explicit
-user constraints; reversible local trials must not erase unrelated shared work.
-Hermes-native learning may own storage and triggering when attested, but still
-needs retrievability, validation and relevant reuse. Do not duplicate its loop.
+The existing time reminder is a chance to reconsider a slow route. Correct the route when needed and continue the user's work; it does not require a new review session or a learning entry with empty fields. See `common/protocols/SELF_IMPROVE.md` for tool and record details.

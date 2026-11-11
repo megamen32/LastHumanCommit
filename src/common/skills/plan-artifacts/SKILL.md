@@ -9,9 +9,9 @@ description: Read the commands and file formats for saved LHC plans, their gener
 
 Use LhcPlan MCP when available, or the same CLI in `lhc_plan_json.py`. `<tools>` means `common/tools/` in the installed package or `src/common/tools/` in the source checkout.
 
-A plan has `plan.json`, task files in `leaves/`, and generated `plan.graph.json`, `plan.md` and `plan.html`. Use the plan bound to the actual session and goal. A request for status reads that plan; it does not start new work.
+A chosen file-backed plan has `plan.json`, task files in `leaves/`, and generated `plan.graph.json`, `plan.md` and `plan.html`. Use the plan bound to the actual session and goal. A request for status reads that plan; it does not start new work.
 
-For fullcycle execution, the current tools check `mode`, `recon`, `acceptance_scenario`, `summary` and `critique`. Record existing facts and the chosen route once. The default leaf estimate limit is 15 minutes; a direct user change is recorded in `estimate_policy` with its reason. Use `deliverable: plan|implementation` and `decomposition: progressive|complete` to describe the assignment. `check --handoff` checks the declared handoff requirements.
+Within the optional file-backed fullcycle planner, the current tools check `mode`, `recon`, `acceptance_scenario`, `summary` and `critique`. Record existing facts and the chosen route once. That planner's default leaf estimate limit is 15 minutes; a direct user change is recorded in `estimate_policy` with its reason. Use `deliverable: plan|implementation` and `decomposition: progressive|complete` to describe the assignment. `check --handoff` checks the declared handoff requirements.
 
 Keep the planned model in `default_model` or each leaf's `model`, using the current catalog. Planned identity and tariff estimates do not establish actual execution or billed usage.
 

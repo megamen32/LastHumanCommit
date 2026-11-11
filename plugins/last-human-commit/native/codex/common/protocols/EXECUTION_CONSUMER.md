@@ -1,18 +1,6 @@
-> Test setup reference. Use it only for an isolated execution-control consumer.
-> The product workflow is in `ORCHESTRATION_RECORDS.md`.
+# Isolated execution-control tests
 
-# Isolated execution-control consumers
-
-A fresh consumer can exercise the staged package over its real CLI and stdio
-MCP using a copied plan and the existing HTTP fixture. The fixture implements
-native admission, exact turn observation and wait receipts without a native
-harness or a model. No live plan or worker is an input.
-
-Choose two separate run directories under the task's `.tmp/`. One consumer uses
-the CLI. The other starts `common/tools/lhc_plan_mcp.py` from the staged package
-and uses JSON-RPC initialize, notifications/initialized, tools/list and tools/call.
-The same canonical leaf and assignment result should be visible from either
-surface. Keep each consumer's temporary plan and environment separate.
+Use this fixture when testing the execution-control CLI or MCP itself. Ordinary product work uses the native runtime and the task workflow in `ORCHESTRATION_RECORDS.md`.
 
 ## Inputs and boundary
 

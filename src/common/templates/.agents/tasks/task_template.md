@@ -19,7 +19,7 @@ Actual wall-clock minutes:
 
 Use the session-bound plan and its generated `plan.md` or public link. Describe what will work by stage, who owns the current pieces and their dependencies. `src/common/skills/plan/SKILL.md` documents the workflow.
 
-Leaves normally estimate up to 15 minutes; a still-running Worker reports by minute 20. Keep measured active time separate from elapsed clock time.
+Use agreed estimates and checkpoints where they help coordination. Keep measured active time separate from elapsed clock time.
 
 ## Decisions and evidence
 

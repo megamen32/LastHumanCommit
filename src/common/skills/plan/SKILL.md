@@ -5,7 +5,7 @@ description: Plan larger or parallel work, keep its current state, and answer re
 
 # Plan
 
-Use a saved plan when work needs coordination or recovery, or when the user asks for one. One clear action of about 15 minutes or less can be done directly. The plan records what will work, the path to it, current work and actual results.
+Use a saved plan when work needs coordination or recovery, or when the user asks for one. A bounded task can be done directly; duration alone does not require a plan. The plan records what will work, the path to it, current work and actual results.
 
 ## Choose the route
 
@@ -13,15 +13,15 @@ Read the goal, latest corrections and existing implementation. Investigate quest
 
 Describe stages in the user's language by what will work after each. Create the tasks needed for the stage being started. With `decomposition: complete`, prepare executable tasks for all active stages before handoff; `progressive` leaves later details open. Record `deliverable: plan` for planning-only work and `implementation` for execution.
 
-Use `plan-artifacts` for the current schema and commands. The tools require fullcycle setup fields including `mode`, `recon`, `acceptance_scenario`, `summary` and `critique`. Record the relevant facts and decision once. The summary has a current tool limit of 3000 characters; full task descriptions keep the detail.
+Use `plan-artifacts` for the current schema and commands. When using the file-backed tools in fullcycle mode, their schema requires setup fields including `mode`, `recon`, `acceptance_scenario`, `summary` and `critique`. Record the relevant facts and decision once. The summary has a current tool limit of 3000 characters; full task descriptions keep the detail.
 
 ## Tasks and estimates
 
 Split at useful result, ownership and dependency boundaries. Different hosts or environments often need separate checks and can run independently. A research task names the uncertainty it will resolve.
 
-The default leaf limit is 15 minutes. Record a direct user change through `update_plan` as `estimate_policy: {"leaf_cap_minutes": 60, "reason": "the actual instruction"}`, using the real limit. Keep the original estimate visible and explain a changed forecast.
+When using the optional file-backed planner, its leaf limit defaults to 15 minutes. Record a direct user change through `update_plan` as `estimate_policy: {"leaf_cap_minutes": 60, "reason": "the actual instruction"}`, using the real limit. Keep the original estimate visible and explain a changed forecast.
 
-The tool may require an overdue large task to be split; preserve completed work and record the remaining pieces. A checkpoint is a reason to inspect progress, not to cancel a healthy Worker.
+Within that selected planner, preserve completed work when splitting a task. An agreed checkpoint is a reason to inspect progress, not to cancel a healthy Worker.
 
 ## Execute and keep state
 

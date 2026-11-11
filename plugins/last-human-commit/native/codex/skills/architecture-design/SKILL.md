@@ -1,130 +1,16 @@
 ---
 name: architecture-design
-description: Design a working solution when boundaries, data ownership or costly assumptions remain uncertain; test pivotal choices, independently challenge the design, then simplify into complete outcomes and dispatchable tasks.
+description: Design a complete solution when an uncertain boundary or assumption would make implementation expensive to redo.
 ---
 
-# Design a working solution, then make it smaller
+# Architecture design
 
-Use for a selected architecture task or when a wrong structural choice would
-make implementation expensive to redo. A clear bounded change can proceed through
-the existing implementation route. Scale design effort to the uncertainty that
-could change the solution; do not fill out stages merely because this skill exists.
+Start from the requested behavior and the existing system. Identify the decisions that would be expensive to reverse: interfaces, ownership of data, lifecycle, deployment or failure handling. A clear local change needs little design.
 
-For a large fullcycle, use bounded independent research Workers and a working→ideal→YAGNI
-plan before dispatch. Add an allowed-model adviser challenge when material uncertainty
-remains and independent reasoning can change the route; it is not a mandatory review
-queue or release gate. Research may clarify the plan, and no Worker recursively hires.
-Quickfix/testing/assigned leaf do not start this research/council loop or hire recursively.
-Reuse the completed council; no new round without a substantive changed decision.
+Describe a complete working approach. Compare real alternatives where they change cost or behavior, then remove optional work while keeping the accepted outcome. An ideal design can expose useful choices; it is a reference, not a second implementation.
 
-## Recover current inputs and applicable learning
+For an uncertain decision, run a small experiment whose result can choose between the alternatives. Use an Adviser, Critic or `council` when another perspective can change the route. Resolve material findings and move on once the next investment is justified.
 
-Begin with the latest objective and corrections, actual project state and
-constraints, and relevant tested lessons, skills and outcomes from the existing
-indexes. Retrieve the few records that could change this decision before
-redesigning; do not scan the full history or load every skill. Verify freshness
-against current source, runtime and user intent. Keep project facts, proposed
-product improvements and reusable LHC method changes distinct. Prior guidance is
-evidence to assess, not authority over the current request.
+Build an early path through the real entry point and important boundaries. Identify simulated dependencies and the gaps still to be implemented. Split the remaining work by ownership and dependencies with `plan`; use `model-routing` for suitable executors.
 
-## Establish what must work
-
-Start with the accepted user outcome and the actual consumer path. Describe a
-coherent solution that can achieve it before distributing implementation tasks.
-Identify the properties that matter for this use: observable behavior, boundaries,
-data ownership and lifecycle, integration contracts, and relevant failure behavior.
-Distinguish required properties from desirable extensions. An ideal target helps
-expose dependencies; it does not authorize features outside the selected scope.
-
-Trace existing components and constraints before introducing new ones. State the
-costly assumptions: which wrong choice would force a migration, invalidate an
-interface or prevent the user from reaching the goal? Compare practical alternatives
-against those properties and the cost of changing course. Preserve a useful
-existing design when evidence supports it.
-
-## Three-pass design
-
-Use this sequence when designing a solution, before committing to its implementation:
-
-1. **Working solution.** Describe an ordinary, coherent way to solve the actual task
-   end to end with current components and constraints. First establish how it works;
-   do not start by cutting the scope of a solution that does not exist yet.
-2. **Ideal version.** Improve that same solution into the best version for the stated
-   purpose. Identify what better behavior, reliability, UX or architecture buys and
-   what it costs. This is a design reference, not permission to build every extension.
-3. **80%-value MVP.** Reduce the ideal to the smallest complete working version that
-   retains roughly 80% of the useful result, not 80% of the implementation. Keep the
-   essential path and architecture-critical boundaries. State the selected value,
-   deferred improvements and a real acceptance check.
-
-Implement the third version by default; the first two are design passes,
-not three separate builds or approval rounds. The 80% figure is an orientation, not a measured guarantee. Preserve already accepted mandatory outcomes; negotiate
-any actual scope reduction instead of silently omitting a requirement. A clear tiny
-change can collapse the passes into a short decision, without a planning document.
-When the user asks for a plan, make the three passes understandable in that one plan.
-
-## Buy evidence before expensive implementation
-
-For each pivotal uncertainty, choose the smallest probe whose possible results
-would change the decision. State the question, observable result and resulting
-choice before running it. Use a contract experiment, representative data sample,
-failure reproduction or focused prototype as appropriate. Stop a probe when the
-decision is sufficiently supported; an open-ended technology survey is not progress.
-
-Build an early executable skeleton across the real entry point, consequential
-boundaries and observable result before investing in broad implementation. It may
-exercise a narrow case, but must reach the actual integration at issue. Label
-simulated dependencies and remaining gaps; a mock-only path cannot settle a real
-integration risk. This skeleton is architecture evidence, not completion of the
-accepted product scope. Keep or discard prototype code according to its fitness.
-
-## Challenge the decision and the improved synthesis
-
-Use a fresh independent challenger through `../challenge-decision/SKILL.md` with
-the raw objective, constraints, proposed design and probe evidence. Ask for
-counterexamples and better alternatives, not endorsement. For other architecture
-tasks with competing approaches where additional reasoning changes the choice, use
-`../council/SKILL.md`.
-
-Revise or synthesize the design using substantive findings. Have the independent
-challenge address the resulting design and any new assumptions; approval of its
-ingredients does not establish that their combination works. Resolve decisive
-disagreement with a targeted check when possible. Record remaining uncertainty
-and the condition that would reopen the decision. Stop designing when pivotal
-choices have adequate evidence for the next investment, not when all uncertainty
-has disappeared. Routine engineering choices remain with Lead.
-
-## Simplify into complete outcomes, then dispatch
-
-Derive a practical design from the working target. Build a YAGNI ladder whose
-rungs are complete, observable user outcomes, each adding justified value or a
-required property. Remove speculative flexibility, duplicate layers and optional
-features before cutting behavior needed for the accepted outcome. Record what
-was discarded and why. A smaller rung is an intermediate delivery unless it
-already meets the user's selected scope; never rename partial work as completion.
-
-Use `../plan/SKILL.md` to turn the next complete outcome into
-coherent measurable tasks with owned paths/resources, acceptance checks, dependencies,
-and estimates explained by work, proof and uncertainty. Use
-`../model-routing/SKILL.md` for suitable actual models. Resolve shared contracts
-before parallel mutation. Show which ready tasks actually run together under
-available capacity and which must wait; a drawn DAG is not a dispatch receipt.
-Verify the combined result at joins. No universal stage count, task duration or
-mandatory batch size follows from this method.
-
-## Learn from the working result
-
-Verify the outcome through `../user-testing/SKILL.md`. Compare the real behavior
-with the properties and assumptions that drove the design. Preserve both feedback
-loops: project/product defects return to an in-scope repair, regression check and
-fresh real-use attempt; reusable friction or successful methods in LHC itself
-return through `../improve-workflow/SKILL.md` and the active SELF_IMPROVE protocol.
-Verify a method change independently and check its next applicable reuse before
-claiming durable improvement. Pending reuse stays pending; do not invent it.
-
-Repair the smallest failing boundary and revisit the architecture only when
-evidence warrants it. Keep the selected design, decisive evidence, deferred
-choices and next delivery in the existing task record; a separate architecture
-dossier is optional. Make validated learning retrievable through the existing
-index. Feed changed assumptions back into task boundaries and model allocation
-before further dispatch.
+Keep the selected design, decisive evidence and deferred choices in the existing task record. After delivery, save lessons that will help a later task.

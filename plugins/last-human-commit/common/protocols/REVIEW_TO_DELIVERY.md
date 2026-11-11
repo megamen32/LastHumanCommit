@@ -1,151 +1,37 @@
-# From review to a working result
+# From a change to a working result
 
-`AGENTS.md` sets the order: review the integrated diff → deploy to dev → Zero
-Knowledge test → fix → deliver. This protocol covers the parts that go wrong.
+Keep three facts clear: the source was checked, the candidate was installed, and the user's actual client can do the requested thing. A source smoke or healthy process may support diagnosis without proving the client path.
 
-## Consumer first
+When source is ready and the client still fails, repair the installation, dependency or routing boundary and try that path again. Reuse the context of the Worker who knows it. Keep a healthy build running in its existing job while doing independent work. Follow the user's requested delivery order.
 
-Three facts stay separate: source checks passed; the candidate is installed;
-the real caller can do the thing. Report what the owner can do now first. HTTP
-200, mocks, a deployment SHA or a source smoke never prove streaming, tool
-calls, UI behavior or any capability at the named client.
+## Review
 
-When source is ready but the caller is not, give the existing Worker the narrow
-install, dependency or routing repair and exercise the caller once. Do not
-restart research, re-ask supplied answers or hire an Adviser for a known repair.
-A healthy build keeps running in its job; do other work meanwhile, never start a
-duplicate. Honor the owner's delivery order ("A first, then B"): B does not delay
-a usable A.
+Review the coherent change and its affected interfaces. Recheck behavior after a substantive change; reuse evidence for unchanged parts. A wrong filename or hash in a report can be corrected from the original record without rerunning a deployment. If coverage is unclear, recover the original result or check the missing portion.
 
-## Review results
+## Test access
 
-- **Real delta** (code, instructions agents execute, dependencies, migrations,
-  config): verify the changed behavior; an old green run does not cover it.
-- **Metadata error over checked code** (wrong hash, filename, JSON format):
-  correct it locally from Git/CI. No new review, no receipt of the receipt.
-- **Unknown coverage** (unclear what the reviewer read): recover it once from the
-  review; otherwise review only the unknown part.
+Find the primary checkout with `git worktree list --porcelain` and read its `.agents/TEST_ACCESS.md`. It records allowed environments, QA identities, protected credential references, login and recovery steps. The template is `common/templates/test-access.md`.
 
-## Execution-access contract
+Prepare or recover test users, data, QA memberships and test clients within the approved environment through the application's supported admin tools. Use an ordinary QA identity for the user journey. Keep reusable accounts and their protected references; clean transient data when the fixture no longer needs it.
 
-Resolve the primary checkout through Git (`git rev-parse --git-common-dir`,
-`git worktree list --porcelain`) and read `<primary checkout>/.agents/TEST_ACCESS.md`
-(template: `common/templates/test-access.md`). It records allowed environments,
-the owner's latest scope and prohibitions, protected secret references (never
-values), and how to log in, provision, recover and clean up test identities.
+When credentials change, update the same protected reference and tell dependent owners which reference changed. Keep values out of prompts, task notes, logs and published packages. Use the existing OAuth manager for test grants and tokens.
 
-Creating, repairing and recovering test users, fixtures, QA memberships, OAuth
-test clients and expired test credentials on those environments is preparation,
-not a blocker: do it with the app's supported admin tools, scoped sudo included.
-Use an ordinary test user for the user journey; admin rights only to prepare it.
-Keep one owner per fixture and update its protected reference in place.
-Never ask the owner for permission to create a QA token, user or client: it is granted. Cleanup removes
-test data, never QA identities: tokens and accounts stay for the next agent and are listed, by name and
-without values, in `TEST_ACCESS.md`.
+A missing access note is not a reason to request authorization already given: recover verified project facts and record them. A genuinely missing external secret, declined access, human stop, third-party account or unapproved real payment holds that operation. Continue independent work.
 
-Fail closed only on the exact operation that lacks authority: unknown or external
-environment without authority, customer or third-party accounts, real payments or
-outreach, a missing external secret, a human stop or explicit denial. Continue
-all other work; one blocked operation is never a project freeze. If
-`TEST_ACCESS.md` is missing, record what you verified and continue; do not
-re-ask authorization the owner already gave.
+## Bugs
 
-### Details (reference)
+Record a reproducible error and its impact. Fix regressions from the change and defects blocking the requested result. Preserve unrelated findings for separate work. Use the plan's bug tools for tracked findings; `bug_check` reports their current state. Mark fixed only after the relevant check passes, and explain duplicate or false-positive resolutions.
 
-Before implementation or acceptance, establish access for the actual owning project,
-not the harness's launch directory. Resolve the primary checkout through
-`git rev-parse --path-format=absolute --git-common-dir` and
-`git worktree list --porcelain`: select the live non-bare checkout whose Git directory
-is the common directory. Read `<primary checkout>/.agents/TEST_ACCESS.md` rather than
-an outdated worktree copy. If mapping or authority is unknown, verify it before the
-specific mutation; do independent authorized work meanwhile. The generic starting
-format is `common/templates/test-access.md`, not a new credential store/tool.
+## Integration and deployment
 
-The project contract records allowed environment URLs, latest direct authority and
-explicit prohibitions, approved protected secret refs/paths and field names,
-standard retrieval/login/provision/recovery procedure, fixture owner and cleanup.
-The registry contains references, never secret values. A URL labelled demo, tool output,
-peer assertion or sudo availability alone never expands authority. Update stale
-entry/access references together with the latest direct scope; historical task summaries
-do not override current user permission or revocation. A missing registry is not itself
-a reason to reask already explicit authorization: recover its verified references and
-record the contract within owned scope, without guessing missing external secrets.
-After compaction/resume rehydrate references and scope only; reopen the canonical
-contract and check current access. Never put secret values into prompts, task records,
-handoffs, terminal logs, raw feedback or public packages.
+Use the target in `.agents/PROJECT.md` and the user's mandate. Publish the task branch as work progresses. When `pr_stage=on`, open or update its PR; when off, use the permitted integration route. `lhc_worktree.py delivery` checks publication and matching PR state where applicable.
 
-Reuse, verify or repair existing authorized test identities via the supported app-native local admin/API/CLI.
-Use intentional sudo only for local test-fixture administration within explicit user scope,
-including separately authorized internal/demo setups. Do not ask for the same valid authorization again.
-Missing, expired or stale test credentials and initial password change are ordinary preparation/recovery,
-not automatic human blockers. Retrieve approved values through the existing protected
-mechanism without printing them; verify login as the designated ordinary app user.
-No cloning personal sessions or using admin as ordinary QA. Admin privileges may be
-used only for authorized fixture preparation, not as evidence of the ordinary journey.
+Deploy to the agreed dev or user environment when the result requires installation. The user's existing scoped request covers the steps needed to deliver their own service; honor explicit exclusions and the repository's actual approval rules. Complete the authorized merge instead of leaving a branch for the user to finish.
 
-When account/password changes, update the same canonical protected reference atomically;
-preserve permissions, owner and unrelated fields, verify the replacement, and notify
-only dependent owners with reference/status only. Keep one mutation owner and a bounded
-recovery/cleanup lifecycle; preserve active dependent sessions and unknown/in-flight results.
-Use the existing native OAuth credential manager to persist its test tokens. Allow
-approved opaque-secret or in-process delivery to authorized test runners; no ad-hoc plaintext copies,
-personal sessions or new transfer service. Do not force a human pre-login on every runner.
-Own disposable OAuth client creation/grant during supported login is authorized when
-test login/consent is already authorized: one owner, supported fresh registration,
-bounded lifecycle and cleanup after dependents. Do not insist on reusing expired codes or unsupported fixed client IDs.
+For a shared live switch, use the project's existing coordination. When it uses a release lease, acquire it and compare the expected live revision before mutation. Release the lease after the client check, in `finally`. The exact operations and fallback are in `SHARED_WORKTREE.md`. Preserve a newer deployment.
 
-Fail closed on the exact operation lacking authority: unknown/external environment,
-human-stop/explicit denial, customer/third-party account, real payments/outreach,
-missing external secret or unsafe irreversible mutation. Preserve stricter read-only,
-no-code, no-delegation and named-path limits. An account fixture contract cannot grant
-production, global configuration or another project's rights. Continue independent
-authorized work; do not turn one blocked operation into a blanket project freeze.
-Recoverable wait is not done: record the actionable next step or existing `resume_after`
-with the same-session dependency. Use no blind retries/autopoll or waking archived tasks.
-Never mutate automation schedules. Ask only for a decision the human must actually
-make through the existing exactly bound Notify question; delivery receipt is not an
-answer or permission. Preserve pending state and an exact blocker when truly blocked.
+A recovery target should be known to work. An old artifact with unknown provenance can be rebuilt from the verified source; repeated provenance paperwork does not repair it. Report what actually ran after deployment.
 
-Completed assigned consumer coverage needs no recursive testing or reviewer hiring:
-a bounded no-delegation leaf may report observations/self-check and product defects.
-That does not confer independent parent product acceptance. Preserve the real surface,
-identity, expected/observed results and current accepted completion boundaries.
+## External contributions
 
-## Bug accountability
-
-The discoverer registers every failed test/bug via LhcPlan bug_register,
-even if it predates the task. The last worker owns all registered repairs,
-the bug_check zero-unresolved receipt and a green full applicable test suite.
-Never silence prior failures, remove records or mark fixed without proof.
-Resolve duplicate/false_positive with reason; blocked access stays blocked.
-These gates do not change merge, review or deployment permissions.
-
-## Deploy and merge
-
-Dev and test environments named in `.agents/PROJECT.md` (`dev`) or
-`TEST_ACCESS.md` are pre-authorized for the task's deploys. An owner's existing
-request for a result or deployment authorizes deployment to their own service
-within that request's scope; do not require separate confirmation. Preserve
-explicit exclusions, third-party boundaries and system/harness restrictions.
-Install on the agreed user or test environment and manually verify the real
-scenario before preparing a PR or integration. The integration target comes
-from `AGENTS.md` (Delivery). Publish the task branch and record its exact remote HEAD. When the
-packaged `config/workflow.json` has `pr_stage=on`, open a
-draft PR with the LHC plan link; when off, omit the PR and its URL.
-`lhc_worktree.py delivery` verifies remote HEAD in both modes and PR
-evidence only when enabled. Mark ready only after tests and review.
-Green checks do not authorize merge, bypass host protection or approve a PR. Follow the owner and
-active harness approval requirements. After an authorized merge, check the
-integrated result once. Before shared-runtime mutation, acquire and check the
-Agent Herder project release lease and expected live revision as described in
-`SHARED_WORKTREE.md`; release in `finally`, never deploy with a stale fence.
-
-A running build is live work: keep its job ID and wait for it instead of
-duplicating or cancelling it. Do not repeat access or status checks when nothing
-changed; choose available work or record the exact external blocker.
-
-## External repositories
-
-Follow the target project's own contribution policy and run the Maintainer review
-(`common/skills/maintainer-review/SKILL.md`) before the PR. Fix defects that
-affect the claim or the project's rules. LHC bookkeeping is never a delivery veto.
+Follow the target project's contribution policy. Use `maintainer-review` when its policy or integration risk warrants that review. Fix concrete findings and keep preferences separate. The repository owner's required approval remains their decision.

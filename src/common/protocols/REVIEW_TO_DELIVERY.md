@@ -28,7 +28,7 @@ Use the target in `.agents/PROJECT.md` and the user's mandate. Publish the task 
 
 Deploy to the agreed dev or user environment when the result requires installation. The user's existing scoped request covers the steps needed to deliver their own service; honor explicit exclusions and the repository's actual approval rules. Complete the authorized merge instead of leaving a branch for the user to finish.
 
-For a shared live switch, acquire the project release lease and compare the expected live revision before mutation. Release the lease after the client check, in `finally`. The exact operations and fallback are in `SHARED_WORKTREE.md`. Preserve a newer deployment.
+For a shared live switch, use the project's existing coordination. When it uses a release lease, acquire it and compare the expected live revision before mutation. Release the lease after the client check, in `finally`. The exact operations and fallback are in `SHARED_WORKTREE.md`. Preserve a newer deployment.
 
 A recovery target should be known to work. An old artifact with unknown provenance can be rebuilt from the verified source; repeated provenance paperwork does not repair it. Report what actually ran after deployment.
 

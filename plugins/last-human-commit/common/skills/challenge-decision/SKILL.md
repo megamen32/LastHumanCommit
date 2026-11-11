@@ -1,20 +1,12 @@
 ---
 name: challenge-decision
-description: Independently challenge an important proposal or synthesis with counterexamples, alternative explanations and a minimal evidence-producing check.
+description: Get an independent challenge when an assumption or proposed route could materially change the outcome.
 ---
 
-# Independent challenge
+# Challenge a decision
 
-Use a fresh Adviser session or the compatibility Critic role, not just the author
-asking itself to be critical. Receive the raw objective, constraints, selected
-proposal/synthesis and verifiable evidence. The author does not dictate a verdict.
+Give a fresh Adviser or Critic the raw goal, constraints, proposal and evidence. Ask where the approach could fail or whether a simpler complete solution exists.
 
-Find assumptions that could change the outcome. Seek a counterexample, a simpler
-complete solution, an inconsistent dependency, a missed user consequence or a
-claim whose proof is insufficient. Distinguish substantive objections from taste.
-Recommend an improved solution when justified and specify the smallest check that
-could settle important disagreement.
+Explain supported objections, their consequences and a better alternative when there is one. A small experiment may settle the disagreement. When the proposal holds up, say why.
 
-Return SUPPORTED, REVISE or NEEDS_EVIDENCE with reasons and next action. No
-mandatory criticism quota and no extra human approval gate. Reassess a materially
-changed synthesis; prior approval of its ingredients is not approval of the whole.
+The Lead uses the findings to decide and continue. Revisit only assumptions or parts that changed.

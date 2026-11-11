@@ -9,6 +9,7 @@ from pathlib import Path
 import secrets
 import shutil
 import subprocess
+import pytest as _pytest_for_user_config
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent
@@ -85,6 +86,33 @@ def pytest_unconfigure(config) -> None:
         raise RuntimeError(f"refusing to clean escaped pytest root: {basetemp}") from error
     if basetemp.name.startswith("pytest-") and basetemp.is_dir():
         shutil.rmtree(basetemp)
+
+
+
+# The old plan, mail and guard unit cases remain useful as explicit opt-in
+# coverage. They exercise the compatibility switches; the default contract is
+# tested separately without these variables.
+_LEGACY_VERBOSE_FILES = {
+    "test_directives_mail.py", "test_execution_display.py", "test_lhc_backlog.py",
+    "test_lhc_plan_surface.py", "test_mail_hook.py", "test_overseer_hook.py",
+    "test_plan_frontier_control.py", "test_plan_overview.py", "test_plan_report.py",
+    "test_session_plan_binding.py",
+}
+_LEGACY_STRICT_FILES = {
+    "test_directives_mail.py", "test_execution_display.py", "test_git_guard_version.py",
+    "test_lhc_backlog.py", "test_lhc_plan_surface.py", "test_mail_hook.py",
+    "test_plan_frontier_control.py", "test_plan_overview.py",
+    "test_plan_report.py", "test_session_plan_binding.py",
+}
+
+
+@_pytest_for_user_config.fixture(autouse=True)
+def _legacy_workflow_switches(request, monkeypatch):
+    name = Path(str(request.node.fspath)).name
+    if name in _LEGACY_VERBOSE_FILES:
+        monkeypatch.setenv("LHC_VERBOSE_WORKFLOW", "1")
+    if name in _LEGACY_STRICT_FILES:
+        monkeypatch.setenv("LHC_STRICT_WORKFLOW", "1")
 
 
 # --------------------------------------------------------------------------
