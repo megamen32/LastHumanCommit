@@ -42,7 +42,7 @@ def test_escalation_goes_lead_then_adviser_then_boss_then_owner():
     assert order == sorted(order)
     lead = flat("src/common/agents/Lead.md")
     assert lead.index("Then Adviser") < lead.index("then Boss")
-    assert "исходного измеримого бизнес-результата" in flat("src/common/agents/Boss.md")
+    assert "первоначальное поручение пользователя" in flat("src/common/agents/Boss.md")
     assert "step 3 of the escalation chain" in flat("src/common/agents/Adviser.md")
 
 

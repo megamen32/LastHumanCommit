@@ -11,21 +11,34 @@ PLUGIN = ROOT / "plugins/last-human-commit/opencode/lhc-boss-v2.ts"
 def test_boss_is_the_only_business_critic_role():
     text = ROLE.read_text()
     assert "# Boss" in text
-    assert "Бесконечные проверки" in text
-    assert "Безопасность ради безопасности" in text
-    assert "Раздувание плана" in text
-    assert "исходного измеримого бизнес-результата" in text
+    assert "бесконечные проверки" in text
+    assert "безопасность ради видимости безопасности" in text
+    assert "планы вместо работы" in text
+    assert "первоначальное поручение пользователя" in text
     assert not (ROOT / "src/common/agents/Overseer.md").exists()
     assert not (ROOT / "src/common/tools/lhc_overseer_ack.py").exists()
     assert not (ROOT / "src/common/tools/lhc_progress_review.py").exists()
 
 
-def test_boss_requires_one_action_and_can_remain_silent():
+def test_boss_responds_in_prose_without_a_shape_or_length_cap():
     text = ROLE.read_text()
-    for token in ('"verdict"', '"observation"', '"stop"', '"next_action"', '"done_when"'):
-        assert token in text
-    assert "не вмешивайся" in text
-    assert "не блокировка" in text
+    assert "Разговаривай как человек с человеком" in text
+    assert "ограничение длины" in text
+    assert "не выдумывай нарушения" in text
+    assert '"verdict"' not in text
+    assert '"next_action"' not in text
+    assert "Верни **только один JSON-объект**" not in text
+
+
+def test_boss_injects_the_whole_native_reply_without_json_parsing():
+    source = PLUGIN.read_text()
+    assert "const advice=bossSpokenText(answer)" in source
+    assert "text:advice" in source
+    assert 'delivery:"steer"' in source
+    assert "verdict(" not in source
+    assert "JSON.parse(raw.trim())" not in source
+    assert "advice.next_action" not in source
+    assert "Ответ только JSON" not in source
 
 
 def test_opencode2_uses_native_session_and_inherits_current_model():
