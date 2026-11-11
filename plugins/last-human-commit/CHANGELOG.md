@@ -44,7 +44,7 @@ Why: a 20-hour Codex session (agent-herder CI with a fake model) planned one lea
 
 - One skill `plan` replaces `plan`, `planning`, `task-decomposition` and `decompose-and-dispatch`: research at least 10 minutes, every «needs checking» in recon becomes a research leaf, stages that each end in a release, one leaf per object (environment, host, service), honest estimates, parallel Workers for same-kind leaves (each in its own worktree and run directory, merged and removed before the leaf closes), a finished leaf closes at once with its result. `plan-artifacts` is now only commands and format.
 - After a compaction or at session start the hook shows the plan bound to the session: done leaves with their results, the current leaf with its last note, the next leaves, and says the current leaf is the goal, not the first message of the chat. The intake text is short and points at the `plan` skill instead of `plan-artifacts`.
-- A running leaf past twice its estimate and at least 45 minutes: the tool refuses progress notes on it until it is closed or split; the hook says "split it now, one leaf per object". The "plan has not changed" pulse is gone (any write silenced it, hence 61 notes in that session), as are the decomposition_check reminder and the Overseer self-review: the 30-minute hook always asks for a fresh Overseer, also with subagents off.
+- A running leaf past twice its estimate and at least 45 minutes: the tool refuses progress notes on it until it is closed or split; the hook says "split it now, one leaf per object". The "plan has not changed" pulse is gone (any write silenced it, hence 61 notes in that session), as are the decomposition_check reminder and the Boss self-review: the 30-minute hook always asks for a fresh Boss, also with subagents off.
 - Plain-text revisions are kept as reasons instead of being dropped silently.
 - AGENTS.md: research step, plan step and Time point at the `plan` skill; the plan is the task's memory. BUSINESS_CHECKPOINT.md lists the hooks that are really registered.
 
@@ -58,14 +58,14 @@ Why: a 20-hour Codex session (agent-herder CI with a fake model) planned one lea
 
 ## 1.12.2
 
-- The plan of a session is found by its binding, not by cwd. 2026-11-05 a Codex session (cwd omniroute-zcode) made a plan in another project (vpn-panel) and finished its turn three minutes later: the Stop gate looked for plans only in the repository of the cwd. lhc_plan_mirror activate and create-leaf with a session now write an index $XDG_STATE_HOME/lhc/sessions/<id>.json (session to plan dirs); lhc_entry._plan_entry reads it first, then the cwd repository, so stop_gate, overseer_review, plan_pulse, plan_audit and the plan-intake hook see the plan in another directory. A stale entry (no queued/running leaf of the session) is ignored; any failure is fail open.
+- The plan of a session is found by its binding, not by cwd. 2026-11-05 a Codex session (cwd omniroute-zcode) made a plan in another project (vpn-panel) and finished its turn three minutes later: the Stop gate looked for plans only in the repository of the cwd. lhc_plan_mirror activate and create-leaf with a session now write an index $XDG_STATE_HOME/lhc/sessions/<id>.json (session to plan dirs); lhc_entry._plan_entry reads it first, then the cwd repository, so stop_gate, boss_review, plan_pulse, plan_audit and the plan-intake hook see the plan in another directory. A stale entry (no queued/running leaf of the session) is ignored; any failure is fail open.
 - Stop gate: part done and part unconfirmed is not an end state. STOP_FIRES is 4 per window; a leaf of the session that is still running keeps the hold (also after stop_hook_active) until it is closed (done/blocked/dropped) or the session wrote a question/result letter into .agents/mail, up to STOP_MAX 6 with a last message to escalate and stop.
 - lhc_plan_mirror link and activate no longer hand out an unpublished URL. link waits up to 45 s (LHC_LINK_WAIT_SECONDS) for HTTP 200 of the plan page itself and otherwise prints "plan page not yet published (sync pending); path: ...; retry: lhc_plan_mirror.py status/once" with exit 0; activate returns url null and pending_url until the observer has synced once.
 - Recon gate: each recon fact is "text (30+ chars) :: evidence" with a command, path, URL or host, no duplicates, 3+ facts for fullcycle (2+ otherwise). Plans whose recon is the old list of strings still read and run (a warning); a new plan starting with trivial recon is refused. Tests: tests/test_session_plan_binding.py, tests/test_plan_gates.py. AGENTS.md states both rules.
 
 ## 1.12.1
 
-- An installed artifact with no provenance receipt is not a blocker. AGENTS.md (Not blockers) and SHARED_WORKTREE.md: treat it as unverified, build a new release from fresh origin/main by the standard route, keep a backup of the old one, install, exercise the real scenario, roll back on failure. Asking a "release owner" or the owner is forbidden when the owner already ordered the result and deployment to their own service; only what is outside your power is blocked, and it escalates Worker to Lead to Adviser to Overseer instead of stopping. Test in tests/test_core_contract.py.
+- An installed artifact with no provenance receipt is not a blocker. AGENTS.md (Not blockers) and SHARED_WORKTREE.md: treat it as unverified, build a new release from fresh origin/main by the standard route, keep a backup of the old one, install, exercise the real scenario, roll back on failure. Asking a "release owner" or the owner is forbidden when the owner already ordered the result and deployment to their own service; only what is outside your power is blocked, and it escalates Worker to Lead to Adviser to Boss instead of stopping. Test in tests/test_core_contract.py.
 - File mail reaches idle sessions. lhc_entry.py checks .agents/mail/<session id>/ of the primary checkout: SessionStart and PostToolUse (at most every 5 min) put unread letters into the context (sender, first lines, the ack command); Stop is held once per unacknowledged task/step letter (decision block, never twice for the same letter). Silent for subagents and without a session id; any failure is fail open. No hooks.json change (the same three flags). Tests: tests/test_mail_hook.py.
 
 ## 1.12.0
@@ -78,16 +78,16 @@ Why: a 20-hour Codex session (agent-herder CI with a fake model) planned one lea
 
 - Herder outage no longer parks a release. If Agent Herder's project_release_lease does not answer for 3 min (20 s per call, retries at 0/30/60/120 s), the session takes a fallback lease: a git ref refs/lhc/release/<project> on origin, changed by atomic compare-and-swap (git push --force-with-lease). New `lhc_worktree.py release-guard acquire|check|release`: a live lease of another session stops the caller, an expired one is taken by the same CAS, release deletes the ref by CAS; `check` verifies in code that the candidate is in origin/main (lhc_git_facts.is_ancestor), the live revision is its ancestor, VERSION is greater than the live one, the entrypoint's expected revision equals the re-read live revision and the worktree is clean. Every step is journaled as a herder-bypass entry in the plan's revisions and a result mail to the DISPATCHER (lhc_mail). AGENTS.md, SHARED_WORKTREE.md and the release skill describe what a session may and may not do; the next release goes through Herder again once it answers. Test: tests/test_release_guard.py on a temporary bare origin.
 - The OpenCode installer removes what it wrote earlier and no longer writes. install_runtime.py records every written agent, skill link and plugin file with its sha256 in ~/.local/state/last-human-commit/install-manifest-<runtime>.json; the next install deletes entries missing from the new manifest (a file the owner edited is kept), after copying each to the backup folder. The first install without a manifest removes only a known list: opencode/agents/orchestrator.md with LastHumanCommit frontmatter, dangling skill links into an LHC package and lhc-*.ts plugin files other than the package's. Foreign files are never touched. The JSON result has a `removed` field. lhc_orchestrator.py stays as an alias wrapper in the package. Test: tests/test_install_prune.py.
-- Subagents are off by default. New key `subagents` in config/workflow.json (default off); priority: the owner's word in the task (воркеры, субагенты, параллельно, council), then `subagents: on` in .agents/PROJECT.md, then ~/.config/lhc/workflow.json, then off (new tools/lhc_subagents.py). With off the Lead does the leaves itself and self-checks the real scenario on the dev environment; the Worker/Adviser/Tester steps of the cycle and the escalation chain become self-checks, and "the Lead splits work and starts Workers in parallel" holds only with subagents=on. The 30-minute Overseer hook stays: with off it asks the Lead to read agents/Overseer.md, compare the plan with the request, write 3 lines in revisions and run `lhc_overseer_ack.py --self`. AGENTS.md is 278 lines: the lease block, the Workers section and the Dispatcher section are shortened with links. Dispatcher unchanged. Updated Lead.md, Overseer.md, SHARED_WORKTREE.md and adapters/*/templates/subagent.md. Tests: tests/test_subagents_setting.py and the rewritten test in tests/test_core_contract.py.
+- Subagents are off by default. New key `subagents` in config/workflow.json (default off); priority: the owner's word in the task (воркеры, субагенты, параллельно, council), then `subagents: on` in .agents/PROJECT.md, then ~/.config/lhc/workflow.json, then off (new tools/lhc_subagents.py). With off the Lead does the leaves itself and self-checks the real scenario on the dev environment; the Worker/Adviser/Tester steps of the cycle and the escalation chain become self-checks, and "the Lead splits work and starts Workers in parallel" holds only with subagents=on. The 30-minute Boss hook stays: with off it asks the Lead to read agents/Boss.md, compare the plan with the request, write 3 lines in revisions and run `lhc_boss_ack.py --self`. AGENTS.md is 278 lines: the lease block, the Workers section and the Dispatcher section are shortened with links. Dispatcher unchanged. Updated Lead.md, Boss.md, SHARED_WORKTREE.md and adapters/*/templates/subagent.md. Tests: tests/test_subagents_setting.py and the rewritten test in tests/test_core_contract.py.
 
 ## 1.10.0
 
 - The session orchestrator is renamed Dispatcher, so that one word no longer names two things: the Lead splits the work and starts Workers in parallel (it is not an orchestrator and not a Dispatcher); the Dispatcher only watches the owner's sessions and leads each to acceptance. Role Dispatcher.md, protocol DISPATCHER.md, tool lhc_dispatcher.py, registry key "dispatcher", mail address DISPATCHER, OpenCode profile dispatcher. Old names keep working for running sessions: lhc_orchestrator.py is an alias of lhc_dispatcher.py, the "orchestrator" key in .agents/sessions.json reads as "dispatcher" (and stays in step where it exists), mail to ORCHESTRATOR lands in the DISPATCHER box and the old box is still read. The AGENTS.md section states the difference.
-- The Overseer is called mechanically. A default-on hook (the existing lhc_entry.py Stop gate and PostToolUse heartbeat, so no new hook entry) asks the Lead to call the zero-knowledge, read-only Overseer every 30 min of an active plan: Stop blocks the finish once per 30-minute boundary, PostToolUse reminds once per boundary. The review is marked with one command, python3 tools/lhc_overseer_ack.py (state under XDG_STATE_HOME, never the repository), which restarts the 30 minutes; --off records an owner no-LHC/STOP, LHC_OVERSEER=off switches the hook off. Silent without a plan, for subagents, for finished plans, and on any failure. Codex, Claude Code and ZCode run it on Stop and PostToolUse; OpenCode runs it on Stop only (session.idle), with no PostToolUse reminder.
+- The Boss is called mechanically. A default-on hook (the existing lhc_entry.py Stop gate and PostToolUse heartbeat, so no new hook entry) asks the Lead to call the zero-knowledge, read-only Boss every 30 min of an active plan: Stop blocks the finish once per 30-minute boundary, PostToolUse reminds once per boundary. The review is marked with one command, python3 tools/lhc_boss_ack.py (state under XDG_STATE_HOME, never the repository), which restarts the 30 minutes; --off records an owner no-LHC/STOP, LHC_OVERSEER=off switches the hook off. Silent without a plan, for subagents, for finished plans, and on any failure. Codex, Claude Code and ZCode run it on Stop and PostToolUse; OpenCode runs it on Stop only (session.idle), with no PostToolUse reminder.
 
 ## 1.9.2
 
-- A stop must not leave work uncommitted or a blocker standing. WIP commits and pushes of the task branch are always made as work goes on; test-first delays only the PR/integration into main, never the commit. A blocker the agent can remove itself (unsafe build or artifact composition, failed check, uninstalled stand) is removed at once; stopping with "not ready" is allowed only for a blocker outside its power, escalated Worker -> Lead -> Adviser -> Overseer, not to the owner. The only end states are a verified result (with the independent recheck, if acceptance required it) or an escalation that went out. The Lead is an orchestrator by default, unprompted: two or more independent leaves go to parallel Workers (one per leaf) plus a Zero-Knowledge Critic, and the Lead does no engineering itself; one leaf, one Worker; the owner-named Orchestrator role stays for cross-session coordination. Changed AGENTS.md, SHARED_WORKTREE.md and the release skill; test in tests/test_core_contract.py.
+- A stop must not leave work uncommitted or a blocker standing. WIP commits and pushes of the task branch are always made as work goes on; test-first delays only the PR/integration into main, never the commit. A blocker the agent can remove itself (unsafe build or artifact composition, failed check, uninstalled stand) is removed at once; stopping with "not ready" is allowed only for a blocker outside its power, escalated Worker -> Lead -> Adviser -> Boss, not to the owner. The only end states are a verified result (with the independent recheck, if acceptance required it) or an escalation that went out. The Lead is an orchestrator by default, unprompted: two or more independent leaves go to parallel Workers (one per leaf) plus a Zero-Knowledge Critic, and the Lead does no engineering itself; one leaf, one Worker; the owner-named Orchestrator role stays for cross-session coordination. Changed AGENTS.md, SHARED_WORKTREE.md and the release skill; test in tests/test_core_contract.py.
 
 ## 1.9.1
 
@@ -183,7 +183,7 @@ Why: a 20-hour Codex session (agent-herder CI with a fake model) planned one lea
 # 1.7.9 — Stop-гейт: сессия не завершает ход, пока в плане есть нетронутые листья
 
 - Новый хук Stop (lhc_entry.py --stop-gate): если в плане сессии остались листья queued/running, ход удерживается и сессия получает перечень листьев. Решение по фактам на диске, текст хода не читается.
-- Удержание ограничено: не более двух раз за 6 часов и не при stop_hook_active, подагенты не затрагиваются. Заблокированный лист не повод остановиться: блокер уходит вверх по цепочке (L, Adviser, Overseer) почтой, сессия идёт к следующему листу.
+- Удержание ограничено: не более двух раз за 6 часов и не при stop_hook_active, подагенты не затрагиваются. Заблокированный лист не повод остановиться: блокер уходит вверх по цепочке (L, Adviser, Boss) почтой, сессия идёт к следующему листу.
 - Причина: ExManager остановился на L06 «нужна квитанция» при 11 нетронутых и 10 заблокированных листьях из 33.
 
 # 1.7.8 — зеркало принимает несколько тысяч планов
@@ -275,7 +275,7 @@ Why: a 20-hour Codex session (agent-herder CI with a fake model) planned one lea
 - `AGENTS.md` переписан коротко и без противоречий: финишная линия, список
   не-блокеров (тестовые данные, доступы к тестовым стендам, смена инструмента —
   делать самому), список настоящих блокеров, одна цепочка эскалации
-  Worker → Lead → Adviser → Overseer → владелец.
+  Worker → Lead → Adviser → Boss → владелец.
 - Доставка: свой репозиторий — PR в `main`, merge при зелёных проверках; чужой —
   PR в ветку владельца (например `megamen32-dev`). «Единой истории» и общего
   интегратора больше нет: параллельные сессии не ждут друг друга, сводит тот,
@@ -468,7 +468,7 @@ leaf may carry, and the path it documents really builds the graph and the page.
 the facade travel with the package instead of being left behind in the source tree.
 # 1.5.48 - correct the route from actual progress
 
-- Codex: an optional trusted async hook invokes a fresh read-only Overseer at a
+- Codex: an optional trusted async hook invokes a fresh read-only Boss at a
   due work boundary and returns one concrete progress correction to the active turn.
 - Bound and redact native evidence, prevent recursive/duplicate reviews, honor
   native stop/new-turn cancellation and hook disablement, and fail open.
@@ -1051,10 +1051,10 @@ repository boundary: a task graph never comes from outside the repository you ar
 
 # 1.5.23 — the task template ships what the method says
 
-The task template still asked for 30-minute leaves and described the Overseer as
+The task template still asked for 30-minute leaves and described the Boss as
 a reader that only returns a correction. The method it belongs to says a leaf is
 about 15 minutes, that the 20-minute mark is the worker's reporting checkpoint, and
-that the Overseer is the Lead's guide while the Lead owns the decision. The template
+that the Boss is the Lead's guide while the Lead owns the decision. The template
 now says the same thing, so a new task card is written against the real contract
 instead of the old one.
 
@@ -1101,14 +1101,14 @@ including the Hermes extension. The approved 1.5.19 instruction content is uncha
 
 # 1.5.19 — business-first review and delivery
 
-Overseer and review guidance now keeps the Lead in charge of the original business
+Boss and review guidance now keeps the Lead in charge of the original business
 result. Reviewers are arranged autonomously when risk warrants them; real defects and
 claim-critical proof still block the affected release. LHC ledger/manifest and
 identity-registration failures are bookkeeping, not delivery vetoes. Ordinary native
 reviewer responses remain useful evidence without transcript-export ceremony.
 
 Historical active-time gaps remain explicit but no longer prevent useful authorized
-work. Frontier advisers and Overseer provide recommendations; the Lead owns route
+work. Frontier advisers and Boss provide recommendations; the Lead owns route
 choices. User stops, revocations, authorization boundaries, negative findings and
 UNKNOWN external operations remain protected.
 

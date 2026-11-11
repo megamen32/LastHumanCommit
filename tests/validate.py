@@ -39,7 +39,7 @@ _router_lines=len(router.decode().splitlines())
 require(_router_lines<=300,"automatic entry grew beyond its context budget (hard limit 300 lines)")
 if _router_lines>250:
     print(f"warning: AGENTS.md has {_router_lines} lines; the soft limit is 250 - trim before adding more",file=sys.stderr)
-for role in ("Lead","Worker","Overseer","Tester","Reviewer","Adviser","Critic","Maintainer"):
+for role in ("Lead","Worker","Boss","Tester","Reviewer","Adviser","Critic","Maintainer"):
     require((ROOT/f"src/common/agents/{role}.md").is_file(),f"missing optional role {role}")
 for harness in ("codex","opencode","claude-code","hermes","zcode"):
     folder=ROOT/"adapters"/harness

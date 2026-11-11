@@ -65,8 +65,8 @@ COPIES: tuple[tuple[str, str, tuple[tuple[bytes, bytes], ...]], ...] = (
     ("AGENTS.md", "plugins/last-human-commit/native/codex/CLAUDE.md", COMMON),
     ("src/common/agents/Lead.md", "plugins/last-human-commit/common/agents/Lead.md", COMMON),
     ("src/common/agents/Worker.md", "plugins/last-human-commit/common/agents/Worker.md", COMMON),
-    ("src/common/agents/Overseer.md", "plugins/last-human-commit/common/agents/Overseer.md", COMMON),
-    ("src/common/agents/Overseer.md", "plugins/last-human-commit/native/codex/common/agents/Overseer.md", COMMON),
+    ("src/common/agents/Boss.md", "plugins/last-human-commit/common/agents/Boss.md", COMMON),
+    ("src/common/agents/Boss.md", "plugins/last-human-commit/native/codex/common/agents/Boss.md", COMMON),
     (
         "src/common/agents/Lead.md",
         "plugins/last-human-commit/native/codex/common/agents/Lead.md",
@@ -132,7 +132,6 @@ TOOL_COPIES = (
     "lhc_outcome_review.py",
     "lhc_milestone.py",
     "lhc_time_guard.py",
-    "lhc_progress_review.py",
     "lhc_active_time.py",
     "lhc_native_identity.py",
     "lhc_source_publication.py",
@@ -154,7 +153,6 @@ TOOL_COPIES = (
     "lhc_mail.py",
     "lhc_orchestrator.py",
     "lhc_dispatcher.py",
-    "lhc_overseer_ack.py",
     "lhc_subagents.py",
     "lhc_model_list.py",
     "lhc_plan_catalog.py",
@@ -241,8 +239,7 @@ def main() -> int:
             continue
         write(ROOT / generated, project(source_path.read_bytes(), replacements))
 
-    # Native Codex extension: preserve the portable/time-only bundle for other
-    # clients and add only the explicitly supported async adapter here.
+    # Native Codex extension keeps only portable/time-only hooks; Boss uses OpenCode 2.
     codex_hooks = json.loads((ROOT / "adapters/codex/hooks/hooks.json").read_text())
     portable_hooks = json.loads((PACKAGE / "hooks/hooks.json").read_text())
     for event, registrations in portable_hooks["hooks"].items():

@@ -1348,7 +1348,7 @@ def learning_checkpoint(args: argparse.Namespace, cwd: Path, session_id: str,
             "What slowed it: a blocker you could remove yourself, a check or ritual, a "
             "wrong route? Stop that and take the nearest step to the business result; if "
             "the route is unclear, follow the escalation chain in AGENTS.md (Adviser, then "
-            "Overseer). Not a task and never a reason to stop. "
+            "a concrete next repair). Not a task and never a reason to stop. "
             f"Session={session_id}; due-at={state['due_at']}; first observed={state['started_at']}."
         )
         if session_id == "unknown-session":

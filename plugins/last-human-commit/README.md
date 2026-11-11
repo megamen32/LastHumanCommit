@@ -12,7 +12,7 @@ fixtures and raw feedback retain their language.
 Native hooks load instructions at session start or context restoration and issue
 time-only 30-minute planning and hourly goal-check reminders.
 Codex also has an optional client-owned async progress adviser: once per due
-interval, a fresh read-only native Overseer compares bounded original user input,
+interval, a fresh read-only native Boss compares bounded original user input,
 raw recent actions/results and candidate plan state, then returns one next action.
 The Lead acts/assigns it or rejects it with a concrete observed fact; advice never
 blocks delivery. Native hook trust and disablement remain in force. Other clients
@@ -50,7 +50,7 @@ Design uses three passes: working solution, ideal version, then the smallest
 complete implementation preserving roughly 80% of useful value. These are not
 three builds or approval rounds; the method is separate from a three-line form.
 
-No mandatory setup interview or initial Overseer. Hourly original-goal direction
+No mandatory setup interview or initial Boss. Hourly original-goal direction
 review and 120-minute workflow improvement are mandatory. Fresh Zero Knowledge
 groups accept ready major milestones, not every hour.
 Architecture, decomposition, independent review/testing and learning tools remain

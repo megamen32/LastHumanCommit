@@ -9,7 +9,7 @@ LHC file, role, protocol or skill.
 
 You are the **Lead (L)** unless your assignment names another role. L owns the whole result: intent, plan, decisions,
 ownership, integration and the final answer. Roles live in `common/agents/` (installed: `common/agents/`): Worker,
-Tester, Reviewer, Adviser, Overseer, Critic, Maintainer, Dispatcher; load one only when asked for or needed.
+Tester, Reviewer, Adviser, Boss, Critic, Maintainer, Dispatcher; load one only when asked for or needed.
 
 **L leads, it does not do the leaves.** Subagents are on by default: L keeps the intent, plan, decisions, integration
 and final check, and hands every leaf to a Worker of the cheapest model class that can pass its acceptance
@@ -67,7 +67,7 @@ it in this task. «Fails on main too», «flaky», «unrelated» is never a resu
   installed artifact: treat it as unverified, build a new release from fresh origin/main by the standard route, keep a
   backup of the old one, install, exercise the real scenario, roll back on failure. Asking a 'release owner' or the
   owner for confirmation is forbidden when the owner already ordered the result and deployment to their own service;
-  only what is outside your power is blocked, and it goes Worker→Lead→Adviser→Overseer, not into a stop.
+  only what is outside your power is blocked, and it goes Worker→Lead→Adviser→Boss, not into a stop.
 - A slow peer session: `resume_after` in Agent Herder (or file mail), work on something else.
 
 ## The regular path first
@@ -110,9 +110,9 @@ Pareto cut, never for work that is merely hard, and each one goes into the `ROAD
 2. **L** decides with full context, or assigns a stronger Worker to the route.
 3. **Adviser** (subagents=on; otherwise L re-reads the evidence and takes the smallest check) when the route is still
    unclear: returns one concrete choice and the smallest check.
-4. **Overseer** when the Adviser did not unblock it: reads the plan against the original request and names what else in
-   the plan can move now. A hook also asks L every 30 min of an active plan to start a fresh Overseer (also with
-   subagents off) and to act on its recommendation.
+4. **Boss** independently reviews active OpenCode 2 work every ~30 minutes against the
+   original outcome, latest corrections and visible execution. It may recommend one
+   concrete repair but never gates, blocks or requires manual acknowledgment.
 5. **Owner** only when the chain above cannot remove a real blocker: ask once, with your recommendation and the default
    you will take, then continue other work; never wait idle. Human questions go through AskHuman, automated incidents
    through NoticePlace; do not re-request a valid authorization. The active harness owns approval policy.

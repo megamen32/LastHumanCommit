@@ -25,7 +25,7 @@ next cycle's inputs. Use architecture-design when structural uncertainty matters
 5. Execution allocation: strongest-model decomposition -> dependency graph ->
    suitable model assignments -> parallel execution -> acceptance -> routing update.
 
-The Overseer guides the Lead on drift and on blockers the Adviser could not
+The Boss guides the Lead on drift and on blockers the Adviser could not
 resolve (escalation chain in `AGENTS.md`). It is zero-knowledge and advisory: it helps shorten the path to the
 business result, prevents spurious blockers and drift from the original plan
 specification, and does not own the result or gate release — the Lead owns the

@@ -21,7 +21,7 @@ dependencies, owned resources, frozen interfaces, selected model and suitability
 reason, acceptance and integration join. Resolve API identifiers from actual
 harness capabilities; never send example aliases blindly. Record actual model
 selection when available and disclose unsupported selection or concurrency.
-Use fresh independent sessions for the initial Overseer audit and Full Tester
+Use fresh independent sessions for the initial Boss audit and Full Tester
 after coherent technical review. Adviser/council are optional reasoning methods;
 Critic is a compatibility alias, not an extra required gate. Resume useful
 Workers but do not reuse the implementation session as its independent Tester.
@@ -40,7 +40,7 @@ Before every delegated task:
   supported and its context remains useful.
 - Persist task/result detail only when handoff, recovery, reuse, or rediscovery
   cost justifies it.
-- Beyond the initial Overseer and Full review/Tester gates, use additional
+- Beyond the initial Boss and Full review/Tester gates, use additional
   independent roles only for a concrete risk whose expected value exceeds delay.
 - Ask L at decision boundaries through a proven non-blocking parent transport,
   include recommendation/default and parallel-safe work, and continue safe work

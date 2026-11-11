@@ -46,7 +46,7 @@ overrides the built value; otherwise missing configuration defaults to `on`.
 A pushed task branch is valid work in progress; stopping with uncommitted work is
 never allowed. A blocker you can remove yourself (unsafe artifact composition,
 failed check, uninstalled stand) is removed at once; stop with "not ready" only
-for a blocker outside your power, escalated Worker -> Lead -> Adviser -> Overseer,
+for a blocker outside your power, escalated Worker -> Lead -> Adviser -> Boss,
 not to the owner. Stop only when the result is verified (including an independent
 recheck of the fixed screen if acceptance required it) or the escalation has gone
 out; "part done, part unconfirmed" is not an end state. Prepare a PR only after the real

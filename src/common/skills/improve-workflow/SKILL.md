@@ -7,7 +7,7 @@ description: Convert observed failures and successful methods into tested, retri
 
 Mandatory at least every120 wall-clock minutes during unfinished work, and on
 user correction, substantial overrun, repeated route failure and cycle completion.
-Every maximum overrun requires a route decision. Overseer demands the accepted
+Every maximum overrun requires a route decision. Boss demands the accepted
 business result; a learning receipt never replaces it or justifies CONTINUE. The objective clock
 survives phase changes and compaction. Use the persistent lhc_time_guard checkpoint;
 notification is not completion. With no native hook, check manually at work

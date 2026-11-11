@@ -26,7 +26,7 @@ It holds the current state only: finished rows go to the archive (`lhc_dispatche
 3. Not closer, SILENT or DEAD: send its L one concrete next step. Blocked on something
    the L can remove itself (a stuck queue entry, a missing test user, a route): say so
    and tell it to remove it. Not closer at the next tick too: replace the L or go up the
-   chain (Adviser, Overseer, owner). UNREGISTERED: ask what it is for, then register it.
+   chain (Adviser, Boss, owner). UNREGISTERED: ask what it is for, then register it.
    Answer every MAIL line.
 
 4. Accepted (the test circuit is green on the new color): release that result at once,

@@ -23,7 +23,7 @@ not override new instructions. For architecture, use
    `../skills/model-routing/SKILL.md`: the classes fast, middle and frontier that LhcPlan `list_models` returns, resolved to an exact live
    catalog ID, no silent fallback. Who executes follows `AGENTS.md` (subagents).
 7. For a blocker or unclear route follow the escalation chain in `AGENTS.md`
-   (L, then Adviser, then Overseer). Add technical review and fresh independent testing when
+   (L, then Adviser, then Boss). Add technical review and fresh independent testing when
    the change’s risk and claim justify their cost.
 
 Do not plan a horizontal layer before the first vertical user path. A plan is
@@ -46,7 +46,7 @@ shortest next route.
 Every 20 active minutes is a control checkpoint, not a Worker lifetime limit.
 The Worker reports progress, business delta, blocker, and the shortest next
 action. The expected total range may exceed 20 minutes. L may continue, redirect
-or resume the same Worker, ask the Overseer for useful route advice,
+or resume the same Worker, ask the Boss for useful route advice,
 or exceptionally cancel for active harm/conflict/stuck state.
 
 A task maximum overrun requires an evidence-based route decision. Do not merely

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The live plan report: canonical format, 30-minute emission, plan-reading Overseer."""
+"""The live plan report: canonical format, 30-minute emission, plan-reading Boss."""
 from __future__ import annotations
 
 import json

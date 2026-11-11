@@ -78,7 +78,7 @@ session or review. Known repairs go to the existing Worker; no adviser queue is 
 
 ## Mandatory checkpoint, bounded to useful work
 
-The Overseer advises toward business results. Learning is a corrective tool, never
+The Boss advises toward business results. Learning is a corrective tool, never
 a deliverable substituted for the accepted outcome or justification for continuing.
 Every maximum overrun still requires an immediate route decision; substantial
 overrun means that decision's bounded continuation also misses its limit or the

@@ -8,7 +8,7 @@ TIME_CONTROL.md names no second hourly checkpoint, and the two are the same
 review described once here and referenced there. The original assignment,
 attached document and
 latest direct user corrections define the goal; your plan, summary or new task card
-cannot replace them. A fresh zero-knowledge Overseer may read this checkpoint against
+cannot replace them. A fresh zero-knowledge Boss may read this checkpoint against
 the original request to guide the Lead; it does not own the result and never gates
 delivery.
 
@@ -54,7 +54,7 @@ runtime is unavailable, Lead continues independent work without invented tester 
 | `UserPromptSubmit` | `--plan-entry` | Codex package only: instructions plus the open plans of this session as candidates. |
 | `PostToolUse` | `--heartbeat-only` | Time reminders and plan facts (overrun, contradicting statuses, uncut stage). |
 | `PreToolUse` | `--git-guard` | Refuses `git stash` and a branch switch in the primary checkout. |
-| `Stop` | `--stop-gate` | Holds a stop while the session's plan has open leaves, and once per 30 min asks for the Overseer. |
+| `Stop` | `--stop-gate` | Holds a stop while the session's plan has open leaves, without waiting for a Boss review. |
 
 A hook never reviews work or scores it; a failing hook prints one line to stderr and the turn continues.
 State, verification and verdicts live behind explicit CLI commands

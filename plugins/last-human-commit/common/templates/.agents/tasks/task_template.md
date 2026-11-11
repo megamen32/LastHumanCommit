@@ -86,7 +86,7 @@ Every 20 active minutes is a reporting checkpoint, not a lifetime limit.
   Blocker:
   Route still shortest:
   Shortest next action:
-  L action: continue | redirect/resume | consult Overseer | exceptional cancel
+  L action: continue | redirect/resume | consult Boss | exceptional cancel
 
 Use the harness wait/join tool while a required child is non-terminal. A wait
 timeout is observational. Prefer the same Worker; cancellation is exceptional.
@@ -106,7 +106,7 @@ timeout is observational. Prefer the same Worker; cancellation is exceptional.
 
 Canonical format: `common/protocols/PLAN_REPORT.md`. Rewrite this block at
 every 30-minute plan boundary and whenever the user asks for the plan. The
-Overseer reads it against the original request and the business canary; it never
+Boss reads it against the original request and the business canary; it never
 blocks delivery.
 
 ## Task graph — machine-readable plan
@@ -137,7 +137,7 @@ in both places.
 
 ## Gates
 
-Overseer is the plan reader and the Lead's guide: it reads the 30-minute plan report
+Boss is the plan reader and the Lead's guide: it reads the 30-minute plan report
 against the original request and the accepted business canary and returns the smallest
 correction; it never blocks delivery and never waives a gate, and it does not own the
 result — the Lead owns the decision. Tester is the mandatory
