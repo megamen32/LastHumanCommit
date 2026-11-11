@@ -45,7 +45,7 @@ def test_native_pruning_restores_old_hooks_even_on_failure(roots, tmp_path, nati
     assert [json.loads(line) for line in log.read_text().splitlines()] == [
         ['plugin', 'add', 'last-human-commit@megamen32-plugins', '--json']]
     for version in ('1.6.2', '1.6.3', '1.6.4'):
-        assert (cache / version / 'tools/lhc_progress_review.py').read_text() == '# canonical hook\n'
+        assert (cache / version / 'tools/lhc_entry.py').read_text() == '# canonical hook\n'
         assert (cache / version / 'tools').is_symlink()
     assert (cache / '1.6.5/tools').is_dir() and not (cache / '1.6.5/tools').is_symlink()
 
@@ -83,7 +83,7 @@ def test_partial_pruning_restores_newer_target_before_preserved_alias(roots, tmp
     native.chmod(0o700)
     assert installer.install(str(native), cache, source) == 0
     assert alias.is_symlink() and alias.readlink() == cache / '1.6.4/tools'
-    assert (alias / 'lhc_progress_review.py').read_text() == '# canonical hook\n'
+    assert (alias / 'lhc_entry.py').read_text() == '# canonical hook\n'
 
 
 def test_versions_pruned_before_the_installer_ran_come_back_from_the_record(roots, tmp_path):

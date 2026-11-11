@@ -11,7 +11,7 @@ import json
 from pathlib import Path
 import re
 
-REQUIRED = ('lhc_progress_review.py', 'lhc_time_guard.py', 'lhc_entry.py')
+REQUIRED = ('lhc_time_guard.py', 'lhc_entry.py')
 VERSION = re.compile(r'[0-9]+\.[0-9]+\.[0-9]+(?:[-+][A-Za-z0-9.-]+)?')
 
 
