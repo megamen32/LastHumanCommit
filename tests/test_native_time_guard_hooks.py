@@ -80,7 +80,8 @@ def test_package_declares_both_native_adapters() -> None:
     manifest = json.loads((PLUGIN / "plugin.json").read_text(encoding="utf-8"))
     assert manifest["extensions"]["com.openai"]["hooks"] == "./com.openai/hooks/hooks.json"
     native = json.loads((PLUGIN / "com.openai/hooks/hooks.json").read_text())
-    assert any(h.get("async") for r in native["hooks"]["PostToolUse"] for h in r["hooks"])
+    assert not any(h.get("async") for r in native["hooks"]["PostToolUse"] for h in r["hooks"])
+    assert (PLUGIN / "opencode/lhc-boss-v2.ts").is_file()
     hooks = json.loads((PLUGIN / "hooks/hooks.json").read_text(encoding="utf-8"))
     # The declared hook bundle is time-only: instructions plus the heartbeat.
     assert set(hooks["hooks"]) == {"SessionStart", "PostCompact", "PreToolUse", "PostToolUse", "Stop"}

@@ -215,13 +215,17 @@ def register_opencode_plugin(home:Path,root:Path,plugin_dir:Path)->dict:
     for name in OPENCODE_PLUGIN_FILES:
         src=source/name
         if not src.is_file():
+            # Minimal/legacy fixture packages predate the Boss role. New packages
+            # that ship Boss.md must also ship its native plugin.
+            if name == "lhc-boss-v2.ts" and not (root / "common/agents/Boss.md").exists():
+                continue
             raise ValueError(f"The installed package is missing the OpenCode plugin file: {name}")
         target=plugin_dir/name
         # OpenCode instantiates every plugin file, so a second copy doubles every hook:
         # an entry that already points at this source, or the long-standing
         # last-human-commit.ts, is the installed plugin and gets no sibling.
         existing=next((e for e in sorted(plugin_dir.glob("*.ts")) if e.resolve()==src.resolve()),None)
-        if existing is None and (plugin_dir/"last-human-commit.ts").exists():
+        if name == "lhc-v2.ts" and existing is None and (plugin_dir/"last-human-commit.ts").exists():
             existing=plugin_dir/"last-human-commit.ts"
         if existing is not None:
             if not existing.is_symlink() and existing.read_text(encoding="utf-8")!=src.read_text(encoding="utf-8"):

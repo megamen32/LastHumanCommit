@@ -34,12 +34,12 @@ def test_first_install_removes_only_the_known_list_and_a_manifest_removes_the_re
     home = tmp_path / "home"
     config = home / ".config/opencode"
     (config / "agents").mkdir(parents=True)
-    (config / "plugin").mkdir(parents=True)
+    (config / "plugins").mkdir(parents=True)
     (config / "skills").mkdir(parents=True)
     (config / "agents/orchestrator.md").write_text(ORCHESTRATOR)
     (config / "agents/foo.md").write_text("---\ndescription: mine\n---\n")
-    (config / "plugin/lhc-old.ts").write_text("old")
-    (config / "plugin/other.ts").write_text("mine")
+    (config / "plugins/lhc-old.ts").write_text("old")
+    (config / "plugins/other.ts").write_text("mine")
     (config / "skills/gone").symlink_to(tmp_path / "old/last-human-commit/1.0.0/skills/gone")
     (config / "skills/foreign-dangling").symlink_to(tmp_path / "somewhere/else")
     (config / "skills/own").mkdir()
@@ -49,8 +49,8 @@ def test_first_install_removes_only_the_known_list_and_a_manifest_removes_the_re
     assert removed == {"orchestrator.md", "lhc-old.ts", "gone"}, result
     assert not (config / "agents/orchestrator.md").exists()
     assert (config / "agents/foo.md").read_text().startswith("---")
-    assert (config / "plugin/other.ts").exists() and (config / "skills/foreign-dangling").is_symlink() and (config / "skills/own").is_dir()
-    assert (config / "agents/lead.md").is_file() and (config / "plugin/lhc-v2.ts").is_file()
+    assert (config / "plugins/other.ts").exists() and (config / "skills/foreign-dangling").is_symlink() and (config / "skills/own").is_dir()
+    assert (config / "agents/lead.md").is_file() and (config / "plugins/lhc-v2.ts").is_file()
     backups = [p.read_text() for p in (home / ".local/state/last-human-commit/backups").glob("*-removed-orchestrator.md*")]
     assert backups and "Orchestrator" in backups[0]
     manifest = json.loads((home / ".local/state/last-human-commit/install-manifest-opencode.json").read_text())
