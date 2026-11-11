@@ -31,6 +31,15 @@ const assistantText = (messages:AnyRecord[]):string => {
   }
   return ""
 }
+// All user-visible prose from the Boss's independent session, not merely the
+// final message. Reasoning and tool I/O do not masquerade as his words.
+export function bossSpokenText(messages:AnyRecord[]):string {
+  return messages.filter(m=>role(m)==="assistant").flatMap(m=>
+    (Array.isArray(m.parts)?m.parts:[])
+      .filter((part:AnyRecord)=>part.type==="text" && part.ignored!==true && part.synthetic!==true)
+      .map((part:AnyRecord)=>String(part.text??""))
+  ).filter(text=>text.trim()).join("\n\n")
+}
 function currentModel(session:AnyRecord,messages:AnyRecord[]) {
   const values=[session.model,...messages.slice().reverse().map(m=>m.info?.model??m.model)]
   for (const m of values)
@@ -44,14 +53,6 @@ function loadBoss():string {
     if (typeof state.packageRoot !== "string") return ""
     return readFileSync(join(state.packageRoot,"common/agents/Boss.md"),"utf8")
   } catch { return "" }
-}
-function verdict(raw:string):AnyRecord|undefined {
-  try {
-    const result=JSON.parse(raw.trim())
-    if (result?.verdict!=="redirect" || !result.next_action || !result.done_when) return
-    if (["observation","stop","next_action","done_when"].some(k=>typeof result[k]!=="string" || result[k].length>2000)) return
-    return result
-  } catch { return }
 }
 function activeMs(state:State):number {
   return state.elapsed+(state.started===null?0:Math.max(0,Date.now()-state.started))
@@ -125,7 +126,7 @@ export default {
           "Последний видимый ответ:\n"+last.slice(-12000),
           "Доступный журнал сессии файлом: "+file,
           "Если историю до compaction не видно, не выдумывай её.",
-          "Прочитай файл, если нужно подтвердить повторы или отклонение. Ответ только JSON по роли Boss."
+          "Это разговор с исполнителем. Скажи ему своими словами всё, что считаешь важным, без формата или ограничения объёма."
         ].join("\n\n")
         const created=await ctx.session.create({parentID,title:BOSS_TITLE+" / "+parentID.slice(-8)})
         child=String(created.id??created.sessionID??"")
@@ -141,16 +142,15 @@ export default {
           ])
         } finally {clearTimeout(timer)}
         const answer=Array.from(await ctx.session.context({sessionID:child}))
-        const advice=verdict(assistantText(answer))
-        if (!advice || state.generation!==generation || state.started===null || controller.signal.aborted)return
+        const advice=bossSpokenText(answer)
+        if (!advice.trim() || state.generation!==generation || state.started===null || controller.signal.aborted)return
+        // Inject the Boss's whole answer, without parsing, rewriting, truncation,
+        // or a mandatory machine-readable response shape.
         await ctx.session.synthetic({
           sessionID:parentID,
           delivery:"steer",
           resume:false,
-          text:"LHC Boss (совет, не gate)\nНаблюдение: "+advice.observation+
-            "\nПрекрати: "+advice.stop+
-            "\nСделай сейчас: "+advice.next_action+
-            "\nДостаточно, когда: "+advice.done_when
+          text:advice
         })
       } catch (error) {
         console.warn("LHC Boss skipped for "+parentID+": "+String(error))

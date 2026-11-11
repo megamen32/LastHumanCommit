@@ -14,6 +14,12 @@ does not review, gate, approve or evaluate a diff, and it never blocks a turn.
 If the plugin is not loaded, say activation is unverified instead of assuming
 it.
 
+The separate native OpenCode 2 Boss plugin (lhc-boss-v2.ts) launches an
+independent review in the current model/provider and injects the Boss's entire
+natural-language reply into the parent session via native session.synthetic
+with delivery: steer. It does not require JSON or a fixed answer shape,
+and it does not block completion.
+
 Before every child call, load `templates/subagent.md` for compact business
 context, the optional durable task/result boundary, Worker continuity,
 checkpoint/join control, and cheapest-sufficient model rules.
