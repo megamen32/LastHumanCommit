@@ -438,8 +438,8 @@ def test_an_unanswered_hourly_direction_check_is_not_repeated_every_five_minutes
         return guard.business_checkpoint(args, tmp_path, "s1", {})
     assert look(0)["prompt"] == ""
     first = look(61)
-    assert first["due"] and "hourly LHC direction check" in first["prompt"]
+    assert first["due"] and "LHC hourly direction check" in first["prompt"]
     for minutes in (62, 70, 118):
         again = look(minutes)
         assert again["due"] and again["prompt"] == ""
-    assert "hourly LHC direction check" in look(125)["prompt"]
+    assert "LHC hourly direction check" in look(125)["prompt"]

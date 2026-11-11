@@ -64,7 +64,7 @@ about products/paths touched; `read_paths` and `write_paths` grant the worker's
 exact source ownership. A leaf assignment is created and scoped by the Lead. It
 does not ask the worker to reconstruct the parent goal, re-plan, change the mode,
 or recursively recruit another agent. The Lead records the selected mode after
-research and owns the required plan in both quickfix and fullcycle.
+the necessary research. For fullcycle work it presents three short summaries and waits for the user's choice before decomposition or dispatch; a bounded quickfix can remain direct.
 
 For an `Artifact Writer`, the brief also names its exclusive write set and the
 exact Lead-decided text/status/ownership/acceptance that may be recorded. The

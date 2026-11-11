@@ -7,11 +7,19 @@ description: Plan larger or parallel work, keep its current state, and answer re
 
 Use a saved plan when work needs coordination or recovery, or when the user asks for one. A bounded task can be done directly; duration alone does not require a plan. The plan records what will work, the path to it, current work and actual results.
 
-## Choose the route
+## Full cycle: the user chooses the approach
+
+A full cycle covers a new feature, architecture choice or coordinated change across several parts. Before it starts, show the user exactly three short plan summaries in their language. These are alternative approaches, not three stages of one plan or three fully decomposed task trees.
+
+For each option explain what will work, the approach and the main trade-off in complexity, effort or risk. Keep all requested outcomes; do not invent a weak option or silently drop requirements to make one cheaper. Recommend an option and explain why, then wait for the user's explicit choice. The recommendation, silence or a generic instruction to begin is not that choice.
+
+Before the choice, do only the limited read-only investigation needed to make those summaries useful. After the user chooses, record the selected option and their corrections, then do the full decomposition, dependencies and parallel allocation for that option and begin execution. On resume, reuse an already recorded choice instead of asking again. A bounded quickfix stays direct; do not relabel a full cycle as a quickfix to skip the choice.
+
+## Develop the chosen route
 
 Read the goal, latest corrections and existing implementation. Investigate questions that affect the next decision. Draft a complete route, resolve significant weaknesses and remove optional work. A critique is useful when it changes the plan; it does not need repeated rounds until nobody can object.
 
-Describe stages in the user's language by what will work after each. Create the tasks needed for the stage being started. With `decomposition: complete`, prepare executable tasks for all active stages before handoff; `progressive` leaves later details open. Record `deliverable: plan` for planning-only work and `implementation` for execution.
+After the fullcycle user choice, fully decompose only the selected approach: all required stages and tasks, their results, dependencies and useful parallel work. With the file-backed planner, use `decomposition: complete` and prepare executable tasks for all active stages before dispatch. `progressive` remains available for other planning requests; it does not replace the fullcycle sequence. Record `deliverable: plan` for planning-only work and `implementation` for execution.
 
 Use `plan-artifacts` for the current schema and commands. When using the file-backed tools in fullcycle mode, their schema requires setup fields including `mode`, `recon`, `acceptance_scenario`, `summary` and `critique`. Record the relevant facts and decision once. The summary has a current tool limit of 3000 characters; full task descriptions keep the detail.
 

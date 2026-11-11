@@ -695,10 +695,12 @@ def mail_stop(event):
 def context_for(event, root):
     Path(root).resolve()
     return (
-        "LHC outcome-first mode: follow the latest human goal, make the useful change, "
-        "and try it through the actual consumer. Use a plan or delegation when it helps. "
-        "Report what works or the concrete blocker. Preserve human STOP, private data, "
-        "shared work and the scope of authorized external actions."
+        "LHC outcome-first mode: follow the latest human goal and verify the actual consumer. "
+        "For a full cycle, first show exactly three short plan summaries and wait for the user's explicit choice; "
+        "only then do full decomposition, parallel allocation and execution. A bounded quickfix stays direct. "
+        "Boss audits are mandatory about every 30 active minutes, independently of optional workflow telemetry. "
+        "Inject the Boss's full natural-language feedback. Preserve human STOP, private data, shared work "
+        "and the scope of authorized external actions."
     )
 
 

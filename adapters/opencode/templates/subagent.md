@@ -12,4 +12,4 @@ Join a required child result through the native wait/status interface. A timeout
 
 Write user-facing artifacts in the user's language and return useful detail without an arbitrary answer-length limit.
 
-The independent Boss uses OpenCode 2 native sessions and injects its full prose. It does not need a manual initial audit or approval.
+The mandatory periodic Boss audit uses OpenCode 2 native sessions and injects its full prose. Its scheduler does not depend on a manual review request or optional workflow telemetry.

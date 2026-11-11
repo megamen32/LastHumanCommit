@@ -2,7 +2,7 @@
 
 LHC carries a user's request through decisions, implementation, integration and a working result. AGENTS.md defines the shared rules; roles and skills supply the details needed for a particular job.
 
-The Lead owns the outcome. Workers take useful pieces of work. An Adviser or Critic helps with a difficult decision; a Reviewer checks the change; a Tester tries the product. Boss reads ongoing work and speaks up when the agent is missing the point. Use each role for the contribution it can make.
+The Lead owns the outcome. Workers take useful pieces of work. An Adviser or Critic helps with a difficult decision; a Reviewer checks the change; a Tester tries the product. Boss must audit ongoing active work about every 30 minutes and speak up when the agent is missing the point. The other roles are selected for their useful contribution. A full cycle begins with three short approach summaries and the user's choice; decomposition and parallel execution follow that choice.
 
 Start from the existing project and choose the simplest complete solution. Plan enough to coordinate it, preserve relevant decisions, and keep going through delivery. Checks should answer a concrete question about the result or the changed behavior.
 

@@ -1271,7 +1271,7 @@ def native_heartbeat(cwd: Path, runtime: str, session_id: str,
         reminders.append(render_parallel_lines(native_cwd))
     if any(item.startswith("goal:") for item in due):
         reminders.append(
-'LHC 60-minute direction check: compare the original goal and latest correction with what works now. Continue the useful route or change it when the evidence calls for that.'
+            'LHC 60-minute direction check: compare the original goal and latest correction with what works now. Continue the useful route or change it when the evidence calls for that.'
         )
     return {"state": os.fspath(path), "elapsed_wall_seconds": max(0, int(elapsed.total_seconds())),
             "due": due, "prompt": "\n\n".join(reminders)}

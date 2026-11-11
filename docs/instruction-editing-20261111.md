@@ -31,3 +31,9 @@ Used their advice on concrete language, fewer repeated caveats, useful detail, p
 The root guide and product intent, all ten roles, four profiles, twenty-three skills, eighteen protocols, five harness adapters and their child templates, common command/task templates, and the active intake/heartbeat reminder text were inspected. Technical reference sections retain useful schemas, command examples, bounds and compatibility behavior. Historical verification reports remain historical.
 
 Generated package copies follow the canonical sources through the existing publishers. This is an instruction change, not evidence that every installed runtime has reloaded it or that models will always follow it.
+
+## Direct user corrections during editing
+
+Boss audits remain mandatory roughly every 30 active minutes. They are separate from optional workflow telemetry and are not removed as process cleanup. The role now calls out that exact self-authorized scope reduction.
+
+Before fullcycle work the Lead must show exactly three short alternative plan summaries and wait for the user to choose. Only then does it fully decompose the chosen route, allocate parallel work and execute. Limited read-only investigation may prepare the summaries; the Lead recommendation is not the selection.

@@ -2,6 +2,8 @@
 
 Plan enough to choose the route, coordinate work and resume after interruption. A small clear action can be executed directly. For a requested plan or useful coordination, use `../skills/plan/SKILL.md`.
 
+For a full cycle, show exactly three short summaries with meaningful trade-offs and a recommendation. Wait for the user's explicit choice before full decomposition, parallel allocation and execution. Preserve the selected option through handoff and compaction.
+
 Start with the latest request, what already works, and how the user will recognize success. Research the uncertainty that could change the next decision. Compare alternatives when there is a real choice; pick a straightforward route when there is not.
 
 Describe stages by what will work after each. Split tasks at useful ownership, dependency and acceptance boundaries. Show the whole route, then detail the stage being started; use complete decomposition when the user requests a handoff-ready plan.

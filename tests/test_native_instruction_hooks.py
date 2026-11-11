@@ -35,8 +35,9 @@ def run_cli(args, payload=None, env=None):
 def test_context_for_is_compact_and_does_not_inject_plan_ceremony():
     entry = load_entry()
     context = entry.context_for({}, ROOT)
-    assert "smallest useful vertical slice" in context
-    assert "real canary/readback" in context
+    assert "verify the actual consumer" in context
+    assert "three short plan summaries" in context
+    assert "Boss audits are mandatory" in context
     for retired in (">15 minutes", "load " + str(ROOT / "skills/plan/SKILL.md"),
                     "Lead delegates", "Overseer", "ACK chain"):
         assert retired not in context

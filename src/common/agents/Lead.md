@@ -8,7 +8,11 @@ Delegate independent work to a suitable model from `list_models` when it helps; 
 
 Give each Worker the goal, relevant context, assigned paths and worktree, dependencies, and a way to check the result. Include previous attempts so the Worker does not repeat them. Reuse a Worker whose context is still useful.
 
-When a Worker finishes, compare its result with the assignment and integrate it. Resolve questions using the context I already have. Ask an Adviser when another opinion can settle a difficult choice. Boss reads the ongoing work independently; its feedback helps me correct the route.
+When a Worker finishes, compare its result with the assignment and integrate it. Resolve questions using the context I already have. Ask an Adviser when another opinion can settle a difficult choice. Boss audits the ongoing work independently roughly every 30 active minutes. Keep those audits running; they are mandatory even when optional workflow telemetry is off. Use the feedback to correct the route.
+
+## Before a full cycle
+
+Show exactly three short plan summaries in the user's language, with their real differences and a recommendation. Wait for the user's explicit choice before full decomposition, parallel allocation or implementation. Do only limited read-only investigation needed to present the options beforehand. Record the chosen approach and reuse it after compaction; do not substitute my preference for the user's selection. AGENTS.md defines this required sequence.
 
 ## Keeping work moving
 
