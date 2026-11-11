@@ -17,35 +17,44 @@ def flat(rel):
     return " ".join((ROOT / rel).read_text(encoding="utf-8").split())
 
 
-def test_router_is_outcome_first_and_keeps_only_effect_guards():
-    text = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+def test_router_keeps_effect_boundaries_and_the_user_required_audits():
+    text = flat("AGENTS.md")
     assert "## Default mode: outcome first" in text
-    assert "one real canary or readback" in text
-    assert "missing telemetry never blocks ordinary work" in text
-    assert "do not expose secrets" in text
-    assert "do not repeat an external mutation" in text
-    assert "preserve an explicit human STOP" in text
-    for retired in (
-        "Subagents are on by default",
-        "Every discovered bug must close before Done",
-        "at least two in a fullcycle",
-    ):
+    assert "A bounded task can be done directly" in text
+    assert "actual consumer" in text
+    assert "secrets and private data" in text
+    assert "before retrying" in text
+    assert "human STOP" in text
+    assert "Boss audits are mandatory" in text
+    assert "optional checks do not disable Boss" in text
+    for retired in ("Every discovered bug must close before Done", "at least two in a fullcycle"):
         assert retired not in text
 
 
-def test_plan_is_optional_and_small():
-    text = flat("src/common/skills/plan/SKILL.md")
-    assert "Planning is a tool, not a gate" in text
-    assert "at most three stages" in text
-    assert "Recon facts" in text and "optional telemetry" in text
-    assert "Do not create a plan merely because a change may take more than fifteen minutes" in text
+def test_fullcycle_choice_precedes_decomposition_and_execution():
+    for path in ("AGENTS.md", "src/common/skills/plan/SKILL.md"):
+        text = flat(path)
+        assert "exactly three short plan summaries" in text
+        assert "wait for the user's explicit choice" in text
+        assert "After the user chooses" in text
+        assert "full decomposition, dependencies and parallel allocation" in text
+        assert "recommendation, silence" in text
+        assert "A bounded quickfix stays direct" in text
+    assert "decomposition: complete" in flat("src/common/skills/plan/SKILL.md")
+    assert "before dispatch" in flat("src/common/skills/plan/SKILL.md")
+    context = load("src/common/tools/lhc_entry.py").context_for({}, ROOT)
+    assert "three short plan summaries" in context
+    assert "wait for the user's explicit choice" in context
+    assert "only then do full decomposition" in context
+    assert "Boss audits are mandatory" in context
 
 
-def test_real_use_testing_is_proportional():
+def test_real_use_testing_remains_proportional():
     text = flat("src/common/skills/real-use-testing/SKILL.md")
-    assert "does not require a fresh independent Tester" in text
-    assert "explicit release/high" in text
-    assert "Do not launch tester sessions merely to satisfy" in text
+    assert "actual consumer" in text
+    assert "a bounded direct client check may be enough" in text
+    assert "when independent usability or coverage is part of the claim" in text
+    assert "does not require trying every tool in order" in text
 
 
 def test_outcome_fullcycle_does_not_invent_release_stages():
@@ -66,3 +75,4 @@ def test_default_hooks_do_not_run_accounting_or_stop_blocks():
                 "plugins/last-human-commit/hooks/zcode-hooks.json"):
         hooks = json.loads((ROOT / rel).read_text(encoding="utf-8"))["hooks"]
         assert set(hooks) == {"SessionStart", "PostCompact"}
+    assert (ROOT / "plugins/last-human-commit/opencode/lhc-boss-v2.ts").is_file()

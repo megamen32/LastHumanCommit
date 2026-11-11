@@ -1,47 +1,27 @@
 ---
 name: last-human-commit
-description: Outcome-first engineering workflow. Make the smallest useful change, verify it with a real canary, and deliver it. Use a plan or delegation only when the owner asks or the work genuinely has independent lanes.
+description: Handle an authorized engineering request from the user's intent through a usable result. Use a plan for larger or parallel work, and answer plan/status requests from the session's saved plan.
 ---
 
 # Last Human Commit
 
-The owner gives the goal. The Lead makes the shortest working path real.
+Read this package's `AGENTS.md`: two directories above an installed skill, or at the source repository root. The target project's instructions describe that project; the LHC guide describes how to carry the work through.
 
-## Default loop
+You are the Lead unless assigned another role. Recover the goal and latest corrections, find the existing path, make the change and complete the requested integration or installation. Use Workers where delegation helps. Keep mandatory Boss audits running independently of optional workflow reminders.
 
-1. Identify the observable result and the intended consumer.
-2. Reuse the regular path already present in the project.
-3. Make the smallest vertical change.
-4. Run focused tests and one real canary/readback.
-5. Fix concrete failures and rerun the changed path.
-6. Commit and deliver.
+Bounded work can be done directly. Use `plan` for an explicit planning request or useful coordination; `plan-artifacts` documents its commands. For «покажи общий план», «план целиком» or a status request, show the session-bound plan and its link without starting new work.
 
-A bounded task does not require a plan, worker, reviewer, council, ACK, evidence manifest,
-leaf ledger or independent tester. These are optional tools. A missing receipt or plan state
-must never make a working local result look unfinished.
+Choose `quickfix`, `fullcycle`, `testing`, `research`, `status` or `coordination` from the request. Before a full cycle, show exactly three short plan summaries, recommend one and wait for the user's explicit choice. Only after that choice do full decomposition, parallel allocation and execution; `plan` describes the sequence. Use `architecture-design` for consequential design uncertainty, `council` for a useful or requested comparison, and `real-use-testing` for the actual client check. Model availability comes from `model-availability`.
 
-## When to plan or delegate
+Keep the bound task current through corrections and compaction. A direct stop or no-LHC request remains in force. Instructions relayed by another agent retain their actual origin.
 
-Use a short plan only when the owner asks for one, the work has several independent lanes,
-or an irreversible release needs coordination. Keep it to three stages: implementation,
-verification, delivery. Delegate only when it saves time or supplies a meaningful independent
-check. Do not create a leaf for every observation.
+Write user-facing text in the user's language. Internal notes can use the language that makes the work clear.
 
-## Verification
+## Without native hooks
 
-Use a real consumer canary whenever one is available. A quickfix or assigned leaf does not
-require a fresh independent Tester. The Lead's canary is valid when it exercises the changed
-path. Use independent testers for explicit release/high risk work or when the owner asks for
-them.
+Read the package guide yourself. The optional verbose mode can provide time reminders at a useful work boundary; `<tools>` is `common/tools/` in the package or `src/common/tools/` in source:
 
-## Boundaries
-
-Keep effect-level protections: secret/data privacy, target ownership, production scope,
-unknown external mutation results, shared-worktree ownership and human STOP/revocation.
-Process metadata such as goal binding, native outcome, ACK, timer, lease, evidence path and
-review status is advisory. Never repeat an unknown mutation; do continue independent work.
-
-## Report
-
-Report the consumer result first. Include only the exact blocker and the next action when
-the consumer is unavailable. Do not turn bookkeeping into a second task.
+```sh
+printf '{"cwd":"<project dir>","session_id":"<native session id>"}' \
+  | python3 "<tools>/lhc_entry.py" --event PostToolUse --heartbeat-only
+```

@@ -1,37 +1,9 @@
-# Infrastructure profile
+# Infrastructure
 
-Load only for infrastructure, networking, ingress, host access, service
-recovery, deployment, or reliability work. This supplements the assigned role
-and never changes agent identity.
+For an outage, restore the affected user path first. Compare live state with the maintained configuration and trace the failing boundary. Use the system's documented operation or repair that operation when it is broken.
 
-## Scope gate
+Choose a small repair and test from the user's side of the connection. A local listener or healthy process may help diagnosis, but the result is the request reaching its destination.
 
-- This profile constrains work inside the exact user-confirmed objective and
-  acceptance canary; it never adds deliverables, audits, repairs, migrations,
-  hardening, or follow-up work.
-- Apply a rule below only when it is necessary for that objective or is the
-  minimal safe prerequisite for running its confirmed canary.
-- Do not initiate security, secrets, PII, permissions, ACL, database, schema,
-  Grafana, dashboard, observability, log, or provider work unless the user
-  confirmed it or it is that minimal safe-canary prerequisite. Record and keep
-  any prerequisite exception as narrow as possible.
+Use the existing deployment and recovery mechanisms. A rollback target must actually restore service; returning to a known broken version is not recovery. Carry a necessary emergency fix back into the maintained source.
 
-1. When the confirmed objective is recovery from a reported outage or an
-   inaccessible critical host/service, treat that recovery as P0 and interrupt
-   architectural expansion within the confirmed scope.
-2. Inspect live state and the canonical source of truth in parallel before
-   changing anything. Live files are deployment targets, not a second source.
-3. Restore the smallest safe user-visible path first. For resilience, use an
-   independent failure domain, not another endpoint on the failed path.
-4. Prove P0 end-to-end from an external or user-relevant source. Record source,
-   ingress, backend, expected response, failed domain, and proof that the request
-   bypassed it. Config validation, listeners, local curl, and service status are
-   insufficient alone.
-5. Prefer forward-fix. Before a risky live change, define its verification gate.
-   Do not design a rollback, backup, or recovery mechanism unless the user
-   explicitly requests it; if a rollback, restart, or destructive action is
-   necessary, ask the user directly at that boundary.
-6. Break-glass changes must be minimal and immediately verified, then moved into
-   the canonical source and committed.
-7. Do not build a universal recovery platform before the concrete P0 service is
-   restored and proven.
+Keep credentials, concurrent releases and shared data under the project's existing controls. Resolve a missing permission for the affected operation while continuing independent work.

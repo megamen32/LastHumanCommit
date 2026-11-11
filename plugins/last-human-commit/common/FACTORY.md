@@ -1,68 +1,13 @@
-> Background reference. Load only when the task needs this mechanism. `AGENTS.md` wins on any conflict: its finish line, blocker lists, escalation chain and delivery rules override this file.
+# Last Human Commit
 
-# Last Human Commit: autonomous completion by default
+LHC carries a user's request through decisions, implementation, integration and a working result. AGENTS.md defines the shared rules; roles and skills supply the details needed for a particular job.
 
-The factory takes responsibility for a finished, independently verified outcome,
-not a proposal awaiting repeated human coordination. Autonomy is the default
-within the requested objective and the environment's granted permissions.
-The Lead coordinates as planner, model router, integration owner and evidence synthesizer. Workers perform the execution.
+The Lead owns the outcome. Workers take useful pieces of work. An Adviser or Critic helps with a difficult decision; a Reviewer checks the change; a Tester tries the product. Boss must audit ongoing active work about every 30 minutes and speak up when the agent is missing the point. The other roles are selected for their useful contribution. A full cycle begins with three short approach summaries and the user's choice; decomposition and parallel execution follow that choice.
 
-## Five feedback loops
+Start from the existing project and choose the simplest complete solution. Plan enough to coordinate it, preserve relevant decisions, and keep going through delivery. Checks should answer a concrete question about the result or the changed behavior.
 
-Every cycle first reviews current inputs and applicable verified learning from
-existing project and LHC indexes. Freshness and the latest user objective govern
-reuse; loading all historical context is unnecessary. Product improvement and
-improvement of the factory's methods have distinct evidence and both feed the
-next cycle's inputs. Use architecture-design when structural uncertainty matters.
+A useful lesson may change the product, a tool, a skill or the way work is assigned. Save it where the next relevant task will find it. A short successful task needs no retrospective.
 
-1. Execution: research -> implement -> technical review -> real-use test -> repair.
-2. Product learning: diverse goal-driven focus groups -> reproduce -> prioritize
-   -> fix -> regression check -> fresh user attempt.
-3. Difficult decisions: independent strong-model proposals -> cross-challenge
-   -> synthesis -> review of the synthesis -> a discriminating experiment.
-4. Factory learning: observed friction or success -> reusable change -> independent
-   comparison -> relevant reuse -> retain, refine or retire.
-5. Execution allocation: strongest-model decomposition -> dependency graph ->
-   suitable model assignments -> parallel execution -> acceptance -> routing update.
+Model classes and available routes come from LhcPlan `list_models`. Choose by capability, latency, quota and expected rework. Preserve the user's selected account and provider unless the user changes them.
 
-The Boss guides the Lead on drift and on blockers the Adviser could not
-resolve (escalation chain in `AGENTS.md`). It is zero-knowledge and advisory: it helps shorten the path to the
-business result, prevents spurious blockers and drift from the original plan
-specification, and does not own the result or gate release — the Lead owns the
-decision. The Lead arranges needed review and testing without waiting for a
-human appointment, and asks the human only for an actual business decision or
-missing authority.
-
-## Firm responsibility, flexible methods
-
-Preserve independent verification, truthful evidence, explicit user constraints,
-shared work and the original outcome. Methods, estimates, task size, skill choice,
-model choice and decomposition are revisable with a short evidence-based reason.
-A management checkpoint must yield a useful next action, not just a STOP label.
-A partial vertical slice is progress, not the renamed complete user outcome.
-Preserve the original estimate when revising a forecast. Derive each range from
-coherent work and its uncertainty, show actual parallel waves and distinguish
-summed effort from capacity-respecting critical-path duration and external waits.
-Leaves are sized at about 15 minutes of work, not runtime caps. Twenty-minute
-reporting checkpoints are not a task-size rule: they are later than the leaf, so a
-Worker holding a 15-minute leaf reports by the 20-minute mark.
-
-## Model selection
-
-Workers are restricted to the classes fast, middle and frontier that LhcPlan `list_models` returns. These
-labels are not provider IDs: match each to the exact live model-catalog ID and verify
-capability before assignment. If unavailable, stop that lane and report the blocker;
-never substitute another model silently.
-
-Optimize total cost per accepted outcome: decisions, context, execution, tools,
-independent testing, retries and rework. Track latency and quota separately when
-prices are unknown. Expensive testing can be the best investment. A weak executor
-that repeatedly needs rescue is not necessarily economical.
-
-## What this repository can and cannot guarantee
-
-These are agent instructions, reusable skills, templates and offline checks.
-They do not themselves create an agent runtime. The Lead coordinates through the
-actual harness; assigned Workers execute. Dispatch, exact model selection, resumption,
-fresh sessions, independent review and browser control must be attested by the actual
-harness. Record unsupported capabilities honestly. Do not invent timers or fallback.
+These files guide an existing agent runtime. Session creation, tool access, native authorization and delivery of messages are provided by that runtime. State a missing capability plainly and use a supported alternative when one is available.

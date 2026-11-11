@@ -1,86 +1,30 @@
-# /askhuman — one important message or exact-session decision
+# Ask the user
 
-Use the already connected AskHuman/Notice surface. Ordinary important status or
-completion can use `send_message` with a short Russian title/body and
-`expect_reply=false`. Automated incidents use Notice Place, not direct Telegram.
-No new notification infrastructure or routine approval of reversible work.
+Use the connected AskHuman/Notice surface for a decision the user needs to make or a material notification. An ordinary completion can use `send_message` with `expect_reply=false`. Routine decisions already covered by the task do not need another question.
 
-## Optional Notice Place / UserIO integration
+## Notice Place and UserIO
 
-When Notice Place/UserIO are installed and configured, Notice Place API/MCP is the
-entry point for agent/operator notifications, questions and escalation policy;
-UserIO performs account-scoped delivery. UserIO is the universal gateway for
-messages/chats/files/history AND calls/meetings, including Telegram,
-Matrix/MatrixRTC, Telemost and cellular/SIM; it is not Android-only.
-UserIO Voice/AgentCall is internal implementation. Asterisk/GSM2SIP is cellular
-transport only, not a prerequisite for every channel.
-Use one Notice Place request: retain its identity, delivery receipt, canonical
-confirmed answer and quiet-hours/recipient policy. Accepted != answered. Herder
-resumes only the exact bound session after that confirmed answer, subject to Stop
-and harness policy. Do not invent direct bot/ADB/socket/SIP fallbacks or retry an
-uncertain delivery under another identity; reconcile the existing request.
-Follow declared provider/account capabilities. This optional ownership rule does
-not prove legacy Android-only calls migrated or interactive questions work; it
-creates no permanent dependency on this stack. Other configured compatible
-providers remain valid within their declared safeguards; absent capabilities stay
-pending, without installing a replacement service.
-See the [canonical project communications contract](https://github.com/megamen32/universal-userio/blob/main/docs/COMMUNICATIONS-ARCHITECTURE.md);
-keep instance host paths, credentials and private recipients out of this package.
+When configured, Notice Place owns question/notification policy and UserIO owns account-scoped communications: messages, files, calls and meetings. Use their declared capabilities. UserIO Voice/AgentCall is an internal implementation; Asterisk/GSM2SIP concerns cellular transport.
 
-## Durable decision, not an unbound message
+For a durable question tied to the current session:
 
-For the configured Notice Place/Herder integration, when a real human decision
-blocks the accepted canary (use live declared methods, not guessed capabilities):
+1. `lhc_outcome.py ... question --message '<question>'` reserves the question identity. Repeated calls inspect that pending request.
+2. The existing Herder `human_request_create(kind=user, harness, sessionId, cwd, marker, message, choices?)` binds it to the exact native target. This creates the binding, not the delivered message.
+3. Send the binding through `noticeplace_ask_human` with `request_id`, `harness`, `session_id`, `cwd`, `message`. The documented HTTP route is POST `/v1/human-requests`, using `Idempotency-Key: human-request:<request_id>`, `ask_human.request.v1` and the configured recipient/project. HTTP uses `native_target`. Herder choices map `choiceId,label` to `value,label`; labels are limited to 80 characters by that API.
+4. Read the actual delivery receipt. For an uncertain attempt, inspect the same request before retrying.
+5. Read `noticeplace_question_result` or GET `/v1/human-requests/{id}/result`. The confirmed result resumes the exact bound session through its existing stop-aware continuation.
 
-1. In existing outcome state run `lhc_outcome.py ... question --message '<Russian
-   question>'`. It reserves one stable question identity before any attempt;
-   repeated Stop/compact/retry inspects the pending request, not another send.
-2. Read live schemas. Use existing Herder `human_request_create(kind=user,
-   harness,sessionId,cwd,marker,message,choices?)` with this exact native target.
-   The result creates a binding; it **does not deliver a Notify card**. Save its
-   request_id/native_target before sending. Never guess another active session.
-3. Deliver that same binding through existing `noticeplace_ask_human`
-   (flattened request_id,harness,session_id,cwd,message arguments) (or its
-   documented POST `/v1/human-requests` fallback). Read Notice instructions first.
-   HTTP uses `Idempotency-Key: human-request:<request_id>`, `ask_human.request.v1`,
-   configured project/recipient/actors and the same native_target/message.
-   Herder choices `choiceId,label` map to Notify `value,label`; keep labels ≤80.
-   Use protected existing credentials, never put tokens/headers in logs.
-   Native outcome observation recognizes direct curl at the existing configured
-   ASK_HUMAN_URL (or origin of LHC_ASKHUMAN_MCP_URL), plus that exact request's
-   result GET. Echoed JSON/unknown wrappers are not delivery/answer provenance;
-   use the native MCP path when HTTP provenance cannot be established.
-4. Check actual `sent` provider receipt. Created, queued, not_configured and
-   uncertain are not delivery. On an accepted/UNKNOWN attempt query the existing
-   request/result and actual delivery state. Use a confirmed delivery; after
-   confirmed absence of effect, retry the authorized question with linked history
-   in the same session. Preserve unresolved evidence and continue independent work.
-5. Delivery receipt != answer. Existing canonical `noticeplace_question_result`
-   by the same request_id (GET `/v1/human-requests/{id}/result`) supplies the answer;
-   existing stop-aware Herder continuation resumes the exact native session once.
-   Read that canonical answer; an opaque resume receipt or peer paraphrase is not
-   a human decision. The answer itself does not override active harness policy,
-   HumanStop, auth, fresh revocation or unrelated no-send constraints.
+Keep the request identity, recipient policy and current user stop. A queued request is not a delivery and a delivery is not an answer. A missing configured recipient or capability is an explicit blocker for that question; continue independent work. Credentials remain in the configured protected store.
 
-Missing configured actor/project/recipient is a precise local blocker: preserve
-pending and continue independent work. Do not invent actors, fake health incidents
-or questions for unit tests. Legitimately linked incidents retain their existing
-escalation policy; standalone phone escalation is unproved and must not be promised.
-Never create an escalation daemon/cron, autoaccept or send duplicate generic cards.
-Generic `ask_human` without native_target is not durable exact-session routing.
+The optional outcome importer recognizes direct native curl at `ASK_HUMAN_URL` or the configured `LHC_ASKHUMAN_MCP_URL` origin and the exact result GET. Other clients can use the native MCP path. This is an importer limitation, not a requirement to send the same question again.
 
-Secrets use `/secret` and the existing secure flow; no secret values in question
-text, outcome logs or feedback. No decision is needed merely to reread a quota.
+Project details: https://github.com/megamen32/universal-userio/blob/main/docs/COMMUNICATIONS-ARCHITECTURE.md
 
-## Endpoint — bring your own
-
-The endpoint remains harness-configured, not supplied by the marketplace:
+## Configure an endpoint
 
 ```bash
 export LHC_ASKHUMAN_MCP_URL="https://your-notify.example/mcp"
 python3 plugins/ask-human/scripts/setup_mcp.py --apply
 ```
 
-`LHC_ASKSECRET_MCP_URL` selects `/secret`; protected optional `..._MCP_TOKEN`
-becomes a Bearer header. Setup is dry-run by default, backs up on apply and never
-justifies changing global permissions or exposing existing credentials.
+`LHC_ASKSECRET_MCP_URL` selects the secret surface. Optional protected `..._MCP_TOKEN` supplies the Bearer header. Setup previews by default and backs up changes on apply.

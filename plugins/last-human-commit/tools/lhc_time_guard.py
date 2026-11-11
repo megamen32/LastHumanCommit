@@ -1264,23 +1264,14 @@ def native_heartbeat(cwd: Path, runtime: str, session_id: str,
     reminders = []
     if any(item.startswith("plan:") for item in due):
         reminders.append(
-            "LHC 30-minute plan report: the time is over and the task is not finished. "
-            "What blocked you? Remove any blocker you can remove yourself, now. If you "
-            "were doing checks, planning, hardening or reports for their own sake, stop "
-            "and take the nearest step to the owner's business result and keep working. Compare the "
-            "owner's latest correction with what works in the real caller and update "
-            "only the leaves whose facts changed (common/protocols/PLAN_REPORT.md). "
-            "This reminder is not a task and never ends the turn."
+            'LHC 30-minute plan report: compare the latest request with the current result. Update changed leaves and take the next useful step; common/protocols/PLAN_REPORT.md describes the view.'
         )
         # The same checkpoint names the lanes that can start right now. It reads
         # the canonical graph and lists them; it never estimates or judges.
         reminders.append(render_parallel_lines(native_cwd))
     if any(item.startswith("goal:") for item in due):
         reminders.append(
-            "LHC 60-minute direction check: still not finished. Reread the original direct user goal "
-            "and the latest correction, name the blocker and the nearest step to "
-            "the business result, and do it. Checks that verify nothing new are the "
-            "delay: stop them. Not a task, never a reason to stop."
+            'LHC 60-minute direction check: compare the original goal and latest correction with what works now. Continue the useful route or change it when the evidence calls for that.'
         )
     return {"state": os.fspath(path), "elapsed_wall_seconds": max(0, int(elapsed.total_seconds())),
             "due": due, "prompt": "\n\n".join(reminders)}
@@ -1344,11 +1335,8 @@ def learning_checkpoint(args: argparse.Namespace, cwd: Path, session_id: str,
              and observed - parse_time(said) < timedelta(minutes=CHECKPOINT_REPEAT_MINUTES))
     if due and not quiet:
         prompt = (
-            "LHC session checkpoint: 120 wall-clock minutes and the task is not finished. "
-            "What slowed it: a blocker you could remove yourself, a check or ritual, a "
-            "wrong route? Stop that and take the nearest step to the business result; if "
-            "the route is unclear, follow the escalation chain in AGENTS.md (Adviser, then "
-            "a concrete next repair). Not a task and never a reason to stop. "
+            "LHC session checkpoint: 120 wall-clock minutes have elapsed. "
+            "Is a repeated problem wasting work? Correct the route if needed, then continue the task. "
             f"Session={session_id}; due-at={state['due_at']}; first observed={state['started_at']}."
         )
         if session_id == "unknown-session":
@@ -1761,18 +1749,11 @@ def business_checkpoint(args, cwd: Path, session_id: str, payload: dict,
                 business.get("last_injected_review_id") != pending["id"] or
                 (now-parse_time(previous)).total_seconds() >= CHECKPOINT_REPEAT_MINUTES * 60):
             reminder = (
-                "Mandatory hourly LHC direction check: reread the original assignment and latest user corrections, "
-                "not only your plan. What result did the user receive this hour? SHA/test counts/registry updates alone do not answer. "
-                "If the latest result only repaired/reviewed a receipt, do not start another audit: separate actual unverified risk "
-                "from metadata and choose the next user-available change. Correct metadata locally over known unchanged source; "
-                "verify only the needed new delta/unknown coverage. Never bypass release gates or real tests. "
-                "Continue the necessary route, reduce invented scope, change approach or perform available independent work. "
-                "This is direction control, not milestone acceptance. Zero Knowledge with varied personas/full feedback belongs "
-                "at ready major milestones (~3 hours), not every hour/change. Read common/protocols/BUSINESS_CHECKPOINT.md. "
-                "Record source/result/decision/next action through lhc_time_guard.py business-review; it is not product acceptance. "
+                "LHC hourly direction check: what can the user do now, and what still needs work? "
+                "Use the original request and latest correction to choose the next useful action. "
+                "Record a material decision with lhc_time_guard.py business-review when updating this state. "
                 f"review-id={pending['id']}; runtime={args.runtime}; session={session_id}; state={path}. "
-                f"Clock: {clock_source}. A reminder does not close review; milestone acceptance is separate. "
-                "Without new information, do not send another user status."
+                f"Clock: {clock_source}."
             )
             original_scope, latest_scope = active_business_prompts(business)
             if original_scope:

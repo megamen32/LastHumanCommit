@@ -1,34 +1,14 @@
 ---
 name: lhc-update-agents
-description: Update the shared LHC sources, generate and validate the native plugin, then publish and verify the selected installed loaders.
+description: Edit canonical LHC sources, rebuild the plugin package and update the selected native harness installations.
 ---
 
 # Update LHC
 
-Own the change in `LastHumanCommit`, not in an installed cache or a copy in
-another project. Preserve foreign work; use a worktree when another writer is
-present. The source is `src/common/` and `adapters/`; the repo-root `skills/` tree
-is a generated projection of `src/common/skills/`, not a second source. The delivery
-package is `plugins/last-human-commit`.
+Edit `src/common/` and `adapters/` in a task worktree. Root `skills/` and `plugins/last-human-commit` are generated copies.
 
-Generate with `python3 plugins/last-human-commit/scripts/sync_skills.py`, check
-with `--check` and run the relevant behavioral tests plus both validators.
-Keep manifests at the same version. Install the candidate on the agreed user or
-test environment and manually verify an ordinary real scenario before preparing
-the PR or integration. Then review, push, create a PR when configured, and carry
-the authorized integration through; verify the merged source. An existing owner
-request for their own result or deployment needs no duplicate confirmation.
-Respect explicit exclusions, third-party boundaries and system/harness restrictions.
+Run `scripts/publish_package.py` and `plugins/last-human-commit/scripts/sync_skills.py`, synchronize the version, and check the affected behavior and package parity. The full validator is `tests/validate.py`. Publish and integrate into the authorized target.
 
-Use each selected harness's native plugin manager. For Codex, invoke it through
-`python3 deploy/plugin-autoupdate/install-codex-plugin.py` from this checkout,
-after refreshing the configured marketplace. This wrapper retains compatibility
-routes for old versioned hook paths in the same operation as the native update;
-a bare `codex plugin add` can prune paths still used by open chats. These routes
-point to the identified marketplace tools and do not install old versions or
-edit tool contents in the cache. Verify old expanded hook commands as well as
-the new installed definitions; a fresh hook listing is not a live-chat reload.
-Test the installed loader
-with an ordinary engineering request, not only an explicit skill invocation.
-Report source validation, package publication and actual runtime loading
-separately. A source test does not prove every running session has reloaded.
+Update each selected installation through its native plugin manager. For Codex use `python3 deploy/plugin-autoupdate/install-codex-plugin.py` after refreshing the marketplace. The wrapper preserves old expanded hook paths still used by open chats while the new package loads.
+
+Try an ordinary request through the installed loader. For a hook change, include an already-open session when that compatibility matters. Report package publication, installed files and observed runtime behavior separately.

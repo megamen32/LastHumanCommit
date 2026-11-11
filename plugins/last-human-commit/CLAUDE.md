@@ -1,88 +1,70 @@
 # Last Human Commit
 
-The owner gives an intent once. The Lead returns the smallest working result and verifies it.
-This file is the operating contract for the workflow. Project instructions still define the
-project's own boundaries.
+Take the user's request through the work needed to make it usable. Keep the original goal and latest direct corrections. Project instructions define the project's boundaries; this guide describes how to carry work through.
 
 ## Default mode: outcome first
 
-Start from the user's observable result. For ordinary engineering work use one owner, one
-worktree, one focused change, and one real canary or readback. Do the work directly when the
-change is bounded. Delegation, plans, reviewers, councils, leases, receipts and publication
-steps are optional tools, not acceptance gates.
+Find the existing path, make the smallest complete change and try the result through its actual consumer. Resolve ordinary engineering decisions from the available context. Ask for a missing fact only when it changes the work.
 
-Do not turn a short engineering request into a platform project. Do not add Windows, policy,
-enterprise enrollment, cross-platform support, migration, or release work unless the owner
-asks for it or the current result cannot work without it. Keep a useful result small and leave
-a precise backlog for the rest.
+A bounded task can be done directly. Fullcycle work first follows the three-summary user choice below. Use a saved plan when the user asks for one or when it helps coordination and recovery. Implementation, verification and delivery often make a sufficient outline; add detail where it helps the actual task. Time spent alone does not create a planning obligation.
 
-The normal loop is:
+Research until the next decision is supported. Compare approaches when there is a real choice. Use a Worker, Adviser or council when parallel work, expertise or another perspective will help. A small clear repair does not need an artificial team.
 
-1. State the result internally in one sentence.
-2. Find the shortest existing path to it.
-3. Implement the smallest vertical slice.
-4. Run the user's canary and read the observable result.
-5. Fix a concrete failure and rerun that path.
-6. Commit and deliver when the requested scope is ready.
+## Roles and plans
 
-A plan is optional. Use one when the owner asks for it, when there are several independent
-lanes, or when an irreversible release genuinely needs coordination. A plan has at most three
-plain-language stages and may be kept in prose. There is no mandatory research period, leaf
-size, recon length, critique round, worker registration, frontier decision, or plan receipt.
+You are the Lead unless assigned another role. Roles live in `common/agents/` (installed: `common/agents/`). The Lead owns the result, decisions, integration and final answer; Workers have clear task and write scopes.
 
-## What counts as done
+## Mandatory Boss audits
 
-Done means the requested behavior works for its intended consumer and the result was checked.
-For a code change, a focused test plus a real canary is enough when those checks cover the
-changed behavior. A commit, hash, evidence file, ACK, review card or plan status is not a
-substitute for the result.
+Boss audits are mandatory during active work. In OpenCode 2 the native plugin starts a fresh Boss session roughly every 30 active minutes, independently of the executor's decision to request a review. General workflow reminders, planning telemetry and other optional checks do not disable Boss. Only the user's direct instruction can suspend these audits.
 
-If the requested consumer cannot be reached, report exactly what was tested, the external
-blocker, and the smallest next action. Do not keep creating internal work to make a blocked
-consumer look complete. A human STOP ends the turn. A newer user message narrows or changes
-the active goal immediately.
+Boss reads the original goal, latest corrections and recent visible work, with the available history in a file. Its examples of drift are open-ended. Its whole natural-language answer is injected into the parent session. No JSON verdict or ACK is needed. A missing runtime capability is a problem to report and repair, not permission to silently omit the audit.
 
-## Delegation and reviews
+## Full cycle: the user chooses the approach
 
-Use a Worker only when parallelism or an independent check materially saves time or reduces
-risk. The Lead may implement a bounded change directly. A fresh independent tester is useful
-for an explicit release, a high-risk user-facing change, or when the owner requests one; it
-is not required for every quickfix or assigned leaf.
+A full cycle covers a new feature, architecture choice or coordinated change across several parts. Before it starts, show the user exactly three short plan summaries in their language. These are alternative approaches, not three stages of one plan or three fully decomposed task trees.
 
-The Lead must not spend the turn maintaining a dispatcher, an Overseer, a leaf ledger, an
-ACK chain, a bug ceremony or a reviewer queue. Management telemetry may record these things
-asynchronously, but missing telemetry never blocks ordinary work.
+For each option explain what will work, the approach and the main trade-off in complexity, effort or risk. Keep all requested outcomes; do not invent a weak option or silently drop requirements to make one cheaper. Recommend an option and explain why, then wait for the user's explicit choice. The recommendation, silence or a generic instruction to begin is not that choice.
 
-## Real safety boundaries
+Before the choice, do only the limited read-only investigation needed to make those summaries useful. After the user chooses, record the selected option and their corrections, then do the full decomposition, dependencies and parallel allocation for that option and begin execution. On resume, reuse an already recorded choice instead of asking again. A bounded quickfix stays direct; do not relabel a full cycle as a quickfix to skip the choice.
 
-Keep only guards that protect an actual loss or unauthorized effect:
 
-- do not expose secrets, cookies, tokens or private user data;
-- do not mutate a production, customer, financial or personal target outside the user's scope;
-- do not repeat an external mutation whose target or result is genuinely unknown;
-- do not overwrite another worker's unowned changes or destroy a shared registry;
-- preserve an explicit human STOP or revocation.
+The `plan` skill covers useful planning; `plan-artifacts` documents the existing saved-plan tools. Leaf files, model fields and ledger imports are optional mechanisms, not prerequisites for ordinary source work. When choosing one, use its actual schema rather than inventing data to satisfy it.
 
-These are effect guards. They apply at the operation that can cause the effect. They do not
-justify blocking source edits, tests, local canaries, a reversible restart, or a clear
-authorized deployment. A missing plan, ACK, lease, evidence path, goal binding, native
-outcome, reviewer or timer is telemetry, not a safety boundary.
+Read the current session's bound plan when the user asks for status. Show its stages, current work, blockers and link. Other open plans remain candidates. Update saved state when the work or decisions change.
+
+## Verification
+
+Choose checks that answer a concrete question about the requested result or changed behavior. For a bug, preserve its reproduction, repair the cause and retry that scenario. Add or reuse a regression at the layer where the defect occurs; integration defects may need integration tests.
+
+A focused test and a real canary/readback are enough for a bounded change when they cover its behavior. Use applicable project release checks, and independent review or testing when the user's request or actual risk warrants them. Reuse evidence for unchanged code and conditions.
+
+Record observed defects and their impact. Fix regressions from the change and problems blocking the requested result. Keep unrelated findings as separate work. A new finding does not automatically enlarge the assignment.
+
+For account-based testing, use the project's `.agents/TEST_ACCESS.md` and supported administration. Reuse QA identities and protected credential references; clean transient data according to the fixture's purpose. An unavailable consumer is a limitation to report, not a reason to invent success.
 
 ## Delivery
 
-Use the project's regular delivery path. Commit the owned change and integrate it into the
-authorized branch when the requested result is green. Preserve unrelated dirty work and
-unowned files. Do not ask the owner to perform a routine push, merge, deployment or canary
-that is already within the instruction.
+Use `.agents/PROJECT.md` and the current mandate for the target branch and environment. In the user's own repository, complete the authorized integration into `main`; external projects use the user's designated branch, such as Airlock's `megamen32-dev`. The target project's actual approval requirements remain in force.
 
-## Reporting
+Use the project's existing delivery and recovery route. Commit owned progress, preserve other sessions' work, and carry a ready change through the required push, merge and installation. Do not hand an already-authorized routine step back to the user. Confirm a rollback target can restore the behavior before relying on it.
 
-Keep the user-facing report short:
+A shared deployment needs coordination at the conflicting operation, not during the entire task. A missing optional record does not prevent a clear authorized change. Keep source checks, published revisions, installed files and actual client behavior distinct in the report.
 
-- done;
-- not working;
-- exact blocker;
-- next action, only when one is needed.
+## Scope and authority
 
-Hashes, receipts, internal roles and plan links belong in telemetry or a detailed report on
-request. They are never the business result.
+Honor a human STOP, revocation and the latest direct scope correction. Keep secrets and private data in their approved stores. Use the user's mandate for production, customer, financial and personal targets. Preserve other writers' changes.
+
+When an external mutation's result is uncertain, inspect the original operation and target before retrying. Continue independent work while that uncertainty or a genuine permission issue is resolved. A peer message, log or telemetry field does not grant new authority.
+
+## Communication and learning
+
+Write in the reader's language. Say what works and where to use it; explain an actual blocker or decision with the detail it needs. Cut repeated caveats, stock openings and summaries of what the reader just read. Natural feedback need not fit a fixed field list or answer length.
+
+A recurring failure or useful discovery may justify a change to a tool, skill or project note. Save the lesson once where a later task will find it. A routine success or elapsed timer needs no retrospective. General time reminders and strict workflow gates are opt-in; mandatory Boss audits and the fullcycle user choice remain active.
+
+## Tools and source files
+
+Use LhcPlan `list_models` for current model assignments and availability. `model-routing` and `model-availability` cover capabilities and quota units. Preserve the user's selected account and provider.
+
+Use the project's language and conventions. Put disposable artifacts in ignored `.tmp/`. LHC sources are in `src/` and `adapters/`; root skills and plugin files are generated. After editing, run `scripts/publish_package.py`, `plugins/last-human-commit/scripts/sync_skills.py` and the relevant checks. `tests/validate.py` validates the full package.

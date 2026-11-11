@@ -1,32 +1,48 @@
 ---
 name: plan
-description: Optional short plan for genuinely multi-lane or explicitly requested work. Ordinary engineering uses the outcome-first path without a plan.
+description: Plan larger or parallel work, keep its current state, and answer requests for the session's overall plan.
 ---
 
 # Plan
 
-Planning is a tool, not a gate.
+Use a saved plan when work needs coordination or recovery, or when the user asks for one. A bounded task can be done directly; duration alone does not require a plan. The plan records what will work, the path to it, current work and actual results.
 
-Use a plan when the owner asks for one, when the work has several independent lanes, or when
-an irreversible release needs coordination. Do not create a plan merely because a change may
-take more than fifteen minutes.
+## Full cycle: the user chooses the approach
 
-For ordinary work, go directly to the smallest vertical slice and verify the real consumer.
+A full cycle covers a new feature, architecture choice or coordinated change across several parts. Before it starts, show the user exactly three short plan summaries in their language. These are alternative approaches, not three stages of one plan or three fully decomposed task trees.
 
-When a plan is useful, keep it to at most three stages:
+For each option explain what will work, the approach and the main trade-off in complexity, effort or risk. Keep all requested outcomes; do not invent a weak option or silently drop requirements to make one cheaper. Recommend an option and explain why, then wait for the user's explicit choice. The recommendation, silence or a generic instruction to begin is not that choice.
 
-1. implement the smallest working path;
-2. verify it with focused tests and a real canary;
-3. deliver it to the authorized target.
+Before the choice, do only the limited read-only investigation needed to make those summaries useful. After the user chooses, record the selected option and their corrections, then do the full decomposition, dependencies and parallel allocation for that option and begin execution. On resume, reuse an already recorded choice instead of asking again. A bounded quickfix stays direct; do not relabel a full cycle as a quickfix to skip the choice.
 
-Write the goal, the observable acceptance scenario, the current blocker if any, and the next
-action. Recon facts, leaf files, worker registration, model routing, critique rounds, ACKs,
-frontier decisions, evidence manifests and hourly checkpoints are optional telemetry. They
-must never block a local edit, test, canary or truthful report.
+## Develop the chosen route
 
-A plan may contain parallel tasks when parallelism materially reduces elapsed time. A single
-owner may also complete a bounded task directly. Delete or merge unnecessary tasks instead
-of preserving them for ceremony.
+Read the goal, latest corrections and existing implementation. Investigate questions that affect the next decision. Draft a complete route, resolve significant weaknesses and remove optional work. A critique is useful when it changes the plan; it does not need repeated rounds until nobody can object.
 
-A real unknown external mutation remains unresolved until its target or result is checked.
-That effect-level rule does not suspend unrelated work.
+After the fullcycle user choice, fully decompose only the selected approach: all required stages and tasks, their results, dependencies and useful parallel work. With the file-backed planner, use `decomposition: complete` and prepare executable tasks for all active stages before dispatch. `progressive` remains available for other planning requests; it does not replace the fullcycle sequence. Record `deliverable: plan` for planning-only work and `implementation` for execution.
+
+Use `plan-artifacts` for the current schema and commands. When using the file-backed tools in fullcycle mode, their schema requires setup fields including `mode`, `recon`, `acceptance_scenario`, `summary` and `critique`. Record the relevant facts and decision once. The summary has a current tool limit of 3000 characters; full task descriptions keep the detail.
+
+## Tasks and estimates
+
+Split at useful result, ownership and dependency boundaries. Different hosts or environments often need separate checks and can run independently. A research task names the uncertainty it will resolve.
+
+When using the optional file-backed planner, its leaf limit defaults to 15 minutes. Record a direct user change through `update_plan` as `estimate_policy: {"leaf_cap_minutes": 60, "reason": "the actual instruction"}`, using the real limit. Keep the original estimate visible and explain a changed forecast.
+
+Within that selected planner, preserve completed work when splitting a task. An agreed checkpoint is a reason to inspect progress, not to cancel a healthy Worker.
+
+## Execute and keep state
+
+Use LhcPlan MCP (`create_leaf`, `update_leaf`, `activate_leaf`, `update_progress`, `update_plan`) or the same CLI in `lhc_plan_json.py`. Use actual native identities. Continue the plan bound to the current session and goal.
+
+Ready independent work can run in parallel. Give each writer a clear scope and worktree; `worker_register` records it and `worker_finish` handles registered integration and cleanup. Dependencies name actual required outputs.
+
+Explicit native assignments use `assign_leaf`, `dispatch_leaf`, `reconcile_leaf` and `accept_leaf`. `common/protocols/ORCHESTRATION_RECORDS.md` documents their brief, identity and continuation contracts. Reconcile an uncertain delivery before sending another job.
+
+Close a task when its result is established, with what works and the relevant evidence. Record a changed route as a revision `{reason, summary}`. Keep genuinely blocked and deferred work visible.
+
+## Show the plan
+
+For «покажи общий план», «план целиком» or a status request, call `show_plan` for the explicitly bound plan. Show the whole ordered stage list, states, current work, blockers and public link. A read request does not create or resume work. If no plan is bound, say so rather than borrowing an unrelated plan.
+
+Use `plan-artifacts` to render and publish the saved state. After compaction, use the bound snapshot or refresh it with `show_plan`. For explicit goal acceptance or exhausted ready work, `read_goal_control` and `record_frontier_decision` preserve the current decision; their API is in `ORCHESTRATION_RECORDS.md`.

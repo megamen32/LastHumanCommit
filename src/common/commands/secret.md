@@ -1,30 +1,9 @@
-# /secret — hand a secret to the agent from the phone
+# Set a secret
 
-Usage: `/secret NAME [target]`
+Usage: `/secret NAME [target]`. NAME is the environment variable; target defaults to the current project's `.env`.
 
-- `NAME` — the environment variable name to set (for example `API_KEY`).
-- `target` — optional destination file; default `.env` in the current project.
+Use the connected AskSecret workflow when available. `ask_secret(NAME)` asks the user through its protected surface; `get_secret` or `ask_secret_run` passes the resulting value to the authorized destination. Keep values out of chat, logs and task records.
 
-The whole operation is a few steps, produces no lectures, and never builds new
-secret infrastructure.
+When the value already exists in an approved environment or secret store, use that reference directly. If no protected delivery route is available, tell the user which credential and destination are needed and use the project's established method.
 
-## Flow
-
-1. If an AskSecret MCP is connected (tools like `ask_secret`, `get_secret`,
-   `ask_secret_run`), call `ask_secret(NAME)`. The user receives a phone prompt
-   and pastes the secret there. When the secret is ready, `get_secret` returns
-   an opaque file/URL: pipe the file content straight into the target (append
-   `NAME=<value>` to `.env`, or export it for the process) in one command,
-   without reading, printing, or echoing the value into chat or logs.
-2. Otherwise, if AskHuman/notify (Telegram) is available, send one short
-   message asking the user to deliver `NAME` (AskSecret link or direct paste),
-   wait for the reply, and write it to the target the same way.
-3. Otherwise ask in chat for the value, write it to the target immediately, and
-   do not quote it back.
-
-## Rules
-
-- Confirm completion only as `NAME set in <target>`; never echo the value.
-- Later reads of the secret are a normal one-step env/`.env` read.
-- Do not demand attestation, do not create handoff layers, and do not insert
-  confirmation prompts for this routine operation.
+Confirm the name and destination after it is written. Later reads use the same normal environment or secret-store mechanism.

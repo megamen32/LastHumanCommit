@@ -1,94 +1,40 @@
 ---
 name: model-availability
-description: Check existing model catalogs, read-only subscription quotas and assignment capabilities before council, delegation or focus acceptance; the allowed tier list governs those assignments while the route table is installation-specific evidence; never infer availability from a model name or telemetry status.
+description: Read the existing model catalog and quota telemetry before allocating work that depends on them.
 ---
 
-# Available routes, not guessed capacity
+# Model availability
 
-First call LhcPlan `list_models`: it already reads Herder `list_models` and `model_quotas` and classifies the models. For raw fields use Herder's `list_models` and `model_quotas` directly. Read their live
-schemas; retain source, checked_at, relevant raw numeric fields, period/unit/reset
-and the selected route in existing task evidence. This is observation, not a
-reservation: other clients can spend quota after the read. No new MCP or scheduler.
+Call LhcPlan `list_models`; it combines configured assignments with Herder's `list_models` and `model_quotas` when available. Use those native tools directly for raw fields. Keep catalog presence, authentication, quota and required capabilities separate.
 
-For each candidate separate catalog presence, auth state, subscription quota,
-required tools/vision/context, requested model and actual native execution model.
-`reported` means telemetry arrived, not eligible. Unknown is not available. A
-catalog entry or a model name in a prompt does not attest successful execution.
+For council, Adviser or frontier work, the configured reserve is 20% of each applicable provider window. Below that reserve, use an eligible cheaper route or continue independent work unless the user explicitly changes the choice. An unavailable quota reading is unknown, not a claim of spare capacity. Reuse a recent reading within the same dispatch batch; refresh after a meaningful wait, reset or provider failure.
 
-The allowed tiers govern every assignment; the classes come from `list_models`. This applies wherever a model is chosen for council, delegation or focus acceptance.
+## Units
 
-## The 20% allowance gate
+- Z.AI/GLM `percentage` reports used share. 100% means exhausted. Check all applicable text windows; weekly exhaustion still matters when the short window is free. CREDIT_LIMIT is credits, not tokens. Retain `unit` and `number` for the reported period.
+- MiniMax `current_interval_remaining_percent` and `current_weekly_remaining_percent` report remaining share; use the tighter applicable text window. Video is a separate pool. `remains_time` is milliseconds.
+- Codex `usedPercent` reports used share, `windowDurationMins` is minutes and `resetsAt` is Unix seconds. Missing windows remain unknown.
 
-Before a council, an adviser or a frontier model is convened, read the live quota
-of the provider that would serve it. When the remaining share of an applicable
-window is below 20%, that provider is not used: no council, no frontier model, no
-adviser. The work continues on the fast tier and ordinary execution, and the gate
-is reported rather than applied silently. The owner's explicit instruction in the
-moment overrides the gate.
+Retain the source and time of a reading. A reset timestamp by itself does not prove that a previously exhausted pool recovered.
 
-Read the units before applying it: GLM `percentage` is used, not remaining, so 100%
-there means exhausted; MiniMax `current_interval_remaining_percent` and
-`current_weekly_remaining_percent` are remaining, and the applicable window is the
-tighter one; Codex `usedPercent` is used, so 83% used is 17% remaining and is below
-the gate.
+## Configured route examples
 
-User-approved routes for this installation (recheck live catalog):
+These installation examples need confirmation against the current catalog:
 
-| Tier | Harness | Exact subscription route |
+| Tier | Harness | Route |
 | --- | --- | --- |
 | frontier | codex | `gpt-6.1-sol` |
 | middle | opencode | `zai-coding-plan/glm-5.3` |
 | fast | opencode | `minimax-coding-plan/MiniMax-M3.1-Flash` |
 
-The table is this installation's historical route evidence for reaching those
-models; it is not the authority on which models are allowed. A route that is
-missing today is a blocker to report, never a licence to pick a model outside
-the allowed tiers.
+Keep the user's account, provider and billing choice. A missing route is not a reason to silently switch to PAYG, buy capacity or use another account.
 
-Do not silently substitute OmniRoute, PAYG, a cheaper model, a credit pack or an
-unapproved fallback. Set explicit route/fallback policy in the existing dispatch.
-Preserve native session/job IDs and verify an accepted or UNKNOWN outcome using
-the original job and target state. Use a confirmed result; confirmed absence of
-effect permits a corrected authorized attempt. An unresolved outcome holds only
-that job, not independent work. HumanStop, permission and auth boundaries still apply.
+## When Herder is unavailable
 
-## Read the right pool and units
+Use an existing documented read-only source with its protected authentication:
 
-- GLM CREDIT_LIMIT uses credits, not tokens/calls. Inspect every applicable text
-  window: weekly remaining 0 blocks despite a free short window. Keep `unit` and
-  `number` (observed unit3/number5 = five hours; unit6/number1 = one week); unknown
-  shapes stay unknown. `percentage` here is used, not remaining.
-- MiniMax general/text `current_interval_remaining_percent` and
-  `current_weekly_remaining_percent` are remaining: zero in either applicable
-  window means exhausted. The separate video pool neither blocks nor funds text.
-  Counts 0/0 do not override reported percentages. Preserve numeric status enums
-  without inventing undocumented meanings. `remains_time` is milliseconds.
-- Codex usedPercent is used, windowDurationMins is minutes, resetsAt is Unix
-  seconds. A missing secondary window is unknown, not zero used. Inspect relevant
-  buckets and account limit flags together; contradictory data is not eligibility.
+- Codex app-server: `account/rateLimits/read`.
+- Z.AI: GET `https://api.z.ai/api/monitor/usage/quota/limit`.
+- MiniMax: `mmx quota` or GET `https://www.minimax.io/v1/token_plan/remains`.
 
-Take a fresh read before a dispatch batch and after meaningful waiting, a known
-reset or a provider failure. A reset timestamp does not make an old zero snapshot
-positive. Missing reset remains unknown; do not invent now+window or poll in an
-LLM loop. Reuse a still-relevant snapshot within one immediate batch, recording
-its age rather than claiming a provider-guaranteed TTL.
-
-## Existing native/direct fallback when Herder is unavailable
-
-Use documented read-only provider/native mechanisms with existing protected auth;
-never print keys, bearer headers, cookies or full auth/config files.
-
-- Codex App Server `account/rateLimits/read` (not a new inference turn).
-- Z.AI official usage query: GET `https://api.z.ai/api/monitor/usage/quota/limit`.
-- MiniMax documented `mmx quota` or GET `https://www.minimax.io/v1/token_plan/remains`
-  with existing subscription auth. Do not send a one-token messages probe: it is
-  inference and may consume paid credit packs after subscription exhaustion.
-
-On a read failure make at most one appropriate documented fallback read; then
-record unknown and continue independent work. Do not refresh auth, buy capacity,
-change billing or wake manually stopped sessions to measure quota.
-
-Three eligible models may provide useful diversity; two are a valid two-model
-council. One can provide a fresh adversarial review, not multimodel acceptance;
-zero leaves the required model gate pending. Preserve alternatives and dissent.
-A blocked model delays its assignment, not all independent implementation work.
+A model inference probe may consume paid capacity and is not a quota read. If the supported reading fails, retain the unknown state and continue work that does not depend on it. Report an essential missing capability to the Lead.

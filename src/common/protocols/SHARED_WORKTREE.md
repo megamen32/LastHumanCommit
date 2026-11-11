@@ -1,172 +1,53 @@
-# Worktrees, publication, PRs and project releases
+# Worktrees, integration and shared releases
 
-## Start
+## Task worktree
 
-Resolve the primary checkout with `git worktree list --porcelain`, not chat cwd.
-Use one isolated task worktree and branch, even when no other session is visible.
-Reuse the assigned worktree; otherwise use the existing helper:
+Find the primary checkout with `git worktree list --porcelain`. Reuse the assigned task worktree, or create one from the intended remote target:
 
 ```sh
 python3 <LHC>/common/tools/lhc_worktree.py create --repo <project> --task <slug> --base <remote>/<target>
 ```
 
-Fetch the intended target first. `target` comes from the primary checkout's
-`.agents/PROJECT.md`; `AGENTS.md` Delivery handles ownership defaults. Never
-adopt another task's uncommitted changes or reset the shared primary checkout.
+Keep other sessions' work intact. Commit coherent progress on the task branch and push before handoff. Preserve dirty changes rather than stashing, resetting or discarding shared work.
 
-## Publish and review
+## Integrate the result
 
-The package `config/workflow.json` sets `pr_stage` to `on` or
-`off`; build with `python3 scripts/publish_package.py --pr-stage on|off`.
-A user's existing LHC config directory `~/.config/lhc/workflow.json`
-overrides the built value; otherwise missing configuration defaults to `on`.
+The target comes from `.agents/PROJECT.md` and AGENTS.md: the user's own repository normally targets `main`; external work uses the user's designated contribution branch. Airlock uses `megamen32-dev`.
 
-1. Commit scoped changes in an isolated worktree and push the task branch
-   always, as you work (WIP commits); test-first delays only the PR/integration
-   into main, never the commit. Other sessions do not need a PR before continuing their own branches.
-2. After the real user or test scenario passes on the agreed environment,
-   when PR-on, open/update a draft PR into the permitted target with the LHC
-   plan link. Record session, worktree, branch, HEAD and PR URL.
-   When PR-off, do not demand or fabricate a PR. Record the same facts
-   except URL, plus `pr_stage=off` and the exact intended merge target.
-3. Run `lhc_worktree.py delivery --repo <task-worktree> --target <target>`.
-   Both modes check clean isolated work and remote published HEAD. PR-on checks
-   matching open PR; PR-off skips `gh pr` and PR URL. Neither mode merges
-   or deploys. A green publication receipt is not proof of finished work.
-   An installed artifact with no provenance receipt is unverified, not a blocker: rebuild from fresh origin/main,
-   back up the old one, install, verify the real scenario, roll back on failure; do not ask for a release owner.
-4. Reconcile a moved target on the task branch and rerun affected tests.
-   After independent review and checks, finish an authorized merge through
-   the PR (on) or only through a host-permitted direct merge path (off).
-   A host that requires a PR is an exact external gate: no rule bypass,
-   force-push, access change or invented approval.
-5. Verify integrated target SHA, build artifact, deployed revision and actual
-   consumer result separately. PR-off never makes these optional.
+The package's `config/workflow.json` sets `pr_stage: on|off`; `~/.config/lhc/workflow.json` can override it. With PR mode on, open/update the task PR and complete the permitted merge. With it off, use a repository-permitted direct route.
 
-A pushed task branch is valid work in progress; stopping with uncommitted work is
-never allowed. A blocker you can remove yourself (unsafe artifact composition,
-failed check, uninstalled stand) is removed at once; stop with "not ready" only
-for a blocker outside your power, escalated Worker -> Lead -> Adviser -> Boss,
-not to the owner. Stop only when the result is verified (including an independent
-recheck of the fixed screen if acceptance required it) or the escalation has gone
-out; "part done, part unconfirmed" is not an end state. Prepare a PR only after the real
-user or test scenario passes on the agreed environment. Include the plan link
-only when a PR is opened, after checking
-its audience. Green checks do not authorize merge. A required approval or
-branch-protection gate is a precise blocker, not a reason to delete work.
+`lhc_worktree.py delivery --repo <task-worktree> --target <target>` checks clean task work, published HEAD and the matching PR when required. A moved target needs reconciliation and affected checks. Actual repository protection and approval requirements remain in force.
 
-Subagents are on by default (`workflow.json` key `subagents`, `lhc_subagents.py`): inside one session the Lead splits
-the work and starts Workers in parallel, one per leaf, on the cheapest model class that passes acceptance, plus a
-Zero-Knowledge Critic. Only on the owner's word in the task («без агентов», «без субагентов»), `subagents: off`
-in `.agents/PROJECT.md` or in `~/.config/lhc/workflow.json` (that priority) does the Lead do the work itself. The Lead is not the cross-session Dispatcher role.
+Complete the requested installation and client check as well as the merge. Record the integrated revision, installed artifact and observed result separately. Parallel sessions can integrate independently; only the live shared switch needs the release lease.
 
-## Bug register, inherited failures and last-worker gate
+## Bugs
 
-Use the same LhcPlan MCP for bug_register/bug_get/bug_list/bug_update/
-bug_resolve/bug_check, backed by `<plan-dir>/bugs/*.json`. The CLI reuses
-the plan collector's flock, atomic writer and optimistic hash; no new service.
-Register every observed error, even a pre-existing failed test, immediately.
-The last active full-cycle worker inherits all records; "baseline/not ours"
-does not exclude them. Fixed requires a real proof file (hashed), passing
-check and result. Duplicate and false_positive need an explicit reason
-and remain visible in their history.
+The plan's `bugs/*.json` records reproductions, impact and resolution. Use `bug_register`, `bug_get`, `bug_list`, `bug_update`, `bug_resolve` and `bug_check` through LhcPlan. Fix task-blocking defects and regressions from this change; keep unrelated findings as separate work. A fixed status needs real verification. Duplicate and false-positive resolutions keep their reason and history.
 
-Before accepted completion, run bug_check (zero unresolved bugs) **and the
-full applicable test suite green**, then verify actual merge, deployed
-revision and consumer result. Never delete bug records or silence/skip tests
-to fabricate acceptance. A true access/approval gate stays a blocked bug
-and a visible blocker. This applies equally with PR on or off.
+## Shared deployment tools (when selected)
 
-## Shared runtime
+When the project uses Herder release coordination, use `project_release_lease` for the canonical project and actual owner `{hostId, harness, nativeSessionId}`. Acquire it with a built candidate, just before the live operation. `status` gives the current owner and `SendMessage` target.
 
-Use Agent Herder `project_release_lease` with the canonical project `cwd` and
-the actual owner `{hostId, harness, nativeSessionId}`. `status` reports the owner,
-expiry, remaining seconds and the existing `SendMessage` target, never its token.
+Check the token/fence and expected live revision immediately before mutation. Preserve a newer release or peer repair. Hold the lease only for the deployment and client check, and release it in `finally`. Terminal stop/abort/error cleanup and TTL cover failures; an ordinary completed turn is not session termination.
 
-The lease covers the deploy and nothing else. Presence in a project is the session's worktree, branch and Herder
-session; it needs no lease. Never hold the lease while reading, editing source, building, testing or waiting: acquire
-it with the candidate already built and tested, release it as soon as the real scenario is checked.
+A recovery operation uses the project's approved route and a target known to restore service. The lease prevents conflicting writes; it does not decide which release the user requested.
 
-Acquire just before release, renew only while the deploy itself runs, and `check` the current
-token/fence immediately before mutation. Re-read the live revision and use the
-release entrypoint's expected-revision compare-and-swap. A changed revision or
-expired/stale fence stops that candidate. Do not replace a newer deployment or
-a peer's emergency fix with an older artifact, even if that artifact was green.
+### Herder unavailable
 
-Release in `finally`. Terminal end/abort/error/stop hooks release ownership;
-an ordinary completed turn does not. TTL handles a crash with no hook. Never
-release a foreign lease; contact its session via the reported `SendMessage`
-target. Separate projects do not share a global lock. A lease does not authorize
-production or rollback. An authorized rollback must name and verify its target.
-
-### Herder unavailable: git-ref fallback lease
-
-Each `project_release_lease` call waits up to 20 s for an answer and is retried after 0, 30, 60 and 120 s; with no
-successful answer in 3 min Herder is unavailable. Then, and only then, take the fallback lease: a git ref on origin
-changed by atomic compare-and-swap (`--force-with-lease`).
+The current fallback uses a Git ref changed atomically with `--force-with-lease`. Try the existing Herder calls with their 20-second timeout at 0, 30, 60 and 120 seconds; after three minutes without success the fallback is available.
 
 ```sh
-python3 <lhc>/tools/lhc_worktree.py release-guard acquire --repo <wt> --project <p> --session <id> --candidate <sha> [--plan <plan-dir>]
-python3 <lhc>/tools/lhc_worktree.py release-guard check   --repo <wt> --project <p> --session <id> --candidate <sha> --live-rev <live> --expected-rev <live>
-python3 <lhc>/tools/lhc_worktree.py release-guard release --repo <wt> --project <p> --session <id>
+python3 <LHC>/tools/lhc_worktree.py release-guard acquire --repo <wt> --project <p> --session <id> --candidate <sha> [--plan <plan-dir>]
+python3 <LHC>/tools/lhc_worktree.py release-guard check --repo <wt> --project <p> --session <id> --candidate <sha> --live-rev <live> --expected-rev <live>
+python3 <LHC>/tools/lhc_worktree.py release-guard release --repo <wt> --project <p> --session <id>
 ```
 
-- The lease is `refs/lhc/release/<project>`: a commit whose message is JSON {session, host, candidate, expires = now + 15 min}.
-  A ref of another session that has not expired stops you (foreign lease); an expired one is taken by the same CAS;
-  the owner renews with `acquire` and frees the ref in `finally` (`release`, a CAS delete).
-- `check` runs in code right before the mutation: the candidate is in `origin/main` (`lhc_git_facts.is_ancestor`), the
-  live revision is its ancestor, the candidate's `VERSION` is greater than the live one, the entrypoint's expected
-  revision equals the live revision just re-read (otherwise a stale fence stops the release) and the worktree is clean.
-- Journal: `acquire` and `release` add a `herder-bypass` entry to the plan's `revisions` (`--plan`) and send
-  `lhc_mail.py send --to DISPATCHER --kind result`.
-- Allowed: merge your own checked PR, build and roll out your own candidate, renew your own ref. Not allowed: touch a
-  foreign dirty tree while `lhc_orphan_work.py` shows owner=active, roll back, release a Herder lease seen before the
-  outage, roll out a candidate that is not a descendant of the live revision. When Herder answers again, the next
-  release goes through it.
+The ref is `refs/lhc/release/<project>` and expires after 15 minutes. Its record names the session, host and candidate. Renew with `acquire`; release through compare-and-swap. A live foreign ref requires coordination with its owner.
 
-## Completion
+`check` requires a clean worktree, a candidate in `origin/main`, a live revision ancestral to the candidate, a newer candidate VERSION, and a matching expected revision. Acquisition and release record `herder-bypass` in the selected plan and dispatcher mail. Return to Herder for the next release once it answers.
 
-Record branch/remote HEAD, effective `pr_stage`, PR URL if on,
-authorized integrated revision, lease owner/fence reference (never secret
-values), deployed artifact/revision and consumer proof. Off requires all
-fields except PR URL; it does **not** permit stopping after branch push.
-On terminal session end, collect the read-only project inventory:
-`lhc_worktree.py inventory --repo <project> --target <verified-target>`.
-It reports Git facts, not session liveness or cleanup permission. Correlate
-paths with Agent Herder's authoritative session registry.
+## Existing work and cleanup
 
-The last active worker owns whole-project integration, verification and
-cleanup. Account for every task branch, contact peers through SendMessage,
-review/test known changes, then integrate them by the route permitted by
-the active PR mode and host protections. Never blindly merge unknown branches.
-A required approval or conflict remains an explicit blocker, never an excuse
-to discard work or claim completion.
+Use `lhc_worktree.py inventory` for Git facts and the native session registry for ownership. `lhc_orphan_work.py` can inspect dirty or untracked work before adoption. Preserve its exact diff and commit identity, contact an active owner, and review dependencies before integrating an abandoned change.
 
-Clean only merged, clean, confirmed-inactive worktrees/branches after checking
-the exact HEAD, target ancestry and session ownership. Preserve target,
-primary and dirty or unknown work; no force removal or reset; stash is banned outright (commit WIP on the task branch).
-
-## Existing work without an active owner
-
-Do a bounded owner lookup using current session/declaration state, recent
-coordination records and process evidence; record which sources were checked.
-`python3 <lhc>/tools/lhc_orphan_work.py --repo . --me <session>` does the lookup mechanically for dirty and
-untracked files: owner=active (live heartbeat/session, or written within 30 min) means SendMessage and hands
-off; owner=none means the next step is yours, with no question to the owner; unreadable evidence is judged by
-mtime, never "ambiguous". If no active owner is found, the current worker must adopt responsibility for finishing the
-work instead of leaving a permanent "foreign work" blocker.
-
-Inventory and preserve exact branch/commit identities and dirty diffs first.
-Add the adoption, evidence, intended integration and acceptance checks to the
-existing project plan. Inspect the full diff and its dependencies, review and
-test it, then finish integration through the permitted PR/release path.
-Do not blindly copy dirty files, reset another checkout, stash, discard
-changes or silently claim the diff is trusted. Preserve original evidence and
-recheck ownership before mutation; if an active owner appears, coordinate.
-
-Ownership adoption is an obligation to investigate and finish, not automatic
-acceptance or merge/deploy authorization. Conflicts, unsafe changes or required
-approval remain explicit actionable blockers owned by the adopting worker.
-Continue unblocked work, arrange the needed review/approval, and report the
-precise remaining action rather than abandoning the branch. Clean up only under
-the merged, clean, confirmed-inactive rules above, never from owner absence alone.
+Clean merged, clean worktrees and branches after confirming their sessions are inactive. Unknown ownership is a question to resolve, not permission to remove work. Keep the primary checkout and target branch.

@@ -1,6 +1,5 @@
-> Background reference. AGENTS.md wins. Checkpoints are optional telemetry.
+# Check progress when useful
 
-A checkpoint may be useful for a long-running release or an explicit learning review. It is
-never required every hour, never a reason to stop ordinary work, and never a substitute for
-the real consumer canary. Record only a concrete observation, one change to try, and the
-next verification. Do not create a second ledger.
+For long-running work, compare the latest request with what the user can use now. Continue the useful route, correct an observed detour or resolve the next actual blocker.
+
+This general progress checkpoint is optional; the periodic Boss audit is mandatory. Record a material decision in the existing task when it will help continuation; another ledger or review session is unnecessary for an unchanged route. Boss's mandatory audit supplies independent feedback. Inject its full prose; it needs no ACK or formatted verdict.

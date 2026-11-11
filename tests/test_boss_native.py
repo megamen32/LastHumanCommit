@@ -11,10 +11,14 @@ PLUGIN = ROOT / "plugins/last-human-commit/opencode/lhc-boss-v2.ts"
 def test_boss_is_the_only_business_critic_role():
     text = ROLE.read_text()
     assert "# Boss" in text
-    assert "бесконечные проверки" in text
-    assert "безопасность ради видимости безопасности" in text
-    assert "планы вместо работы" in text
-    assert "первоначальное поручение пользователя" in text
+    for example in ("Бесконечные проверки", "Уход в сторону", "Безопасность ради безопасности",
+                    "Раздувание плана", "Путаница между тестом и доставкой", "Незавершённость",
+                    "Зацикливание", "Игнорирование поправки пользователя",
+                    "Самовольное упрощение", "Полный цикл без выбора пользователя"):
+        assert example in text
+    assert "Это примеры, а не полный список" in text
+    assert "Твои аудиты обязательны" in text
+    assert "первоначальное поручение" in text
     assert not (ROOT / "src/common/agents/Overseer.md").exists()
     assert not (ROOT / "src/common/tools/lhc_overseer_ack.py").exists()
     assert not (ROOT / "src/common/tools/lhc_progress_review.py").exists()
@@ -22,9 +26,9 @@ def test_boss_is_the_only_business_critic_role():
 
 def test_boss_responds_in_prose_without_a_shape_or_length_cap():
     text = ROLE.read_text()
-    assert "Разговаривай как человек с человеком" in text
-    assert "ограничение длины" in text
-    assert "не выдумывай нарушения" in text
+    assert "Пиши как человек" in text
+    assert "Твой ответ целиком попадёт в его контекст" in text
+    assert "Когда работа идёт нормально, так и скажи" in text
     assert '"verdict"' not in text
     assert '"next_action"' not in text
     assert "Верни **только один JSON-объект**" not in text

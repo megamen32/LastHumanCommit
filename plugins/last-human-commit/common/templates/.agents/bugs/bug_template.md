@@ -1,12 +1,9 @@
-# Instructions
+# <Observed defect>
 
-Once confirmed, create this file as `.agents/bugs/<id>.md` and commit it
-immediately before repair work. Partial fixes leave it present. The verified fix
-commit must include regression proof and delete this file.
+Problem and user impact:
+Reproduction or evidence:
+Affected task or separate backlog item:
+Status and next step:
+Fix and verification, when complete:
 
-# [short confirmed defect or blocker]
-
-Description: [observable problem and impact]
-Evidence: [immutable path or ID, or exact reproducer]
-Blocks: [task filename or none]
-Severity: [optional; include only when it changes priority]
+Use the plan's bug register when one exists. Keep the original observation and record the verified resolution; a second per-bug file is optional.

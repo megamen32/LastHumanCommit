@@ -1,27 +1,14 @@
-# Project execution-access contract
+# Test access
 
-Store the completed registry at `<primary checkout>/.agents/TEST_ACCESS.md`.
-Secret values MUST NOT appear here. Use approved protected references only;
-this template is neither authority nor a credential store.
+Keep this at `<primary checkout>/.agents/TEST_ACCESS.md`. Store credential values in the existing protected store; record their references here.
 
-- Owning project, primary checkout/worktree mapping and fixture owner:
-- Allowed test environment URLs and how their identity is verified:
-- Explicit current user authority/source, permitted local administration/sudo,
-  login/consent, account/client provisioning and exclusions/revocations:
-- Approved protected reference/path, exact field names and permissions/owner
-  (no values), existing secret retrieval/opaque runner-delivery mechanism:
-- Supported app-native provision/reset/recovery and initial-password-change steps:
-- Ordinary QA identity/role; admin preparation is separate from ordinary testing:
-- OAuth owner, supported fresh disposable client/grant, existing native token
-  manager, bounded lifecycle and cleanup after dependent consumers:
-- Account/password rotation: atomically update the same protected reference,
-  preserve permissions/unrelated fields, verify login, notify owners by ref/status:
-- Cleanup/rollback, active dependents and exact unresolved external dependency:
+Project and primary checkout:
+Approved environments and task scope:
+Current restrictions or revocations:
+QA identity, role and purpose:
+Protected credential reference and field names:
+Login, provisioning and recovery steps:
+Fixture owner and active dependents:
+Transient data cleanup:
 
-- QA identities kept for reuse (one line each, no values): name, what it is for, where the value lives
-  (`/secret` name or `.env` key), how to log in, how to renew. Agents create these without asking and never
-  delete them after a check; the next agent reuses them:
-
-After compaction reload this reference and latest authority, never secret values.
-Keep entry rules and this registry consistent with direct user scope. Do not infer
-permission from sudo, environment names, old notes or tools. Preserve HumanStop.
+Reuse existing QA accounts when appropriate. Prepare fixtures through supported administration and run the user journey as an ordinary test user. Update the same reference after a credential change.

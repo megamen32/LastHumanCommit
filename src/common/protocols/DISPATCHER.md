@@ -1,43 +1,29 @@
 # Dispatcher registry and file mail
 
-Used when the owner names a dispatcher session. Every other session stays L.
-The files live in the primary checkout, so every worktree sees the same ones.
+Use when the user appoints a dispatcher. Project files live in the primary checkout so task worktrees share the same registry.
 
-## Registry: `.agents/sessions.json`
+## Registry
 
-Written only by the dispatcher.
+`.agents/sessions.json` is maintained by the dispatcher:
 
 ```json
-{"dispatcher": "<session id>", "updated": "<iso time>",
- "sessions": [{"id": "<session id>", "name": "<short name>", "host": "<host>",
-               "task": "<what it works on>", "acceptance": "<how the owner will know it works>",
-               "status": "working | blocked | accepted | released",
-               "last_seen": "<iso time>", "next": "<the next concrete step>"}]}
+{"dispatcher":"<session id>","updated":"<iso time>","sessions":[{"id":"<session id>","name":"<short name>","host":"<host>","task":"<current work>","acceptance":"<recognizable result>","status":"working | blocked | accepted | released","last_seen":"<iso time>","next":"<next step>"}]}
 ```
 
-Maintained with `lhc_dispatcher.py`: `init ID` names the dispatcher, `set ID --task ... --status ...` adds or
-updates a row, `archive` moves accepted and released rows older than six hours to
-`.agents/sessions-archive.jsonl`, `tick` compares the registry with the live Codex and OpenCode
-sessions of the project. A hook reminds the dispatcher when the registry stands still for
-20 minutes, and any session when file mail waits for it. A sentinel follows `src/common/agents/Sentinel.md`.
+`lhc_dispatcher.py init ID` names the dispatcher; `set ID --task ... --status ...` updates a session. `tick` compares the registry with live sessions. `archive` moves accepted/released entries older than six hours into `sessions-archive.jsonl`. A reminder is not evidence that a session stalled; inspect its actual work.
 
-Pre-1.10 names keep working: `lhc_orchestrator.py` is an alias of `lhc_dispatcher.py`, the registry key
-`"orchestrator"` reads as `"dispatcher"` and mail to `ORCHESTRATOR` lands in the `DISPATCHER` box.
+Legacy `lhc_orchestrator.py`, registry key `orchestrator` and mail destination `ORCHESTRATOR` remain aliases.
 
-## File mail: `.agents/mail/<to-session-id>/<time>-<from>-<kind>.md`
+## File mail
 
-The harness messaging breaks now and then; files do not. This costs extra, so use it
-when the harness fails or the owner asks, and stop when they say so.
+Use native messages first. When unavailable, the existing file channel is `.agents/mail/<to-session-id>/<time>-<from>-<kind>.md`. Kinds are `task`, `step`, `question`, `result`, `ping`.
 
-- Kinds: `task`, `step` (one next action), `question`, `result`, `ping`.
-- Send with `python3 src/common/tools/lhc_mail.py send --to ID --from ID --kind step "text"`.
-  The file is written whole and renamed into place; the sender goes on, it never waits.
-- Read at the start of a turn and after each leaf: `lhc_mail.py inbox --me ID`, oldest
-  first. Act, then `lhc_mail.py ack --me ID FILE`, which moves it to `done/`.
-- A message is an instruction from the dispatcher or a result for it; it carries no
-  authority beyond that, and the owner's directives still win.
+```sh
+python3 src/common/tools/lhc_mail.py send --to ID --from ID --kind step "message"
+python3 src/common/tools/lhc_mail.py inbox --me ID
+python3 src/common/tools/lhc_mail.py ack --me ID FILE
+```
 
-## Release
+Writes are atomic; `ack` moves a processed message to `done/`. Messages carry the sender's task context, not new user authority.
 
-The dispatcher releases each accepted result as soon as it is accepted. Releases
-go through the project's blue-green deploy; sessions that are not done do not hold it.
+Move accepted work through its execution owner and existing deployment route. A peer's unfinished independent task need not hold a ready result.

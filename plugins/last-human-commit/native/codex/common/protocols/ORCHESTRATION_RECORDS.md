@@ -1,11 +1,6 @@
-> Background reference. Load only when the task needs this mechanism. `AGENTS.md` wins on any conflict: its finish line, blocker lists, escalation chain and delivery rules override this file.
+# Task and worker records
 
-# Durable task and worker records
-
-The task record is the durable source of the assignment, current plan and Lead
-decisions. Use the owning project's `.agents/tasks/<task-id>/` directory, even
-when the native session started elsewhere. Do not create a competing workflow,
-tracker or parallel task directory.
+Use the owning project's existing task directory for work needing a durable plan or handoff. The Lead owns goal and plan decisions; each Worker has a clear write scope. A short direct task does not need the full record structure below.
 
 ## Canonical files and owners
 
@@ -33,7 +28,7 @@ separate approval or ceremony.
 
 ## Brief fields
 
-Every `briefs/<leaf-id>.md` contains:
+For an explicit dispatched assignment, the brief uses the fields below. Include optional planning and artifact-writer details only when relevant:
 
 ```text
 task_id:
@@ -69,13 +64,13 @@ about products/paths touched; `read_paths` and `write_paths` grant the worker's
 exact source ownership. A leaf assignment is created and scoped by the Lead. It
 does not ask the worker to reconstruct the parent goal, re-plan, change the mode,
 or recursively recruit another agent. The Lead records the selected mode after
-research and owns the required plan in both quickfix and fullcycle.
+the necessary research. For fullcycle work it presents three short summaries and waits for the user's choice before decomposition or dispatch; a bounded quickfix can remain direct.
 
 For an `Artifact Writer`, the brief also names its exclusive write set and the
 exact Lead-decided text/status/ownership/acceptance that may be recorded. The
 writer must not infer or introduce a plan decision. The parent task/session/route
 must be explicit in both the brief and receipt so a result returns to the right
-Lead. Its brief MUST forward this acceptance to the writer: human-facing plan
+Lead. Its assignment includes the relevant artifact acceptance: human-facing plan
 fields and rendered views use the user's language (Russian when the user uses
 Russian); descriptions explain the complete meaning without dropping user benefit,
 input, action, visible outcome, or important limits; HTML and Markdown are
@@ -90,14 +85,13 @@ when the accepted review requires it.
 
 ## Progress and result fields
 
-`progress.md` is append-only by dated entries; do not replace earlier evidence.
-Each update includes `status` (`queued`, `running`, `blocked`, `done`,
+Preserve material observations as dated progress entries. Useful updates include `status` (`queued`, `running`, `blocked`, `done`,
 `deferred`), owner, observed business delta, completed step, actual active time
 and its source (or `not measured`), decisions with the evidence/source that
 authorized them, blocker/decision-needed if any, and one next action.
 No timer, start notice or agent message is itself progress evidence.
 
-The assigned worker completes `result.md` using this stable receipt shape:
+A durable Worker result can use this shape when the caller needs structured handoff:
 
 ```text
 status: done | blocked | deferred

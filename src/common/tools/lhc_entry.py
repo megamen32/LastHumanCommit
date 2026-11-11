@@ -695,13 +695,14 @@ def mail_stop(event):
 def context_for(event, root):
     Path(root).resolve()
     return (
-        "LHC outcome-first mode. Follow the current human goal and make the smallest useful "
-        "vertical slice. Run a focused test and a real canary/readback, then report done or the "
-        "exact external blocker. Plans, workers, reviewers, ACKs, receipts, timers and goal "
-        "binding are optional telemetry; use them only when the human explicitly asks for a "
-        "plan/review or the task has genuinely independent release lanes. Keep only effect-level "
-        "guards for secrets, target ownership, unknown mutations, shared writes and human STOP."
+        "LHC outcome-first mode: follow the latest human goal and verify the actual consumer. "
+        "For a full cycle, first show exactly three short plan summaries and wait for the user's explicit choice; "
+        "only then do full decomposition, parallel allocation and execution. A bounded quickfix stays direct. "
+        "Boss audits are mandatory about every 30 active minutes, independently of optional workflow telemetry. "
+        "Inject the Boss's full natural-language feedback. Preserve human STOP, private data, shared work "
+        "and the scope of authorized external actions."
     )
+
 
 def owner_directives(cwd):
     """The live owner directives of this project, or an empty string. Never raises."""

@@ -1,17 +1,5 @@
-# Claude Code adapter instructions
+# Claude Code
 
-Use the native role/profile mechanism when configured. Otherwise the marker-
-preserving `CLAUDE.md` block is the portable fallback. Keep the complete role
-context in the child prompt and never overwrite project-owned text outside the
-marker pair.
+Use the configured native role/profile. The marked `CLAUDE.md` block is the portable fallback and preserves project text outside its markers.
 
-Before every child call, load `templates/subagent.md` for compact business
-context, the optional durable task/result boundary, Worker continuity,
-checkpoint/join control, and cheapest-sufficient model rules.
-
-For missing information ask the user one compact question. Secrets are not
-work: read a password or token directly from an environment variable, `.env`,
-or a secret file in one step; never build secret handoff infrastructure.
-
-Do not promise scheduled resume until the active surface proves it. Before L's
-final answer, run `SELF_IMPROVE.md` only when its trigger occurred.
+Give the child its role and assignment context; `templates/subagent.md` covers the shared handoff details. Use the actual runtime's supported messaging and wait APIs. Verify a live event before claiming automatic resume or plugin activation.

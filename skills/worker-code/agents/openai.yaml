@@ -1,4 +1,4 @@
 interface:
   display_name: "Worker Code"
-  short_description: "Build the thinnest real business vertical"
+  short_description: "Implement a usable change on the actual path"
   default_prompt: "Use $worker-code to implement the smallest working change on the real business path."

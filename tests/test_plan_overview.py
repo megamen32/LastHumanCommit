@@ -86,10 +86,11 @@ def test_skill_routes_overall_status_to_read_only_show():
     plan_skill = (ROOT / 'src/common/skills/plan/SKILL.md').read_text()
     main_skill = (ROOT / 'src/common/skills/last-human-commit/SKILL.md').read_text()
     description = plan_skill.split('---')[1]
-    assert "Optional short plan" in description
-    assert "plan" in main_skill.lower() and "optional" in main_skill.lower()
-    assert 'optional' in plan_skill.lower() and 'telemetry' in plan_skill.lower()
-    assert 'optional' in plan_skill.lower()
+    assert "overall plan" in description
+    assert "show_plan" in plan_skill
+    assert "A read request does not create or resume work" in plan_skill
+    assert "покажи общий план" in main_skill
+    assert "wait for the user's explicit choice" in plan_skill
 
 
 def test_status_hints_find_indexed_blocked_and_completed_plans(tmp_path, monkeypatch):

@@ -1,20 +1,7 @@
-# Hermes adapter instructions
+# Hermes
 
-The plugin uses Hermes' public `tool_request` middleware. Prefix a delegated goal
-with `[LHC_ROLE=<role>]`; the middleware adds that complete canonical role before
-Hermes builds the child. Hermes' native `leaf/orchestrator` role remains
-independent.
+Prefix a delegated goal with `[LHC_ROLE=<role>]`. The plugin's public `tool_request` middleware inserts that complete canonical LHC role before Hermes creates the child. Hermes' native leaf/orchestrator role is a separate runtime setting. Unknown markers stay unchanged.
 
-Before every delegated goal, load `templates/subagent.md` for the role prefix,
-compact business context, optional durable task/result boundary,
-checkpoint/join control, and cheapest-sufficient model rules.
+Use `templates/subagent.md` for the assignment's context and result. The plugin changes the delegated payload, not project-owned instructions.
 
-For missing information ask the user one compact question. Secrets are not
-work: read a password or token directly from an environment variable, `.env`,
-or a secret file in one step; never build secret handoff infrastructure.
-
-The plugin reads the explicit LHC marker and role source but never edits project
-instructions. Missing or unknown roles remain untouched. Hermes owns self-
-improvement natively; invoke and verify that owner at the mandatory120-minute
-unfinished-work checkpoint and on correction/overrun/repeated failure. Do not
-duplicate its storage or waive the cadence because native learning exists.
+Hermes owns its native memory/skill review and `/learn`. Use that mechanism for a useful lesson instead of creating a second learning store. `VERIFICATION.md` records what has actually been tested.

@@ -40,7 +40,7 @@ require(_router_lines<=300,"automatic entry grew beyond its context budget (hard
 if _router_lines>250:
     print(f"warning: AGENTS.md has {_router_lines} lines; the soft limit is 250 - trim before adding more",file=sys.stderr)
 for role in ("Lead","Worker","Boss","Tester","Reviewer","Adviser","Critic","Maintainer"):
-    require((ROOT/f"src/common/agents/{role}.md").is_file(),f"missing optional role {role}")
+    require((ROOT/f"src/common/agents/{role}.md").is_file(),f"missing role {role}")
 for harness in ("codex","opencode","claude-code","hermes","zcode"):
     folder=ROOT/"adapters"/harness
     manifest=(folder/"adapter.yaml").read_text()
@@ -53,7 +53,8 @@ for tool in ("lhc_bug_register.py","lhc_chat.py","lhc_entry.py","lhc_worktree.py
     require(path.read_bytes()==(PACKAGE/"tools"/tool).read_bytes(),f"tool projection differs: {tool}")
 hooks=json.loads((PACKAGE/"hooks/hooks.json").read_text())["hooks"]
 require("SessionStart" in hooks and "PostCompact" in hooks,"automatic entry hooks missing")
-require("PostToolUse" in hooks,"time-only plan and direction reminders need the heartbeat hook")
+require("PostToolUse" not in hooks, "portable bookkeeping reminders stay opt-in")
+require((PACKAGE/"opencode/lhc-boss-v2.ts").is_file(), "mandatory native Boss plugin missing")
 require("UserPromptSubmit" not in hooks,
         "conversation-driven control hooks must stay removed; they vetoed ordinary work")
 # The one Stop hook allowed reads plan files only, never the conversation, and holds a stop at most twice.

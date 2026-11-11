@@ -1,57 +1,31 @@
 ---
 name: plan-artifacts
-description: Commands and file format of LHC plans - create and update leaves, build the page, publish the public link. The skill plan decides what the leaves are; this one says how to write them. Load it when you need a command or a field, not to decide the plan.
+description: Read the commands and file formats for saved LHC plans, their generated views and publication.
 ---
 
 # Plan artifacts
 
-## The owner's link (do this first)
+`plan` explains when and how to plan. For a full cycle, first show three short plan summaries and wait for the user's choice. Create the chosen approach's full decomposition and parallel assignments only afterwards. This reference explains the existing tool contracts. Read the section needed for the current operation.
 
-The owner follows plans from his phone, not from your disk. Right after the
-first leaves of a new plan are written, run
-`python3 "<tools>/lhc_plan_mirror.py" link <plan-dir>` and give the printed URL
-to the owner once, on its own line, in your next reply. It is the permanent
-public page of this plan (`https://…/<project>/<plan>/`), not `plan.html`. The
-side-effect-free prompt reminder does not create plans or print their links.
-If the command says no mirror is configured, say so in one line and go on.
-All plans are listed on the mirror's home page with state, stage and expected
-finish.
+Use LhcPlan MCP when available, or the same CLI in `lhc_plan_json.py`. `<tools>` means `common/tools/` in the installed package or `src/common/tools/` in the source checkout.
 
-## Requests for a project or work plan
+A chosen file-backed plan has `plan.json`, task files in `leaves/`, and generated `plan.graph.json`, `plan.md` and `plan.html`. Use the plan bound to the actual session and goal. A request for status reads that plan; it does not start new work.
 
-Use these artifact commands only when the owner explicitly asks for a plan, when there
-are several independent lanes, or when an irreversible release genuinely needs
-coordination. A bounded engineering request follows the outcome-first loop and does not
-become a fullcycle because it may take longer than fifteen minutes.
+Within the optional file-backed fullcycle planner, the current tools check `mode`, `recon`, `acceptance_scenario`, `summary` and `critique`. Record existing facts and the chosen route once. That planner's default leaf estimate limit is 15 minutes; a direct user change is recorded in `estimate_policy` with its reason. Use `deliverable: plan|implementation` to describe the assignment. A user-selected fullcycle approach uses `decomposition: complete`; `progressive` remains available for other planning requests. `check --handoff` checks the declared handoff requirements.
 
-When a plan is requested, keep it small: implementation, verification and delivery are
-enough. Research, recon, leaves, reviewers, ACKs, evidence manifests and time limits are
-optional records. Create only the artifacts needed to coordinate the requested work.
-Do not refuse a direct authorized change because a plan file, receipt or review record is
-missing. A pending plan is advisory; the real consumer canary and readback decide whether
-the requested result works.
+Keep the planned model in `default_model` or each leaf's `model`, using the current catalog. Planned identity and tariff estimates do not establish actual execution or billed usage.
 
-The natural-language examples below are plan requests. A request to fix, test or inspect
-one bounded path is an ordinary task unless the owner also asks for a plan.
+Get a new plan's public link with `python3 "<tools>/lhc_plan_mirror.py" link <plan-dir>` and share it in the next useful update. An unavailable mirror does not prevent local work.
 
-## The plan is a directory of leaf files
-
-A plan lives in one directory. Every leaf of the plan is one JSON file in the
-`leaves/` subdirectory, named after the leaf:
+## Files
 
 ```text
-<plan-dir>/plan.json          purpose, expected capabilities, scenarios, current progress, slots
-<plan-dir>/leaves/L01.json    one leaf — one file — one owner
-<plan-dir>/leaves/L02.json
-<plan-dir>/plan.graph.json    collected from the leaves; never written by hand
-<plan-dir>/plan.html          the page
-<plan-dir>/plan.md            the text summary of the same graph revision
+<plan-dir>/plan.json
+<plan-dir>/leaves/L01.json
+<plan-dir>/plan.graph.json
+<plan-dir>/plan.md
+<plan-dir>/plan.html
 ```
-
-The leaf file is the source of truth of its leaf. The graph, the report and the
-page are projections of it: nobody writes them by hand. The owner of a leaf
-changes his own file and nothing else, so two workers never write the same file,
-never conflict and never wait for each other.
 
 ## 1. Write one file per leaf
 
@@ -125,7 +99,7 @@ input: waves, parallelism and the critical path are derived from it.
 when the leaf was last changed; the plan takes the newest of them as its own
 update time.
 
-The complete set of fields a leaf file may carry is exactly:
+Common leaf fields are listed below; the CLI reports the supported fields for the installed version:
 
 ```text
 acceptance, actual_minutes, affected_files, blocker, blocker_details, complexity, cost_source, cost_usd, created_at
@@ -259,9 +233,7 @@ rebuilds the page. The hook is installed for `codex`, `claude-code`, `zcode` and
 what rebuilds the page. The chain never loops — the hook reacts to the files the
 agent wrote, and the files the hook writes are not part of that event.
 
-Measured on this machine: the collect-and-render chain takes about half a
-second (0.43–0.51 s over five runs), and the whole hook call about 0.7 s. The
-hook says so when it did the work:
+When the registered hook rebuilds the page, it reports:
 
 ```text
 LHC: страница плана пересобрана из <plan-dir>
@@ -318,13 +290,9 @@ python3 "<tools>/lhc_grid.py" check-plan <record> <plan-dir>/plan.graph.json
 
 `check-plan` prints every divergence between the report and the graph and exits
 non-zero when task IDs, statuses, or explicitly stated description, acceptance
-and affected-file details disagree. That exit code is the gate: the plan is not
-finished until it passes. It does not reject descriptions by length.
+and affected-file details disagree. Correct a reported discrepancy in the source or regenerate the stale view. Descriptions have no short wording cap.
 
-The report's leaf lines carry a positional id — the first line is `L01`, the
-second is `L02` — and `check-plan` matches the report to the graph by that id
-first; a unique title match is the only fallback. Write the report's lines in the
-order of the graph, which is the order `status` prints.
+Rendered task lines carry their explicit IDs. `check-plan` uses those IDs; legacy rows without them use its documented fallback. Preserve the graph order when displaying the report.
 
 ## 6. The live page
 
@@ -381,19 +349,9 @@ leaves or isolated ownership, and the optional offline checker
 exactly that conflict. A graph made by `export` always carries `depends_on`, even
 an empty one, and therefore passes that checker.
 
-## 8. The order at every plan boundary
+## 8. Updating the views
 
-1. update the leaf file of the leaf that changed — the owner of a leaf writes
-   his own file and nothing else;
-2. the page rebuilds itself (or run `build` and `render` from sections 2 and 3);
-3. update the report in the record from the leaf files;
-4. `check-plan` — fix every divergence it prints.
-
-Do this at each 30-minute plan boundary, before dispatching work, before reporting
-a result, and before handing off after compaction. The leaves are what the work
-is; the graph is what the schedule, the forecast and the next session read. They
-are one set of leaves, and `check-plan` is the proof that the report and the
-graph still are.
+Update tasks when their facts or decisions change. Let the registered hook or observer rebuild the views; run build/render when needed. Use check-plan to investigate a discrepancy or verify a changed projection.
 
 ## 9. The field reference
 
@@ -417,15 +375,6 @@ history.
 The dashboard is a snapshot of the plan, not a control panel. It shows what the
 plan says; the actual state of the work comes from the API of the owners. A
 button in it does not change the fleet — it only draws the plan.
-
-## 11. What the tools cannot do for you
-
-- They do not choose the leaves. Decomposition is yours: one accepted outcome, one
-  shortest real canary, hard dependencies only on the real consumer path, one
-  owner per leaf.
-- They do not write the business result, the acceptance line or the blocker text.
-- They do not translate: the labels, the report and the dashboard are written in
-  the user's own language by you.
 
 ## 12. Public HTML, CLI first
 
@@ -467,25 +416,7 @@ the CLI stays for hooks, humans and clients without the MCP.
 It is not a second planner. Local standalone rendering and the legacy
 publisher below remain available for unbound plans.
 
-The native `UserPromptSubmit` hook emits a side-effect-free intake reminder.
-Semantically choose: explicit planning request or genuinely independent lanes → create or update the plan
-and activate only the needed work; ordinary bounded engineering → no plan; status, research, read-only work or direct
-owner no-LHC/STOP → no plan. The hook itself does not interpret intent, select a
-plan, create a scaffold, bind a session, write progress, or rebuild graph/HTML.
-Only a plan explicitly bound to the actual current session and accepted goal is
-a continuation; other open plans are candidates. Before implementation or
-delegation, create the accepted-goal record and executable leaf, then use the
-existing CLI commands `lhc_plan_json.py create-leaf` and
-`lhc_plan_json.py activate <plan-dir> <leaf-id> --session <actual-session-id>`.
-Record the planned `default_model` or explicit leaf `model` and work estimates
-before those commands and first publication; actual usage can arrive later.
-Never invent an identity. Reassess whether a prior scoped no-LHC exception
-covers a materially changed human goal; peer/delegated messages do not revoke
-owner policy. When a human steer changes the accepted goal within this task,
-update its plan and leaf before resuming; a different goal needs its own selected
-plan. Keep the leaf/task record current and state the real canary/result before
-delivery. A STOP ends work but is not a result. Local files and CLI remain usable
-without MCP, network, SSO, or public publication.
+The native intake hook provides the current guide and session plan context. The Lead chooses the relevant plan from the user request and uses explicit create/activate operations. Actual native identities and the latest direct correction remain the basis for continuation.
 
 ### Legacy standalone publication
 

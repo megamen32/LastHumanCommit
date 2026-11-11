@@ -1,24 +1,14 @@
 ---
 name: real-use-testing
-description: Run a proportional real consumer canary after a change. Use independent testers only for explicit release, high-risk user-facing work, or when requested.
+description: Verify the requested behavior through the actual installed app, browser, device, API or CLI.
 ---
 
 # Real-use testing
 
-A real canary is the shortest path to knowing whether the changed behavior works.
+Run the scenario that demonstrates the user's requested result through the actual consumer. Read `.agents/TEST_ACCESS.md` when the scenario needs accounts or fixtures. Access preparation is described in `common/protocols/REVIEW_TO_DELIVERY.md`.
 
-For a bounded change:
+Choose an interaction tool that fits the surface: accessibility references or a browser MCP for ordinary UI work, CDP/Playwright for precise scripting, coordinates when the UI requires them. Refresh the relevant view after it changes. A failing tool may justify another route; it does not require trying every tool in order.
 
-1. start the intended consumer or isolated test target;
-2. perform the changed user action;
-3. read the observable result;
-4. record the exact failure or success.
+Observe the decisive action and its result. Save a screenshot for a UI issue or the actual command and output for a CLI result. On ambiguous state, capture the evidence needed to distinguish the likely causes before retrying.
 
-A quickfix or assigned leaf does not require a fresh independent Tester. The Lead's canary is
-valid when it exercises the changed path. Use independent testers for explicit release/high
-risk work or when the owner asks for them. Do not launch tester sessions merely to satisfy a
-milestone, receipt or reviewer count.
-
-Do not read secrets or private data outside the test scope. Do not repeat an external mutation
-after an unknown result until the target state is checked. These effect-level rules remain
-active; process gates do not.
+Report the goal, actions, result and any remaining failure. A fresh Tester is useful when independent usability or coverage is part of the claim; a bounded direct client check may be enough for a simple repair. Use `PASS`, `CHANGES_REQUIRED` or `STOP_MISSING_REAL_SURFACE` when the calling workflow needs a status.
