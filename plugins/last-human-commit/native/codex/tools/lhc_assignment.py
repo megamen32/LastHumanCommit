@@ -16,9 +16,32 @@ ALLOWED = {
     "running": {"running", "result_ready", "blocked", "delivery_unknown", "cancelled"},
     "result_ready": {"result_ready", "accepted", "blocked", "cancelled"},
     "blocked": {"assigned", "dispatching", "running", "result_ready", "cancelled"},
-    "delivery_unknown": {"submitted", "running", "result_ready", "cancelled"},
+    # ACTION_POLICY: an UNKNOWN delivery keeps recording fresh reads (self-loop)
+    # and admits exactly one guarded re-dispatch under the immutable request_id.
+    "delivery_unknown": {"delivery_unknown", "dispatching", "submitted", "running", "result_ready", "cancelled"},
     "accepted": set(), "cancelled": set(),
 }
+
+# The single guarded retry event counted from the immutable attempt history.
+RETRY_EVENT = ("delivery_unknown", "dispatching")
+
+
+def retryable_unknown(assignment):
+    """ACTION_POLICY: one guarded re-dispatch of an UNKNOWN delivery is admissible.
+
+    The retry reuses the attempt's immutable request id and the exact persisted
+    payload; a confirmed turn belongs to reconciliation, never to a re-send.
+    """
+    if assignment.get("state") != "delivery_unknown":
+        return False
+    dispatch = assignment.get("dispatch")
+    if not isinstance(dispatch, dict) or not dispatch.get("request_id") or dispatch.get("turn_id"):
+        return False
+    if int(dispatch.get("retries") or 0) >= 1:
+        return False
+    events = assignment.get("events")
+    return not any(isinstance(event, dict) and (event.get("from"), event.get("to")) == RETRY_EVENT
+                   for event in events or [])
 
 class ActorRef(dict):
     """Request-local provenance marker, never reconstructed from JSON claims."""
@@ -161,7 +184,10 @@ def transition(current, state, *, attempt_id=None, receipt=None, actor=None, at=
     if state == "assigned" and prior_dispatch.get("status") not in {None, "not_attempted", "rejected"}:
         raise ValueError("accepted or unknown delivery cannot be reset for replay")
     if state == "dispatching":
-        if current["state"] == "blocked" and prior_dispatch.get("status") not in {None, "not_attempted", "rejected"}:
+        if current["state"] == "delivery_unknown":
+            if not retryable_unknown(current):
+                raise ValueError("one guarded retry per unknown delivery; reconcile or cancel the attempt")
+        elif current["state"] == "blocked" and prior_dispatch.get("status") not in {None, "not_attempted", "rejected"}:
             raise ValueError("prior delivery must be reconciled before dispatch")
         validate_ref(item["executor"], allow_unknown=False)
         if not dispatch.get("request_id") or dispatch.get("status") != "dispatching":

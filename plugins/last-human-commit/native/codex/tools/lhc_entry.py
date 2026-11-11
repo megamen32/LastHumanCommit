@@ -417,12 +417,15 @@ def _frontier_text(context):
             f"next decision={view['next_decision']}. ")
     if view["frontier"] in {"admission_unknown", "admission_blocked"}:
         return text + ("Inspect the exact native admission/attempt and existing blocker; runtime unknown is not an exhausted "
-                       "goal. Preserve UNKNOWN delivery and actual HumanStop/quota; never replay or dispatch automatically.")
+                       "goal. Preserve actual HumanStop/quota. ACTION_POLICY: an UNKNOWN delivery without a confirmed "
+                       "turn admits exactly one guarded retry through dispatch_leaf - same request id, exact persisted "
+                       "payload, fresh idle observation; a confirmed turn is reconciled, never re-sent.")
     if view["next_decision"] == "required":
         return text + ("Finished cards do not accept the original goal. Lead compares the saved goal with the actual user result "
                        "and records a concrete permitted next leaf, scoped research/decomposition, or a genuine external wait "
-                       "with owner, evidence and resume condition. Respect actual HumanStop/revocation and reconcile UNKNOWN "
-                       "delivery without replay. Use lhc_outcome.py bind-plan/frontier for this exact native outcome.")
+                       "with owner, evidence and resume condition. Respect actual HumanStop/revocation; reconcile UNKNOWN "
+                       "delivery by reads and use the single guarded retry only through dispatch_leaf. Use lhc_outcome.py "
+                       "bind-plan/frontier for this exact native outcome.")
     if decision:
         return text + f"Owner={decision['owner']}; action={decision['action']}; evidence={decision['evidence']}; " + (
             f"resume condition={decision['resume_condition']}." if decision.get("resume_condition") else

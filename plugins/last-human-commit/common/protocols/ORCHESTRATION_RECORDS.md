@@ -176,7 +176,8 @@ native identity or authority.
 
 These operations accept `expected_hash` in MCP or `--expected-hash` in CLI for
 compare-and-swap. They use the same canonical persistence path. An attempt ID is
-stable for this assignment and is not replaced to retry an uncertain effect.
+stable for this assignment; an uncertain effect is retried only as the single
+guarded retry of that same attempt (ACTION_POLICY.md).
 Before a new external dispatch, `briefs/<leaf-id>.md` must contain explicit
 `task_id`, `leaf_id`, `owner/session`, `parent_lead_identity`,
 `parent_task_id/session/route`, `role`, `mode`, `description`, `acceptance`,
@@ -277,7 +278,8 @@ reconciled before a new registration is considered; duplicate active timers are
 not created. A status receipt must match the wait,
 Lead, executor and captured turn before it can update this assignment. A quota
 or permission refusal stays blocked. For UNKNOWN delivery, inspect the original
-receipt, message or target state.
+receipt, message or target state; without a confirmed turn it admits exactly one
+guarded retry through the same request id (ACTION_POLICY.md).
 Use confirmed delivery; after confirmed absence of effect, a corrected authorized
 attempt is allowed with linked history. If still uncertain, investigate that
 operation and continue independent work. Restart or compaction does not replace
@@ -324,7 +326,8 @@ under the existing native state lock. MCP defaults to the request's native calle
 never the long-lived server's session. The decision records evidence, action,
 owner and uncertainty; external waits also require a resume condition, and a
 human stop requires an existing observed stop. It is not an automatic dispatch,
-new scheduler, or authority to override STOP, quota or UNKNOWN/no-replay gates.
+new scheduler, or authority to override STOP, quota or the single-guarded-retry
+rule in ACTION_POLICY.md.
 
 
 ### Activation does not transfer an earlier acceptance

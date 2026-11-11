@@ -1,7 +1,9 @@
 """Explicit LHC assignment dispatch through the existing Herder authority.
 
-No scheduler or retry loop lives here. ``persist(state, receipt_envelope)`` must
-atomically save the current attempt (normally plan_json.transition_leaf).
+No scheduler or automatic retry loop lives here. One explicit guarded retry per
+UNKNOWN attempt follows ``common/protocols/ACTION_POLICY.md``: same request
+id, exact persisted payload. ``persist(state, receipt_envelope)`` must atomically
+save the current attempt (normally plan_json.transition_leaf).
 """
 from __future__ import annotations
 
@@ -11,6 +13,7 @@ import json
 from pathlib import Path
 import re
 
+from lhc_assignment import retryable_unknown
 from lhc_execution_transport import HerderMcpClient, TransportError
 
 
@@ -177,7 +180,8 @@ def _join(a, transport, persist, runtime, now, context=None):
     try:
         message = ('LHC assignment ' + a['attempt_id'] + ': read the latest user goal and current plan; '
                    'verify the exact native result, integrate and accept it, then select the next ready work. '
-                   'Do not treat completion as acceptance or replay an unknown delivery.')
+                   'Do not treat completion as acceptance; an UNKNOWN delivery is retried at most once '
+                   'through the same request id (ACTION_POLICY).')
         if context:
             message += ' Canonical context: ' + json.dumps(context, ensure_ascii=False, sort_keys=True)
         response = transport.call('resume_after', {'action': 'wait',
@@ -222,15 +226,24 @@ def dispatch_assignment(assignment, message, *, transport=None, persist, observe
     if a.get('state') == 'dispatching':
         dispatch = dict(a.get('dispatch') or {}, status='unknown', reason='dispatch_interrupted', observed_at=now())
         return _saved(persist, a, 'delivery_unknown', dispatch=dispatch)
-    if a.get('state') != 'assigned':
+    # ACTION_POLICY: an UNKNOWN delivery admits exactly one guarded re-dispatch
+    # under the attempt's immutable request id; afterwards it stays a read target.
+    retry = retryable_unknown(a)
+    if not retry and a.get('state') != 'assigned':
         return a
     if not isinstance(message, str) or not message.strip():
         raise ValueError('nonempty_assignment_message_required')
     transport = transport or HerderMcpClient()
     identity = {'attempt_id': a['attempt_id'], 'lead': a['lead'], 'executor': a['executor']}
     request_id = 'lhc:' + hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()
+    if retry:
+        # The dedup key is immutable within the attempt: the transport sees the
+        # same input id and the exact persisted payload, never a second message.
+        request_id = a['dispatch']['request_id'] or request_id
     dispatch = {'request_id': request_id, 'status': 'dispatching', 'observed_at': now(), 'turn_id': None,
                 'reason': None, 'receipt': None}
+    if retry:
+        dispatch['retries'] = int(a['dispatch'].get('retries') or 0) + 1
     if a['lead']['host_id'] != a['executor']['host_id'] or a['lead']['host_id'] != transport.host_id:
         dispatch.update(status='blocked', reason='cross_host_join_unsupported')
         return _saved(persist, a, 'blocked', dispatch=dispatch)
@@ -278,6 +291,17 @@ def reconcile_assignment(assignment, *, transport=None, persist, observer=None, 
     if a.get('state') == 'dispatching':
         return dispatch_assignment(a, '', transport=transport, persist=persist, observer=observer, now=now, context=context)
     if a.get('state') in ('accepted', 'cancelled', 'delivery_unknown', 'blocked'):
+        # ACTION_POLICY: a retryable UNKNOWN takes one fresh availability read
+        # before the guarded re-dispatch; every other terminal/ambiguous state
+        # stays a pure read target.
+        if a.get('state') == 'delivery_unknown' and retryable_unknown(a):
+            transport = transport or HerderMcpClient()
+            try:
+                runtime = _observation(transport, a, observer, now, purpose='availability')
+            except Exception:
+                runtime = {'state': 'unknown', 'source': 'native_unavailable', 'observed_at': now(),
+                           'reason_code': 'native_observation_unavailable'}
+            return _saved(persist, a, 'delivery_unknown', observed_runtime=runtime)
         return a
     transport = transport or HerderMcpClient()
     if a.get('state') == 'assigned':
@@ -329,7 +353,7 @@ def reconcile_assignment(assignment, *, transport=None, persist, observer=None, 
     else:
         return a
     if wake.get('state') in ('registering', 'delivery_unknown') and not wake.get('wait_id'):
-        return a  # uncertain registration is read/reconciled, never replayed
+        return a  # uncertain wake registration stays a read; delivery retries go through dispatch_assignment
     return _join(a, transport, persist, runtime, now, context=context)
 
 
@@ -351,9 +375,10 @@ def _leaf_context(plan_dir, leaf_id, attempt_id, actor, expected_hash, context=N
         if state == 'dispatching':
             result = lhc_plan_json.admit_leaf(plan_dir, leaf_id, attempt_id, receipt,
                         actor=actor, expected_hash=digest,
-                        handoff_message=context.get('caller_message') if context else None)
+                        handoff_message=context.get('caller_message')
+                        if context and not context.get('retry') else None)
             if context is not None:
-                context['handoff_payload'] = result.get('handoff_payload')
+                context['handoff_payload'] = result.get('handoff_payload') or context.get('handoff_payload')
         else:
             result = lhc_plan_json.transition_leaf(plan_dir, leaf_id, attempt_id, state,
                         receipt=receipt, actor=actor, expected_hash=digest)
@@ -367,10 +392,17 @@ def dispatch_leaf(plan_dir, leaf_id, attempt_id, message, *, actor=None, expecte
     context = {'plan_dir': str(Path(plan_dir).resolve()), 'leaf_id': leaf_id,
                'attempt_id': attempt_id, 'caller_message': message}
     a, persist = _leaf_context(plan_dir, leaf_id, attempt_id, actor, expected_hash, context=context)
-    if a.get('state') == 'assigned' and a.get('executor_kind') != 'self':
-        from lhc_handoff import read_brief
+    retry = retryable_unknown(a)
+    if (a.get('state') == 'assigned' or retry) and a.get('executor_kind') != 'self':
+        from lhc_handoff import load_handoff, read_brief
         import lhc_plan_json
         read_brief(plan_dir, leaf_id, a, lhc_plan_json.plan_metadata(plan_dir))
+        if retry:
+            # ACTION_POLICY guarded retry: re-deliver the exact persisted bytes of
+            # this attempt, never a newly composed message.
+            _identity, payload = load_handoff(Path(plan_dir).resolve(), leaf_id, a)
+            context['retry'] = True
+            context['handoff_payload'] = payload
         transport = transport or HerderMcpClient()
         a = reconcile_assignment(a, transport=transport, persist=persist, observer=observer, now=now)
     return dispatch_assignment(a, message, transport=transport, persist=persist, observer=observer, now=now, context=context)

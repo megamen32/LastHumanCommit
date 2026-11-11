@@ -104,18 +104,26 @@ def test_real_http_dispatch_registers_exact_durable_wake(endpoint):
     assert deliver['sourceHarness'] == 'codex' and deliver['sourceSessionId'] == 'lead'
 
 
-def test_unknown_and_crash_intent_are_never_replayed(endpoint):
+def test_unknown_delivery_retries_once_through_the_same_request_id(endpoint):
     execution = importlib.import_module('lhc_execution')
     configure(endpoint); endpoint[2]['deliver'] = lambda args: {'admissionUnknown': True, 'delivery': 'unknown'}
     harness = Harness(); transport = client(endpoint)
     result = execution.dispatch_assignment(harness.assignment, 'task', transport=transport, persist=harness.persist)
     assert result['state'] == 'delivery_unknown'
     count = len(endpoint[1])
-    assert execution.dispatch_assignment(result, 'task', transport=transport, persist=harness.persist) == result
-    assert len(endpoint[1]) == count
+    # ACTION_POLICY: exactly one guarded retry under the immutable request id.
+    retried = execution.dispatch_assignment(result, 'task', transport=transport, persist=harness.persist)
+    assert retried['state'] == 'delivery_unknown'
+    assert retried['dispatch']['request_id'] == result['dispatch']['request_id']
+    assert retried['dispatch'].get('retries') == 1
+    assert len(endpoint[1]) == count + 1
+    deliver_args = endpoint[1][-1][0]['params']['arguments']
+    assert deliver_args['inputId'] == result['dispatch']['request_id']
+    final = execution.dispatch_assignment(retried, 'task', transport=transport, persist=harness.persist)
+    assert final == retried and len(endpoint[1]) == count + 1
     crashed = assignment(); crashed['state'] = 'dispatching'; crashed['dispatch'] = {'request_id': 'old'}
     result = execution.dispatch_assignment(crashed, 'task', transport=transport, persist=Harness(crashed).persist)
-    assert result['state'] == 'delivery_unknown' and len(endpoint[1]) == count
+    assert result['state'] == 'delivery_unknown' and len(endpoint[1]) == count + 1
 
 
 def test_quota_and_missing_turn_do_not_schedule(endpoint):
@@ -444,16 +452,22 @@ def test_stale_idle_repair_never_arms_unknown_foreign_or_stopped_turn(stale_idle
     assert not any(name == 'resume_after' for name, _ in transport.calls)
 
 
-def test_stale_idle_unknown_delivery_is_not_replayed_or_armed(stale_idle_transport):
+def test_stale_idle_unknown_delivery_retries_once_then_stays_read(stale_idle_transport):
     execution = importlib.import_module('lhc_execution')
     transport = stale_idle_transport
     transport.delivery = 'unknown'
     h = Harness()
     a = execution.dispatch_assignment(h.assignment, 'task', transport=transport, persist=h.persist)
     a = execution.reconcile_assignment(a, transport=transport, persist=h.persist)
+    # ACTION_POLICY: an idle executor with an unspent budget takes one guarded
+    # retry; the second UNKNOWN is final and later calls stay reads.
     a = execution.dispatch_assignment(a, 'do not retry', transport=transport, persist=h.persist)
     assert a['state'] == 'delivery_unknown'
-    assert [name for name, _ in transport.calls] == ['deliver']
+    assert a['dispatch'].get('retries') == 1
+    a = execution.dispatch_assignment(a, 'still no third send', transport=transport, persist=h.persist)
+    a = execution.reconcile_assignment(a, transport=transport, persist=h.persist)
+    assert a['dispatch'].get('retries') == 1
+    assert [name for name, _ in transport.calls] == ['deliver', 'session_info', 'deliver']
 
 
 def test_fast_child_completed_before_join_still_arms_exact_wake(stale_idle_transport):
