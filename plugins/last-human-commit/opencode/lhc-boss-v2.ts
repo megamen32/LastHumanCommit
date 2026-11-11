@@ -12,7 +12,8 @@ const BOSS_TITLE = "LHC Boss"
 type AnyRecord = Record<string,any>
 type State = { generation:number; elapsed:number; started:number|null; reviewed:number; busy:boolean }
 const sessionId = (event:AnyRecord):string =>
-  String(event?.properties?.sessionID ?? event?.properties?.sessionId ?? "")
+  String(event?.data?.sessionID ?? event?.data?.sessionId ?? event?.data?.session?.id ??
+    event?.properties?.sessionID ?? event?.properties?.sessionId ?? "")
 const role = (message:AnyRecord):string =>
   String(message?.info?.role ?? message?.role ?? "")
 const asText = (message:AnyRecord):string => (Array.isArray(message.parts) ? message.parts : [])

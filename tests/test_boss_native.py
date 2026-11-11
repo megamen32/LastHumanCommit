@@ -35,6 +35,7 @@ def test_opencode2_uses_native_session_and_inherits_current_model():
                      'ctx.session.wait(', 'ctx.session.synthetic(', 'resume:false',
                      'historyComplete:false', 'ctx.session.hook("context"'):
         assert fragment in text
+    assert 'event?.data?.sessionID' in text, 'V2 event payloads use data'
     assert 'codex exec' not in text
     assert 'gpt-6.1-sol' not in text
 
