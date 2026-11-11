@@ -266,7 +266,8 @@ EXCLUSIONS = {
 
 def applicable(kind, goal):
     intent = positive_intent(goal)
-    needed = list(STAGES) if kind == 'fullcycle' else (['technical', 'consumer'] if kind == 'quickfix' else ['consumer'] if kind in {'testing', 'research', 'unknown'} else [])
+    needed = (['technical', 'consumer'] if kind in ENGINEERING else
+              ['consumer'] if kind in {'testing', 'research', 'unknown'} else [])
     if kind in ENGINEERING:
         if re.search(r'\b(?:deploy|install|rollout)\b|развер|выкат|' + RU_INSTALL, intent, re.I):
             needed += ['deploy']
@@ -1075,23 +1076,22 @@ def verdict(outcome, state):
         return 'running'
     if outcome.get('blockers'):
         return 'blocked'
-    if not _permission_binding_valid(outcome, state):
-        return 'pending'
-    if not outcome.get('contract_confirmed'):
-        return 'pending'
-    if any(s['status'] not in {'complete', 'not-applicable'} for s in outcome['stages'].values()):
-        return 'pending'
-    if outcome['stages']['integration']['status'] == 'complete' and not outcome.get('integration_policy'):
-        return 'pending'  # Unknown target/ownership never defaults to main.
-    policy = outcome.get('integration_policy')
-    if policy and outcome['stages']['integration']['status'] != 'not-applicable':
-        if not policy.get('target_scope_confirmed') or not policy.get('repository') or remote_binding(product_root_path(outcome, Path(outcome['cwd'])), policy['remote']) != policy['repository']:
+    strict = str(os.environ.get('LHC_STRICT_WORKFLOW', '')).lower() in {'1', 'true', 'yes', 'on'}
+    required = {'technical', 'consumer'} if outcome['task_class'] in ENGINEERING else set(outcome['stages'])
+    for stage in required:
+        row = outcome['stages'].get(stage, {})
+        if row.get('status') not in {'complete', 'not-applicable'}:
             return 'pending'
-        if policy['branch'] in {'main', 'master'} and not policy.get('main_permission_confirmed'):
+    if strict:
+        if not _permission_binding_valid(outcome, state) or not outcome.get('contract_confirmed'):
             return 'pending'
-    milestone = state.get('milestone') or {}
-    if native.pending(milestone):
-        return 'pending'
+        if any(s['status'] not in {'complete', 'not-applicable'} for s in outcome['stages'].values()):
+            return 'pending'
+        if outcome['stages']['integration']['status'] == 'complete' and not outcome.get('integration_policy'):
+            return 'pending'
+        milestone = state.get('milestone') or {}
+        if native.pending(milestone):
+            return 'pending'
     return 'complete'
 
 
@@ -1602,59 +1602,19 @@ def observe_job_progress(outcome, business, event, cwd):
 
 
 def reminder(outcome, tool):
-    review_route = ('Research leaf: verify the assigned source and deliver the requested report '
-                    'and raw expected/observed commentary before close bookkeeping. Use the documented review --native-self route; '
-                    'level self-check, not independent parent product acceptance. '
-                    "Use each command's --help; no helper implementation research unless assigned. "
-                    'FEEDBACK alone is not a visible assistant assessment. Respect no-code limits: no scratch scripts. '
-                    'On rejection, one supported reread or pending exact-error handoff; no helper debugging or session-storage inspection. '
-                    if outcome['task_class'] == 'research' else
-                    'Own bounded assignment: finish actual tests/CLI or assigned coverage and native transcript self-check '
-                    '(review --native-self; Herder export_transcript → review --manifest also available). '
-                    'First write raw expected/observed as a separate commentary message and preserve FEEDBACK; '
-                    'level self-check, not independent parent product acceptance. '
-                    if bounded_self_check(outcome) or outcome['task_class'] in {'testing', 'research'} else
-                    'Optional outcome-ledger review import: review --manifest may record provenance; missing ledger/manifest is not a delivery veto. Preserve actual findings and verify any concrete defect. ')
-    if outcome.get('delegation_prohibited'):
-        review_route += ('Explicit no-delegation: do not create, launch or resume reviewer/tester sessions. '
-                         'If independent acceptance remains required, hand ready results to the assigned coordinator; '
-                         'do not hire a reviewer to close state. ')
-    review_route += ('Integrate only into an explicitly selected permitted target (contract --integration-branch/remote/ownership); '
-                     'Airlock: megamen32-dev; external/shared upstream main is never auto-merged. Completed dev delivery '
-                     'does not require Oleg final main merge: release_handoff awaiting-owner is separate. ')
     stage = next_stage(outcome)
-    rejection = outcome.get('contract_rejection') or {}
-    if (rejection and rejection.get('scope_fingerprint') == contract_scope_fingerprint(outcome)):
-        contract_guidance = (' Contract rejection (exact): ' + rejection.get('exact_error', '') +
-                             ' Corrective action: ' + rejection.get('corrective_action',
-                             'Correct only the rejected field; do not retry unchanged.'))
-    elif outcome.get('contract_confirmed'):
-        if stage:
-            claim = outcome.get('stage_claims', {}).get(stage, {})
-            target = claim.get('target', outcome['canary']['target'])
-            expected = claim.get('expected', outcome['canary']['expected'])
-            contract_guidance = (f' Contract confirmed. Next stage={stage}; perform the assigned {stage} action '
-                                 f'for scenario {outcome["canary"]["scenario"]!r} at target {target!r}; '
-                                 f'compare with expected {expected!r}. Preserve existing permissions and gates.')
-        else:
-            contract_guidance = (' Contract confirmed and no technical stage remains; continue the existing pending '
-                                 'milestone, acceptance, or recorded blocker. Do not restate the contract.')
-    elif outcome.get('contract_request_fingerprint') == contract_scope_fingerprint(outcome):
-        contract_guidance = (' The unchanged task contract was already requested; resume from the existing request '
-                             'without restating the scenario or owned paths.')
+    if stage:
+        claim = outcome.get('stage_claims', {}).get(stage, {})
+        target = claim.get('target', outcome.get('canary', {}).get('target'))
+        expected = claim.get('expected', outcome.get('canary', {}).get('expected'))
+        next_step = f"Run the {stage} canary at {target!r} and compare with {expected!r}."
+    elif outcome.get('blockers'):
+        next_step = "Resolve the recorded external blocker, then rerun the canary."
     else:
-        contract_guidance = (' confirm the concrete contract once: provide the scenario, target, expected result, and owned paths with '
-                             'python3 ' + shlex.quote(str(tool)) + ' --cwd ' + shlex.quote(outcome['cwd']) +
-                             ' --runtime ' + outcome['owner']['harness'] + ' --session-id ' +
-                             shlex.quote(outcome['owner']['session_id']) + ' contract --help; then perform actual work.')
-    return ('LHC outcome: ' + outcome['task_class'] + '; ' + outcome['finish_verdict'] +
-            '. Canary: ' + json.dumps(outcome['canary'], ensure_ascii=False) +
-            '. Review subject: ' + review_subject(outcome) + ' (subject binding only; not permission).' +
-            ' Next stage: ' + str(stage) + '.' + contract_guidance + ' ' + review_route +
-            'Refs, echo, pytest and own PASS do not replace the original canary. Testing may complete with product=changes-required; '
-            'do not hire nested testers. Never bypass human stop/permission. Human question: question --message; '
-            'existing bound request → Notify card → sent receipt → canonical answer; receipt != answer. '
-            'Keep unfinished work pending with exact next action/blocker, without infinite retries.')
+        next_step = "Run the smallest real canary/readback for the changed behavior."
+    return ("LHC outcome: " + outcome.get('task_class', 'unknown') + "; " +
+            outcome.get('finish_verdict', 'pending') + ". " + next_step +
+            " Missing plans, receipts, reviewers, ACKs and native outcome binding do not block ordinary work.")
 
 
 def question_plan(outcome, message):

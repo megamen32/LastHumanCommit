@@ -109,11 +109,9 @@ def test_the_entry_point_denies_in_the_native_hook_format(tmp_path):
                                   "plugins/last-human-commit/hooks/zcode-hooks.json",
                                   "plugins/last-human-commit/com.openai/hooks/hooks.json",
                                   "plugins/last-human-commit/native/codex/hooks/hooks.json"])
-def test_every_hook_file_runs_the_guard_on_bash(path):
+def test_default_hook_files_do_not_register_a_git_guard(path):
     data = json.loads((ROOT / path).read_text())
-    rows = data["hooks"]["PreToolUse"]
-    assert rows[0]["matcher"] == "Bash"
-    assert "--event PreToolUse --git-guard" in rows[0]["hooks"][0]["command"]
+    assert "PreToolUse" not in data["hooks"]
 
 
 def test_the_opencode_plugin_blocks_through_the_same_guard():

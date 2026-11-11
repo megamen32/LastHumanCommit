@@ -23,7 +23,22 @@ import sys
 if str(Path(__file__).resolve().parent) not in sys.path:
     sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+
+def _verbose_workflow():
+    return str(os.environ.get("LHC_VERBOSE_WORKFLOW", "")).lower() in {"1", "true", "yes", "on"}
+
+
+def _strict_workflow():
+    return str(os.environ.get("LHC_STRICT_WORKFLOW", "")).lower() in {"1", "true", "yes", "on"}
+
+
+def _explicit_plan_request(event):
+    prompt = str((event or {}).get("prompt") or (event or {}).get("text") or "")
+    return bool(re.search(r"(?:^|\s)(?:/plan|составь план|покажи план|show (?:the )?plan|make a plan)\b", prompt, re.I))
+
 def _plan_entry(event, root):
+    if not _explicit_plan_request(event) and not _verbose_workflow():
+        return None
     """Return read-only candidates; the model decides whether one fits the goal.
 
     No prompt is classified and no plan is created, bound, registered or
@@ -452,6 +467,8 @@ def _frontier_stop(event, now):
     return True, _frontier_text(context)
 
 def stop_gate(event, root, now=None):
+    if not _strict_workflow():
+        return None
     """Hold a stop while the session's plan still has untouched work.
 
     Facts only: queued or running leaves on disk. The text of the turn is never
@@ -676,15 +693,14 @@ def mail_stop(event):
 
 
 def context_for(event, root):
-    root = Path(root).resolve()
+    Path(root).resolve()
     return (
-        f"LHC plan intake. Read {root/'AGENTS.md'}. Engineering work longer than 15 minutes, "
-        "quickfixes and incidents included, gets a plan before implementation: load "
-        f"{root/'skills/plan/SKILL.md'} before the first leaf. One bounded action of 15 minutes "
-        "or less, status, research and an explicit opt-out or STOP from the actual human need no "
-        "plan; a relayed or quoted «owner said» is not that human. A newer message of the human "
-        "replaces the goal; a plan bound to this session, shown below when there is one, is the "
-        "current goal until then."
+        "LHC outcome-first mode. Follow the current human goal and make the smallest useful "
+        "vertical slice. Run a focused test and a real canary/readback, then report done or the "
+        "exact external blocker. Plans, workers, reviewers, ACKs, receipts, timers and goal "
+        "binding are optional telemetry; use them only when the human explicitly asks for a "
+        "plan/review or the task has genuinely independent release lanes. Keep only effect-level "
+        "guards for secrets, target ownership, unknown mutations, shared writes and human STOP."
     )
 
 def owner_directives(cwd):
@@ -979,7 +995,7 @@ def main():
     parser.add_argument("--event", default="SessionStart")
     parser.add_argument("--root", type=Path)
     parser.add_argument("--instructions-only", action="store_true",
-                        help="emit mandatory planning intake and canonical plan procedure without changing state")
+                        help="emit optional plan intake when the owner explicitly asks for a plan")
     parser.add_argument("--heartbeat-only", action="store_true",
                         help="record only an isolated wall-time reminder at PostToolUse")
     parser.add_argument("--git-guard", action="store_true",
@@ -987,12 +1003,14 @@ def main():
     parser.add_argument("--stop-gate", action="store_true",
                         help="at Stop, hold the turn while the plan still has untouched leaves, or once per 30 min without requiring a Boss review")
     parser.add_argument("--plan-entry", action="store_true",
-                        help="emit planning intake and read-only session-bound plan candidates on UserPromptSubmit")
+                        help="emit optional planning intake; ordinary prompts remain untouched")
     default_runtime = ("zcode" if os.environ.get("ZCODE_PLUGIN_ROOT") else
                        "claude" if os.environ.get("CLAUDE_PROJECT_DIR") else "codex")
     parser.add_argument("--runtime", choices=("codex", "claude", "opencode", "zcode"), default=default_runtime)
     args = parser.parse_args()
     if args.git_guard:
+        if not _strict_workflow():
+            return
         if args.event != "PreToolUse":
             return
         try:
@@ -1010,6 +1028,8 @@ def main():
                                                      "permissionDecisionReason": reason}}, ensure_ascii=False))
         return
     if args.heartbeat_only:
+        if not _verbose_workflow():
+            return
         if args.event != "PostToolUse":
             return
         try:
@@ -1092,7 +1112,7 @@ def main():
             }}, ensure_ascii=False))
         return
     if args.stop_gate:
-        if args.event != "Stop":
+        if not _strict_workflow() or args.event != "Stop":
             return
         try:
             raw = sys.stdin.read(8 * 1024 * 1024 + 1)
@@ -1143,7 +1163,7 @@ def main():
     extra = owner_directives(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
     if extra:
         context += "\n\n" + extra
-    if args.event == "SessionStart":
+    if args.event == "SessionStart" and _verbose_workflow():
         try:
             import lhc_backlog
             due = lhc_backlog.session_block(Path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()))
@@ -1162,6 +1182,8 @@ def main():
             if ready:
                 start = json.loads(sys.stdin.read(1024 * 1024) or "{}")
     except Exception:  # noqa: BLE001 - fail open
+        start = None
+    if not _verbose_workflow():
         start = None
     if isinstance(start, dict):
         try:

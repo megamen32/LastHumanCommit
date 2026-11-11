@@ -15,9 +15,8 @@ def test_both_generated_protocol_modes_are_valid():
         assert data == {"pr_stage": stage, "subagents": "on"}
         router = (ROOT / "AGENTS.md").read_text()
         protocol = (ROOT / "src/common/protocols/SHARED_WORKTREE.md").read_text()
-        assert "pr_stage" in router and "pr_stage" in protocol
-        assert "merge" in router.lower() and "deploy" in router.lower()
-        assert "PR" in protocol
+        assert "outcome first" in router
+        assert "primary checkout" in protocol and "worktree" in protocol
 
 
 def test_generated_package_protocols_on_and_off(tmp_path, monkeypatch):
@@ -46,8 +45,8 @@ def test_generated_package_protocols_on_and_off(tmp_path, monkeypatch):
         for root in (package, package / "native/codex"):
             assert json.loads((root / "config/workflow.json").read_text()) == {"pr_stage": stage, "subagents": "on"}
         protocol = (package / "AGENTS.md").read_text()
-        assert "pr_stage" in protocol and "PR-off" in protocol
-        assert "integrat" in protocol and "deploy" in protocol
+        assert "outcome first" in protocol
+        assert "real canary" in protocol
         monkeypatch.setattr(sys, "argv", ["publish_package.py", "--check", "--pr-stage", stage])
         assert publisher.main() == 0
         other = "off" if stage == "on" else "on"
