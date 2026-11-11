@@ -243,7 +243,18 @@ def main() -> int:
     codex_hooks = json.loads((ROOT / "adapters/codex/hooks/hooks.json").read_text())
     portable_hooks = json.loads((PACKAGE / "hooks/hooks.json").read_text())
     for event, registrations in portable_hooks["hooks"].items():
-        codex_hooks["hooks"].setdefault(event, [])[:0] = registrations
+        existing = codex_hooks["hooks"].setdefault(event, [])
+        seen = {
+            json.dumps(registration, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+            for registration in existing
+        }
+        for registration in reversed(registrations):
+            signature = json.dumps(
+                registration, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+            )
+            if signature not in seen:
+                existing.insert(0, registration)
+                seen.add(signature)
     hook_data = (json.dumps(codex_hooks, ensure_ascii=False, indent=2) + "\n").encode()
     for prefix in (PACKAGE, NATIVE):
         write(prefix / "com.openai/hooks/hooks.json", hook_data)
