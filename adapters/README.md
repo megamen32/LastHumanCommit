@@ -1,43 +1,11 @@
 # Harness adapters
 
-The adapter layer translates portable Last Human Commit roles to one host's
-agent API. Enabling one adapter does not install, configure, or rewrite another.
+LHC defines roles and the workflow. An adapter supplies native profile syntax, child creation, model selection, message delivery and continuation for one runtime.
 
-The core owns business-first routing, optional roles, cost-triggered persistence,
-claim-calibrated proof, and secret/workspace safety. An adapter owns only
-delivery syntax, profile frontmatter, child context boundaries, model hooks,
-wait/join, and resume transport.
+Use the current runtime's available APIs and the assigned working directory. Its manifest records `proven`, `unproven`, `unsupported` or adapter-dependent capabilities. Source implementation and a live execution are different evidence.
 
-Before a child call, L loads that adapter's
-`subagent_instructions_template`. The child receives the smallest sufficient
-context. A task/result path is included only when durable handoff, recovery,
-reuse, or rediscovery economics justify it; no adapter makes a task card or
-duplicate detailed report mandatory.
+The child receives the role and the context needed for its assignment. `templates/subagent.md` adds the runtime details; the shared rules remain in AGENTS.md rather than being copied into every prompt.
 
-Every manifest records capabilities as `proven`, `unproven`, `unsupported`, or
-adapter-dependent. Do not claim role/model/fresh-context/wait/resume behavior
-without a live child event.
+Native time and compaction events can use `common/tools/lhc_time_guard.py`. Without an event or resume capability, retain the work and state the limitation. Use the runtime's existing memory and authorization mechanisms.
 
-When available, adapters map a non-blocking child-to-parent message to Worker
-decision questions and map lifecycle/checkpoint/finalizer/scheduler events to
-`common/tools/lhc_time_guard.py`. Without either capability, preserve the
-question/time state and report delayed delivery; never simulate a live event.
-
-## Human requests
-
-Ask the user one compact question directly for missing decisions or
-information. Secrets are not work: read them from an environment variable,
-`.env`, or a secret file in one step. No attestation contracts, HTTP handoff
-plugins, or opaque-handle protocols exist in this canon.
-
-## Self-improve
-
-All adapters apply the120-minute unfinished-work checkpoint and immediate
-correction/overrun/repeated-failure triggers in `SELF_IMPROVE.md`. Hermes invokes
-its verified native memory/skill owner at the same cadence. Ordinary short
-success adds no retrospective record; a timed checkpoint may close with an
-evidence-backed no-change decision. Hook availability must be proven per loader;
-unsupported loaders require explicit manual checks, not a silent exemption.
-
-`scripts/lhc-block` remains a narrow marker utility, not an installer, daemon,
-scheduler, or adapter manager.
+`scripts/lhc-block` manages the marked instruction block while preserving project-owned text.

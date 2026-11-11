@@ -1,31 +1,9 @@
-# Codex adapter instructions
+# Codex
 
-These are optional Codex integration details, not a core role. A configured
-profile embeds the complete role prompt; use file fallback only when native
-profile delivery is absent.
+A native profile embeds its complete role. Use the role file when native profile delivery is unavailable. `templates/subagent.md` describes the child assignment and continuation.
 
-Before every child call, load `templates/subagent.md`. Pass the context needed
-for the assigned role; reserve fresh context for independent review when
-required. Follow its model selection, reporting checkpoint, and wait/join rules
-when the result is required. Include a task/result path only when durable
-handoff is worth its cost.
+One V1/V2 wait window uses `deadline = monotonicNow() + 1800000 ms`. On a mailbox wake or `timed_out`, inspect the child and compute `remainingMs = deadline - monotonicNow()`; keep that deadline for the current window.
 
-One Codex V1/V2 wait window is absolute and monotonic:
-`deadline = monotonicNow() + 1800000 ms`. On each target-specific wait, mailbox
-wake, or `timed_out`, inspect authoritative status, compute
-`remainingMs = deadline - monotonicNow()`, and wait only with `remainingMs`.
-Never reset that window.
+At expiry, use the child's checkpoint to decide whether to continue or redirect with `send_input`. Start another join window when the work is still useful. A wait expiry alone is not a reason to call `close_agent` or replace the Worker.
 
-At window expiry, preserve the child and make one control decision from its
-checkpoint/status. Continue or redirect with `send_input`, then start another
-join window when the child result remains required and continuation is
-least-cost. Never call `close_agent`, create a replacement, or send the final
-answer solely because 20 minutes, a timeout, or one wait window elapsed.
-
-For missing information ask the user one compact question. Secrets are not
-work: read a password or token directly from an environment variable, `.env`,
-or a secret file in one step; never build secret handoff infrastructure.
-
-Do not claim model selection, fresh-context isolation, wait, or resume support
-until a live child event proves it. Before L's final answer, run
-`SELF_IMPROVE.md` only when its trigger occurred.
+Report an actual missing model-selection, wait or resume capability rather than assuming a delegated result.

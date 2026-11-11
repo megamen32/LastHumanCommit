@@ -1,26 +1,7 @@
 # Models
 
-Three classes. Name the class in every assignment; take the cheapest class that passes acceptance.
+LhcPlan `list_models` reads the curated assignments in `config/models.json` and adds the live Herder catalog and quota telemetry when available. The classes are `fast`, `middle` and `frontier`. Use the cheapest suitable class for the actual task.
 
-| Class | Use it for |
-|---|---|
-| fast | routine: research, search, reading, polling, waiting, mechanical edits |
-| middle | code written by a ready plan |
-| frontier | architecture, hard problems, work that dragged on past its estimate |
+The current configured set contains thirteen IDs. Luna is fast; Fable, Opus, Astra and Sol are frontier families. Benchmark measurements describe performance and do not reclassify a configured assignment. Read the catalog instead of guessing a new version's API ID.
 
-The authoritative assignment set is exactly the curated thirteen IDs in
-`config/models.json`: five fast, four middle and four frontier. Luna is an
-explicit fast assignment in that set and is never frontier. Fable and Opus
-remain frontier families, and Astra and Sol are explicit frontier families for
-new versions. The coding benchmark manifest supplies measurements only; it does
-not change a curated assignment or promote an unknown live catalog entry into a
-tier. `list_models` returns the curated assignment, the measured score when
-available, and the resolved benchmark cuts separately.
-
-Read the list with the LhcPlan MCP tool `list_models` (CLI `lhc_model_list.py`). When Agent Herder answers it adds Herder's live catalog and provider quota states; without Herder it works from the configured examples.
-
-Workers only from these classes. Map the class to an exact catalog ID
-before dispatch (`lhc_models.py suggest`); never substitute silently. A provider with under 20% allowance
-left is not used for council, frontier work or an Adviser unless the owner says
-so. A Worker does not delegate unless L authorizes a bounded child; a
-no-delegation leaf hires no reviewers.
+Use `model-routing` for assignment context and native execution, and `model-availability` for provider units and the 20% reserve on council, Adviser and frontier work. Preserve the user's account and provider choice.

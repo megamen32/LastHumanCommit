@@ -1,6 +1,6 @@
-> Background reference. Load only when the task needs this mechanism. `AGENTS.md` wins on any conflict: its finish line, blocker lists, escalation chain and delivery rules override this file.
+# Outcome records
 
-# Ordinary task → observable outcome
+This is the API reference for the optional outcome ledger, including its native-evidence import rules. Use the sections relevant to the command being called. AGENTS.md defines ordinary task delivery; bookkeeping is not a separate release approval.
 
 ## Expected result and evidence of achievement
 
@@ -22,52 +22,15 @@ revisions or user messages. Old fields remain legacy declarations, never inferre
 fulfillment. This documentation contract adds no regex classifier, runtime state
 transition or gate.
 
-## Recording the accepted assignment
+## Recording an assignment
 
-The Lead may record each actionable assignment through the existing outcome CLI,
-including its class and a concrete canary: scenario, actual consumer target/host,
-expected observation. The Lead derives that record from the user's authority and
-latest direct corrections. LHC does not classify ordinary messages or mutate the
-contract, evidence floor, stages or holds from acknowledgements, status, agent
-reports, tool events or hook prompts. Native startup hooks provide current
-instructions and tool paths only; they do not create task state. Time-only
-PostToolUse reminders may fire at 30/60 minutes. They may read elapsed time only;
-they must not interpret message language, infer a task, mutate state or veto Stop.
-The Lead owns task-note updates: initial/revised estimate and reason, actual active
-versus wall-clock elapsed time, next ~15-minute tasks/owners/dependencies and parallel
-opportunities. At 60 minutes the Lead also checks the original goal and business result.
-User updates report material progress, not every timer reminder.
-The Lead's plan, briefs, worker progress, decisions, blockers and result receipts
-live in the owning task directory under `ORCHESTRATION_RECORDS.md`; outcome state
-does not replace those human-readable records.
-For authorized development, the Lead first researches enough to understand the
-user's intended outcome and affected path, selects `quickfix` or `fullcycle` from
-actual scope and risk, and creates the human-readable plan before implementation.
-The plan states what a person will get, what changes, why it matters, and how to
-check it. A quickfix still needs a proportional independent tester and real-path
-proof; a fullcycle needs at least two Zero Knowledge testers, more when the change touches more user journeys.
-A worker's assigned leaf narrows its execution scope but cannot select the parent
-mode or waive the Lead-owned plan. The Lead may assign one named Planner exclusive
-artifact writing from verified Lead decisions; this does not transfer plan
-decision authority. A human-readable outcome is a separate claim
-from test status, source publication, package installation, runtime state, and
-consumer acceptance. Do not wait for a second plan approval when the user's
-execution authority is already clear.
-Quickfix needs focused RED/fix/GREEN and its real narrow canary; fullcycle also
-needs applicable deployment and publication. Testing completes assigned coverage
-and candid raw observations, including a product defect; it does not require code,
-deploy or another tester. Research needs its verified finding, status only its
-answer. A later read-only/status question never cancels earlier repair obligations.
-Only an explicit direct replacement changes scope; preserve its source/lineage.
-Keep administrative transport separate from task semantics. A status question,
-acknowledgement, duplicate, agent report or review handoff cannot by itself clear
-a stop, replace the task, advance the evidence floor or erase accepted progress.
-Preserve the original observations and later negative findings. Reuse an accepted
-proof only while its actual subject, candidate, scenario and relevant environment
-remain valid; an administrative timestamp is not a product change. A substantive
-requirement change reopens the affected checks and their dependent claims.
-An evidence-format rejection requires repairing the supported binding, not
-repeating a deployment, publication or other already accepted external action.
+The Lead can record the current goal, scenario, consumer and expected result through `lhc_outcome.py contract`. The record follows the user's actual request and latest corrections. Keep task progress in the existing task directory and use the appropriate scope: implementation, testing, research or status.
+
+A quickfix needs a focused reproduction or behavior check and its actual result. A fullcycle includes the applicable implementation, integration and deployment. Choose independent review or testing for the question and affected journeys; the task class is not a headcount requirement. A testing assignment can complete by reporting a product defect.
+
+Reuse evidence for unchanged subject, revision and conditions. A changed requirement reopens the affected check. Correct a metadata problem from the original evidence rather than repeating an accepted external action.
+
+The sections below describe what the existing optional importer can verify, including narrowly supported source forms. They do not require using that importer for an ordinary reviewer response.
 
 For a research `project:<cwd>` canary, the source floor supports one direct `cat`
 read of a file explicitly named in the accepted scope. Relative and absolute forms
@@ -428,12 +391,9 @@ automatic integration close. Dev branch names must be confirmed by native scope;
 unknown targets never inherit main. Shared/external main is rejected. Airlock worktrees
 branch from and converge on megamen32-dev; that route and Oleg's ownership do not
 override direct owner authorization in LastHumanCommit itself. Final upstream main PR
-is only the agreed handoff for Airlock work. Lead owns the engineering outcome and
-assigns every engineering step, including small tasks, to a native Worker. A
+is only the agreed handoff for Airlock work. Lead owns the engineering outcome and assigns useful independent work to native Workers. A
 business executor inside the product being built handles that product's user task;
-it is not the engineering Worker for this session. The Lead role does not depend on
-whether a child has started and must not silently switch into doing every engineering
-step personally. Add an independent Reviewer only when the claim and risk warrant it. An
+it is not the engineering Worker for this session. Small changes can be handled directly when delegation costs more. Add an independent Reviewer only when the claim and risk warrant it. An
 already assigned leaf does not recursively hire and its self-check remains separate
 from parent acceptance.
 

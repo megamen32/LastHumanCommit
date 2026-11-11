@@ -1,58 +1,14 @@
 ---
 name: council
-description: Council (кворум, quorum, «созови кворум») - independent strong models propose and challenge solutions, a synthesis is rechecked and disputed assumptions are tested. Use when the owner asks for a quorum, when a decision is complex or architectural, or when a hard dead end persists.
+description: Ask several suitable models to compare approaches for a requested council or a consequential unresolved decision.
 ---
 
-# Strong-model council
+# Council
 
-Use when the owner asks for a quorum, for consequential uncertainty, a persistent
-difficult dead end or a material architecture decision where diverse frontier
-reasoning can change the answer. Include every role the decision touches; a
-quorum that forgot an affected agent or viewpoint is incomplete. Do not convene
-it for every routine slice. Its output ends in a decision L executes, not in a
-question to the owner.
+Use a council when the user requests one or a difficult decision would benefit from independent approaches. Check `model-availability` and select suitable available models. Two models can provide a useful comparison; record the actual participants and any missing capability.
 
-First apply `../model-availability/SKILL.md` using existing `model_quotas` and
-`list_models`; retain quota/auth/capability limits and actual native model evidence.
-A model whose remaining allowance is below 20% does not sit in a council: the
-council is not convened with it, and the work continues on the fast tier.
-No recursive hiring by proposers/reviewers. Two eligible models suffice; one
-model review is useful but does not close a required multimodel gate.
+Give them the same goal, facts and constraints. Collect independent proposals, compare their strongest arguments and ask about material disagreements. Choose the approach that best solves the task. Combining proposals is useful only when the pieces fit.
 
-Select several strong suitable available models, preferably with meaningfully
-different reasoning tendencies/providers when actually available. Record the real
-models. Multiple sessions of one model may be useful, but are not a multi-model
-council. If only one model is available, label the limitation rather than inventing
-participants. Council size/round count is chosen by value and evidence, not ritual.
+Test a disputed assumption when an experiment is cheaper or more conclusive than another round. Stop the discussion when the Lead has enough evidence to act. Reopen it for a changed decision or new contrary evidence.
 
-1. Independent proposals: same raw problem, goals, constraints and verified facts;
-   no preferred Lead plan to rubber-stamp. Each provides a recommended approach,
-   critical assumptions, weaknesses and a discriminating check.
-2. Cross-challenge: inspect alternative proposals, seek counterexamples, missing
-   constraints and a genuinely stronger alternative. Hide author labels when useful.
-3. Synthesis: a strong decision-maker selects or combines the best reasoning.
-   Do not force incompatible architectures into a compromise. Retain important
-   disagreement and track assumptions introduced by the synthesis itself.
-4. Recheck the synthesized decision: fresh independent scrutiny addresses the
-   actual combined result, not merely the component proposals already reviewed.
-5. Test contested claims: run a small prototype, benchmark, reproduction or other
-   discriminating experiment when feasible. Revisit the choice if evidence refutes it.
-
-Lead owns the selected solution. Majority agreement is not truth and unanimity
-is not required. One valid counterexample can outweigh multiple endorsements.
-L ends unproductive debate or asks for an experiment; a stated unresolved
-assumption is better than manufactured consensus. Routine engineering decisions
-return to execution, not to a human ballot.
-
-Output a concise decision, reasons, material dissent, validation evidence,
-remaining uncertainty and the decomposition implications. Save detailed proposal
-receipts outside the Lead's active context using the existing evidence mechanism.
-
-Compare real alternatives in one business matrix: user value, complexity/effort,
-risk, latency/quota/cash cost (unknown when unmeasured), assumptions and a concrete
-falsifier/minimal experiment. Retain dissent, not a forced vote or complaints.
-Use one bounded proposals/cross-challenge/synthesis/recheck pass; repeat only to
-resolve a specific material disputed fact. A quorum takes about an hour, not
-days: if a member stalls, decide with the proposals in hand and record the gap. Preserve proposal/model/native refs,
-canary and unresolved gate through compaction; do not wait for an unavailable
-third model while useful authorized work exists.
+Return the decision, reasons, important dissent and the next work. Save detailed proposals in the existing task record when they will be useful.
