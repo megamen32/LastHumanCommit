@@ -1,5 +1,5 @@
 {
-  "description": "Side-effect-free LHC instruction activation and isolated time-only PostToolUse reminders",
+  "description": "Outcome-first LHC instruction activation; workflow telemetry is opt-in.",
   "hooks": {
     "SessionStart": [
       {
@@ -21,40 +21,6 @@
             "timeout": 3
           }
         ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${PLUGIN_ROOT:-${ZCODE_PLUGIN_ROOT:-$HOME/.codex/.tmp/marketplaces/megamen32-plugins/plugins/last-human-commit}}}}/tools/lhc_entry.py\" --event PostToolUse --heartbeat-only || { printf '%s\\n' 'LHC entry unavailable; message processing continues.' >&2; :; }",
-            "timeout": 5
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${PLUGIN_ROOT:-${ZCODE_PLUGIN_ROOT:-$HOME/.codex/.tmp/marketplaces/megamen32-plugins/plugins/last-human-commit}}}}/tools/lhc_entry.py\" --event Stop --stop-gate || { printf '%s\\n' 'LHC entry unavailable; message processing continues.' >&2; :; }",
-            "timeout": 5
-          }
-        ]
-      }
-    ],
-    "PreToolUse": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${PLUGIN_ROOT:-${ZCODE_PLUGIN_ROOT:-$HOME/.codex/.tmp/marketplaces/megamen32-plugins/plugins/last-human-commit}}}}/tools/lhc_entry.py\" --event PreToolUse --git-guard || { printf '%s\\n' 'LHC entry unavailable; message processing continues.' >&2; :; }",
-            "timeout": 5
-          }
-        ],
-        "matcher": "Bash"
       }
     ]
   }

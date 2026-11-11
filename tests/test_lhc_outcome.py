@@ -31,8 +31,9 @@ def test_new_feature_and_broad_or_risky_repair_are_fullcycle():
         "Small fix: redesign the architecture of all services.",
     ):
         assert outcome.classify(task) == "fullcycle"
-        assert all(stage["status"] == "pending"
-                   for stage in outcome.applicable("fullcycle", task).values())
+        pending = [name for name, stage in outcome.applicable("fullcycle", task).items()
+                   if stage["status"] == "pending"]
+        assert pending == ["technical", "consumer"]
 
 
 def test_assigned_leaf_does_not_choose_a_smaller_parent_mode():

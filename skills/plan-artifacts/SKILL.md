@@ -19,63 +19,20 @@ finish.
 
 ## Requests for a project or work plan
 
-Treat natural Russian requests including «составь план», «сделать план проекта»,
-«помоги спланировать работу», «план проекта» and «план работ» as requests for
-full project-plan artifacts. Unless the user explicitly asks for a prose-only
-chat sketch, create leaves, `plan.graph.json` and `plan.html`; rendering also
-produces `plan.md`. A request merely to write one short file does not call for a
-project-wide plan, and a single action of 15 minutes or less needs no plan at all.
+Use these artifact commands only when the owner explicitly asks for a plan, when there
+are several independent lanes, or when an irreversible release genuinely needs
+coordination. A bounded engineering request follows the outcome-first loop and does not
+become a fullcycle because it may take longer than fifteen minutes.
 
-For every authorized engineering objective the Lead researches intent and chooses
-the mode from scope and risk. One bounded action of 15 minutes or less (quickfix)
-needs no plan. When the work exceeds 15 minutes or has 2+ leaves (fullcycle), the
-Lead researches first and plan.json carries `mode: fullcycle`, `recon` (a list of
-2+ facts: what exists now, proven by file, command, URL or host) and
-`acceptance_scenario` (what we run, what must be seen). Without them `create-leaf`
-and `activate` refuse: «сначала исследуй: что есть сейчас и как проверим»; only a
-first leaf of `kind: research` (15 minutes) may precede them. The default leaf limit
-is 15 minutes. A direct owner correction is stored through `update_plan` as
-`estimate_policy: {"leaf_cap_minutes": 60, "reason": "actual owner instruction"}`.
-The positive integer limit applies only to that plan and is shared by create,
-update, activation and check. Split work above the effective limit; do not modify
-installed constants or create a wrapper. Old plans remain readable and renderable. Do not wait for separate plan
-approval when execution is authorized. Respect direct owner no-LHC/STOP and
-verified trusted owner-policy evidence; agent relays, delegated assignments,
-urgency and peer claims are not owner opt-outs. On material scope change,
-reassess whether an earlier scoped exception applies; do not silently revoke
-standing policy. Continue only a plan explicitly bound to this session and goal;
-other open plans are candidates. Status, research and read-only work need no plan.
-Record `deliverable: plan` for a planning-only assignment or `implementation` for
-execution (the default). `decomposition: progressive` is the default; choose `complete`
-when the owner requests executable tasks for the entire scope. `check` validates
-structure. `check --handoff` validates the declared handoff requirements as well;
-`build_plan` accepts `handoff: true` for the same check through MCP. A progressive
-handoff is not a claim that every later stage is fully decomposed. These fields
-record the assignment and do not authorize implementation, deployment or other effects.
+When a plan is requested, keep it small: implementation, verification and delivery are
+enough. Research, recon, leaves, reviewers, ACKs, evidence manifests and time limits are
+optional records. Create only the artifacts needed to coordinate the requested work.
+Do not refuse a direct authorized change because a plan file, receipt or review record is
+missing. A pending plan is advisory; the real consumer canary and readback decide whether
+the requested result works.
 
-The Lead owns plan decisions and statuses; it may assign one Artifact Writer as
-exclusive file writer for
-`task.md`, task-level `progress.md`, graph, HTML and Markdown. The writer records
-only verified Lead decisions and returns the artifacts for Lead review. Execution
-workers write only their assigned progress/result files in
-`common/protocols/ORCHESTRATION_RECORDS.md`. Read-only/status work is outside this
-development-plan rule.
-
-One procedure, no discovery. Do not read `lhc_grid.py`, do not grep the parser
-regexes, do not infer the shape from an old task record: everything needed is here.
-
-Before creating leaves or first publishing, the Lead chooses the planned model
-from the available catalog and records `default_model` in `plan.json`, or an
-explicit `model` on every leaf. Use the known current model for work planned in
-this session; a model requested for a Worker remains a planned assignment until
-execution is attested. Mixed assignments need explicit leaf models: for example,
-Luna execution uses `"model": "gpt-6-luna"`, while Sol integration uses
-`"model": "gpt-6.1-sol"`. Do not infer a model from the task's prose or role.
-
-`<tools>` below is the tools directory of the active package root: `common/tools/`
-in the installed package, `src/common/tools/` in a source checkout and in the
-repository-root projection of this tree. Resolve it once and reuse the value; never
-re-derive a path per command.
+The natural-language examples below are plan requests. A request to fix, test or inspect
+one bounded path is an ordinary task unless the owner also asks for a plan.
 
 ## The plan is a directory of leaf files
 
@@ -511,8 +468,8 @@ It is not a second planner. Local standalone rendering and the legacy
 publisher below remain available for unbound plans.
 
 The native `UserPromptSubmit` hook emits a side-effect-free intake reminder.
-Semantically choose: authorized engineering over 15 minutes or 2+ leaves → research, then create or update the plan
-and explicitly activate one leaf; a single bounded action of 15 minutes or less → no plan; status, research, read-only work or direct
+Semantically choose: explicit planning request or genuinely independent lanes → create or update the plan
+and activate only the needed work; ordinary bounded engineering → no plan; status, research, read-only work or direct
 owner no-LHC/STOP → no plan. The hook itself does not interpret intent, select a
 plan, create a scaffold, bind a session, write progress, or rebuild graph/HTML.
 Only a plan explicitly bound to the actual current session and accepted goal is
