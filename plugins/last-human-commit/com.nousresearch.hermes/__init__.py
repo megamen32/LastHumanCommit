@@ -18,7 +18,7 @@ BEGIN = "<!-- last-human-commit:begin -->"
 END = "<!-- last-human-commit:end -->"
 ROLE_TAG = re.compile(r"\[LHC_ROLE=(?P<role>[A-Za-z]+)\]")
 ROLES = {
-    "lead": "Lead", "overseer": "Overseer", "adviser": "Adviser",
+    "lead": "Lead", "boss": "Boss", "adviser": "Adviser",
     "critic": "Critic", "worker": "Worker",
     "reviewer": "Reviewer", "tester": "Tester",
 }

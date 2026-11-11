@@ -537,50 +537,9 @@ def stop_gate(event, root, now=None):
             f"and {blocked} blocked. Part done, part not confirmed is not an end state. A stop is right when "
             "the business result is reached or only the owner can unblock it. Otherwise do not stop: take the "
             "next queued leaf that is not blocked and work it now; for a blocked leaf send the blocker up the "
-            "chain (python3 common/tools/lhc_mail.py send to the L, Adviser or Overseer) and go on to the "
+            "chain (python3 common/tools/lhc_mail.py send to the L, Adviser or Boss) and go on to the "
             "next leaf instead of waiting. Report when the leaves are done or escalated, not when the first "
             "one is stuck.")
-
-
-def overseer_review(event, root, channel, now=None):
-    """Ask the Lead to call the Overseer once per 30 min boundary of an active plan.
-
-    A hook cannot start an agent, so it names the step; lhc_overseer_ack.py marks it done. Facts
-    only (queued or running leaves on disk); never for a subagent, a session without a plan, a
-    plan that is not this session's live work, or an owner no-LHC/STOP. Any failure is silent.
-    """
-    import time
-    try:
-        session = str(event.get("session_id") or event.get("sessionID") or "")
-        if not session or event.get("agent_id"):
-            return None
-        import lhc_overseer_ack as ack
-        found = _plan_entry(event, root)
-        if not found:
-            return None
-        own = (found.get("continuation") or {}).get("plan")
-        pick = own or (found["candidates"][0] if len(found.get("candidates", [])) == 1 else None)
-        if not pick:
-            return None
-        plan = Path(pick)
-        files = sorted((plan / "leaves").glob("*.json"))
-        now = now or time.time()
-        if not files or now - max(f.stat().st_mtime for f in files) > STOP_WINDOW:
-            return None
-        active = False
-        for f in files:
-            leaf = json.loads(f.read_text(encoding="utf-8"))
-            if isinstance(leaf, dict) and leaf.get("status") in {"queued", "running"}:
-                active = True
-                break
-        if not active:
-            return None
-        minutes = ack.due(plan, channel, now)
-        if minutes is None:
-            return None
-        return ack.request_text(plan, minutes)
-    except Exception:  # noqa: BLE001 - fail open: a reminder that cannot decide stays silent
-        return None
 
 
 def _due(session, key, now, window):
@@ -1026,7 +985,7 @@ def main():
     parser.add_argument("--git-guard", action="store_true",
                         help="at PreToolUse, refuse git stash everywhere and a branch switch in the primary checkout")
     parser.add_argument("--stop-gate", action="store_true",
-                        help="at Stop, hold the turn while the plan still has untouched leaves, or once per 30 min until the Overseer reviewed it")
+                        help="at Stop, hold the turn while the plan still has untouched leaves, or once per 30 min without requiring a Boss review")
     parser.add_argument("--plan-entry", action="store_true",
                         help="emit planning intake and read-only session-bound plan candidates on UserPromptSubmit")
     default_runtime = ("zcode" if os.environ.get("ZCODE_PLUGIN_ROOT") else
@@ -1110,9 +1069,6 @@ def main():
         letters = mail_context(event, throttle=300)
         if letters:
             prompts.append(letters)
-        overseer = overseer_review(event, args.root or Path(__file__).resolve().parents[1], "post")
-        if overseer:
-            prompts.append(overseer)
         try:
             coordination = coordination_pulse(event, args.root or Path(__file__).resolve().parents[1])
         except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError):
@@ -1142,7 +1098,7 @@ def main():
             raw = sys.stdin.read(8 * 1024 * 1024 + 1)
             event = json.loads(raw or "{}") if len(raw) <= 8 * 1024 * 1024 else {}
             hook_root = args.root or Path(__file__).resolve().parents[1]
-            reason = (mail_stop(event) or overseer_review(event, hook_root, "stop") or stop_gate(event, hook_root)) if isinstance(event, dict) else None
+            reason = (mail_stop(event) or stop_gate(event, hook_root)) if isinstance(event, dict) else None
         except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError):
             reason = None
         if reason:

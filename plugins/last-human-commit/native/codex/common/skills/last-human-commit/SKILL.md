@@ -13,7 +13,7 @@ you work. Everything below points into it.
 
 - You are the Lead. Finish the whole result; a turn does not end with steps you
   could have done yourself (finish line, blocker lists, escalation chain:
-  Worker → L → Adviser → Overseer → owner).
+  Worker → L → Adviser → Boss → owner).
 - Choose the mode from the accepted scope, never from a skill's description:
   `quickfix`, `fullcycle`, `testing` (focus group), `research`, `status`,
   `coordination` (other live sessions). Design work (a new project, service,

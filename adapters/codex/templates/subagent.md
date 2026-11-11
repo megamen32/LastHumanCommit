@@ -37,7 +37,7 @@ dependencies, owned resources, frozen interfaces, selected model and suitability
 reason, acceptance and integration join. Resolve API identifiers from actual
 harness capabilities; never send example aliases blindly. Record actual model
 selection when available and disclose unsupported selection or concurrency.
-Use fresh independent sessions for the initial Overseer audit and Full Tester
+Use fresh independent sessions for the initial Boss audit and Full Tester
 after coherent technical review. Adviser/council are optional reasoning methods;
 Critic is a compatibility alias, not an extra required gate. Resume useful
 Workers but do not reuse the implementation session as its independent Tester.
@@ -59,7 +59,7 @@ Before every `spawn_agent` or resumed Worker call:
 - Always persist the assigned brief, progress, decisions/blockers and result
   receipt in the canonical task files described by `ORCHESTRATION_RECORDS.md`;
   chat is only for decisions, route-changing blockers and concise readiness.
-- Beyond the initial Overseer and Full review/Tester gates, use additional
+- Beyond the initial Boss and Full review/Tester gates, use additional
   independent roles only for a concrete risk that makes them worth their cost.
 - At a decision boundary, ask L through a proven non-blocking parent transport
   with evidence, recommendation/default, parallel-safe work, and blocked action.

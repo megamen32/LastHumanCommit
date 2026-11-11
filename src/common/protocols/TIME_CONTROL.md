@@ -19,7 +19,7 @@ authorized remaining scope, or Proposed; discovery alone does not select work.
 
 At an overrun or two equivalent failed routes, stop adding work. Choose one
 bounded continuation justified by evidence or change approach. Make a concise evidence-based route decision with the achieved user result,
-concrete remaining blocker, next proof and time bound. The Overseer may advise;
+concrete remaining blocker, next proof and time bound. The Boss may advise;
 its response is not a permission or continuation receipt. Never weaken accepted scope silently to make a budget green.
 
 Every 30 minutes, write the live plan report (`../protocols/PLAN_REPORT.md`): the
@@ -34,20 +34,14 @@ Native PostToolUse reminders track only time and deduplicate each due interval;
 without tool activity, a reminder arrives at the next work boundary. They never
 classify text, mutate task/evidence/holds or block completion.
 
-Every 30 minutes of an active plan the default-on hook in `lhc_entry.py` (Stop gate and PostToolUse; Stop only on
-OpenCode) asks the Lead to call the Overseer and mark it with `lhc_overseer_ack.py`; see `agents/Overseer.md`.
-The optional Codex `com.openai` extension adds an async progress adviser beside
-that timer. Once per due bucket and with at most one invocation in flight, it
-runs the existing fresh read-only Overseer through the native ephemeral CLI.
-The timer decides only when; the model compares original request/corrections,
-bounded raw recent actions/results, candidate plan/leaf state and previous
-advice against subsequent behavior. Missing source data means unknown progress.
-The Lead acts/assigns its one recommended action or rejects it with a concrete
-observed fact. Native hook trust/disablement and permissions remain in force;
-failures never block work. New input, Interrupt, Stop and SessionEnd invalidate
-in-flight advice; inactive turns are never awakened. Other clients use manual
-consultation until an actual native adapter is proven. No semantic regex,
-daemon, scheduler, new gate or recursive supervision is involved.
+When OpenCode 2 has the native Boss plugin installed, its independent Boss
+reviews active work at roughly 30-minute intervals. Boss reads the original
+owner request, latest direct corrections, latest visible assistant turn, and
+available transcript snapshot; it may issue one concrete recommendation into
+the parent session. The native OpenCode runtime owns model execution and
+authorization. Boss does not block Stop, require an ACK, or generate new work
+when there is no observable drift. For other harnesses, do not pretend this
+native adapter is active; no Codex review is used as a fallback.
 
 Every 30 minutes the report and the task graph are brought into one unit, in
 this order: refresh the map from the report through the CLI
@@ -65,7 +59,7 @@ forgotten.
 | Timer | Cadence | What it protects | What it must not become |
 |---|---|---|---|
 | Leaf size | 15 min | The unit of decomposition: a piece small enough to finish, verify and report inside one estimate | A runtime cap, a kill switch, or a reason to reject or abort a long task |
-| Plan report | 30 min | The plan stays in the model's head and in the record; the Overseer reads it against the original request and the canary | A second task-card format, a file list, or a progress theatre report |
+| Plan report | 30 min | The plan stays in the model's head and in the record; the Boss reads it against the original request and the canary | A second task-card format, a file list, or a progress theatre report |
 | Goal direction check | 60 min | The original request is still the goal after an hour of work | A mandatory hourly ritual, a tester dispatch, or an empty status message to the user |
 | Learning checkpoint | 120 min unfinished work | The Lead opens a separate session with the reviewed transcript and receives a verified method correction | A seven-field form, binding verdict, acknowledgement loop, or a learning run started by a non-Lead role |
 | Estimate overrun | On event | Crossing the original maximum forces a re-plan: close the leaf, new leaves of about 15 minutes, a record in plan.json revisions; the hook says so every 15 minutes until it is done | A scolding, a forced estimate rewrite, or more governance that costs more than the overrun |

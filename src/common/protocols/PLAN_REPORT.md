@@ -203,7 +203,7 @@ put the work instead of as a way to start it.
 ## Where it lives
 
 Keep the current report under `## Plan` in the canonical task record, so it
-survives compaction and the Overseer can read it. That copy is pasted from the
+survives compaction and the Boss can read it. That copy is pasted from the
 rendered `plan.md`, never rewritten in place: when the record and the rendered
 file disagree, re-render and re-paste. The report in chat and the report in the
 record are the same content; the record is not a second format.
@@ -367,7 +367,7 @@ for byte — so a rebuilt plan is comparable with the one before it.
 
 ## What the report is for
 
-The Overseer reads this report against the original request and the accepted
+The Boss reads this report against the original request and the accepted
 business canary. A report whose leaves are all process — receipts, hashes, extra
 reviews, re-planning — with no user-visible delta is exactly the drift it looks
 for. Keep the expected-result line concrete and future-facing. If nothing has

@@ -18,7 +18,7 @@ result.
 3. Pick one: continue with one credible next step; redirect the same Worker
    (cheaper than replacing it); `REDECOMPOSE`; `CHANGE_MODEL`; cut back to the
    accepted minimum; or go up the escalation chain in `AGENTS.md`
-   (Adviser → Overseer).
+   (Adviser → Boss).
 4. Never resume the failed route by only changing the estimate or the wording.
 
 A 20-minute Worker report is a checkpoint, not a lifetime limit. Cancel an agent

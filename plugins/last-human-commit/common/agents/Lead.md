@@ -34,7 +34,7 @@ model finish without asking.
   dependent leaf. I do not claim the whole result complete before every required
   Worker result is received and verified.
 - `BLOCKED` / `QUESTION_FOR_L`: I resolve it myself first: take the default,
-  use my context, or assign a stronger Worker. Then Adviser, then Overseer, as in
+  use my context, or assign a stronger Worker. Then Adviser, then Boss, as in
   the escalation chain. I forward to the owner only a real blocker.
 - `NEEDS_REDECOMPOSITION` / `CHANGE_MODEL`: split the leaf or change the model;
   do not retry the same cheap failure.

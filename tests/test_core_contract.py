@@ -34,15 +34,15 @@ def test_a_decline_is_parked_not_routed_around():
     assert "do not route around it" in router
 
 
-def test_escalation_goes_lead_then_adviser_then_overseer_then_owner():
-    # The Lead used to jump from a stuck Worker straight to the Overseer.
+def test_escalation_goes_lead_then_adviser_then_boss_then_owner():
+    # The Lead used to jump from a stuck Worker straight to the Boss.
     text = (ROOT / ROUTER).read_text()
     chain = text[text.index("## When stuck"):text.index("## The cycle")]
-    order = [chain.index(f"**{role}**") for role in ("Worker", "L", "Adviser", "Overseer", "Owner")]
+    order = [chain.index(f"**{role}**") for role in ("Worker", "L", "Adviser", "Boss", "Owner")]
     assert order == sorted(order)
     lead = flat("src/common/agents/Lead.md")
-    assert lead.index("Then Adviser") < lead.index("then Overseer")
-    assert "Step 4 of the escalation chain" in flat("src/common/agents/Overseer.md")
+    assert lead.index("Then Adviser") < lead.index("then Boss")
+    assert "исходного измеримого бизнес-результата" in flat("src/common/agents/Boss.md")
     assert "step 3 of the escalation chain" in flat("src/common/agents/Adviser.md")
 
 
@@ -191,7 +191,7 @@ def test_commit_always_blockers_removed_and_two_stop_states():
         assert "test-first delays only the pr/integration into main, never the commit" in text
         assert "unsafe" in text and "artifact" in text
         assert "outside your power" in text
-        assert "worker -> lead -> adviser -> overseer" in text or "escalated it down the chain" in text
+        assert "worker -> lead -> adviser -> boss" in text or "escalated it down the chain" in text
         assert '"part done, part unconfirmed" is not an end state' in text
         assert "independent recheck" in text
 
@@ -247,6 +247,6 @@ def test_unknown_artifact_provenance_is_not_a_blocker_but_a_rebuild():
     assert "provenance receipt of an installed artifact: treat it as unverified, build a new release from fresh origin/main" in router
     assert "keep a backup of the old one" in router and "roll back on failure" in router
     assert "forbidden when the owner already ordered the result and deployment" in router
-    assert "Worker→Lead→Adviser→Overseer, not into a stop" in router
+    assert "Worker→Lead→Adviser→Boss, not into a stop" in router
     assert len((ROOT / ROUTER).read_text().splitlines()) <= 300
     assert "not a blocker: rebuild from fresh origin/main" in flat("src/common/protocols/SHARED_WORKTREE.md")

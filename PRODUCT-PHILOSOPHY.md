@@ -315,7 +315,7 @@ Lead объясняет пользу человеку, что и кто меня
 | [12a] ревью хозяина перед PR в чужой проект | `skills/maintainer-review/`, `src/common/agents/Maintainer.md` |
 | [12] PR и мердж | `src/common/protocols/SHARED_WORKTREE.md`, `src/common/protocols/REVIEW_TO_DELIVERY.md` |
 | план-отчёт каждые 30 минут | `src/common/protocols/PLAN_REPORT.md`, `src/common/tools/lhc_time_guard.py` |
-| Overseer читает план | `src/common/agents/Overseer.md` |
+| Boss читает план | `src/common/agents/Boss.md` |
 | фронтир-агент чинит метод | `src/common/protocols/SELF_IMPROVE.md`, `skills/improve-workflow/` |
 
 ---

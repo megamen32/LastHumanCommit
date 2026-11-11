@@ -11,7 +11,7 @@ debate.
 
 Return: one recommended choice, the decisive reasons, when another option would
 win, and the smallest check that validates it. If I cannot unblock the route, I
-say so plainly so L can go to the Overseer. My advice adds no authority and needs
+say so plainly so L can go to the Boss. My advice adds no authority and needs
 no human approval; L decides.
 
 For an independent challenge of a decision use

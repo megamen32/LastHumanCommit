@@ -1,5 +1,5 @@
 {
-  "description": "Codex-only asynchronous LHC progress advice; other client adapters remain time-only",
+  "description": "LHC Codex time-only hooks; no separate reviewer using Codex quota",
   "hooks": {
     "PostToolUse": [
       {
@@ -8,16 +8,6 @@
             "type": "command",
             "command": "python3 \"${CLAUDE_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${PLUGIN_ROOT:-${ZCODE_PLUGIN_ROOT:-$HOME/.codex/.tmp/marketplaces/megamen32-plugins/plugins/last-human-commit}}}}/tools/lhc_entry.py\" --event PostToolUse --heartbeat-only || { printf '%s\\n' 'LHC entry unavailable; message processing continues.' >&2; :; }",
             "timeout": 5
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "lhc_progress_script=\"${PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-${ZCODE_PLUGIN_ROOT:-}}}}/tools/lhc_progress_review.py\"; if [ ! -f \"$lhc_progress_script\" ]; then lhc_progress_script=\"${CODEX_HOME:-$HOME/.codex}/.tmp/marketplaces/megamen32-plugins/plugins/last-human-commit/tools/lhc_progress_review.py\"; fi; if [ -f \"$lhc_progress_script\" ]; then python3 \"$lhc_progress_script\" || :; fi; :",
-            "async": true,
-            "timeout": 90
           }
         ]
       }
@@ -31,28 +21,9 @@
             "timeout": 5
           }
         ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "lhc_progress_script=\"${PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-${ZCODE_PLUGIN_ROOT:-}}}}/tools/lhc_progress_review.py\"; if [ ! -f \"$lhc_progress_script\" ]; then lhc_progress_script=\"${CODEX_HOME:-$HOME/.codex}/.tmp/marketplaces/megamen32-plugins/plugins/last-human-commit/tools/lhc_progress_review.py\"; fi; if [ -f \"$lhc_progress_script\" ]; then python3 \"$lhc_progress_script\" --invalidate || :; fi; :",
-            "timeout": 3
-          }
-        ]
       }
     ],
-    "Interrupt": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "lhc_progress_script=\"${PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-${ZCODE_PLUGIN_ROOT:-}}}}/tools/lhc_progress_review.py\"; if [ ! -f \"$lhc_progress_script\" ]; then lhc_progress_script=\"${CODEX_HOME:-$HOME/.codex}/.tmp/marketplaces/megamen32-plugins/plugins/last-human-commit/tools/lhc_progress_review.py\"; fi; if [ -f \"$lhc_progress_script\" ]; then python3 \"$lhc_progress_script\" --invalidate || :; fi; :",
-            "timeout": 3
-          }
-        ]
-      }
-    ],
+    "Interrupt": [],
     "Stop": [
       {
         "hooks": [
@@ -62,28 +33,9 @@
             "timeout": 5
           }
         ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "lhc_progress_script=\"${PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-${ZCODE_PLUGIN_ROOT:-}}}}/tools/lhc_progress_review.py\"; if [ ! -f \"$lhc_progress_script\" ]; then lhc_progress_script=\"${CODEX_HOME:-$HOME/.codex}/.tmp/marketplaces/megamen32-plugins/plugins/last-human-commit/tools/lhc_progress_review.py\"; fi; if [ -f \"$lhc_progress_script\" ]; then python3 \"$lhc_progress_script\" --invalidate || :; fi; :",
-            "timeout": 3
-          }
-        ]
       }
     ],
-    "SessionEnd": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "lhc_progress_script=\"${PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT:-${ZCODE_PLUGIN_ROOT:-}}}}/tools/lhc_progress_review.py\"; if [ ! -f \"$lhc_progress_script\" ]; then lhc_progress_script=\"${CODEX_HOME:-$HOME/.codex}/.tmp/marketplaces/megamen32-plugins/plugins/last-human-commit/tools/lhc_progress_review.py\"; fi; if [ -f \"$lhc_progress_script\" ]; then python3 \"$lhc_progress_script\" --invalidate || :; fi; :",
-            "timeout": 3
-          }
-        ]
-      }
-    ],
+    "SessionEnd": [],
     "SessionStart": [
       {
         "hooks": [

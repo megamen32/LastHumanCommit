@@ -14,7 +14,7 @@ import uuid
 
 BEGIN="<!-- lhc-autoentry:begin -->"
 END="<!-- lhc-autoentry:end -->"
-OPENCODE_PLUGIN_FILES=("lhc-v2.ts",)
+OPENCODE_PLUGIN_FILES=("lhc-v2.ts","lhc-boss-v2.ts")
 
 def backup_dir(home:Path)->Path:
     return home/".local/state/last-human-commit/backups"
@@ -47,7 +47,7 @@ OPENCODE_ROLES={"Lead":"LastHumanCommit Lead: owns classification, integration, 
                 "Sentinel":"LastHumanCommit Sentinel: watches one thing, reports only when something is wrong.",
                 "Adviser":"LastHumanCommit Adviser: a second opinion on a hard decision.",
                 "Critic":"LastHumanCommit Critic: finds where a plan or change breaks.",
-                "Overseer":"LastHumanCommit Overseer: the last step before the owner.",
+                "Boss":"LastHumanCommit Boss: the last step before the owner.",
                 "Reviewer":"LastHumanCommit Reviewer: reviews the integrated change once.",
                 "Tester":"LastHumanCommit Tester: proves the claim on the real consumer path.",
                 "Maintainer":"LastHumanCommit Maintainer: keeps the package and its installs current.",
@@ -215,13 +215,17 @@ def register_opencode_plugin(home:Path,root:Path,plugin_dir:Path)->dict:
     for name in OPENCODE_PLUGIN_FILES:
         src=source/name
         if not src.is_file():
+            # Minimal/legacy fixture packages predate the Boss role. New packages
+            # that ship Boss.md must also ship its native plugin.
+            if name == "lhc-boss-v2.ts" and not (root / "common/agents/Boss.md").exists():
+                continue
             raise ValueError(f"The installed package is missing the OpenCode plugin file: {name}")
         target=plugin_dir/name
         # OpenCode instantiates every plugin file, so a second copy doubles every hook:
         # an entry that already points at this source, or the long-standing
         # last-human-commit.ts, is the installed plugin and gets no sibling.
         existing=next((e for e in sorted(plugin_dir.glob("*.ts")) if e.resolve()==src.resolve()),None)
-        if existing is None and (plugin_dir/"last-human-commit.ts").exists():
+        if name == "lhc-v2.ts" and existing is None and (plugin_dir/"last-human-commit.ts").exists():
             existing=plugin_dir/"last-human-commit.ts"
         if existing is not None:
             if not existing.is_symlink() and existing.read_text(encoding="utf-8")!=src.read_text(encoding="utf-8"):
@@ -258,7 +262,7 @@ def configure(home:Path,root:Path,runtime:str,replace_gsd:bool=False,opencode_pl
     if not (root/"AGENTS.md").is_file() or not (root/"skills/last-human-commit/SKILL.md").is_file():
         raise ValueError("Select an installed package with its router and skills")
     destinations={"codex":".codex/AGENTS.md","claude":".claude/CLAUDE.md","opencode":".config/opencode/AGENTS.md"}
-    plugin_dir=(opencode_plugin_dir or home/".config/opencode/plugin").expanduser().resolve()
+    plugin_dir=(opencode_plugin_dir or home/".config/opencode/plugins").expanduser().resolve()
     file=home/destinations[runtime]
     before=file.read_text() if file.exists() else ""
     text=before

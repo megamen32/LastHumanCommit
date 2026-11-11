@@ -175,7 +175,7 @@ return that exact blocker. Do not silently substitute an incapable model.
 After acceptance or failure, diagnose whether the cause was model capability,
 bad decomposition, missing context, product complexity or tool/environment error.
 Change model, context, method or slice accordingly; escalating the model alone is
-not always the repair. Reassign through Lead and Overseer at material route changes.
+not always the repair. Reassign through Lead and Boss at material route changes.
 
 ## Learn from completed work
 

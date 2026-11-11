@@ -170,11 +170,11 @@ def test_opencode_install_does_not_duplicate_an_installed_plugin(tmp_path):
     (plugins / "last-human-commit.ts").symlink_to(plugin / "opencode/lhc-v2.ts")
     install.configure(home, plugin, "opencode", opencode_plugin_dir=plugins)
     install.configure(home, plugin, "opencode", opencode_plugin_dir=plugins)
-    assert sorted(f.name for f in plugins.glob("*.ts")) == ["last-human-commit.ts"]
+    assert sorted(f.name for f in plugins.glob("*.ts")) == ["last-human-commit.ts", "lhc-boss-v2.ts"]
     fresh = tmp_path / "home2"
     install.configure(fresh, plugin, "opencode")
     install.configure(fresh, plugin, "opencode")
-    assert [f.name for f in (fresh / ".config/opencode/plugin").glob("*.ts")] == ["lhc-v2.ts"]
+    assert sorted(f.name for f in (fresh / ".config/opencode/plugins").glob("*.ts")) == ["lhc-boss-v2.ts", "lhc-v2.ts"]
 
 
 def _plan(tmp_path, leaves, meta=None):

@@ -14,6 +14,7 @@ capabilities:
   resume_transport: adapter-dependent
   nonblocking_parent_transport: adapter-dependent
   lifecycle_time_guard_hook: proven
+  native_boss_review: implemented-v2
   # proven by a real run, not by the branch alone: the plugin now forwards
   # tool args as tool_input, and the hook binary started the OpenCode way
   # (--event PostToolUse --heartbeat-only --runtime opencode) rebuilds the

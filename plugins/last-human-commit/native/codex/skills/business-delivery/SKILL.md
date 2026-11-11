@@ -21,7 +21,7 @@ unknown/revoked operations stay blocked. Sudo alone never grants authority.
    production consumer path, and shortest real canary.
 2. Lead owns the engineering outcome and assigns every engineering step to a native Worker, even when small. A business executor inside the product handles its user task and is not the engineering Worker for this session.
 3. Use the cheapest evidence sufficient for the exact business claim.
-4. Add Reviewer, Tester, Overseer, Critic, or hardening only when concrete risk
+4. Add Reviewer, Tester, Boss, Critic, or hardening only when concrete risk
    makes their expected value exceed their cost.
 5. Report source/test proof, deployment state, and real-canary proof separately.
 6. Stop when the accepted claim is proven and hand off deferred optional work as
