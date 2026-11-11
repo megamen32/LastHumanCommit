@@ -22,7 +22,7 @@ from pathlib import Path
 from typing import Any, Callable, Optional
 
 SERVER_NAME = "LhcPlan"
-SERVER_VERSION = "1.22.7"
+SERVER_VERSION = "1.22.8"
 DEFAULT_PROTOCOL_VERSION = "2024-11-05"
 SUPPORTED_PROTOCOL_VERSIONS = ("2024-11-05", "2025-03-26", "2025-06-18")
 
@@ -894,7 +894,9 @@ for name, extra, required, description in (
     ("assign_leaf", {"assignment": {"type": "object"}}, ["assignment"],
      "Declare an explicit Assignment v1. This does not submit or start native work."),
     ("dispatch_leaf", {"message": {"type": "string"}}, ["attempt_id", "message"],
-     "Refresh exact runtime then atomically admit and submit once through Herder. UNKNOWN is never replayed."),
+     "Refresh exact runtime then atomically admit and submit once through Herder. An UNKNOWN delivery without a "
+     "confirmed turn admits exactly one guarded retry through the same request id (ACTION_POLICY); a confirmed "
+     "turn is reconciled, never re-sent."),
     ("reconcile_leaf", {}, ["attempt_id"],
      "Refresh the exact attempt's native observation and wake without replaying delivery."),
     ("accept_leaf", {"result": {"type": "string"}}, ["attempt_id", "result"],

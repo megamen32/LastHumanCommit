@@ -94,6 +94,45 @@ def test_exact_packet_is_saved_and_delivered_without_public_payload(plan):
     assert len(transport.sent) == 1
 
 
+class UnknownOnceTransport(Transport):
+    """Herder fixture: the first delivery answers admissionUnknown."""
+
+    def __init__(self):
+        super().__init__()
+        self.failures = 1
+
+    def call(self, name, args):
+        if name == "deliver" and self.failures > 0:
+            self.failures -= 1
+            self.sent.append(args)
+            return {"admissionUnknown": True, "delivery": "unknown"}
+        return super().call(name, args)
+
+
+def test_unknown_delivery_retries_the_exact_persisted_payload_once(plan):
+    (plan / "briefs/L1.md").write_text(BRIEF)
+    transport = UnknownOnceTransport()
+    first = ex.dispatch_leaf(plan, "L1", "attempt", "private caller input: 934-xyz", transport=transport)
+    assert first["state"] == "delivery_unknown"
+    assert len(transport.sent) == 1
+    # ACTION_POLICY: the guarded retry re-sends the exact persisted bytes under
+    # the same request id, even when the caller supplies a different message.
+    second = ex.dispatch_leaf(plan, "L1", "attempt", "different retry text: 935-abc", transport=transport)
+    assert len(transport.sent) == 2
+    assert transport.sent[1]["inputId"] == transport.sent[0]["inputId"]
+    assert transport.sent[1]["message"] == transport.sent[0]["message"]
+    assert "935-abc" not in transport.sent[1]["message"]
+    leaf = read(plan)
+    assert leaf["assignment"]["state"] == "submitted"
+    assert leaf["assignment"]["dispatch"]["retries"] == 1
+    assert leaf["assignment"]["dispatch"]["handoff"] == first["dispatch"]["handoff"]
+    identity = second["dispatch"]["handoff"]
+    assert identity["payload_sha256"] == hashlib.sha256(transport.sent[1]["message"].encode()).hexdigest()
+    # The budget is spent: a third call is a read, never another send.
+    ex.dispatch_leaf(plan, "L1", "attempt", "still no third send", transport=transport)
+    assert len(transport.sent) == 2
+
+
 def test_public_cli_and_mcp_raw_message_require_brief(plan):
     import os
     import subprocess

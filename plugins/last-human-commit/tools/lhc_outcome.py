@@ -1638,7 +1638,9 @@ def question_plan(outcome, message):
                          'harness': outcome['owner']['harness'], 'session_id': outcome['owner']['session_id'],
                          'cwd': outcome['cwd'], 'message': message},
             'result': {'tool': 'noticeplace_question_result', 'request_id': '<same request_id>'},
-            'policy': 'Persist binding before delivery; inspect accepted/UNKNOWN, never replay. Missing actors/project is a scoped blocker; no invented incident. Delivery != answer != permission.'}
+            'policy': 'Persist binding before delivery; inspect accepted/UNKNOWN; one guarded retry per UNKNOWN '
+                      'delivery reuses the same request id (ACTION_POLICY). Missing actors/project is a scoped '
+                      'blocker; no invented incident. Delivery != answer != permission.'}
 
 
 def http_question_operation(name, args, question):

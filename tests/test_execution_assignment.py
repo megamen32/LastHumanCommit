@@ -78,18 +78,23 @@ def test_assignment_and_lifecycle_roundtrip(plan):
     pj.transition_leaf(plan, "L01", "attempt-1", "accepted")
     assert read(plan)["status"] == "done"
 
-def test_unknown_delivery_cannot_replay_and_history_survives(plan):
+def test_unknown_delivery_retries_once_and_history_survives(plan):
     pj.assign_leaf(plan, "L01", assignment())
     pj.transition_leaf(plan, "L01", "attempt-1", "dispatching",
                        receipt={"dispatch": {"request_id": "request-1", "status": "dispatching"}})
     pj.transition_leaf(plan, "L01", "attempt-1", "delivery_unknown",
                        receipt={"dispatch": {"request_id": "request-1", "status": "unknown", "reason": "timeout"}})
-    before = read(plan)
+    # ACTION_POLICY: exactly one guarded retry re-enters dispatching with the
+    # same durable request id; the event history counts the budget forever.
+    retry = pj.transition_leaf(plan, "L01", "attempt-1", "dispatching",
+                               receipt={"dispatch": {"request_id": "request-1", "status": "dispatching",
+                                                     "retries": 1}})
+    assert retry["assignment"]["dispatch"]["retries"] == 1
     with pytest.raises(ValueError):
-        pj.transition_leaf(plan, "L01", "attempt-1", "dispatching")
+        pj.transition_leaf(plan, "L01", "attempt-1", "dispatching",
+                           receipt={"dispatch": {"request_id": "request-1", "status": "dispatching"}})
     with pytest.raises(ValueError):
         pj.assign_leaf(plan, "L01", assignment("attempt-2"))
-    assert read(plan) == before
     pj.transition_leaf(plan, "L01", "attempt-1", "cancelled",
                        receipt={"dispatch": {"request_id": "request-1", "status": "not_attempted", "reason": "confirmed no effect"}})
     completed = read(plan)["assignment"]

@@ -11,6 +11,8 @@ import json
 from datetime import datetime, timezone
 from typing import Any, Mapping
 
+from lhc_assignment import retryable_unknown
+
 RUNTIME_MAX_AGE_SECONDS = 300
 _STATUSES = {"queued", "running", "done", "deferred", "deferred_ai", "blocked", "waiting"}
 _IN_FLIGHT = {"dispatching", "submitted", "running"}
@@ -62,9 +64,15 @@ def _execution_gate(task: Any, now: float, max_age: float) -> tuple[bool | None,
     if not assignment:
         return None, "assignment_unknown"
     state = assignment.get("state")
+    retryable = False
     if state == "delivery_unknown":
-        return None, "delivery_unknown"
-    if state not in {"assigned", "dispatching", "submitted", "running", "result_ready", "accepted", "blocked", "cancelled"}:
+        # ACTION_POLICY: while the retry budget is unused, one guarded
+        # re-dispatch stays admissible; otherwise delivery stays ambiguous.
+        retryable = retryable_unknown(assignment)
+        if not retryable:
+            return None, "delivery_unknown"
+    if state not in {"assigned", "dispatching", "submitted", "running", "result_ready", "accepted", "blocked",
+                     "cancelled", "delivery_unknown"}:
         return None, "assignment_unknown"
     if state == "blocked":
         for field in ("observed_runtime", "dispatch", "wake"):
@@ -73,7 +81,7 @@ def _execution_gate(task: Any, now: float, max_age: float) -> tuple[bool | None,
             if isinstance(reason, str) and reason.strip():
                 return False, reason[:500]
         return False, "assignment_blocked"
-    if state != "assigned":
+    if state != "assigned" and not retryable:
         return False, "assignment_" + str(state)
     runtime = assignment.get("observed_runtime") or {}
     runtime = runtime if isinstance(runtime, dict) else {}
@@ -122,7 +130,13 @@ def evaluate(tasks: Any, slots: int | None = None, *, now: Any = None,
             return False
         assignment = _assignment(task)
         if assignment:
-            return assignment.get("state") in _IN_FLIGHT | {"delivery_unknown"}
+            state = assignment.get("state")
+            if state == "delivery_unknown":
+                # ACTION_POLICY: a retryable UNKNOWN no longer holds its executor
+                # hostage; its single guarded retry re-books the executor like a
+                # fresh assignment. A spent or unbound UNKNOWN keeps reserving.
+                return not retryable_unknown(assignment)
+            return state in _IN_FLIGHT
         return _get(task, "status", "queued") == "running"
     busy = {executor_key(task) for task in rows if reserved(task)}
     free = None if slots is None else max(0, slots - len(busy))

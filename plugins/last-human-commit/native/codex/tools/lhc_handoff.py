@@ -214,6 +214,36 @@ def prepare(plan_dir, leaf_id, assignment, leaf_bytes, message, metadata):
     return identity, payload
 
 
+def load_handoff(plan_dir, leaf_id, assignment):
+    """Read the immutable delivered payload of an existing attempt for a guarded retry.
+
+    ACTION_POLICY: a retry re-sends the exact persisted bytes under the same
+    request id. The record was written once by ``prepare`` under the admission
+    lock; a retry never composes new delivery bytes.
+    """
+    root = Path(plan_dir).resolve()
+    attempt_key = _digest(assignment['attempt_id'].encode())
+    target = root / f'records/{leaf_id}/attempts/{attempt_key}/handoff.json'
+    try:
+        record = json.loads(target.read_text(encoding='utf-8'))
+    except (OSError, ValueError):
+        raise ValueError('brief_record_unavailable') from None
+    if target.is_symlink():
+        raise ValueError('brief_record_symlink_forbidden')
+    identity = record.get('identity') if isinstance(record, dict) else None
+    if not isinstance(identity, dict):
+        raise ValueError('brief_record_identity_missing')
+    if (identity.get('attempt_id') != assignment['attempt_id']
+            or identity.get('leaf_id') != leaf_id or identity.get('plan_dir') != str(root)
+            or identity.get('lead') != assignment['lead']
+            or identity.get('executor') != assignment['executor']):
+        raise ValueError('brief_record_identity_mismatch')
+    payload = record.get('message')
+    if not isinstance(payload, str) or not payload.strip():
+        raise ValueError('brief_record_payload_missing')
+    return identity, payload
+
+
 def sync_intent(path):
     """Flush the saved admission and its directory before an external send."""
     for target in (Path(path), Path(path).parent):

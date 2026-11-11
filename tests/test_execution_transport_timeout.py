@@ -1,4 +1,4 @@
-"""Delivery may outlast a metadata read; a timeout never authorizes replay."""
+"""Delivery may outlast a metadata read; a timeout authorizes one guarded retry."""
 import copy
 import json
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -81,7 +81,7 @@ def test_read_and_init_keep_the_short_budget(delayed_http, operation):
     assert not any(name == 'deliver' for name, _ in calls)
 
 
-def test_genuine_delivery_timeout_remains_unknown_without_retry(delayed_http):
+def test_genuine_delivery_timeout_gets_one_guarded_retry_then_stops(delayed_http):
     client, delays, calls = delayed_http
     client.deliver_timeout = 0.10
     delays['deliver'] = 0.30
@@ -97,9 +97,15 @@ def test_genuine_delivery_timeout_remains_unknown_without_retry(delayed_http):
     assert result['state'] == 'delivery_unknown'
     assert result['dispatch']['status'] == 'unknown'
     assert result['dispatch']['reason'] == 'herder_transport_unavailable'
-    result = dispatch_assignment(result, 'must not repeat', transport=client, persist=persist)
-    assert result['state'] == 'delivery_unknown'
-    assert [operation for operation, _ in calls] == ['initialize', 'notifications/initialized', 'deliver']
+    # ACTION_POLICY: the timeout gets exactly one guarded retry under the same
+    # request id; a second UNKNOWN is final and further calls stay reads.
+    retried = dispatch_assignment(result, 'isolated test', transport=client, persist=persist)
+    assert retried['state'] == 'delivery_unknown'
+    assert retried['dispatch'].get('retries') == 1
+    assert retried['dispatch']['request_id'] == result['dispatch']['request_id']
+    final = dispatch_assignment(retried, 'isolated test', transport=client, persist=persist)
+    assert final == retried
+    assert [operation for operation, _ in calls].count('deliver') == 2
 
 
 def test_delivery_budget_defaults_and_constructor_override():

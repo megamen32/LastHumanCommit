@@ -63,6 +63,8 @@ COPIES: tuple[tuple[str, str, tuple[tuple[bytes, bytes], ...]], ...] = (
     ("AGENTS.md", "plugins/last-human-commit/CLAUDE.md", COMMON),
     ("AGENTS.md", "plugins/last-human-commit/native/codex/AGENTS.md", COMMON),
     ("AGENTS.md", "plugins/last-human-commit/native/codex/CLAUDE.md", COMMON),
+    ("src/common/protocols/ACTION_POLICY.md", "plugins/last-human-commit/common/protocols/ACTION_POLICY.md", COMMON),
+    ("src/common/protocols/ACTION_POLICY.md", "plugins/last-human-commit/native/codex/common/protocols/ACTION_POLICY.md", COMMON),
     ("src/common/agents/Lead.md", "plugins/last-human-commit/common/agents/Lead.md", COMMON),
     ("src/common/agents/Worker.md", "plugins/last-human-commit/common/agents/Worker.md", COMMON),
     ("src/common/agents/Boss.md", "plugins/last-human-commit/common/agents/Boss.md", COMMON),
