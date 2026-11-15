@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "provider": "lhc",
+  "sources": [
+    {
+      "id": "lhc.workflow",
+      "uri": "lhc://context/workflow",
+      "title": "Полный LHC",
+      "description": "Основной рабочий контракт Last Human Commit.",
+      "path": "AGENTS.md",
+      "mime_type": "text/markdown",
+      "default_selected": true
+    },
+    {
+      "id": "lhc.code",
+      "uri": "lhc://context/code",
+      "title": "Написание кода",
+      "description": "Правила проектирования и изменения кода.",
+      "path": "common/protocols/CODE.md",
+      "mime_type": "text/markdown",
+      "default_selected": false
+    },
+    {
+      "id": "lhc.models",
+      "uri": "lhc://context/models",
+      "title": "Выбор моделей",
+      "description": "Категории моделей и правила выбора.",
+      "path": "common/protocols/MODELS.md",
+      "mime_type": "text/markdown",
+      "default_selected": false
+    },
+    {
+      "id": "lhc.coordination",
+      "uri": "lhc://context/coordination",
+      "title": "Координация",
+      "description": "Совместная работа и владение изменениями.",
+      "path": "common/protocols/COORDINATION.md",
+      "mime_type": "text/markdown",
+      "default_selected": false
+    },
+    {
+      "id": "lhc.profile-code",
+      "uri": "lhc://context/profile-code",
+      "title": "Профиль: разработка",
+      "description": "Дополнительные правила инженерной задачи.",
+      "path": "common/profiles/Code.md",
+      "mime_type": "text/markdown",
+      "default_selected": false
+    },
+    {
+      "id": "lhc.profile-infrastructure",
+      "uri": "lhc://context/profile-infrastructure",
+      "title": "Профиль: инфраструктура",
+      "description": "Дополнительные правила инфраструктурных задач.",
+      "path": "common/profiles/Infrastructure.md",
+      "mime_type": "text/markdown",
+      "default_selected": false
+    },
+    {
+      "id": "lhc.profile-testing",
+      "uri": "lhc://context/profile-testing",
+      "title": "Профиль: тестирование",
+      "description": "Дополнительные правила тестирования.",
+      "path": "common/profiles/Test.md",
+      "mime_type": "text/markdown",
+      "default_selected": false
+    },
+    {
+      "id": "lhc.profile-planning",
+      "uri": "lhc://context/profile-planning",
+      "title": "Профиль: планирование",
+      "description": "Дополнительные правила планирования.",
+      "path": "common/profiles/Planning.md",
+      "mime_type": "text/markdown",
+      "default_selected": false
+    }
+  ]
+}

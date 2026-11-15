@@ -993,7 +993,7 @@ def handle(message: dict[str, Any]) -> Optional[dict[str, Any]]:
             return None
         return {"jsonrpc": "2.0", "id": identifier, "result": {
             "protocolVersion": version,
-            "capabilities": {"tools": {}},
+            "capabilities": {"tools": {}, "resources": {}},
             "serverInfo": {"name": SERVER_NAME, "version": SERVER_VERSION},
         }}
 
@@ -1002,6 +1002,24 @@ def handle(message: dict[str, Any]) -> Optional[dict[str, Any]]:
 
     if method == "ping":
         return None if not is_request else {"jsonrpc": "2.0", "id": identifier, "result": {}}
+
+    if method in ("resources/list", "resources/read"):
+        if not is_request:
+            return None
+        try:
+            import lhc_context_sources
+            if method == "resources/list":
+                if params.get("cursor"):
+                    raise ValueError("unknown resources cursor")
+                result = lhc_context_sources.list_resources()
+            else:
+                uri = params.get("uri")
+                if not isinstance(uri, str) or not uri:
+                    raise ValueError("resource uri is required")
+                result = lhc_context_sources.read_resource(uri)
+            return {"jsonrpc":"2.0", "id":identifier, "result":result}
+        except (ValueError, OSError, UnicodeError, json.JSONDecodeError) as error:
+            return {"jsonrpc":"2.0", "id":identifier, "error":{"code":INVALID_PARAMS, "message":str(error)}}
 
     if method == "tools/list":
         if not is_request:
